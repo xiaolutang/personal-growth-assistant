@@ -1,9 +1,11 @@
 """Personal Growth Assistant API"""
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
 from app.callers import APICaller
+from app.models import Task
 from app.services import TaskParser
 
 # 全局实例
@@ -26,25 +28,46 @@ app = FastAPI(
 )
 
 
-@app.get("/health")
+# === 响应模型 ===
+
+class HealthResponse(BaseModel):
+    """健康检查响应"""
+    status: str
+
+
+class ParseRequest(BaseModel):
+    """解析请求"""
+    text: str = Field(..., min_length=1, description="自然语言文本")
+
+
+class ParseResponse(BaseModel):
+    """解析响应"""
+    tasks: list[Task]
+
+
+# === 路由 ===
+
+@app.get("/health", response_model=HealthResponse)
 async def health():
     """健康检查"""
     return {"status": "ok"}
 
 
-@app.post("/parse")
-async def parse(text: str):
+@app.post("/parse", response_model=ParseResponse)
+async def parse(request: ParseRequest):
     """
     解析自然语言文本，提取结构化任务
 
-    Args:
-        text: 自然语言文本，如 "明天下午3点开会，讨论项目进度"
-
-    Returns:
-        解析后的任务列表
+    - **text**: 自然语言文本，如 "明天下午3点开会，讨论项目进度"
     """
+    # 服务状态检查
     if not parser:
-        return {"error": "Service not initialized"}
+        raise HTTPException(status_code=503, detail="服务未初始化")
 
-    tasks = await parser.parse(text)
+    # 调用解析服务
+    try:
+        tasks = await parser.parse(request.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"解析失败: {str(e)}")
+
     return {"tasks": tasks}
