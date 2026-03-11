@@ -12,7 +12,7 @@ personal-growth-assistant/
 │   │   ├── providers/ # LLM 提供商
 │   │   ├── services/  # 业务服务
 │   │   └── api/       # API 路由
-│   ├── requirements.txt
+│   ├── pyproject.toml # uv 依赖管理
 │   └── .env.example
 ├── frontend/          # 前端（待定）
 └── README.md
@@ -25,12 +25,13 @@ personal-growth-assistant/
 cd backend
 cp .env.example .env
 # 编辑 .env 填入 OPENAI_API_KEY
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+uv sync
+uv run uvicorn app.main:app --reload
 ```
 
 ## 技术栈
 
 - 后端：FastAPI + Pydantic + OpenAI
+- 包管理：uv
 - 前端：待定
 - 数据库：SQLite（后续）

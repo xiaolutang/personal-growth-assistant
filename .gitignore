@@ -9,6 +9,9 @@ venv/
 env/
 .env
 
+# uv
+.python-version
+
 # IDE
 .idea/
 .vscode/
