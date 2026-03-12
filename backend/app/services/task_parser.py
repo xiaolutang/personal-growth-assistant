@@ -1,4 +1,6 @@
+import json
 from datetime import datetime
+from typing import AsyncGenerator
 
 from app.callers import LLMCaller
 from app.models import Task, ParsedTaskInput
@@ -88,3 +90,25 @@ class TaskParser:
 
         # 3. 解析结果
         return self._parse_result(response)
+
+    async def stream_parse(self, text: str) -> AsyncGenerator[str, None]:
+        """
+        流式解析用户输入文本，返回 SSE 格式数据
+
+        Args:
+            text: 用户输入文本
+
+        Yields:
+            SSE 格式数据：data: {"content": "..."}\n\n
+        """
+        # 1. 构造消息
+        messages = self._build_messages(text)
+
+        # 2. 流式调用 LLM
+        response_format = {"type": "json_object"}
+        async for token in self.caller.stream(messages, response_format):
+            data = json.dumps({"content": token}, ensure_ascii=False)
+            yield f"data: {data}\n\n"
+
+        # 3. 发送结束信号
+        yield "data: [DONE]\n\n"

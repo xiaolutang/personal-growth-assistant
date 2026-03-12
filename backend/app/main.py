@@ -2,6 +2,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.callers import APICaller
@@ -53,21 +54,26 @@ async def health():
     return {"status": "ok"}
 
 
-@app.post("/parse", response_model=ParseResponse)
+@app.post("/parse")
 async def parse(request: ParseRequest):
     """
-    解析自然语言文本，提取结构化任务
+    解析自然语言文本，流式返回结果（SSE）
 
-    - **text**: 自然语言文本，如 "明天下午3点开会，讨论项目进度"
+    返回 Server-Sent Events 格式的流式响应：
+    - data: {"content": "..."}\n\n（JSON 内容片段）
+    - data: [DONE]\n\n（结束信号）
+
+    前端需要累积完整 JSON 后解析。
     """
-    # 服务状态检查
     if not parser:
         raise HTTPException(status_code=503, detail="服务未初始化")
 
-    # 调用解析服务
-    try:
-        tasks = await parser.parse(request.text)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"解析失败: {str(e)}")
-
-    return {"tasks": tasks}
+    return StreamingResponse(
+        parser.stream_parse(request.text),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )

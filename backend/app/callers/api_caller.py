@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, AsyncGenerator
 
 from openai import OpenAI
 
@@ -69,3 +69,32 @@ class APICaller(LLMCaller):
 
         response = self.client.chat.completions.create(**params)
         return response.choices[0].message.content or ""
+
+    async def stream(
+        self,
+        messages: list[dict[str, str]],
+        response_format: dict[str, Any] | None = None,
+    ) -> AsyncGenerator[str, None]:
+        """
+        流式调用 LLM API
+
+        Args:
+            messages: 消息列表
+            response_format: 响应格式约束
+
+        Yields:
+            每个 token 的内容
+        """
+        params = {
+            "model": self.model,
+            "messages": messages,
+            "stream": True,
+        }
+        if response_format:
+            params["response_format"] = response_format
+
+        response = self.client.chat.completions.create(**params)
+
+        for chunk in response:
+            if chunk.choices and chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content

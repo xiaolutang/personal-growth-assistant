@@ -9,6 +9,7 @@ interface TaskStore {
   error: string | null;
 
   // Actions
+  addTasks: (tasks: Omit<Task, "id" | "created_at">[]) => void;
   parseAndAddTasks: (text: string) => Promise<void>;
   updateTaskStatus: (id: number, status: TaskStatus) => void;
   deleteTask: (id: number) => void;
@@ -23,6 +24,17 @@ export const useTaskStore = create<TaskStore>()(
       tasks: [],
       isLoading: false,
       error: null,
+
+      addTasks: (newTasks: Omit<Task, "id" | "created_at">[]) => {
+        const tasksWithId = newTasks.map((task, index) => ({
+          ...task,
+          id: Date.now() + index,
+          created_at: new Date().toISOString(),
+        }));
+        set((state) => ({
+          tasks: [...state.tasks, ...tasksWithId],
+        }));
+      },
 
       parseAndAddTasks: async (text: string) => {
         set({ isLoading: true, error: null });

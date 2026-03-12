@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, AsyncGenerator
 
 
 class LLMCaller(ABC):
@@ -20,5 +20,23 @@ class LLMCaller(ABC):
 
         Returns:
             LLM 返回的原始字符串
+        """
+        pass
+
+    @abstractmethod
+    async def stream(
+        self,
+        messages: list[dict[str, str]],
+        response_format: dict[str, Any] | None = None,
+    ) -> AsyncGenerator[str, None]:
+        """
+        流式调用 LLM，逐个返回 token
+
+        Args:
+            messages: 消息列表
+            response_format: 响应格式约束
+
+        Yields:
+            每个 token 的内容
         """
         pass

@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { QuickInput } from "@/components/QuickInput";
+import { ChatBox } from "@/components/ChatBox";
 import { TaskList } from "@/components/TaskList";
 import { Header } from "@/components/layout/Header";
 import { useTaskStore } from "@/stores/taskStore";
@@ -15,13 +15,13 @@ export function Home() {
     <>
       <Header title="首页" />
       <main className="flex-1 space-y-6 p-6">
-        {/* Quick Input */}
+        {/* AI Chat */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">快速录入</CardTitle>
+            <CardTitle className="text-base">AI 助手</CardTitle>
           </CardHeader>
           <CardContent>
-            <QuickInput />
+            <ChatBox />
           </CardContent>
         </Card>
 

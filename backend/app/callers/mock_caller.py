@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, AsyncGenerator
 
 from .base import LLMCaller
 
@@ -27,3 +27,11 @@ class MockCaller(LLMCaller):
     ) -> str:
         """返回预设的响应数据"""
         return self.response
+
+    async def stream(
+        self,
+        messages: list[dict[str, str]],
+        response_format: dict[str, Any] | None = None,
+    ) -> AsyncGenerator[str, None]:
+        """模拟流式返回，一次性返回完整响应"""
+        yield self.response
