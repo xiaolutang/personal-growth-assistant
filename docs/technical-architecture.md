@@ -80,29 +80,26 @@ status: doing
 priority: high
 created_at: 2026-03-01
 updated_at: 2026-03-12
-tags: [AI, 转型, 学习]
+tags: [学习, 技术]
 related:
   - note-001
   - task-015
 ---
 
-# AI 应用开发转型
+# 项目标题
 
-## 目标
-8周内转型为 AI 应用开发工程师，目标薪资 25-32k
+## 描述
+项目简要描述
 
 ## 当前状态
-- Week 2 进行中
-- 已完成 Prompt 工程
+- 进行中
 
 ## 里程碑
-- [ ] Week 4: MCP Server 完成
-- [ ] Week 5: RAG 检索可用
-- [ ] Week 7: 产品上线
+- [ ] 阶段一完成
+- [ ] 阶段二完成
 
 ## 决策记录
-- [[dec-001]] 选择 FastAPI 而非 Flask
-- [[dec-002]] 选择 ChromaDB 而非 Pinecone
+- [[dec-001]] 技术选型决策
 ```
 
 ---
@@ -117,7 +114,7 @@ CREATE TABLE entries (
     id TEXT PRIMARY KEY,           -- proj-001, task-015, note-001
     type TEXT NOT NULL,            -- project, task, note, decision, meeting
     file_path TEXT NOT NULL,       -- projects/ai-transition.md
-    title TEXT,                    -- AI转型项目
+    title TEXT,                    -- 项目标题
     status TEXT,                   -- doing, waitStart, complete
     priority TEXT,                 -- high, medium, low
     created_at DATETIME,
