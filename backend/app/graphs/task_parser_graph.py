@@ -1,9 +1,10 @@
 """基于 LangGraph 的任务解析图"""
 import json
 from datetime import datetime
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Any
 
 from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import StateGraph, MessagesState, START, END
 
@@ -98,7 +99,7 @@ class TaskParserGraph:
         Yields:
             SSE 格式数据
         """
-        config = {"configurable": {"thread_id": thread_id}}
+        config: RunnableConfig = {"configurable": {"thread_id": thread_id}}  # type: ignore[typeddict-item]
 
         # 流式调用图
         async for event in self.graph.astream(
