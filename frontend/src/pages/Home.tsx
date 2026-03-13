@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChatBox } from "@/components/ChatBox";
 import { TaskList } from "@/components/TaskList";
 import { Header } from "@/components/layout/Header";
 import { useTaskStore } from "@/stores/taskStore";
@@ -15,16 +14,6 @@ export function Home() {
     <>
       <Header title="首页" />
       <main className="flex-1 space-y-6 p-6">
-        {/* AI Chat */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">AI 助手</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChatBox />
-          </CardContent>
-        </Card>
-
         {/* Today's Tasks */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -35,7 +24,7 @@ export function Home() {
           <CardContent>
             <TaskList
               tasks={todayTasks}
-              emptyMessage="今天还没有任务，试试输入「明天下午3点开会」"
+              emptyMessage="今天还没有任务，试试在底部输入「明天下午3点开会」"
             />
           </CardContent>
         </Card>
@@ -57,7 +46,7 @@ export function Home() {
           <CardContent>
             <TaskList
               tasks={recentInbox}
-              emptyMessage="还没有灵感，试试输入「学习 LangChain 的 Agent 模式」"
+              emptyMessage="还没有灵感，试试在底部输入「学习 LangChain 的 Agent 模式」"
             />
           </CardContent>
         </Card>

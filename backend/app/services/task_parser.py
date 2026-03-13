@@ -1,9 +1,10 @@
 import json
 from datetime import datetime
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 
 from app.callers import LLMCaller
 from app.models import Task, ParsedTaskInput
+from app.services.conversation_store import ConversationStore
 
 
 class TaskParser:
@@ -54,17 +55,24 @@ class TaskParser:
 1. 只输出 JSON，不要有其他内容
 2. 根据当前时间将相对日期（明天、下周等）转换为具体日期"""
 
-    def __init__(self, caller: LLMCaller):
+    def __init__(self, caller: LLMCaller, store: Optional[ConversationStore] = None):
         self.caller = caller
+        self.store = store
 
-    def _build_messages(self, text: str) -> list[dict[str, str]]:
-        """构造消息列表"""
+    def _build_messages(self, text: str, session_id: str = "default") -> list[dict[str, str]]:
+        """构造消息列表，包含历史对话"""
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
         system_prompt = self.SYSTEM_PROMPT_TEMPLATE.format(current_time=current_time)
-        return [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": text},
-        ]
+        messages = [{"role": "system", "content": system_prompt}]
+
+        # 获取历史消息
+        if self.store:
+            history = self.store.get_history(session_id)
+            messages.extend(history)
+
+        # 添加当前用户消息
+        messages.append({"role": "user", "content": text})
+        return messages
 
     def _parse_result(self, json_str: str) -> list[Task]:
         """解析 LLM 返回的 JSON"""
@@ -91,24 +99,37 @@ class TaskParser:
         # 3. 解析结果
         return self._parse_result(response)
 
-    async def stream_parse(self, text: str) -> AsyncGenerator[str, None]:
+    async def stream_parse(
+        self, text: str, session_id: str = "default"
+    ) -> AsyncGenerator[str, None]:
         """
         流式解析用户输入文本，返回 SSE 格式数据
 
         Args:
             text: 用户输入文本
+            session_id: 会话 ID，用于多轮对话
 
         Yields:
             SSE 格式数据：data: {"content": "..."}\n\n
         """
-        # 1. 构造消息
-        messages = self._build_messages(text)
+        # 1. 构造消息（含历史）
+        messages = self._build_messages(text, session_id)
 
-        # 2. 流式调用 LLM
+        # 2. 记录用户消息
+        if self.store:
+            self.store.add_message(session_id, "user", text)
+
+        # 3. 流式调用 LLM
         response_format = {"type": "json_object"}
+        full_response = ""
         async for token in self.caller.stream(messages, response_format):
+            full_response += token
             data = json.dumps({"content": token}, ensure_ascii=False)
             yield f"data: {data}\n\n"
 
-        # 3. 发送结束信号
+        # 4. 记录助手回复
+        if self.store:
+            self.store.add_message(session_id, "assistant", full_response)
+
+        # 5. 发送结束信号
         yield "data: [DONE]\n\n"

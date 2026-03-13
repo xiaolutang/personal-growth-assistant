@@ -18,6 +18,7 @@ interface ParseResult {
 interface UseStreamParseOptions {
   onComplete?: (result: ParseResult) => void;
   onError?: (error: Error) => void;
+  onMessage?: (role: "user" | "assistant", content: string) => void;
 }
 
 /**
@@ -35,8 +36,11 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
   const [error, setError] = useState<Error | null>(null);
 
   const parse = useCallback(
-    async (text: string) => {
+    async (text: string, sessionId: string = "default") => {
       if (!text.trim()) return;
+
+      // 存储用户消息
+      options.onMessage?.("user", text);
 
       setRawJson("");
       setResult(null);
@@ -47,7 +51,7 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
         const res = await fetch(`${API_BASE}/parse`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text }),
+          body: JSON.stringify({ text, session_id: sessionId }),
         });
 
         if (!res.ok) {
@@ -79,6 +83,8 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
                   const parsed: ParseResult = JSON.parse(fullJson);
                   setResult(parsed);
                   options.onComplete?.(parsed);
+                  // 存储 AI 响应
+                  options.onMessage?.("assistant", fullJson);
                 } catch (e) {
                   console.error("JSON parse error:", e);
                   setError(new Error("JSON 解析失败"));
