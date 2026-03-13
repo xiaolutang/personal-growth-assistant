@@ -73,12 +73,14 @@ class TaskParserGraph:
         system_prompt = SYSTEM_PROMPT_TEMPLATE.format(current_time=current_time)
 
         # 将 LangChain 消息对象转换为字典格式
-        dict_messages = [{"role": "system", "content": system_prompt}]
+        dict_messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
         for msg in state["messages"]:
             if isinstance(msg, HumanMessage):
-                dict_messages.append({"role": "user", "content": msg.content})
+                content = msg.content if isinstance(msg.content, str) else str(msg.content)
+                dict_messages.append({"role": "user", "content": content})
             elif isinstance(msg, AIMessage):
-                dict_messages.append({"role": "assistant", "content": msg.content})
+                content = msg.content if isinstance(msg.content, str) else str(msg.content)
+                dict_messages.append({"role": "assistant", "content": content})
 
         # 调用 LLM
         response_format = {"type": "json_object"}
@@ -111,7 +113,8 @@ class TaskParserGraph:
                 last_message = event["messages"][-1]
                 if isinstance(last_message, AIMessage):
                     # 返回 SSE 格式
-                    data = json.dumps({"content": last_message.content}, ensure_ascii=False)
+                    content = last_message.content if isinstance(last_message.content, str) else str(last_message.content)
+                    data = json.dumps({"content": content}, ensure_ascii=False)
                     yield f"data: {data}\n\n"
 
         yield "data: [DONE]\n\n"
