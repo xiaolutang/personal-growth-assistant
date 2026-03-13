@@ -6,13 +6,19 @@ import { Tasks } from "@/pages/Tasks";
 import { Inbox } from "@/pages/Inbox";
 import { Notes } from "@/pages/Notes";
 import { Projects } from "@/pages/Projects";
+import { useChatStore } from "@/stores/chatStore";
 
 function App() {
+  const panelHeight = useChatStore((state) => state.panelHeight);
+
   return (
     <BrowserRouter>
       <div className="flex min-h-screen bg-background">
         <Sidebar />
-        <div className="flex flex-1 flex-col ml-64 pb-32">
+        <div
+          className="flex flex-1 flex-col ml-64"
+          style={{ paddingBottom: panelHeight }}
+        >
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/tasks" element={<Tasks />} />

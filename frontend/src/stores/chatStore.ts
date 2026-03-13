@@ -19,6 +19,7 @@ export interface ChatSession {
 interface ChatStore {
   sessions: ChatSession[];
   currentSessionId: string | null;
+  panelHeight: number; // FloatingChat 面板高度
 
   // Actions
   createSession: () => string;
@@ -31,13 +32,18 @@ interface ChatStore {
   getCurrentSession: () => ChatSession | null;
   updateSessionTitle: (id: string, title: string) => void;
   clearMessages: (sessionId: string) => void;
+  setPanelHeight: (height: number) => void;
 }
+
+// 默认面板高度
+const DEFAULT_PANEL_HEIGHT = 300;
 
 export const useChatStore = create<ChatStore>()(
   persist(
     (set, get) => ({
       sessions: [],
       currentSessionId: null,
+      panelHeight: DEFAULT_PANEL_HEIGHT,
 
       createSession: () => {
         const id = `session-${Date.now()}`;
@@ -114,6 +120,10 @@ export const useChatStore = create<ChatStore>()(
               : session
           ),
         }));
+      },
+
+      setPanelHeight: (height) => {
+        set({ panelHeight: height });
       },
     }),
     { name: "chat-storage" }

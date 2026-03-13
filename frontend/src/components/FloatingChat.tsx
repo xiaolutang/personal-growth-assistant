@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Send,
   Loader2,
@@ -6,7 +6,8 @@ import {
   MessageSquare,
   Trash2,
   ChevronDown,
-  ChevronUp,
+  GripHorizontal,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,10 +15,16 @@ import { useStreamParse } from "@/hooks/useStreamParse";
 import { useTaskStore } from "@/stores/taskStore";
 import { useChatStore } from "@/stores/chatStore";
 
+// 最小和最大面板高度
+const MIN_HEIGHT = 200;
+const MAX_HEIGHT = 600;
+
 export function FloatingChat() {
   const [input, setInput] = useState("");
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [showSessionList, setShowSessionList] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const {
     sessions,
@@ -28,6 +35,8 @@ export function FloatingChat() {
     addMessage,
     getCurrentSession,
     updateSessionTitle,
+    panelHeight,
+    setPanelHeight,
   } = useChatStore();
 
   const currentSession = getCurrentSession();
@@ -90,35 +99,101 @@ export function FloatingChat() {
     reset();
   };
 
+  // 拖拽调整高度
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      // 从底部计算高度
+      const newHeight = window.innerHeight - e.clientY;
+      setPanelHeight(Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, newHeight)));
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging]);
+
   return (
-    <div className="fixed bottom-0 left-64 right-0 bg-background border-t z-50">
-      {/* 会话列表（展开时显示） */}
-      {isExpanded && (
-        <div className="border-b bg-muted/30 max-h-60 overflow-y-auto">
-          <div className="flex items-center justify-between p-2 border-b">
-            <span className="text-sm font-medium">会话历史</span>
-            <Button variant="ghost" size="sm" onClick={handleNewSession}>
-              <Plus className="h-4 w-4 mr-1" />
-              新对话
-            </Button>
+    <div
+      className={`fixed bottom-0 left-64 right-0 bg-background border-t z-50 flex flex-col ${
+        isDragging ? "select-none" : ""
+      }`}
+      style={{ height: panelHeight }}
+    >
+      {/* 拖拽条 */}
+      <div
+        className="flex items-center justify-center h-6 cursor-ns-resize hover:bg-muted/50 border-b shrink-0"
+        onMouseDown={handleMouseDown}
+      >
+        <GripHorizontal className="h-4 w-4 text-muted-foreground" />
+      </div>
+
+      {/* 会话列表区域 - 可折叠 */}
+      <div className="border-b bg-muted/30 shrink-0">
+        {/* 当前会话行（始终显示） */}
+        <div
+          className="flex items-center justify-between p-2 cursor-pointer hover:bg-muted/50"
+          onClick={() => setShowSessionList(!showSessionList)}
+        >
+          <div className="flex items-center gap-2">
+            {showSessionList ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+            <MessageSquare className="h-4 w-4" />
+            <span className="text-sm font-medium truncate">
+              {currentSession?.title || "新对话"}
+            </span>
           </div>
-          <div className="p-2 space-y-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNewSession();
+            }}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* 展开的会话列表 */}
+        {showSessionList && (
+          <div className="max-h-32 overflow-y-auto border-t">
             {sessions.map((session) => (
               <div
                 key={session.id}
-                className={`flex items-center justify-between p-2 rounded cursor-pointer hover:bg-muted ${
+                className={`flex items-center justify-between px-4 py-1.5 cursor-pointer hover:bg-muted ${
                   session.id === currentSessionId ? "bg-muted" : ""
                 }`}
-                onClick={() => handleSwitchSession(session.id)}
+                onClick={() => {
+                  handleSwitchSession(session.id);
+                  setShowSessionList(false);
+                }}
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <MessageSquare className="h-4 w-4 shrink-0" />
+                  <MessageSquare className="h-3 w-3 shrink-0 text-muted-foreground" />
                   <span className="truncate text-sm">{session.title}</span>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 shrink-0"
+                  className="h-5 w-5 shrink-0"
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteSession(session.id);
@@ -129,17 +204,20 @@ export function FloatingChat() {
               </div>
             ))}
             {sessions.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                暂无对话，开始新对话吧
+              <p className="text-sm text-muted-foreground text-center py-2">
+                暂无对话
               </p>
             )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* 历史消息区域 */}
+      {/* 历史消息区域 - 可滚动 */}
       {currentSession && currentSession.messages.length > 0 && (
-        <div className="max-h-40 overflow-y-auto p-3 border-b bg-muted/20">
+        <div
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto p-3 border-b bg-muted/20 min-h-0"
+        >
           {currentSession.messages.map((msg) => (
             <div
               key={msg.id}
@@ -148,7 +226,7 @@ export function FloatingChat() {
               }`}
             >
               <span
-                className={`inline-block px-3 py-1.5 rounded-lg text-sm max-w-[80%] ${
+                className={`inline-block px-3 py-1.5 rounded-lg text-sm max-w-[80%] whitespace-pre-wrap break-words ${
                   msg.role === "user"
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted"
@@ -163,40 +241,23 @@ export function FloatingChat() {
       )}
 
       {/* 输入区域 */}
-      <div className="p-3">
-        <div className="flex items-center gap-2">
-          {/* 展开/收起按钮 */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsExpanded(!isExpanded)}
-            title={isExpanded ? "收起会话列表" : "展开会话列表"}
-          >
-            {isExpanded ? (
-              <ChevronDown className="h-4 w-4" />
+      <div className="p-3 shrink-0">
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="输入任务... (如: 明天下午3点开会)"
+            className="flex-1"
+            disabled={isLoading}
+          />
+          <Button type="submit" disabled={!input.trim() || isLoading}>
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <ChevronUp className="h-4 w-4" />
+              <Send className="h-4 w-4" />
             )}
           </Button>
-
-          {/* 输入框 */}
-          <form onSubmit={handleSubmit} className="flex-1 flex gap-2">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="输入任务... (如: 明天下午3点开会)"
-              className="flex-1"
-              disabled={isLoading}
-            />
-            <Button type="submit" disabled={!input.trim() || isLoading}>
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </form>
-        </div>
+        </form>
 
         {/* 错误提示 */}
         {error && (
