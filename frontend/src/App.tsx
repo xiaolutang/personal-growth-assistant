@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { FloatingChat } from "@/components/FloatingChat";
@@ -6,10 +7,18 @@ import { Tasks } from "@/pages/Tasks";
 import { Inbox } from "@/pages/Inbox";
 import { Notes } from "@/pages/Notes";
 import { Projects } from "@/pages/Projects";
+import { EntryDetail } from "@/pages/EntryDetail";
 import { useChatStore } from "@/stores/chatStore";
+import { useTaskStore } from "@/stores/taskStore";
 
 function App() {
   const panelHeight = useChatStore((state) => state.panelHeight);
+  const fetchEntries = useTaskStore((state) => state.fetchEntries);
+
+  // 应用启动时从后端获取数据
+  useEffect(() => {
+    fetchEntries();
+  }, [fetchEntries]);
 
   return (
     <BrowserRouter>
@@ -25,6 +34,7 @@ function App() {
             <Route path="/inbox" element={<Inbox />} />
             <Route path="/notes" element={<Notes />} />
             <Route path="/projects" element={<Projects />} />
+            <Route path="/entries/:id" element={<EntryDetail />} />
           </Routes>
         </div>
         <FloatingChat />

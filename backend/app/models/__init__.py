@@ -1,3 +1,3 @@
-from .task import Task, TaskStatus, Category, ParsedTaskInput
+from .task import Task, TaskStatus, Category, Priority, ParsedTaskInput, Concept, ConceptRelation, ExtractedKnowledge
 
-__all__ = ["Task", "TaskStatus", "Category", "ParsedTaskInput"]
+__all__ = ["Task", "TaskStatus", "Category", "Priority", "ParsedTaskInput", "Concept", "ConceptRelation", "ExtractedKnowledge"]

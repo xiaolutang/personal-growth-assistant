@@ -13,11 +13,12 @@ export function ChatBox() {
       if (data.tasks.length > 0) {
         addTasks(
           data.tasks.map((task) => ({
-            name: task.name,
-            description: task.description,
+            type: task.category,
+            title: task.title || "",
+            content: task.content || "",
             category: task.category,
             status: task.status,
-            planned_date: task.planned_date,
+            tags: task.tags || [],
           }))
         );
       }
@@ -92,7 +93,7 @@ export function ChatBox() {
                         <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
                           {task.category}
                         </span>
-                        <span>{task.name}</span>
+                        <span>{task.title}</span>
                         {task.planned_date && (
                           <span className="text-xs text-muted-foreground">
                             {task.planned_date}

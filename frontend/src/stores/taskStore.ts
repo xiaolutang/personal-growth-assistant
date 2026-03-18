@@ -1,108 +1,204 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type { Task, TaskStatus, Category } from "@/types/task";
-import { parseText } from "@/services/api";
+import type {
+  Task,
+  TaskStatus,
+  Category,
+  EntryCreate,
+  SearchResult,
+  KnowledgeGraphResponse,
+} from "@/types/task";
+import {
+  getEntries,
+  createEntry as apiCreateEntry,
+  updateEntry,
+  deleteEntry as apiDeleteEntry,
+  searchEntries as apiSearchEntries,
+  getKnowledgeGraph as apiGetKnowledgeGraph,
+} from "@/services/api";
 
 interface TaskStore {
   tasks: Task[];
   isLoading: boolean;
   error: string | null;
+  searchResults: SearchResult[];
+  knowledgeGraph: KnowledgeGraphResponse | null;
 
   // Actions
-  addTasks: (tasks: Omit<Task, "id" | "created_at">[]) => void;
-  parseAndAddTasks: (text: string) => Promise<void>;
-  updateTaskStatus: (id: number, status: TaskStatus) => void;
-  deleteTask: (id: number) => void;
+  fetchEntries: (params?: {
+    type?: string;
+    status?: string;
+    limit?: number;
+  }) => Promise<void>;
+  createEntry: (data: EntryCreate) => Promise<Task>;
+  addTasks: (tasks: { type: string; title: string; content?: string; category: Category; status: TaskStatus; tags?: string[] }[]) => Promise<void>;
+  updateTaskStatus: (id: string, status: TaskStatus) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  searchEntries: (query: string, limit?: number) => Promise<SearchResult[]>;
+  getKnowledgeGraph: (concept: string, depth?: number) => Promise<KnowledgeGraphResponse | null>;
+  clearSearchResults: () => void;
+  clearKnowledgeGraph: () => void;
   getTasksByCategory: (category: Category) => Task[];
   getTasksByStatus: (status: TaskStatus) => Task[];
   getTodayTasks: () => Task[];
 }
 
-export const useTaskStore = create<TaskStore>()(
-  persist(
-    (set, get) => ({
-      tasks: [],
-      isLoading: false,
-      error: null,
+export const useTaskStore = create<TaskStore>()((set, get) => ({
+  tasks: [],
+  isLoading: false,
+  error: null,
+  searchResults: [],
+  knowledgeGraph: null,
 
-      addTasks: (newTasks: Omit<Task, "id" | "created_at">[]) => {
-        const tasksWithId = newTasks.map((task, index) => ({
-          ...task,
-          id: Date.now() + index,
-          created_at: new Date().toISOString(),
-        }));
-        set((state) => ({
-          tasks: [...state.tasks, ...tasksWithId],
-        }));
-      },
-
-      parseAndAddTasks: async (text: string) => {
-        set({ isLoading: true, error: null });
-        try {
-          const response = await parseText(text);
-          const newTasks = response.tasks.map((task, index) => ({
-            ...task,
-            id: Date.now() + index,
-            created_at: new Date().toISOString(),
-          }));
-          set((state) => ({
-            tasks: [...state.tasks, ...newTasks],
-            isLoading: false,
-          }));
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : "解析失败",
-            isLoading: false,
-          });
-        }
-      },
-
-      updateTaskStatus: (id: number, status: TaskStatus) => {
-        set((state) => ({
-          tasks: state.tasks.map((task) =>
-            task.id === id
-              ? {
-                  ...task,
-                  status,
-                  updated_at: new Date().toISOString(),
-                  ...(status === "complete"
-                    ? { completed_at: new Date().toISOString() }
-                    : {}),
-                }
-              : task
-          ),
-        }));
-      },
-
-      deleteTask: (id: number) => {
-        set((state) => ({
-          tasks: state.tasks.filter((task) => task.id !== id),
-        }));
-      },
-
-      getTasksByCategory: (category: Category) => {
-        return get().tasks.filter((task) => task.category === category);
-      },
-
-      getTasksByStatus: (status: TaskStatus) => {
-        return get().tasks.filter((task) => task.status === status);
-      },
-
-      getTodayTasks: () => {
-        const today = new Date().toISOString().split("T")[0];
-        return get().tasks.filter((task) => {
-          if (task.planned_date) {
-            return task.planned_date.startsWith(today);
-          }
-          if (task.created_at) {
-            return task.created_at.startsWith(today);
-          }
-          return false;
-        });
-      },
-    }),
-    {
-      name: "task-storage",
+  fetchEntries: async (params) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await getEntries(params);
+      set({
+        tasks: response.entries,
+        isLoading: false,
+      });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : "获取条目失败",
+        isLoading: false,
+      });
     }
-  )
-);
+  },
+
+  createEntry: async (data: EntryCreate) => {
+    set({ isLoading: true, error: null });
+    try {
+      const entry = await apiCreateEntry(data);
+      // 创建成功后重新获取列表
+      await get().fetchEntries();
+      return entry;
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : "创建条目失败",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  // 批量添加任务（从 AI 解析结果创建）
+  addTasks: async (tasks) => {
+    set({ isLoading: true, error: null });
+    try {
+      // 并行创建条目
+      await Promise.all(
+        tasks.map((task) =>
+          apiCreateEntry({
+            type: task.type || task.category,
+            title: task.title,
+            content: task.content,
+            tags: task.tags,
+          })
+        )
+      );
+      // 创建完成后重新获取列表
+      await get().fetchEntries();
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : "创建条目失败",
+        isLoading: false,
+      });
+    }
+  },
+
+  updateTaskStatus: async (id: string, status: TaskStatus) => {
+    set({ isLoading: true, error: null });
+    try {
+      await updateEntry(id, { status });
+      // 更新成功后重新获取列表
+      await get().fetchEntries();
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : "更新状态失败",
+        isLoading: false,
+      });
+    }
+  },
+
+  deleteTask: async (id: string) => {
+    // 乐观更新：先从本地移除
+    const previousTasks = get().tasks;
+    set({ tasks: previousTasks.filter((t) => t.id !== id), error: null });
+
+    try {
+      await apiDeleteEntry(id);
+      // 删除成功，不需要再 fetchEntries，因为已经乐观更新了
+    } catch (error) {
+      // 失败时回滚
+      set({
+        tasks: previousTasks,
+        error: error instanceof Error ? error.message : "删除失败",
+      });
+    }
+  },
+
+  searchEntries: async (query: string, limit: number = 5) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiSearchEntries(query, limit);
+      set({
+        searchResults: response.results,
+        isLoading: false,
+      });
+      return response.results;
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : "搜索失败",
+        isLoading: false,
+      });
+      return [];
+    }
+  },
+
+  getKnowledgeGraph: async (concept: string, depth: number = 2) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await apiGetKnowledgeGraph(concept, depth);
+      set({
+        knowledgeGraph: response,
+        isLoading: false,
+      });
+      return response;
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : "获取知识图谱失败",
+        isLoading: false,
+      });
+      return null;
+    }
+  },
+
+  clearSearchResults: () => {
+    set({ searchResults: [] });
+  },
+
+  clearKnowledgeGraph: () => {
+    set({ knowledgeGraph: null });
+  },
+
+  getTasksByCategory: (category: Category) => {
+    return get().tasks.filter((task) => task.category === category);
+  },
+
+  getTasksByStatus: (status: TaskStatus) => {
+    return get().tasks.filter((task) => task.status === status);
+  },
+
+  getTodayTasks: () => {
+    const today = new Date().toISOString().split("T")[0];
+    return get().tasks.filter((task) => {
+      if (task.planned_date) {
+        return task.planned_date.startsWith(today);
+      }
+      if (task.created_at) {
+        return task.created_at.startsWith(today);
+      }
+      return false;
+    });
+  },
+}));

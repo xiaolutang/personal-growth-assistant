@@ -1,18 +1,19 @@
 import { useState, useCallback } from "react";
+import { API_BASE } from "@/config/api";
 
-const API_BASE = "/api";
-
-interface Task {
-  id: string;
-  name: string;
-  description?: string;
+// 解析后的任务结构（与后端 ParsedTaskInput 对应）
+interface ParsedTask {
+  id?: string;
+  title?: string;
+  content?: string;
   category: "task" | "inbox" | "note" | "project";
   status: "waitStart" | "doing" | "complete";
+  tags?: string[];
   planned_date?: string;
 }
 
 interface ParseResult {
-  tasks: Task[];
+  tasks: ParsedTask[];
 }
 
 interface UseStreamParseOptions {

@@ -1,7 +1,7 @@
 [project]
 name = "personal-growth-assistant"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.3.0"
+description = "Personal Growth Assistant with MCP Server"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -12,6 +12,12 @@ dependencies = [
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.2",
     "uvicorn>=0.41.0",
+    # MCP Server
+    "mcp>=1.0.0",
+    # Knowledge Graph
+    "neo4j>=5.0.0",
+    # Vector Search
+    "qdrant-client>=1.7.0",
 ]
 
 [project.optional-dependencies]
