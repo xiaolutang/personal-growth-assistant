@@ -169,13 +169,14 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
                         return;
                       } else if (data === "[DONE]") {
                         // create 意图完成
-                        let parsedResult: ParseResult | undefined;
+                        let parsedResult: ParseResult | undefined = undefined;
                         if (fullJson) {
                           try {
-                            parsedResult = JSON.parse(fullJson);
-                            setResult(parsedResult);
-                            optionsRef.current.onComplete?.(parsedResult);
-                            optionsRef.current.onMessage?.("assistant", formatParsedResult(parsedResult));
+                            const parsed = JSON.parse(fullJson) as ParseResult;
+                            parsedResult = parsed;
+                            setResult(parsed);
+                            optionsRef.current.onComplete?.(parsed);
+                            optionsRef.current.onMessage?.("assistant", formatParsedResult(parsed));
                           } catch (e) {
                             console.error("JSON parse error:", e);
                             const err = new Error("JSON 解析失败");

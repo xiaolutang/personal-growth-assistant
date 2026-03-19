@@ -137,21 +137,30 @@ class MarkdownStorage:
         yaml_str = yaml.dump(metadata, allow_unicode=True, sort_keys=False, default_flow_style=False)
         return f"---\n{yaml_str}---\n\n{body}"
 
-    def _parse_datetime(self, value: Optional[str]) -> Optional[datetime]:
-        """解析 ISO 格式的日期时间"""
+    def _parse_datetime(self, value) -> Optional[datetime]:
+        """解析 ISO 格式的日期时间（支持字符串或 datetime 对象）"""
         if not value:
             return None
-        try:
-            # 尝试 ISO 格式（去掉时区后缀）
-            clean_value = value.replace('Z', '').split('+')[0].split('.')[0]
-            return datetime.fromisoformat(clean_value)
-        except (ValueError, AttributeError):
-            pass
-        try:
-            # 尝试日期格式
-            return datetime.strptime(value, '%Y-%m-%d')
-        except (ValueError, AttributeError):
-            return None
+
+        # YAML 可能已经解析为 datetime 对象
+        if isinstance(value, datetime):
+            return value
+
+        # 处理字符串
+        if isinstance(value, str):
+            try:
+                # 尝试 ISO 格式（去掉时区后缀）
+                clean_value = value.replace('Z', '').split('+')[0].split('.')[0]
+                return datetime.fromisoformat(clean_value)
+            except (ValueError, AttributeError):
+                pass
+            try:
+                # 尝试日期格式
+                return datetime.strptime(value, '%Y-%m-%d')
+            except (ValueError, AttributeError):
+                pass
+
+        return None
 
     def _extract_body(self, content: str, title: str) -> str:
         """从内容中提取正文（去掉旧的标题和日期行）"""

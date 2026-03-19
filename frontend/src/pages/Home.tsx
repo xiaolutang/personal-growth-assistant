@@ -16,7 +16,7 @@ import type { Task, Category, TaskStatus } from "@/types/task";
 import { statusConfig, categoryConfig, categoryBgColors } from "@/config/constants";
 
 export function Home() {
-  // 直接获取 tasks，确保响应式更新
+  // 直接获取 tasks，数据由 App.tsx 在启动时加载
   const tasks = useTaskStore((state) => state.tasks);
 
   // 使用 useMemo 计算派生数据
@@ -236,7 +236,7 @@ export function Home() {
 function RecentEntryItem({ entry }: { entry: Task }) {
   return (
     <Link
-      to={`/entry/${entry.id}`}
+      to={`/entries/${entry.id}`}
       className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors"
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">

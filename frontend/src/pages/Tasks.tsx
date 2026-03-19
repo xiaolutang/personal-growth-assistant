@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,8 +21,9 @@ const QUICK_DATE_OPTIONS = [
 ];
 
 export function Tasks() {
-  const tasks = useTaskStore((state) => state.tasks);
+  const allTasks = useTaskStore((state) => state.tasks);
   const fetchEntries = useTaskStore((state) => state.fetchEntries);
+  const isLoading = useTaskStore((state) => state.isLoading);
 
   // 筛选状态
   const [showFilters, setShowFilters] = useState(false);
@@ -30,6 +31,13 @@ export function Tasks() {
   const [quickDate, setQuickDate] = useState<string>("all");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+
+  // 首次挂载时加载数据（如果 store 为空）
+  useEffect(() => {
+    if (allTasks.length === 0) {
+      fetchEntries({ type: "task", limit: 100 });
+    }
+  }, []); // 只在首次挂载时执行
 
   // 获取日期范围
   const getDateRange = (option: string) => {
@@ -71,16 +79,35 @@ export function Tasks() {
     }
   }, [quickDate]);
 
-  // 从后端获取筛选后的数据
-  useEffect(() => {
-    fetchEntries({
-      type: "task",
-      status: selectedStatus || undefined,
-      start_date: startDate || undefined,
-      end_date: endDate || undefined,
-      limit: 100,
-    });
-  }, [selectedStatus, startDate, endDate, fetchEntries]);
+  // 本地筛选数据（显示所有类型）
+  const filteredTasks = useMemo(() => {
+    let result = allTasks;
+
+    // 状态筛选
+    if (selectedStatus) {
+      result = result.filter((task) => task.status === selectedStatus);
+    }
+
+    // 日期筛选
+    if (startDate) {
+      result = result.filter((task) => {
+        const taskDate = task.planned_date || task.created_at;
+        if (!taskDate) return false;
+        const dateStr = taskDate.split("T")[0];
+        return dateStr >= startDate;
+      });
+    }
+    if (endDate) {
+      result = result.filter((task) => {
+        const taskDate = task.planned_date || task.created_at;
+        if (!taskDate) return false;
+        const dateStr = taskDate.split("T")[0];
+        return dateStr <= endDate;
+      });
+    }
+
+    return result;
+  }, [allTasks, selectedStatus, startDate, endDate]);
 
   // 清除筛选
   const clearFilters = () => {
@@ -99,7 +126,7 @@ export function Tasks() {
       <main className="flex-1 p-6 pb-32">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">所有任务 ({tasks.length})</CardTitle>
+            <CardTitle className="text-base">所有任务 ({filteredTasks.length})</CardTitle>
             <div className="flex gap-2">
               <Button
                 variant={showFilters ? "secondary" : "outline"}
@@ -191,10 +218,14 @@ export function Tasks() {
           )}
 
           <CardContent>
-            <TaskList
-              tasks={tasks}
-              emptyMessage="还没有任务，去首页快速录入吧"
-            />
+            {isLoading ? (
+              <div className="text-center py-8 text-muted-foreground">加载中...</div>
+            ) : (
+              <TaskList
+                tasks={filteredTasks}
+                emptyMessage="还没有任务，去首页快速录入吧"
+              />
+            )}
           </CardContent>
         </Card>
       </main>
