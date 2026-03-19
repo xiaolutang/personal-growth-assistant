@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 from app.callers import APICaller
 from app.graphs.task_parser_graph import TaskParserGraph
-from app.routers import entries_router, search_router, knowledge_router, review_router
+from app.routers import entries_router, search_router, knowledge_router, review_router, intent_router
 from app.storage import init_storage
 from app.middleware import setup_middlewares
 
@@ -30,18 +30,22 @@ async def lifespan(app: FastAPI):
     try:
         storage = await init_storage(
             data_dir=os.getenv("DATA_DIR", "./data"),
-            sqlite_path=os.getenv("SQLITE_PATH"),  # 可选，默认 {DATA_DIR}/index.db
             neo4j_uri=os.getenv("NEO4J_URI"),
             neo4j_username=os.getenv("NEO4J_USERNAME"),
             neo4j_password=os.getenv("NEO4J_PASSWORD"),
             qdrant_url=os.getenv("QDRANT_URL"),
             qdrant_api_key=os.getenv("QDRANT_API_KEY"),
             llm_caller=graph.caller,
+            embedding_model=os.getenv("EMBEDDING_MODEL"),
         )
 
         # 注入到共享依赖模块
         from app.routers import deps
         deps.storage = storage
+
+        # 注入 LLM Caller 到意图识别模块
+        from app.routers import intent as intent_module
+        intent_module.set_llm_caller(graph.caller)
 
         print("存储服务初始化成功")
     except Exception as e:
@@ -74,6 +78,7 @@ app.include_router(entries_router)
 app.include_router(search_router)
 app.include_router(knowledge_router)
 app.include_router(review_router)
+app.include_router(intent_router)
 
 
 # === 响应模型 ===

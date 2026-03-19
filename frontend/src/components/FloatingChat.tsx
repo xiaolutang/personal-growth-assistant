@@ -19,7 +19,6 @@ import { SearchResultList } from "@/components/SearchResultCard";
 import { KnowledgeGraphInline } from "@/components/KnowledgeGraph";
 import { QuickCommandHints } from "@/components/QuickCommandHints";
 import {
-  detectIntent,
   extractSearchQuery,
   extractConcept,
   extractUpdateTarget,
@@ -28,8 +27,10 @@ import {
   getHelpMessage,
   intentConfig,
   intentIcons,
+  detectIntent as detectIntentLocal,
   type Intent,
 } from "@/lib/intentDetection";
+import { detectIntent as detectIntentApi } from "@/services/api";
 import { generateReviewReport, formatShortReview } from "@/lib/reviewFormatter";
 import type { SearchResult } from "@/types/task";
 
@@ -64,6 +65,7 @@ export function FloatingChat() {
   const [currentIntent, setCurrentIntent] = useState<Intent | null>(null);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -130,9 +132,10 @@ export function FloatingChat() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || isSubmitting) return;
 
     const userMessage = input.trim();
+    setIsSubmitting(true);
 
     // 处理待确认的操作（多轮对话）
     if (pendingAction) {
@@ -171,6 +174,7 @@ export function FloatingChat() {
         });
         setPendingAction(null);
         setInput("");
+        setIsSubmitting(false);
         return;
       }
 
@@ -198,6 +202,7 @@ export function FloatingChat() {
         }
         setPendingAction(null);
         setInput("");
+        setIsSubmitting(false);
         return;
       }
 
@@ -208,13 +213,23 @@ export function FloatingChat() {
         addMessage(activeSessionId, { role: "assistant", content: "操作已取消" });
         setPendingAction(null);
         setInput("");
+        setIsSubmitting(false);
         return;
       }
     }
 
-    // 检测意图
-    const intent = detectIntent(userMessage);
-    setCurrentIntent(intent);
+    // 检测意图（优先使用后端 LLM，失败时回退到本地）
+    let intent: Intent;
+
+    try {
+      const intentResult = await detectIntentApi(userMessage);
+      intent = intentResult.intent as Intent;
+      setCurrentIntent(intent);
+    } catch (error) {
+      console.warn("后端意图识别失败，使用本地检测:", error);
+      intent = detectIntentLocal(userMessage);
+      setCurrentIntent(intent);
+    }
 
     // 确保有会话 ID
     const activeSessionId = currentSessionId || createSession();
@@ -349,10 +364,14 @@ export function FloatingChat() {
         clearSearchResults();
         clearKnowledgeGraph();
         await parse(userMessage, activeSessionId);
+        // parse 是流式的，isLoading 由 useStreamParse 管理，这里不需要重置 isSubmitting
+        setInput("");
+        return; // 提前返回，不重置 isSubmitting（由 useStreamParse 管理）
       }
     }
 
     setInput("");
+    setIsSubmitting(false);
   };
 
   const handleNewSession = () => {
@@ -520,7 +539,7 @@ export function FloatingChat() {
           isVisible={isInputFocused && !input.trim()}
           onSelectCommand={(example) => {
             setInput(example);
-            setCurrentIntent(detectIntent(example));
+            setCurrentIntent(detectIntentLocal(example));
           }}
         />
 
@@ -531,18 +550,18 @@ export function FloatingChat() {
                 value={input}
                 onChange={(e) => {
                   setInput(e.target.value);
-                  setCurrentIntent(e.target.value.trim() ? detectIntent(e.target.value.trim()) : null);
+                  setCurrentIntent(e.target.value.trim() ? detectIntentLocal(e.target.value.trim()) : null);
                 }}
                 onFocus={() => setIsInputFocused(true)}
                 onBlur={() => setIsInputFocused(false)}
                 placeholder="输入内容、帮我搜索、把...改为...、或输入帮助..."
                 className="flex-1 pr-20"
-                disabled={isLoading}
+                disabled={isLoading || isSubmitting}
               />
               {renderIntentBadge()}
             </div>
-            <Button type="submit" disabled={!input.trim() || isLoading}>
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            <Button type="submit" disabled={!input.trim() || isLoading || isSubmitting}>
+              {(isLoading || isSubmitting) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </form>
 

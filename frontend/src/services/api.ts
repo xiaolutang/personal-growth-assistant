@@ -4,6 +4,7 @@ import type {
   EntryUpdate,
   EntryListResponse,
   SearchResponse,
+  SearchResult,
   KnowledgeGraphResponse,
   RelatedConceptsResponse,
 } from "@/types/task";
@@ -108,28 +109,146 @@ export async function deleteEntry(id: string): Promise<{ success: boolean; messa
 
 // === 搜索 API ===
 
+// 使用 types/task.ts 中的 SearchResult 类型
+type SearchResultItem = SearchResult;
+
 /**
- * 全文搜索条目（使用 SQLite FTS5）
+ * 归一化搜索结果项
  */
-export async function searchEntries(query: string, limit: number = 5): Promise<SearchResponse> {
+function normalizeSearchItem(e: any, defaultScore = 1): SearchResultItem {
+  return {
+    id: e.id,
+    title: e.title,
+    score: e.score ?? defaultScore,
+    type: e.type ?? e.category,
+    category: e.category ?? e.type ?? "note",
+    status: e.status ?? "doing",
+    tags: e.tags || [],
+    created_at: e.created_at ?? "",
+    file_path: e.file_path || "",
+  };
+}
+
+/**
+ * 向量搜索（Qdrant）
+ */
+async function vectorSearch(query: string, limit: number): Promise<SearchResponse> {
+  const response = await fetch(`${API_BASE}/search`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query, limit }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Vector search failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return {
+    results: data.results.map((e: any) => normalizeSearchItem(e)),
+  };
+}
+
+/**
+ * SQLite 全文搜索（FTS5）
+ */
+async function sqliteSearch(query: string, limit: number): Promise<SearchResponse> {
   const response = await fetch(
     `${API_BASE}/entries/search/query?q=${encodeURIComponent(query)}&limit=${limit}`
   );
+
   if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
+    throw new Error(`SQLite search failed: ${response.status}`);
   }
+
   const data = await response.json();
-  // 转换为前端期望的格式
   return {
-    results: data.entries.map((e: any) => ({
-      id: e.id,
-      title: e.title,
-      score: 1, // SQLite 搜索没有分数，默认为 1
-      type: e.category,
-      tags: e.tags || [],
-      file_path: e.file_path || "",
-    })),
+    results: data.entries.map((e: any) => normalizeSearchItem(e)),
   };
+}
+
+/**
+ * SQLite 分数归一化
+ */
+function normalizeSqliteScore(score: number): number {
+  return Math.min(1, Math.max(0, score));
+}
+
+/**
+ * 合并向量搜索和全文搜索结果
+ * 权重：向量 70% + BM25 30%
+ */
+function mergeSearchResults(
+  vecResults: SearchResultItem[],
+  sqlResults: SearchResultItem[],
+  limit: number
+): SearchResponse {
+  const VECTOR_WEIGHT = 0.7;
+  const SQLITE_WEIGHT = 0.3;
+
+  // 用 Map 存储合并后的结果（按 id 去重）
+  const merged = new Map<string, SearchResultItem>();
+
+  // 添加向量搜索结果
+  for (const item of vecResults) {
+    merged.set(item.id, { ...item, score: item.score * VECTOR_WEIGHT });
+  }
+
+  // 合并 SQL 搜索结果
+  for (const item of sqlResults) {
+    if (merged.has(item.id)) {
+      // 已存在，累加分数
+      const existing = merged.get(item.id)!;
+      existing.score += normalizeSqliteScore(item.score) * SQLITE_WEIGHT;
+    } else {
+      // 新增
+      merged.set(item.id, {
+        ...item,
+        score: normalizeSqliteScore(item.score) * SQLITE_WEIGHT,
+      });
+    }
+  }
+
+  // 按分数排序，返回 top N
+  const results = Array.from(merged.values())
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+
+  return { results };
+}
+
+/**
+ * 混合搜索：并行执行向量搜索和全文搜索，合并结果
+ * 权重：向量 70% + BM25 30%
+ *
+ * 优势：
+ * - 向量搜索擅长语义理解（如 "mcp" 能找到相关概念）
+ * - 全文搜索擅长精确匹配（如专有名词、代码）
+ * - 并行执行 + 结果融合，取长补短
+ */
+export async function searchEntries(query: string, limit: number = 5): Promise<SearchResponse> {
+  // 并行执行两个搜索
+  const [vectorResults, sqliteResults] = await Promise.allSettled([
+    vectorSearch(query, limit * 2), // 多取一些用于合并
+    sqliteSearch(query, limit * 2),
+  ]);
+
+  // 提取成功的结果
+  const vecHits = vectorResults.status === 'fulfilled' ? vectorResults.value.results : [];
+  const sqlHits = sqliteResults.status === 'fulfilled' ? sqliteResults.value.results : [];
+
+  // 如果两个都失败，抛出错误
+  if (vecHits.length === 0 && sqlHits.length === 0) {
+    // 尝试获取具体的错误信息
+    const vecError = vectorResults.status === 'rejected' ? vectorResults.reason : null;
+    const sqlError = sqliteResults.status === 'rejected' ? sqliteResults.reason : null;
+
+    console.warn("Both search methods failed:", { vecError, sqlError });
+    throw new Error("搜索服务暂时不可用，请稍后重试");
+  }
+
+  // 合并结果
+  return mergeSearchResults(vecHits, sqlHits, limit);
 }
 
 // === 知识图谱 API ===
@@ -203,4 +322,59 @@ export async function getProjectProgress(projectId: string): Promise<ProjectProg
     throw new Error(`API error: ${response.status}`);
   }
   return response.json();
+}
+
+// === 意图识别 API ===
+
+export interface IntentResponse {
+  intent: string;
+  confidence: number;
+  entities: Record<string, string>;
+  query?: string;
+  response_hint?: string;
+}
+
+/**
+ * 检测用户输入的意图（调用后端 LLM）
+ */
+export async function detectIntent(text: string): Promise<IntentResponse> {
+  const response = await fetch(`${API_BASE}/intent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+
+  if (!response.ok) {
+    // 如果后端 API 不可用，回退到本地检测
+    console.warn("Intent API 不可用，回退到本地检测");
+    return fallbackIntentDetection(text);
+  }
+
+  return response.json();
+}
+
+/**
+ * 回退的本地意图检测（当后端不可用时）
+ */
+function fallbackIntentDetection(text: string): IntentResponse {
+  // 简单的关键词匹配
+  if (["帮助", "能做什么", "怎么用"].some(k => text.includes(k))) {
+    return { intent: "help", confidence: 0.8, entities: {} };
+  }
+  if (["今天做了", "本周进度", "月报", "回顾"].some(k => text.includes(k))) {
+    return { intent: "review", confidence: 0.8, entities: {} };
+  }
+  if (["知识图谱", "相关概念"].some(k => text.includes(k))) {
+    return { intent: "knowledge", confidence: 0.8, entities: {}, query: text };
+  }
+  if (["删除", "移除", "去掉"].some(k => text.includes(k))) {
+    return { intent: "delete", confidence: 0.8, entities: {}, query: text };
+  }
+  if (["改为", "标记", "完成", "更新", "添加标签"].some(k => text.includes(k))) {
+    return { intent: "update", confidence: 0.8, entities: {}, query: text };
+  }
+  if (["帮我找", "搜索", "查找", "有没有"].some(k => text.includes(k))) {
+    return { intent: "read", confidence: 0.8, entities: {}, query: text };
+  }
+  return { intent: "create", confidence: 0.6, entities: {}, query: text };
 }

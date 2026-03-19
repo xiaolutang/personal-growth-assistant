@@ -40,7 +40,7 @@ async def search_entries(request: SearchRequest):
     storage = get_storage()
 
     # 检查 Qdrant 是否可用
-    if not storage.qdrant or not storage.qdrant.client:
+    if not storage.qdrant:
         raise HTTPException(status_code=503, detail="搜索服务未配置")
 
     try:

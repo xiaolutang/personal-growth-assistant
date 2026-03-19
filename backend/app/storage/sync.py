@@ -296,6 +296,7 @@ async def init_storage(
     qdrant_url: str = None,
     qdrant_api_key: str = None,
     llm_caller=None,
+    embedding_model: str = None,
 ) -> SyncService:
     """初始化存储服务"""
     # 创建存储实例
@@ -325,12 +326,33 @@ async def init_storage(
             print(f"Neo4j 连接失败: {e}")
             neo4j_client = None
 
+    # 初始化 Embedding 服务
+    embedding_service = None
+    embedding_model = embedding_model or os.getenv("EMBEDDING_MODEL", "text-embedding-v3")
+
+    if os.getenv("LLM_API_KEY"):
+        try:
+            from app.services.embedding import EmbeddingService, get_embedding_dimension
+            embedding_service = EmbeddingService(model=embedding_model)
+            vector_size = get_embedding_dimension(embedding_model)
+            print(f"Embedding 服务初始化成功: model={embedding_model}, dimension={vector_size}")
+        except Exception as e:
+            print(f"Embedding 服务初始化失败: {e}")
+
     # 初始化 Qdrant（如果配置了）
     qdrant_client = None
     if qdrant_url and QdrantClient:
         try:
-            qdrant_client = QdrantClient(qdrant_url, qdrant_api_key)
+            from app.services.embedding import get_embedding_dimension
+            vector_size = get_embedding_dimension(embedding_model) if embedding_service else 1024
+            qdrant_client = QdrantClient(
+                url=qdrant_url,
+                api_key=qdrant_api_key,
+                embedding_service=embedding_service,
+                vector_size=vector_size,
+            )
             await qdrant_client.connect()
+            print(f"Qdrant 连接成功: {qdrant_url}")
         except Exception as e:
             print(f"Qdrant 连接失败: {e}")
             qdrant_client = None

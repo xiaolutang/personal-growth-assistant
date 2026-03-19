@@ -8,7 +8,7 @@ import type { Intent } from "@/lib/intentDetection";
 // 测试用例接口
 export interface TestCase {
   id: string;
-  category: "intent" | "operation" | "multi_turn" | "edge_case";
+  category: "intent" | "operation" | "multi_turn" | "edge_case" | "api";
   input: string;
   context?: {
     hasPendingItems?: boolean;
@@ -19,6 +19,10 @@ export interface TestCase {
     message?: string | RegExp;
     success?: boolean;
     batchCount?: number;
+    // API 验证相关
+    shouldHaveResults?: boolean;      // 搜索应该有结果
+    minResultCount?: number;          // 最少结果数
+    resultShouldContain?: string;     // 结果应包含的关键词
   };
 }
 
@@ -233,6 +237,50 @@ export const allTestCases: TestCase[] = [
   ...multiTurnTestCases,
   ...edgeCaseTestCases,
   ...operationTestCases,
+];
+
+// API 验证测试用例（需要真实后端）
+export const apiTestCases: TestCase[] = [
+  {
+    id: "API001",
+    category: "api",
+    input: "帮我找 MCP 的笔记",
+    expected: {
+      intent: "read",
+      shouldHaveResults: true,
+      resultShouldContain: "MCP",
+    },
+  },
+  {
+    id: "API002",
+    category: "api",
+    input: "搜索 RAG 相关内容",
+    expected: {
+      intent: "read",
+      shouldHaveResults: true,
+      resultShouldContain: "RAG",
+    },
+  },
+  {
+    id: "API003",
+    category: "api",
+    input: "查找 Agent 相关笔记",
+    expected: {
+      intent: "read",
+      shouldHaveResults: true,
+      resultShouldContain: "Agent",
+    },
+  },
+  {
+    id: "API004",
+    category: "api",
+    input: "搜索 Claude",
+    expected: {
+      intent: "read",
+      shouldHaveResults: true,
+      resultShouldContain: "Claude",
+    },
+  },
 ];
 
 export default allTestCases;

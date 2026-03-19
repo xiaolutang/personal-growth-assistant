@@ -129,6 +129,7 @@ function getCategoryLabel(category: string): string {
     operation: "操作流程",
     multi_turn: "多轮对话",
     edge_case: "边界情况",
+    api: "API 验证",
   };
   return labels[category] || category;
 }

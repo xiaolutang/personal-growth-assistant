@@ -1,0 +1,159 @@
+"""意图识别 API 路由"""
+from typing import Optional, List
+from pydantic import BaseModel, Field
+from fastapi import APIRouter, HTTPException
+
+from app.callers import APICaller
+
+router = APIRouter(tags=["intent"])
+
+# 全局 LLM Caller（由 main.py 注入）
+_llm_caller: Optional[APICaller] = None
+
+
+def set_llm_caller(caller: APICaller):
+    """设置 LLM Caller"""
+    global _llm_caller
+    _llm_caller = caller
+
+
+# 意图类型
+INTENT_TYPES = ["create", "read", "update", "delete", "knowledge", "review", "help"]
+
+
+class IntentRequest(BaseModel):
+    """意图识别请求"""
+    text: str = Field(..., min_length=1, description="用户输入文本")
+    context: Optional[dict] = Field(default=None, description="上下文信息")
+
+
+class IntentResponse(BaseModel):
+    """意图识别响应"""
+    intent: str = Field(description="识别的意图类型")
+    confidence: float = Field(default=1.0, description="置信度")
+    entities: dict = Field(default_factory=dict, description="提取的实体")
+    query: Optional[str] = Field(default=None, description="搜索/操作关键词")
+    response_hint: Optional[str] = Field(default=None, description="响应提示")
+
+
+INTENT_SYSTEM_PROMPT = """你是一个意图识别助手。分析用户输入，识别意图并提取相关信息。
+
+## 意图类型
+
+1. **create** - 创建新条目
+   关键词：新建、创建、添加、记录、记一下
+   例："明天开会" → intent: create, query: "明天开会"
+
+2. **read** - 查询/搜索
+   关键词：帮我找、搜索、有没有、查找、寻找、查看、显示
+   例："帮我找MCP的笔记" → intent: read, query: "MCP"
+
+3. **update** - 更新条目
+   关键词：修改、更新、改为、标记、完成、设为、添加标签
+   例："把MCP笔记标记为完成" → intent: update, query: "MCP笔记", field: "status", value: "complete"
+
+4. **delete** - 删除条目
+   关键词：删除、移除、去掉、删掉、不要了
+   例："删除测试任务" → intent: delete, query: "测试任务"
+
+5. **knowledge** - 知识图谱
+   关键词：知识图谱、相关概念、什么关系、学习路径
+   例："MCP的知识图谱" → intent: knowledge, query: "MCP"
+
+6. **review** - 回顾总结
+   关键词：今天做了什么、本周进度、月报、回顾、统计
+   例："今天做了什么" → intent: review, period: "daily"
+
+7. **help** - 帮助说明
+   关键词：帮助、能做什么、怎么用、使用说明
+   例："你能做什么" → intent: help
+
+## 输出格式
+
+返回 JSON：
+```json
+{
+  "intent": "意图类型",
+  "confidence": 0.95,
+  "query": "提取的关键词（如果有）",
+  "entities": {
+    "field": "要更新的字段（update 意图）",
+    "value": "新值（update 意图）",
+    "period": "时间范围（review 意图：daily/weekly/monthly）"
+  },
+  "response_hint": "可选的响应提示"
+}
+```
+
+只输出 JSON，不要有其他内容。"""
+
+
+@router.post("/intent", response_model=IntentResponse)
+async def detect_intent(request: IntentRequest):
+    """
+    检测用户输入的意图
+
+    使用 LLM 进行智能意图识别，支持：
+    - create: 创建任务/笔记
+    - read: 搜索/查询
+    - update: 更新条目
+    - delete: 删除条目
+    - knowledge: 知识图谱
+    - review: 回顾总结
+    - help: 帮助说明
+    """
+    if not _llm_caller:
+        raise HTTPException(status_code=503, detail="LLM 服务未初始化")
+
+    try:
+        messages = [
+            {"role": "system", "content": INTENT_SYSTEM_PROMPT},
+            {"role": "user", "content": request.text}
+        ]
+
+        response = await _llm_caller.call(messages, {"type": "json_object"})
+
+        # 解析响应
+        import json
+        result = json.loads(response)
+
+        # 验证意图类型
+        intent = result.get("intent", "create")
+        if intent not in INTENT_TYPES:
+            intent = "create"
+
+        return IntentResponse(
+            intent=intent,
+            confidence=result.get("confidence", 1.0),
+            entities=result.get("entities", {}),
+            query=result.get("query"),
+            response_hint=result.get("response_hint")
+        )
+
+    except json.JSONDecodeError:
+        # JSON 解析失败，回退到简单规则
+        return _fallback_intent_detection(request.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"意图识别失败: {str(e)}")
+
+
+def _fallback_intent_detection(text: str) -> IntentResponse:
+    """回退的规则意图检测"""
+    text_lower = text.lower()
+
+    # 关键词匹配
+    if any(k in text for k in ["帮助", "能做什么", "怎么用"]):
+        return IntentResponse(intent="help", confidence=0.8)
+    if any(k in text for k in ["今天做了", "本周进度", "月报", "回顾"]):
+        return IntentResponse(intent="review", confidence=0.8)
+    if any(k in text for k in ["知识图谱", "相关概念"]):
+        return IntentResponse(intent="knowledge", confidence=0.8, query=text.replace("知识图谱", "").replace("相关概念", "").strip())
+    if any(k in text for k in ["删除", "移除", "去掉"]):
+        return IntentResponse(intent="delete", confidence=0.8, query=text.replace("删除", "").replace("移除", "").strip())
+    if any(k in text for k in ["改为", "标记", "完成", "更新", "添加标签"]):
+        return IntentResponse(intent="update", confidence=0.8, query=text)
+    if any(k in text for k in ["帮我找", "搜索", "查找", "有没有"]):
+        return IntentResponse(intent="read", confidence=0.8, query=text)
+
+    # 默认创建
+    return IntentResponse(intent="create", confidence=0.6, query=text)

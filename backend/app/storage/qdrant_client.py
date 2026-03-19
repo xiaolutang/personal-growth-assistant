@@ -1,6 +1,6 @@
 """Qdrant 向量检索客户端"""
 import os
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, TYPE_CHECKING
 
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http import models
@@ -8,23 +8,27 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 
 from app.models import Task
 
+if TYPE_CHECKING:
+    from app.services.embedding import EmbeddingService
+
 
 class QdrantClient:
     """Qdrant 向量检索客户端"""
 
     COLLECTION_NAME = "growth_entries"
-    VECTOR_SIZE = 1536  # OpenAI embedding 维度
 
     def __init__(
         self,
         url: str = None,
         api_key: str = None,
-        embedding_func=None,
+        embedding_service: "EmbeddingService" = None,
+        vector_size: int = 1024,
     ):
         self.url = url or os.getenv("QDRANT_URL", "http://localhost:6333")
         self.api_key = api_key or os.getenv("QDRANT_API_KEY")
         self._client: Optional[AsyncQdrantClient] = None
-        self._embedding_func = embedding_func
+        self._embedding_service = embedding_service
+        self.vector_size = vector_size
 
     async def connect(self):
         """连接数据库"""
@@ -49,20 +53,20 @@ class QdrantClient:
             await self._client.create_collection(
                 collection_name=self.COLLECTION_NAME,
                 vectors_config=models.VectorParams(
-                    size=self.VECTOR_SIZE,
+                    size=self.vector_size,
                     distance=models.Distance.COSINE,
                 ),
             )
 
-    def set_embedding_func(self, func):
-        """设置 embedding 函数"""
-        self._embedding_func = func
+    def set_embedding_service(self, service: "EmbeddingService"):
+        """设置 embedding 服务"""
+        self._embedding_service = service
 
     async def _get_embedding(self, text: str) -> List[float]:
         """获取文本的向量"""
-        if self._embedding_func:
-            return await self._embedding_func(text)
-        raise NotImplementedError("Embedding function not set")
+        if self._embedding_service:
+            return await self._embedding_service.get_embedding(text)
+        raise NotImplementedError("Embedding service not configured")
 
     # ==================== 向量操作 ====================
 
