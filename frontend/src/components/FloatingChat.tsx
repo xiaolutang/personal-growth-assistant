@@ -143,29 +143,26 @@ export function FloatingChat() {
       const isBatchAction = batchKeywords.some(k => userMessage.includes(k));
 
       if (isBatchAction) {
-        // 执行批量操作
+        // 执行批量操作（并行）
         const activeSessionId = currentSessionId || createSession();
         addMessage(activeSessionId, { role: "user", content: userMessage });
 
-        let successCount = 0;
-        for (const item of pendingAction.items) {
-          try {
-            if (pendingAction.type === "delete") {
-              await useTaskStore.getState().deleteTask(item.id);
-              successCount++;
-            } else if (pendingAction.type === "update" && pendingAction.field) {
-              const updateData = buildUpdateData(
-                pendingAction.field,
-                pendingAction.value!,
-                item.tags
-              );
-              await updateEntry(item.id, updateData);
-              successCount++;
-            }
-          } catch {
-            // 忽略单个失败
+        const operations = pendingAction.items.map((item) => {
+          if (pendingAction.type === "delete") {
+            return useTaskStore.getState().deleteTask(item.id);
+          } else if (pendingAction.type === "update" && pendingAction.field) {
+            const updateData = buildUpdateData(
+              pendingAction.field,
+              pendingAction.value!,
+              item.tags
+            );
+            return updateEntry(item.id, updateData);
           }
-        }
+          return Promise.resolve();
+        });
+
+        const results = await Promise.allSettled(operations);
+        const successCount = results.filter((r) => r.status === "fulfilled").length;
 
         const actionLabel = pendingAction.type === "delete" ? "删除" : "更新";
         addMessage(activeSessionId, {

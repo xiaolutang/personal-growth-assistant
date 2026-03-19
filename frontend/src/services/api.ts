@@ -326,8 +326,10 @@ export async function getProjectProgress(projectId: string): Promise<ProjectProg
 
 // === 意图识别 API ===
 
+import { detectIntent as detectIntentLocal, type Intent } from "@/lib/intentDetection";
+
 export interface IntentResponse {
-  intent: string;
+  intent: Intent;
   confidence: number;
   entities: Record<string, string>;
   query?: string;
@@ -335,7 +337,7 @@ export interface IntentResponse {
 }
 
 /**
- * 检测用户输入的意图（调用后端 LLM）
+ * 检测用户输入的意图（调用后端 LLM，失败时回退到本地）
  */
 export async function detectIntent(text: string): Promise<IntentResponse> {
   const response = await fetch(`${API_BASE}/intent`, {
@@ -347,34 +349,13 @@ export async function detectIntent(text: string): Promise<IntentResponse> {
   if (!response.ok) {
     // 如果后端 API 不可用，回退到本地检测
     console.warn("Intent API 不可用，回退到本地检测");
-    return fallbackIntentDetection(text);
+    return {
+      intent: detectIntentLocal(text),
+      confidence: 0.8,
+      entities: {},
+      query: text,
+    };
   }
 
   return response.json();
-}
-
-/**
- * 回退的本地意图检测（当后端不可用时）
- */
-function fallbackIntentDetection(text: string): IntentResponse {
-  // 简单的关键词匹配
-  if (["帮助", "能做什么", "怎么用"].some(k => text.includes(k))) {
-    return { intent: "help", confidence: 0.8, entities: {} };
-  }
-  if (["今天做了", "本周进度", "月报", "回顾"].some(k => text.includes(k))) {
-    return { intent: "review", confidence: 0.8, entities: {} };
-  }
-  if (["知识图谱", "相关概念"].some(k => text.includes(k))) {
-    return { intent: "knowledge", confidence: 0.8, entities: {}, query: text };
-  }
-  if (["删除", "移除", "去掉"].some(k => text.includes(k))) {
-    return { intent: "delete", confidence: 0.8, entities: {}, query: text };
-  }
-  if (["改为", "标记", "完成", "更新", "添加标签"].some(k => text.includes(k))) {
-    return { intent: "update", confidence: 0.8, entities: {}, query: text };
-  }
-  if (["帮我找", "搜索", "查找", "有没有"].some(k => text.includes(k))) {
-    return { intent: "read", confidence: 0.8, entities: {}, query: text };
-  }
-  return { intent: "create", confidence: 0.6, entities: {}, query: text };
 }
