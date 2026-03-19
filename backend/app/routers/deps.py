@@ -30,3 +30,9 @@ def get_entry_service() -> "EntryService":
         from app.services.entry_service import EntryService
         _entry_service = EntryService(storage)
     return _entry_service
+
+
+def reset_entry_service():
+    """重置 EntryService 缓存（用于测试）"""
+    global _entry_service
+    _entry_service = None

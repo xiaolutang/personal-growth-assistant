@@ -49,8 +49,9 @@ async def client(storage) -> AsyncGenerator[AsyncClient, None]:
     from app.main import app
     from app.routers import deps
 
-    # 注入存储服务
+    # 注入存储服务并重置服务缓存
     deps.storage = storage
+    deps.reset_entry_service()
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test", timeout=60.0) as c:

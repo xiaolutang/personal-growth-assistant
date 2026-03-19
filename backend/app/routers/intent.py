@@ -1,4 +1,5 @@
 """意图识别 API 路由"""
+import json
 from typing import Optional, List
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException
@@ -130,7 +131,6 @@ async def detect_intent_service(text: str) -> IntentResponse:
         response = await _llm_caller.call(messages, {"type": "json_object"})
 
         # 解析响应
-        import json
         result = json.loads(response)
 
         # 验证意图类型
@@ -165,7 +165,7 @@ def _fallback_intent_detection(text: str) -> IntentResponse:
         return IntentResponse(intent="knowledge", confidence=0.8, query=text.replace("知识图谱", "").replace("相关概念", "").strip())
     if any(k in text for k in ["删除", "移除", "去掉"]):
         return IntentResponse(intent="delete", confidence=0.8, query=text.replace("删除", "").replace("移除", "").strip())
-    if any(k in text for k in ["改为", "标记", "完成", "更新", "添加标签"]):
+    if any(k in text for k in ["改为", "标记", "完成", "更新", "添加标签", "修改"]):
         return IntentResponse(intent="update", confidence=0.8, query=text)
     if any(k in text for k in ["帮我找", "搜索", "查找", "有没有"]):
         return IntentResponse(intent="read", confidence=0.8, query=text)
