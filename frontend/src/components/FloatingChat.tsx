@@ -11,26 +11,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { useStreamParse } from "@/hooks/useStreamParse";
 import { useTaskStore } from "@/stores/taskStore";
 import { useChatStore } from "@/stores/chatStore";
 import { SearchResultList } from "@/components/SearchResultCard";
 import { KnowledgeGraphInline } from "@/components/KnowledgeGraph";
 import { QuickCommandHints } from "@/components/QuickCommandHints";
-import {
-  extractSearchQuery,
-  extractConcept,
-  extractUpdateTarget,
-  extractDeleteTarget,
-  extractReviewParams,
-  getHelpMessage,
-  intentConfig,
-  intentIcons,
-  detectIntent as detectIntentLocal,
-  type Intent,
-} from "@/lib/intentDetection";
-import { detectIntent as detectIntentApi } from "@/services/api";
+import { getHelpMessage, type Intent } from "@/lib/intentDetection";
 import { generateReviewReport, formatShortReview } from "@/lib/reviewFormatter";
 import type { SearchResult } from "@/types/task";
 
@@ -38,13 +25,11 @@ import type { SearchResult } from "@/types/task";
 const MIN_HEIGHT = 200;
 const MAX_HEIGHT = 600;
 
-// 多轮对话状态类型
-type PendingAction = {
-  type: "delete" | "update";
-  items: SearchResult[];
-  field?: string;
-  value?: string;
-} | null;
+// 多轮对话状态类型（可辨识联合）
+type PendingAction =
+  | { type: "delete"; items: SearchResult[] }
+  | { type: "update"; items: SearchResult[]; field: string; value: string }
+  | null;
 
 // 辅助函数：构建更新数据
 function buildUpdateData(
@@ -56,6 +41,17 @@ function buildUpdateData(
     return { tags: [...(existingTags || []), value] };
   }
   return { [field]: value };
+}
+
+// 辅助函数：更新会话标题（如果需要）
+function updateTitleIfNeeded(
+  session: { title: string } | null | undefined,
+  updateFn: (title: string) => void,
+  newTitle: string
+) {
+  if (session?.title === "新对话") {
+    updateFn(newTitle.slice(0, 20));
+  }
 }
 
 export function FloatingChat() {
@@ -89,7 +85,6 @@ export function FloatingChat() {
   const { result, isLoading, error, parse, reset } = useStreamParse({
     onComplete: (data) => {
       if (data.tasks.length > 0) {
-        // 调用后端 API 创建条目
         addTasks(
           data.tasks.map((task) => ({
             type: task.category,
@@ -100,13 +95,7 @@ export function FloatingChat() {
             tags: task.tags || [],
           }))
         );
-        // 更新会话标题（使用第一个任务名称）
-        if (currentSession && currentSession.title === "新对话") {
-          updateSessionTitle(
-            currentSession.id,
-            (data.tasks[0].title || "").slice(0, 20)
-          );
-        }
+        updateTitleIfNeeded(currentSession, (t) => updateSessionTitle(currentSession!.id, t), data.tasks[0].title || "");
       }
     },
     onMessage: (role, content) => {
@@ -130,6 +119,59 @@ export function FloatingChat() {
     setPendingAction(null);
   }, [reset, clearSearchResults, clearKnowledgeGraph]);
 
+  // 处理待确认操作（多轮对话）
+  const handlePendingAction = useCallback(async (userMessage: string): Promise<boolean> => {
+    if (!pendingAction) return false;
+
+    const activeSessionId = currentSessionId || createSession();
+    addMessage(activeSessionId, { role: "user", content: userMessage });
+
+    // 批量操作
+    const batchKeywords = ["都", "全部", "所有", "两个", "三个", "这几个", "以上"];
+    if (batchKeywords.some(k => userMessage.includes(k))) {
+      const operations = pendingAction.items.map((item) => {
+        if (pendingAction.type === "delete") {
+          return useTaskStore.getState().deleteTask(item.id);
+        }
+        const updateData = buildUpdateData(pendingAction.field, pendingAction.value, item.tags);
+        return updateEntry(item.id, updateData);
+      });
+
+      const results = await Promise.allSettled(operations);
+      const successCount = results.filter(r => r.status === "fulfilled").length;
+      const actionLabel = pendingAction.type === "delete" ? "删除" : "更新";
+      addMessage(activeSessionId, { role: "assistant", content: `已${actionLabel} ${successCount} 个条目` });
+      setPendingAction(null);
+      return true;
+    }
+
+    // 数字选择
+    const num = parseInt(userMessage);
+    if (!isNaN(num) && num >= 1 && num <= pendingAction.items.length) {
+      const selected = pendingAction.items[num - 1];
+      if (pendingAction.type === "delete") {
+        await useTaskStore.getState().deleteTask(selected.id);
+        addMessage(activeSessionId, { role: "assistant", content: `已删除「${selected.title}」` });
+      } else {
+        const updateData = buildUpdateData(pendingAction.field, pendingAction.value, selected.tags);
+        await updateEntry(selected.id, updateData);
+        const fieldLabel = pendingAction.field === "status" ? "状态" : pendingAction.field === "tags" ? "标签" : "内容";
+        addMessage(activeSessionId, { role: "assistant", content: `已更新「${selected.title}」的${fieldLabel}` });
+      }
+      setPendingAction(null);
+      return true;
+    }
+
+    // 取消操作
+    if (/取消|算了|不要了|不删|不更/.test(userMessage)) {
+      addMessage(activeSessionId, { role: "assistant", content: "操作已取消" });
+      setPendingAction(null);
+      return true;
+    }
+
+    return false;
+  }, [pendingAction, currentSessionId, createSession, addMessage, updateEntry]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading || isSubmitting) return;
@@ -137,234 +179,115 @@ export function FloatingChat() {
     const userMessage = input.trim();
     setIsSubmitting(true);
 
-    // 处理待确认的操作（多轮对话）
-    if (pendingAction) {
-      const batchKeywords = ["都", "全部", "所有", "两个", "三个", "这几个", "以上"];
-      const isBatchAction = batchKeywords.some(k => userMessage.includes(k));
-
-      if (isBatchAction) {
-        // 执行批量操作（并行）
-        const activeSessionId = currentSessionId || createSession();
-        addMessage(activeSessionId, { role: "user", content: userMessage });
-
-        const operations = pendingAction.items.map((item) => {
-          if (pendingAction.type === "delete") {
-            return useTaskStore.getState().deleteTask(item.id);
-          } else if (pendingAction.type === "update" && pendingAction.field) {
-            const updateData = buildUpdateData(
-              pendingAction.field,
-              pendingAction.value!,
-              item.tags
-            );
-            return updateEntry(item.id, updateData);
-          }
-          return Promise.resolve();
-        });
-
-        const results = await Promise.allSettled(operations);
-        const successCount = results.filter((r) => r.status === "fulfilled").length;
-
-        const actionLabel = pendingAction.type === "delete" ? "删除" : "更新";
-        addMessage(activeSessionId, {
-          role: "assistant",
-          content: `已${actionLabel} ${successCount} 个条目`,
-        });
-        setPendingAction(null);
-        setInput("");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // 数字选择
-      const num = parseInt(userMessage);
-      if (!isNaN(num) && num >= 1 && num <= pendingAction.items.length) {
-        const activeSessionId = currentSessionId || createSession();
-        addMessage(activeSessionId, { role: "user", content: userMessage });
-
-        const selected = pendingAction.items[num - 1];
-        if (pendingAction.type === "delete") {
-          await useTaskStore.getState().deleteTask(selected.id);
-          addMessage(activeSessionId, { role: "assistant", content: `已删除「${selected.title}」` });
-        } else if (pendingAction.type === "update" && pendingAction.field) {
-          const updateData = buildUpdateData(
-            pendingAction.field,
-            pendingAction.value!,
-            selected.tags
-          );
-          await updateEntry(selected.id, updateData);
-          addMessage(activeSessionId, {
-            role: "assistant",
-            content: `已更新「${selected.title}」的${pendingAction.field === "status" ? "状态" : pendingAction.field === "tags" ? "标签" : "内容"}`,
-          });
-        }
-        setPendingAction(null);
-        setInput("");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // 取消操作
-      if (/取消|算了|不要了|不删|不更/.test(userMessage)) {
-        const activeSessionId = currentSessionId || createSession();
-        addMessage(activeSessionId, { role: "user", content: userMessage });
-        addMessage(activeSessionId, { role: "assistant", content: "操作已取消" });
-        setPendingAction(null);
-        setInput("");
-        setIsSubmitting(false);
-        return;
-      }
+    // 处理待确认的操作
+    if (await handlePendingAction(userMessage)) {
+      setInput("");
+      setIsSubmitting(false);
+      return;
     }
 
-    // 检测意图（优先使用后端 LLM，失败时回退到本地）
-    let intent: Intent;
+    // 统一调用后端接口
+    const activeSessionId = currentSessionId || createSession();
+    clearSearchResults();
+    clearKnowledgeGraph();
 
     try {
-      const intentResult = await detectIntentApi(userMessage);
-      intent = intentResult.intent as Intent;
-      setCurrentIntent(intent);
-    } catch (error) {
-      console.warn("后端意图识别失败，使用本地检测:", error);
-      intent = detectIntentLocal(userMessage);
-      setCurrentIntent(intent);
-    }
+      const response = await parse(userMessage, activeSessionId);
+      const { intent, query, entities } = response.intent;
+      setCurrentIntent(intent as Intent);
 
-    // 确保有会话 ID
-    const activeSessionId = currentSessionId || createSession();
+      switch (intent) {
+        case "create":
+          // 已由 parse() 内部处理
+          break;
 
-    // 根据意图执行不同操作
-    switch (intent) {
-      case "read": {
-        addMessage(activeSessionId, { role: "user", content: userMessage });
-        const query = extractSearchQuery(userMessage);
-        clearKnowledgeGraph();
-        const results = await searchEntries(query);
-        addMessage(activeSessionId, {
-          role: "assistant",
-          content: results.length > 0 ? `找到 ${results.length} 个相关结果` : "没有找到相关内容",
-        });
-        if (currentSession?.title === "新对话") {
-          updateSessionTitle(activeSessionId, `搜索: ${query.slice(0, 15)}`);
+        case "read": {
+          const results = await searchEntries(query || userMessage, 10);
+          addMessage(activeSessionId, {
+            role: "assistant",
+            content: results.length > 0 ? `找到 ${results.length} 个相关结果` : "没有找到相关内容",
+          });
+          updateTitleIfNeeded(currentSession, (t) => updateSessionTitle(activeSessionId, t), `搜索: ${query || userMessage}`);
+          break;
         }
-        break;
-      }
 
-      case "knowledge": {
-        addMessage(activeSessionId, { role: "user", content: userMessage });
-        const concept = extractConcept(userMessage);
-        clearSearchResults();
-        const graph = await getKnowledgeGraph(concept);
-        addMessage(activeSessionId, {
-          role: "assistant",
-          content: graph?.center ? `已加载 "${concept}" 的知识图谱` : "没有找到相关知识图谱",
-        });
-        if (currentSession?.title === "新对话") {
-          updateSessionTitle(activeSessionId, `图谱: ${concept.slice(0, 15)}`);
+        case "knowledge": {
+          const graph = await getKnowledgeGraph(query || userMessage, 2);
+          addMessage(activeSessionId, {
+            role: "assistant",
+            content: graph?.center ? `已加载 "${query}" 的知识图谱` : "没有找到相关知识图谱",
+          });
+          updateTitleIfNeeded(currentSession, (t) => updateSessionTitle(activeSessionId, t), `图谱: ${query || ""}`);
+          break;
         }
-        break;
-      }
 
-      case "update": {
-        addMessage(activeSessionId, { role: "user", content: userMessage });
-        const target = extractUpdateTarget(userMessage);
-        clearKnowledgeGraph();
-        const results = await searchEntries(target.query);
+        case "update": {
+          const field = entities?.field as string;
+          const value = entities?.value as string;
+          const results = await searchEntries(query || userMessage, 10);
 
-        if (results.length === 0) {
-          addMessage(activeSessionId, { role: "assistant", content: `没找到"${target.query}"相关内容` });
-        } else if (results.length === 1) {
-          // 唯一匹配，直接更新
-          const entry = results[0];
-          const updateData: Record<string, unknown> = {};
-          if (target.field === "tags") {
-            updateData.tags = [...(entry.tags || []), target.value];
-          } else if (target.field) {
-            updateData[target.field] = target.value;
+          if (results.length === 0) {
+            addMessage(activeSessionId, { role: "assistant", content: `没找到"${query}"相关内容` });
+          } else if (results.length === 1) {
+            const entry = results[0];
+            const updateData = buildUpdateData(field, value, entry.tags);
+            await updateEntry(entry.id, updateData);
+            const fieldLabel = field === "status" ? "状态" : field === "tags" ? "标签" : "内容";
+            addMessage(activeSessionId, { role: "assistant", content: `已更新「${entry.title}」的${fieldLabel}` });
+          } else {
+            setPendingAction({ type: "update", items: results, field, value });
+            addMessage(activeSessionId, {
+              role: "assistant",
+              content: `找到 ${results.length} 个匹配项，请选择：\n${results.map((r, i) => `${i + 1}. ${r.title}`).join("\n")}\n\n输入序号选择，或输入"全部"批量更新`,
+            });
           }
-          await updateEntry(entry.id, updateData);
-          addMessage(activeSessionId, {
-            role: "assistant",
-            content: `已更新「${entry.title}」的${target.field === "status" ? "状态" : target.field === "tags" ? "标签" : "内容"}`,
-          });
-        } else {
-          // 多个匹配，设置 pendingAction 并显示选择列表
-          setPendingAction({ type: "update", items: results, field: target.field, value: target.value });
-          addMessage(activeSessionId, {
-            role: "assistant",
-            content: `找到 ${results.length} 个匹配项，请选择：\n${results.map((r, i) => `${i + 1}. ${r.title}`).join("\n")}\n\n输入序号选择，或输入"全部"批量更新`,
-          });
+          updateTitleIfNeeded(currentSession, (t) => updateSessionTitle(activeSessionId, t), `更新: ${query || ""}`);
+          break;
         }
-        if (currentSession?.title === "新对话") {
-          updateSessionTitle(activeSessionId, `更新: ${target.query.slice(0, 15)}`);
+
+        case "delete": {
+          const results = await searchEntries(query || userMessage, 10);
+
+          if (results.length === 0) {
+            addMessage(activeSessionId, { role: "assistant", content: `没找到"${query}"相关内容` });
+          } else if (results.length === 1) {
+            addMessage(activeSessionId, {
+              role: "assistant",
+              content: `确认删除「${results[0].title}」？`,
+              actionConfirm: { type: "delete", entryId: results[0].id, title: results[0].title },
+            });
+          } else {
+            setPendingAction({ type: "delete", items: results });
+            addMessage(activeSessionId, {
+              role: "assistant",
+              content: `找到 ${results.length} 个匹配项，请选择：\n${results.map((r, i) => `${i + 1}. ${r.title}`).join("\n")}\n\n输入序号选择，或输入"都删除"批量删除`,
+            });
+          }
+          updateTitleIfNeeded(currentSession, (t) => updateSessionTitle(activeSessionId, t), `删除: ${query || ""}`);
+          break;
         }
-        break;
+
+        case "review": {
+          const period = (entities?.period || "daily") as "daily" | "weekly" | "monthly";
+          const entries = await searchEntries("", 50);
+          const report = generateReviewReport(entries, period);
+          addMessage(activeSessionId, { role: "assistant", content: formatShortReview(report) });
+          const typeLabel = period === "daily" ? "日报" : period === "weekly" ? "周报" : "月报";
+          updateTitleIfNeeded(currentSession, (t) => updateSessionTitle(activeSessionId, t), typeLabel);
+          break;
+        }
+
+        case "help":
+          addMessage(activeSessionId, { role: "assistant", content: getHelpMessage() });
+          updateTitleIfNeeded(currentSession, (t) => updateSessionTitle(activeSessionId, t), "帮助");
+          break;
+
+        default:
+          // fallback 到 create
+          break;
       }
-
-      case "delete": {
-        addMessage(activeSessionId, { role: "user", content: userMessage });
-        const target = extractDeleteTarget(userMessage);
-        clearKnowledgeGraph();
-        const results = await searchEntries(target.query);
-
-        if (results.length === 0) {
-          addMessage(activeSessionId, { role: "assistant", content: `没找到"${target.query}"相关内容` });
-        } else if (results.length === 1) {
-          // 唯一匹配，确认后删除
-          addMessage(activeSessionId, {
-            role: "assistant",
-            content: `确认删除「${results[0].title}」？`,
-            actionConfirm: { type: "delete", entryId: results[0].id, title: results[0].title },
-          });
-        } else {
-          // 多个匹配，设置 pendingAction 并显示选择列表
-          setPendingAction({ type: "delete", items: results });
-          addMessage(activeSessionId, {
-            role: "assistant",
-            content: `找到 ${results.length} 个匹配项，请选择：\n${results.map((r, i) => `${i + 1}. ${r.title}`).join("\n")}\n\n输入序号选择，或输入"都删除"批量删除`,
-          });
-        }
-        if (currentSession?.title === "新对话") {
-          updateSessionTitle(activeSessionId, `删除: ${target.query.slice(0, 15)}`);
-        }
-        break;
-      }
-
-      case "review": {
-        addMessage(activeSessionId, { role: "user", content: userMessage });
-        const params = extractReviewParams(userMessage);
-        clearSearchResults();
-        clearKnowledgeGraph();
-
-        // 获取数据并生成报告
-        const entries = await searchEntries("", 50);
-        const report = generateReviewReport(entries, params.type);
-        const reviewContent = formatShortReview(report);
-
-        addMessage(activeSessionId, { role: "assistant", content: reviewContent });
-        if (currentSession?.title === "新对话") {
-          const typeLabel = params.type === "daily" ? "日报" : params.type === "weekly" ? "周报" : "月报";
-          updateSessionTitle(activeSessionId, typeLabel);
-        }
-        break;
-      }
-
-      case "help": {
-        addMessage(activeSessionId, { role: "user", content: userMessage });
-        addMessage(activeSessionId, { role: "assistant", content: getHelpMessage() });
-        if (currentSession?.title === "新对话") {
-          updateSessionTitle(activeSessionId, "帮助");
-        }
-        break;
-      }
-
-      default: {
-        // create 意图
-        clearSearchResults();
-        clearKnowledgeGraph();
-        await parse(userMessage, activeSessionId);
-        // parse 是流式的，isLoading 由 useStreamParse 管理，这里不需要重置 isSubmitting
-        setInput("");
-        return; // 提前返回，不重置 isSubmitting（由 useStreamParse 管理）
-      }
+    } catch (err) {
+      console.error("Parse error:", err);
     }
 
     setInput("");
@@ -396,9 +319,7 @@ export function FloatingChat() {
       setPanelHeight(Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, newHeight)));
     };
 
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
+    const handleMouseUp = () => setIsDragging(false);
 
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
@@ -408,22 +329,6 @@ export function FloatingChat() {
       document.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isDragging, setPanelHeight]);
-
-  // 渲染意图提示
-  const renderIntentBadge = () => {
-    if (!currentIntent) return null;
-    const config = intentConfig[currentIntent];
-    const Icon = intentIcons[currentIntent];
-    return (
-      <Badge
-        variant="secondary"
-        className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs ${config.color}`}
-      >
-        <Icon className="h-3 w-3 mr-1" />
-        {config.label}
-      </Badge>
-    );
-  };
 
   return (
     <div
@@ -440,7 +345,7 @@ export function FloatingChat() {
         <GripHorizontal className="h-4 w-4 text-muted-foreground" />
       </div>
 
-      {/* 会话列表区域 - 可折叠 */}
+      {/* 会话列表区域 */}
       <div className="border-b bg-muted/30 shrink-0">
         <div
           className="flex items-center justify-between p-2 cursor-pointer hover:bg-muted/50"
@@ -449,16 +354,13 @@ export function FloatingChat() {
           <div className="flex items-center gap-2">
             {showSessionList ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             <MessageSquare className="h-4 w-4" />
-            <span className="text-sm font-medium truncate">
-              {currentSession?.title || "新对话"}
-            </span>
+            <span className="text-sm font-medium truncate">{currentSession?.title || "新对话"}</span>
           </div>
           <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleNewSession(); }}>
             <Plus className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* 展开的会话列表 */}
         {showSessionList && (
           <div className="max-h-32 overflow-y-auto border-t">
             {sessions.map((session) => (
@@ -473,56 +375,35 @@ export function FloatingChat() {
                   <MessageSquare className="h-3 w-3 shrink-0 text-muted-foreground" />
                   <span className="truncate text-sm">{session.title}</span>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-5 w-5 shrink-0"
-                  onClick={(e) => { e.stopPropagation(); deleteSession(session.id); }}
-                >
+                <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0" onClick={(e) => { e.stopPropagation(); deleteSession(session.id); }}>
                   <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
             ))}
-            {sessions.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-2">暂无对话</p>
-            )}
+            {sessions.length === 0 && <p className="text-sm text-muted-foreground text-center py-2">暂无对话</p>}
           </div>
         )}
       </div>
 
       {/* 历史消息区域 */}
       {currentSession && currentSession.messages.length > 0 && (
-        <div
-          ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto p-3 border-b bg-muted/20 min-h-0"
-        >
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-3 border-b bg-muted/20 min-h-0">
           {currentSession.messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`mb-2 ${msg.role === "user" ? "text-right" : "text-left"}`}
-            >
-              <span
-                className={`inline-block px-3 py-1.5 rounded-lg text-sm max-w-[80%] whitespace-pre-wrap break-words ${
-                  msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
-                }`}
-              >
+            <div key={msg.id} className={`mb-2 ${msg.role === "user" ? "text-right" : "text-left"}`}>
+              <span className={`inline-block px-3 py-1.5 rounded-lg text-sm max-w-[80%] whitespace-pre-wrap break-words ${
+                msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+              }`}>
                 {msg.content}
               </span>
             </div>
           ))}
 
-          {/* 搜索结果展示 */}
           {currentIntent === "read" && searchResults.length > 0 && (
-            <div className="mb-2">
-              <SearchResultList results={searchResults} />
-            </div>
+            <div className="mb-2"><SearchResultList results={searchResults} /></div>
           )}
 
-          {/* 知识图谱展示 */}
           {currentIntent === "knowledge" && knowledgeGraph && (
-            <div className="mb-2">
-              <KnowledgeGraphInline data={knowledgeGraph} />
-            </div>
+            <div className="mb-2"><KnowledgeGraphInline data={knowledgeGraph} /></div>
           )}
 
           <div ref={messagesEndRef} />
@@ -531,32 +412,22 @@ export function FloatingChat() {
 
       {/* 输入区域 */}
       <div className="shrink-0">
-        {/* 快捷命令提示 */}
         <QuickCommandHints
           isVisible={isInputFocused && !input.trim()}
-          onSelectCommand={(example) => {
-            setInput(example);
-            setCurrentIntent(detectIntentLocal(example));
-          }}
+          onSelectCommand={(example) => setInput(example)}
         />
 
         <div className="p-3">
           <form onSubmit={handleSubmit} className="flex gap-2">
-            <div className="relative flex-1">
-              <Input
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  setCurrentIntent(e.target.value.trim() ? detectIntentLocal(e.target.value.trim()) : null);
-                }}
-                onFocus={() => setIsInputFocused(true)}
-                onBlur={() => setIsInputFocused(false)}
-                placeholder="输入内容、帮我搜索、把...改为...、或输入帮助..."
-                className="flex-1 pr-20"
-                disabled={isLoading || isSubmitting}
-              />
-              {renderIntentBadge()}
-            </div>
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onFocus={() => setIsInputFocused(true)}
+              onBlur={() => setIsInputFocused(false)}
+              placeholder="输入内容、帮我搜索、把...改为...、或输入帮助..."
+              className="flex-1"
+              disabled={isLoading || isSubmitting}
+            />
             <Button type="submit" disabled={!input.trim() || isLoading || isSubmitting}>
               {(isLoading || isSubmitting) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>

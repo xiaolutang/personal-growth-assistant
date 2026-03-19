@@ -105,10 +105,26 @@ async def detect_intent(request: IntentRequest):
     if not _llm_caller:
         raise HTTPException(status_code=503, detail="LLM 服务未初始化")
 
+    return await detect_intent_service(request.text)
+
+
+async def detect_intent_service(text: str) -> IntentResponse:
+    """
+    意图检测服务函数（可被其他模块复用）
+
+    Args:
+        text: 用户输入文本
+
+    Returns:
+        IntentResponse: 意图检测结果
+    """
+    if not _llm_caller:
+        return _fallback_intent_detection(text)
+
     try:
         messages = [
             {"role": "system", "content": INTENT_SYSTEM_PROMPT},
-            {"role": "user", "content": request.text}
+            {"role": "user", "content": text}
         ]
 
         response = await _llm_caller.call(messages, {"type": "json_object"})
@@ -131,10 +147,9 @@ async def detect_intent(request: IntentRequest):
         )
 
     except json.JSONDecodeError:
-        # JSON 解析失败，回退到简单规则
-        return _fallback_intent_detection(request.text)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"意图识别失败: {str(e)}")
+        return _fallback_intent_detection(text)
+    except Exception:
+        return _fallback_intent_detection(text)
 
 
 def _fallback_intent_detection(text: str) -> IntentResponse:
