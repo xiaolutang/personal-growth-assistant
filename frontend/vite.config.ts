@@ -15,7 +15,7 @@ export default defineConfig({
       "/api": {
         target: "http://localhost",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ""),
+        // 不移除 /api 前缀，让 nginx 正确路由
       },
     },
   },

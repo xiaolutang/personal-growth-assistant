@@ -8,6 +8,7 @@ import { Inbox } from "@/pages/Inbox";
 import { Notes } from "@/pages/Notes";
 import { Projects } from "@/pages/Projects";
 import { EntryDetail } from "@/pages/EntryDetail";
+import { Review } from "@/pages/Review";
 import { useChatStore } from "@/stores/chatStore";
 import { useTaskStore } from "@/stores/taskStore";
 
@@ -35,6 +36,7 @@ function App() {
             <Route path="/inbox" element={<Inbox />} />
             <Route path="/notes" element={<Notes />} />
             <Route path="/projects" element={<Projects />} />
+            <Route path="/review" element={<Review />} />
             <Route path="/entries/:id" element={<EntryDetail />} />
           </Routes>
         </div>

@@ -62,7 +62,11 @@ export interface SearchResult {
   title: string;
   score: number;
   type: string;
+  category: string;        // 条目类型
+  status: TaskStatus;     // 状态
+  priority?: Priority;   // 优先级
   tags: string[];
+  created_at: string;     // 创建时间
   file_path: string;
 }
 

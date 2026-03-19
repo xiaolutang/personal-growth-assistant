@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -17,6 +17,7 @@ import {
   Edit2,
   Save,
   X,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -39,12 +40,33 @@ export function EntryDetail() {
   const [childTasks, setChildTasks] = useState<Task[]>([]);
   const [projectProgress, setProjectProgress] = useState<ProjectProgressResponse | null>(null);
   const [parentEntry, setParentEntry] = useState<Task | null>(null);
+  const [referencedNotes, setReferencedNotes] = useState<Map<string, Task>>(new Map());
 
   // 编辑模式状态
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const { updateEntry } = useTaskStore();
+
+  // 解析内容中的 [[note-id]] 引用
+  const parsedContent = useMemo(() => {
+    if (!entry?.content) return entry?.content || "";
+    // 将 [[note-id]] 替换为可点击的链接
+    return entry.content.replace(/\[\[([^\]]+)\]\]/g, (_match, noteId) => {
+      const refNote = referencedNotes.get(noteId);
+      if (refNote) {
+        return `[${refNote.title}](/entry/${noteId})`;
+      }
+      return `[${noteId}](/entry/${noteId})`;
+    });
+  }, [entry?.content, referencedNotes]);
+
+  // 提取内容中的所有引用 ID
+  const referenceIds = useMemo(() => {
+    if (!entry?.content) return [];
+    const matches = entry.content.match(/\[\[([^\]]+)\]\]/g) || [];
+    return matches.map((m) => m.slice(2, -2));
+  }, [entry?.content]);
 
   useEffect(() => {
     if (!id) return;
@@ -75,6 +97,23 @@ export function EntryDetail() {
           } catch {
             // 父条目可能已被删除，忽略错误
           }
+        }
+
+        // 解析并加载引用的笔记
+        const noteIds = data.content?.match(/\[\[([^\]]+)\]\]/g)?.map((m) => m.slice(2, -2)) || [];
+        if (noteIds.length > 0) {
+          const notesMap = new Map<string, Task>();
+          await Promise.all(
+            noteIds.map(async (noteId) => {
+              try {
+                const noteData = await getEntry(noteId);
+                notesMap.set(noteId, noteData);
+              } catch {
+                // 引用的笔记可能不存在，忽略
+              }
+            })
+          );
+          setReferencedNotes(notesMap);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "获取条目失败");
@@ -340,10 +379,73 @@ export function EntryDetail() {
             </div>
           </div>
         ) : (
-          <div className="prose prose-sm dark:prose-invert max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {entry.content || "暂无内容"}
-            </ReactMarkdown>
+          <div className="space-y-4">
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  // 处理链接点击，支持内部链接跳转
+                  a: ({ href, children }) => {
+                    if (href?.startsWith("/entry/")) {
+                      return (
+                        <span
+                          className="text-primary hover:underline cursor-pointer"
+                          onClick={() => navigate(href)}
+                        >
+                          {children}
+                        </span>
+                      );
+                    }
+                    return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
+                  },
+                }}
+              >
+                {parsedContent || "暂无内容"}
+              </ReactMarkdown>
+            </div>
+
+            {/* 引用笔记列表 */}
+            {referenceIds.length > 0 && (
+              <Card className="mt-4">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    引用的笔记 ({referenceIds.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {referenceIds.map((noteId) => {
+                      const note = referencedNotes.get(noteId);
+                      return (
+                        <div
+                          key={noteId}
+                          className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                          onClick={() => navigate(`/entry/${noteId}`)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">
+                              {note?.title || noteId}
+                            </span>
+                            {note && (
+                              <Badge variant="outline" className="text-xs">
+                                {categoryConfig[note.category]?.label || note.category}
+                              </Badge>
+                            )}
+                          </div>
+                          {note && (
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(note.created_at).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
       </div>

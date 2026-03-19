@@ -9,8 +9,9 @@ from pydantic import BaseModel, Field
 
 from app.callers import APICaller
 from app.graphs.task_parser_graph import TaskParserGraph
-from app.routers import entries_router, search_router, knowledge_router
+from app.routers import entries_router, search_router, knowledge_router, review_router
 from app.storage import init_storage
+from app.middleware import setup_middlewares
 
 # 全局实例
 graph: TaskParserGraph | None = None
@@ -65,10 +66,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 添加自定义中间件（错误处理和日志）
+setup_middlewares(app)
+
 # 注册路由
 app.include_router(entries_router)
 app.include_router(search_router)
 app.include_router(knowledge_router)
+app.include_router(review_router)
 
 
 # === 响应模型 ===

@@ -258,6 +258,8 @@ class SQLiteStorage:
         status: Optional[str] = None,
         tags: Optional[List[str]] = None,
         parent_id: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
     ) -> tuple[str, List]:
         """构建筛选查询（复用逻辑）"""
         query = base_select
@@ -285,6 +287,23 @@ class SQLiteStorage:
             conditions.append("e.parent_id = ?")
             params.append(parent_id)
 
+        # 时间范围筛选（基于 created_at）
+        # created_at 是 ISO 格式时间戳如 "2026-03-19T10:47:22"
+        # start_date/end_date 是日期格式如 "2026-03-19"
+        if start_date:
+            # >= start_date 00:00:00
+            conditions.append("e.created_at >= ?")
+            params.append(start_date)
+
+        if end_date:
+            # <= end_date 23:59:59 (使用日期前缀匹配)
+            conditions.append("e.created_at < ?")
+            # 下一天的开始 = 当前 end_date + 1 天
+            from datetime import datetime, timedelta
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+            next_day = (end_dt + timedelta(days=1)).strftime("%Y-%m-%d")
+            params.append(next_day)
+
         if conditions:
             if tags:
                 query += " AND " + " AND ".join(conditions)
@@ -299,6 +318,8 @@ class SQLiteStorage:
         status: Optional[str] = None,
         tags: Optional[List[str]] = None,
         parent_id: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
     ) -> List[Dict[str, Any]]:
@@ -306,7 +327,7 @@ class SQLiteStorage:
         conn = self._get_conn()
         try:
             query, params = self._build_filter_query(
-                "SELECT DISTINCT e.* FROM entries e", type, status, tags, parent_id
+                "SELECT DISTINCT e.* FROM entries e", type, status, tags, parent_id, start_date, end_date
             )
             query += " ORDER BY e.updated_at DESC LIMIT ? OFFSET ?"
             params.extend([limit, offset])
@@ -350,12 +371,14 @@ class SQLiteStorage:
         status: Optional[str] = None,
         tags: Optional[List[str]] = None,
         parent_id: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
     ) -> int:
         """统计条目数量"""
         conn = self._get_conn()
         try:
             query, params = self._build_filter_query(
-                "SELECT COUNT(DISTINCT e.id) as cnt FROM entries e", type, status, tags, parent_id
+                "SELECT COUNT(DISTINCT e.id) as cnt FROM entries e", type, status, tags, parent_id, start_date, end_date
             )
             cursor = conn.execute(query, params)
             return cursor.fetchone()["cnt"]

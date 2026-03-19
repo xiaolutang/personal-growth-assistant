@@ -6,6 +6,11 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   timestamp: number;
+  actionConfirm?: {
+    type: "delete" | "update";
+    entryId: string;
+    title: string;
+  };
 }
 
 export interface ChatSession {

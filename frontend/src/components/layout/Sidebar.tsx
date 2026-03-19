@@ -5,6 +5,7 @@ import {
   Lightbulb,
   FileText,
   Folder,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +15,7 @@ const navItems = [
   { to: "/inbox", icon: Lightbulb, label: "灵感" },
   { to: "/notes", icon: FileText, label: "笔记" },
   { to: "/projects", icon: Folder, label: "项目" },
+  { to: "/review", icon: BarChart3, label: "回顾" },
 ];
 
 export function Sidebar() {

@@ -27,12 +27,20 @@ export async function getEntries(params?: {
   type?: string;
   status?: string;
   parent_id?: string;
+  tags?: string[];
+  start_date?: string;
+  end_date?: string;
   limit?: number;
 }): Promise<EntryListResponse> {
   const searchParams = new URLSearchParams();
   if (params?.type) searchParams.append("type", params.type);
   if (params?.status) searchParams.append("status", params.status);
   if (params?.parent_id) searchParams.append("parent_id", params.parent_id);
+  if (params?.tags && params.tags.length > 0) {
+    searchParams.append("tags", params.tags.join(","));
+  }
+  if (params?.start_date) searchParams.append("start_date", params.start_date);
+  if (params?.end_date) searchParams.append("end_date", params.end_date);
   if (params?.limit) searchParams.append("limit", params.limit.toString());
 
   const response = await fetch(`${API_BASE}/entries?${searchParams.toString()}`, {

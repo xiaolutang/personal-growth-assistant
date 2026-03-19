@@ -1,3 +1,5 @@
-# Services module - currently using LangGraph (app/graphs/)
+"""服务层"""
 
-__all__ = []
+from app.services.entry_service import EntryService
+
+__all__ = ["EntryService"]

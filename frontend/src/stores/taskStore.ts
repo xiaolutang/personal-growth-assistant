@@ -28,6 +28,10 @@ interface TaskStore {
   fetchEntries: (params?: {
     type?: string;
     status?: string;
+    parent_id?: string;
+    tags?: string[];
+    start_date?: string;
+    end_date?: string;
     limit?: number;
   }) => Promise<void>;
   createEntry: (data: EntryCreate) => Promise<Task>;
