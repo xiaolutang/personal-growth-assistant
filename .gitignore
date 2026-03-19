@@ -27,3 +27,13 @@ Thumbs.db
 
 # Local config
 *.local
+
+# Runtime data
+data/index.db
+data/tasks/
+backend/data/
+
+# Python package
+*.egg-info/
+dist/
+build/
