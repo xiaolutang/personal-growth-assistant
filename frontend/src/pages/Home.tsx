@@ -1,32 +1,42 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { TaskList } from "@/components/TaskList";
 import { Header } from "@/components/layout/Header";
 import { useTaskStore } from "@/stores/taskStore";
-import { useStreamParse } from "@/hooks/useStreamParse";
 import {
   ArrowRight,
-  Plus,
-  Loader2,
   CheckCircle,
   Circle,
   Clock,
   TrendingUp,
-  Lightbulb,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Task, Category, TaskStatus } from "@/types/task";
 import { statusConfig, categoryConfig, categoryBgColors } from "@/config/constants";
 
 export function Home() {
-  const { tasks, getTodayTasks, getTasksByCategory, fetchEntries, createEntry } = useTaskStore();
-  const [quickInput, setQuickInput] = useState("");
+  // 直接获取 tasks，确保响应式更新
+  const tasks = useTaskStore((state) => state.tasks);
 
-  const todayTasks = getTodayTasks();
-  const inboxItems = getTasksByCategory("inbox");
+  // 使用 useMemo 计算派生数据
+  const todayTasks = useMemo(() => {
+    const today = new Date().toISOString().split("T")[0];
+    return tasks.filter((task) => {
+      if (task.planned_date) {
+        return task.planned_date.startsWith(today);
+      }
+      if (task.created_at) {
+        return task.created_at.startsWith(today);
+      }
+      return false;
+    });
+  }, [tasks]);
+
+  const inboxItems = useMemo(
+    () => tasks.filter((task) => task.category === "inbox"),
+    [tasks]
+  );
 
   // 使用 useMemo 优化计算
   const recentEntries = useMemo(() => {
@@ -59,40 +69,6 @@ export function Home() {
     return stats;
   }, [tasks]);
 
-  // 流式解析 Hook
-  const { result, isLoading: isParsing, parse } = useStreamParse({
-    onComplete: async (data) => {
-      if (data.tasks.length > 0) {
-        // 并行创建条目
-        await Promise.all(
-          data.tasks.map((task) =>
-            createEntry({
-              type: task.category,
-              title: task.title || "",
-              content: task.content || "",
-              tags: task.tags || [],
-              status: task.status,
-              planned_date: task.planned_date,
-            })
-          )
-        );
-        setQuickInput("");
-      }
-    },
-  });
-
-  // 初始化加载数据
-  useEffect(() => {
-    fetchEntries({ limit: 100 });
-  }, [fetchEntries]);
-
-  // 快速记录提交
-  const handleQuickSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quickInput.trim() || isParsing) return;
-    await parse(quickInput.trim());
-  };
-
   // 计算今日完成率
   const todayCompletionRate = todayStats.total > 0
     ? Math.round((todayStats.completed / todayStats.total) * 100)
@@ -102,36 +78,6 @@ export function Home() {
     <>
       <Header title="首页" />
       <main className="flex-1 space-y-6 p-6 pb-32 overflow-y-auto">
-        {/* 快速记录 */}
-        <Card className="border-dashed">
-          <CardContent className="pt-4">
-            <form onSubmit={handleQuickSubmit} className="flex gap-2">
-              <div className="relative flex-1">
-                <Lightbulb className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={quickInput}
-                  onChange={(e) => setQuickInput(e.target.value)}
-                  placeholder="快速记录：明天下午3点开会 / 学习 RAG 技术..."
-                  className="pl-10"
-                  disabled={isParsing}
-                />
-              </div>
-              <Button type="submit" disabled={!quickInput.trim() || isParsing}>
-                {isParsing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4" />
-                )}
-              </Button>
-            </form>
-            {isParsing && result && result.tasks.length > 0 && (
-              <div className="mt-2 text-sm text-muted-foreground">
-                已识别 {result.tasks.length} 个条目，正在创建...
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         {/* 进度概览 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* 今日进度 */}

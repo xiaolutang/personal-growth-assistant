@@ -19,6 +19,29 @@ class SQLiteStorage:
         """确保数据库目录存在"""
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
 
+    def _migrate_schema(self, conn: sqlite3.Connection):
+        """数据库迁移：添加缺失的列"""
+        # 获取现有列
+        cursor = conn.execute("PRAGMA table_info(entries)")
+        existing_columns = {row[1] for row in cursor.fetchall()}
+
+        # 需要确保存在的列
+        required_columns = {
+            'priority': 'TEXT DEFAULT "medium"',
+            'parent_id': 'TEXT',
+            'planned_date': 'DATE',
+            'time_spent': 'INTEGER',
+        }
+
+        # 添加缺失的列
+        for col_name, col_def in required_columns.items():
+            if col_name not in existing_columns:
+                try:
+                    conn.execute(f"ALTER TABLE entries ADD COLUMN {col_name} {col_def}")
+                    print(f"数据库迁移: 添加列 {col_name}")
+                except Exception as e:
+                    print(f"迁移失败 {col_name}: {e}")
+
     def _get_conn(self) -> sqlite3.Connection:
         """获取数据库连接"""
         conn = sqlite3.connect(self.db_path)
@@ -48,6 +71,9 @@ class SQLiteStorage:
                     content TEXT
                 )
             """)
+
+            # 数据库迁移：添加缺失的列
+            self._migrate_schema(conn)
 
             # 索引
             conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_type ON entries(type)")

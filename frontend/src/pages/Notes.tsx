@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,14 +8,20 @@ import { useTaskStore } from "@/stores/taskStore";
 import { Plus, X, FileText, Loader2 } from "lucide-react";
 
 export function Notes() {
-  const { getTasksByCategory, createEntry } = useTaskStore();
+  // 直接获取 tasks 和 createEntry，确保响应式更新
+  const tasks = useTaskStore((state) => state.tasks);
+  const createEntry = useTaskStore((state) => state.createEntry);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const [newNoteContent, setNewNoteContent] = useState("");
   const [newNoteTags, setNewNoteTags] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
-  const notes = getTasksByCategory("note");
+  // 使用 useMemo 过滤，确保响应式更新
+  const notes = useMemo(
+    () => tasks.filter((task) => task.category === "note"),
+    [tasks]
+  );
 
   const handleCreateNote = async () => {
     if (!newNoteTitle.trim()) return;

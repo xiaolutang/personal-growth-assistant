@@ -24,7 +24,7 @@ export function ChatBox() {
       }
     },
   });
-  const { addTasks } = useTaskStore();
+  const addTasks = useTaskStore((state) => state.addTasks);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

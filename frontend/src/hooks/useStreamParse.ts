@@ -16,6 +16,40 @@ interface ParseResult {
   tasks: ParsedTask[];
 }
 
+// 类型和状态的中文映射
+const categoryLabels: Record<string, string> = {
+  task: "任务",
+  inbox: "灵感",
+  note: "笔记",
+  project: "项目",
+};
+
+const statusLabels: Record<string, string> = {
+  waitStart: "待开始",
+  doing: "进行中",
+  complete: "已完成",
+};
+
+// 格式化解析结果为可读文本
+function formatParsedResult(result: ParseResult): string {
+  if (result.tasks.length === 0) {
+    return "未识别到有效内容";
+  }
+
+  const lines = result.tasks.map((task, index) => {
+    const categoryLabel = categoryLabels[task.category] || task.category;
+    const statusLabel = statusLabels[task.status] || task.status;
+    const tags = task.tags?.length ? ` [${task.tags.join(", ")}]` : "";
+    const date = task.planned_date
+      ? ` 📅 ${new Date(task.planned_date).toLocaleString("zh-CN")}`
+      : "";
+
+    return `${index + 1}. [${categoryLabel}] ${task.title}${tags}${date}\n   状态: ${statusLabel}`;
+  });
+
+  return `✅ 已识别 ${result.tasks.length} 个条目：\n\n${lines.join("\n\n")}`;
+}
+
 interface UseStreamParseOptions {
   onComplete?: (result: ParseResult) => void;
   onError?: (error: Error) => void;
@@ -84,8 +118,9 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
                   const parsed: ParseResult = JSON.parse(fullJson);
                   setResult(parsed);
                   options.onComplete?.(parsed);
-                  // 存储 AI 响应
-                  options.onMessage?.("assistant", fullJson);
+                  // 生成可读的 AI 响应
+                  const readableResponse = formatParsedResult(parsed);
+                  options.onMessage?.("assistant", readableResponse);
                 } catch (e) {
                   console.error("JSON parse error:", e);
                   setError(new Error("JSON 解析失败"));

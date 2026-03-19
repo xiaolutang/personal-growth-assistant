@@ -15,10 +15,11 @@ function App() {
   const panelHeight = useChatStore((state) => state.panelHeight);
   const fetchEntries = useTaskStore((state) => state.fetchEntries);
 
-  // 应用启动时从后端获取数据
+  // 应用启动时从后端获取数据（只执行一次）
   useEffect(() => {
-    fetchEntries();
-  }, [fetchEntries]);
+    fetchEntries({ limit: 100 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 空依赖数组，只在挂载时执行一次
 
   return (
     <BrowserRouter>

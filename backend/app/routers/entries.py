@@ -246,12 +246,13 @@ async def create_entry(request: EntryCreate):
     # 写入 Markdown
     storage.markdown.write_entry(entry)
 
-    # 异步同步到 Neo4j + Qdrant（不阻塞响应）
-    try:
-        await storage.sync_entry(entry)
-    except Exception as e:
-        # 同步失败不影响创建
-        print(f"同步失败: {e}")
+    # SQLite 同步必须同步执行（确保查询能立即获取数据）
+    if storage.sqlite:
+        storage.sqlite.upsert_entry(entry)
+
+    # Neo4j + Qdrant 同步可以后台执行（涉及 LLM 调用，可能较慢）
+    import asyncio
+    asyncio.create_task(storage.sync_to_graph_and_vector(entry))
 
     return task_to_response(entry)
 
@@ -315,11 +316,13 @@ async def update_entry(entry_id: str, request: EntryUpdate):
     # 写入 Markdown
     storage.markdown.write_entry(entry)
 
-    # 异步同步
-    try:
-        await storage.sync_entry(entry)
-    except Exception as e:
-        print(f"同步失败: {e}")
+    # SQLite 同步必须同步执行
+    if storage.sqlite:
+        storage.sqlite.upsert_entry(entry)
+
+    # Neo4j + Qdrant 后台同步
+    import asyncio
+    asyncio.create_task(storage.sync_to_graph_and_vector(entry))
 
     return SuccessResponse(success=True, message=f"已更新条目: {entry_id}")
 

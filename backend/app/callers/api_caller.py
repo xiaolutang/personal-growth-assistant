@@ -1,6 +1,6 @@
 from typing import Any, AsyncGenerator
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 from app.config import LLMConfig
 
@@ -9,7 +9,7 @@ from .base import LLMCaller
 
 class APICaller(LLMCaller):
     """
-    通过 OpenAI 兼容 API 调用 LLM
+    通过 OpenAI 兼容 API 调用 LLM（异步版本）
 
     支持所有兼容 OpenAI API 的模型：
     - 通义千问（DashScope）
@@ -40,7 +40,8 @@ class APICaller(LLMCaller):
         if not self.api_key:
             LLMConfig.validate()  # 抛出友好的错误信息
 
-        self.client = OpenAI(
+        # 使用异步客户端，避免阻塞事件循环
+        self.client = AsyncOpenAI(
             api_key=self.api_key,
             base_url=self.base_url,
         )
@@ -51,7 +52,7 @@ class APICaller(LLMCaller):
         response_format: dict[str, Any] | None = None,
     ) -> str:
         """
-        调用 LLM API
+        异步调用 LLM API
 
         Args:
             messages: 消息列表
@@ -67,7 +68,8 @@ class APICaller(LLMCaller):
         if response_format:
             params["response_format"] = response_format
 
-        response = self.client.chat.completions.create(**params)
+        # 使用 await 真正异步调用，不阻塞事件循环
+        response = await self.client.chat.completions.create(**params)
         return response.choices[0].message.content or ""
 
     async def stream(
@@ -76,7 +78,7 @@ class APICaller(LLMCaller):
         response_format: dict[str, Any] | None = None,
     ) -> AsyncGenerator[str, None]:
         """
-        流式调用 LLM API
+        异步流式调用 LLM API
 
         Args:
             messages: 消息列表
@@ -93,8 +95,9 @@ class APICaller(LLMCaller):
         if response_format:
             params["response_format"] = response_format
 
-        response = self.client.chat.completions.create(**params)
+        # 使用 async for 异步迭代流式响应
+        response = await self.client.chat.completions.create(**params)
 
-        for chunk in response:
+        async for chunk in response:
             if chunk.choices and chunk.choices[0].delta.content:
                 yield chunk.choices[0].delta.content

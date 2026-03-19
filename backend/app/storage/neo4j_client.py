@@ -25,10 +25,17 @@ class Neo4jClient:
     async def connect(self):
         """连接数据库"""
         if not self._driver:
-            self._driver = AsyncGraphDatabase.driver(
-                self.uri,
-                auth=(self.username, self.password)
-            )
+            try:
+                self._driver = AsyncGraphDatabase.driver(
+                    self.uri,
+                    auth=(self.username, self.password)
+                )
+            except Exception as e:
+                # 连接失败时记录日志，将 _driver 设为 None
+                import logging
+                logging.warning(f"Neo4j 连接失败: {e}")
+                self._driver = None
+                # 不抛出异常，允许优雅降级
 
     async def close(self):
         """关闭连接"""

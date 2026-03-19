@@ -35,7 +35,9 @@ export async function getEntries(params?: {
   if (params?.parent_id) searchParams.append("parent_id", params.parent_id);
   if (params?.limit) searchParams.append("limit", params.limit.toString());
 
-  const response = await fetch(`${API_BASE}/entries?${searchParams.toString()}`);
+  const response = await fetch(`${API_BASE}/entries?${searchParams.toString()}`, {
+    cache: 'no-store',  // 禁用缓存，确保获取最新数据
+  });
   if (!response.ok) {
     throw new Error(`API error: ${response.status}`);
   }

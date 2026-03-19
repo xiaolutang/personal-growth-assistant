@@ -64,8 +64,12 @@ class SyncService:
             if self.neo4j and self.neo4j.driver:
                 tasks.append(self._sync_to_neo4j(entry, knowledge))
 
-            if self.qdrant and self.qdrant.client:
-                tasks.append(self.qdrant.upsert_entry(entry))
+            if self.qdrant:
+                try:
+                    tasks.append(self.qdrant.upsert_entry(entry))
+                except Exception as e:
+                    import logging
+                    logging.warning(f"Qdrant 同步失败，忽略: {e}")
 
             if tasks:
                 await asyncio.gather(*tasks, return_exceptions=True)
@@ -73,6 +77,37 @@ class SyncService:
             return True
         except Exception as e:
             print(f"同步失败: {e}")
+            return False
+
+    async def sync_to_graph_and_vector(self, entry: Task) -> bool:
+        """
+        仅同步到 Neo4j + Qdrant（后台执行，不阻塞响应）
+
+        用于创建条目后立即返回响应，但后台继续同步到知识图谱和向量库
+        """
+        try:
+            # 提取知识
+            knowledge = await self._extract_knowledge(entry)
+
+            # 并行同步到 Neo4j 和 Qdrant
+            tasks = []
+
+            if self.neo4j and self.neo4j.driver:
+                tasks.append(self._sync_to_neo4j(entry, knowledge))
+
+            if self.qdrant:
+                try:
+                    tasks.append(self.qdrant.upsert_entry(entry))
+                except Exception as e:
+                    import logging
+                    logging.warning(f"Qdrant 同步失败，忽略: {e}")
+
+            if tasks:
+                await asyncio.gather(*tasks, return_exceptions=True)
+
+            return True
+        except Exception as e:
+            print(f"图谱/向量同步失败: {e}")
             return False
 
     async def _sync_to_neo4j(self, entry: Task, knowledge: ExtractedKnowledge):
@@ -104,16 +139,28 @@ class SyncService:
         try:
             tasks = []
 
-            # 1. 删除 SQLite 索引（同步，因为很快）
+            # 1. 删除 SQLite 索引（同步，因为很快)
             if self.sqlite:
                 self.sqlite.delete_entry(entry_id)
 
             # 2. 并行删除 Neo4j 和 Qdrant
-            if self.neo4j and self.neo4j.driver:
-                tasks.append(self.neo4j.delete_entry(entry_id))
+            # Neo4j: 优雅处理连接失败
+            if self.neo4j:
+                try:
+                    tasks.append(self.neo4j.delete_entry(entry_id))
+                except Exception as e:
+                    # Neo4j 删除失败，记录日志但继续
+                    import logging
+                    logging.warning(f"Neo4j 删除失败，忽略: {e}")
 
-            if self.qdrant and self.qdrant.client:
-                tasks.append(self.qdrant.delete_entry(entry_id))
+            # Qdrant: 优雅处理连接失败
+            if self.qdrant:
+                try:
+                    tasks.append(self.qdrant.delete_entry(entry_id))
+                except Exception as e:
+                    # Qdrant 删除失败，记录日志但继续
+                    import logging
+                    logging.warning(f"Qdrant 删除失败，忽略: {e}")
 
             if tasks:
                 await asyncio.gather(*tasks, return_exceptions=True)
