@@ -4,6 +4,7 @@ import type {
   TaskStatus,
   Category,
   EntryCreate,
+  EntryUpdate,
   SearchResult,
   KnowledgeGraphResponse,
 } from "@/types/task";
@@ -30,6 +31,7 @@ interface TaskStore {
     limit?: number;
   }) => Promise<void>;
   createEntry: (data: EntryCreate) => Promise<Task>;
+  updateEntry: (id: string, data: EntryUpdate) => Promise<void>;
   addTasks: (tasks: { type: string; title: string; content?: string; category: Category; status: TaskStatus; tags?: string[] }[]) => Promise<void>;
   updateTaskStatus: (id: string, status: TaskStatus) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
@@ -81,6 +83,21 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
     }
   },
 
+  updateEntry: async (id: string, data: EntryUpdate) => {
+    set({ isLoading: true, error: null });
+    try {
+      await updateEntry(id, data);
+      // 更新成功后重新获取列表
+      await get().fetchEntries();
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : "更新条目失败",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
   // 批量添加任务（从 AI 解析结果创建）
   addTasks: async (tasks) => {
     set({ isLoading: true, error: null });
@@ -123,13 +140,19 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
   deleteTask: async (id: string) => {
     // 乐观更新：先从本地移除
     const previousTasks = get().tasks;
+    console.log('[乐观更新] 删除前任务数:', previousTasks.length, '删除ID:', id);
     set({ tasks: previousTasks.filter((t) => t.id !== id), error: null });
+    console.log('[乐观更新] 删除后任务数:', get().tasks.length);
 
     try {
-      await apiDeleteEntry(id);
-      // 删除成功，不需要再 fetchEntries，因为已经乐观更新了
+      console.log('[API调用] 开始删除:', id);
+      const result = await apiDeleteEntry(id);
+      console.log('[API调用] 删除结果:', result);
+      // 删除成功后重新获取列表以确保后端数据一致
+      await get().fetchEntries();
     } catch (error) {
       // 失败时回滚
+      console.log('[API调用] 删除失败:', error);
       set({
         tasks: previousTasks,
         error: error instanceof Error ? error.message : "删除失败",

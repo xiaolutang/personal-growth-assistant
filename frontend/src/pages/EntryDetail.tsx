@@ -14,12 +14,17 @@ import {
   XCircle,
   BarChart3,
   Link2,
+  Edit2,
+  Save,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
 import { getEntry, getEntries, getProjectProgress } from "@/services/api";
+import { useTaskStore } from "@/stores/taskStore";
 import type { Task } from "@/types/task";
 import type { ProjectProgressResponse } from "@/services/api";
 import { statusConfig, categoryConfig, priorityConfig } from "@/config/constants";
@@ -35,6 +40,12 @@ export function EntryDetail() {
   const [projectProgress, setProjectProgress] = useState<ProjectProgressResponse | null>(null);
   const [parentEntry, setParentEntry] = useState<Task | null>(null);
 
+  // 编辑模式状态
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const { updateEntry } = useTaskStore();
+
   useEffect(() => {
     if (!id) return;
 
@@ -44,6 +55,7 @@ export function EntryDetail() {
       try {
         const data = await getEntry(id);
         setEntry(data);
+        setEditContent(data.content || "");
 
         // 如果是项目类型，获取子任务和进度
         if (data.category === "project") {
@@ -114,6 +126,33 @@ export function EntryDetail() {
     }
   };
 
+  // 开始编辑
+  const handleStartEdit = () => {
+    setEditContent(entry.content || "");
+    setIsEditing(true);
+  };
+
+  // 取消编辑
+  const handleCancelEdit = () => {
+    setEditContent(entry.content || "");
+    setIsEditing(false);
+  };
+
+  // 保存编辑
+  const handleSaveEdit = async () => {
+    if (!id) return;
+    setIsSaving(true);
+    try {
+      await updateEntry(id, { content: editContent });
+      setEntry((prev) => prev ? { ...prev, content: editContent } : prev);
+      setIsEditing(false);
+    } catch (err) {
+      console.error("保存失败:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-4xl mx-auto p-6">
@@ -128,6 +167,19 @@ export function EntryDetail() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             返回
           </Button>
+
+          {/* 编辑按钮 */}
+          {!isEditing && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleStartEdit}
+              className="mb-4 ml-2"
+            >
+              <Edit2 className="h-4 w-4 mr-2" />
+              编辑
+            </Button>
+          )}
 
           <div className="flex items-start gap-4">
             <div className="flex-shrink-0 mt-1">
@@ -254,11 +306,46 @@ export function EntryDetail() {
         )}
 
         {/* Content */}
-        <div className="prose prose-sm dark:prose-invert max-w-none">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {entry.content || "暂无内容"}
-          </ReactMarkdown>
-        </div>
+        {isEditing ? (
+          <div className="space-y-4">
+            <Textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              placeholder="输入 Markdown 格式的内容..."
+              className="min-h-[400px] font-mono text-sm"
+              disabled={isSaving}
+            />
+            <div className="flex gap-2">
+              <Button onClick={handleSaveEdit} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    保存中...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    保存
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleCancelEdit}
+                disabled={isSaving}
+              >
+                <X className="h-4 w-4 mr-2" />
+                取消
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="prose prose-sm dark:prose-invert max-w-none">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {entry.content || "暂无内容"}
+            </ReactMarkdown>
+          </div>
+        )}
       </div>
     </div>
   );
