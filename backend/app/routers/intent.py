@@ -1,5 +1,6 @@
 """意图识别 API 路由"""
 import json
+import re
 from typing import Optional, List
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException
@@ -154,8 +155,6 @@ async def detect_intent_service(text: str) -> IntentResponse:
 
 def _fallback_intent_detection(text: str) -> IntentResponse:
     """回退的规则意图检测"""
-    text_lower = text.lower()
-
     # 关键词匹配
     if any(k in text for k in ["帮助", "能做什么", "怎么用"]):
         return IntentResponse(intent="help", confidence=0.8)
@@ -164,11 +163,58 @@ def _fallback_intent_detection(text: str) -> IntentResponse:
     if any(k in text for k in ["知识图谱", "相关概念"]):
         return IntentResponse(intent="knowledge", confidence=0.8, query=text.replace("知识图谱", "").replace("相关概念", "").strip())
     if any(k in text for k in ["删除", "移除", "去掉"]):
-        return IntentResponse(intent="delete", confidence=0.8, query=text.replace("删除", "").replace("移除", "").strip())
-    if any(k in text for k in ["改为", "标记", "完成", "更新", "添加标签", "修改"]):
-        return IntentResponse(intent="update", confidence=0.8, query=text)
+        query = re.sub(r"(删除|移除|去掉|掉|了)", "", text).strip()
+        return IntentResponse(intent="delete", confidence=0.8, query=query or text)
+
+    # 更新意图 - 提取 field, value 和 query
+    # 注意：更具体的模式要放在前面
+    update_patterns = [
+        # "把xxx标记为完成/已完成" - 状态改为完成（最具体，放最前）
+        (r"把\s*(.+?)\s*标记为\s*(?:已完成|完成)", "status", "complete"),
+        # "给xxx添加标签yyy" 或 "xxx添加标签yyy" 或 "添加标签yyy"
+        (r"(?:给\s*)?(.*?)\s*添加标签\s*(.+)$", "tags", None),
+        # "xxx改为yyy" - 更新字段
+        (r"(.+?)\s*改为\s*(.+)$", "status", None),  # value 从匹配中提取
+        # "xxx更新为yyy"
+        (r"(.+?)\s*更新为\s*(.+)$", "status", None),
+        # "完成了xxx" - 以"完成了"开头
+        (r"^完成(?:了|度)?\s*(.+)$", "status", "complete"),
+        # "xxx完成了" / "xxx已完成" - 以"完成了"或"已完成"结尾
+        (r"(.+?)\s*(?:已|经)?完成(?:了|度)?$", "status", "complete"),
+        # "修改xxx"
+        (r"(?:修改|更新)\s*(.+)$", None, None),
+    ]
+
+    for pattern, field, value in update_patterns:
+        match = re.search(pattern, text)
+        if match:
+            groups = match.groups()
+            # 取第一个非空的 group 作为 query
+            query = next((g.strip() for g in groups if g and g.strip()), text)
+
+            # 如果 pattern 没有预设 field/value，从匹配中提取
+            if len(groups) > 1:
+                if field is None:
+                    field = "status"
+                if value is None:
+                    value = groups[1].strip()
+
+            entities = {}
+            if field:
+                entities["field"] = field
+            if value:
+                entities["value"] = value
+
+            return IntentResponse(
+                intent="update",
+                confidence=0.8,
+                query=query or text,
+                entities=entities,
+            )
+
     if any(k in text for k in ["帮我找", "搜索", "查找", "有没有"]):
-        return IntentResponse(intent="read", confidence=0.8, query=text)
+        query = re.sub(r"(帮我找|搜索|查找|有没有|一下)", "", text).strip()
+        return IntentResponse(intent="read", confidence=0.8, query=query or text)
 
     # 默认创建
     return IntentResponse(intent="create", confidence=0.6, query=text)

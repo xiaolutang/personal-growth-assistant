@@ -142,3 +142,146 @@ def sample_note():
         updated_at=datetime.now(),
         file_path="notes/note-test123.md",
     )
+
+
+# ============ Qdrant Mock Fixtures ============
+@pytest.fixture
+def mock_qdrant_available():
+    """Mock Qdrant 可用状态"""
+    from unittest.mock import AsyncMock, patch, MagicMock
+    from qdrant_client.http import models
+
+    with patch('app.storage.qdrant_client.AsyncQdrantClient') as mock_client_class:
+        mock_instance = AsyncMock()
+        mock_client_class.return_value = mock_instance
+
+        # Mock get_collection (collection exists)
+        mock_instance.get_collection = AsyncMock()
+
+        # Mock query_points
+        mock_result = MagicMock()
+        mock_result.id = "test-uuid-1"
+        mock_result.score = 0.9
+        mock_result.payload = {"original_id": "task-1", "title": "测试任务"}
+        mock_response = MagicMock()
+        mock_response.points = [mock_result]
+        mock_instance.query_points = AsyncMock(return_value=mock_response)
+
+        # Mock upsert
+        mock_instance.upsert = AsyncMock()
+
+        # Mock delete
+        mock_instance.delete = AsyncMock()
+
+        # Mock retrieve
+        mock_instance.retrieve = AsyncMock(return_value=[])
+
+        # Mock close
+        mock_instance.close = AsyncMock()
+
+        yield mock_instance
+
+
+@pytest.fixture
+def mock_qdrant_unavailable():
+    """Mock Qdrant 不可用状态"""
+    from unittest.mock import patch
+
+    with patch('app.storage.qdrant_client.AsyncQdrantClient') as mock_client:
+        mock_client.side_effect = ConnectionError("Qdrant not available")
+        yield mock_client
+
+
+# ============ Neo4j Mock Fixtures ============
+@pytest.fixture
+def mock_neo4j_available():
+    """Mock Neo4j 可用状态"""
+    from unittest.mock import AsyncMock, patch, MagicMock
+
+    with patch('app.storage.neo4j_client.AsyncGraphDatabase') as mock_graph_db:
+        mock_driver = AsyncMock()
+        mock_graph_db.driver.return_value = mock_driver
+
+        # Mock session
+        mock_session = AsyncMock()
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+        mock_driver.session.return_value = mock_session
+
+        # Mock run result
+        mock_result = MagicMock()
+        mock_result.single = MagicMock(return_value={"name": "测试概念", "description": "描述", "category": "技术"})
+        mock_result.__aiter__ = MagicMock(return_value=iter([]))
+        mock_session.run = AsyncMock(return_value=mock_result)
+
+        # Mock close
+        mock_driver.close = AsyncMock()
+
+        yield mock_driver
+
+
+@pytest.fixture
+def mock_neo4j_unavailable():
+    """Mock Neo4j 不可用状态"""
+    from unittest.mock import patch
+    from neo4j.exceptions import ServiceUnavailable
+
+    with patch('app.storage.neo4j_client.AsyncGraphDatabase') as mock_graph_db:
+        mock_graph_db.driver.side_effect = ServiceUnavailable("Neo4j not available")
+        yield mock_graph_db
+
+
+# ============ Embedding/LLM Mock Fixtures ============
+@pytest.fixture
+def mock_embedding_success():
+    """Mock Embedding 服务成功响应"""
+    from unittest.mock import patch, AsyncMock, MagicMock
+
+    with patch('httpx.AsyncClient') as mock_client_class:
+        mock_client = AsyncMock()
+        mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
+
+        # Mock response
+        mock_response = AsyncMock()
+        mock_response.status_code = 200
+        mock_response.json = MagicMock(return_value={
+            "data": [{"embedding": [0.1] * 1024}]
+        })
+        mock_client.post = AsyncMock(return_value=mock_response)
+
+        yield mock_client
+
+
+@pytest.fixture
+def mock_embedding_api_error():
+    """Mock Embedding API 错误"""
+    from unittest.mock import patch, AsyncMock
+
+    with patch('httpx.AsyncClient') as mock_client_class:
+        mock_client = AsyncMock()
+        mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
+
+        mock_response = AsyncMock()
+        mock_response.status_code = 500
+        mock_response.text = "Internal Server Error"
+        mock_client.post = AsyncMock(return_value=mock_response)
+
+        yield mock_client
+
+
+@pytest.fixture
+def mock_embedding_timeout():
+    """Mock Embedding 超时"""
+    from unittest.mock import patch, AsyncMock
+    import httpx
+
+    with patch('httpx.AsyncClient') as mock_client_class:
+        mock_client = AsyncMock()
+        mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
+
+        mock_client.post = AsyncMock(side_effect=httpx.TimeoutException("Request timeout"))
+
+        yield mock_client

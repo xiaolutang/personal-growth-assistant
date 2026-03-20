@@ -1,5 +1,8 @@
 """Qdrant 向量检索客户端"""
+import asyncio
+import logging
 import os
+import uuid
 from typing import List, Optional, Dict, Any, TYPE_CHECKING
 
 from qdrant_client import AsyncQdrantClient
@@ -10,6 +13,17 @@ from app.models import Task
 
 if TYPE_CHECKING:
     from app.services.embedding import EmbeddingService
+
+
+logger = logging.getLogger(__name__)
+
+# 命名空间 UUID（用于生成确定性 UUID）
+NAMESPACE_UUID = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+
+def str_to_uuid(text_id: str) -> str:
+    """将字符串 ID 转换为 UUID 格式（Qdrant 要求）"""
+    return str(uuid.uuid5(NAMESPACE_UUID, text_id))
 
 
 class QdrantClient:
@@ -46,10 +60,28 @@ class QdrantClient:
             self._client = None
 
     async def _ensure_collection(self):
-        """确保 collection 存在"""
+        """确保 collection 存在且维度正确"""
         try:
-            await self._client.get_collection(self.COLLECTION_NAME)
+            collection_info = await self._client.get_collection(self.COLLECTION_NAME)
+            # 检查维度是否匹配
+            existing_size = collection_info.config.params.vectors.size
+            if existing_size != self.vector_size:
+                # 维度不匹配，删除旧 collection 重建
+                logger.warning(
+                    f"Qdrant collection dimension mismatch: "
+                    f"existing={existing_size}, expected={self.vector_size}. "
+                    f"Recreating collection..."
+                )
+                await self._client.delete_collection(self.COLLECTION_NAME)
+                await self._client.create_collection(
+                    collection_name=self.COLLECTION_NAME,
+                    vectors_config=models.VectorParams(
+                        size=self.vector_size,
+                        distance=models.Distance.COSINE,
+                    ),
+                )
         except UnexpectedResponse:
+            # collection 不存在，创建新的
             await self._client.create_collection(
                 collection_name=self.COLLECTION_NAME,
                 vectors_config=models.VectorParams(
@@ -68,6 +100,19 @@ class QdrantClient:
             return await self._embedding_service.get_embedding(text)
         raise NotImplementedError("Embedding service not configured")
 
+    def _build_payload(self, entry: Task) -> Dict[str, Any]:
+        """构建向量存储的 payload"""
+        return {
+            "original_id": entry.id,
+            "title": entry.title,
+            "type": entry.category.value,
+            "status": entry.status.value,
+            "tags": entry.tags,
+            "file_path": entry.file_path,
+            "created_at": entry.created_at.isoformat(),
+            "updated_at": entry.updated_at.isoformat(),
+        }
+
     # ==================== 向量操作 ====================
 
     async def upsert_entry(self, entry: Task) -> bool:
@@ -78,25 +123,14 @@ class QdrantClient:
         # 获取向量
         vector = await self._get_embedding(f"{entry.title}\n\n{entry.content}")
 
-        # 构建 payload
-        payload = {
-            "title": entry.title,
-            "type": entry.category.value,
-            "status": entry.status.value,
-            "tags": entry.tags,
-            "file_path": entry.file_path,
-            "created_at": entry.created_at.isoformat(),
-            "updated_at": entry.updated_at.isoformat(),
-        }
-
-        # 存储向量
+        # 存储向量（ID 转换为 UUID）
         await self._client.upsert(
             collection_name=self.COLLECTION_NAME,
             points=[
                 models.PointStruct(
-                    id=entry.id,
+                    id=str_to_uuid(entry.id),
                     vector=vector,
-                    payload=payload,
+                    payload=self._build_payload(entry),
                 )
             ],
         )
@@ -111,7 +145,7 @@ class QdrantClient:
             await self._client.delete(
                 collection_name=self.COLLECTION_NAME,
                 points_selector=models.PointIdsList(
-                    points=[entry_id],
+                    points=[str_to_uuid(entry_id)],
                 ),
             )
             return True
@@ -126,13 +160,13 @@ class QdrantClient:
         try:
             result = await self._client.retrieve(
                 collection_name=self.COLLECTION_NAME,
-                ids=[entry_id],
+                ids=[str_to_uuid(entry_id)],
                 with_vectors=True,
             )
             if result:
                 point = result[0]
                 return {
-                    "id": point.id,
+                    "id": point.payload.get("original_id", str(point.id)),
                     "vector": point.vector,
                     "payload": point.payload,
                 }
@@ -175,21 +209,21 @@ class QdrantClient:
         if must_conditions:
             filter_obj = models.Filter(must=must_conditions)
 
-        # 搜索
-        results = await self._client.search(
+        # 搜索 (使用新版 query_points API)
+        response = await self._client.query_points(
             collection_name=self.COLLECTION_NAME,
-            query_vector=query_vector,
+            query=query_vector,
             limit=limit,
             query_filter=filter_obj,
         )
 
         return [
             {
-                "id": str(result.id),
+                "id": result.payload.get("original_id", str(result.id)),
                 "score": result.score,
                 "payload": result.payload,
             }
-            for result in results
+            for result in response.points
         ]
 
     async def search_by_vector(
@@ -201,50 +235,43 @@ class QdrantClient:
         if not self._client:
             await self.connect()
 
-        results = await self._client.search(
+        response = await self._client.query_points(
             collection_name=self.COLLECTION_NAME,
-            query_vector=vector,
+            query=vector,
             limit=limit,
         )
 
         return [
             {
-                "id": str(result.id),
+                "id": result.payload.get("original_id", str(result.id)),
                 "score": result.score,
                 "payload": result.payload,
             }
-            for result in results
+            for result in response.points
         ]
 
     # ==================== 批量操作 ====================
 
     async def batch_upsert(self, entries: List[Task]) -> int:
-        """批量创建或更新向量"""
+        """批量创建或更新向量（并行获取 embedding）"""
         if not entries:
             return 0
 
         if not self._client:
             await self.connect()
 
-        points = []
-        for entry in entries:
-            vector = await self._get_embedding(f"{entry.title}\n\n{entry.content}")
-            payload = {
-                "title": entry.title,
-                "type": entry.category.value,
-                "status": entry.status.value,
-                "tags": entry.tags,
-                "file_path": entry.file_path,
-                "created_at": entry.created_at.isoformat(),
-                "updated_at": entry.updated_at.isoformat(),
-            }
-            points.append(
-                models.PointStruct(
-                    id=entry.id,
-                    vector=vector,
-                    payload=payload,
-                )
+        # 并行获取所有 embedding
+        texts = [f"{e.title}\n\n{e.content}" for e in entries]
+        vectors = await asyncio.gather(*[self._get_embedding(t) for t in texts])
+
+        points = [
+            models.PointStruct(
+                id=str_to_uuid(entry.id),
+                vector=vector,
+                payload=self._build_payload(entry),
             )
+            for entry, vector in zip(entries, vectors)
+        ]
 
         await self._client.upsert(
             collection_name=self.COLLECTION_NAME,
@@ -263,7 +290,7 @@ class QdrantClient:
         await self._client.delete(
             collection_name=self.COLLECTION_NAME,
             points_selector=models.PointIdsList(
-                points=entry_ids,
+                points=[str_to_uuid(eid) for eid in entry_ids],
             ),
         )
         return len(entry_ids)
@@ -278,6 +305,5 @@ class QdrantClient:
         info = await self._client.get_collection(self.COLLECTION_NAME)
         return {
             "points_count": info.points_count,
-            "vectors_count": info.vectors_count,
             "status": info.status.value,
         }

@@ -70,6 +70,10 @@ class EmbeddingService:
 
 # 支持的模型及其向量维度
 EMBEDDING_MODELS = {
+    # 智谱 AI
+    "embedding-3": 2048,
+    "embedding-2": 1024,
+    # 阿里云
     "text-embedding-v3": 1024,
     "text-embedding-v2": 1536,
     "text-embedding-v1": 1536,
