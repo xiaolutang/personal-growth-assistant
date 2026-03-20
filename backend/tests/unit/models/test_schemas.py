@@ -1,8 +1,8 @@
-"""测试 DTO 转换函数"""
+"""测试 API Schemas"""
 import pytest
 from datetime import datetime
 
-from app.dto import (
+from app.api.schemas import (
     EntryCreate,
     EntryUpdate,
     EntryResponse,
@@ -10,19 +10,18 @@ from app.dto import (
     SearchResult,
     SuccessResponse,
     ProjectProgressResponse,
-    task_to_response,
-    dict_to_response,
 )
+from app.mappers.entry_mapper import EntryMapper
 from app.models import Task, Category, TaskStatus, Priority
 
 
 class TestEntryCreate:
-    """EntryCreate DTO 测试"""
+    """EntryCreate Schema 测试"""
 
     def test_entry_create_minimal(self):
         """测试最小化创建请求"""
-        entry = EntryCreate(type="task", title="测试任务")
-        assert entry.type == "task"
+        entry = EntryCreate(category="task", title="测试任务")
+        assert entry.category == "task"
         assert entry.title == "测试任务"
         assert entry.content == ""
         assert entry.tags == []
@@ -30,7 +29,7 @@ class TestEntryCreate:
     def test_entry_create_full(self):
         """测试完整创建请求"""
         entry = EntryCreate(
-            type="project",
+            category="project",
             title="测试项目",
             content="项目描述",
             tags=["重要"],
@@ -40,7 +39,7 @@ class TestEntryCreate:
             planned_date="2026-03-20",
             time_spent=120,
         )
-        assert entry.type == "project"
+        assert entry.category == "project"
         assert entry.title == "测试项目"
         assert entry.content == "项目描述"
         assert entry.tags == ["重要"]
@@ -49,7 +48,7 @@ class TestEntryCreate:
 
 
 class TestEntryUpdate:
-    """EntryUpdate DTO 测试"""
+    """EntryUpdate Schema 测试"""
 
     def test_entry_update_partial(self):
         """测试部分更新"""
@@ -73,7 +72,7 @@ class TestEntryUpdate:
 
 
 class TestEntryResponse:
-    """EntryResponse DTO 测试"""
+    """EntryResponse Schema 测试"""
 
     def test_entry_response_creation(self):
         """测试响应创建"""
@@ -95,11 +94,11 @@ class TestEntryResponse:
         assert response.planned_date is None
 
 
-class TestTaskToResponse:
-    """task_to_response 转换函数测试"""
+class TestEntryMapperTaskToResponse:
+    """EntryMapper.task_to_response 转换函数测试"""
 
     def test_convert_task(self):
-        """测试 Task 模型转 Response"""
+        """测试 Task 模型转响应字典"""
         now = datetime(2026, 3, 20, 10, 0, 0)
         task = Task(
             id="task-001",
@@ -114,16 +113,15 @@ class TestTaskToResponse:
             file_path="tasks/task-001.md",
         )
 
-        response = task_to_response(task)
+        response = EntryMapper.task_to_response(task)
 
-        assert isinstance(response, EntryResponse)
-        assert response.id == "task-001"
-        assert response.title == "测试任务"
-        assert response.category == "task"
-        assert response.status == "doing"
-        assert response.priority == "high"
-        assert response.tags == ["测试"]
-        assert response.created_at == now.isoformat()
+        assert response["id"] == "task-001"
+        assert response["title"] == "测试任务"
+        assert response["category"] == "task"
+        assert response["status"] == "doing"
+        assert response["priority"] == "high"
+        assert response["tags"] == ["测试"]
+        assert response["created_at"] == now.isoformat()
 
     def test_convert_task_with_optional_fields(self):
         """测试带可选字段的转换"""
@@ -145,19 +143,19 @@ class TestTaskToResponse:
             file_path="tasks/task-002.md",
         )
 
-        response = task_to_response(task)
+        response = EntryMapper.task_to_response(task)
 
-        assert response.planned_date == now.isoformat()
-        assert response.completed_at == now.isoformat()
-        assert response.time_spent == 60
-        assert response.parent_id == "project-001"
+        assert response["planned_date"] == now.isoformat()
+        assert response["completed_at"] == now.isoformat()
+        assert response["time_spent"] == 60
+        assert response["parent_id"] == "project-001"
 
 
-class TestDictToResponse:
-    """dict_to_response 转换函数测试"""
+class TestEntryMapperDictToResponse:
+    """EntryMapper.dict_to_response 转换函数测试"""
 
     def test_convert_dict(self):
-        """测试字典转 Response"""
+        """测试字典转响应字典"""
         data = {
             "id": "task-003",
             "title": "字典任务",
@@ -172,13 +170,12 @@ class TestDictToResponse:
             "file_path": "tasks/task-003.md",
         }
 
-        response = dict_to_response(data)
+        response = EntryMapper.dict_to_response(data)
 
-        assert isinstance(response, EntryResponse)
-        assert response.id == "task-003"
-        assert response.title == "字典任务"
-        assert response.category == "task"
-        assert response.priority == "low"
+        assert response["id"] == "task-003"
+        assert response["title"] == "字典任务"
+        assert response["category"] == "task"
+        assert response["priority"] == "low"
 
     def test_convert_dict_missing_fields(self):
         """测试缺失字段使用默认值"""
@@ -187,13 +184,13 @@ class TestDictToResponse:
             "title": "缺失字段任务",
         }
 
-        response = dict_to_response(data)
+        response = EntryMapper.dict_to_response(data)
 
-        assert response.id == "task-004"
-        assert response.content == ""
-        assert response.status == "doing"
-        assert response.priority == "medium"
-        assert response.tags == []
+        assert response["id"] == "task-004"
+        assert response["content"] == ""
+        assert response["status"] == "doing"
+        assert response["priority"] == "medium"
+        assert response["tags"] == []
 
 
 class TestSuccessResponse:

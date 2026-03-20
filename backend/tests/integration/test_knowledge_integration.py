@@ -149,7 +149,7 @@ class TestKnowledgeIntegration:
                 title=f"列表测试任务 {i}",
                 content=f"内容 {i}",
                 category=Category.TASK,
-                status=TaskStatus.DOING if i % 2 == 0 else TaskStatus.DONE,
+                status=TaskStatus.DOING if i % 2 == 0 else TaskStatus.COMPLETE,
                 priority=Priority.MEDIUM,
                 tags=[],
                 created_at=datetime.now(),

@@ -85,7 +85,7 @@ class TestNeo4jClient:
         """测试正常创建条目节点"""
         # Mock result
         mock_result = MagicMock()
-        mock_result.single = MagicMock(return_value={"e": sample_entry.model_dump()})
+        mock_result.single = AsyncMock(return_value={"e": sample_entry.model_dump()})
         mock_neo4j_session.run = AsyncMock(return_value=mock_result)
 
         client = Neo4jClient(uri="bolt://test:7687")
@@ -99,7 +99,7 @@ class TestNeo4jClient:
     async def test_update_entry_success(self, sample_entry, mock_neo4j_session):
         """测试更新条目（使用 MERGE）"""
         mock_result = MagicMock()
-        mock_result.single = MagicMock(return_value={"e": sample_entry.model_dump()})
+        mock_result.single = AsyncMock(return_value={"e": sample_entry.model_dump()})
         mock_neo4j_session.run = AsyncMock(return_value=mock_result)
 
         client = Neo4jClient(uri="bolt://test:7687")
@@ -113,7 +113,7 @@ class TestNeo4jClient:
     async def test_delete_entry_success(self, mock_neo4j_session):
         """测试正常删除条目节点"""
         mock_result = MagicMock()
-        mock_result.single = MagicMock(return_value={"deleted": 1})
+        mock_result.single = AsyncMock(return_value={"deleted": 1})
         mock_neo4j_session.run = AsyncMock(return_value=mock_result)
 
         client = Neo4jClient(uri="bolt://test:7687")
@@ -127,7 +127,7 @@ class TestNeo4jClient:
     async def test_delete_entry_not_found(self, mock_neo4j_session):
         """测试删除不存在的条目"""
         mock_result = MagicMock()
-        mock_result.single = MagicMock(return_value={"deleted": 0})
+        mock_result.single = AsyncMock(return_value={"deleted": 0})
         mock_neo4j_session.run = AsyncMock(return_value=mock_result)
 
         client = Neo4jClient(uri="bolt://test:7687")
@@ -141,7 +141,7 @@ class TestNeo4jClient:
     async def test_get_entry_found(self, sample_entry, mock_neo4j_session):
         """测试获取存在的条目"""
         mock_result = MagicMock()
-        mock_result.single = MagicMock(return_value={
+        mock_result.single = AsyncMock(return_value={
             "id": sample_entry.id,
             "title": sample_entry.title,
             "type": sample_entry.category.value,
@@ -160,7 +160,7 @@ class TestNeo4jClient:
     async def test_get_entry_not_found(self, mock_neo4j_session):
         """测试获取不存在的条目"""
         mock_result = MagicMock()
-        mock_result.single = MagicMock(return_value=None)
+        mock_result.single = AsyncMock(return_value=None)
         mock_neo4j_session.run = AsyncMock(return_value=mock_result)
 
         client = Neo4jClient(uri="bolt://test:7687")
@@ -174,7 +174,7 @@ class TestNeo4jClient:
     async def test_create_concept_success(self, sample_concept, mock_neo4j_session):
         """测试正常创建概念节点"""
         mock_result = MagicMock()
-        mock_result.single = MagicMock(return_value={"c": sample_concept.model_dump()})
+        mock_result.single = AsyncMock(return_value={"c": sample_concept.model_dump()})
         mock_neo4j_session.run = AsyncMock(return_value=mock_result)
 
         client = Neo4jClient(uri="bolt://test:7687")
@@ -188,7 +188,7 @@ class TestNeo4jClient:
     async def test_get_concept_found(self, sample_concept, mock_neo4j_session):
         """测试获取存在的概念"""
         mock_result = MagicMock()
-        mock_result.single = MagicMock(return_value={
+        mock_result.single = AsyncMock(return_value={
             "name": sample_concept.name,
             "description": sample_concept.description,
             "category": sample_concept.category,
@@ -221,7 +221,7 @@ class TestNeo4jClient:
     async def test_create_concept_relation(self, sample_relation, mock_neo4j_session):
         """测试创建概念之间的关系"""
         mock_result = MagicMock()
-        mock_result.single = MagicMock(return_value={})
+        mock_result.single = AsyncMock(return_value={})
         mock_neo4j_session.run = AsyncMock(return_value=mock_result)
 
         client = Neo4jClient(uri="bolt://test:7687")
@@ -316,7 +316,7 @@ class TestNeo4jClient:
     async def test_create_entry_relation(self, mock_neo4j_session):
         """测试创建条目之间的关系"""
         mock_result = MagicMock()
-        mock_result.single = MagicMock(return_value={})
+        mock_result.single = AsyncMock(return_value={})
         mock_neo4j_session.run = AsyncMock(return_value=mock_result)
 
         client = Neo4jClient(uri="bolt://test:7687")
@@ -330,7 +330,7 @@ class TestNeo4jClient:
     async def test_get_entry_with_relations(self, mock_neo4j_session):
         """测试获取条目及其关系"""
         mock_result = MagicMock()
-        mock_result.single = MagicMock(return_value={
+        mock_result.single = AsyncMock(return_value={
             "entry": {"id": "entry-1", "title": "测试"},
             "relations": []
         })

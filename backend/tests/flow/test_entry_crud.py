@@ -12,7 +12,7 @@ from app.storage.sqlite import SQLiteStorage
 from app.storage.sync import SyncService
 from app.services.entry_service import EntryService
 from app.models import Task, Category, TaskStatus, Priority
-from app.dto import EntryCreate, EntryUpdate
+from app.api.schemas import EntryCreate, EntryUpdate
 
 
 @pytest.fixture
@@ -242,7 +242,7 @@ class TestEntryServiceCRUD:
     async def test_create_and_read_entry(self, entry_service):
         """测试创建和读取条目"""
         request = EntryCreate(
-            type="note",
+            category="note",
             title="测试笔记",
             content="这是测试内容",
             tags=["测试"],
@@ -264,7 +264,7 @@ class TestEntryServiceCRUD:
         """测试更新和读取条目"""
         # 先创建
         create_request = EntryCreate(
-            type="task",
+            category="task",
             title="原始标题",
             content="原始内容",
             status="doing",
@@ -290,7 +290,7 @@ class TestEntryServiceCRUD:
         """测试多次更新内容（模拟前端编辑场景）"""
         # 创建
         create_request = EntryCreate(
-            type="note",
+            category="note",
             title="多次编辑测试",
             content="初始内容",
         )
@@ -332,7 +332,7 @@ class TestEntryServiceCRUD:
         """测试删除后读取"""
         # 创建
         create_request = EntryCreate(
-            type="note",
+            category="note",
             title="将被删除",
             content="内容",
         )
@@ -447,7 +447,7 @@ class TestConcurrencyAndCache:
         """测试快速连续更新"""
         # 创建
         create_request = EntryCreate(
-            type="note",
+            category="note",
             title="快速更新测试",
             content="v1",
         )

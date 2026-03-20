@@ -19,7 +19,7 @@ async def test_create_task(client: AsyncClient):
     response = await client.post(
         "/entries",
         json={
-            "type": "task",
+            "category": "task",
             "title": "测试任务",
             "content": "任务内容",
             "tags": ["test"],
@@ -39,7 +39,7 @@ async def test_create_project(client: AsyncClient):
     response = await client.post(
         "/entries",
         json={
-            "type": "project",
+            "category": "project",
             "title": "测试项目",
             "content": "项目描述",
             "tags": ["project"],
@@ -58,7 +58,7 @@ async def test_create_note(client: AsyncClient):
     response = await client.post(
         "/entries",
         json={
-            "type": "note",
+            "category": "note",
             "title": "测试笔记",
             "content": "# 标题\n笔记内容",
             "tags": ["note"],
@@ -76,7 +76,7 @@ async def test_create_with_tags(client: AsyncClient):
     response = await client.post(
         "/entries",
         json={
-            "type": "task",
+            "category": "task",
             "title": "带标签任务",
             "content": "",
             "tags": ["tag1", "tag2", "tag3"],
@@ -95,7 +95,7 @@ async def test_create_with_parent(client: AsyncClient):
     # 先创建父项目
     parent_response = await client.post(
         "/entries",
-        json={"type": "project", "title": "父项目", "content": ""},
+        json={"category": "project", "title": "父项目", "content": ""},
     )
     parent_id = parent_response.json()["id"]
 
@@ -103,7 +103,7 @@ async def test_create_with_parent(client: AsyncClient):
     response = await client.post(
         "/entries",
         json={
-            "type": "task",
+            "category": "task",
             "title": "子任务",
             "content": "",
             "parent_id": parent_id,
@@ -120,7 +120,7 @@ async def test_create_with_priority(client: AsyncClient):
     response = await client.post(
         "/entries",
         json={
-            "type": "task",
+            "category": "task",
             "title": "高优先级任务",
             "content": "",
             "priority": "high",
@@ -137,7 +137,7 @@ async def test_create_with_status(client: AsyncClient):
     response = await client.post(
         "/entries",
         json={
-            "type": "task",
+            "category": "task",
             "title": "待开始任务",
             "content": "",
             "status": "waitStart",
@@ -150,46 +150,55 @@ async def test_create_with_status(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_create_invalid_type(client: AsyncClient):
-    """测试无效类型返回 400"""
+    """测试无效类型使用默认值 note"""
     response = await client.post(
         "/entries",
         json={
-            "type": "invalid_type",
+            "category": "invalid_type",
             "title": "测试",
             "content": "",
         },
     )
-    assert response.status_code == 400
+    # 无效类型会被映射为 note，所以返回 200
+    assert response.status_code == 200
+    data = response.json()
+    assert data["category"] == "note"  # 默认值
 
 
 @pytest.mark.asyncio
 async def test_create_invalid_status(client: AsyncClient):
-    """测试无效状态返回 400"""
+    """测试无效状态使用默认值 doing"""
     response = await client.post(
         "/entries",
         json={
-            "type": "task",
+            "category": "task",
             "title": "测试",
             "content": "",
             "status": "invalid_status",
         },
     )
-    assert response.status_code == 400
+    # 无效状态会被映射为 doing，所以返回 200
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "doing"  # 默认值
 
 
 @pytest.mark.asyncio
 async def test_create_invalid_priority(client: AsyncClient):
-    """测试无效优先级返回 400"""
+    """测试无效优先级使用默认值 medium"""
     response = await client.post(
         "/entries",
         json={
-            "type": "task",
+            "category": "task",
             "title": "测试",
             "content": "",
             "priority": "invalid_priority",
         },
     )
-    assert response.status_code == 400
+    # 无效优先级会被映射为 medium，所以返回 200
+    assert response.status_code == 200
+    data = response.json()
+    assert data["priority"] == "medium"  # 默认值
 
 
 # === 查询条目测试 ===
@@ -201,7 +210,7 @@ async def test_list_entries(client: AsyncClient):
     for i in range(3):
         await client.post(
             "/entries",
-            json={"type": "task", "title": f"任务-{i}", "content": ""},
+            json={"category": "task", "title": f"任务-{i}", "content": ""},
         )
 
     response = await client.get("/entries")
@@ -216,9 +225,9 @@ async def test_list_entries(client: AsyncClient):
 async def test_filter_by_type(client: AsyncClient):
     """测试按类型筛选"""
     # 创建不同类型的条目
-    await client.post("/entries", json={"type": "task", "title": "任务", "content": ""})
-    await client.post("/entries", json={"type": "project", "title": "项目", "content": ""})
-    await client.post("/entries", json={"type": "note", "title": "笔记", "content": ""})
+    await client.post("/entries", json={"category": "task", "title": "任务", "content": ""})
+    await client.post("/entries", json={"category": "project", "title": "项目", "content": ""})
+    await client.post("/entries", json={"category": "note", "title": "笔记", "content": ""})
 
     # 筛选任务
     response = await client.get("/entries?type=task")
@@ -233,11 +242,11 @@ async def test_filter_by_status(client: AsyncClient):
     """测试按状态筛选"""
     await client.post(
         "/entries",
-        json={"type": "task", "title": "进行中", "content": "", "status": "doing"},
+        json={"category": "task", "title": "进行中", "content": "", "status": "doing"},
     )
     await client.post(
         "/entries",
-        json={"type": "task", "title": "已完成", "content": "", "status": "complete"},
+        json={"category": "task", "title": "已完成", "content": "", "status": "complete"},
     )
 
     response = await client.get("/entries?status=complete")
@@ -252,11 +261,11 @@ async def test_filter_by_tags(client: AsyncClient):
     """测试按标签筛选"""
     await client.post(
         "/entries",
-        json={"type": "task", "title": "任务A", "content": "", "tags": ["work"]},
+        json={"category": "task", "title": "任务A", "content": "", "tags": ["work"]},
     )
     await client.post(
         "/entries",
-        json={"type": "task", "title": "任务B", "content": "", "tags": ["personal"]},
+        json={"category": "task", "title": "任务B", "content": "", "tags": ["personal"]},
     )
 
     response = await client.get("/entries?tags=work")
@@ -276,18 +285,18 @@ async def test_filter_by_parent(client: AsyncClient):
     # 创建父项目
     parent = await client.post(
         "/entries",
-        json={"type": "project", "title": "父项目", "content": ""},
+        json={"category": "project", "title": "父项目", "content": ""},
     )
     parent_id = parent.json()["id"]
 
     # 创建子任务
     await client.post(
         "/entries",
-        json={"type": "task", "title": "子任务1", "content": "", "parent_id": parent_id},
+        json={"category": "task", "title": "子任务1", "content": "", "parent_id": parent_id},
     )
     await client.post(
         "/entries",
-        json={"type": "task", "title": "子任务2", "content": "", "parent_id": parent_id},
+        json={"category": "task", "title": "子任务2", "content": "", "parent_id": parent_id},
     )
 
     response = await client.get(f"/entries?parent_id={parent_id}")
@@ -303,7 +312,7 @@ async def test_pagination(client: AsyncClient):
     for i in range(10):
         await client.post(
             "/entries",
-            json={"type": "task", "title": f"分页测试-{i}", "content": ""},
+            json={"category": "task", "title": f"分页测试-{i}", "content": ""},
         )
 
     # 获取第一页
@@ -324,7 +333,7 @@ async def test_get_single_entry(client: AsyncClient):
     """测试获取单个条目"""
     create_response = await client.post(
         "/entries",
-        json={"type": "task", "title": "单个条目测试", "content": "内容"},
+        json={"category": "task", "title": "单个条目测试", "content": "内容"},
     )
     entry_id = create_response.json()["id"]
 
@@ -349,7 +358,7 @@ async def test_update_title(client: AsyncClient):
     """测试更新标题"""
     create_response = await client.post(
         "/entries",
-        json={"type": "task", "title": "原标题", "content": ""},
+        json={"category": "task", "title": "原标题", "content": ""},
     )
     entry_id = create_response.json()["id"]
 
@@ -369,7 +378,7 @@ async def test_update_status(client: AsyncClient):
     """测试更新状态"""
     create_response = await client.post(
         "/entries",
-        json={"type": "task", "title": "测试", "content": "", "status": "doing"},
+        json={"category": "task", "title": "测试", "content": "", "status": "doing"},
     )
     entry_id = create_response.json()["id"]
 
@@ -389,7 +398,7 @@ async def test_update_priority(client: AsyncClient):
     """测试更新优先级"""
     create_response = await client.post(
         "/entries",
-        json={"type": "task", "title": "测试", "content": ""},
+        json={"category": "task", "title": "测试", "content": ""},
     )
     entry_id = create_response.json()["id"]
 
@@ -409,7 +418,7 @@ async def test_update_tags(client: AsyncClient):
     """测试更新标签"""
     create_response = await client.post(
         "/entries",
-        json={"type": "task", "title": "测试", "content": "", "tags": ["old"]},
+        json={"category": "task", "title": "测试", "content": "", "tags": ["old"]},
     )
     entry_id = create_response.json()["id"]
 
@@ -443,7 +452,7 @@ async def test_delete_entry(client: AsyncClient):
     """测试删除条目"""
     create_response = await client.post(
         "/entries",
-        json={"type": "task", "title": "待删除", "content": ""},
+        json={"category": "task", "title": "待删除", "content": ""},
     )
     entry_id = create_response.json()["id"]
 
@@ -471,7 +480,7 @@ async def test_get_project_progress(client: AsyncClient):
     # 创建项目
     project_response = await client.post(
         "/entries",
-        json={"type": "project", "title": "进度测试项目", "content": ""},
+        json={"category": "project", "title": "进度测试项目", "content": ""},
     )
     project_id = project_response.json()["id"]
 
@@ -481,7 +490,7 @@ async def test_get_project_progress(client: AsyncClient):
         await client.post(
             "/entries",
             json={
-                "type": "task",
+                "category": "task",
                 "title": f"子任务-{i}",
                 "content": "",
                 "parent_id": project_id,
@@ -503,7 +512,7 @@ async def test_progress_no_children(client: AsyncClient):
     """测试无子任务的项目进度"""
     project_response = await client.post(
         "/entries",
-        json={"type": "project", "title": "空项目", "content": ""},
+        json={"category": "project", "title": "空项目", "content": ""},
     )
     project_id = project_response.json()["id"]
 

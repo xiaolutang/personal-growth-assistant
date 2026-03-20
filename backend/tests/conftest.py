@@ -210,7 +210,7 @@ def mock_neo4j_available():
 
         # Mock run result
         mock_result = MagicMock()
-        mock_result.single = MagicMock(return_value={"name": "测试概念", "description": "描述", "category": "技术"})
+        mock_result.single = AsyncMock(return_value={"name": "测试概念", "description": "描述", "category": "技术"})
         mock_result.__aiter__ = MagicMock(return_value=iter([]))
         mock_session.run = AsyncMock(return_value=mock_result)
 

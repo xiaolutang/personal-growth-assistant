@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 from typing import Optional, Tuple
 
-from app.dto import (
+from app.api.schemas import (
     EntryCreate,
     EntryUpdate,
     EntryResponse,
@@ -13,9 +13,8 @@ from app.dto import (
     SearchResult,
     SuccessResponse,
     ProjectProgressResponse,
-    task_to_response,
-    dict_to_response,
 )
+from app.mappers.entry_mapper import EntryMapper
 from app.models import Task, Category, TaskStatus, Priority
 from app.storage.sync import SyncService
 from app.storage.markdown import MarkdownStorage
@@ -29,39 +28,21 @@ class EntryService:
 
     # === 辅助方法 ===
 
-    def _parse_category(self, type_str: str) -> Category:
-        """解析条目类型"""
-        try:
-            return Category(type_str)
-        except ValueError:
-            raise ValueError(f"无效的条目类型: {type_str}")
+    def _parse_category(self, category_str: str) -> Category:
+        """解析条目分类"""
+        return EntryMapper.str_to_category(category_str)
 
     def _parse_status(self, status_str: Optional[str]) -> TaskStatus:
         """解析状态"""
-        if not status_str:
-            return TaskStatus.DOING
-        try:
-            return TaskStatus(status_str)
-        except ValueError:
-            raise ValueError(f"无效的状态: {status_str}")
+        return EntryMapper.str_to_status(status_str)
 
     def _parse_priority(self, priority_str: Optional[str]) -> Priority:
         """解析优先级"""
-        if not priority_str:
-            return Priority.MEDIUM
-        try:
-            return Priority(priority_str)
-        except ValueError:
-            raise ValueError(f"无效的优先级: {priority_str}")
+        return EntryMapper.str_to_priority(priority_str)
 
     def _parse_datetime(self, date_str: Optional[str]) -> Optional[datetime]:
         """解析日期时间字符串"""
-        if not date_str:
-            return None
-        try:
-            return datetime.fromisoformat(date_str.replace('Z', '').split('+')[0])
-        except ValueError:
-            return None
+        return EntryMapper.parse_datetime(date_str)
 
     def _generate_entry_id(self, category: Category) -> str:
         """生成条目 ID"""
@@ -76,8 +57,9 @@ class EntryService:
 
     async def create_entry(self, request: EntryCreate) -> EntryResponse:
         """创建条目"""
-        # 解析类型
-        category = self._parse_category(request.type)
+        # 解析类型（兼容 type 和 category 字段）
+        category_str = getattr(request, 'category', None) or getattr(request, 'type', None)
+        category = self._parse_category(category_str)
 
         # 生成 ID 和文件路径
         entry_id = self._generate_entry_id(category)
@@ -116,14 +98,14 @@ class EntryService:
         # Neo4j + Qdrant 后台同步
         asyncio.create_task(self.storage.sync_to_graph_and_vector(entry))
 
-        return task_to_response(entry)
+        return EntryResponse(**EntryMapper.task_to_response(entry))
 
     async def get_entry(self, entry_id: str) -> Optional[EntryResponse]:
         """获取单个条目"""
         entry = self.storage.markdown.read_entry(entry_id)
         if not entry:
             return None
-        return task_to_response(entry)
+        return EntryResponse(**EntryMapper.task_to_response(entry))
 
     async def update_entry(self, entry_id: str, request: EntryUpdate) -> Tuple[bool, str]:
         """更新条目，返回 (成功, 消息)"""
@@ -242,7 +224,7 @@ class EntryService:
                 end_date=end_date,
             )
             return EntryListResponse(
-                entries=[dict_to_response(e) for e in entries],
+                entries=[EntryResponse(**EntryMapper.dict_to_response(e)) for e in entries],
                 total=total,
             )
 
@@ -257,7 +239,7 @@ class EntryService:
         )
 
         return EntryListResponse(
-            entries=[task_to_response(e) for e in entries]
+            entries=[EntryResponse(**EntryMapper.task_to_response(e)) for e in entries]
         )
 
     async def search_entries(self, query: str, limit: int = 10) -> SearchResult:
@@ -268,7 +250,7 @@ class EntryService:
         results = self.storage.sqlite.search(query, limit=limit)
 
         return SearchResult(
-            entries=[dict_to_response(e) for e in results],
+            entries=[EntryResponse(**EntryMapper.dict_to_response(e)) for e in results],
             query=query,
         )
 

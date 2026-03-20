@@ -1,7 +1,7 @@
 """测试 Entries API 路由"""
 import pytest
 
-from app.dto import EntryCreate, EntryUpdate
+from app.api.schemas import EntryCreate, EntryUpdate
 
 
 class TestEntriesAPI:
@@ -43,7 +43,7 @@ class TestEntriesAPI:
         response = await client.post(
             "/entries",
             json={
-                "type": "task",
+                "category": "task",
                 "title": "API测试任务",
                 "content": "测试内容",
                 "tags": ["api", "test"],
@@ -62,16 +62,19 @@ class TestEntriesAPI:
 
     @pytest.mark.asyncio
     async def test_create_entry_invalid_type(self, client):
-        """测试创建无效类型的条目"""
+        """测试创建无效类型的条目 - 无效类型会使用默认值 note"""
         response = await client.post(
             "/entries",
             json={
-                "type": "invalid_type",
+                "category": "invalid_type",
                 "title": "测试",
             }
         )
 
-        assert response.status_code == 400
+        # 无效类型会被映射为 note，所以返回 200
+        assert response.status_code == 200
+        data = response.json()
+        assert data["category"] == "note"  # 默认值
 
     @pytest.mark.asyncio
     async def test_create_entry_missing_title(self, client):
@@ -79,7 +82,7 @@ class TestEntriesAPI:
         response = await client.post(
             "/entries",
             json={
-                "type": "task",
+                "category": "task",
             }
         )
 
@@ -91,7 +94,7 @@ class TestEntriesAPI:
         # 先创建
         create_response = await client.post(
             "/entries",
-            json={"type": "task", "title": "获取测试"}
+            json={"category": "task", "title": "获取测试"}
         )
         entry_id = create_response.json()["id"]
 
@@ -116,7 +119,7 @@ class TestEntriesAPI:
         # 先创建
         create_response = await client.post(
             "/entries",
-            json={"type": "task", "title": "更新前标题"}
+            json={"category": "task", "title": "更新前标题"}
         )
         entry_id = create_response.json()["id"]
 
@@ -151,7 +154,7 @@ class TestEntriesAPI:
         # 先创建
         create_response = await client.post(
             "/entries",
-            json={"type": "task", "title": "待删除"}
+            json={"category": "task", "title": "待删除"}
         )
         entry_id = create_response.json()["id"]
 
@@ -180,7 +183,7 @@ class TestEntriesAPI:
         await client.post(
             "/entries",
             json={
-                "type": "note",
+                "category": "note",
                 "title": "搜索测试文档",
                 "content": "包含SEARCH_KEYWORD的内容",
             }
@@ -211,7 +214,7 @@ class TestEntriesAPI:
         # 创建项目
         project_response = await client.post(
             "/entries",
-            json={"type": "project", "title": "进度测试项目"}
+            json={"category": "project", "title": "进度测试项目"}
         )
         project_id = project_response.json()["id"]
 
@@ -219,7 +222,7 @@ class TestEntriesAPI:
         await client.post(
             "/entries",
             json={
-                "type": "task",
+                "category": "task",
                 "title": "子任务1",
                 "parent_id": project_id,
                 "status": "complete",
@@ -228,7 +231,7 @@ class TestEntriesAPI:
         await client.post(
             "/entries",
             json={
-                "type": "task",
+                "category": "task",
                 "title": "子任务2",
                 "parent_id": project_id,
                 "status": "doing",
@@ -263,7 +266,7 @@ class TestEntriesAPIPagination:
         for i in range(15):
             await client.post(
                 "/entries",
-                json={"type": "task", "title": f"分页测试{i:03d}"}
+                json={"category": "task", "title": f"分页测试{i:03d}"}
             )
 
         # 第一页

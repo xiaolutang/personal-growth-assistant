@@ -78,7 +78,7 @@ class Neo4jClient:
                 file_path=entry.file_path,
                 parent_id=entry.parent_id,
             )
-            return result.single() is not None
+            return await result.single() is not None
 
     async def update_entry(self, entry: Task) -> bool:
         """更新条目节点"""
@@ -93,7 +93,7 @@ class Neo4jClient:
         """
         async with await self._get_session() as session:
             result = await session.run(query, id=entry_id)
-            record = result.single()
+            record = await result.single()
             return record and record["deleted"] > 0
 
     async def get_entry(self, entry_id: str) -> Optional[Dict[str, Any]]:
@@ -107,7 +107,7 @@ class Neo4jClient:
         """
         async with await self._get_session() as session:
             result = await session.run(query, id=entry_id)
-            record = result.single()
+            record = await result.single()
             if record:
                 return dict(record)
             return None
@@ -143,7 +143,10 @@ class Neo4jClient:
         """
         async with await self._get_session() as session:
             result = await session.run(query, **params)
-            return [dict(record) async for record in result]
+            entries = []
+            async for record in result:
+                entries.append(dict(record))
+            return entries
 
     # ==================== Concept 节点操作 ====================
 
@@ -162,7 +165,7 @@ class Neo4jClient:
                 description=concept.description or "",
                 category=concept.category or "技术",
             )
-            return result.single() is not None
+            return await result.single() is not None
 
     async def get_or_create_concept(self, name: str, category: str = "技术") -> bool:
         """获取或创建概念"""
@@ -179,7 +182,7 @@ class Neo4jClient:
         """
         async with await self._get_session() as session:
             result = await session.run(query, name=name)
-            record = result.single()
+            record = await result.single()
             if record:
                 return dict(record)
             return None
@@ -214,7 +217,8 @@ class Neo4jClient:
         query = f"""
         MATCH (from:Concept {{name: $from_concept}})
         MATCH (to:Concept {{name: $to_concept}})
-        MERGE (from)-[:{relation.relation_type}]->(to)
+        MERGE (from)-[r:{relation.relation_type}]->(to)
+        RETURN r
         """
         async with await self._get_session() as session:
             result = await session.run(
@@ -222,7 +226,7 @@ class Neo4jClient:
                 from_concept=relation.from_concept,
                 to_concept=relation.to_concept,
             )
-            return result.single() is not None
+            return await result.single() is not None
 
     async def create_concept_relations(
         self,
@@ -251,7 +255,7 @@ class Neo4jClient:
                 from_id=from_id,
                 to_id=to_id,
             )
-            return result.single() is not None
+            return await result.single() is not None
 
     # ==================== 知识图谱查询 ====================
 
@@ -271,7 +275,7 @@ class Neo4jClient:
         """
         async with await self._get_session() as session:
             result = await session.run(query, name=concept_name)
-            record = result.single()
+            record = await result.single()
             if record:
                 return {
                     "center": dict(record["center"]),
@@ -319,7 +323,7 @@ class Neo4jClient:
         """
         async with await self._get_session() as session:
             result = await session.run(query, id=entry_id)
-            record = result.single()
+            record = await result.single()
             if record:
                 return {
                     "entry": dict(record["entry"]),

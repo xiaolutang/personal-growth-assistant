@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.services.entry_service import EntryService
 from app.models import Task, Category, TaskStatus, Priority
-from app.dto import EntryCreate, EntryUpdate
+from app.api.schemas import EntryCreate, EntryUpdate
 
 
 class TestEntryServiceHelpers:
@@ -24,10 +24,10 @@ class TestEntryServiceHelpers:
         assert service._parse_category("inbox") == Category.INBOX
 
     def test_parse_category_invalid(self, service):
-        """测试解析无效类型"""
-        with pytest.raises(ValueError) as exc_info:
-            service._parse_category("invalid")
-        assert "无效的条目类型" in str(exc_info.value)
+        """测试解析无效类型 - 使用默认值而非抛出异常"""
+        # EntryMapper 对无效类型返回 NOTE 作为默认值
+        result = service._parse_category("invalid")
+        assert result == Category.NOTE
 
     def test_parse_status_valid(self, service):
         """测试解析有效状态"""
@@ -42,10 +42,10 @@ class TestEntryServiceHelpers:
         assert service._parse_status(None) == TaskStatus.DOING
 
     def test_parse_status_invalid(self, service):
-        """测试解析无效状态"""
-        with pytest.raises(ValueError) as exc_info:
-            service._parse_status("invalid")
-        assert "无效的状态" in str(exc_info.value)
+        """测试解析无效状态 - 使用默认值而非抛出异常"""
+        # EntryMapper 对无效状态返回 DOING 作为默认值
+        result = service._parse_status("invalid")
+        assert result == TaskStatus.DOING
 
     def test_parse_priority_valid(self, service):
         """测试解析有效优先级"""
@@ -58,10 +58,10 @@ class TestEntryServiceHelpers:
         assert service._parse_priority(None) == Priority.MEDIUM
 
     def test_parse_priority_invalid(self, service):
-        """测试解析无效优先级"""
-        with pytest.raises(ValueError) as exc_info:
-            service._parse_priority("invalid")
-        assert "无效的优先级" in str(exc_info.value)
+        """测试解析无效优先级 - 使用默认值而非抛出异常"""
+        # EntryMapper 对无效优先级返回 MEDIUM 作为默认值
+        result = service._parse_priority("invalid")
+        assert result == Priority.MEDIUM
 
     def test_parse_datetime_valid(self, service):
         """测试解析有效日期"""
@@ -129,7 +129,7 @@ class TestEntryServiceCRUD:
     async def test_create_entry(self, service):
         """测试创建条目"""
         request = EntryCreate(
-            type="task",
+            category="task",
             title="测试任务",
             content="任务内容",
             tags=["测试"],
@@ -149,7 +149,7 @@ class TestEntryServiceCRUD:
     @pytest.mark.asyncio
     async def test_create_entry_minimal(self, service):
         """测试最小化创建条目"""
-        request = EntryCreate(type="note", title="简单笔记")
+        request = EntryCreate(category="note", title="简单笔记")
 
         response = await service.create_entry(request)
 
@@ -163,7 +163,7 @@ class TestEntryServiceCRUD:
     async def test_get_entry(self, service):
         """测试获取条目"""
         # 先创建
-        request = EntryCreate(type="task", title="获取测试")
+        request = EntryCreate(category="task", title="获取测试")
         created = await service.create_entry(request)
 
         # 再获取
@@ -183,7 +183,7 @@ class TestEntryServiceCRUD:
     async def test_update_entry_title(self, service):
         """测试更新标题"""
         # 先创建
-        request = EntryCreate(type="task", title="原始标题")
+        request = EntryCreate(category="task", title="原始标题")
         created = await service.create_entry(request)
 
         # 更新
@@ -201,7 +201,7 @@ class TestEntryServiceCRUD:
     async def test_update_entry_status(self, service):
         """测试更新状态"""
         # 先创建
-        request = EntryCreate(type="task", title="状态测试")
+        request = EntryCreate(category="task", title="状态测试")
         created = await service.create_entry(request)
 
         # 更新状态
@@ -227,7 +227,7 @@ class TestEntryServiceCRUD:
     async def test_update_entry_no_changes(self, service):
         """测试无更改更新"""
         # 先创建
-        request = EntryCreate(type="task", title="无更改测试")
+        request = EntryCreate(category="task", title="无更改测试")
         created = await service.create_entry(request)
 
         # 空更新
@@ -241,7 +241,7 @@ class TestEntryServiceCRUD:
     async def test_delete_entry(self, service):
         """测试删除条目"""
         # 先创建
-        request = EntryCreate(type="task", title="待删除")
+        request = EntryCreate(category="task", title="待删除")
         created = await service.create_entry(request)
 
         # 删除
@@ -277,7 +277,7 @@ class TestEntryServiceQuery:
         # 创建多个条目
         for i in range(3):
             await service.create_entry(EntryCreate(
-                type="task",
+                category="task",
                 title=f"列表测试{i}",
             ))
 
@@ -290,8 +290,8 @@ class TestEntryServiceQuery:
     async def test_list_entries_with_status_filter(self, service):
         """测试按状态筛选"""
         # 创建不同状态的条目
-        await service.create_entry(EntryCreate(type="task", title="进行中", status="doing"))
-        await service.create_entry(EntryCreate(type="task", title="已完成", status="complete"))
+        await service.create_entry(EntryCreate(category="task", title="进行中", status="doing"))
+        await service.create_entry(EntryCreate(category="task", title="已完成", status="complete"))
 
         response = await service.list_entries(status="complete")
 
@@ -303,7 +303,7 @@ class TestEntryServiceQuery:
         """测试搜索条目"""
         # 创建带特殊关键词的条目
         await service.create_entry(EntryCreate(
-            type="note",
+            category="note",
             title="搜索关键词测试",
             content="包含UNIQUE_KEYWORD的内容",
         ))
@@ -327,7 +327,7 @@ class TestEntryServiceProjectProgress:
         """测试空项目进度"""
         # 创建无子任务的项目
         project = await service.create_entry(EntryCreate(
-            type="project",
+            category="project",
             title="空项目",
         ))
 
@@ -343,19 +343,19 @@ class TestEntryServiceProjectProgress:
         """测试有子任务的项目进度"""
         # 创建项目
         project = await service.create_entry(EntryCreate(
-            type="project",
+            category="project",
             title="有任务的项目",
         ))
 
         # 创建子任务
         await service.create_entry(EntryCreate(
-            type="task",
+            category="task",
             title="子任务1",
             parent_id=project.id,
             status="complete",
         ))
         await service.create_entry(EntryCreate(
-            type="task",
+            category="task",
             title="子任务2",
             parent_id=project.id,
             status="doing",

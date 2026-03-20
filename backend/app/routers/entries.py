@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.dto import (
+from app.api.schemas import (
     EntryCreate,
     EntryUpdate,
     EntryResponse,
