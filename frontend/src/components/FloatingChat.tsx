@@ -4,10 +4,7 @@ import {
   Loader2,
   Plus,
   MessageSquare,
-  Trash2,
-  ChevronDown,
   GripHorizontal,
-  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,7 +37,6 @@ function updateTitleIfNeeded(
 
 export function FloatingChat() {
   const [input, setInput] = useState("");
-  const [showSessionList, setShowSessionList] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [currentIntent, setCurrentIntent] = useState<Intent | null>(null);
   const [isInputFocused, setIsInputFocused] = useState(false);
@@ -50,11 +46,8 @@ export function FloatingChat() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const {
-    sessions,
     currentSessionId,
     createSession,
-    deleteSession,
-    switchSession,
     addMessage,
     getCurrentSession,
     updateSessionTitle,
@@ -263,12 +256,6 @@ export function FloatingChat() {
     clearState();
   };
 
-  const handleSwitchSession = (id: string) => {
-    switchSession(id);
-    clearState();
-    setShowSessionList(false);
-  };
-
   // 拖拽调整高度
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -309,44 +296,15 @@ export function FloatingChat() {
         <GripHorizontal className="h-4 w-4 text-muted-foreground" />
       </div>
 
-      {/* 会话列表区域 */}
-      <div className="border-b bg-muted/30 shrink-0">
-        <div
-          className="flex items-center justify-between p-2 cursor-pointer hover:bg-muted/50"
-          onClick={() => setShowSessionList(!showSessionList)}
-        >
-          <div className="flex items-center gap-2">
-            {showSessionList ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            <MessageSquare className="h-4 w-4" />
-            <span className="text-sm font-medium truncate">{currentSession?.title || "新对话"}</span>
-          </div>
-          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleNewSession(); }}>
-            <Plus className="h-4 w-4" />
-          </Button>
+      {/* 当前会话信息 */}
+      <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <MessageSquare className="h-4 w-4 shrink-0" />
+          <span className="text-sm font-medium truncate">{currentSession?.title || "新对话"}</span>
         </div>
-
-        {showSessionList && (
-          <div className="max-h-32 overflow-y-auto border-t">
-            {sessions.map((session) => (
-              <div
-                key={session.id}
-                className={`flex items-center justify-between px-4 py-1.5 cursor-pointer hover:bg-muted ${
-                  session.id === currentSessionId ? "bg-muted" : ""
-                }`}
-                onClick={() => handleSwitchSession(session.id)}
-              >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <MessageSquare className="h-3 w-3 shrink-0 text-muted-foreground" />
-                  <span className="truncate text-sm">{session.title}</span>
-                </div>
-                <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0" onClick={(e) => { e.stopPropagation(); deleteSession(session.id); }}>
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
-            {sessions.length === 0 && <p className="text-sm text-muted-foreground text-center py-2">暂无对话</p>}
-          </div>
-        )}
+        <Button variant="ghost" size="sm" onClick={handleNewSession} title="新建对话">
+          <Plus className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* 历史消息区域 */}
