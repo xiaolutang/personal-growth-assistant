@@ -32,7 +32,7 @@ def temp_data_dir() -> Generator[str, None, None]:
 @pytest.fixture
 async def storage(temp_data_dir: str):
     """初始化存储服务（无外部依赖）"""
-    from app.storage import init_storage
+    from app.services import init_storage
 
     s = await init_storage(
         data_dir=temp_data_dir,

@@ -31,7 +31,7 @@ def test_storage():
     print(f"\n测试数据目录: {test_dir}")
 
     # 初始化存储服务
-    from app.storage import init_storage
+    from app.services import init_storage
 
     async def setup():
         storage = await init_storage(
@@ -219,7 +219,7 @@ async def run_tests():
     print(f"测试数据目录: {test_dir}")
 
     # 初始化存储服务
-    from app.storage import init_storage
+    from app.services import init_storage
     from app.routers import deps
 
     storage = await init_storage(

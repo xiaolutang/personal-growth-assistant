@@ -193,8 +193,8 @@ async def test_extract_knowledge_without_llm(storage):
         file_path="tasks/extract-test.md",
     )
 
-    # 提取知识（无 LLM，使用规则）
-    knowledge = storage._extract_with_rules(entry)
+    # 提取知识（无 LLM，使用规则）- 通过 KnowledgeService
+    knowledge = storage._knowledge_service._extract_with_rules(entry)
 
     # 验证标签提取
     assert "标签1" in knowledge.tags
@@ -205,7 +205,7 @@ async def test_extract_knowledge_without_llm(storage):
 async def test_extract_knowledge_with_mock_llm(storage, mock_llm_caller):
     """测试使用 Mock LLM 的知识提取"""
     # 设置 Mock LLM
-    storage.llm_caller = mock_llm_caller
+    storage._knowledge_service.set_llm_caller(mock_llm_caller)
 
     entry = Task(
         id="extract-llm-test",
@@ -220,8 +220,8 @@ async def test_extract_knowledge_with_mock_llm(storage, mock_llm_caller):
         file_path="tasks/extract-llm-test.md",
     )
 
-    # 提取知识
-    knowledge = await storage._extract_knowledge(entry)
+    # 提取知识 - 通过 KnowledgeService
+    knowledge = await storage._knowledge_service.extract_knowledge(entry)
 
     # 验证返回了有效结构
     assert hasattr(knowledge, "tags")

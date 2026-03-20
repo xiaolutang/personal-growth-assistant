@@ -7,7 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.storage import init_storage
+from app.services import init_storage
 from app.routers import deps
 
 

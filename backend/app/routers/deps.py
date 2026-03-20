@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from fastapi import HTTPException
 
 if TYPE_CHECKING:
-    from app.storage.sync import SyncService
+    from app.services.sync_service import SyncService
     from app.services.entry_service import EntryService
     from app.services.intent_service import IntentService
     from app.services.review_service import ReviewService

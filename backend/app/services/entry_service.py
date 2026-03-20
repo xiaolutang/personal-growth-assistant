@@ -16,7 +16,7 @@ from app.api.schemas import (
 )
 from app.mappers.entry_mapper import EntryMapper
 from app.models import Task, Category, TaskStatus, Priority
-from app.storage.sync import SyncService
+from app.services.sync_service import SyncService
 from app.storage.markdown import MarkdownStorage
 
 

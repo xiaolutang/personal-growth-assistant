@@ -1,7 +1,17 @@
 """知识图谱服务"""
-from typing import List, Optional, Dict, Any
+import json
+import re
+import logging
+from typing import List, Optional, Dict, Any, TYPE_CHECKING
 
 from pydantic import BaseModel, Field
+
+from app.models import Concept, ConceptRelation, ExtractedKnowledge, Task
+
+if TYPE_CHECKING:
+    from app.callers import APICaller
+
+logger = logging.getLogger(__name__)
 
 
 class ConceptNode(BaseModel):
@@ -11,7 +21,7 @@ class ConceptNode(BaseModel):
     description: Optional[str] = None
 
 
-class ConceptRelation(BaseModel):
+class ConceptRelationModel(BaseModel):
     """概念关系"""
     name: str
     relationship: str
@@ -21,7 +31,7 @@ class ConceptRelation(BaseModel):
 class KnowledgeGraphResponse(BaseModel):
     """知识图谱响应"""
     center: Optional[ConceptNode] = None
-    connections: List[ConceptRelation] = []
+    connections: List[ConceptRelationModel] = []
 
 
 class RelatedConceptsResponse(BaseModel):
@@ -43,16 +53,23 @@ class LearningPathResponse(BaseModel):
 class KnowledgeService:
     """知识图谱服务"""
 
-    def __init__(self, neo4j_client=None, sqlite_storage=None):
+    def __init__(
+        self,
+        neo4j_client=None,
+        sqlite_storage=None,
+        llm_caller: Optional["APICaller"] = None,
+    ):
         """
         初始化服务
 
         Args:
             neo4j_client: Neo4j 客户端实例
             sqlite_storage: SQLite 存储实例
+            llm_caller: LLM 调用器（用于知识提取）
         """
         self._neo4j = neo4j_client
         self._sqlite = sqlite_storage
+        self._llm_caller = llm_caller
 
     def set_neo4j_client(self, client):
         """设置 Neo4j 客户端"""
@@ -62,9 +79,113 @@ class KnowledgeService:
         """设置 SQLite 存储"""
         self._sqlite = storage
 
+    def set_llm_caller(self, caller: "APICaller"):
+        """设置 LLM 调用器"""
+        self._llm_caller = caller
+
     def is_neo4j_available(self) -> bool:
         """检查 Neo4j 是否可用"""
         return self._neo4j is not None and self._neo4j._driver is not None
+
+    # ==================== 知识提取 ====================
+
+    async def extract_knowledge(self, entry: Task) -> ExtractedKnowledge:
+        """
+        从条目中提取知识（tags, concepts, relations）
+
+        优先使用 LLM 提取，如果没有 LLM 则使用简单规则
+
+        Args:
+            entry: 要提取知识的条目
+
+        Returns:
+            ExtractedKnowledge: 提取的知识
+        """
+        if self._llm_caller:
+            return await self._extract_with_llm(entry)
+        else:
+            return self._extract_with_rules(entry)
+
+    async def _extract_with_llm(self, entry: Task) -> ExtractedKnowledge:
+        """使用 LLM 提取知识"""
+        prompt = f"""请从以下文本中提取：
+1. 标签（keywords）
+2. 技术概念（concepts）
+3. 概念之间的关系（relations）
+
+文本：
+{entry.title}
+{entry.content}
+
+返回 JSON 格式：
+{{
+  "tags": ["MCP", "LLM应用开发"],
+  "concepts": [
+    {{"name": "MCP", "category": "技术"}},
+    {{"name": "Host", "category": "概念"}}
+  ],
+  "relations": [
+    {{"from": "MCP", "to": "LLM应用开发", "type": "PART_OF"}},
+    {{"from": "Host", "to": "MCP", "type": "PART_OF"}}
+  ]
+}}
+
+只输出 JSON，不要有其他内容。"""
+
+        try:
+            messages = [{"role": "user", "content": prompt}]
+            response = await self._llm_caller.call(messages, {"type": "json_object"})
+            data = json.loads(response)
+
+            concepts = [
+                Concept(
+                    name=c["name"],
+                    category=c.get("category", "技术"),
+                )
+                for c in data.get("concepts", [])
+            ]
+
+            relations = [
+                ConceptRelation(
+                    from_concept=r["from"],
+                    to_concept=r["to"],
+                    relation_type=r.get("type", "RELATED_TO"),
+                )
+                for r in data.get("relations", [])
+            ]
+
+            return ExtractedKnowledge(
+                tags=data.get("tags", []),
+                concepts=concepts,
+                relations=relations,
+            )
+        except Exception as e:
+            logger.warning(f"LLM 提取失败: {e}")
+            return self._extract_with_rules(entry)
+
+    def _extract_with_rules(self, entry: Task) -> ExtractedKnowledge:
+        """使用简单规则提取知识"""
+        # 从内容中提取 #标签
+        content = entry.content or ""
+        tags = re.findall(r"#(\w+)", content)
+        tags = list(set(tags))  # 去重
+
+        # 使用已有标签作为概念
+        concepts = [
+            Concept(name=tag, category="技术")
+            for tag in tags
+        ]
+
+        # 不推断关系
+        relations = []
+
+        return ExtractedKnowledge(
+            tags=tags,
+            concepts=concepts,
+            relations=relations,
+        )
+
+    # ==================== 知识图谱查询 ====================
 
     async def get_knowledge_graph(self, concept: str, depth: int = 2) -> KnowledgeGraphResponse:
         """
@@ -95,7 +216,7 @@ class KnowledgeService:
         for conn in graph.get("connections", []):
             node = conn.get("node", {})
             if node:
-                connections.append(ConceptRelation(
+                connections.append(ConceptRelationModel(
                     name=node.get("name", ""),
                     relationship=conn.get("relationship", "RELATED_TO"),
                     category=node.get("category"),

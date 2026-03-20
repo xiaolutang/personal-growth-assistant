@@ -1,12 +1,11 @@
-"""数据同步逻辑"""
+"""数据同步服务 - 精简版"""
 import asyncio
-import json
 import logging
-import os
 from typing import List, Optional, Dict, Any
 
-from app.models import Task, Concept, ConceptRelation, ExtractedKnowledge
+from app.models import Task
 from app.storage.markdown import MarkdownStorage
+from app.services.knowledge_service import KnowledgeService
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +43,13 @@ class SyncService:
         self.qdrant = qdrant_client
         self.llm_caller = llm_caller
 
+        # 创建知识服务（用于知识提取）
+        self._knowledge_service = KnowledgeService(
+            neo4j_client=neo4j_client,
+            sqlite_storage=sqlite_storage,
+            llm_caller=llm_caller,
+        )
+
     async def sync_entry(self, entry: Task) -> bool:
         """
         同步单个条目到 SQLite + Neo4j + Qdrant
@@ -58,13 +64,13 @@ class SyncService:
             if self.sqlite:
                 self.sqlite.upsert_entry(entry)
 
-            # 2. 提取知识
-            knowledge = await self._extract_knowledge(entry)
+            # 2. 提取知识（委托给 KnowledgeService）
+            knowledge = await self._knowledge_service.extract_knowledge(entry)
 
             # 3. 并行同步到 Neo4j 和 Qdrant
             tasks = []
 
-            if self.neo4j and self.neo4j.driver:
+            if self.neo4j and self.neo4j._driver:
                 tasks.append(self._sync_to_neo4j(entry, knowledge))
 
             if self.qdrant:
@@ -84,7 +90,7 @@ class SyncService:
 
             return True
         except Exception as e:
-            print(f"同步失败: {e}")
+            logger.error(f"同步失败: {e}")
             return False
 
     async def sync_to_graph_and_vector(self, entry: Task) -> bool:
@@ -94,13 +100,13 @@ class SyncService:
         用于创建条目后立即返回响应，但后台继续同步到知识图谱和向量库
         """
         try:
-            # 提取知识
-            knowledge = await self._extract_knowledge(entry)
+            # 提取知识（委托给 KnowledgeService）
+            knowledge = await self._knowledge_service.extract_knowledge(entry)
 
             # 并行同步到 Neo4j 和 Qdrant
             tasks = []
 
-            if self.neo4j and self.neo4j.driver:
+            if self.neo4j and self.neo4j._driver:
                 tasks.append(self._sync_to_neo4j(entry, knowledge))
 
             if self.qdrant:
@@ -114,10 +120,10 @@ class SyncService:
 
             return True
         except Exception as e:
-            print(f"图谱/向量同步失败: {e}")
+            logger.error(f"图谱/向量同步失败: {e}")
             return False
 
-    async def _sync_to_neo4j(self, entry: Task, knowledge: ExtractedKnowledge):
+    async def _sync_to_neo4j(self, entry: Task, knowledge):
         """同步到 Neo4j（内部方法）"""
         await self.neo4j.create_entry(entry)
 
@@ -151,20 +157,16 @@ class SyncService:
                 self.sqlite.delete_entry(entry_id)
 
             # 2. 并行删除 Neo4j 和 Qdrant
-            # Neo4j: 优雅处理连接失败
             if self.neo4j:
                 try:
                     tasks.append(self.neo4j.delete_entry(entry_id))
                 except Exception as e:
-                    # Neo4j 删除失败，记录日志但继续
                     logger.warning(f"Neo4j 删除失败，忽略: {e}")
 
-            # Qdrant: 优雅处理连接失败
             if self.qdrant:
                 try:
                     tasks.append(self.qdrant.delete_entry(entry_id))
                 except Exception as e:
-                    # Qdrant 删除失败，记录日志但继续
                     logger.warning(f"Qdrant 删除失败，忽略: {e}")
 
             if tasks:
@@ -175,7 +177,7 @@ class SyncService:
 
             return True
         except Exception as e:
-            print(f"删除失败: {e}")
+            logger.error(f"删除失败: {e}")
             return False
 
     async def sync_all(self) -> Dict[str, int]:
@@ -192,104 +194,17 @@ class SyncService:
 
         return {"success": success, "failed": failed}
 
-    async def _extract_knowledge(self, entry: Task) -> ExtractedKnowledge:
-        """
-        从条目中提取知识（tags, concepts, relations）
-
-        优先使用 LLM 提取，如果没有 LLM 则使用简单规则
-        """
-        if self.llm_caller:
-            return await self._extract_with_llm(entry)
-        else:
-            return self._extract_with_rules(entry)
-
-    async def _extract_with_llm(self, entry: Task) -> ExtractedKnowledge:
-        """使用 LLM 提取知识"""
-        prompt = f"""请从以下文本中提取：
-1. 标签（keywords）
-2. 技术概念（concepts）
-3. 概念之间的关系（relations）
-
-文本：
-{entry.title}
-{entry.content}
-
-返回 JSON 格式：
-{{
-  "tags": ["MCP", "LLM应用开发"],
-  "concepts": [
-    {{"name": "MCP", "category": "技术"}},
-    {{"name": "Host", "category": "概念"}}
-  ],
-  "relations": [
-    {{"from": "MCP", "to": "LLM应用开发", "type": "PART_OF"}},
-    {{"from": "Host", "to": "MCP", "type": "PART_OF"}}
-  ]
-}}
-
-只输出 JSON，不要有其他内容。"""
-
-        try:
-            messages = [{"role": "user", "content": prompt}]
-            response = await self.llm_caller.call(messages, {"type": "json_object"})
-            data = json.loads(response)
-
-            concepts = [
-                Concept(
-                    name=c["name"],
-                    category=c.get("category", "技术"),
-                )
-                for c in data.get("concepts", [])
-            ]
-
-            relations = [
-                ConceptRelation(
-                    from_concept=r["from"],
-                    to_concept=r["to"],
-                    relation_type=r.get("type", "RELATED_TO"),
-                )
-                for r in data.get("relations", [])
-            ]
-
-            return ExtractedKnowledge(
-                tags=data.get("tags", []),
-                concepts=concepts,
-                relations=relations,
-            )
-        except Exception as e:
-            print(f"LLM 提取失败: {e}")
-            return self._extract_with_rules(entry)
-
-    def _extract_with_rules(self, entry: Task) -> ExtractedKnowledge:
-        """使用简单规则提取知识"""
-        import re
-
-        # 从内容中提取 #标签
-        content = entry.content
-        tags = re.findall(r"#(\w+)", content)
-        tags = list(set(tags))  # 去重
-
-        # 使用已有标签作为概念
-        concepts = [
-            Concept(name=tag, category="技术")
-            for tag in tags
-        ]
-
-        # 不推断关系
-        relations = []
-
-        return ExtractedKnowledge(
-            tags=tags,
-            concepts=concepts,
-            relations=relations,
-        )
-
     async def resync_entry(self, entry_id: str) -> bool:
         """重新同步单个条目（用于文件编辑后）"""
         entry = self.markdown.read_entry(entry_id)
         if entry:
             return await self.sync_entry(entry)
         return False
+
+    @property
+    def driver(self):
+        """向后兼容：返回 Neo4j driver"""
+        return self.neo4j._driver if self.neo4j else None
 
 
 async def init_storage(
@@ -304,6 +219,8 @@ async def init_storage(
     embedding_model: str = None,
 ) -> SyncService:
     """初始化存储服务"""
+    import os
+
     # 创建存储实例
     markdown_storage = MarkdownStorage(data_dir)
 

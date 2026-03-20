@@ -16,7 +16,7 @@ from app.routers import (
     intent_router,
     parse_router,
 )
-from app.storage import init_storage
+from app.services import init_storage
 from app.middleware import setup_middlewares
 
 # 全局实例

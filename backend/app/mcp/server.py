@@ -11,7 +11,7 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
 
-from app.storage import init_storage, SyncService
+from app.services import init_storage, SyncService
 from app.storage.markdown import MarkdownStorage
 from app.models import Task, Category, TaskStatus, Priority
 

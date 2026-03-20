@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch, MagicMock
 from datetime import datetime
 
 from app.models import Task, Category, TaskStatus, Priority
-from app.storage.sync import SyncService
+from app.services.sync_service import SyncService
 from app.storage.markdown import MarkdownStorage
 
 
@@ -278,7 +278,7 @@ class TestSyncServiceErrors:
             llm_caller=None,
         )
 
-        knowledge = sync_service._extract_with_rules(sample_entry)
+        knowledge = sync_service._knowledge_service._extract_with_rules(sample_entry)
 
         # 应该从内容中提取 #测试标签
         assert "测试标签" in knowledge.tags

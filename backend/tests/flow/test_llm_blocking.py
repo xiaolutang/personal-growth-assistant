@@ -24,7 +24,7 @@ from httpx import AsyncClient, ASGITransport
 async def test_llm_parse_blocking():
     """测试 LLM 解析期间是否会阻塞其他请求"""
     from app.main import app
-    from app.storage import init_storage
+    from app.services import init_storage
     from app.routers import deps
 
     # 创建临时目录
@@ -170,7 +170,7 @@ async def test_llm_parse_blocking():
 async def test_parse_creates_entry_then_query():
     """测试完整的 LLM 对话 -> 创建条目 -> 查询流程"""
     from app.main import app
-    from app.storage import init_storage
+    from app.services import init_storage
     from app.routers import deps
     from app.callers import APICaller
 
