@@ -1,0 +1,16 @@
+{
+  "name": "personal-growth-assistant-e2e",
+  "version": "1.0.0",
+  "description": "E2E tests for Personal Growth Assistant",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^20.0.0"
+  }
+}

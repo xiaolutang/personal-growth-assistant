@@ -1,4 +1,5 @@
 """搜索 API 路由"""
+import logging
 from typing import List
 
 from fastapi import APIRouter, HTTPException
@@ -6,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from app.routers.deps import get_storage
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["search"])
 
 
@@ -49,11 +51,11 @@ async def search_entries(request: SearchRequest):
 
         results = []
         for hit in hits:
-            payload = hit.payload or {}
+            payload = hit.get("payload", {})
             results.append(SearchResult(
-                id=str(hit.id),
+                id=hit.get("id", ""),
                 title=payload.get("title", ""),
-                score=hit.score,
+                score=hit.get("score", 0),
                 type=payload.get("type", "note"),
                 tags=payload.get("tags", []),
                 file_path=payload.get("file_path", ""),

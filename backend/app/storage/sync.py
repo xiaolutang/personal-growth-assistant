@@ -1,11 +1,14 @@
 """数据同步逻辑"""
 import asyncio
 import json
+import logging
 import os
 from typing import List, Optional, Dict, Any
 
 from app.models import Task, Concept, ConceptRelation, ExtractedKnowledge
 from app.storage.markdown import MarkdownStorage
+
+logger = logging.getLogger(__name__)
 
 # 可选依赖
 try:
@@ -68,11 +71,16 @@ class SyncService:
                 try:
                     tasks.append(self.qdrant.upsert_entry(entry))
                 except Exception as e:
-                    import logging
-                    logging.warning(f"Qdrant 同步失败，忽略: {e}")
+                    logger.warning(f"Qdrant 任务创建失败，忽略: {e}")
 
             if tasks:
-                await asyncio.gather(*tasks, return_exceptions=True)
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                errors = [(i, r) for i, r in enumerate(results) if isinstance(r, Exception)]
+                for i, err in errors:
+                    logger.error(f"同步任务 {i} 失败: {err}")
+
+                if errors:
+                    return False
 
             return True
         except Exception as e:
@@ -99,8 +107,7 @@ class SyncService:
                 try:
                     tasks.append(self.qdrant.upsert_entry(entry))
                 except Exception as e:
-                    import logging
-                    logging.warning(f"Qdrant 同步失败，忽略: {e}")
+                    logger.warning(f"Qdrant 同步失败，忽略: {e}")
 
             if tasks:
                 await asyncio.gather(*tasks, return_exceptions=True)
@@ -150,8 +157,7 @@ class SyncService:
                     tasks.append(self.neo4j.delete_entry(entry_id))
                 except Exception as e:
                     # Neo4j 删除失败，记录日志但继续
-                    import logging
-                    logging.warning(f"Neo4j 删除失败，忽略: {e}")
+                    logger.warning(f"Neo4j 删除失败，忽略: {e}")
 
             # Qdrant: 优雅处理连接失败
             if self.qdrant:
@@ -159,8 +165,7 @@ class SyncService:
                     tasks.append(self.qdrant.delete_entry(entry_id))
                 except Exception as e:
                     # Qdrant 删除失败，记录日志但继续
-                    import logging
-                    logging.warning(f"Qdrant 删除失败，忽略: {e}")
+                    logger.warning(f"Qdrant 删除失败，忽略: {e}")
 
             if tasks:
                 await asyncio.gather(*tasks, return_exceptions=True)

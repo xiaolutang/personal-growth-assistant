@@ -11,7 +11,7 @@ from app.dto import (
     SuccessResponse,
     ProjectProgressResponse,
 )
-from app.routers.deps import get_entry_service
+from app.routers.deps import get_entry_service, get_storage
 
 router = APIRouter(prefix="/entries", tags=["entries"])
 
@@ -107,3 +107,20 @@ async def get_project_progress(entry_id: str):
         raise HTTPException(status_code=404, detail=str(e))
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
+
+
+@router.post("/admin/sync-vectors", response_model=SuccessResponse)
+async def sync_vectors():
+    """同步所有条目到向量数据库（Qdrant）"""
+    storage = get_storage()
+    if not storage.qdrant:
+        raise HTTPException(status_code=503, detail="向量数据库未配置")
+
+    try:
+        result = await storage.sync_all()
+        return SuccessResponse(
+            success=True,
+            message=f"同步完成: {result['success']} 条成功, {result['failed']} 条失败"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"同步失败: {str(e)}")

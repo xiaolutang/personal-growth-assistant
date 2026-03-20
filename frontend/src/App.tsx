@@ -23,7 +23,7 @@ function App() {
   }, []); // 空依赖数组，只在挂载时执行一次
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <div className="flex min-h-screen bg-background">
         <Sidebar />
         <div
