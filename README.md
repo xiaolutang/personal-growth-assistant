@@ -96,9 +96,81 @@ open http://localhost:5173
 
 | 变量 | 说明 | 示例 |
 |------|------|------|
+| FRONTEND_BASE_PATH | 前端基础路径 | /growth/ |
 | LLM_API_KEY | LLM API 密钥 | sk-xxx |
 | LLM_BASE_URL | API 地址 | https://dashscope.aliyuncs.com/compatible-mode/v1 |
 | LLM_MODEL | 模型名称 | qwen-plus |
+| NEO4J_USERNAME | Neo4j 用户名 | neo4j |
+| NEO4J_PASSWORD | Neo4j 密码 | your_password |
+
+## Docker 部署
+
+### 目录结构
+
+```
+docker/
+├── Dockerfile.backend      # 后端镜像
+├── Dockerfile.frontend     # 前端镜像
+├── docker-compose.dev.yml  # 开发环境
+├── docker-compose.prod.yml # 生产环境
+└── nginx/
+    ├── nginx.conf          # Nginx 主配置
+    └── templates/          # 配置模板（支持环境变量）
+
+scripts/
+├── dev.sh                  # 开发环境启动
+└── deploy.sh               # 生产部署
+```
+
+### 开发环境
+
+```bash
+# 快速启动
+./scripts/dev.sh
+
+# 或手动启动
+docker compose -f docker/docker-compose.dev.yml up -d
+
+# 访问
+# 前端: http://localhost:8888/growth/
+# Neo4j: http://localhost:17474
+# Qdrant: http://localhost:16333
+```
+
+### 生产部署
+
+```bash
+# 1. 配置环境变量
+cp .env.example .env
+# 编辑 .env 填入配置
+
+# 2. 一键部署
+./scripts/deploy.sh
+
+# 3. 不使用缓存构建
+./scripts/deploy.sh --no-cache
+
+# 访问
+# 前端: http://localhost/growth/
+# Neo4j: http://localhost:7474
+# Qdrant: http://localhost:6333
+```
+
+### 常用命令
+
+```bash
+# 查看日志
+docker compose -f docker/docker-compose.prod.yml logs -f
+
+# 停止服务
+docker compose -f docker/docker-compose.prod.yml down
+
+# 重启服务
+docker compose -f docker/docker-compose.prod.yml restart
+
+# 进入后端容器
+docker exec -it pga-backend /bin/bash
+```
 
 ## 技术栈
 

@@ -12,21 +12,21 @@ server {
     # 客户端请求限制
     client_max_body_size 10M;
 
-    # 前端静态文件 - /growth/ 路径
-    location /growth/ {
+    # 前端静态文件 - 使用环境变量配置路径
+    location ${FRONTEND_BASE_PATH} {
         alias /usr/share/nginx/html/;
         index index.html;
-        try_files $uri $uri/ /growth/index.html;
+        try_files $uri $uri/ ${FRONTEND_BASE_PATH}index.html;
     }
 
     # 根路径重定向
     location = / {
-        return 301 /growth/;
+        return 301 ${FRONTEND_BASE_PATH};
     }
 
-    # API 路由 - 转发到后端 (/growth/api/)
-    location /growth/api/ {
-        rewrite ^/growth/api/(.*) /$1 break;
+    # API 路由 - 转发到后端
+    location ${FRONTEND_BASE_PATH}api/ {
+        rewrite ^${FRONTEND_BASE_PATH}api/(.*) /$1 break;
         proxy_pass http://backend;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
@@ -41,7 +41,7 @@ server {
         proxy_read_timeout 60s;
     }
 
-    # API 路由 - 兼容 /api/ 路径
+    # 兼容 /api/ 路径
     location /api/ {
         rewrite ^/api/(.*) /$1 break;
         proxy_pass http://backend;
@@ -52,7 +52,6 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header Connection "";
 
-        # 超时设置
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;

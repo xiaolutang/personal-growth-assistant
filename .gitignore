@@ -35,5 +35,11 @@ backend/data/
 
 # Python package
 *.egg-info/
-dist/
 build/
+
+# Frontend build output
+frontend/dist/
+dist/
+
+# Release directory (deprecated, use docker/ instead)
+release/

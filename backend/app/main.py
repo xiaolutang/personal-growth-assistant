@@ -71,6 +71,7 @@ app = FastAPI(
     description="个人成长管理助手 - 从自然语言解析任务（LangGraph 版）",
     version="0.3.0",
     lifespan=lifespan,
+    root_path=os.getenv("ROOT_PATH", ""),
 )
 
 # CORS 中间件

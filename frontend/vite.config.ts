@@ -4,7 +4,7 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/growth/',
+  base: process.env.FRONTEND_BASE_PATH || '/growth/',
   plugins: [react()],
   resolve: {
     alias: {
