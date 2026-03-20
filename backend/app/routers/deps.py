@@ -1,5 +1,5 @@
 """共享依赖"""
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from fastapi import HTTPException
 
 if TYPE_CHECKING:
@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from app.services.intent_service import IntentService
     from app.services.review_service import ReviewService
     from app.services.knowledge_service import KnowledgeService
+    from app.services.log_service import LogService
 
 # 全局存储服务（由 main.py 初始化）
 storage: "SyncService" = None
@@ -17,6 +18,7 @@ _entry_service: "EntryService" = None
 _intent_service: "IntentService" = None
 _review_service: "ReviewService" = None
 _knowledge_service: "KnowledgeService" = None
+_log_service: Optional["LogService"] = None
 
 
 def get_storage() -> "SyncService":
@@ -80,13 +82,25 @@ def get_knowledge_service() -> "KnowledgeService":
     return _knowledge_service
 
 
+def get_log_service() -> "LogService":
+    """获取日志服务的依赖函数"""
+    return _log_service
+
+
+def set_log_service(log_service: "LogService") -> None:
+    """设置日志服务（由 main.py 初始化时调用）"""
+    global _log_service
+    _log_service = log_service
+
+
 def reset_all_services():
     """重置所有服务缓存（用于测试）"""
-    global _entry_service, _intent_service, _review_service, _knowledge_service
+    global _entry_service, _intent_service, _review_service, _knowledge_service, _log_service
     _entry_service = None
     _intent_service = None
     _review_service = None
     _knowledge_service = None
+    _log_service = None
 
 
 # 向后兼容
