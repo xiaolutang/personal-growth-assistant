@@ -1,4 +1,4 @@
-"""测试意图识别模块"""
+"""测试意图识别服务"""
 import pytest
 from unittest.mock import AsyncMock, patch
 
@@ -6,9 +6,8 @@ from app.routers.intent import (
     IntentRequest,
     IntentResponse,
     detect_intent_service,
-    _fallback_intent_detection,
-    INTENT_TYPES,
 )
+from app.services.intent_service import IntentService, INTENT_TYPES
 
 
 class TestIntentTypes:
@@ -63,111 +62,109 @@ class TestIntentResponse:
         assert response.query == "测试任务"
 
 
-class TestFallbackIntentDetection:
-    """回退意图检测测试"""
+class TestIntentServiceFallback:
+    """IntentService 回退检测测试"""
 
-    def test_detect_help_intent(self):
+    @pytest.fixture
+    def service(self):
+        """创建无 LLM caller 的服务实例"""
+        return IntentService(llm_caller=None)
+
+    def test_detect_help_intent(self, service):
         """测试检测帮助意图"""
         texts = ["帮助", "你能做什么", "怎么用这个系统"]
         for text in texts:
-            response = _fallback_intent_detection(text)
-            assert response.intent == "help"
-            assert response.confidence == 0.8
+            result = service._fallback_detection(text)
+            assert result.intent == "help"
+            assert result.confidence == 0.8
 
-    def test_detect_review_intent(self):
+    def test_detect_review_intent(self, service):
         """测试检测回顾意图"""
         texts = ["今天做了什么", "本周进度", "月报", "回顾一下"]
         for text in texts:
-            response = _fallback_intent_detection(text)
-            assert response.intent == "review"
-            assert response.confidence == 0.8
+            result = service._fallback_detection(text)
+            assert result.intent == "review"
+            assert result.confidence == 0.8
 
-    def test_detect_knowledge_intent(self):
+    def test_detect_knowledge_intent(self, service):
         """测试检测知识图谱意图"""
-        response = _fallback_intent_detection("MCP的知识图谱")
-        assert response.intent == "knowledge"
-        assert "MCP" in response.query
+        result = service._fallback_detection("MCP的知识图谱")
+        assert result.intent == "knowledge"
+        assert "MCP" in result.query
 
-        response = _fallback_intent_detection("相关概念分析")
-        assert response.intent == "knowledge"
+        result = service._fallback_detection("相关概念分析")
+        assert result.intent == "knowledge"
 
-    def test_detect_delete_intent(self):
+    def test_detect_delete_intent(self, service):
         """测试检测删除意图"""
         texts = ["删除测试任务", "移除这条记录", "去掉这个"]
         for text in texts:
-            response = _fallback_intent_detection(text)
-            assert response.intent == "delete"
-            assert response.confidence == 0.8
+            result = service._fallback_detection(text)
+            assert result.intent == "delete"
+            assert result.confidence == 0.8
 
-    def test_detect_update_intent(self):
+    def test_detect_update_intent(self, service):
         """测试检测更新意图"""
         texts = ["把任务标记为完成", "修改标题", "更新状态", "添加标签测试"]
         for text in texts:
-            response = _fallback_intent_detection(text)
-            assert response.intent == "update"
-            assert response.confidence == 0.8
+            result = service._fallback_detection(text)
+            assert result.intent == "update"
+            assert result.confidence == 0.8
 
-    def test_detect_read_intent(self):
+    def test_detect_read_intent(self, service):
         """测试检测查询意图"""
         texts = ["帮我找MCP的笔记", "搜索任务", "查找记录", "有没有关于X的内容"]
         for text in texts:
-            response = _fallback_intent_detection(text)
-            assert response.intent == "read"
-            assert response.confidence == 0.8
+            result = service._fallback_detection(text)
+            assert result.intent == "read"
+            assert result.confidence == 0.8
 
-    def test_detect_create_intent_default(self):
+    def test_detect_create_intent_default(self, service):
         """测试默认创建意图"""
         texts = ["明天开会", "学习Python", "一个新的想法"]
         for text in texts:
-            response = _fallback_intent_detection(text)
-            assert response.intent == "create"
+            result = service._fallback_detection(text)
+            assert result.intent == "create"
             # 默认创建的置信度较低
-            assert response.confidence == 0.6
+            assert result.confidence == 0.6
 
 
-class TestDetectIntentService:
-    """意图检测服务测试"""
+class TestIntentServiceAsync:
+    """IntentService 异步检测测试"""
 
     @pytest.mark.asyncio
     async def test_service_with_mock_llm(self, mock_llm_caller):
         """测试使用 Mock LLM 的意图检测"""
-        from app.routers import intent
+        service = IntentService(llm_caller=mock_llm_caller)
 
-        # 设置 mock caller
-        intent.set_llm_caller(mock_llm_caller)
+        result = await service.detect("帮我找MCP的笔记")
 
-        response = await detect_intent_service("帮我找MCP的笔记")
-
-        assert response.intent in INTENT_TYPES
-        assert response.confidence >= 0
+        assert result.intent in INTENT_TYPES
+        assert result.confidence >= 0
 
     @pytest.mark.asyncio
     async def test_service_fallback_on_error(self):
         """测试错误时回退"""
-        from app.routers import intent
+        service = IntentService(llm_caller=None)
 
-        # 不设置 caller，应使用回退
-        intent._llm_caller = None
+        result = await service.detect("帮我找MCP的笔记")
 
-        response = await detect_intent_service("帮我找MCP的笔记")
-
-        assert response.intent == "read"
-        assert response.confidence == 0.8
+        assert result.intent == "read"
+        assert result.confidence == 0.8
 
     @pytest.mark.asyncio
     async def test_service_validates_intent_type(self):
         """测试验证意图类型"""
-        from app.routers import intent
         from app.callers.mock_caller import MockCaller
 
         # Mock 返回无效意图
         mock = MockCaller(response='{"intent": "invalid_intent", "confidence": 0.9}')
-        intent.set_llm_caller(mock)
+        service = IntentService(llm_caller=mock)
 
-        response = await detect_intent_service("测试")
+        result = await service.detect("测试")
 
         # 应回退到默认 create
-        assert response.intent == "create"
+        assert result.intent == "create"
 
 
 class TestIntentAPI:
@@ -176,11 +173,14 @@ class TestIntentAPI:
     @pytest.mark.asyncio
     async def test_intent_endpoint(self, client):
         """测试意图识别 API 端点"""
-        from app.routers import intent
+        from app.routers import deps
         from app.callers.mock_caller import MockCaller
 
-        # 设置 mock
-        intent.set_llm_caller(MockCaller(response='{"intent": "read", "confidence": 0.9, "query": "MCP"}'))
+        # 重置服务缓存并设置 mock
+        deps.reset_all_services()
+
+        service = deps.get_intent_service()
+        service.set_llm_caller(MockCaller(response='{"intent": "read", "confidence": 0.9, "query": "MCP"}'))
 
         response = await client.post(
             "/intent",
@@ -206,10 +206,14 @@ class TestIntentAPI:
     @pytest.mark.asyncio
     async def test_intent_endpoint_with_context(self, client):
         """测试带上下文的请求"""
-        from app.routers import intent
+        from app.routers import deps
         from app.callers.mock_caller import MockCaller
 
-        intent.set_llm_caller(MockCaller(response='{"intent": "create", "confidence": 0.95}'))
+        # 重置服务缓存并设置 mock
+        deps.reset_all_services()
+
+        service = deps.get_intent_service()
+        service.set_llm_caller(MockCaller(response='{"intent": "create", "confidence": 0.95}'))
 
         response = await client.post(
             "/intent",
