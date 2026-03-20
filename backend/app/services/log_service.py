@@ -21,6 +21,7 @@ class LogService:
         end_time: Optional[datetime] = None,
         limit: int = 100,
         offset: int = 0,
+        order: str = "desc",  # desc 或 asc
     ) -> list[LogEntry]:
         """查询日志"""
         return self.storage.query_logs(
@@ -31,6 +32,7 @@ class LogService:
             end_time=end_time,
             limit=min(limit, 1000),  # 最大 1000 条
             offset=offset,
+            order=order,
         )
 
     def count_logs(

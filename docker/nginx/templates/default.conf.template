@@ -24,6 +24,16 @@ server {
         return 301 ${FRONTEND_BASE_PATH};
     }
 
+    # 日志管理 UI - 使用 alias
+    location /admin/logs/ {
+        alias /usr/share/nginx/logs-ui/;
+        index index.html;
+        # 对于 SPA，直接返回 index.html
+        if (!-e $request_filename) {
+            rewrite ^(.*)$ /admin/logs/index.html break;
+        }
+    }
+
     # API 路由 - 转发到后端
     location ${FRONTEND_BASE_PATH}api/ {
         rewrite ^${FRONTEND_BASE_PATH}api/(.*) /$1 break;

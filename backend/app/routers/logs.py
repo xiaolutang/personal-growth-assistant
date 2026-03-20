@@ -72,6 +72,7 @@ async def list_logs(
     end_time: Optional[datetime] = Query(None, description="结束时间 (ISO 8601)"),
     limit: int = Query(100, ge=1, le=1000, description="每页数量"),
     offset: int = Query(0, ge=0, description="偏移量"),
+    order: str = Query("desc", description="排序方式: desc(最新优先) 或 asc(最早优先)"),
     log_service=Depends(get_log_service),
 ):
     """
@@ -82,6 +83,7 @@ async def list_logs(
     - request_id: 请求追踪 ID
     - keyword: 消息关键词
     - start_time/end_time: 时间范围
+    - order: 排序方式 (desc/asc)
     """
     if log_service is None:
         raise HTTPException(status_code=503, detail="日志服务未初始化")
@@ -95,6 +97,7 @@ async def list_logs(
         end_time=end_time,
         limit=limit,
         offset=offset,
+        order=order,
     )
 
     # 统计总数
