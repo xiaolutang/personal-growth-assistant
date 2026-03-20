@@ -155,7 +155,7 @@ class TestIntentServiceAsync:
     @pytest.mark.asyncio
     async def test_service_validates_intent_type(self):
         """测试验证意图类型"""
-        from app.callers.mock_caller import MockCaller
+        from app.infrastructure.llm.mock_caller import MockCaller
 
         # Mock 返回无效意图
         mock = MockCaller(response='{"intent": "invalid_intent", "confidence": 0.9}')
@@ -174,7 +174,7 @@ class TestIntentAPI:
     async def test_intent_endpoint(self, client):
         """测试意图识别 API 端点"""
         from app.routers import deps
-        from app.callers.mock_caller import MockCaller
+        from app.infrastructure.llm.mock_caller import MockCaller
 
         # 重置服务缓存并设置 mock
         deps.reset_all_services()
@@ -207,7 +207,7 @@ class TestIntentAPI:
     async def test_intent_endpoint_with_context(self, client):
         """测试带上下文的请求"""
         from app.routers import deps
-        from app.callers.mock_caller import MockCaller
+        from app.infrastructure.llm.mock_caller import MockCaller
 
         # 重置服务缓存并设置 mock
         deps.reset_all_services()

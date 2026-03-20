@@ -7,8 +7,8 @@ import pytest
 from datetime import datetime
 from pathlib import Path
 
-from app.storage.markdown import MarkdownStorage
-from app.storage.sqlite import SQLiteStorage
+from app.infrastructure.storage.markdown import MarkdownStorage
+from app.infrastructure.storage.sqlite import SQLiteStorage
 from app.services.sync_service import SyncService
 from app.services.entry_service import EntryService
 from app.models import Task, Category, TaskStatus, Priority

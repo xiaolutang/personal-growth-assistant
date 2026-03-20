@@ -12,7 +12,7 @@ from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
 
 from app.services import init_storage, SyncService
-from app.storage.markdown import MarkdownStorage
+from app.infrastructure.storage.markdown import MarkdownStorage
 from app.models import Task, Category, TaskStatus, Priority
 
 

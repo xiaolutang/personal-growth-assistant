@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch, MagicMock
 from datetime import datetime
 
 from app.models import Task, Category, TaskStatus, Priority, Concept, ConceptRelation
-from app.storage.neo4j_client import Neo4jClient
+from app.infrastructure.storage.neo4j_client import Neo4jClient
 
 
 class TestNeo4jClient:

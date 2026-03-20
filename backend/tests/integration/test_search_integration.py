@@ -187,7 +187,7 @@ class TestDimensionMismatch:
 
     async def test_dimension_mismatch_auto_recreate(self, qdrant_url):
         """测试维度不匹配时自动重建 collection"""
-        from app.storage.qdrant_client import QdrantClient
+        from app.infrastructure.storage.qdrant_client import QdrantClient
 
         # 1. 先创建一个 512 维度的 collection
         class MockEmbedding512:

@@ -35,7 +35,7 @@ def neo4j_config():
 @pytest.fixture
 async def qdrant_client_with_container(qdrant_url):
     """使用现有容器的 Qdrant 客户端"""
-    from app.storage.qdrant_client import QdrantClient
+    from app.infrastructure.storage.qdrant_client import QdrantClient
 
     # 创建 mock embedding 服务（不需要真实 LLM）
     class MockEmbeddingService:
@@ -58,7 +58,7 @@ async def qdrant_client_with_container(qdrant_url):
 @pytest.fixture
 async def neo4j_client_with_container(neo4j_config):
     """使用现有容器的 Neo4j 客户端"""
-    from app.storage.neo4j_client import Neo4jClient
+    from app.infrastructure.storage.neo4j_client import Neo4jClient
 
     client = Neo4jClient(
         uri=neo4j_config["uri"],

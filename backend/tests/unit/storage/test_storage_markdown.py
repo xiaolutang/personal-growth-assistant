@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 from app.models import Task, Category, TaskStatus, Priority
-from app.storage.markdown import MarkdownStorage
+from app.infrastructure.storage.markdown import MarkdownStorage
 
 
 class TestMarkdownStorage:

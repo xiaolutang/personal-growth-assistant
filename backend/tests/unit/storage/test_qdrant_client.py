@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch, MagicMock
 from datetime import datetime
 
 from app.models import Task, Category, TaskStatus, Priority
-from app.storage.qdrant_client import QdrantClient, str_to_uuid
+from app.infrastructure.storage.qdrant_client import QdrantClient, str_to_uuid
 
 
 class TestQdrantClient:
@@ -217,7 +217,7 @@ class TestQdrantDimensionMismatch:
         mock_client.delete_collection = AsyncMock()
         mock_client.create_collection = AsyncMock()
 
-        with patch('app.storage.qdrant_client.AsyncQdrantClient', return_value=mock_client):
+        with patch('app.infrastructure.storage.qdrant_client.AsyncQdrantClient', return_value=mock_client):
             client = QdrantClient(url="http://test:6333", vector_size=1024)
             await client.connect()
 
@@ -237,7 +237,7 @@ class TestQdrantDimensionMismatch:
         mock_client.delete_collection = AsyncMock()
         mock_client.create_collection = AsyncMock()
 
-        with patch('app.storage.qdrant_client.AsyncQdrantClient', return_value=mock_client):
+        with patch('app.infrastructure.storage.qdrant_client.AsyncQdrantClient', return_value=mock_client):
             client = QdrantClient(url="http://test:6333", vector_size=1024)
             await client.connect()
 

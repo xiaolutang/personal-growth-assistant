@@ -4,24 +4,24 @@ import logging
 from typing import List, Optional, Dict, Any
 
 from app.models import Task
-from app.storage.markdown import MarkdownStorage
+from app.infrastructure.storage.markdown import MarkdownStorage
 from app.services.knowledge_service import KnowledgeService
 
 logger = logging.getLogger(__name__)
 
 # 可选依赖
 try:
-    from app.storage.neo4j_client import Neo4jClient
+    from app.infrastructure.storage.neo4j_client import Neo4jClient
 except ImportError:
     Neo4jClient = None
 
 try:
-    from app.storage.qdrant_client import QdrantClient
+    from app.infrastructure.storage.qdrant_client import QdrantClient
 except ImportError:
     QdrantClient = None
 
 try:
-    from app.storage.sqlite import SQLiteStorage
+    from app.infrastructure.storage.sqlite import SQLiteStorage
 except ImportError:
     SQLiteStorage = None
 

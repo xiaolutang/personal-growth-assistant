@@ -61,7 +61,7 @@ async def client(storage) -> AsyncGenerator[AsyncClient, None]:
 @pytest.fixture
 def sqlite_storage(temp_data_dir: str):
     """创建 SQLite 存储实例"""
-    from app.storage.sqlite import SQLiteStorage
+    from app.infrastructure.storage.sqlite import SQLiteStorage
 
     s = SQLiteStorage(db_path=f"{temp_data_dir}/test.db")
     yield s
@@ -70,7 +70,7 @@ def sqlite_storage(temp_data_dir: str):
 @pytest.fixture
 def markdown_storage(temp_data_dir: str):
     """创建 Markdown 存储实例"""
-    from app.storage.markdown import MarkdownStorage
+    from app.infrastructure.storage.markdown import MarkdownStorage
 
     s = MarkdownStorage(data_dir=temp_data_dir)
     yield s
@@ -79,7 +79,7 @@ def markdown_storage(temp_data_dir: str):
 @pytest.fixture
 def mock_llm_caller():
     """Mock LLM Caller"""
-    from app.callers.mock_caller import MockCaller
+    from app.infrastructure.llm.mock_caller import MockCaller
 
     return MockCaller(response='{"intent": "create", "tasks": [], "tags": [], "concepts": [], "relations": []}')
 
@@ -151,7 +151,7 @@ def mock_qdrant_available():
     from unittest.mock import AsyncMock, patch, MagicMock
     from qdrant_client.http import models
 
-    with patch('app.storage.qdrant_client.AsyncQdrantClient') as mock_client_class:
+    with patch('app.infrastructure.storage.qdrant_client.AsyncQdrantClient') as mock_client_class:
         mock_instance = AsyncMock()
         mock_client_class.return_value = mock_instance
 
@@ -187,7 +187,7 @@ def mock_qdrant_unavailable():
     """Mock Qdrant 不可用状态"""
     from unittest.mock import patch
 
-    with patch('app.storage.qdrant_client.AsyncQdrantClient') as mock_client:
+    with patch('app.infrastructure.storage.qdrant_client.AsyncQdrantClient') as mock_client:
         mock_client.side_effect = ConnectionError("Qdrant not available")
         yield mock_client
 
@@ -198,7 +198,7 @@ def mock_neo4j_available():
     """Mock Neo4j 可用状态"""
     from unittest.mock import AsyncMock, patch, MagicMock
 
-    with patch('app.storage.neo4j_client.AsyncGraphDatabase') as mock_graph_db:
+    with patch('app.infrastructure.storage.neo4j_client.AsyncGraphDatabase') as mock_graph_db:
         mock_driver = AsyncMock()
         mock_graph_db.driver.return_value = mock_driver
 
@@ -226,7 +226,7 @@ def mock_neo4j_unavailable():
     from unittest.mock import patch
     from neo4j.exceptions import ServiceUnavailable
 
-    with patch('app.storage.neo4j_client.AsyncGraphDatabase') as mock_graph_db:
+    with patch('app.infrastructure.storage.neo4j_client.AsyncGraphDatabase') as mock_graph_db:
         mock_graph_db.driver.side_effect = ServiceUnavailable("Neo4j not available")
         yield mock_graph_db
 
