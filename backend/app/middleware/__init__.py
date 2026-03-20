@@ -51,6 +51,26 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """请求日志中间件"""
 
+    # 不记录日志的路径前缀
+    SKIP_PATH_PREFIXES = (
+        "/logs",  # 日志 API（nginx 已重写）
+        "/health",  # 健康检查
+        "/admin/logs",  # 日志 UI
+        "/favicon",  # 图标
+    )
+
+    # 不记录日志的路径后缀（静态资源）
+    SKIP_SUFFIXES = (
+        ".js",
+        ".css",
+        ".ico",
+        ".png",
+        ".jpg",
+        ".svg",
+        ".woff",
+        ".woff2",
+    )
+
     async def dispatch(self, request: Request, call_next):
         # 记录请求开始时间
         start_time = time.time()
@@ -58,20 +78,25 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         # 获取请求信息
         request_id = get_request_id()
         client_ip = self._get_client_ip(request)
+        path = request.url.path
 
-        # 设置日志额外信息
-        extra = {
-            "request_id": request_id,
-            "method": request.method,
-            "path": request.url.path,
-            "client_ip": client_ip,
-        }
+        # 检查是否跳过日志记录
+        should_skip = self._should_skip_logging(path)
 
-        # 记录请求信息
-        logger.info(
-            f"Request started: {request.method} {request.url.path}",
-            extra=extra,
-        )
+        if not should_skip:
+            # 设置日志额外信息
+            extra = {
+                "request_id": request_id,
+                "method": request.method,
+                "path": path,
+                "client_ip": client_ip,
+            }
+
+            # 记录请求信息
+            logger.info(
+                f"Request started: {request.method} {path}",
+                extra=extra,
+            )
 
         try:
             response = await call_next(request)
@@ -79,19 +104,22 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             # 计算处理时间
             process_time_ms = int((time.time() - start_time) * 1000)
 
-            # 更新日志额外信息
-            extra.update(
-                {
+            if not should_skip:
+                # 更新日志额外信息
+                extra = {
+                    "request_id": request_id,
+                    "method": request.method,
+                    "path": path,
+                    "client_ip": client_ip,
                     "status_code": response.status_code,
                     "process_time_ms": process_time_ms,
                 }
-            )
 
-            # 记录响应信息
-            logger.info(
-                f"Request completed: {request.method} {request.url.path} - {response.status_code} ({process_time_ms}ms)",
-                extra=extra,
-            )
+                # 记录响应信息
+                logger.info(
+                    f"Request completed: {request.method} {path} - {response.status_code} ({process_time_ms}ms)",
+                    extra=extra,
+                )
 
             # 添加处理时间头
             response.headers["X-Process-Time"] = f"{process_time_ms}ms"
@@ -100,19 +128,30 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
         except Exception as e:
             process_time_ms = int((time.time() - start_time) * 1000)
-            extra.update(
-                {
+
+            if not should_skip:
+                extra = {
+                    "request_id": request_id,
+                    "method": request.method,
+                    "path": path,
+                    "client_ip": client_ip,
                     "status_code": 500,
                     "process_time_ms": process_time_ms,
                 }
-            )
 
-            logger.error(
-                f"Request failed: {request.method} {request.url.path} - Error after {process_time_ms}ms: {e}",
-                extra=extra,
-                exc_info=True,
-            )
+                logger.error(
+                    f"Request failed: {request.method} {path} - Error after {process_time_ms}ms: {e}",
+                    extra=extra,
+                    exc_info=True,
+                )
             raise
+
+    def _should_skip_logging(self, path: str) -> bool:
+        """检查是否应该跳过日志记录"""
+        return (
+            any(path.startswith(p) for p in self.SKIP_PATH_PREFIXES) or
+            any(path.endswith(s) for s in self.SKIP_SUFFIXES)
+        )
 
     def _get_client_ip(self, request: Request) -> str:
         """获取客户端 IP"""

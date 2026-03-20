@@ -116,17 +116,15 @@ class LogStorage:
             json.dumps(log.get("extra")) if log.get("extra") else None,
         )
 
-    def query_logs(
+    def _build_query_conditions(
         self,
         level: Optional[str] = None,
         request_id: Optional[str] = None,
         keyword: Optional[str] = None,
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
-        limit: int = 100,
-        offset: int = 0,
-    ) -> list[LogEntry]:
-        """查询日志"""
+    ) -> tuple[list[str], list[Any]]:
+        """构建查询条件，返回 (conditions, params)"""
         conditions = []
         params = []
 
@@ -146,7 +144,25 @@ class LogStorage:
             conditions.append("timestamp <= ?")
             params.append(end_time.isoformat())
 
+        return conditions, params
+
+    def query_logs(
+        self,
+        level: Optional[str] = None,
+        request_id: Optional[str] = None,
+        keyword: Optional[str] = None,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+        limit: int = 100,
+        offset: int = 0,
+        order: str = "desc",  # desc 或 asc
+    ) -> list[LogEntry]:
+        """查询日志"""
+        conditions, params = self._build_query_conditions(
+            level, request_id, keyword, start_time, end_time
+        )
         where_clause = " AND ".join(conditions) if conditions else "1=1"
+        order_clause = "DESC" if order.lower() == "desc" else "ASC"
 
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
@@ -155,7 +171,7 @@ class LogStorage:
                 f"""
                 SELECT * FROM logs
                 WHERE {where_clause}
-                ORDER BY timestamp DESC
+                ORDER BY timestamp {order_clause}
                 LIMIT ? OFFSET ?
                 """,
                 params + [limit, offset],
@@ -172,25 +188,9 @@ class LogStorage:
         end_time: Optional[datetime] = None,
     ) -> int:
         """统计日志数量"""
-        conditions = []
-        params = []
-
-        if level:
-            conditions.append("level = ?")
-            params.append(level.upper())
-        if request_id:
-            conditions.append("request_id = ?")
-            params.append(request_id)
-        if keyword:
-            conditions.append("message LIKE ?")
-            params.append(f"%{keyword}%")
-        if start_time:
-            conditions.append("timestamp >= ?")
-            params.append(start_time.isoformat())
-        if end_time:
-            conditions.append("timestamp <= ?")
-            params.append(end_time.isoformat())
-
+        conditions, params = self._build_query_conditions(
+            level, request_id, keyword, start_time, end_time
+        )
         where_clause = " AND ".join(conditions) if conditions else "1=1"
 
         with sqlite3.connect(self.db_path) as conn:
