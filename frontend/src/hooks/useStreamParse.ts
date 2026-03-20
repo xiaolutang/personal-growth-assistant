@@ -25,10 +25,42 @@ export interface IntentResult {
   entities: Record<string, string>;
 }
 
+// 确认项（多选场景）
+export interface ConfirmItem {
+  id: string;
+  title: string;
+}
+
+// 确认事件数据
+export interface ConfirmData {
+  action: "update" | "delete";
+  items: ConfirmItem[];
+  entities?: Record<string, string>;
+}
+
+// 搜索结果项
+export interface ResultItem {
+  id: string;
+  title: string;
+  status?: string;
+  category?: string;
+}
+
+// 操作结果
+export interface OperationResult {
+  created?: { ids: string[]; count: number };
+  updated?: { id: string; title?: string; changes: Record<string, unknown> };
+  deleted?: { id: string };
+  confirm?: ConfirmData;
+  results?: { items: ResultItem[]; count: number };
+  message?: string;
+}
+
 // parse() 返回结果
 export interface ParseResponse {
   intent: IntentResult;
   result?: ParseResult;
+  operation?: OperationResult;
 }
 
 // 标签映射常量
@@ -66,165 +98,242 @@ interface UseStreamParseOptions {
   onComplete?: (result: ParseResult) => void;
   onError?: (error: Error) => void;
   onMessage?: (role: "user" | "assistant", content: string) => void;
+  // 新增：操作结果回调
+  onCreated?: (ids: string[], count: number) => void;
+  onUpdated?: (id: string, title: string, changes: Record<string, unknown>) => void;
+  onDeleted?: (id: string) => void;
+  onConfirm?: (data: ConfirmData) => void;
+  onResults?: (items: ResultItem[]) => void;
+}
+
+// 确认请求参数
+export interface ConfirmRequest {
+  action: "update" | "delete";
+  item_id: string;
 }
 
 /**
  * 流式解析 Hook（使用统一的 /chat 接口）
  *
- * 后端统一处理意图检测，返回 Promise<ParseResponse>
+ * 后端一站式处理意图检测和操作执行
  */
 export function useStreamParse(options: UseStreamParseOptions = {}) {
   const [rawJson, setRawJson] = useState("");
   const [result, setResult] = useState<ParseResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [operation, setOperation] = useState<OperationResult | null>(null);
 
   // 使用 ref 存储稳定的回调，避免 useCallback 依赖频繁变化
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
   const parse = useCallback(
-    async (text: string, sessionId: string = "default"): Promise<ParseResponse> => {
+    async (text: string, sessionId: string = "default", confirm?: ConfirmRequest): Promise<ParseResponse> => {
       if (!text.trim()) throw new Error("文本为空");
 
       optionsRef.current.onMessage?.("user", text);
       setRawJson("");
       setResult(null);
       setError(null);
+      setOperation(null);
       setIsLoading(true);
 
       return new Promise((resolve, reject) => {
-            (async () => {
-              try {
-                const res = await fetch(`${API_BASE}/chat`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ text, session_id: sessionId }),
-                });
+        (async () => {
+          try {
+            const res = await fetch(`${API_BASE}/chat`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                text,
+                session_id: sessionId,
+                confirm
+              }),
+            });
 
-                if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
+            if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
 
-                const reader = res.body?.getReader();
-                if (!reader) throw new Error("No response body");
+            const reader = res.body?.getReader();
+            if (!reader) throw new Error("No response body");
 
-                const decoder = new TextDecoder();
-                let fullJson = "";
-                let currentEvent = "";
-                let intentResult: IntentResult | null = null;
+            const decoder = new TextDecoder();
+            let fullJson = "";
+            let currentEvent = "";
+            let intentResult: IntentResult | null = null;
+            let operationResult: OperationResult | null = null;
 
-                // SSE buffer 处理跨 chunk 的数据
-                let buffer = "";
+            // SSE buffer 处理跨 chunk 的数据
+            let buffer = "";
 
-                while (true) {
-                  const { done, value } = await reader.read();
-                  if (done) break;
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
 
-                  buffer += decoder.decode(value, { stream: true });
-                  const lines = buffer.split("\n");
-                  // 保留最后一个不完整的行
-                  buffer = lines.pop() || "";
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              // 保留最后一个不完整的行
+              buffer = lines.pop() || "";
 
-                  for (const line of lines) {
-                    if (line.startsWith("event: ")) {
-                      currentEvent = line.slice(7).trim();
-                    } else if (line.startsWith("data: ")) {
-                      const data = line.slice(6).trim();
+              for (const line of lines) {
+                if (line.startsWith("event: ")) {
+                  currentEvent = line.slice(7).trim();
+                } else if (line.startsWith("data: ")) {
+                  const data = line.slice(6).trim();
 
-                      if (currentEvent === "intent") {
-                        try {
-                          intentResult = JSON.parse(data) as IntentResult;
-                        } catch {
-                          console.error("Intent parse error:", data);
-                        }
-                      } else if (currentEvent === "content") {
-                        try {
-                          const json = JSON.parse(data);
-                          if (json.content) {
-                            fullJson += json.content;
-                            setRawJson(fullJson);
-                          }
-                        } catch {
-                          // 忽略解析错误
-                        }
-                      } else if (currentEvent === "done") {
-                        // 非 create 意图完成
-                        if (intentResult && intentResult.intent !== "create") {
-                          setIsLoading(false);
-                          resolve({ intent: intentResult });
-                          return;
-                        }
-                      } else if (currentEvent === "error") {
-                        let errorMsg = "未知错误";
-                        try {
-                          const errorData = JSON.parse(data);
-                          errorMsg = errorData.message || errorMsg;
-                        } catch {
-                          errorMsg = data;
-                        }
-                        const err = new Error(errorMsg);
+                  if (currentEvent === "intent") {
+                    try {
+                      intentResult = JSON.parse(data) as IntentResult;
+                    } catch {
+                      console.error("Intent parse error:", data);
+                    }
+                  } else if (currentEvent === "content") {
+                    try {
+                      const json = JSON.parse(data);
+                      if (json.content) {
+                        fullJson += json.content;
+                        setRawJson(fullJson);
+                      }
+                    } catch {
+                      // 忽略解析错误
+                    }
+                  } else if (currentEvent === "created") {
+                    try {
+                      const created = JSON.parse(data);
+                      operationResult = { created };
+                      setOperation(operationResult);
+                      optionsRef.current.onCreated?.(created.ids, created.count);
+                    } catch {
+                      console.error("Created parse error:", data);
+                    }
+                  } else if (currentEvent === "updated") {
+                    try {
+                      const updated = JSON.parse(data);
+                      operationResult = { updated };
+                      setOperation(operationResult);
+                      optionsRef.current.onUpdated?.(updated.id, updated.title, updated.changes);
+                      optionsRef.current.onMessage?.("assistant", `已更新「${updated.title || updated.id}」`);
+                    } catch {
+                      console.error("Updated parse error:", data);
+                    }
+                  } else if (currentEvent === "deleted") {
+                    try {
+                      const deleted = JSON.parse(data);
+                      operationResult = { deleted };
+                      setOperation(operationResult);
+                      optionsRef.current.onDeleted?.(deleted.id);
+                      optionsRef.current.onMessage?.("assistant", "已删除");
+                    } catch {
+                      console.error("Deleted parse error:", data);
+                    }
+                  } else if (currentEvent === "confirm") {
+                    try {
+                      const confirmData: ConfirmData = JSON.parse(data);
+                      operationResult = { confirm: confirmData };
+                      setOperation(operationResult);
+                      optionsRef.current.onConfirm?.(confirmData);
+                    } catch {
+                      console.error("Confirm parse error:", data);
+                    }
+                  } else if (currentEvent === "results") {
+                    try {
+                      const results = JSON.parse(data);
+                      operationResult = { results };
+                      setOperation(operationResult);
+                      optionsRef.current.onResults?.(results.items);
+                    } catch {
+                      console.error("Results parse error:", data);
+                    }
+                  } else if (currentEvent === "done") {
+                    try {
+                      const doneData = JSON.parse(data);
+                      if (doneData.message) {
+                        optionsRef.current.onMessage?.("assistant", doneData.message);
+                      }
+                    } catch {
+                      // 忽略解析错误
+                    }
+                    setIsLoading(false);
+                    resolve({
+                      intent: intentResult!,
+                      result: result || undefined,
+                      operation: operationResult || undefined,
+                    });
+                    return;
+                  } else if (currentEvent === "error") {
+                    let errorMsg = "未知错误";
+                    try {
+                      const errorData = JSON.parse(data);
+                      errorMsg = errorData.message || errorMsg;
+                    } catch {
+                      errorMsg = data;
+                    }
+                    const err = new Error(errorMsg);
+                    setError(err);
+                    setIsLoading(false);
+                    optionsRef.current.onError?.(err);
+                    reject(err);
+                    return;
+                  } else if (data === "[DONE]") {
+                    // create 意图完成（旧格式兼容）
+                    let parsedResult: ParseResult | undefined = undefined;
+                    if (fullJson) {
+                      try {
+                        const parsed = JSON.parse(fullJson) as ParseResult;
+                        parsedResult = parsed;
+                        setResult(parsed);
+                        optionsRef.current.onComplete?.(parsed);
+                        optionsRef.current.onMessage?.("assistant", formatParsedResult(parsed));
+                      } catch (e) {
+                        console.error("JSON parse error:", e);
+                        const err = new Error("JSON 解析失败");
                         setError(err);
-                        setIsLoading(false);
                         optionsRef.current.onError?.(err);
-                        reject(err);
-                        return;
-                      } else if (data === "[DONE]") {
-                        // create 意图完成
-                        let parsedResult: ParseResult | undefined = undefined;
-                        if (fullJson) {
-                          try {
-                            const parsed = JSON.parse(fullJson) as ParseResult;
-                            parsedResult = parsed;
-                            setResult(parsed);
-                            optionsRef.current.onComplete?.(parsed);
-                            optionsRef.current.onMessage?.("assistant", formatParsedResult(parsed));
-                          } catch (e) {
-                            console.error("JSON parse error:", e);
-                            const err = new Error("JSON 解析失败");
-                            setError(err);
-                            optionsRef.current.onError?.(err);
-                          }
-                        }
-                        setIsLoading(false);
-                        if (intentResult) {
-                          resolve({ intent: intentResult, result: parsedResult });
-                        } else {
-                          reject(new Error("未收到意图检测结果"));
-                        }
-                        return;
                       }
                     }
+                    setIsLoading(false);
+                    resolve({
+                      intent: intentResult!,
+                      result: parsedResult,
+                      operation: operationResult || undefined,
+                    });
+                    return;
                   }
                 }
-
-                setIsLoading(false);
-                if (intentResult) {
-                  resolve({ intent: intentResult });
-                } else {
-                  reject(new Error("未收到意图检测结果"));
-                }
-              } catch (err) {
-                const error = err instanceof Error ? err : new Error(String(err));
-                setError(error);
-                setIsLoading(false);
-                optionsRef.current.onError?.(error);
-                reject(error);
               }
-            })();
-          });
-        },
-        [] // 空依赖，使用 ref 存储回调
-      );
+            }
+
+            setIsLoading(false);
+            if (intentResult) {
+              resolve({ intent: intentResult, operation: operationResult || undefined });
+            } else {
+              reject(new Error("未收到意图检测结果"));
+            }
+          } catch (err) {
+            const error = err instanceof Error ? err : new Error(String(err));
+            setError(error);
+            setIsLoading(false);
+            optionsRef.current.onError?.(error);
+            reject(error);
+          }
+        })();
+      });
+    },
+    [result]
+  );
 
   const reset = useCallback(() => {
     setRawJson("");
     setResult(null);
     setError(null);
+    setOperation(null);
     setIsLoading(false);
   }, []);
 
   return {
     rawJson,
     result,
+    operation,
     isLoading,
     error,
     parse,
