@@ -18,6 +18,7 @@ from app.mappers.entry_mapper import EntryMapper
 from app.models import Task, Category, TaskStatus, Priority
 from app.services.sync_service import SyncService
 from app.infrastructure.storage.markdown import MarkdownStorage
+from app.services.hybrid_search import HybridSearchService
 
 
 class EntryService:
@@ -243,16 +244,23 @@ class EntryService:
         )
 
     async def search_entries(self, query: str, limit: int = 10) -> SearchResult:
-        """搜索条目"""
-        if not self.storage.sqlite:
-            raise RuntimeError("SQLite 索引不可用")
+        """搜索条目 - 使用混合搜索（向量 + 全文）"""
 
-        results = self.storage.sqlite.search(query, limit=limit)
+        # 优先使用混合搜索（需要 Qdrant 和 SQLite 都可用）
+        if self.storage.qdrant and self.storage.sqlite:
+            hybrid = HybridSearchService(self.storage)
+            entries = await hybrid.search(query, limit)
+            return SearchResult(entries=entries, query=query)
 
-        return SearchResult(
-            entries=[EntryResponse(**EntryMapper.dict_to_response(e)) for e in results],
-            query=query,
-        )
+        # 回退：仅 SQLite 全文搜索
+        if self.storage.sqlite:
+            results = self.storage.sqlite.search(query, limit=limit)
+            return SearchResult(
+                entries=[EntryResponse(**EntryMapper.dict_to_response(e)) for e in results],
+                query=query,
+            )
+
+        raise RuntimeError("没有可用的搜索服务")
 
     async def get_project_progress(self, entry_id: str) -> ProjectProgressResponse:
         """获取项目进度"""
