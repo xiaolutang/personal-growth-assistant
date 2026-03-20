@@ -47,7 +47,7 @@ def test_storage():
     # 注入到 deps
     from app.routers import deps
     deps.storage = storage
-    deps.reset_entry_service()
+    deps.reset_all_services()
 
     yield storage
 

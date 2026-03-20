@@ -31,7 +31,7 @@ def client(temp_data_dir):
 
     # 替换全局存储
     deps.storage = storage
-    deps.reset_entry_service()  # 重置 service 缓存
+    deps.reset_all_services()  # 重置 service 缓存
 
     return TestClient(app)
 

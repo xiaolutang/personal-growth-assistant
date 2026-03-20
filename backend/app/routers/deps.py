@@ -80,12 +80,6 @@ def get_knowledge_service() -> "KnowledgeService":
     return _knowledge_service
 
 
-def reset_entry_service():
-    """重置 EntryService 缓存（用于测试）"""
-    global _entry_service
-    _entry_service = None
-
-
 def reset_all_services():
     """重置所有服务缓存（用于测试）"""
     global _entry_service, _intent_service, _review_service, _knowledge_service
@@ -93,3 +87,7 @@ def reset_all_services():
     _intent_service = None
     _review_service = None
     _knowledge_service = None
+
+
+# 向后兼容
+reset_entry_service = reset_all_services

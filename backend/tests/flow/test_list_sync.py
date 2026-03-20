@@ -29,7 +29,7 @@ def client(temp_data_dir):
     )
 
     deps.storage = storage
-    deps.reset_entry_service()
+    deps.reset_all_services()
 
     return TestClient(app)
 

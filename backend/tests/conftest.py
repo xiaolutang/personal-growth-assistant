@@ -51,7 +51,7 @@ async def client(storage) -> AsyncGenerator[AsyncClient, None]:
 
     # 注入存储服务并重置服务缓存
     deps.storage = storage
-    deps.reset_entry_service()
+    deps.reset_all_services()
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test", timeout=60.0) as c:

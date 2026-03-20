@@ -3,14 +3,18 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, AliasChoices
 
 
 # === 请求模型 ===
 
 class EntryCreate(BaseModel):
     """创建条目请求"""
-    category: str = Field(..., description="条目分类: project/task/note/inbox")
+    category: str = Field(
+        ...,
+        description="条目分类: project/task/note/inbox",
+        validation_alias=AliasChoices('category', 'type')
+    )
     title: str = Field(..., min_length=1, description="标题")
     content: str = Field(default="", description="内容")
     tags: List[str] = Field(default_factory=list, description="标签")

@@ -39,7 +39,7 @@ async def test_llm_parse_blocking():
         llm_caller=None,
     )
     deps.storage = storage
-    deps.reset_entry_service()
+    deps.reset_all_services()
     print("存储服务初始化完成")
 
     # 先创建一些测试数据
@@ -191,7 +191,7 @@ async def test_parse_creates_entry_then_query():
         llm_caller=llm_caller,
     )
     deps.storage = storage
-    deps.reset_entry_service()  # 重置缓存
+    deps.reset_all_services()  # 重置缓存
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test", timeout=60.0) as client:
