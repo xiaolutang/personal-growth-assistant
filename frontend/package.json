@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "gen:types": "cd ../backend && python3 -c \"import json; from app.main import app; print(json.dumps(app.openapi()))\" > ../frontend/src/types/api-schema.json && cd ../frontend && npx openapi-typescript src/types/api-schema.json -o src/types/api.generated.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
@@ -42,6 +43,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "jsdom": "^29.0.0",
+    "openapi-typescript": "^7.13.0",
     "postcss": "^8.5.8",
     "tailwindcss": "^3.4.19",
     "typescript": "~5.9.3",
