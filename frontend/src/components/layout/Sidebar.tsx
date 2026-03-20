@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
   Home,
@@ -6,8 +7,12 @@ import {
   FileText,
   Folder,
   BarChart3,
+  MessageSquare,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SessionList } from "@/components/SessionList";
 
 const navItems = [
   { to: "/", icon: Home, label: "首页" },
@@ -19,6 +24,8 @@ const navItems = [
 ];
 
 export function Sidebar() {
+  const [isChatExpanded, setIsChatExpanded] = useState(false);
+
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r bg-card">
       <div className="flex h-full flex-col">
@@ -49,6 +56,30 @@ export function Sidebar() {
             </NavLink>
           ))}
         </nav>
+
+        {/* 对话历史 */}
+        <div className="border-t">
+          <button
+            onClick={() => setIsChatExpanded(!isChatExpanded)}
+            className="flex items-center justify-between w-full px-4 py-3 text-sm hover:bg-accent transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <MessageSquare className="h-5 w-5" />
+              <span className="font-medium">对话历史</span>
+            </div>
+            {isChatExpanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </button>
+
+          {isChatExpanded && (
+            <div className="border-t">
+              <SessionList compact showTitle={false} maxHeight="320px" />
+            </div>
+          )}
+        </div>
 
         {/* Footer */}
         <div className="border-t p-4">
