@@ -49,6 +49,11 @@ class Settings(BaseSettings):
     LOG_DB_PATH: Optional[str] = None  # 默认 {DATA_DIR}/logs.db
     LOG_RETENTION_DAYS: int = 30
 
+    # LangSmith 可观测性配置（可选）
+    LANGSMITH_API_KEY: Optional[str] = None
+    LANGSMITH_TRACING: bool = False
+    LANGSMITH_PROJECT: str = "personal-growth-assistant"
+
     # CORS 配置
     ALLOWED_ORIGINS_ENV: str = ""  # 逗号分隔的域名列表，如 "http://localhost:3000,http://localhost"
 

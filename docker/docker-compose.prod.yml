@@ -19,6 +19,10 @@ services:
       - NEO4J_USERNAME=${NEO4J_USERNAME:-neo4j}
       - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password}
       - QDRANT_URL=http://qdrant:6333
+      # LangSmith 可观测性
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}
+      - LANGSMITH_TRACING=${LANGSMITH_TRACING:-false}
+      - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-personal-growth-assistant}
     volumes:
       - ../data:/app/data
     depends_on:

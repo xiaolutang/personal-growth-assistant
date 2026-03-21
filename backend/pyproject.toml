@@ -24,6 +24,8 @@ dependencies = [
     "neo4j>=5.0.0",
     # Vector Search
     "qdrant-client>=1.7.0",
+    # Observability
+    "langsmith>=0.1.0",
 ]
 
 [project.optional-dependencies]
