@@ -291,8 +291,8 @@ export function FloatingChat() {
         </div>
       )}
 
-      {/* 输入区域 */}
-      <div className="shrink-0">
+      {/* 输入区域 - 固定在底部 */}
+      <div className="shrink-0 mt-auto">
         {/* 操作状态提示条 */}
         <OperationStatusBar
           operation={lastOperation}
