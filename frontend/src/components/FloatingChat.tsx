@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Send,
   Loader2,
-  Plus,
   MessageSquare,
   GripHorizontal,
 } from "lucide-react";
@@ -59,7 +58,7 @@ export function FloatingChat() {
   const { searchResults, knowledgeGraph, searchEntries, getKnowledgeGraph, clearSearchResults, clearKnowledgeGraph, fetchEntries } =
     useTaskStore();
 
-  const { result, isLoading, error, parse, reset } = useStreamParse({
+  const { result, isLoading, error, parse } = useStreamParse({
     onMessage: (role, content) => {
       if (currentSessionId) {
         addMessage(currentSessionId, { role, content });
@@ -116,15 +115,6 @@ export function FloatingChat() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [currentSession?.messages, searchResults, knowledgeGraph]);
-
-  // 清理状态的辅助函数
-  const clearState = useCallback(() => {
-    reset();
-    clearSearchResults();
-    clearKnowledgeGraph();
-    setCurrentIntent(null);
-    setConfirmData(null);
-  }, [reset, clearSearchResults, clearKnowledgeGraph]);
 
   // 处理确认操作（多选场景）
   const handleConfirm = useCallback(
@@ -251,11 +241,6 @@ export function FloatingChat() {
     setIsSubmitting(false);
   };
 
-  const handleNewSession = () => {
-    createSession();
-    clearState();
-  };
-
   // 拖拽调整高度
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -297,14 +282,9 @@ export function FloatingChat() {
       </div>
 
       {/* 当前会话信息 */}
-      <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30 shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <MessageSquare className="h-4 w-4 shrink-0" />
-          <span className="text-sm font-medium truncate">{currentSession?.title || "新对话"}</span>
-        </div>
-        <Button variant="ghost" size="sm" onClick={handleNewSession} title="新建对话">
-          <Plus className="h-4 w-4" />
-        </Button>
+      <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30 shrink-0">
+        <MessageSquare className="h-4 w-4 shrink-0" />
+        <span className="text-sm font-medium truncate">{currentSession?.title || "新对话"}</span>
       </div>
 
       {/* 历史消息区域 */}
