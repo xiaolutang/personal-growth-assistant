@@ -41,17 +41,17 @@ async def lifespan(app: FastAPI):
 
     settings = get_settings()
 
+    # 初始化日志系统
+    log_storage = LogStorage(db_path=settings.log_db_path)
+    setup_logging(level=settings.LOG_LEVEL, log_storage=log_storage)
+    logger.info("日志系统初始化成功")
+
     # 配置 LangSmith 可观测性（LangGraph 自动读取这些环境变量）
     if settings.LANGSMITH_API_KEY:
         os.environ["LANGSMITH_API_KEY"] = settings.LANGSMITH_API_KEY
         os.environ["LANGSMITH_TRACING"] = "true" if settings.LANGSMITH_TRACING else "false"
         os.environ["LANGSMITH_PROJECT"] = settings.LANGSMITH_PROJECT
         logger.info(f"LangSmith tracing enabled, project: {settings.LANGSMITH_PROJECT}")
-
-    # 初始化日志系统
-    log_storage = LogStorage(db_path=settings.log_db_path)
-    setup_logging(level=settings.LOG_LEVEL, log_storage=log_storage)
-    logger.info("日志系统初始化成功")
 
     # 初始化日志服务
     from app.services.log_service import LogService
