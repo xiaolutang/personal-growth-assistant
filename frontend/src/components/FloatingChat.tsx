@@ -15,9 +15,10 @@ import { useTaskStore } from "@/stores/taskStore";
 import { useChatStore } from "@/stores/chatStore";
 import { SearchResultList } from "@/components/SearchResultCard";
 import { KnowledgeGraphInline } from "@/components/KnowledgeGraph";
-import { QuickCommandHints } from "@/components/QuickCommandHints";
 import { getHelpMessage, type Intent } from "@/lib/intentDetection";
 import { generateReviewReport, formatShortReview } from "@/lib/reviewFormatter";
+import { OperationStatusBar } from "@/components/OperationStatusBar";
+import { ActionIndicator } from "@/components/ActionIndicator";
 
 // 最小和最大面板高度
 const MIN_HEIGHT = 200;
@@ -38,7 +39,6 @@ export function FloatingChat() {
   const [input, setInput] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [currentIntent, setCurrentIntent] = useState<Intent | null>(null);
-  const [isInputFocused, setIsInputFocused] = useState(false);
   const [confirmData, setConfirmData] = useState<ConfirmData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -52,17 +52,30 @@ export function FloatingChat() {
     updateSessionTitle,
     panelHeight,
     setPanelHeight,
+    lastOperation,
+    setLastOperation,
+    clearLastOperation,
   } = useChatStore();
 
   const currentSession = getCurrentSession();
   const { searchResults, knowledgeGraph, searchEntries, getKnowledgeGraph, clearSearchResults, clearKnowledgeGraph, fetchEntries } =
     useTaskStore();
 
+  const [currentAction, setCurrentAction] = useState<{ type: "intent" | "tool" | "skill"; name: string; status: "pending" | "running" | "success" | "error" } | null>(null);
+
   const { result, isLoading, error, parse } = useStreamParse({
     onMessage: (role, content) => {
       if (currentSessionId) {
         addMessage(currentSessionId, { role, content });
       }
+    },
+    onIntentDetected: (intentResult) => {
+      // 意图检测完成，显示操作指示器
+      setCurrentAction({
+        type: "intent",
+        name: intentResult.intent,
+        status: "running",
+      });
     },
     onCreated: (_ids, count) => {
       // 刷新列表
@@ -74,12 +87,22 @@ export function FloatingChat() {
           `创建 ${count} 个条目`
         );
       }
+      // 设置操作状态
+      setCurrentAction((prev) => prev ? { ...prev, status: "success" } : null);
+      setLastOperation({
+        type: "create",
+        status: "success",
+        message: `已创建 ${count} 个条目`,
+        timestamp: Date.now(),
+      });
     },
     onUpdated: () => {
       fetchEntries();
+      setCurrentAction((prev) => prev ? { ...prev, status: "success" } : null);
     },
     onDeleted: () => {
       fetchEntries();
+      setCurrentAction((prev) => prev ? { ...prev, status: "success" } : null);
     },
     onConfirm: (data) => {
       setConfirmData(data);
@@ -91,6 +114,7 @@ export function FloatingChat() {
           content: `找到 ${data.items.length} 个匹配项，请选择：\n${itemList}\n\n输入序号选择，或输入"全部${actionLabel}"批量操作`,
         });
       }
+      setCurrentAction(null);
     },
     onResults: (items) => {
       // 将结果同步到 taskStore
@@ -108,6 +132,7 @@ export function FloatingChat() {
       }));
       useTaskStore.setState({ searchResults: searchItems as typeof searchResults });
       setCurrentIntent("read");
+      setCurrentAction((prev) => prev ? { ...prev, status: "success" } : null);
     },
   });
 
@@ -290,8 +315,30 @@ export function FloatingChat() {
       {/* 历史消息区域 */}
       {currentSession && currentSession.messages.length > 0 && (
         <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-3 border-b bg-muted/20 min-h-0">
+          {/* 当前操作指示器 */}
+          {currentAction && currentAction.status === "running" && (
+            <div className="mb-2">
+              <ActionIndicator
+                type={currentAction.type}
+                name={currentAction.name}
+                status={currentAction.status}
+              />
+            </div>
+          )}
+
           {currentSession.messages.map((msg) => (
             <div key={msg.id} className={`mb-2 ${msg.role === "user" ? "text-right" : "text-left"}`}>
+              {/* AI 消息时显示操作类型标签 */}
+              {msg.role === "assistant" && msg.metadata?.intent && (
+                <div className="mb-1">
+                  <ActionIndicator
+                    type="intent"
+                    name={msg.metadata.intent}
+                    status="success"
+                    compact
+                  />
+                </div>
+              )}
               <span className={`inline-block px-3 py-1.5 rounded-lg text-sm max-w-[80%] whitespace-pre-wrap break-words ${
                 msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
               }`}>
@@ -314,18 +361,18 @@ export function FloatingChat() {
 
       {/* 输入区域 */}
       <div className="shrink-0">
-        <QuickCommandHints
-          isVisible={isInputFocused && !input.trim()}
-          onSelectCommand={(example) => setInput(example)}
+        {/* 操作状态提示条 */}
+        <OperationStatusBar
+          operation={lastOperation}
+          onDismiss={clearLastOperation}
         />
+
 
         <div className="p-3">
           <form onSubmit={handleSubmit} className="flex gap-2">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onFocus={() => setIsInputFocused(true)}
-              onBlur={() => setIsInputFocused(false)}
               placeholder="输入内容、帮我搜索、把...改为...、或输入帮助..."
               className="flex-1"
               disabled={isLoading || isSubmitting}

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { Intent } from "@/lib/intentDetection";
 
 export interface ChatMessage {
   id: string;
@@ -11,6 +12,17 @@ export interface ChatMessage {
     entryId: string;
     title: string;
   };
+  // 预留元数据：意图、工具调用、Skill 调用
+  metadata?: {
+    intent?: Intent;
+    response?: string;
+    toolCalls?: {
+      type: "tool" | "skill";
+      name: string;
+      params?: Record<string, unknown>;
+      status: "running" | "success" | "error";
+    }[];
+  };
 }
 
 export interface ChatSession {
@@ -21,10 +33,21 @@ export interface ChatSession {
   updatedAt: number;
 }
 
+// 操作状态（用于状态提示条）
+export interface OperationStatus {
+  type: Intent | "tool" | "skill";  // 操作类型
+  name?: string;                     // 工具/Skill 名称
+  status: "pending" | "success" | "error";
+  message: string;                   // 显示消息
+  target?: string;                   // 操作目标（标题）
+  timestamp: number;
+}
+
 interface ChatStore {
   sessions: ChatSession[];
   currentSessionId: string | null;
   panelHeight: number; // FloatingChat 面板高度
+  lastOperation: OperationStatus | null; // 最近操作状态
 
   // Actions
   createSession: () => string;
@@ -38,6 +61,8 @@ interface ChatStore {
   updateSessionTitle: (id: string, title: string) => void;
   clearMessages: (sessionId: string) => void;
   setPanelHeight: (height: number) => void;
+  setLastOperation: (op: OperationStatus | null) => void;
+  clearLastOperation: () => void;
 }
 
 // 默认面板高度
@@ -49,6 +74,7 @@ export const useChatStore = create<ChatStore>()(
       sessions: [],
       currentSessionId: null,
       panelHeight: DEFAULT_PANEL_HEIGHT,
+      lastOperation: null,
 
       createSession: () => {
         const id = `session-${Date.now()}`;
@@ -130,7 +156,15 @@ export const useChatStore = create<ChatStore>()(
       setPanelHeight: (height) => {
         set({ panelHeight: height });
       },
+
+      setLastOperation: (op) => {
+        set({ lastOperation: op });
+      },
+
+      clearLastOperation: () => {
+        set({ lastOperation: null });
+      },
     }),
-    { name: "chat-storage" }
+    { name: "chat-storage", partialize: (state) => ({ sessions: state.sessions, currentSessionId: state.currentSessionId, panelHeight: state.panelHeight }) }
   )
 );

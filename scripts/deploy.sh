@@ -88,28 +88,17 @@ else
     COMPOSE_FILE="docker/docker-compose.prod.yml"
 fi
 
-# ===== 步骤 1: 构建前端 =====
-echo -e "${BLUE}=== 步骤 1/4: 构建前端 ===${NC}"
-echo -e "${YELLOW}🔨 构建前端 (base: ${FRONTEND_BASE_PATH})...${NC}"
-
-cd "$PROJECT_ROOT/frontend"
-if [ ! -d "node_modules" ]; then
-    echo -e "${YELLOW}📦 安装前端依赖...${NC}"
-    npm install
-fi
-
-FRONTEND_BASE_PATH=$FRONTEND_BASE_PATH npm run build
-mkdir -p "$PROJECT_ROOT/dist"
-cp -r dist/* "$PROJECT_ROOT/dist/"
-
-echo -e "${GREEN}✅ 前端构建完成${NC}"
+# ===== 步骤 1: 构建前端 (由 Docker 容器内完成) =====
+echo -e "${BLUE}=== 步骤 1/4: 准备构建 ===${NC}"
+echo -e "${YELLOW}ℹ️  前端将由 Docker 容器构建 (base: ${FRONTEND_BASE_PATH})${NC}"
 echo ""
 
-# ===== 步骤 2: 停止旧容器 =====
+# ===== 步骤 2: 停止旧容器并清理 volumes =====
 echo -e "${BLUE}=== 步骤 2/4: 停止旧容器 ===${NC}"
 cd "$PROJECT_ROOT"
-$DOCKER_COMPOSE -f $COMPOSE_FILE down 2>/dev/null || true
-echo -e "${GREEN}✅ 旧容器已停止${NC}"
+# 使用 -v 参数清理 volumes，确保前端构建产物是最新的
+$DOCKER_COMPOSE -f $COMPOSE_FILE down -v 2>/dev/null || true
+echo -e "${GREEN}✅ 旧容器和 volumes 已清理${NC}"
 echo ""
 
 # ===== 步骤 3: 构建并启动 Docker 服务 =====

@@ -98,12 +98,17 @@ interface UseStreamParseOptions {
   onComplete?: (result: ParseResult) => void;
   onError?: (error: Error) => void;
   onMessage?: (role: "user" | "assistant", content: string) => void;
+  // 新增：意图检测回调
+  onIntentDetected?: (intent: IntentResult) => void;
   // 新增：操作结果回调
   onCreated?: (ids: string[], count: number) => void;
   onUpdated?: (id: string, title: string, changes: Record<string, unknown>) => void;
   onDeleted?: (id: string) => void;
   onConfirm?: (data: ConfirmData) => void;
   onResults?: (items: ResultItem[]) => void;
+  // 预留：工具/Skill 调用回调
+  onToolStart?: (name: string, params: Record<string, unknown>) => void;
+  onToolEnd?: (name: string, result: Record<string, unknown>) => void;
 }
 
 // 确认请求参数
@@ -184,6 +189,8 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
                   if (currentEvent === "intent") {
                     try {
                       intentResult = JSON.parse(data) as IntentResult;
+                      // 触发意图检测回调
+                      optionsRef.current.onIntentDetected?.(intentResult);
                     } catch {
                       console.error("Intent parse error:", data);
                     }

@@ -173,11 +173,15 @@ async def _stream_chat_with_intent(text: str, session_id: str, skip_intent: bool
 
                 if created_ids:
                     yield sse_event("created", {"ids": created_ids, "count": len(created_ids)})
+                    # 获取第一个任务的标题用于更友好的提示
+                    first_title = tasks[0].get("title", "") if tasks else ""
+                    if len(created_ids) == 1 and first_title:
+                        yield sse_event("done", {"message": f"已记录「{first_title[:20]}」"})
+                    else:
+                        yield sse_event("done", {"message": f"已创建 {len(created_ids)} 个条目"})
 
             except json.JSONDecodeError as e:
                 yield sse_event("error", {"message": f"解析失败: {str(e)}"})
-
-        yield sse_event("done", {"message": "完成"})
 
     elif intent == "update":
         # 处理确认操作
