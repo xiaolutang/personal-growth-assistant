@@ -9,6 +9,7 @@ import type {
   RelatedConceptsResponse,
 } from "@/types/task";
 import { API_BASE } from "@/config/api";
+import { handleApiResponse, ApiError } from "@/lib/errors";
 
 // === 项目进度响应类型 ===
 export interface ProjectProgressResponse {
@@ -47,10 +48,7 @@ export async function getEntries(params?: {
   const response = await fetch(`${API_BASE}/entries?${searchParams.toString()}`, {
     cache: 'no-store',  // 禁用缓存，确保获取最新数据
   });
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
-  }
-  return response.json();
+  return handleApiResponse<EntryListResponse>(response);
 }
 
 /**
@@ -58,10 +56,7 @@ export async function getEntries(params?: {
  */
 export async function getEntry(id: string): Promise<Task> {
   const response = await fetch(`${API_BASE}/entries/${id}`);
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
-  }
-  return response.json();
+  return handleApiResponse<Task>(response);
 }
 
 /**
@@ -73,10 +68,7 @@ export async function createEntry(data: EntryCreate): Promise<Task> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
-  }
-  return response.json();
+  return handleApiResponse<Task>(response);
 }
 
 /**
@@ -88,10 +80,7 @@ export async function updateEntry(id: string, data: EntryUpdate): Promise<{ succ
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
-  }
-  return response.json();
+  return handleApiResponse<{ success: boolean; message: string }>(response);
 }
 
 /**
@@ -101,10 +90,7 @@ export async function deleteEntry(id: string): Promise<{ success: boolean; messa
   const response = await fetch(`${API_BASE}/entries/${id}`, {
     method: "DELETE",
   });
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
-  }
-  return response.json();
+  return handleApiResponse<{ success: boolean; message: string }>(response);
 }
 
 // === 搜索 API ===
@@ -140,7 +126,7 @@ async function vectorSearch(query: string, limit: number): Promise<SearchRespons
   });
 
   if (!response.ok) {
-    throw new Error(`Vector search failed: ${response.status}`);
+    throw new ApiError(response.status, `Vector search failed: ${response.status}`);
   }
 
   const data = await response.json();
@@ -158,7 +144,7 @@ async function sqliteSearch(query: string, limit: number): Promise<SearchRespons
   );
 
   if (!response.ok) {
-    throw new Error(`SQLite search failed: ${response.status}`);
+    throw new ApiError(response.status, `SQLite search failed: ${response.status}`);
   }
 
   const data = await response.json();
@@ -263,10 +249,7 @@ export async function getKnowledgeGraph(
   const response = await fetch(
     `${API_BASE}/knowledge-graph/${encodeURIComponent(concept)}?depth=${depth}`
   );
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
-  }
-  return response.json();
+  return handleApiResponse<KnowledgeGraphResponse>(response);
 }
 
 /**
@@ -276,10 +259,7 @@ export async function getRelatedConcepts(concept: string): Promise<RelatedConcep
   const response = await fetch(
     `${API_BASE}/related-concepts/${encodeURIComponent(concept)}`
   );
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
-  }
-  return response.json();
+  return handleApiResponse<RelatedConceptsResponse>(response);
 }
 
 // === 解析 API (旧接口) ===
@@ -294,7 +274,7 @@ export async function parseText(text: string, sessionId?: string): Promise<Respo
     body: JSON.stringify({ text, session_id: sessionId }),
   });
   if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
+    throw new ApiError(response.status, `Parse API error: ${response.status}`);
   }
   return response;
 }
@@ -306,9 +286,7 @@ export async function clearSession(sessionId: string): Promise<void> {
   const response = await fetch(`${API_BASE}/session/${sessionId}`, {
     method: "DELETE",
   });
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
-  }
+  await handleApiResponse<void>(response as any);
 }
 
 // === 项目进度 API ===
@@ -318,10 +296,7 @@ export async function clearSession(sessionId: string): Promise<void> {
  */
 export async function getProjectProgress(projectId: string): Promise<ProjectProgressResponse> {
   const response = await fetch(`${API_BASE}/entries/${projectId}/progress`);
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
-  }
-  return response.json();
+  return handleApiResponse<ProjectProgressResponse>(response);
 }
 
 // === 意图识别 API ===
@@ -359,3 +334,6 @@ export async function detectIntent(text: string): Promise<IntentResponse> {
 
   return response.json();
 }
+
+// 导出错误类供外部使用
+export { ApiError } from "@/lib/errors";

@@ -1,0 +1,39 @@
+#!/bin/bash
+# pre-commit hook: 提交前自动运行测试
+# 位置: .git/hooks/pre-commit
+
+set -e
+
+echo ""
+echo "🔍 运行提交前检查..."
+echo ""
+
+# 1. 后端单元测试
+echo "📦 后端测试..."
+cd backend
+if [ -d ".venv" ] || command -v uv &> /dev/null; then
+    uv run pytest tests/unit/ -q --tb=short 2>/dev/null || {
+        echo "❌ 后端测试失败"
+        exit 1
+    }
+fi
+cd ..
+
+# 2. 前端测试和构建
+echo "📦 前端测试..."
+cd frontend
+if [ -d "node_modules" ]; then
+    npm run test:run 2>/dev/null || {
+        echo "❌ 前端测试失败"
+        exit 1
+    }
+    npm run build 2>/dev/null || {
+        echo "❌ 前端构建失败"
+        exit 1
+    }
+fi
+cd ..
+
+echo ""
+echo "✅ 所有检查通过，正在提交..."
+echo ""

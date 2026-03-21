@@ -4,6 +4,12 @@ upstream backend {
     keepalive 32;
 }
 
+# 智能教学助手后端
+upstream teaching-backend {
+    server teaching-backend:8080;
+    keepalive 32;
+}
+
 # HTTP 服务
 server {
     listen 80;
@@ -100,6 +106,23 @@ server {
         proxy_set_header Connection '';
         proxy_buffering off;
         proxy_cache off;
+    }
+
+    # 智能教学助手 API 路由
+    location /teaching/api/ {
+        rewrite ^/teaching/api/(.*) /api/$1 break;
+        proxy_pass http://teaching-backend;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection "";
+
+        # 超时设置
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
     }
 
     # 健康检查

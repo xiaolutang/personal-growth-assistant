@@ -14,12 +14,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 复制依赖文件（单独复制，利用 Docker 缓存）
 COPY backend/pyproject.toml ./
 
-# 创建虚拟环境并安装依赖
+# 创建虚拟环境并从 pyproject.toml 安装依赖
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-RUN pip install --no-cache-dir \
-    fastapi uvicorn pydantic python-dotenv pyyaml \
-    neo4j qdrant-client mcp langchain-core langgraph openai
+RUN pip install --no-cache-dir .
 
 # 阶段2: 运行时镜像
 FROM python:3.12-slim

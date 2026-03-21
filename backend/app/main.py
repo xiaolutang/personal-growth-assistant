@@ -52,8 +52,8 @@ async def lifespan(app: FastAPI):
     log_service = LogService(storage=log_storage)
     deps.set_log_service(log_service)
 
-    # 初始化解析图
-    graph = TaskParserGraph(caller=APICaller())
+    # 初始化解析图（使用工厂方法）
+    graph = TaskParserGraph.create(caller=APICaller())
 
     # 初始化存储服务（可选，依赖环境变量）
     try:
@@ -102,9 +102,10 @@ app = FastAPI(
 )
 
 # CORS 中间件
+settings = get_settings()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 生产环境应限制
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

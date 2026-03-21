@@ -2,7 +2,7 @@ from typing import Any, AsyncGenerator
 
 from openai import AsyncOpenAI
 
-from app.config import LLMConfig
+from app.core.config import get_settings
 
 from .base import LLMCaller
 
@@ -33,12 +33,13 @@ class APICaller(LLMCaller):
             base_url: API 地址，默认从配置读取
             model: 模型名称，默认从配置读取
         """
-        self.api_key = api_key or LLMConfig.API_KEY
-        self.base_url = base_url or LLMConfig.BASE_URL
-        self.model = model or LLMConfig.MODEL
+        settings = get_settings()
+        self.api_key = api_key or settings.LLM_API_KEY
+        self.base_url = base_url or settings.LLM_BASE_URL
+        self.model = model or settings.LLM_MODEL
 
         if not self.api_key:
-            LLMConfig.validate()  # 抛出友好的错误信息
+            settings.validate_llm()  # 抛出友好的错误信息
 
         # 使用异步客户端，避免阻塞事件循环
         self.client = AsyncOpenAI(

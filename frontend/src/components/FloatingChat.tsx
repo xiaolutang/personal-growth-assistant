@@ -11,12 +11,14 @@ import {
   useStreamParse,
   type ConfirmData,
 } from "@/hooks/useStreamParse";
+import { useConfirmHandler } from "@/hooks/useConfirmHandler";
+import { useIntentDispatcher } from "@/hooks/useIntentDispatcher";
+import { useChatActions } from "@/hooks/useChatActions";
 import { useTaskStore } from "@/stores/taskStore";
 import { useChatStore } from "@/stores/chatStore";
 import { SearchResultList } from "@/components/SearchResultCard";
 import { KnowledgeGraphInline } from "@/components/KnowledgeGraph";
-import { getHelpMessage, type Intent } from "@/lib/intentDetection";
-import { generateReviewReport, formatShortReview } from "@/lib/reviewFormatter";
+import type { Intent } from "@/lib/intentDetection";
 import { OperationStatusBar } from "@/components/OperationStatusBar";
 import { ActionIndicator } from "@/components/ActionIndicator";
 
@@ -24,26 +26,21 @@ import { ActionIndicator } from "@/components/ActionIndicator";
 const MIN_HEIGHT = 200;
 const MAX_HEIGHT = 600;
 
-// 辅助函数：更新会话标题（如果需要）
-function updateTitleIfNeeded(
-  session: { title: string } | null | undefined,
-  updateFn: (title: string) => void,
-  newTitle: string
-) {
-  if (session?.title === "新对话") {
-    updateFn(newTitle.slice(0, 20));
-  }
-}
-
 export function FloatingChat() {
   const [input, setInput] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [currentIntent, setCurrentIntent] = useState<Intent | null>(null);
   const [confirmData, setConfirmData] = useState<ConfirmData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentAction, setCurrentAction] = useState<{
+    type: Intent | "tool" | "skill";
+    name?: string;
+    status: "pending" | "running" | "success" | "error";
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
+  // Chat store
   const {
     currentSessionId,
     createSession,
@@ -53,159 +50,110 @@ export function FloatingChat() {
     panelHeight,
     setPanelHeight,
     lastOperation,
-    setLastOperation,
     clearLastOperation,
+    fetchSessions,
+    fetchSessionMessages,
   } = useChatStore();
 
   const currentSession = getCurrentSession();
-  const { searchResults, knowledgeGraph, searchEntries, getKnowledgeGraph, clearSearchResults, clearKnowledgeGraph, fetchEntries } =
-    useTaskStore();
 
-  const [currentAction, setCurrentAction] = useState<{ type: "intent" | "tool" | "skill"; name: string; status: "pending" | "running" | "success" | "error" } | null>(null);
+  // 初始化时加载会话列表
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
 
+  // 切换会话时加载消息历史
+  useEffect(() => {
+    if (currentSessionId) {
+      fetchSessionMessages(currentSessionId);
+    }
+  }, [currentSessionId, fetchSessionMessages]);
+
+  // Task store
+  const {
+    searchResults,
+    knowledgeGraph,
+    searchEntries,
+    getKnowledgeGraph,
+    clearSearchResults,
+    clearKnowledgeGraph,
+    fetchEntries,
+  } = useTaskStore();
+
+  // Chat actions hook
+  const {
+    onIntentDetected,
+    onCreated,
+    onUpdated,
+    onDeleted,
+    onConfirm,
+    onResults,
+    updateTitleIfNeeded,
+  } = useChatActions({
+    currentSessionId,
+    currentSession,
+    addMessage,
+    updateSessionTitle,
+    fetchEntries,
+    setSearchResults: (results) => useTaskStore.setState({ searchResults: results as typeof searchResults }),
+    clearSearchResults,
+    setCurrentAction,
+    setLastOperation: (op) => {
+      if (op) {
+        useChatStore.getState().setLastOperation({
+          type: op.type as any,
+          status: op.status as any,
+          message: op.message,
+          timestamp: op.timestamp,
+        });
+      } else {
+        useChatStore.getState().clearLastOperation();
+      }
+    },
+    setConfirmData,
+    setCurrentIntent,
+  });
+
+  // Stream parse hook
   const { result, isLoading, error, parse } = useStreamParse({
     onMessage: (role, content) => {
       if (currentSessionId) {
         addMessage(currentSessionId, { role, content });
       }
     },
-    onIntentDetected: (intentResult) => {
-      // 意图检测完成，显示操作指示器
-      setCurrentAction({
-        type: "intent",
-        name: intentResult.intent,
-        status: "running",
-      });
-    },
-    onCreated: (_ids, count) => {
-      // 刷新列表
-      fetchEntries();
-      if (currentSessionId) {
-        updateTitleIfNeeded(
-          currentSession,
-          (t) => updateSessionTitle(currentSessionId, t),
-          `创建 ${count} 个条目`
-        );
-      }
-      // 设置操作状态
-      setCurrentAction((prev) => prev ? { ...prev, status: "success" } : null);
-      setLastOperation({
-        type: "create",
-        status: "success",
-        message: `已创建 ${count} 个条目`,
-        timestamp: Date.now(),
-      });
-    },
-    onUpdated: () => {
-      fetchEntries();
-      setCurrentAction((prev) => prev ? { ...prev, status: "success" } : null);
-    },
-    onDeleted: () => {
-      fetchEntries();
-      setCurrentAction((prev) => prev ? { ...prev, status: "success" } : null);
-    },
-    onConfirm: (data) => {
-      setConfirmData(data);
-      if (currentSessionId) {
-        const itemList = data.items.map((item, i) => `${i + 1}. ${item.title}`).join("\n");
-        const actionLabel = data.action === "delete" ? "删除" : "更新";
-        addMessage(currentSessionId, {
-          role: "assistant",
-          content: `找到 ${data.items.length} 个匹配项，请选择：\n${itemList}\n\n输入序号选择，或输入"全部${actionLabel}"批量操作`,
-        });
-      }
-      setCurrentAction(null);
-    },
-    onResults: (items) => {
-      // 将结果同步到 taskStore
-      clearSearchResults();
-      const searchItems: Array<{
-        id: string;
-        title: string;
-        status?: string;
-        category?: string;
-      }> = items.map((item) => ({
-        id: item.id,
-        title: item.title,
-        status: item.status,
-        category: item.category,
-      }));
-      useTaskStore.setState({ searchResults: searchItems as typeof searchResults });
-      setCurrentIntent("read");
-      setCurrentAction((prev) => prev ? { ...prev, status: "success" } : null);
-    },
+    onIntentDetected,
+    onCreated,
+    onUpdated,
+    onDeleted,
+    onConfirm,
+    onResults,
+  });
+
+  // Confirm handler hook
+  const { handleConfirm } = useConfirmHandler(confirmData, {
+    currentSessionId,
+    createSession,
+    addMessage,
+    parse,
+  });
+
+  // Intent dispatcher hook
+  const { dispatchIntent } = useIntentDispatcher({
+    currentSessionId,
+    currentSession,
+    createSession,
+    addMessage,
+    updateSessionTitle,
+    searchEntries,
+    getKnowledgeGraph,
+    setKnowledgeGraph: (graph) => useTaskStore.setState({ knowledgeGraph: graph as typeof knowledgeGraph }),
+    setCurrentIntent,
   });
 
   // 自动滚动到底部
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [currentSession?.messages, searchResults, knowledgeGraph]);
-
-  // 处理确认操作（多选场景）
-  const handleConfirm = useCallback(
-    async (userMessage: string): Promise<boolean> => {
-      if (!confirmData) return false;
-
-      const activeSessionId = currentSessionId || createSession();
-
-      // 批量操作
-      const batchKeywords = ["都", "全部", "所有", "两个", "三个", "这几个", "以上"];
-      if (batchKeywords.some((k) => userMessage.includes(k))) {
-        // 批量操作：依次发送确认请求
-        const results = [];
-        for (const item of confirmData.items) {
-          try {
-            await parse(
-              `${confirmData.action === "delete" ? "删除" : "更新"} ${item.title}`,
-              activeSessionId,
-              { action: confirmData.action, item_id: item.id }
-            );
-            results.push({ success: true });
-          } catch {
-            results.push({ success: false });
-          }
-        }
-        const successCount = results.filter((r) => r.success).length;
-        const actionLabel = confirmData.action === "delete" ? "删除" : "更新";
-        addMessage(activeSessionId, {
-          role: "assistant",
-          content: `已${actionLabel} ${successCount} 个条目`,
-        });
-        setConfirmData(null);
-        return true;
-      }
-
-      // 数字选择
-      const num = parseInt(userMessage);
-      if (!isNaN(num) && num >= 1 && num <= confirmData.items.length) {
-        const selected = confirmData.items[num - 1];
-        try {
-          await parse(
-            `${confirmData.action === "delete" ? "删除" : "更新"} ${selected.title}`,
-            activeSessionId,
-            { action: confirmData.action, item_id: selected.id }
-          );
-        } catch {
-          addMessage(activeSessionId, {
-            role: "assistant",
-            content: "操作失败",
-          });
-        }
-        setConfirmData(null);
-        return true;
-      }
-
-      // 取消操作
-      if (/取消|算了|不要了|不删|不更/.test(userMessage)) {
-        addMessage(activeSessionId, { role: "assistant", content: "操作已取消" });
-        setConfirmData(null);
-        return true;
-      }
-
-      return false;
-    },
-    [confirmData, currentSessionId, createSession, addMessage, parse]
-  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -232,32 +180,16 @@ export function FloatingChat() {
       const { query, entities } = response.intent;
 
       // 更新会话标题
-      updateTitleIfNeeded(currentSession, (t) => updateSessionTitle(activeSessionId, t), userMessage.slice(0, 20));
+      updateTitleIfNeeded(userMessage.slice(0, 20));
 
       // 对于需要前端额外处理的意图
-      if (response.operation?.confirm) {
-        // confirm 已在 onConfirm 回调中处理
-      } else if (intent === "review") {
-        // review 需要前端处理（本地生成报告）
-        const period = (entities?.period || "daily") as "daily" | "weekly" | "monthly";
-        const entries = await searchEntries("", 50);
-        const report = generateReviewReport(entries, period);
-        addMessage(activeSessionId, { role: "assistant", content: formatShortReview(report) });
-        const typeLabel = period === "daily" ? "日报" : period === "weekly" ? "周报" : "月报";
-        updateTitleIfNeeded(currentSession, (t) => updateSessionTitle(activeSessionId, t), typeLabel);
-      } else if (intent === "knowledge") {
-        // knowledge 需要前端处理（调用知识图谱 API）
-        const graph = await getKnowledgeGraph(query || userMessage, 2);
-        addMessage(activeSessionId, {
-          role: "assistant",
-          content: graph?.center ? `已加载 "${query}" 的知识图谱` : "没有找到相关知识图谱",
-        });
-        updateTitleIfNeeded(currentSession, (t) => updateSessionTitle(activeSessionId, t), `图谱: ${query || ""}`);
-      } else if (intent === "help") {
-        addMessage(activeSessionId, { role: "assistant", content: getHelpMessage() });
-        updateTitleIfNeeded(currentSession, (t) => updateSessionTitle(activeSessionId, t), "帮助");
+      if (!response.operation?.confirm) {
+        const handled = await dispatchIntent(intent, query || "", entities, userMessage);
+        // 如果 dispatchIntent 返回 false，说明意图由后端处理完成
+        if (!handled) {
+          // create/update/delete/read 意图由后端处理完成
+        }
       }
-      // create/update/delete/read 意图由后端处理完成，无需额外操作
     } catch (err) {
       console.error("Parse error:", err);
     }
@@ -319,8 +251,8 @@ export function FloatingChat() {
           {currentAction && currentAction.status === "running" && (
             <div className="mb-2">
               <ActionIndicator
-                type={currentAction.type}
-                name={currentAction.name}
+                type={currentAction.type === "tool" || currentAction.type === "skill" ? currentAction.type : "intent"}
+                name={currentAction.name || (currentAction.type !== "tool" && currentAction.type !== "skill" ? currentAction.type : "")}
                 status={currentAction.status}
               />
             </div>
@@ -366,7 +298,6 @@ export function FloatingChat() {
           operation={lastOperation}
           onDismiss={clearLastOperation}
         />
-
 
         <div className="p-3">
           <form onSubmit={handleSubmit} className="flex gap-2">
