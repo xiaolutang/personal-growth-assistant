@@ -1,4 +1,13 @@
-# 灵感收集
+---
+id: inbox
+type: inbox
+title: 灵感收集
+status: doing
+priority: medium
+created_at: '2026-03-20T03:49:21.388367'
+updated_at: '2026-03-21T15:40:54.537417'
+tags: []
+---
 
 > 偶现的想法、灵感、待整理的事项
 

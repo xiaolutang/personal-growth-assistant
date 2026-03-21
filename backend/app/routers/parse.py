@@ -121,7 +121,7 @@ async def clear_session(session_id: str):
     """
     if not _graph:
         raise HTTPException(status_code=503, detail="服务未初始化")
-    _graph.clear_thread(session_id)
+    await _graph.clear_thread(session_id)
     return {"status": "ok", "message": f"会话 {session_id} 已清空"}
 
 
@@ -219,6 +219,8 @@ async def get_session_messages(session_id: str):
 
     从 LangGraph checkpointer 读取消息
     """
+    from langchain_core.messages import HumanMessage as LCHumanMessage, AIMessage as LCAIMessage
+
     if not _graph:
         raise HTTPException(status_code=503, detail="服务未初始化")
 
@@ -234,17 +236,27 @@ async def get_session_messages(session_id: str):
             msgs = channel_values.get("messages", [])
 
             for i, msg in enumerate(msgs):
-                role = "user" if msg.get("type") == "human" else "assistant"
+                # 处理 LangChain 消息对象
+                if isinstance(msg, LCHumanMessage):
+                    role = "user"
+                    content = msg.content if isinstance(msg.content, str) else str(msg.content)
+                elif isinstance(msg, LCAIMessage):
+                    role = "assistant"
+                    content = msg.content if isinstance(msg.content, str) else str(msg.content)
+                else:
+                    # 兼容字典格式
+                    role = "user" if isinstance(msg, dict) and msg.get("type") == "human" else "assistant"
+                    content = msg.get("content", "") if isinstance(msg, dict) else str(msg)
+
                 messages.append(MessageInfo(
                     id=f"{session_id}-{i}",
                     role=role,
-                    content=msg.get("content", ""),
-                    timestamp=state.metadata.get("write_timestamp", datetime.now().isoformat()) if state.metadata else datetime.now().isoformat(),
+                    content=content,
+                    timestamp=state.checkpoint.get("ts", datetime.now().isoformat()),
                 ))
     except Exception as e:
         # 会话不存在或读取失败时返回空列表
         logger.debug(f"Failed to get session messages for {session_id}: {e}")
-        pass
 
     return messages
 
@@ -284,7 +296,7 @@ async def delete_session(session_id: str):
         raise HTTPException(status_code=503, detail="服务未初始化")
 
     # 删除对话历史
-    _graph.clear_thread(session_id)
+    await _graph.clear_thread(session_id)
 
     # 删除元数据
     _session_meta_store.delete_session(session_id)

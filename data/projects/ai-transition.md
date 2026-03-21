@@ -1,4 +1,13 @@
-# 项目清单
+---
+id: ai-transition
+type: project
+title: 项目清单
+status: doing
+priority: medium
+created_at: '2026-03-14T15:26:47'
+updated_at: '2026-03-21T15:05:53.705138'
+tags: []
+---
 
 > 所有长期项目及其进度跟踪
 

@@ -16,7 +16,8 @@ class TestSettings:
         assert settings.APP_NAME == "Personal Growth Assistant"
         assert settings.APP_VERSION == "0.3.0"
         assert settings.DEBUG is False
-        assert settings.DATA_DIR == "./data"
+        # DATA_DIR 现在使用绝对路径（基于项目根目录）
+        assert settings.DATA_DIR.endswith("/data")
         assert settings.EMBEDDING_MODEL == "text-embedding-v3"
 
     def test_sqlite_db_path_default(self):

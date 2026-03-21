@@ -59,8 +59,8 @@ async def lifespan(app: FastAPI):
     log_service = LogService(storage=log_storage)
     deps.set_log_service(log_service)
 
-    # 初始化解析图（使用工厂方法）
-    graph = TaskParserGraph.create(caller=APICaller())
+    # 初始化解析图（使用工厂方法，异步创建）
+    graph = await TaskParserGraph.create(caller=APICaller())
 
     # 初始化存储服务（可选，依赖环境变量）
     try:

@@ -5,7 +5,7 @@ from typing import AsyncGenerator, Any
 
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.runnables import RunnableConfig
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import StateGraph, MessagesState, START, END
 
 from app.callers import LLMCaller
@@ -93,13 +93,13 @@ SYSTEM_PROMPT_TEMPLATE = """你是一个任务解析助手。用户会输入一�
 class TaskParserGraph:
     """基于 LangGraph 的任务解析图，支持对话历史"""
 
-    def __init__(self, caller: LLMCaller, checkpointer: SqliteSaver):
+    def __init__(self, caller: LLMCaller, checkpointer: AsyncSqliteSaver):
         self.caller = caller
         self.checkpointer = checkpointer
         self.graph = self._build_graph()
 
     @classmethod
-    def create(cls, caller: LLMCaller, db_path: str | None = None) -> "TaskParserGraph":
+    async def create(cls, caller: LLMCaller, db_path: str | None = None) -> "TaskParserGraph":
         """
         工厂方法：创建 TaskParserGraph 实例
 
@@ -107,14 +107,15 @@ class TaskParserGraph:
             caller: LLM 调用器
             db_path: SQLite 数据库路径，默认从配置读取
         """
+        import aiosqlite
+
         if db_path is None:
             db_path = get_settings().sqlite_checkpoints_path
 
-        # 使用同步的 SqliteSaver
-        import sqlite3
-        conn = sqlite3.connect(db_path, check_same_thread=False)
-        checkpointer = SqliteSaver(conn)
-        checkpointer.setup()
+        # 使用 aiosqlite 创建异步连接
+        conn = await aiosqlite.connect(db_path)
+        checkpointer = AsyncSqliteSaver(conn)
+        await checkpointer.setup()
         return cls(caller, checkpointer)
 
     def _build_graph(self):
@@ -177,6 +178,6 @@ class TaskParserGraph:
 
         yield "data: [DONE]\n\n"
 
-    def clear_thread(self, thread_id: str):
+    async def clear_thread(self, thread_id: str):
         """清空指定线程的对话历史"""
-        self.checkpointer.delete_thread(thread_id)
+        await self.checkpointer.adelete_thread(thread_id)

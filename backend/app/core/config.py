@@ -5,6 +5,10 @@ from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# 项目根目录（配置文件所在目录的父目录）
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
+DATA_DIR_DEFAULT = str(PROJECT_ROOT / "data")
+
 
 class Settings(BaseSettings):
     """应用配置 - 所有配置从环境变量读取"""
@@ -20,8 +24,8 @@ class Settings(BaseSettings):
     APP_VERSION: str = "0.3.0"
     DEBUG: bool = False
 
-    # 数据目录
-    DATA_DIR: str = "./data"
+    # 数据目录（默认使用项目根目录的 data/）
+    DATA_DIR: str = DATA_DIR_DEFAULT
 
     # LLM 配置
     LLM_API_KEY: str = ""
@@ -42,7 +46,7 @@ class Settings(BaseSettings):
 
     # SQLite 配置
     SQLITE_PATH: Optional[str] = None
-    SQLITE_CHECKPOINTS_PATH: str = "./data/checkpoints.db"  # LangGraph 对话历史存储
+    SQLITE_CHECKPOINTS_PATH: Optional[str] = None  # LangGraph 对话历史存储，默认 {DATA_DIR}/checkpoints.db
 
     # 日志配置
     LOG_LEVEL: str = "INFO"
@@ -92,7 +96,7 @@ class Settings(BaseSettings):
     @property
     def sqlite_checkpoints_path(self) -> str:
         """获取 LangGraph checkpoints 存储路径"""
-        return self.SQLITE_CHECKPOINTS_PATH
+        return self.SQLITE_CHECKPOINTS_PATH or f"{self.DATA_DIR}/checkpoints.db"
 
 
 @lru_cache
