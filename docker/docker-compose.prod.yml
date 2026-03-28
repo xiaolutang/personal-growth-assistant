@@ -92,8 +92,11 @@ services:
       - ../docker/nginx/templates:/etc/nginx/templates:ro
       - frontend-dist:/usr/share/nginx/html:ro
       - nginx-confd:/etc/nginx/conf.d  # 使用 volume 覆盖默认配置
+      - /Users/tangxiaolu/project/log-service/logs-ui/dist:/etc/nginx/logs-ui:ro
     depends_on:
       backend:
+        condition: service_healthy
+      log-service:
         condition: service_healthy
     networks:
       - pga-network
@@ -113,6 +116,26 @@ services:
     volumes:
       - frontend-dist:/usr/share/nginx/html
 
+  # 日志服务后端
+  log-service:
+    image: log-service:latest
+    container_name: log-service
+    restart: unless-stopped
+    environment:
+      - LOG_DB_PATH=/app/data/logs.db
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_RETENTION_DAYS=${LOG_RETENTION_DAYS:-30}
+    volumes:
+      - log-data:/app/data
+    networks:
+      - pga-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
 
 networks:
   pga-network:
@@ -124,3 +147,4 @@ volumes:
   qdrant-data:
   frontend-dist:
   nginx-confd:
+  log-data:
