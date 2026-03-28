@@ -6,7 +6,6 @@ from .review import router as review_router
 from .intent import router as intent_router
 from .parse import router as parse_router
 from .playground import router as playground_router
-from .logs import router as logs_router
 
 __all__ = [
     "entries_router",
@@ -16,5 +15,4 @@ __all__ = [
     "intent_router",
     "parse_router",
     "playground_router",
-    "logs_router",
 ]

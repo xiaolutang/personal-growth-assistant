@@ -9,9 +9,7 @@ from pydantic import BaseModel
 
 from app.callers import APICaller
 from app.core.config import get_settings
-from app.core.logging import setup_logging, shutdown_logging
 from app.graphs.task_parser_graph import TaskParserGraph
-from app.infrastructure.logging.storage import LogStorage
 from app.routers import (
     entries_router,
     search_router,
@@ -20,7 +18,6 @@ from app.routers import (
     intent_router,
     parse_router,
     playground_router,
-    logs_router,
 )
 from app.routers import deps
 from app.services import init_storage
@@ -41,23 +38,12 @@ async def lifespan(app: FastAPI):
 
     settings = get_settings()
 
-    # 初始化日志系统
-    log_storage = LogStorage(db_path=settings.log_db_path)
-    setup_logging(level=settings.LOG_LEVEL, log_storage=log_storage)
-    logger.info("日志系统初始化成功")
-
     # 配置 LangSmith 可观测性（LangGraph 自动读取这些环境变量）
     if settings.LANGSMITH_API_KEY:
         os.environ["LANGSMITH_API_KEY"] = settings.LANGSMITH_API_KEY
         os.environ["LANGSMITH_TRACING"] = "true" if settings.LANGSMITH_TRACING else "false"
         os.environ["LANGSMITH_PROJECT"] = settings.LANGSMITH_PROJECT
         logger.info(f"LangSmith tracing enabled, project: {settings.LANGSMITH_PROJECT}")
-
-    # 初始化日志服务
-    from app.services.log_service import LogService
-
-    log_service = LogService(storage=log_storage)
-    deps.set_log_service(log_service)
 
     # 初始化解析图（使用工厂方法，异步创建）
     graph = await TaskParserGraph.create(caller=APICaller())
@@ -80,7 +66,6 @@ async def lifespan(app: FastAPI):
 
         # 注入 LLM Caller 到意图识别服务（通过 deps）
         deps.reset_all_services()
-        deps.set_log_service(log_service)  # 重新设置 log_service
         intent_service = deps.get_intent_service()
         if graph.caller:
             intent_service.set_llm_caller(graph.caller)
@@ -95,9 +80,6 @@ async def lifespan(app: FastAPI):
         logger.error(f"存储服务初始化失败（部分功能不可用）: {e}")
 
     yield
-
-    # 关闭日志系统
-    shutdown_logging()
 
 
 app = FastAPI(
@@ -129,7 +111,6 @@ app.include_router(review_router)
 app.include_router(intent_router)
 app.include_router(parse_router)
 app.include_router(playground_router)
-app.include_router(logs_router)
 
 
 # === 健康检查 ===

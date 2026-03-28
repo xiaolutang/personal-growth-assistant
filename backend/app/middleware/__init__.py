@@ -53,9 +53,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
     # 不记录日志的路径前缀
     SKIP_PATH_PREFIXES = (
-        "/logs",  # 日志 API（nginx 已重写）
         "/health",  # 健康检查
-        "/admin/logs",  # 日志 UI
         "/favicon",  # 图标
     )
 

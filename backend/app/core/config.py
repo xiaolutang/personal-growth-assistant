@@ -50,8 +50,6 @@ class Settings(BaseSettings):
 
     # 日志配置
     LOG_LEVEL: str = "INFO"
-    LOG_DB_PATH: Optional[str] = None  # 默认 {DATA_DIR}/logs.db
-    LOG_RETENTION_DAYS: int = 30
 
     # LangSmith 可观测性配置（可选）
     LANGSMITH_API_KEY: Optional[str] = None
@@ -87,11 +85,6 @@ class Settings(BaseSettings):
     def sqlite_db_path(self) -> str:
         """获取 SQLite 数据库路径"""
         return self.SQLITE_PATH or f"{self.DATA_DIR}/index.db"
-
-    @property
-    def log_db_path(self) -> str:
-        """获取日志数据库路径"""
-        return self.LOG_DB_PATH or f"{self.DATA_DIR}/logs.db"
 
     @property
     def sqlite_checkpoints_path(self) -> str:
