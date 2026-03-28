@@ -44,6 +44,7 @@ async def lifespan(app: FastAPI):
     _log_handler = setup_remote_logging(
         endpoint=settings.LOG_SERVICE_URL,
         service_name="personal-growth-assistant",
+        component="backend",
         level=settings.LOG_LEVEL,
     )
     logger.info("远程日志初始化完成, endpoint=%s", settings.LOG_SERVICE_URL)

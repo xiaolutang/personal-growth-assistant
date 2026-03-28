@@ -1,0 +1,517 @@
+{
+  "plan_version": "1.3",
+  "project": "log-service",
+  "created_at": "2026-03-28",
+  "updated_at": "2026-03-28",
+  "status": "confirmed",
+  "summary": {
+    "total_tasks": 18,
+    "pending": 0,
+    "in_progress": 0,
+    "completed": 18,
+    "cancelled": 0
+  },
+  "phases": [
+    {
+      "id": "P1",
+      "name": "日志服务核心",
+      "description": "搭建 log-service 独立仓库，迁移并适配现有日志模块"
+    },
+    {
+      "id": "P2",
+      "name": "Python SDK",
+      "description": "实现 Python SDK，支持各 Python 项目通过 pip 安装接入"
+    },
+    {
+      "id": "P3",
+      "name": "前端迁移",
+      "description": "迁移 logs-ui 到新仓库，适配新 API 并支持 service_name 筛选"
+    },
+    {
+      "id": "P4",
+      "name": "当前项目改造",
+      "description": "personal-growth-assistant 移除本地日志模块，改用 SDK 接入"
+    },
+    {
+      "id": "P5",
+      "name": "部署与集成验证",
+      "description": "Docker 部署配置与端到端冒烟验证"
+    }
+  ],
+  "modules": [
+    {
+      "id": "M1",
+      "name": "日志服务核心",
+      "phase": "P1"
+    },
+    {
+      "id": "M2",
+      "name": "Python SDK",
+      "phase": "P2"
+    },
+    {
+      "id": "M3",
+      "name": "日志前端",
+      "phase": "P3"
+    },
+    {
+      "id": "M4",
+      "name": "项目改造",
+      "phase": "P4"
+    },
+    {
+      "id": "M5",
+      "name": "部署集成",
+      "phase": "P5"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "S001",
+      "phase": "P1",
+      "module": "M1",
+      "name": "项目初始化与目录结构",
+      "description": "创建 log-service 仓库，初始化 Python 项目结构（pyproject.toml、目录结构、配置类）。从 personal-growth-assistant/core/config.py 提取日志相关配置项到独立的 Settings 类。",
+      "depends_on": [],
+      "acceptance_criteria": [
+        "log-service 仓库已创建，目录结构符合 project_spec",
+        "pyproject.toml 包含必要依赖（fastapi, pydantic, pydantic-settings, uvicorn）",
+        "Settings 类包含 LOG_LEVEL, LOG_DB_PATH, LOG_RETENTION_DAYS, HOST, PORT 配置项",
+        "uv run python -c 'from app.core.config import Settings; s = Settings(); print(s.LOG_LEVEL)' 正常运行"
+      ],
+      "risk_tags": ["startup", "config"],
+      "test_tasks": [
+        {
+          "type": "unit",
+          "description": "Settings 默认值正确",
+          "scenario": "验证 LOG_LEVEL=INFO, LOG_RETENTION_DAYS=30 等默认值"
+        },
+        {
+          "type": "unit",
+          "description": "环境变量覆盖生效",
+          "scenario": "设置 LOG_LEVEL=DEBUG 环境变量后，Settings.LOG_LEVEL 返回 DEBUG"
+        }
+      ],
+      "smoke_required": true,
+      "status": "completed",
+      "started_at": "2026-03-28T08:45:00Z",
+      "completed_at": "2026-03-28T08:52:00Z",
+      "actual_minutes": 7,
+      "commit": "e7a9b08",
+      "notes": "11 tests passed, audit done"
+    },
+    {
+      "id": "B001",
+      "phase": "P1",
+      "module": "M1",
+      "name": "迁移存储层 storage.py",
+      "description": "从 personal-growth-assistant 迁移 infrastructure/logging/storage.py，新增 service_name 字段到 LogEntry 模型和 SQLite 表结构，保留原有全部字段和索引。",
+      "depends_on": ["S001"],
+      "acceptance_criteria": [
+        "LogStorage 类可独立实例化并创建 SQLite 表",
+        "logs 表包含 service_name 字段",
+        "batch_insert 支持传入 service_name",
+        "query 支持 service_name 筛选",
+        "stats 支持按 service_name 分组统计",
+        "原有字段（level, message, request_id, method, path, status_code 等）全部保留"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        {
+          "type": "unit",
+          "description": "建表与字段完整性",
+          "scenario": "创建 LogStorage 后检查 logs 表结构，确认所有字段存在且类型正确"
+        },
+        {
+          "type": "unit",
+          "description": "批量插入与查询",
+          "scenario": "插入 3 条不同 service_name 的日志，按 service_name 查询确认结果正确"
+        },
+        {
+          "type": "unit",
+          "description": "统计按 service_name 分组",
+          "scenario": "插入多个 service_name 的日志，验证 count_by_service 返回正确分组计数"
+        }
+      ],
+      "status": "completed",
+      "started_at": "2026-03-28T08:52:00Z",
+      "completed_at": "2026-03-28T08:58:00Z",
+      "actual_minutes": 6,
+      "commit": "fec7f42",
+      "notes": "19 tests passed"
+    },
+    {
+      "id": "B002",
+      "phase": "P1",
+      "module": "M1",
+      "name": "迁移日志 Handler",
+      "description": "迁移 infrastructure/logging/handler.py（SQLiteLogHandler），适配新增的 service_name 字段。",
+      "depends_on": ["B001"],
+      "acceptance_criteria": [
+        "SQLiteLogHandler 继承 logging.Handler，可注册到 root logger",
+        "后台线程正常启动，批量写入日志到 SQLite",
+        "日志记录包含 service_name",
+        "进程退出时自动 flush 队列中的剩余日志"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        {
+          "type": "unit",
+          "description": "Handler 注册与写入",
+          "scenario": "注册 Handler 后 logger.info() 调用，检查 SQLite 中有对应记录"
+        },
+        {
+          "type": "unit",
+          "description": "批量攒批与 flush",
+          "scenario": "快速写入 200 条日志，验证全部写入 SQLite"
+        }
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "B003",
+      "phase": "P1",
+      "module": "M1",
+      "name": "日志初始化入口",
+      "description": "迁移 core/logging.py，提供 setup_logging / shutdown_logging 函数，支持配置 service_name。",
+      "depends_on": ["B002"],
+      "acceptance_criteria": [
+        "setup_logging(level, log_storage, service_name) 可正常初始化",
+        "root logger 同时输出到控制台和 SQLite",
+        "shutdown_logging 正确 flush 并清理资源"
+      ],
+      "risk_tags": ["startup"],
+      "status": "completed",
+      "started_at": "2026-03-28T08:58:00Z",
+      "completed_at": "2026-03-28T09:05:00Z",
+      "actual_minutes": 7,
+      "commit": "293fce7",
+      "notes": "11 tests passed, setup_logging + shutdown_logging"
+    },
+    {
+      "id": "B004",
+      "phase": "P1",
+      "module": "M1",
+      "name": "新增 ingest API",
+      "description": "实现 POST /api/logs/ingest 端点，接收外部项目批量上报的日志。这是跨项目接入的核心接口。包含请求体校验（Pydantic 模型）和批量写入。",
+      "depends_on": ["B001"],
+      "acceptance_criteria": [
+        "POST /api/logs/ingest 接收 {service_name, logs[]} 格式",
+        "service_name 必填，缺失返回 422",
+        "logs 数组中每条记录校验通过后写入 SQLite",
+        "返回 {ingested: count}",
+        "空 logs 数组返回 {ingested: 0}，不报错"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        {
+          "type": "unit",
+          "description": "正常批量写入",
+          "scenario": "POST 3 条日志，验证返回 ingested=3 且 SQLite 中有对应记录"
+        },
+        {
+          "type": "unit",
+          "description": "service_name 缺失",
+          "scenario": "POST 不含 service_name 的请求，验证返回 422"
+        },
+        {
+          "type": "unit",
+          "description": "空 logs 数组",
+          "scenario": "POST {service_name: 'test', logs: []}，验证返回 200 ingested=0"
+        },
+        {
+          "type": "unit",
+          "description": "大批量写入",
+          "scenario": "POST 500 条日志，验证全部写入成功"
+        }
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "B005",
+      "phase": "P1",
+      "module": "M1",
+      "name": "迁移查询/统计/清理 API",
+      "description": "迁移 routers/logs.py 的三个端点到 log-service，新增 service_name 查询参数，stats 新增 count_by_service 字段。",
+      "depends_on": ["B001"],
+      "acceptance_criteria": [
+        "GET /api/logs 支持 level, service_name, request_id, keyword, 时间范围, 分页, 排序",
+        "GET /api/logs/stats 返回 total_count, count_by_level, count_by_service, 时间范围, db_size_mb",
+        "DELETE /api/logs/cleanup 支持 retention_days 参数",
+        "响应格式与 CONTRACT-002/003/004 一致"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        {
+          "type": "unit",
+          "description": "按 service_name 筛选",
+          "scenario": "插入两个 service_name 的日志，按其中一个筛选验证只返回对应记录"
+        },
+        {
+          "type": "unit",
+          "description": "stats 包含 count_by_service",
+          "scenario": "插入多个 service_name 的日志，验证 count_by_service 正确"
+        },
+        {
+          "type": "unit",
+          "description": "cleanup 按天数清理",
+          "scenario": "插入一条 31 天前的日志，cleanup(retention_days=30) 后验证该记录被删除"
+        }
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "B006",
+      "phase": "P1",
+      "module": "M1",
+      "name": "迁移中间件",
+      "description": "迁移 RequestIDMiddleware、RequestLoggingMiddleware、ErrorHandlerMiddleware 到 log-service。中间件用于 log-service 自身的请求追踪。",
+      "depends_on": ["B003"],
+      "acceptance_criteria": [
+        "每个请求自动分配或传递 X-Request-ID",
+        "请求日志记录 method, path, status_code, process_time_ms, client_ip",
+        "未处理异常被捕获并返回标准 JSON 错误响应"
+      ],
+      "risk_tags": [],
+      "status": "pending"
+    },
+    {
+      "id": "B007",
+      "phase": "P1",
+      "module": "M1",
+      "name": "日志服务集成测试",
+      "description": "验证 log-service 完整启动流程：初始化 → 写入 → 查询 → 统计 → 清理。覆盖 ingest API 和本地 Handler 两条写入路径。",
+      "depends_on": ["B004", "B005", "B006"],
+      "acceptance_criteria": [
+        "uvicorn 启动 log-service 无报错",
+        "通过 ingest API 写入日志后可通过 query API 查到",
+        "本地 Handler 写入的日志也能通过 query API 查到",
+        "stats 返回正确的统计数据",
+        "cleanup 能清理过期日志"
+      ],
+      "risk_tags": ["startup", "network"],
+      "smoke_required": true,
+      "test_tasks": [
+        {
+          "type": "integration",
+          "description": "完整写入-查询-统计-清理链路",
+          "scenario": "启动服务 → POST ingest → GET logs → GET stats → DELETE cleanup → 验证每步结果"
+        },
+        {
+          "type": "integration",
+          "description": "Handler + Ingest 混合数据",
+          "scenario": "同时通过 Handler 和 ingest API 写入不同 service_name 的日志，查询验证都能查到"
+        }
+      ],
+      "status": "completed",
+      "commit": "8a7b879",
+      "notes": "9 integration tests passed"
+    },
+    {
+      "id": "S002",
+      "phase": "P2",
+      "module": "M2",
+      "name": "Python SDK 项目初始化",
+      "description": "在 log-service/sdks/python/ 下创建 Python SDK 项目结构（pyproject.toml、目录结构）。SDK 只依赖标准库 + httpx（轻量 HTTP 客户端）。",
+      "depends_on": ["S001"],
+      "acceptance_criteria": [
+        "sdks/python/ 目录结构完整",
+        "pyproject.toml 包含 httpx 依赖",
+        "包名可导入：from log_service_sdk import RemoteLogHandler"
+      ],
+      "risk_tags": ["config"],
+      "status": "completed",
+      "commit": "3dc7634",
+      "notes": "SDK project initialized with httpx dependency"
+    },
+    {
+      "id": "B008",
+      "phase": "P2",
+      "module": "M2",
+      "name": "实现 RemoteLogHandler",
+      "description": "实现 logging.Handler 子类，通过 HTTP POST 批量上报日志到 log-service。包含：内存队列、后台线程攒批、HTTP POST、失败重试（最多 3 次）、优雅关闭。",
+      "depends_on": ["S002", "B004"],
+      "acceptance_criteria": [
+        "RemoteLogHandler 可注册到任意 Python logger",
+        "日志在内存中攒批（50 条或 2 秒）后批量发送",
+        "发送失败最多重试 3 次，重试间隔递增",
+        "进程退出时 flush 剩余日志",
+        "不阻塞业务线程（写入队列 + 后台发送）"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        {
+          "type": "unit",
+          "description": "正常批量发送",
+          "scenario": "写入 5 条日志，验证发送到 /api/logs/ingest 的请求体正确"
+        },
+        {
+          "type": "unit",
+          "description": "服务不可达时不阻塞",
+          "scenario": "endpoint 指向不可达地址，logger.info() 应立即返回不阻塞"
+        },
+        {
+          "type": "unit",
+          "description": "重试机制",
+          "scenario": "模拟前 2 次请求失败、第 3 次成功，验证重试后日志最终发送成功"
+        },
+        {
+          "type": "unit",
+          "description": "进程退出时 flush",
+          "scenario": "写入日志后立即关闭，验证剩余队列中的日志被发送"
+        }
+      ],
+      "status": "completed",
+      "commit": "3dc7634",
+      "notes": "11 SDK tests passed"
+    },
+    {
+      "id": "B009",
+      "phase": "P2",
+      "module": "M2",
+      "name": "Python SDK 快捷初始化函数",
+      "description": "提供 setup_remote_logging() 便捷函数，一行代码完成 SDK 初始化（创建 Handler、注册到 root logger）。",
+      "depends_on": ["B008"],
+      "acceptance_criteria": [
+        "setup_remote_logging(endpoint, service_name, level) 一次性完成初始化",
+        "返回 handler 引用，可用于后续 removeHandler",
+        "不传 level 时默认 INFO"
+      ],
+      "risk_tags": ["first_use"],
+      "smoke_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "F001",
+      "phase": "P3",
+      "module": "M3",
+      "name": "迁移 logs-ui 并适配新 API",
+      "description": "将 personal-growth-assistant/logs-ui/ 整体迁移到 log-service/logs-ui/。更新 API 路径（/api/logs → 不变）、vite proxy 配置、新增 service_name 筛选组件。",
+      "depends_on": ["B005"],
+      "acceptance_criteria": [
+        "logs-ui 可独立运行（npm run dev）",
+        "日志列表页正常显示",
+        "FilterBar 新增 service_name 下拉筛选",
+        "vite.config.ts proxy 指向 log-service 后端"
+      ],
+      "risk_tags": [],
+      "status": "pending"
+    },
+    {
+      "id": "F002",
+      "phase": "P3",
+      "module": "M3",
+      "name": "logs-ui 统计页适配",
+      "description": "更新 StatsCard 组件，显示按 service_name 分组的统计（count_by_service）。",
+      "depends_on": ["F001"],
+      "acceptance_criteria": [
+        "统计页显示各 service_name 的日志数量",
+        "总日志数、按级别统计正常显示"
+      ],
+      "risk_tags": [],
+      "status": "pending"
+    },
+    {
+      "id": "B010",
+      "phase": "P4",
+      "module": "M4",
+      "name": "移除 personal-growth-assistant 本地日志模块",
+      "description": "从 personal-growth-assistant 中移除 infrastructure/logging/、services/log_service.py、routers/logs.py、core/logging.py 中日志相关代码、middleware 中日志相关部分、deps.py 中日志相关函数、config.py 中日志相关配置项。保留 LangSmith 配置。",
+      "depends_on": ["B008"],
+      "acceptance_criteria": [
+        "infrastructure/logging/ 目录已删除",
+        "services/log_service.py 已删除",
+        "routers/logs.py 已删除",
+        "main.py 中不再有本地日志初始化代码",
+        "deps.py 中不再有 log_service 相关函数",
+        "config.py 中不再有 LOG_DB_PATH/LOG_RETENTION_DAYS（LOG_LEVEL 保留）",
+        "logs-ui/ 目录已删除",
+        "项目能正常启动（uvicorn app.main:app --reload）"
+      ],
+      "risk_tags": ["startup"],
+      "test_tasks": [
+        {
+          "type": "integration",
+          "description": "项目启动验证",
+          "scenario": "移除后 uvicorn 启动无报错，业务 API 正常工作"
+        }
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "B011",
+      "phase": "P4",
+      "module": "M4",
+      "name": "personal-growth-assistant 接入 log-service SDK",
+      "description": "在 personal-growth-assistant 的 main.py 中使用 log-service Python SDK 的 setup_remote_logging() 替代原有的本地日志初始化。保留中间件（RequestID, RequestLogging, ErrorHandler），因为它们通过标准 logging 协议与 SDK Handler 配合工作。",
+      "depends_on": ["B010", "B009"],
+      "acceptance_criteria": [
+        "main.py 使用 setup_remote_logging() 初始化日志",
+        "中间件的请求日志通过 SDK 发送到 log-service",
+        "LangSmith 配置不受影响",
+        "项目启动后日志可在 log-service 的 logs-ui 中查看"
+      ],
+      "risk_tags": ["network", "startup", "first_use"],
+      "smoke_required": true,
+      "test_tasks": [
+        {
+          "type": "integration",
+          "description": "SDK 初始化成功",
+          "scenario": "main.py 启动后检查 log-service 中有来自 personal-growth-assistant 的日志"
+        },
+        {
+          "type": "integration",
+          "description": "请求日志正常上报",
+          "scenario": "调用 personal-growth-assistant 的 API，验证请求日志出现在 log-service 中"
+        }
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "B012",
+      "phase": "P5",
+      "module": "M5",
+      "name": "Docker 部署配置",
+      "description": "为 log-service 创建 Docker 部署配置：Dockerfile（服务端）、Dockerfile（logs-ui 构建）、docker-compose.yml。",
+      "depends_on": ["B007", "F002"],
+      "acceptance_criteria": [
+        "docker compose up 一键启动 log-service + logs-ui",
+        "logs-ui 可通过浏览器访问",
+        "ingest API 可从容器外部访问"
+      ],
+      "risk_tags": ["startup", "config"],
+      "smoke_required": true,
+      "status": "pending"
+    },
+    {
+      "id": "S003",
+      "phase": "P5",
+      "module": "M5",
+      "name": "端到端集成验证",
+      "description": "启动 log-service + personal-growth-assistant，验证完整的日志链路：业务操作产生日志 → SDK 上报到 log-service → logs-ui 可查看。",
+      "depends_on": ["B011", "B012"],
+      "acceptance_criteria": [
+        "log-service Docker 容器正常运行",
+        "personal-growth-assistant 启动后自动连接 log-service",
+        "在 personal-growth-assistant 执行操作后，logs-ui 中能看到对应日志",
+        "日志包含正确的 service_name = personal-growth-assistant",
+        "按 service_name 筛选功能正常"
+      ],
+      "risk_tags": ["network", "startup", "first_use"],
+      "smoke_required": true,
+      "test_tasks": [
+        {
+          "type": "integration",
+          "description": "完整链路冒烟测试",
+          "scenario": "启动两个服务 → 在 personal-growth-assistant 创建一条条目 → 检查 logs-ui 有对应请求日志"
+        },
+        {
+          "type": "integration",
+          "description": "log-service 重启后恢复",
+          "scenario": "重启 log-service 容器 → personal-growth-assistant 的 SDK 能自动重连并继续上报日志"
+        }
+      ],
+      "status": "pending"
+    }
+  ]
+}
