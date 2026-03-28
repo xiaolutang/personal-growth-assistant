@@ -26,7 +26,12 @@ dependencies = [
     "qdrant-client>=1.7.0",
     # Observability
     "langsmith>=0.1.0",
+    # Remote Logging
+    "log-service-sdk",
 ]
+
+[tool.uv.sources]
+log-service-sdk = { path = "../../log-service/sdks/python", editable = true }
 
 [project.optional-dependencies]
 dev = [

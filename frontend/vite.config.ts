@@ -14,9 +14,9 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://localhost",
+        target: "http://localhost:8000",
         changeOrigin: true,
-        // 不移除 /api 前缀，让 nginx 正确路由
+        // 不移除 /api 前缀。让 nginx 正确路由
       },
     },
   },

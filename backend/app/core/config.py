@@ -50,6 +50,7 @@ class Settings(BaseSettings):
 
     # 日志配置
     LOG_LEVEL: str = "INFO"
+    LOG_SERVICE_URL: str = "http://localhost:8001"
 
     # LangSmith 可观测性配置（可选）
     LANGSMITH_API_KEY: Optional[str] = None

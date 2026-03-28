@@ -22,6 +22,7 @@ from app.routers import (
 from app.routers import deps
 from app.services import init_storage
 from app.middleware import setup_middlewares
+from log_service_sdk import setup_remote_logging
 
 # 获取 logger
 logger = logging.getLogger(__name__)
@@ -29,14 +30,23 @@ logger = logging.getLogger(__name__)
 # 全局实例
 graph = None
 storage = None
+_log_handler = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
-    global graph, storage
+    global graph, storage, _log_handler
 
     settings = get_settings()
+
+    # 初始化远程日志（log-service SDK，非阻塞，即使服务不可达也不影响启动）
+    _log_handler = setup_remote_logging(
+        endpoint=settings.LOG_SERVICE_URL,
+        service_name="personal-growth-assistant",
+        level=settings.LOG_LEVEL,
+    )
+    logger.info("远程日志初始化完成, endpoint=%s", settings.LOG_SERVICE_URL)
 
     # 配置 LangSmith 可观测性（LangGraph 自动读取这些环境变量）
     if settings.LANGSMITH_API_KEY:
@@ -80,6 +90,11 @@ async def lifespan(app: FastAPI):
         logger.error(f"存储服务初始化失败（部分功能不可用）: {e}")
 
     yield
+
+    # 关闭远程日志 handler，flush 剩余日志
+    if _log_handler is not None:
+        logger.info("正在关闭远程日志 handler...")
+        _log_handler.close()
 
 
 app = FastAPI(
