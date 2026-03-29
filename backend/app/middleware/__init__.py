@@ -15,6 +15,9 @@ from starlette.types import ASGIApp
 # 请求 ID 上下文变量
 request_id_var: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
 
+# 用户 UID 上下文变量
+uid_var: ContextVar[Optional[str]] = ContextVar("uid", default=None)
+
 
 def get_request_id() -> Optional[str]:
     """获取当前请求的 request_id"""
@@ -24,6 +27,11 @@ def get_request_id() -> Optional[str]:
 def set_request_id(request_id: str) -> None:
     """设置当前请求的 request_id"""
     request_id_var.set(request_id)
+
+
+def get_uid() -> Optional[str]:
+    """获取当前请求的 uid"""
+    return uid_var.get()
 
 
 logger = logging.getLogger(__name__)
@@ -36,8 +44,12 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         # 从请求头获取或生成新的 request_id
         request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
 
+        # 从请求头获取 uid（匿名用户标识）
+        uid = request.headers.get("X-UID")
+
         # 设置到上下文
         set_request_id(request_id)
+        uid_var.set(uid)
 
         # 执行请求
         response = await call_next(request)
@@ -88,6 +100,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 "method": request.method,
                 "path": path,
                 "client_ip": client_ip,
+                "uid": uid_var.get(),
             }
 
             # 记录请求信息
@@ -111,6 +124,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                     "client_ip": client_ip,
                     "status_code": response.status_code,
                     "process_time_ms": process_time_ms,
+                    "uid": uid_var.get(),
                 }
 
                 # 记录响应信息
@@ -135,6 +149,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                     "client_ip": client_ip,
                     "status_code": 500,
                     "process_time_ms": process_time_ms,
+                    "uid": uid_var.get(),
                 }
 
                 logger.error(
@@ -190,6 +205,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 "path": request.url.path,
                 "status_code": 500,
                 "client_ip": client_ip,
+                "uid": uid_var.get(),
             }
 
             # 记录错误日志
