@@ -1,5 +1,17 @@
 # API 契约
 
+## Contract Index
+
+| ID | Method | Path | Description | Related Tasks |
+|----|--------|------|-------------|---------------|
+| CONTRACT-001 | POST | /api/logs/ingest | 批量写入日志 | B004 |
+| CONTRACT-002 | GET | /api/logs | 查询日志列表 | B005 |
+| CONTRACT-003 | GET | /api/logs/stats | 查询日志统计 | B005 |
+| CONTRACT-004 | DELETE | /api/logs/cleanup | 清理过期日志 | B005 |
+| CONTRACT-005 | GET | /health | 服务健康检查 | B001 |
+
+---
+
 ## 日志写入
 
 ### 批量写入日志
