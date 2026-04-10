@@ -43,3 +43,6 @@ dist/
 
 # Release directory (deprecated, use docker/ instead)
 release/
+
+# Build-time SDK copy (deploy.sh copies here temporarily)
+log-service-sdk/
