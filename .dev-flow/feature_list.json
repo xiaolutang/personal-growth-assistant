@@ -14,9 +14,9 @@
   },
   "summary": {
     "total_tasks": 29,
-    "pending": 19,
+    "pending": 18,
     "in_progress": 0,
-    "completed": 10,
+    "completed": 11,
     "cancelled": 0
   },
   "archived_phases": [],
@@ -514,8 +514,7 @@
       "completed_at": "2026-04-10T11:55:00Z",
       "actual_minutes": 15,
       "evidence_file": ".dev-flow/evidence/TD03.md",
-      "commit": "pending",
-      "priority": "medium",
+      "commit": "03aacc9",
       "risk_tags": [
         "config",
         "startup"
@@ -626,11 +625,13 @@
         "后端单元测试通过（272 个）"
       ],
       "verification": "L1",
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-10T21:10:00Z",
+      "completed_at": "2026-04-10T21:20:00Z",
+      "actual_minutes": 10,
+      "evidence_file": ".dev-flow/evidence/TD06.md",
+      "commit": "pending",
       "priority": "medium",
-      "risk_tags": [
-        "startup"
-      ],
       "test_tasks": [
         {
           "type": "unit",

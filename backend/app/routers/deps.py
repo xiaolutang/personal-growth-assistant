@@ -58,10 +58,7 @@ def get_review_service() -> "ReviewService":
         raise HTTPException(status_code=503, detail="存储服务未初始化")
     if _review_service is None:
         from app.services.review_service import ReviewService
-        _review_service = ReviewService()
-    # 每次都更新 sqlite 存储（解决测试环境的问题）
-    if storage.sqlite:
-        _review_service.set_sqlite_storage(storage.sqlite)
+        _review_service = ReviewService(sqlite_storage=storage.sqlite)
     return _review_service
 
 
@@ -72,12 +69,10 @@ def get_knowledge_service() -> "KnowledgeService":
         raise HTTPException(status_code=503, detail="存储服务未初始化")
     if _knowledge_service is None:
         from app.services.knowledge_service import KnowledgeService
-        _knowledge_service = KnowledgeService()
-    # 每次都更新存储（解决测试环境的问题）
-    if storage.neo4j:
-        _knowledge_service.set_neo4j_client(storage.neo4j)
-    if storage.sqlite:
-        _knowledge_service.set_sqlite_storage(storage.sqlite)
+        _knowledge_service = KnowledgeService(
+            neo4j_client=storage.neo4j,
+            sqlite_storage=storage.sqlite,
+        )
     return _knowledge_service
 
 
