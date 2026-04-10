@@ -21,3 +21,4 @@
 | 死代码清理 | TD01 | unit | 构建通过/无残留引用 | completed | - |
 | nginx 配置统一 | TD02 | integration | nginx -t 通过/compose 路径正确 | completed | - |
 | CORS 配置收紧 | TD11 | unit | 预检/非法源/非法方法/GET CORS 头 | completed | 4 tests in backend/tests/unit/api/test_cors.py |
+| Docker sed hack | TD03 | integration | Docker build + 容器健康检查 | completed | deploy.sh 生成 docker-pyproject.toml |

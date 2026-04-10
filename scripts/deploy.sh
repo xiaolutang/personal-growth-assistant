@@ -100,15 +100,30 @@ echo -e "${BLUE}=== 步骤 2/3: 构建并启动服务 ===${NC}"
 
 # 复制 log-service SDK 到项目内（后端本地 path 依赖）
 LOG_SERVICE_SDK_SRC="${LOG_SERVICE_SDK_SRC:-$PROJECT_ROOT/../../log-service/sdks/python}"
-cleanup_sdk() { rm -rf "$PROJECT_ROOT/log-service-sdk"; }
+cleanup_sdk() {
+    rm -rf "$PROJECT_ROOT/log-service-sdk"
+    rm -f "$PROJECT_ROOT/backend/docker-pyproject.toml"
+}
 trap cleanup_sdk EXIT
 
 if [ -d "$LOG_SERVICE_SDK_SRC" ]; then
     cp -r "$LOG_SERVICE_SDK_SRC" "$PROJECT_ROOT/log-service-sdk"
     echo -e "${GREEN}✅ log-service SDK 已准备${NC}"
+
+    # 生成容器版 pyproject.toml（替换 SDK 路径为容器内路径）
+    sed 's|path = "../../log-service/sdks/python", editable = true|path = "/app/log-service-sdk"|g' \
+        "$PROJECT_ROOT/backend/pyproject.toml" > "$PROJECT_ROOT/backend/docker-pyproject.toml"
+    # 验证替换生效（sed 不匹配时静默跳过，需显式检查）
+    if ! grep -q '/app/log-service-sdk' "$PROJECT_ROOT/backend/docker-pyproject.toml"; then
+        echo -e "${RED}❌ SDK 路径替换失败，请检查 pyproject.toml 格式${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}✅ 容器版 pyproject.toml 已生成${NC}"
 else
-    echo -e "${YELLOW}⚠️  log-service SDK 未找到: $LOG_SERVICE_SDK_SRC${NC}"
+    # SDK 是后端硬依赖，构建需要本地 path 依赖解析
+    echo -e "${RED}❌ log-service SDK 未找到: $LOG_SERVICE_SDK_SRC${NC}"
     echo -e "${YELLOW}   设置 LOG_SERVICE_SDK_SRC 环境变量指定路径${NC}"
+    exit 1
 fi
 
 if [ -n "$NO_CACHE" ]; then

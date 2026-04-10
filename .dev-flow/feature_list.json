@@ -14,9 +14,9 @@
   },
   "summary": {
     "total_tasks": 29,
-    "pending": 20,
+    "pending": 19,
     "in_progress": 0,
-    "completed": 9,
+    "completed": 10,
     "cancelled": 0
   },
   "archived_phases": [],
@@ -509,7 +509,12 @@
         "后端容器启动后健康检查通过"
       ],
       "verification": "L3",
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-10T11:40:00Z",
+      "completed_at": "2026-04-10T11:55:00Z",
+      "actual_minutes": 15,
+      "evidence_file": ".dev-flow/evidence/TD03.md",
+      "commit": "pending",
       "priority": "medium",
       "risk_tags": [
         "config",
@@ -801,8 +806,7 @@
       "completed_at": "2026-04-10T11:10:00Z",
       "actual_minutes": 10,
       "evidence_file": ".dev-flow/evidence/TD11.md",
-      "commit": "pending",
-      "priority": "medium",
+      "commit": "77115d2",
       "risk_tags": [
         "config"
       ],

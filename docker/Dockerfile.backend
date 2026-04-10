@@ -8,14 +8,12 @@ WORKDIR /app
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# 复制依赖文件（优先，利用缓存）
-COPY backend/pyproject.toml backend/uv.lock ./
+# 复制容器版 pyproject.toml（deploy.sh 已替换 SDK 路径）和锁文件
+COPY backend/docker-pyproject.toml ./pyproject.toml
+COPY backend/uv.lock ./
 
 # 复制 log-service SDK（本地 path 依赖）
 COPY log-service-sdk/ /app/log-service-sdk/
-
-# 修改 pyproject.toml 中的 SDK 路径指向容器内位置
-RUN sed -i 's|path = "../../log-service/sdks/python"|path = "/app/log-service-sdk"|g' pyproject.toml
 
 # 安装依赖（含 SDK）但不安装项目本身
 RUN uv sync --no-dev --no-install-project && \

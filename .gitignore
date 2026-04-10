@@ -46,3 +46,6 @@ release/
 
 # Build-time SDK copy (deploy.sh copies here temporarily)
 log-service-sdk/
+
+# Build-time pyproject override (deploy.sh generates this)
+backend/docker-pyproject.toml
