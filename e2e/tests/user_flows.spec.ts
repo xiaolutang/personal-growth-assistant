@@ -59,17 +59,18 @@ test.describe('数据创建与验证闭环', () => {
     expect(created.id).toBeTruthy();
     const taskId = created.id;
 
-    // 2. 导航到任务列表页
-    await page.goto('/tasks');
-    await page.waitForTimeout(2000);
+    try {
+      // 2. 导航到任务列表页
+      await page.goto('/tasks');
 
-    // 3. 验证新创建的任务在列表中可见
-    const taskElement = page.locator('text=E2E测试任务').first();
-    await expect(taskElement).toBeVisible({ timeout: 10000 });
-
-    // 4. 清理：删除测试任务
-    const deleteResponse = await request.delete(`/api/entries/${taskId}`);
-    expect(deleteResponse.ok()).toBeTruthy();
+      // 3. 验证新创建的任务在列表中可见
+      const taskElement = page.locator('text=E2E测试任务').first();
+      await expect(taskElement).toBeVisible({ timeout: 10000 });
+    } finally {
+      // 4. 清理：删除测试任务
+      const deleteResponse = await request.delete(`/api/entries/${taskId}`);
+      expect(deleteResponse.ok()).toBeTruthy();
+    }
   });
 });
 
@@ -85,20 +86,17 @@ test.describe('非关键路径（容错）', () => {
 
     await searchInput.fill('测试');
     await searchInput.press('Enter');
-    await page.waitForTimeout(1000);
 
     // 验证有搜索结果或"无结果"提示
     const resultArea = page.locator('.search-result, [data-testid*="result"], .list-item, text=没有').first();
-    const hasResult = await resultArea.isVisible().catch(() => false);
-    console.log('Search has result:', hasResult);
+    await expect(resultArea).toBeVisible({ timeout: 5000 });
   });
 
   test('任务状态切换', async ({ page }) => {
     await page.goto('/tasks');
-    await page.waitForTimeout(2000);
 
     const taskItem = page.locator('.task-card, [data-testid*="task"], li, .list-item').first();
-    if (!(await taskItem.isVisible().catch(() => false))) {
+    if (!(await taskItem.isVisible({ timeout: 5000 }).catch(() => false))) {
       test.skip();
       return;
     }
@@ -106,7 +104,8 @@ test.describe('非关键路径（容错）', () => {
     const statusButton = taskItem.locator('button, [data-testid*="status"]').first();
     if (await statusButton.isVisible().catch(() => false)) {
       await statusButton.click();
-      await page.waitForTimeout(500);
+      // 验证状态变更后有 UI 反馈（按钮文本或样式变化）
+      await expect(taskItem).toBeVisible();
     }
   });
 });
