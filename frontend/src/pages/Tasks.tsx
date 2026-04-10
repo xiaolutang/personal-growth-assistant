@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TaskList } from "@/components/TaskList";
 import { Header } from "@/components/layout/Header";
+import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { useTaskStore } from "@/stores/taskStore";
 import { Filter, X, Calendar } from "lucide-react";
 import type { TaskStatus } from "@/types/task";
@@ -11,6 +12,9 @@ import { statusConfig } from "@/config/constants";
 
 // 所有可选状态
 const STATUS_OPTIONS: TaskStatus[] = ["waitStart", "doing", "complete", "paused", "cancelled"];
+
+// 默认查询参数
+const TASK_QUERY_PARAMS = { type: "task" as const, limit: 100 };
 
 // 快捷时间选项
 const QUICK_DATE_OPTIONS = [
@@ -24,6 +28,7 @@ export function Tasks() {
   const allTasks = useTaskStore((state) => state.tasks);
   const fetchEntries = useTaskStore((state) => state.fetchEntries);
   const isLoading = useTaskStore((state) => state.isLoading);
+  const serviceUnavailable = useTaskStore((state) => state.serviceUnavailable);
 
   // 筛选状态
   const [showFilters, setShowFilters] = useState(false);
@@ -35,7 +40,7 @@ export function Tasks() {
   // 首次挂载时加载数据（如果 store 为空）
   useEffect(() => {
     if (allTasks.length === 0) {
-      fetchEntries({ type: "task", limit: 100 });
+      fetchEntries(TASK_QUERY_PARAMS);
     }
   }, []); // 只在首次挂载时执行
 
@@ -124,6 +129,9 @@ export function Tasks() {
     <>
       <Header title="任务列表" />
       <main className="flex-1 p-6 pb-32">
+        {serviceUnavailable ? (
+          <ServiceUnavailable onRetry={() => fetchEntries(TASK_QUERY_PARAMS)} />
+        ) : (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">所有任务 ({filteredTasks.length})</CardTitle>
@@ -228,6 +236,7 @@ export function Tasks() {
             )}
           </CardContent>
         </Card>
+        )}
       </main>
     </>
   );

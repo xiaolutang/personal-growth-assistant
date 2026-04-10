@@ -752,21 +752,26 @@
       ]
     },
     {
+      "evidence_file": ".dev-flow/evidence/TD10.md",
       "id": "TD10",
       "phase": "P9",
       "module": "M9",
-      "name": "前端存储初始化失败降级 UI",
-      "description": "后端存储服务初始化失败时返回 503，前端应显示友好的降级提示而非空白或报错。需在 App 层或各页面检测 503 响应，显示统一的「服务暂时不可用」提示。注意：依赖 TD06 完成后再执行，因为 TD06 会改变 deps.py 的初始化逻辑。",
-      "depends_on": [
-        "TD06"
-      ],
+      "name": "前端 503 服务不可用降级提示",
+      "description": "后端 API 返回 503 时（如存储服务未初始化），前端应显示友好的降级提示而非空白或报错。需在 API 层或页面层检测 503 响应，显示统一的「服务暂时不可用」提示并附带重试按钮。",
+      "depends_on": [],
       "acceptance_criteria": [
         "API 返回 503 时前端显示友好降级提示（非空白/报错）",
         "降级提示包含重试按钮",
         "正常页面功能不受影响"
       ],
       "verification": "F2",
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-10T16:00:00+08:00",
+      "completed_at": "2026-04-10T22:30:00+08:00",
+      "execution_state": {
+        "current_step": "done",
+        "resume_hint": "任务已完成"
+      },
       "priority": "high",
       "risk_tags": [],
       "test_tasks": [

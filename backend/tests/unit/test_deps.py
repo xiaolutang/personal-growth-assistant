@@ -76,6 +76,13 @@ class TestGetKnowledgeService:
 
 
 class TestStorageNotInitialized:
+    def test_entry_service_raises_503(self):
+        """storage=None 时 get_entry_service 抛 503"""
+        deps.storage = None
+        with pytest.raises(Exception) as exc_info:
+            deps.get_entry_service()
+        assert exc_info.value.status_code == 503
+
     def test_review_service_raises_503(self):
         """storage=None 时 get_review_service 抛 503"""
         deps.storage = None

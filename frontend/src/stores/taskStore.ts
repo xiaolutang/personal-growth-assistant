@@ -16,11 +16,13 @@ import {
   searchEntries as apiSearchEntries,
   getKnowledgeGraph as apiGetKnowledgeGraph,
 } from "@/services/api";
+import { ApiError } from "@/lib/errors";
 
 interface TaskStore {
   tasks: Task[];
   isLoading: boolean;
   error: string | null;
+  serviceUnavailable: boolean;
   searchResults: SearchResult[];
   knowledgeGraph: KnowledgeGraphResponse | null;
 
@@ -52,6 +54,7 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
   tasks: [],
   isLoading: false,
   error: null,
+  serviceUnavailable: false,
   searchResults: [],
   knowledgeGraph: null,
 
@@ -62,10 +65,13 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
       set({
         tasks: response.entries,
         isLoading: false,
+        serviceUnavailable: false,
       });
     } catch (error) {
+      const is503 = error instanceof ApiError && error.isServiceUnavailable;
       set({
         error: error instanceof Error ? error.message : "获取条目失败",
+        serviceUnavailable: is503,
         isLoading: false,
       });
     }

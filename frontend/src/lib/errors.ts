@@ -53,6 +53,13 @@ export class ApiError extends Error {
   }
 
   /**
+   * 判断是否为服务不可用错误
+   */
+  get isServiceUnavailable(): boolean {
+    return this.status === 503;
+  }
+
+  /**
    * 格式化为用户友好的消息
    */
   toUserMessage(): string {
