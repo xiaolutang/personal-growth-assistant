@@ -18,3 +18,6 @@
 | 项目改造-接入 | B011 | integration | SDK 初始化/请求日志上报 | planned | - |
 | Docker 部署 | B012 | manual | docker compose up 正常启动 | planned | - |
 | 端到端 | S003 | integration | 完整链路/服务重启恢复 | planned | - |
+| 死代码清理 | TD01 | unit | 构建通过/无残留引用 | completed | - |
+| nginx 配置统一 | TD02 | integration | nginx -t 通过/compose 路径正确 | completed | - |
+| CORS 配置收紧 | TD11 | unit | 预检/非法源/非法方法/GET CORS 头 | completed | 4 tests in backend/tests/unit/api/test_cors.py |
