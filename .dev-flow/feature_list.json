@@ -14,9 +14,9 @@
   },
   "summary": {
     "total_tasks": 29,
-    "pending": 22,
+    "pending": 21,
     "in_progress": 0,
-    "completed": 7,
+    "completed": 8,
     "cancelled": 0
   },
   "archived_phases": [],
@@ -457,7 +457,7 @@
       "completed_at": "2026-04-10T10:45:00Z",
       "actual_minutes": 5,
       "evidence_file": ".dev-flow/evidence/TD01.md",
-      "commit": "pending"
+      "commit": "26083c9"
     },
     {
       "id": "TD02",
@@ -473,7 +473,12 @@
         "前端构建通过"
       ],
       "verification": "L3",
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-10T10:50:00Z",
+      "completed_at": "2026-04-10T10:58:00Z",
+      "actual_minutes": 8,
+      "evidence_file": ".dev-flow/evidence/TD02.md",
+      "commit": "pending",
       "priority": "high",
       "risk_tags": [
         "config"
