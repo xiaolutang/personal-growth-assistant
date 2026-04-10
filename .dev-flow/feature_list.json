@@ -14,9 +14,9 @@
   },
   "summary": {
     "total_tasks": 29,
-    "pending": 16,
+    "pending": 15,
     "in_progress": 0,
-    "completed": 13,
+    "completed": 14,
     "cancelled": 0
   },
   "archived_phases": [],
@@ -725,6 +725,10 @@
       "depends_on": [
         "TD05"
       ],
+      "status": "completed",
+      "started_at": "2026-04-11T00:17:00+08:00",
+      "completed_at": "2026-04-11T00:23:00+08:00",
+      "evidence_file": ".dev-flow/evidence/TD08.md",
       "acceptance_criteria": [
         "useChatActions 测试覆盖主要回调（onCreated、onUpdated、onDeleted）",
         "ApiError 测试覆盖 isClientError/isServerError/toUserMessage",

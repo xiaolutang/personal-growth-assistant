@@ -28,3 +28,4 @@
 | E2E 测试加强 | TD09 | integration | 硬断言/导航/数据闭环/响应式/容错 | completed | 8 tests in e2e/tests/user_flows.spec.ts |
 | 前端 API 类型安全 | TD05 | unit | TypeScript 编译/CRUD 类型推导/搜索保留 | completed | openapi-fetch CRUD migration |
 | taskStore 单元测试 | TD07 | unit | fetchEntries/addTasks/updateTaskStatus/deleteTask/searchEntries/getTodayTasks | completed | 32 tests in frontend/src/stores/taskStore.test.ts |
+| hooks 和 lib 测试 | TD08 | unit | useChatActions/ApiError/reviewFormatter | completed | 58 tests across 3 test files |
