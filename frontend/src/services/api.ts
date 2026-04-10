@@ -10,6 +10,24 @@ import type {
 } from "@/types/task";
 import { API_BASE } from "@/config/api";
 import { handleApiResponse, ApiError } from "@/lib/errors";
+import createClient from "openapi-fetch";
+import type { paths, components } from "@/types/api.generated";
+
+// === 类型安全的 OpenAPI client ===
+const client = createClient<paths>({ baseUrl: API_BASE });
+
+/**
+ * 处理 openapi-fetch 返回值，统一错误处理
+ * 与 handleApiResponse 保持一致的错误抛出行为
+ */
+function handleOpenApiResponse<T>(data: T | undefined, error: unknown, response: Response): T {
+  if (error !== undefined && error !== null) {
+    const errorObj = error as { detail?: string; message?: string };
+    const message = errorObj.detail || errorObj.message || `HTTP ${response.status}`;
+    throw new ApiError(response.status, message, error);
+  }
+  return data as T;
+}
 
 // === 项目进度响应类型 ===
 export interface ProjectProgressResponse {
@@ -34,63 +52,78 @@ export async function getEntries(params?: {
   end_date?: string;
   limit?: number;
 }): Promise<EntryListResponse> {
-  const searchParams = new URLSearchParams();
-  if (params?.type) searchParams.append("type", params.type);
-  if (params?.status) searchParams.append("status", params.status);
-  if (params?.parent_id) searchParams.append("parent_id", params.parent_id);
-  if (params?.tags && params.tags.length > 0) {
-    searchParams.append("tags", params.tags.join(","));
-  }
-  if (params?.start_date) searchParams.append("start_date", params.start_date);
-  if (params?.end_date) searchParams.append("end_date", params.end_date);
-  if (params?.limit) searchParams.append("limit", params.limit.toString());
-
-  const response = await fetch(`${API_BASE}/entries?${searchParams.toString()}`, {
-    cache: 'no-store',  // 禁用缓存，确保获取最新数据
+  const { data, error, response } = await client.GET("/entries", {
+    params: {
+      query: {
+        type: params?.type,
+        status: params?.status,
+        parent_id: params?.parent_id,
+        tags: params?.tags && params.tags.length > 0 ? params.tags.join(",") : undefined,
+        start_date: params?.start_date,
+        end_date: params?.end_date,
+        limit: params?.limit,
+      },
+    },
+    fetchOptions: {
+      cache: 'no-store',  // 禁用缓存，确保获取最新数据
+    },
   });
-  return handleApiResponse<EntryListResponse>(response);
+
+  handleOpenApiResponse(data, error, response);
+
+  // api.generated.ts 的 EntryListResponse 多了 total 字段，适配为现有 EntryListResponse
+  return { entries: (data as components["schemas"]["EntryListResponse"])?.entries ?? [] } as EntryListResponse;
 }
 
 /**
  * 获取单个条目
  */
 export async function getEntry(id: string): Promise<Task> {
-  const response = await fetch(`${API_BASE}/entries/${id}`);
-  return handleApiResponse<Task>(response);
+  const { data, error, response } = await client.GET("/entries/{entry_id}", {
+    params: { path: { entry_id: id } },
+  });
+  return handleOpenApiResponse<Task>(data as Task | undefined, error, response);
 }
 
 /**
  * 创建条目
  */
 export async function createEntry(data: EntryCreate): Promise<Task> {
-  const response = await fetch(`${API_BASE}/entries`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+  // EntryCreate.type 映射为 api.generated.ts EntryCreate.category
+  const body = { ...data, category: data.type };
+  const { data: responseData, error, response } = await client.POST("/entries", {
+    body: body as unknown as components["schemas"]["EntryCreate"],
   });
-  return handleApiResponse<Task>(response);
+  return handleOpenApiResponse<Task>(responseData as Task | undefined, error, response);
 }
 
 /**
  * 更新条目
  */
 export async function updateEntry(id: string, data: EntryUpdate): Promise<{ success: boolean; message: string }> {
-  const response = await fetch(`${API_BASE}/entries/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+  const { data: responseData, error, response } = await client.PUT("/entries/{entry_id}", {
+    params: { path: { entry_id: id } },
+    body: data as unknown as components["schemas"]["EntryUpdate"],
   });
-  return handleApiResponse<{ success: boolean; message: string }>(response);
+  return handleOpenApiResponse<{ success: boolean; message: string }>(
+    responseData as { success: boolean; message: string } | undefined,
+    error,
+    response,
+  );
 }
 
 /**
  * 删除条目
  */
 export async function deleteEntry(id: string): Promise<{ success: boolean; message: string }> {
-  const response = await fetch(`${API_BASE}/entries/${id}`, {
-    method: "DELETE",
+  const { data, error, response } = await client.DELETE("/entries/{entry_id}", {
+    params: { path: { entry_id: id } },
   });
-  return handleApiResponse<{ success: boolean; message: string }>(response);
+  return handleOpenApiResponse<{ success: boolean; message: string }>(
+    data as { success: boolean; message: string } | undefined,
+    error,
+    response,
+  );
 }
 
 // === 搜索 API ===
@@ -295,8 +328,14 @@ export async function clearSession(sessionId: string): Promise<void> {
  * 获取项目进度
  */
 export async function getProjectProgress(projectId: string): Promise<ProjectProgressResponse> {
-  const response = await fetch(`${API_BASE}/entries/${projectId}/progress`);
-  return handleApiResponse<ProjectProgressResponse>(response);
+  const { data, error, response } = await client.GET("/entries/{entry_id}/progress", {
+    params: { path: { entry_id: projectId } },
+  });
+  return handleOpenApiResponse<ProjectProgressResponse>(
+    data as ProjectProgressResponse | undefined,
+    error,
+    response,
+  );
 }
 
 // === 意图识别 API ===
