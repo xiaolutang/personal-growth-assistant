@@ -534,6 +534,7 @@
       ]
     },
     {
+      "evidence_file": ".dev-flow/evidence/TD04.md",
       "id": "TD04",
       "phase": "P7",
       "module": "M7",
@@ -549,7 +550,9 @@
         "后端测试通过"
       ],
       "verification": "L1",
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-10T22:40:00+08:00",
+      "completed_at": "2026-04-10T22:55:00+08:00",
       "priority": "medium",
       "risk_tags": [],
       "test_tasks": [

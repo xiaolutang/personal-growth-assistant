@@ -24,3 +24,4 @@
 | Docker sed hack | TD03 | integration | Docker build + 容器健康检查 | completed | deploy.sh 生成 docker-pyproject.toml |
 | deps.py 统一化 | TD06 | unit | 构造注入/无副作用/reset重建/503 | completed | 8 tests in backend/tests/unit/test_deps.py |
 | 503 降级提示 | TD10 | unit+integration | 503检测/非503不触发/重试恢复 + UI文案/重试按钮 + GET /entries 503集成 | completed | 3 store tests + 3 component tests + 3 deps 503 tests + 1 GET /entries 503 integration test |
+| MCP Server 拆分 | TD04 | unit | 导入/路由映射/常量/handler可调用 | completed | 8 tests in backend/tests/unit/test_mcp_split.py |
