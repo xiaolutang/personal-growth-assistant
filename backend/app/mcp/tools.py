@@ -1,7 +1,7 @@
 """MCP Tool Schema 定义"""
 from mcp.types import Tool
 
-TOOLS: list[Tool] = [
+TOOLS: tuple[Tool, ...] = (
     Tool(
         name="list_entries",
         description="查询条目列表",
@@ -234,4 +234,4 @@ TOOLS: list[Tool] = [
             "required": ["project_id"],
         },
     ),
-]
+)

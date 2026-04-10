@@ -23,6 +23,7 @@ class TestToolsModule:
     def test_tools_count(self):
         """TOOL 列表包含 9 个工具"""
         assert len(TOOLS) == 9
+        assert isinstance(TOOLS, tuple)
 
     def test_tool_names(self):
         """所有 tool name 可枚举"""

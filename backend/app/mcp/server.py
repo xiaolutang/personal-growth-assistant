@@ -69,7 +69,7 @@ server = Server("personal-growth-assistant")
 
 
 @server.list_tools()
-async def list_tools() -> list:
+async def list_tools() -> tuple:
     """列出可用的工具"""
     return TOOLS
 
