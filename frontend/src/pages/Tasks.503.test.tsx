@@ -81,13 +81,18 @@ describe("Tasks 页面 503 集成", () => {
     expect(screen.queryByText("服务暂时不可用")).not.toBeInTheDocument();
   });
 
-  it("点击重试按钮调用 fetchEntries", async () => {
+  it("点击重试按钮调用 fetchEntries（且挂载时不会自动调用）", async () => {
     useTaskStore.setState({ serviceUnavailable: true });
     const fetchSpy = vi.spyOn(useTaskStore.getState(), "fetchEntries");
 
     render(<Tasks />);
 
+    // 挂载时不应自动调用 fetchEntries（因为 serviceUnavailable=true）
+    expect(fetchSpy).not.toHaveBeenCalled();
+
     await userEvent.click(screen.getByText("重试"));
+    // 点击后总共只调用 1 次
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith({ type: "task", limit: 100 });
   });
 });
