@@ -37,9 +37,9 @@ export function Tasks() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
-  // 首次挂载时加载数据（如果 store 为空）
+  // 首次挂载时加载数据（如果 store 为空且服务可用）
   useEffect(() => {
-    if (allTasks.length === 0) {
+    if (allTasks.length === 0 && !serviceUnavailable) {
       fetchEntries(TASK_QUERY_PARAMS);
     }
   }, []); // 只在首次挂载时执行
