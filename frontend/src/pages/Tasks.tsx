@@ -38,11 +38,13 @@ export function Tasks() {
   const [endDate, setEndDate] = useState<string>("");
 
   // 首次挂载时加载数据（如果 store 为空且服务可用）
+  // 使用 getState() 读取实时值，避免 deps=[] 导致闭包捕获初始值
   useEffect(() => {
-    if (allTasks.length === 0 && !serviceUnavailable) {
-      fetchEntries(TASK_QUERY_PARAMS);
+    const state = useTaskStore.getState();
+    if (state.tasks.length === 0 && !state.serviceUnavailable) {
+      state.fetchEntries(TASK_QUERY_PARAMS);
     }
-  }, []); // 只在首次挂载时执行
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- 故意只执行一次
 
   // 获取日期范围
   const getDateRange = (option: string) => {

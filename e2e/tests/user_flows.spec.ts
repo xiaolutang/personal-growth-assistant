@@ -112,9 +112,8 @@ test.describe('非关键路径（容错）', () => {
     const textBefore = await statusButton.textContent().catch(() => null);
     await statusButton.click();
 
-    // 验证点击后有反馈：按钮文本变化，或页面有更新
-    const taskItemAfter = page.locator('.task-card, [data-testid*="task"], li, .list-item').first();
-    await expect(taskItemAfter).toBeVisible();
+    // 验证点击后任务卡片仍然可见
+    await expect(taskItem).toBeVisible();
     // 如果按钮文本有变化则明确断言
     const textAfter = await statusButton.textContent().catch(() => null);
     if (textBefore !== textAfter) {
