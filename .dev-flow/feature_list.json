@@ -736,7 +736,6 @@
         "npm run test:run 通过"
       ],
       "verification": "F1",
-      "status": "pending",
       "priority": "medium",
       "risk_tags": []
     },
