@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { act } from "@testing-library/react";
 import { useTaskStore } from "./taskStore";
 import { ApiError } from "@/lib/errors";
-import type { Task, SearchResult } from "@/types/task";
+import { resetStore, createMockTask, createMockSearchResult } from "@/testUtils/taskStoreHelpers";
 
 // Mock API module
 vi.mock("@/services/api", () => ({
@@ -27,49 +27,6 @@ const mockCreateEntry = vi.mocked(apiCreateEntry);
 const mockUpdateEntry = vi.mocked(apiUpdateEntry);
 const mockDeleteEntry = vi.mocked(apiDeleteEntry);
 const mockSearchEntries = vi.mocked(apiSearchEntries);
-
-// === 测试数据工厂 ===
-function createMockTask(overrides: Partial<Task> = {}): Task {
-  return {
-    id: `task-${Math.random().toString(36).slice(2, 8)}`,
-    title: "测试任务",
-    content: "测试内容",
-    category: "task",
-    status: "doing",
-    tags: [],
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    file_path: "test.md",
-    ...overrides,
-  };
-}
-
-function createMockSearchResult(overrides: Partial<SearchResult> = {}): SearchResult {
-  return {
-    id: `result-${Math.random().toString(36).slice(2, 8)}`,
-    title: "搜索结果",
-    score: 0.95,
-    type: "task",
-    category: "task",
-    status: "doing",
-    tags: [],
-    created_at: new Date().toISOString(),
-    file_path: "test.md",
-    ...overrides,
-  };
-}
-
-// === 重置 store 状态辅助函数 ===
-function resetStore() {
-  useTaskStore.setState({
-    tasks: [],
-    error: null,
-    serviceUnavailable: false,
-    isLoading: false,
-    searchResults: [],
-    knowledgeGraph: null,
-  });
-}
 
 // === 顶层统一重置 ===
 beforeEach(() => {

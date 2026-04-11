@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Tasks } from "./Tasks";
 import { useTaskStore } from "@/stores/taskStore";
+import { resetStore, createMockTask } from "@/testUtils/taskStoreHelpers";
 
 // Mock API module
 vi.mock("@/services/api", () => ({
@@ -25,59 +26,31 @@ vi.mock("@/components/TaskList", () => ({
   ),
 }));
 
-function resetStore() {
-  useTaskStore.setState({
-    tasks: [],
-    error: null,
-    serviceUnavailable: false,
-    isLoading: false,
-    searchResults: [],
-    knowledgeGraph: null,
-  });
-}
-
 beforeEach(() => {
   resetStore();
   vi.clearAllMocks();
 });
 
-describe("Tasks 页面 503 集成", () => {
+describe("Tasks 页面 503 降级集成", () => {
   it("serviceUnavailable=true 时显示 ServiceUnavailable 组件而非任务列表", () => {
     useTaskStore.setState({ serviceUnavailable: true });
 
     render(<Tasks />);
 
-    // 应显示降级提示
     expect(screen.getByText("服务暂时不可用")).toBeInTheDocument();
-    // 应有重试按钮
     expect(screen.getByText("重试")).toBeInTheDocument();
-    // 不应显示任务列表卡片
     expect(screen.queryByText(/所有任务/)).not.toBeInTheDocument();
   });
 
   it("serviceUnavailable=false 时显示任务列表卡片", () => {
     useTaskStore.setState({
       serviceUnavailable: false,
-      tasks: [
-        {
-          id: "1",
-          title: "测试任务",
-          content: "",
-          category: "task",
-          status: "doing",
-          tags: [],
-          created_at: "2026-04-11T00:00:00",
-          updated_at: "2026-04-11T00:00:00",
-          file_path: "test.md",
-        },
-      ],
+      tasks: [createMockTask({ id: "1", title: "测试任务" })],
     });
 
     render(<Tasks />);
 
-    // 应显示任务列表
     expect(screen.getByText(/所有任务/)).toBeInTheDocument();
-    // 不应显示降级提示
     expect(screen.queryByText("服务暂时不可用")).not.toBeInTheDocument();
   });
 
@@ -91,7 +64,6 @@ describe("Tasks 页面 503 集成", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
 
     await userEvent.click(screen.getByText("重试"));
-    // 点击后总共只调用 1 次
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith({ type: "task", limit: 100 });
   });

@@ -109,15 +109,13 @@ test.describe('非关键路径（容错）', () => {
     }
 
     // 记录点击前的按钮文本
-    const textBefore = await statusButton.textContent().catch(() => null);
+    const textBefore = await statusButton.textContent();
     await statusButton.click();
 
     // 验证点击后任务卡片仍然可见
     await expect(taskItem).toBeVisible();
-    // 如果按钮文本有变化则明确断言
-    const textAfter = await statusButton.textContent().catch(() => null);
-    if (textBefore !== textAfter) {
-      expect(textAfter).not.toBe(textBefore);
-    }
+    // 验证按钮文本发生了变化（状态切换的 UI 反馈）
+    const textAfter = await statusButton.textContent();
+    expect(textAfter).not.toBe(textBefore);
   });
 });
