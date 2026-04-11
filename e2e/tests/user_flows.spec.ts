@@ -79,7 +79,7 @@ test.describe('非关键路径（容错）', () => {
     await page.goto('/');
     const searchInput = page.locator('[data-testid="search-input"], input[placeholder*="搜索"], input[placeholder*="Search"]').first();
 
-    if (!(await searchInput.isVisible().catch(() => false))) {
+    if (!(await searchInput.isVisible())) {
       test.skip();
       return;
     }
@@ -96,14 +96,13 @@ test.describe('非关键路径（容错）', () => {
     await page.goto('/tasks');
 
     const taskItem = page.locator('.task-card, [data-testid*="task"], li, .list-item').first();
-    if (!(await taskItem.isVisible({ timeout: 5000 }).catch(() => false))) {
+    if (!(await taskItem.isVisible({ timeout: 5000 }))) {
       test.skip();
       return;
     }
 
     const statusButton = taskItem.locator('button, [data-testid*="status"]').first();
-    if (!(await statusButton.isVisible().catch(() => false))) {
-      // 任务卡片可见但无状态按钮，跳过
+    if (!(await statusButton.isVisible())) {
       test.skip();
       return;
     }
