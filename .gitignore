@@ -30,6 +30,7 @@ Thumbs.db
 
 # Runtime data
 data/index.db
+data/logs.db
 data/tasks/
 backend/data/
 

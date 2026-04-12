@@ -2,22 +2,22 @@
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
 |--------|----------|-----------|--------------------|--------|------|
-| 项目初始化 | S001 | unit | 默认值/环境变量覆盖 | planned | - |
-| 存储层 | B001 | unit | 建表/批量插入/按 service 查询/统计分组 | planned | - |
-| Handler | B002 | unit | 注册写入/批量 flush/进程退出 flush | planned | - |
-| 初始化入口 | B003 | unit | setup/shutdown 生命周期 | planned | - |
-| ingest API | B004 | unit | 正常写入/service 缺失/空数组/大批量 | planned | - |
-| 查询 API | B005 | unit | 按 service 筛选/stats 分组/cleanup 按天数 | planned | - |
-| 中间件 | B006 | unit | RequestID 生成/请求日志/异常捕获 | planned | - |
-| 服务集成 | B007 | integration | 完整写入-查询-统计-清理链路/混合数据 | planned | - |
-| SDK Handler | B008 | unit | 正常发送/不可达不阻塞/重试/退出 flush | planned | - |
-| SDK 初始化 | B009 | unit | 快捷函数默认参数 | planned | - |
-| logs-ui 迁移 | F001 | manual | 页面加载/筛选/分页正常 | planned | 无自动化测试 |
-| logs-ui 统计 | F002 | manual | 统计卡片显示 service 分组 | planned | 无自动化测试 |
-| 项目改造-移除 | B010 | integration | 项目启动无报错/业务 API 正常 | planned | - |
-| 项目改造-接入 | B011 | integration | SDK 初始化/请求日志上报 | planned | - |
-| Docker 部署 | B012 | manual | docker compose up 正常启动 | planned | - |
-| 端到端 | S003 | integration | 完整链路/服务重启恢复 | planned | - |
+| 项目初始化 | S001 | unit | 默认值/环境变量覆盖 | completed | log-service repo commit e7a9b08 |
+| 存储层 | B001 | unit | 建表/批量插入/按 service 查询/统计分组 | completed | log-service repo commit fec7f42 |
+| Handler | B002 | unit | 注册写入/批量 flush/进程退出 flush | completed | log-service repo commit d88b205 |
+| 初始化入口 | B003 | unit | setup/shutdown 生命周期 | completed | log-service repo commit 293fce7 |
+| ingest API | B004 | unit | 正常写入/service 缺失/空数组/大批量 | completed | log-service repo commit ee26119 |
+| 查询 API | B005 | unit | 按 service 筛选/stats 分组/cleanup 按天数 | completed | log-service repo commit ddb6a3e |
+| 中间件 | B006 | unit | RequestID 生成/请求日志/异常捕获 | completed | log-service repo commit 870e30d |
+| 服务集成 | B007 | integration | 完整写入-查询-统计-清理链路/混合数据 | completed | log-service repo commit 8a7b879 |
+| SDK Handler | B008 | unit | 正常发送/不可达不阻塞/重试/退出 flush | completed | log-service repo commit 3dc7634 |
+| SDK 初始化 | B009 | unit | 快捷函数默认参数 | completed | log-service repo commit 3dc7634 |
+| logs-ui 迁移 | F001 | manual | 页面加载/筛选/分页正常 | completed | log-service repo commit d4b87dc |
+| logs-ui 统计 | F002 | manual | 统计卡片显示 service 分组 | completed | log-service repo commit d4b87dc |
+| 项目改造-移除 | B010 | integration+runtime | 项目启动无报错/业务 API 正常/日志目录已删除 | completed | evidence/B010.md, 294 backend tests passed, runtime verified |
+| 项目改造-接入 | B011 | integration+runtime | SDK 初始化/RemoteLogHandler 挂载/中间件日志链路 | completed | evidence/B011.md, runtime verification PASSED |
+| Docker 部署 | B012 | manual | docker compose up 正常启动 | completed | log-service repo commit 9d1c360 |
+| 端到端 | S003 | integration | 完整链路/服务重启恢复 | completed | log-service repo commit 9d1c360 |
 | 死代码清理 | TD01 | unit | 构建通过/无残留引用 | completed | - |
 | nginx 配置统一 | TD02 | integration | nginx -t 通过/compose 路径正确 | completed | - |
 | CORS 配置收紧 | TD11 | unit | 预检/非法源/非法方法/GET CORS 头 | completed | 4 tests in backend/tests/unit/api/test_cors.py |

@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI):
         os.environ["LANGSMITH_API_KEY"] = settings.LANGSMITH_API_KEY
         os.environ["LANGSMITH_TRACING"] = "true" if settings.LANGSMITH_TRACING else "false"
         os.environ["LANGSMITH_PROJECT"] = settings.LANGSMITH_PROJECT
-        logger.info(f"LangSmith tracing enabled, project: {settings.LANGSMITH_PROJECT}")
+        logger.info("LangSmith tracing enabled, project=%s", settings.LANGSMITH_PROJECT)
 
     # 初始化解析图（使用工厂方法，异步创建）
     graph = await TaskParserGraph.create(caller=APICaller())
@@ -88,7 +88,7 @@ async def lifespan(app: FastAPI):
 
         logger.info("存储服务初始化成功")
     except Exception as e:
-        logger.error(f"存储服务初始化失败（部分功能不可用）: {e}")
+        logger.error("存储服务初始化失败（部分功能不可用）: %s", e)
 
     yield
 
