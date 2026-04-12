@@ -1,5 +1,6 @@
 """TD04: MCP Server 拆分后结构和导入验证"""
 import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.mcp.tools import TOOLS
 from app.mcp.handlers import (
@@ -87,3 +88,68 @@ class TestHelpers:
         assert ENTRY_ID_LENGTH == 8
         assert MAX_CHILD_TASKS == 1000
         assert MAX_DISPLAY_TASKS == 10
+
+
+class TestCallToolDispatch:
+    """验证 call_tool 路由分发到正确的 handler"""
+
+    @pytest.mark.asyncio
+    async def test_call_tool_dispatches_to_handler(self):
+        """call_tool 正确分发到对应 handler"""
+        from app.mcp.server import call_tool
+
+        mock_storage = MagicMock()
+        mock_handler = AsyncMock(return_value=[])
+
+        with patch("app.mcp.server.storage", mock_storage), \
+             patch("app.mcp.server.TOOL_HANDLERS", {"list_entries": mock_handler}):
+            result = await call_tool("list_entries", {"limit": 10})
+            mock_handler.assert_called_once_with(mock_storage, {"limit": 10})
+
+    @pytest.mark.asyncio
+    async def test_call_tool_unknown_tool(self):
+        """未知工具名返回错误消息"""
+        from app.mcp.server import call_tool
+
+        with patch("app.mcp.server.storage", MagicMock()):
+            result = await call_tool("nonexistent_tool", {})
+            assert len(result) == 1
+            assert "未知工具" in result[0].text
+
+    @pytest.mark.asyncio
+    async def test_call_tool_handler_exception(self):
+        """handler 抛异常时返回错误消息"""
+        from app.mcp.server import call_tool
+
+        mock_handler = AsyncMock(side_effect=ValueError("test error"))
+        with patch("app.mcp.server.storage", MagicMock()), \
+             patch("app.mcp.server.TOOL_HANDLERS", {"list_entries": mock_handler}):
+            result = await call_tool("list_entries", {})
+            assert len(result) == 1
+            assert "错误" in result[0].text
+
+    @pytest.mark.asyncio
+    async def test_call_tool_auto_init_when_no_storage(self):
+        """storage 为 None 时自动初始化"""
+        from app.mcp.server import call_tool
+
+        mock_handler = AsyncMock(return_value=[])
+
+        with patch("app.mcp.server.storage", None), \
+             patch("app.mcp.server.init", new_callable=AsyncMock) as mock_init, \
+             patch("app.mcp.server.TOOL_HANDLERS", {"list_entries": mock_handler}):
+            result = await call_tool("list_entries", {})
+            mock_init.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_call_tool_all_9_tools_routable(self):
+        """所有 9 个 tool name 都能找到对应 handler"""
+        from app.mcp.server import TOOL_HANDLERS
+
+        for tool in TOOLS:
+            assert tool.name in TOOL_HANDLERS, f"Tool {tool.name} not in TOOL_HANDLERS"
+
+    def test_main_entry_point_exists(self):
+        """main 函数存在且可调用"""
+        from app.mcp.server import main
+        assert callable(main)
