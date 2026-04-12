@@ -14,8 +14,8 @@
 | SDK 初始化 | B009 | unit | 快捷函数默认参数 | completed | log-service repo commit 3dc7634 |
 | logs-ui 迁移 | F001 | manual | 页面加载/筛选/分页正常 | completed | log-service repo commit d4b87dc |
 | logs-ui 统计 | F002 | manual | 统计卡片显示 service 分组 | completed | log-service repo commit d4b87dc |
-| 项目改造-移除 | B010 | integration+runtime | 项目启动无报错/业务 API 正常/日志目录已删除 | completed | evidence/B010.md, 5 task-level tests (含 lifespan 启动), 307 backend tests (commit 1f37227) |
-| 项目改造-接入 | B011 | integration+runtime | SDK 初始化/RemoteLogHandler 挂载/中间件日志链路/失败不阻塞 | completed | evidence/B011.md, 8 task-level tests (含日志到达 handler 验证), 307 backend tests (commit 1f37227) |
+| 项目改造-移除 | B010 | integration+runtime | 项目启动无报错/业务 API 正常/日志目录已删除 | completed | evidence/B010.md, 5 task-level tests (含 lifespan 启动), 307 backend tests, 运行态验证通过 (commit 2810a6e) |
+| 项目改造-接入 | B011 | integration+runtime | SDK 初始化/RemoteLogHandler 挂载/中间件日志链路/失败不阻塞 | completed | evidence/B011.md, 8 task-level tests (含日志到达 handler 验证), 307 backend tests, E2E 链路验证通过 (commit 2810a6e) |
 | Docker 部署 | B012 | manual | docker compose up 正常启动 | completed | log-service repo commit 9d1c360 |
 | 端到端 | S003 | integration | 完整链路/服务重启恢复 | completed | log-service repo commit 9d1c360 |
 | 死代码清理 | TD01 | unit | 构建通过/无残留引用 | completed | - |

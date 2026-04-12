@@ -81,3 +81,5 @@ log-service
 | dff7002 | B010+B011 | 接入 log-service SDK |
 | 1f37227 | B010+B011 | SDK 异常处理 + 任务级测试 + 运行态验证 |
 | a15321c | B010+B011 | 跟踪文件同步至 1f37227 |
+| 4160c2a | B010+B011 | 运行态验证 + feature_map 同步 |
+| 2810a6e | B011 | E2E 链路验证（log-service 可达场景） |

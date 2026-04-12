@@ -496,12 +496,12 @@
         "startup"
       ],
       "status": "completed",
-      "commit": "1f37227",
+      "commit": "2810a6e",
       "started_at": "2026-03-28T10:28:00+08:00",
-      "completed_at": "2026-03-28T10:41:00+08:00",
+      "completed_at": "2026-04-12T10:00:00+08:00",
       "actual_minutes": 13,
       "evidence_file": ".dev-flow/evidence/B010.md",
-      "execution_notes": "审核修复：simplify + 任务级集成测试 + SDK 异常保护"
+      "execution_notes": "审核修复：simplify + 任务级集成测试 + SDK 异常保护 + 运行态验证 + E2E 链路验证"
     },
     {
       "id": "B011",
@@ -523,12 +523,12 @@
       ],
       "smoke_required": true,
       "status": "completed",
-      "commit": "1f37227",
+      "commit": "2810a6e",
       "started_at": "2026-03-28T10:28:00+08:00",
-      "completed_at": "2026-03-28T10:41:00+08:00",
+      "completed_at": "2026-04-12T10:00:00+08:00",
       "actual_minutes": 13,
       "evidence_file": ".dev-flow/evidence/B011.md",
-      "execution_notes": "审核修复：simplify + 任务级集成测试 + SDK 异常保护"
+      "execution_notes": "审核修复：simplify + 任务级集成测试 + SDK 异常保护 + 运行态验证 + E2E 链路验证"
     },
     {
       "id": "B012",
