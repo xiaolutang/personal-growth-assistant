@@ -927,7 +927,7 @@
           "scenario": "npx playwright test --project=chromium 基本用例通过"
         }
       ],
-      "commit": "db6c50a"
+      "commit": "8971273"
     },
     {
       "evidence_file": ".dev-flow/evidence/TD10.md",
