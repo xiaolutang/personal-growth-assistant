@@ -29,3 +29,7 @@
 | 前端 API 类型安全 | TD05 | unit | TypeScript 编译/CRUD 类型推导/搜索保留 | completed | openapi-fetch CRUD migration |
 | taskStore 单元测试 | TD07 | unit | fetchEntries/addTasks/updateTaskStatus/deleteTask/searchEntries/getTodayTasks | completed | 32 tests in frontend/src/stores/taskStore.test.ts |
 | hooks 和 lib 测试 | TD08 | unit | useChatActions/ApiError/reviewFormatter | completed | 76 tests across 3 test files (25+22+29) |
+| 反馈 SDK 契约确认 | S004 | manual | report_issue 签名/返回结构/severity 枚举核对 | completed | 通过 python3 inspect 校验 SDK 签名 |
+| 后端反馈路由 | FB01 | unit+flow | 正常提交/SDK不可达/title 422/severity 422 + 全链路集成8项 | completed | 4 unit + 8 flow tests in test_feedback_api.py + test_feedback_flow.py |
+| 前端反馈按钮 | FB02 | manual+unit | UI交互/构建通过/组件交互测试/浮层避让 | completed | 4 tests in frontend/src/components/FeedbackButton.test.tsx + npm run build |
+| 前端反馈 API | FB03 | unit | fetch 200/503/422 | completed | 3 tests in frontend/src/services/api.feedback.test.ts |

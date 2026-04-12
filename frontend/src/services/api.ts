@@ -38,6 +38,26 @@ export interface ProjectProgressResponse {
   status_distribution: Record<string, number>;
 }
 
+export type FeedbackSeverity = "low" | "medium" | "high" | "critical";
+
+export interface FeedbackPayload {
+  title: string;
+  description?: string;
+  severity: FeedbackSeverity;
+}
+
+export interface FeedbackIssue {
+  id: number;
+  title: string;
+  status: string;
+  created_at: string;
+}
+
+export interface FeedbackResponse {
+  success: boolean;
+  issue: FeedbackIssue;
+}
+
 // === 条目管理 API ===
 
 /**
@@ -336,6 +356,18 @@ export async function getProjectProgress(projectId: string): Promise<ProjectProg
     error,
     response,
   );
+}
+
+/**
+ * 提交用户反馈
+ */
+export async function submitFeedback(payload: FeedbackPayload): Promise<FeedbackResponse> {
+  const response = await fetch(`${API_BASE}/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return handleApiResponse<FeedbackResponse>(response);
 }
 
 // === 意图识别 API ===

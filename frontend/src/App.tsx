@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { FloatingChat } from "@/components/FloatingChat";
+import { FeedbackButton } from "@/components/FeedbackButton";
 import { Home } from "@/pages/Home";
 import { Tasks } from "@/pages/Tasks";
 import { Inbox } from "@/pages/Inbox";
@@ -40,6 +41,7 @@ function App() {
             <Route path="/entries/:id" element={<EntryDetail />} />
           </Routes>
         </div>
+        <FeedbackButton />
         <FloatingChat />
       </div>
     </BrowserRouter>

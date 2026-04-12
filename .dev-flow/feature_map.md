@@ -2,7 +2,7 @@
 
 > 项目：log-service
 > 版本：v0.1.0
-> 最后更新：2026-03-28
+> 最后更新：2026-04-12
 
 ## 任务树
 
@@ -31,9 +31,21 @@ log-service
 │   ├── [completed] B010 移除 personal-growth-assistant 本地日志模块
 │   └── [completed] B011 personal-growth-assistant 接入 log-service SDK
 │
-└── P5: 部署与集成验证
-    ├── [completed] B012 Docker 部署配置
-    └── [completed] S003 端到端集成验证            ★ 最终验收
+├── P5: 部署与集成验证
+│   ├── [completed] B012 Docker 部署配置
+│   └── [completed] S003 端到端集成验证            ★ 最终验收
+│
+├── P6-P9: 技术债务与健壮性治理
+│   ├── [completed] TD01-TD03 死代码与冗余清理
+│   ├── [completed] TD04-TD06 代码结构重构
+│   ├── [completed] TD07-TD09 测试覆盖补全
+│   └── [completed] TD10-TD11 健壮性与安全
+│
+└── P10: 反馈功能接入
+    ├── [completed] S004 确认反馈 SDK 契约
+    ├── [completed] FB01 后端反馈代理路由          ★ 核心新功能
+    ├── [completed] FB03 前端反馈 API 层
+    └── [completed] FB02 前端反馈按钮与表单        ★ 用户可见入口
 ```
 
 ## 统计
@@ -42,8 +54,8 @@ log-service
 |------|------|
 | pending | 0 |
 | in_progress | 0 |
-| completed | 18 |
-| **总计** | **18** |
+| completed | 33 |
+| **总计** | **33** |
 
 ## 测试汇总
 
@@ -54,6 +66,7 @@ log-service
 | personal-growth-assistant 后端 | 313 | 全部通过 (commit 37fc585) |
 | personal-growth-assistant 前端 | 170 | 全部通过 (commit 37fc585) |
 | E2E tests | 8 (6 pass, 2 skip) | 全部通过 (commit ca5af5f) |
+| 反馈功能计划测试 | 10 | 已完成（S004 1 + FB01 4 + FB02 4 + FB03 1） |
 | **总计** | **590+** | **全部通过** |
 
 ## 仓库提交记录

@@ -9,6 +9,7 @@
 | CONTRACT-003 | GET | /api/logs/stats | 查询日志统计 | B005 |
 | CONTRACT-004 | DELETE | /api/logs/cleanup | 清理过期日志 | B005 |
 | CONTRACT-005 | GET | /health | 服务健康检查 | B001 |
+| CONTRACT-006 | POST | /feedback | 提交用户反馈 | S004, FB01, FB03 |
 
 ---
 
@@ -211,3 +212,53 @@ retention_days=30
   "status": "healthy"
 }
 ```
+
+---
+
+## 反馈提交
+
+### 提交用户反馈
+
+| 字段 | 值 |
+|------|----|
+| ID | CONTRACT-006 |
+| Method | POST |
+| Path | /feedback |
+| Auth | None |
+| Related Tasks | S004, FB01, FB03 |
+
+#### Request
+
+```json
+{
+  "title": "搜索功能响应慢",
+  "description": "在任务列表中搜索时，页面卡顿约 3 秒",
+  "severity": "medium"
+}
+```
+
+#### Request Constraints
+
+- `severity` 枚举统一为 `low | medium | high | critical`
+- 代理层调用前先完成 `log_service_sdk.report_issue()` 签名确认，确保入参与返回结构一致
+
+#### Response 200
+
+```json
+{
+  "success": true,
+  "issue": {
+    "id": 1,
+    "title": "搜索功能响应慢",
+    "status": "open",
+    "created_at": "2026-04-12T10:00:00Z"
+  }
+}
+```
+
+#### Errors
+
+| Code | Meaning |
+|------|---------|
+| 422 | title 为空、缺失，或 severity 不在 low/medium/high/critical |
+| 503 | log-service 不可达 |

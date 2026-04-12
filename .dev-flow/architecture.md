@@ -109,3 +109,41 @@ backend/app/
 - 不依赖外部消息队列
 - 不包含 LangSmith（留在各项目内部）
 - Java SDK 后续补充
+
+## 反馈功能架构（P10）
+
+### 数据流
+
+```
+用户点击反馈按钮 → FeedbackButton 组件
+  → submitFeedback() (api.ts, fetch POST /feedback)
+    → feedback.py 路由
+      → log_service_sdk.report_issue()
+        → log-service POST /api/issues
+```
+
+### 后端
+
+- **路由**: `backend/app/routers/feedback.py`（新建）
+- **端点**: `POST /feedback`
+- **请求模型**: `FeedbackRequest(title, description?, severity)`
+- **依赖**: `log_service_sdk.report_issue()` + `get_settings().LOG_SERVICE_URL`
+- **前置约束**: 先确认 `report_issue(title, description, severity)` 签名、异常类型和返回 `issue` 结构，再实现代理层
+- **错误处理**: SDK 异常 → 503, 参数校验 → 422
+- **不依赖**: deps.py（不使用存储层）
+
+### 前端
+
+- **组件**: `frontend/src/components/FeedbackButton.tsx`（新建）
+- **定位**: 固定定位右下角（z-50），位于 `FloatingChat` 上方并保持至少 `16px` 垂直间距
+- **UI**: 展开/折叠面板，不使用 Dialog/Toast
+- **枚举**: 前后端共用同一业务枚举 `low | medium | high | critical`
+- **API**: `submitFeedback()` in `api.ts`，原生 fetch
+- **挂载**: `App.tsx` 全局挂载
+- **响应式约束**: 移动端窄屏下反馈按钮与聊天入口不得互相遮挡，优先保留聊天入口可见性
+
+### 不修改的文件
+
+- `frontend/src/types/task.ts` — 反馈接口简单，不需要类型生成
+- `frontend/src/stores/` — 反馈是一次性操作，不需要 store
+- `backend/app/routers/deps.py` — feedback 不依赖存储层

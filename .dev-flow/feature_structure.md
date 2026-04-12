@@ -2,7 +2,7 @@
 
 > 项目：log-service
 > 版本：v0.1.0
-> 最后更新：2026-03-28
+> 最后更新：2026-04-12
 
 ## 系统架构
 
@@ -104,6 +104,26 @@ logs-ui → GET /logs → 查询 SQLite → 返回分页结果
 - logs-ui 容器（Nginx 静态文件服务）
 - 数据卷（SQLite 数据持久化）
 
+### M10: 反馈功能
+
+**职责**: 在 personal-growth-assistant 中提供用户可见的反馈提交通道，并代理到 log-service Issue API
+
+**核心流程**:
+```
+用户点击右下角反馈按钮
+→ 展开 FeedbackButton 表单
+→ submitFeedback()
+→ POST /feedback
+→ log_service_sdk.report_issue()
+→ log-service /api/issues
+→ 返回 success / 422 / 503
+```
+
+**界面约束**:
+- 反馈按钮固定在右下角，但需位于 FloatingChat 上方
+- 与 FloatingChat 保持至少 16px 垂直间距
+- 窄屏下优先保证聊天入口和反馈提交按钮均可触达
+
 ## 数据流图
 
 ```
@@ -143,4 +163,6 @@ M1(服务核心) ← M3(logs-ui)
 M2(Python SDK) ← M4(项目改造)
 M1 + M3 ← M5(部署集成)
 M4 + M5 → 端到端验证
+M1(服务核心) ← M10(反馈功能)
+M10(反馈功能) 依赖反馈 SDK 契约确认和前端 API 层
 ```

@@ -6,17 +6,17 @@
   "updated_at": "2026-04-12",
   "status": "confirmed",
   "workflow": {
-    "name": "A",
+    "name": "B",
     "mode": "codex_plugin/codex_plugin/codex_plugin",
     "review_provider": "codex_plugin",
     "audit_provider": "codex_plugin",
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 29,
+    "total_tasks": 33,
     "pending": 0,
     "in_progress": 0,
-    "completed": 29,
+    "completed": 33,
     "cancelled": 0
   },
   "archived_phases": [
@@ -157,6 +157,11 @@
       "id": "P9",
       "name": "健壮性与安全",
       "description": "存储初始化失败降级 UI、CORS 配置收紧"
+    },
+    {
+      "id": "P10",
+      "name": "反馈功能接入",
+      "description": "接入 log-service Issue API，实现用户反馈提交功能"
     }
   ],
   "modules": [
@@ -204,6 +209,11 @@
       "id": "M9",
       "name": "健壮安全",
       "phase": "P9"
+    },
+    {
+      "id": "M10",
+      "name": "反馈功能",
+      "phase": "P10"
     }
   ],
   "tasks": [
@@ -1007,6 +1017,162 @@
           "scenario": "TRACE 请求被 CORS 拒绝"
         }
       ]
+    },
+    {
+      "id": "S004",
+      "phase": "P10",
+      "module": "M10",
+      "name": "确认反馈 SDK 契约",
+      "description": "在实现反馈功能前确认 log_service_sdk.report_issue() 的函数签名、severity 枚举、返回结构和异常类型。若 SDK 当前签名与 /feedback 契约不一致，先记录适配策略或补兼容层，避免 FB01 实现期间出现隐式假设。",
+      "depends_on": [],
+      "acceptance_criteria": [
+        "已确认 report_issue() 的入参包含 title/description/severity",
+        "已确认 severity 枚举统一为 low/medium/high/critical",
+        "已确认成功返回 issue 结构，失败抛出可捕获异常",
+        "确认结论已同步到 CONTRACT-006 和对齐清单"
+      ],
+      "risk_tags": [
+        "network"
+      ],
+      "test_tasks": [
+        {
+          "type": "manual",
+          "description": "SDK 签名核对",
+          "scenario": "检查 log_service_sdk.report_issue() 定义与示例返回，确认 /feedback 代理层可直接映射"
+        }
+      ],
+      "status": "completed",
+      "started_at": "2026-04-12T07:55:50Z",
+      "completed_at": "2026-04-12T07:55:50Z",
+      "actual_minutes": 5,
+      "evidence_file": ".dev-flow/evidence/S004.md",
+      "execution_notes": "通过 python3 直接校验 log_service_sdk.report_issue() 签名，确认 endpoint/title/service_name 与 severity 映射成立"
+    },
+    {
+      "id": "FB01",
+      "phase": "P10",
+      "module": "M10",
+      "name": "后端反馈代理路由",
+      "description": "新建 backend/app/routers/feedback.py，POST /feedback 端点调用 log_service_sdk.report_issue()，代理到 log-service Issue API。请求模型 FeedbackRequest: title(str, 必填), description(str | None), severity(str = 'medium')，severity 枚举统一为 low/medium/high/critical。实现前先消费 S004 的 SDK 签名确认结果。使用 get_settings() 获取 LOG_SERVICE_URL，异常时返回 503。在 __init__.py 和 main.py 注册路由。",
+      "depends_on": [
+        "S004"
+      ],
+      "acceptance_criteria": [
+        "POST /feedback 端点可用",
+        "正常提交返回 {success: true, issue: {...}}",
+        "log-service 不可达时返回 503",
+        "title 为空时 Pydantic 校验拒绝 (422)",
+        "severity 只接受 low/medium/high/critical"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        {
+          "type": "unit",
+          "description": "正常提交",
+          "scenario": "mock report_issue 返回成功，验证 POST /feedback 返回 200 + success"
+        },
+        {
+          "type": "unit",
+          "description": "SDK 不可达",
+          "scenario": "mock report_issue 抛异常，验证返回 503"
+        },
+        {
+          "type": "unit",
+          "description": "参数校验",
+          "scenario": "title 为空时返回 422，且错误字段指向 title"
+        },
+        {
+          "type": "unit",
+          "description": "severity 枚举校验",
+          "scenario": "severity 不在 low/medium/high/critical 时返回 422"
+        }
+      ],
+      "status": "completed",
+      "started_at": "2026-04-12T07:55:50Z",
+      "completed_at": "2026-04-12T07:55:50Z",
+      "actual_minutes": 12,
+      "evidence_file": ".dev-flow/evidence/FB01.md",
+      "execution_notes": "新增 feedback 路由并完成 4 个 API 单测，覆盖 success/503/422-title/422-severity"
+    },
+    {
+      "id": "FB02",
+      "phase": "P10",
+      "module": "M10",
+      "name": "前端反馈按钮与表单",
+      "description": "新建 frontend/src/components/FeedbackButton.tsx，右下角固定定位浮动按钮（MessageSquare 图标），点击展开反馈表单面板。表单字段：标题（必填 Input）、描述（可选 textarea）、严重程度下拉（low/medium/high/critical）。提交时调用 FB03 的 submitFeedback()。提交后显示成功提示，1.5s 后自动关闭。使用现有 UI 组件（Button, Input）+ Lucide 图标。不引入 toast 库和 Dialog 组件。在 App.tsx 中全局挂载。需与 FloatingChat 明确避让：默认固定在其上方 16px，移动端窄屏下仍不得遮挡聊天入口或表单操作区。",
+      "depends_on": [
+        "FB01",
+        "FB03"
+      ],
+      "acceptance_criteria": [
+        "右下角浮动按钮可见",
+        "严重程度下拉与后端保持同一枚举：low/medium/high/critical",
+        "点击展开表单，再次点击关闭",
+        "标题为空时提交按钮禁用",
+        "提交成功显示绿色确认提示",
+        "提交失败显示错误信息",
+        "FeedbackButton 与 FloatingChat 之间保持 16px 以上垂直间距，不发生遮挡",
+        "前端构建通过 (npm run build)"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        {
+          "type": "manual",
+          "description": "UI 交互验证",
+          "scenario": "点击按钮 → 展开 → 填写 → 提交 → 确认成功提示 → 自动关闭"
+        },
+        {
+          "type": "unit",
+          "description": "构建通过",
+          "scenario": "npm run build 成功"
+        },
+        {
+          "type": "unit",
+          "description": "组件交互测试",
+          "scenario": "验证展开/关闭、空标题禁用、成功态与失败态渲染"
+        },
+        {
+          "type": "unit",
+          "description": "浮层避让测试",
+          "scenario": "当 FloatingChat 存在时，反馈按钮容器应用约定偏移，不遮挡聊天入口"
+        }
+      ],
+      "status": "completed",
+      "started_at": "2026-04-12T07:55:50Z",
+      "completed_at": "2026-04-12T07:55:50Z",
+      "actual_minutes": 18,
+      "evidence_file": ".dev-flow/evidence/FB02.md",
+      "execution_notes": "新增 FeedbackButton 并全局挂载，完成交互/错误/成功态/避让测试"
+    },
+    {
+      "id": "FB03",
+      "phase": "P10",
+      "module": "M10",
+      "name": "前端反馈 API 层",
+      "description": "在 frontend/src/services/api.ts 添加 submitFeedback(data) 函数，使用原生 fetch + handleApiResponse 调用 POST /feedback。不在 OpenAPI schema 中生成类型（反馈接口简单，直接手写）。请求类型中的 severity 枚举需与 CONTRACT-006 保持一致：low/medium/high/critical。",
+      "depends_on": [
+        "FB01"
+      ],
+      "acceptance_criteria": [
+        "submitFeedback 函数可正常调用",
+        "成功时返回结果，失败时抛出 ApiError",
+        "422 校验错误可透传给上层 UI 处理",
+        "TypeScript 编译无错误"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        {
+          "type": "unit",
+          "description": "API 调用验证",
+          "scenario": "mock fetch 返回 200/503/422，验证 submitFeedback 正确处理"
+        }
+      ],
+      "status": "completed",
+      "started_at": "2026-04-12T07:55:50Z",
+      "completed_at": "2026-04-12T07:55:50Z",
+      "actual_minutes": 8,
+      "evidence_file": ".dev-flow/evidence/FB03.md",
+      "execution_notes": "新增 submitFeedback() 与 200/503/422 单测，422 通过 ApiError 透传给 UI"
     }
   ]
 }

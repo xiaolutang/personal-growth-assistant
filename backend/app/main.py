@@ -18,6 +18,7 @@ from app.routers import (
     intent_router,
     parse_router,
     playground_router,
+    feedback_router,
 )
 from app.routers import deps
 from app.services import init_storage
@@ -130,6 +131,7 @@ app.include_router(review_router)
 app.include_router(intent_router)
 app.include_router(parse_router)
 app.include_router(playground_router)
+app.include_router(feedback_router)
 
 
 # === 健康检查 ===
