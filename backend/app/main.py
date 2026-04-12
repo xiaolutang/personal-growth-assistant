@@ -41,13 +41,16 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
 
     # 初始化远程日志（log-service SDK，非阻塞，即使服务不可达也不影响启动）
-    _log_handler = setup_remote_logging(
-        endpoint=settings.LOG_SERVICE_URL,
-        service_name="personal-growth-assistant",
-        component="backend",
-        level=settings.LOG_LEVEL,
-    )
-    logger.info("远程日志初始化完成, endpoint=%s", settings.LOG_SERVICE_URL)
+    try:
+        _log_handler = setup_remote_logging(
+            endpoint=settings.LOG_SERVICE_URL,
+            service_name="personal-growth-assistant",
+            component="backend",
+            level=settings.LOG_LEVEL,
+        )
+        logger.info("远程日志初始化完成, endpoint=%s", settings.LOG_SERVICE_URL)
+    except Exception as e:
+        logger.error("远程日志初始化失败（不影响启动）: %s", e)
 
     # 配置 LangSmith 可观测性（LangGraph 自动读取这些环境变量）
     if settings.LANGSMITH_API_KEY:

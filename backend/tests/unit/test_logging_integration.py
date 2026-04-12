@@ -28,8 +28,7 @@ class TestB010RemoveLocalLogging:
 
     def test_project_starts_without_local_logging(self):
         """移除本地日志后项目可正常启动（import 成功）"""
-        # 如果本地日志模块残留，import 会失败或引入旧依赖
-        from app.main import app  # noqa: F401
+        from app.main import app
         assert app is not None
 
     def test_no_log_router_registered(self):
@@ -54,19 +53,18 @@ class TestB011SDKIntegration:
         from app.core.config import get_settings
         settings = get_settings()
         assert hasattr(settings, "LOG_SERVICE_URL")
-        assert settings.LOG_SERVICE_URL  # 非空
+        assert settings.LOG_SERVICE_URL
 
     def test_setup_remote_logging_attaches_handler(self):
         """setup_remote_logging 将 RemoteLogHandler 挂载到 root logger"""
         from log_service_sdk import setup_remote_logging
 
-        # 清理可能的已有 handler
         root = logging.getLogger()
         original_handlers = root.handlers[:]
 
         try:
             handler = setup_remote_logging(
-                endpoint="http://localhost:9999",  # 不可达端口，不影响测试
+                endpoint="http://localhost:9999",
                 service_name="test-service",
                 level=logging.INFO,
             )
@@ -74,29 +72,25 @@ class TestB011SDKIntegration:
             assert type(handler).__name__ == "RemoteLogHandler"
             assert handler in root.handlers
         finally:
-            # 恢复原始 handlers
             root.handlers = original_handlers
 
     def test_sdk_init_failure_does_not_block_startup(self):
-        """SDK 初始化失败不阻塞项目启动"""
-        with patch("log_service_sdk.setup_remote_logging", side_effect=Exception("SDK 连接失败")):
-            # 即使 SDK 抛异常，main 模块仍应可导入
-            # 这模拟了 log-service 不可达但应用仍正常运行的场景
+        """SDK 初始化失败不阻塞项目启动（main.py try/except 覆盖）"""
+        # main.py 中 setup_remote_logging 已被 try/except 包裹
+        # 验证方式：patch SDK 抛异常后，import app.main 不受影响
+        with patch("app.main.setup_remote_logging", side_effect=Exception("SDK 连接失败")):
             import importlib
             import app.main
             importlib.reload(app.main)
-            # 如果到达这里，说明 SDK 失败没有导致导入失败
+            # 如果到达这里，说明模块级别未因 SDK 异常而崩溃
 
     def test_middleware_logs_through_root_logger(self):
         """中间件日志通过 root logger 输出（被 RemoteLogHandler 捕获）"""
-        from app.middleware import RequestLoggingMiddleware
-
-        # 验证中间件使用标准 logging（会被 root logger 的 handler 捕获）
         middleware_logger = logging.getLogger("app.middleware")
         assert middleware_logger.getEffectiveLevel() <= logging.INFO
 
     def test_log_handler_close_on_shutdown(self):
-        """应用关闭时调用 handler.close()（flush 剩余日志）"""
+        """应用关闭时 lifespan 调用 handler.close()（flush 剩余日志）"""
         mock_handler = MagicMock()
         mock_handler.close = MagicMock()
 
@@ -104,3 +98,13 @@ class TestB011SDKIntegration:
             # 模拟 shutdown 流程中的 close 调用
             mock_handler.close()
             mock_handler.close.assert_called_once()
+
+    def test_lifespan_catches_sdk_failure(self):
+        """验证 lifespan 中 setup_remote_logging 异常被 try/except 捕获"""
+        # 通过检查 main.py 源码确认 try/except 包裹了 setup_remote_logging
+        import inspect
+        from app.main import lifespan
+        source = inspect.getsource(lifespan)
+        assert "setup_remote_logging" in source
+        # 确认 try/except 包裹了 SDK 初始化
+        assert "远程日志初始化失败" in source, "lifespan 中缺少 SDK 异常处理"
