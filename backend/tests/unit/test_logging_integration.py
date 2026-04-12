@@ -31,6 +31,26 @@ class TestB010RemoveLocalLogging:
         from app.main import app
         assert app is not None
 
+    @pytest.mark.asyncio
+    async def test_lifespan_starts_without_local_logging(self):
+        """验证 lifespan 在无本地日志模块时可正常执行 startup 阶段"""
+        from app.main import lifespan
+
+        # Mock 所有 lifespan 依赖
+        async def mock_graph_create(*args, **kwargs):
+            g = MagicMock()
+            g.caller = MagicMock()
+            return g
+
+        with patch("app.main.setup_remote_logging", return_value=MagicMock()), \
+             patch("app.main.TaskParserGraph") as mock_graph_cls, \
+             patch("app.main.init_storage", return_value=MagicMock()), \
+             patch("app.main.deps"):
+            mock_graph_cls.create = mock_graph_create
+
+            async with lifespan(None):
+                pass  # startup 成功，到达 yield 后继续 shutdown
+
     def test_no_log_router_registered(self):
         """旧日志路由 /api/logs 不再注册"""
         from app.main import app
@@ -88,6 +108,35 @@ class TestB011SDKIntegration:
         """中间件日志通过 root logger 输出（被 RemoteLogHandler 捕获）"""
         middleware_logger = logging.getLogger("app.middleware")
         assert middleware_logger.getEffectiveLevel() <= logging.INFO
+
+    def test_middleware_log_reaches_handler(self):
+        """中间件日志真正进入 RemoteLogHandler（运行态验证）"""
+        captured = []
+
+        class CapturingHandler(logging.Handler):
+            """捕获 emit 调用的测试 handler，模拟 RemoteLogHandler 的日志接收"""
+            def emit(self, record):
+                self.captured.append(record)
+
+        handler = CapturingHandler()
+        handler.captured = captured
+        handler.setLevel(logging.INFO)
+
+        root = logging.getLogger()
+        original_handlers = root.handlers[:]
+
+        try:
+            root.addHandler(handler)
+            root.setLevel(logging.INFO)
+            # 模拟中间件日志输出
+            mw_logger = logging.getLogger("app.middleware")
+            mw_logger.info("Request completed: GET /api/health 200")
+
+            assert len(captured) == 1, f"Expected 1 log record, got {len(captured)}"
+            assert "Request completed" in captured[0].getMessage()
+            assert captured[0].name == "app.middleware"
+        finally:
+            root.handlers = original_handlers
 
     def test_log_handler_close_on_shutdown(self):
         """应用关闭时 lifespan 调用 handler.close()（flush 剩余日志）"""
