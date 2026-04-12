@@ -12,5 +12,5 @@
 | logs-ui | 日志列表+筛选 | CONTRACT-002 | completed | completed | completed | log-service commit d4b87dc |
 | logs-ui | 统计卡片 | CONTRACT-003 | completed | completed | completed | log-service commit d4b87dc |
 | logs-ui | 日志详情 | CONTRACT-002 | completed | completed | completed | log-service commit d4b87dc |
-| 项目改造 | 移除本地模块 | - | completed | not_applicable | completed | commit dff7002, evidence/B010.md |
-| 项目改造 | SDK 接入 | CONTRACT-001 | completed | not_applicable | completed | commit dff7002, evidence/B011.md |
+| 项目改造 | 移除本地模块 | - | completed | not_applicable | completed | commit d47cfaf, evidence/B010.md |
+| 项目改造 | SDK 接入 | CONTRACT-001 | completed | not_applicable | completed | commit d47cfaf, evidence/B011.md |

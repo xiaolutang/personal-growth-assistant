@@ -496,12 +496,12 @@
         "startup"
       ],
       "status": "completed",
-      "commit": "dff7002",
+      "commit": "d47cfaf",
       "started_at": "2026-03-28T10:28:00+08:00",
       "completed_at": "2026-03-28T10:41:00+08:00",
       "actual_minutes": 13,
       "evidence_file": ".dev-flow/evidence/B010.md",
-      "execution_notes": "状态从 log-service 仓库 git 历史回填"
+      "execution_notes": "审核修复：simplify + 任务级集成测试 + SDK 异常保护"
     },
     {
       "id": "B011",
@@ -523,12 +523,12 @@
       ],
       "smoke_required": true,
       "status": "completed",
-      "commit": "dff7002",
+      "commit": "d47cfaf",
       "started_at": "2026-03-28T10:28:00+08:00",
       "completed_at": "2026-03-28T10:41:00+08:00",
       "actual_minutes": 13,
       "evidence_file": ".dev-flow/evidence/B011.md",
-      "execution_notes": "状态从 log-service 仓库 git 历史回填"
+      "execution_notes": "审核修复：simplify + 任务级集成测试 + SDK 异常保护"
     },
     {
       "id": "B012",
