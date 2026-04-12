@@ -496,7 +496,7 @@
         "startup"
       ],
       "status": "completed",
-      "commit": "d47cfaf",
+      "commit": "1f37227",
       "started_at": "2026-03-28T10:28:00+08:00",
       "completed_at": "2026-03-28T10:41:00+08:00",
       "actual_minutes": 13,
@@ -523,7 +523,7 @@
       ],
       "smoke_required": true,
       "status": "completed",
-      "commit": "d47cfaf",
+      "commit": "1f37227",
       "started_at": "2026-03-28T10:28:00+08:00",
       "completed_at": "2026-03-28T10:41:00+08:00",
       "actual_minutes": 13,
