@@ -10,6 +10,10 @@
 | CONTRACT-004 | DELETE | /api/logs/cleanup | 清理过期日志 | B005 |
 | CONTRACT-005 | GET | /health | 服务健康检查 | B001 |
 | CONTRACT-006 | POST | /feedback | 提交用户反馈 | S004, FB01, FB03 |
+| CONTRACT-A01 | POST | /auth/register | 用户注册 | S01, B02 |
+| CONTRACT-A02 | POST | /auth/login | 用户登录 | S01, B02 |
+| CONTRACT-A03 | POST | /auth/logout | 用户登出 | S01, B02 |
+| CONTRACT-A04 | GET | /auth/me | 获取当前用户 | S01, B02 |
 
 ---
 
@@ -262,3 +266,152 @@ retention_days=30
 |------|---------|
 | 422 | title 为空、缺失，或 severity 不在 low/medium/high/critical |
 | 503 | log-service 不可达 |
+
+---
+
+## 用户认证
+
+### 用户注册
+
+| 字段 | 值 |
+|------|----|
+| ID | CONTRACT-A01 |
+| Method | POST |
+| Path | /auth/register |
+| Auth | None |
+| Related Tasks | S01, B02 |
+
+#### Request
+
+```json
+{
+  "username": "zhangsan",
+  "email": "zhangsan@example.com",
+  "password": "mysecretpassword"
+}
+```
+
+#### Request Constraints
+
+- `username`: 必填，3-50 字符，仅允许字母数字下划线
+- `email`: 必填，有效 email 格式
+- `password`: 必填，最少 6 字符
+
+#### Response 201
+
+```json
+{
+  "id": "usr_abc123",
+  "username": "zhangsan",
+  "email": "zhangsan@example.com",
+  "created_at": "2026-04-13T10:00:00Z"
+}
+```
+
+#### Errors
+
+| Code | Meaning |
+|------|---------|
+| 409 | username 或 email 已存在 |
+| 422 | 参数校验失败 |
+
+---
+
+### 用户登录
+
+| 字段 | 值 |
+|------|----|
+| ID | CONTRACT-A02 |
+| Method | POST |
+| Path | /auth/login |
+| Auth | None |
+| Related Tasks | S01, B02 |
+
+#### Request
+
+```json
+{
+  "username": "zhangsan",
+  "password": "mysecretpassword"
+}
+```
+
+#### Response 200
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "token_type": "bearer",
+  "expires_in": 604800,
+  "user": {
+    "id": "usr_abc123",
+    "username": "zhangsan",
+    "email": "zhangsan@example.com"
+  }
+}
+```
+
+#### Notes
+
+- access_token 有效期 7 天（604800 秒），到期后需重新登录
+- R002 不提供 refresh_token 机制，后续版本按需添加
+
+#### Errors
+
+| Code | Meaning |
+|------|---------|
+| 401 | 用户名或密码错误（不区分具体原因） |
+
+---
+
+### 用户登出
+
+| 字段 | 值 |
+|------|----|
+| ID | CONTRACT-A03 |
+| Method | POST |
+| Path | /auth/logout |
+| Auth | Bearer Token |
+| Related Tasks | S01, B02 |
+
+#### Response 200
+
+```json
+{
+  "message": "logged out"
+}
+```
+
+#### Notes
+
+- R002 logout 为前端清除 localStorage token，后端仅返回确认响应，不维护 token 黑名单
+
+---
+
+### 获取当前用户
+
+| 字段 | 值 |
+|------|----|
+| ID | CONTRACT-A04 |
+| Method | GET |
+| Path | /auth/me |
+| Auth | Bearer Token |
+| Related Tasks | S01, B02 |
+
+#### Response 200
+
+```json
+{
+  "id": "usr_abc123",
+  "username": "zhangsan",
+  "email": "zhangsan@example.com",
+  "is_active": true,
+  "created_at": "2026-04-13T10:00:00Z"
+}
+```
+
+#### Errors
+
+| Code | Meaning |
+|------|---------|
+| 401 | Token 缺失、无效或过期 |

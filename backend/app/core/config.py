@@ -57,6 +57,11 @@ class Settings(BaseSettings):
     LANGSMITH_TRACING: bool = False
     LANGSMITH_PROJECT: str = "personal-growth-assistant"
 
+    # JWT 认证配置
+    JWT_SECRET: str = ""  # 必须通过环境变量设置
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_DAYS: int = 7
+
     # CORS 配置
     ALLOWED_ORIGINS_ENV: str = ""  # 逗号分隔的域名列表，如 "http://localhost:3000,http://localhost"
 

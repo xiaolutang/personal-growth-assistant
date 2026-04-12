@@ -1,8 +1,8 @@
 # 架构文档
 
-> 项目：log-service（从 personal-growth-assistant 抽取）
-> 版本：v0.1.0
-> 更新：2026-04-10
+> 项目：personal-growth-assistant
+> 版本：v0.2.0
+> 更新：2026-04-13
 
 ## 系统总览
 
@@ -27,11 +27,53 @@ personal-growth-assistant          log-service (独立仓库)
 
 | 层 | 技术 | 职责 |
 |----|------|------|
-| Source of Truth | Markdown (.md) | 数据主源，data/ 目录 |
-| 知识图谱 | Neo4j | 概念关系 |
-| 向量检索 | Qdrant | 语义搜索 |
+| Source of Truth | Markdown (.md) | 数据主源，data/users/{user_id}/ 目录 |
+| 知识图谱 | Neo4j | 概念关系，节点带 user_id 属性 |
+| 向量检索 | Qdrant | 语义搜索，payload 带 user_id 字段 |
 
-SyncService 负责三层存储的同步。
+SyncService 负责三层存储的同步，所有操作按 user_id 隔离。
+
+## 用户认证架构（R002）
+
+### 认证流程
+
+```
+用户 → Login/Register 页面 → auth API → JWT Token
+                                              ↓
+前端 localStorage 存储 token → fetch 拦截器注入 Authorization header
+                                              ↓
+后端 get_current_user 依赖 → 验证 token → 注入 User 上下文
+                                              ↓
+所有路由通过 Depends(get_current_user) 守卫 → 服务层传递 user_id
+```
+
+### 关键组件
+
+| 组件 | 位置 | 职责 |
+|------|------|------|
+| UserStorage | infrastructure/storage/user_storage.py | users 表 CRUD |
+| AuthService | services/auth_service.py | JWT 创建/验证、密码哈希 |
+| get_current_user | routers/deps.py | 认证依赖函数 |
+| StorageFactory | infrastructure/storage/storage_factory.py | 按 user_id 创建 Markdown 存储实例 |
+| userStore | stores/userStore.ts | 前端用户状态 + Token 管理 |
+
+### 不变量
+
+- 所有数据操作必须携带 user_id，不允许无用户上下文的数据访问（系统路由如 /health 除外）
+- deps.py 保持全局单例模式，user_id 在路由层通过方法参数传递，不修改构造时注入
+- JWT secret 必须通过环境变量配置，不硬编码
+- 密码使用 bcrypt 哈希，永不存储明文
+- 已有数据迁移到 user_id = '_default'
+- LangGraph checkpoint 通过 thread_id 命名空间化（{user_id}:{session_id}）实现隔离，不修改 LangGraph 库内部
+- R002 不含 MCP Server 认证改造，MCP 作为 R003 候选
+
+### 禁止模式
+
+- 不在前端存储敏感信息（密码、hashed_password）
+- 不在日志中记录 token 或密码
+- 不使用客户端生成的 user_id
+- 不做 get_optional_current_user（所有数据路由必须认证）
+- 不做 refresh_token（R002 仅 access_token，7天过期）
 
 ## log-service 架构
 
@@ -76,7 +118,9 @@ backend/app/
 
 | 模式 | 说明 |
 |------|------|
-| 依赖注入 | deps.py 全局变量 + getter 函数 |
+| 依赖注入 | deps.py 全局变量 + getter 函数 + get_current_user |
+| 认证守卫 | Depends(get_current_user) 注入用户上下文 |
+| 存储工厂 | StorageFactory 按 user_id 创建隔离存储实例 |
 | LangGraph 任务解析 | AsyncSqliteSaver + thread_id 会话隔离 + SSE 流式 |
 | OpenAPI 类型同步 | 后端 schema → openapi-typescript → 前端类型 |
 | 跨项目日志 | log-service 独立部署，各项目通过 SDK 接入 |
@@ -97,6 +141,9 @@ backend/app/
 | 变量 | 用途 |
 |------|------|
 | LLM_API_KEY / LLM_BASE_URL / LLM_MODEL | LLM 调用 |
+| JWT_SECRET | JWT 签名密钥 |
+| JWT_ALGORITHM | JWT 算法（默认 HS256） |
+| ACCESS_TOKEN_EXPIRE_DAYS | Access Token 过期天数（默认 7） |
 | NEO4J_URI / USERNAME / PASSWORD | 知识图谱 |
 | QDRANT_URL / API_KEY | 向量检索 |
 | DATA_DIR | Markdown 数据目录 |

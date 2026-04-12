@@ -17,3 +17,16 @@
 | 反馈功能 | SDK 契约确认 | CONTRACT-006 | completed | not_applicable | not_applicable | S004，已核对 report_issue() 签名、返回结构、severity 枚举 |
 | 反馈功能 | 后端反馈路由 | CONTRACT-006 | completed | not_applicable | completed | FB01，/feedback 已实现并完成 4 个 API 单测 |
 | 反馈功能 | 反馈按钮+API | CONTRACT-006 | completed | completed | completed | FB02 + FB03，前后端 severity 枚举统一，已验证与 FloatingChat 避让 |
+| 用户认证 | 注册 API | CONTRACT-A01 | pending | not_applicable | pending | S01 → B02 |
+| 用户认证 | 登录 API | CONTRACT-A02 | pending | pending | pending | S01 → B02 → F02 |
+| 用户认证 | 登出 API | CONTRACT-A03 | pending | pending | pending | S01 → B02 → F04 |
+| 用户认证 | 获取当前用户 | CONTRACT-A04 | pending | pending | pending | S01 → B02 → F01 |
+| 用户认证 | 路由守卫 | All contracts | pending | pending | pending | B10 → B11 |
+| 数据隔离 | SQLite user_id | All data contracts | pending | not_applicable | pending | B04 |
+| 数据隔离 | Markdown 用户目录 | All data contracts | pending | not_applicable | pending | B05 |
+| 数据隔离 | Neo4j user_id | All data contracts | pending | not_applicable | pending | B06 |
+| 数据隔离 | Qdrant user_id | All data contracts | pending | not_applicable | pending | B07 |
+| 前端认证 | 登录注册页面 | CONTRACT-A01/A02 | not_applicable | pending | pending | F02 |
+| 前端认证 | 路由守卫+拦截器 | All contracts | not_applicable | pending | pending | F03 |
+| 前端认证 | 侧边栏用户信息 | CONTRACT-A04 | not_applicable | pending | pending | F04 |
+| 全链路 | 认证+隔离联调 | All contracts | pending | pending | pending | S02 |

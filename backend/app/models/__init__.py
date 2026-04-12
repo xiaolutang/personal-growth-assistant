@@ -8,6 +8,15 @@ from app.models.task import (
     ConceptRelation,
     ExtractedKnowledge,
 )
+from app.models.user import (
+    User,
+    UserBase,
+    UserResponse,
+    UserCreate,
+    UserLogin,
+    Token,
+    TokenData,
+)
 
 __all__ = [
     "Category",
@@ -19,4 +28,11 @@ __all__ = [
     "Concept",
     "ConceptRelation",
     "ExtractedKnowledge",
+    "User",
+    "UserBase",
+    "UserResponse",
+    "UserCreate",
+    "UserLogin",
+    "Token",
+    "TokenData",
 ]

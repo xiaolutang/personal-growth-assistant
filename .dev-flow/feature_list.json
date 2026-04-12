@@ -1,22 +1,24 @@
 {
   "version": "1.4",
-  "plan_version": "1.3",
+  "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
   "updated_at": "2026-04-13",
   "status": "confirmed",
+  "scope_notes": "R002 不含 MCP Server 认证改造，MCP 9 个 Tools 的用户隔离方案作为 R003 候选",
   "workflow": {
-    "name": "B",
-    "mode": "codex_plugin/codex_plugin/codex_plugin",
-    "review_provider": "codex_plugin",
-    "audit_provider": "codex_plugin",
-    "risk_provider": "codex_plugin"
+    "name": "R002-user-auth",
+    "mode": "A",
+    "runtime": "team_orchestrated",
+    "review_provider": "local",
+    "audit_provider": "local",
+    "risk_provider": "local"
   },
   "summary": {
-    "total_tasks": 0,
-    "pending": 0,
+    "total_tasks": 17,
+    "pending": 16,
     "in_progress": 0,
-    "completed": 0,
+    "completed": 1,
     "cancelled": 0
   },
   "archived_cycles": [
@@ -30,6 +32,483 @@
       "snapshot": "feature_list.snapshot.json"
     }
   ],
-  "modules": [],
-  "tasks": []
+  "modules": [
+    {
+      "id": "auth",
+      "name": "认证模块",
+      "description": "用户注册、登录、登出、JWT Token 管理"
+    },
+    {
+      "id": "data-isolation",
+      "name": "数据隔离模块",
+      "description": "SQLite/Markdown/Neo4j/Qdrant 四层存储的用户隔离改造"
+    },
+    {
+      "id": "route-guard",
+      "name": "路由守卫模块",
+      "description": "后端全路由认证守卫和用户上下文注入"
+    },
+    {
+      "id": "frontend-auth",
+      "name": "前端认证模块",
+      "description": "登录注册页面、路由守卫、Token 管理、用户状态"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "S01",
+      "phase": "P1",
+      "module": "auth",
+      "name": "认证契约与数据模型定义",
+      "description": "定义用户认证的 API 契约、JWT payload 结构、User 数据模型。R002 仅使用 access_token（7天过期），不做 refresh_token，后续版本按需添加。产出 api_contracts.md 中 auth 部分和 User Pydantic model。",
+      "verification": "L1",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "high",
+      "acceptance_criteria": [
+        "User Pydantic model 定义完成（id, username, email, hashed_password, created_at, is_active）",
+        "JWT payload 结构确定（sub=user_id, exp, type=access）",
+        "API 契约写入 api_contracts.md（POST /auth/register, POST /auth/login, POST /auth/logout, GET /auth/me）",
+        "Token 配置项加入 config.py（JWT_SECRET, JWT_ALGORITHM, ACCESS_TOKEN_EXPIRE_DAYS，默认 7 天）"
+      ],
+      "started_at": "2026-04-13",
+      "completed_at": "2026-04-13",
+      "evidence_file": ".dev-flow/evidence/S01.md",
+      "risk_tags": ["auth", "config"],
+      "test_tasks": ["契约字段完整性检查"],
+      "files": ["backend/app/models/user.py", "backend/app/core/config.py"]
+    },
+    {
+      "id": "B01",
+      "phase": "P1",
+      "module": "auth",
+      "name": "User 模型 + users 表 + 密码哈希",
+      "description": "创建 users SQLite 表，实现 User CRUD（create, get_by_username, get_by_email, get_by_id），集成 passlib bcrypt 密码哈希。",
+      "verification": "L1",
+      "depends_on": ["S01"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "users 表创建成功（id, username, email, hashed_password, is_active, created_at, updated_at）",
+        "UserStorage 类提供 create_user, get_by_username, get_by_email, get_by_id 方法",
+        "密码哈希使用 bcrypt，verify_password 和 get_password_hash 函数可用",
+        "username 和 email 唯一约束生效",
+        "单元测试覆盖：创建用户、重复 username 报错、密码验证"
+      ],
+      "risk_tags": ["auth"],
+      "test_tasks": [
+        "创建用户成功，返回不含 hashed_password",
+        "重复 username 创建失败返回 409",
+        "密码哈希不可逆，verify_password 正确匹配",
+        "get_by_username 找不到返回 None"
+      ],
+      "files": ["backend/app/infrastructure/storage/user_storage.py", "backend/app/models/user.py"]
+    },
+    {
+      "id": "B02",
+      "phase": "P1",
+      "module": "auth",
+      "name": "认证 API（注册/登录/登出/me）",
+      "description": "实现 auth_router，包含 POST /auth/register、POST /auth/login（返回 access_token，7天过期）、POST /auth/logout、GET /auth/me。不做 refresh_token。",
+      "verification": "L2",
+      "depends_on": ["B01"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "POST /auth/register — 接收 username/email/password，创建用户，返回 201 + user info",
+        "POST /auth/login — 验证凭证，返回 access_token（7天过期）",
+        "POST /auth/logout — 清除 token（前端同步清除 localStorage）",
+        "GET /auth/me — 返回当前用户信息（需 Authorization header）",
+        "register 的 email/password 基础校验（非空、email 格式、密码长度 >=6）",
+        "login 失败返回 401（不暴露是用户名还是密码错误）"
+      ],
+      "risk_tags": ["auth", "first_use"],
+      "test_tasks": [
+        "注册成功 → 登录成功 → 获取 me → 登出",
+        "注册重复 username/email → 409",
+        "登录错误密码 → 401",
+        "获取 me 无 token → 401",
+        "获取 me 过期 token → 401",
+        "首次注册后自动登录流程顺畅"
+      ],
+      "smoke_required": true,
+      "contract_refs": ["POST /auth/register", "POST /auth/login", "POST /auth/logout", "GET /auth/me"],
+      "files": ["backend/app/routers/auth.py", "backend/app/services/auth_service.py"]
+    },
+    {
+      "id": "B03",
+      "phase": "P1",
+      "module": "auth",
+      "name": "认证单元测试",
+      "description": "覆盖认证核心路径的单元测试：注册、登录、token 验证、密码哈希。",
+      "verification": "L1",
+      "depends_on": ["B02"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "测试覆盖：注册成功/失败、登录成功/失败、token 创建/验证/过期、密码哈希",
+        "所有测试通过 `uv run pytest tests/unit/test_auth.py`",
+        "边界场景：空密码、超长 username、特殊字符 email"
+      ],
+      "risk_tags": ["auth"],
+      "test_tasks": [
+        "正常路径：注册→登录→验证token→获取me",
+        "异常路径：重复注册、错误密码、过期token",
+        "边界：密码最短长度、username 最大长度"
+      ],
+      "files": ["backend/tests/unit/test_auth.py"]
+    },
+    {
+      "id": "B04",
+      "phase": "P2",
+      "module": "data-isolation",
+      "name": "SQLite entries 表添加 user_id + 数据迁移",
+      "description": "在 SQLite entries 表中添加 user_id 列和索引，实现数据迁移（已有数据分配给默认用户），修改所有查询方法加 user_id 过滤。",
+      "verification": "L1",
+      "depends_on": ["B01"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "entries 表新增 user_id 列（TEXT, NOT NULL）和索引",
+        "数据迁移：已有条目 user_id 设为 '_default'",
+        "list_entries/search/count_entries 等方法新增 user_id 参数",
+        "create_entry 自动关联当前 user_id",
+        "迁移脚本可重复执行（幂等）"
+      ],
+      "risk_tags": ["auth", "startup"],
+      "test_tasks": [
+        "新建 entry 带上 user_id",
+        "list_entries 只返回当前用户数据",
+        "迁移后已有数据 user_id = '_default'",
+        "不同用户数据互不可见"
+      ],
+      "files": ["backend/app/infrastructure/storage/sqlite.py"]
+    },
+    {
+      "id": "B05",
+      "phase": "P2",
+      "module": "data-isolation",
+      "name": "Markdown 存储按用户隔离目录",
+      "description": "改造 MarkdownStorage 支持按用户隔离目录。数据目录从 data/{category}/ 变为 data/users/{user_id}/{category}/。提供存储工厂，按 user_id 创建隔离实例。",
+      "verification": "L1",
+      "depends_on": ["B01"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "StorageFactory 类，按 user_id 创建/缓存 MarkdownStorage 实例",
+        "MarkdownStorage 构造函数接受 base_dir（如 data/users/{user_id}/）",
+        "新用户首次访问时自动创建目录结构（tasks/, notes/, projects/, inbox.md）",
+        "现有 data/ 目录内容迁移到 data/users/_default/",
+        "单元测试：不同用户目录隔离"
+      ],
+      "risk_tags": ["startup", "first_use"],
+      "test_tasks": [
+        "新用户首次操作自动创建目录",
+        "用户 A 的数据文件不存在于用户 B 的目录中",
+        "迁移后 _default 用户数据完整",
+        "StorageFactory 缓存命中验证"
+      ],
+      "smoke_required": true,
+      "files": ["backend/app/infrastructure/storage/markdown.py", "backend/app/infrastructure/storage/storage_factory.py"]
+    },
+    {
+      "id": "B06",
+      "phase": "P2",
+      "module": "data-isolation",
+      "name": "Neo4j 节点添加 user_id 属性",
+      "description": "为 Neo4j 中 Entry 和 Concept 节点添加 user_id 属性。修改所有 Cypher 查询添加 user_id 过滤。",
+      "verification": "L1",
+      "depends_on": ["B01"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Entry 和 Concept 节点创建时自动带 user_id 属性",
+        "所有 MATCH 查询添加 WHERE e.user_id = $user_id 或 n.user_id = $user_id",
+        "已有节点批量设置 user_id = '_default'",
+        "get_entry/get_related_concepts 等方法新增 user_id 参数"
+      ],
+      "risk_tags": ["auth"],
+      "test_tasks": [
+        "创建节点带 user_id",
+        "查询只返回当前用户的节点",
+        "已有节点迁移成功"
+      ],
+      "files": ["backend/app/infrastructure/storage/neo4j_client.py"]
+    },
+    {
+      "id": "B07",
+      "phase": "P2",
+      "module": "data-isolation",
+      "name": "Qdrant payload 添加 user_id + 搜索过滤",
+      "description": "为 Qdrant collection 的 payload 添加 user_id 字段，修改搜索和索引方法添加 user_id filter。",
+      "verification": "L1",
+      "depends_on": ["B01"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "upsert 时 payload 包含 user_id 字段",
+        "search 方法新增 user_id 参数，添加 Filter(must=[FieldCondition(key='user_id', match=Value(string=user_id))])",
+        "已有向量数据批量补充 user_id = '_default'",
+        "delete_by_ids 方法保留 user_id 关联"
+      ],
+      "risk_tags": ["auth"],
+      "test_tasks": [
+        "upsert 向量带 user_id",
+        "search 只返回当前用户结果",
+        "已有数据迁移成功"
+      ],
+      "files": ["backend/app/infrastructure/storage/qdrant_client.py"]
+    },
+    {
+      "id": "B08",
+      "phase": "P2",
+      "module": "data-isolation",
+      "name": "SyncService + EntryService 传递用户上下文",
+      "description": "重构 SyncService 和 EntryService，所有方法增加 user_id 参数，调用存储层时传递用户上下文。",
+      "verification": "L2",
+      "depends_on": ["B04", "B05", "B06", "B07"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "SyncService.sync_entry() 接受 user_id 参数，传递到 SQLite/Neo4j/Qdrant",
+        "EntryService 的 CRUD 方法全部接受 user_id 参数",
+        "sync_from_markdown() 按 user_id 同步该用户的数据",
+        "删除操作只影响当前用户数据"
+      ],
+      "risk_tags": ["auth"],
+      "test_tasks": [
+        "用户 A 创建条目 → sync → 各存储层都有 user_id",
+        "用户 B 查不到用户 A 的数据",
+        "删除操作只删当前用户数据"
+      ],
+      "files": ["backend/app/services/sync_service.py", "backend/app/services/entry_service.py"]
+    },
+    {
+      "id": "B09",
+      "phase": "P2",
+      "module": "data-isolation",
+      "name": "会话（Chat）按用户隔离",
+      "description": "改造 SessionMetaStore 按 user_id 隔离会话元数据。LangGraph checkpoint 隔离方案：在路由层将 thread_id 命名空间化为 '{user_id}:{session_id}'，不修改 LangGraph 库内部存储结构。",
+      "verification": "L2",
+      "depends_on": ["B01"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "SessionMetaStore 的 sessions 表添加 user_id 列",
+        "list_sessions 按 user_id 过滤",
+        "create_session 自动关联当前 user_id",
+        "已有会话数据 user_id 设为 '_default'",
+        "路由层 thread_id 改为 '{user_id}:{session_id}' 格式，实现 LangGraph checkpoint 天然隔离",
+        "parse.py 中 _graph.stream_parse / _graph.clear_thread 的 thread_id 参数使用命名空间化格式",
+        "session_id 合法字符约束：仅允许字母数字和连字符（UUID 格式），防止冒号分隔符冲突"
+      ],
+      "risk_tags": ["auth"],
+      "test_tasks": [
+        "创建会话关联 user_id",
+        "list_sessions 只返回当前用户会话",
+        "已有数据迁移成功"
+      ],
+      "test_tasks": [
+        "创建会话关联 user_id",
+        "list_sessions 只返回当前用户会话",
+        "已有数据迁移成功",
+        "用户 A 的 thread_id 不能访问用户 B 的 checkpoint"
+      ],
+      "files": ["backend/app/services/session_meta_store.py", "backend/app/routers/parse.py"]
+    },
+    {
+      "id": "B10",
+      "phase": "P3",
+      "module": "route-guard",
+      "name": "认证中间件 + deps.py 用户上下文注入",
+      "description": "创建 get_current_user 依赖函数（从 Authorization header 提取 JWT → 验证 → 加载用户）。deps.py 保持全局单例模式，但在每个方法调用时传递 user_id 参数（非构造时注入）。",
+      "verification": "L2",
+      "depends_on": ["B02"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "get_current_user 函数作为 FastAPI Depends，从 Bearer token 提取 user_id",
+        "deps.py 保持全局单例服务，get_entry_service() 等方法不变，user_id 在路由层通过方法参数传递",
+        "无效/过期 token 返回 401",
+        "缺失 token 返回 401（非 auth 路由）",
+        "不做 get_optional_current_user，所有数据路由必须认证"
+      ],
+      "risk_tags": ["auth", "first_use"],
+      "test_tasks": [
+        "有效 token → 返回 User 对象",
+        "过期 token → 401",
+        "无效 token → 401",
+        "无 token → 401"
+      ],
+      "smoke_required": true,
+      "files": ["backend/app/routers/deps.py", "backend/app/services/auth_service.py"]
+    },
+    {
+      "id": "B11",
+      "phase": "P3",
+      "module": "route-guard",
+      "name": "所有路由添加认证守卫",
+      "description": "为 entries、search、knowledge、intent、parse、review、feedback、playground 路由添加 Depends(get_current_user)。更新所有 endpoint 使用用户上下文。",
+      "verification": "L2",
+      "depends_on": ["B10", "B08", "B09"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "所有 8 个路由文件的每个 endpoint 添加 user: User = Depends(get_current_user)",
+        "每个 endpoint 通过 user.id 调用服务层",
+        "auth_router 的 register/login 不需要认证",
+        "CORS 配置保持 Authorization header 允许",
+        "集成测试：未认证请求返回 401"
+      ],
+      "risk_tags": ["auth"],
+      "test_tasks": [
+        "entries CRUD 全流程带 token → 成功",
+        "entries CRUD 不带 token → 401",
+        "search 带 token → 只返回当前用户数据",
+        "parse（SSE）带 token → 正常工作"
+      ],
+      "files": [
+        "backend/app/routers/entries.py",
+        "backend/app/routers/search.py",
+        "backend/app/routers/knowledge.py",
+        "backend/app/routers/intent.py",
+        "backend/app/routers/parse.py",
+        "backend/app/routers/review.py",
+        "backend/app/routers/feedback.py",
+        "backend/app/routers/playground.py"
+      ]
+    },
+    {
+      "id": "F01",
+      "phase": "P4",
+      "module": "frontend-auth",
+      "name": "用户状态管理 + Token 管理",
+      "description": "创建 Zustand userStore，管理用户状态（user, token, isAuthenticated）和 Token 持久化（localStorage）。",
+      "verification": "F1",
+      "depends_on": ["S01"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "userStore 包含 user, token, isAuthenticated 状态",
+        "login(username, password) action 调用 API 并存储 token",
+        "logout() action 清除 token 和用户状态",
+        "token 持久化到 localStorage，刷新页面后恢复登录态",
+        "token 过期时自动清除状态"
+      ],
+      "risk_tags": ["auth", "first_use"],
+      "test_tasks": [
+        "login 成功后 isAuthenticated = true",
+        "logout 后 isAuthenticated = false",
+        "刷新页面后恢复登录态",
+        "token 过期后清除状态"
+      ],
+      "files": ["frontend/src/stores/userStore.ts"]
+    },
+    {
+      "id": "F02",
+      "phase": "P4",
+      "module": "frontend-auth",
+      "name": "登录/注册页面",
+      "description": "创建 Login.tsx 和 Register.tsx 页面，包含表单验证、错误提示、加载状态。符合设计规范（主色 #6366F1，圆角 8px）。",
+      "verification": "F2",
+      "depends_on": ["F01", "B02"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Login 页面：username + password 输入框，登录按钮，注册链接",
+        "Register 页面：username + email + password + confirm_password，注册按钮，登录链接",
+        "表单验证：必填项、密码长度 >= 6、email 格式",
+        "错误提示：API 返回的错误信息展示",
+        "加载状态：按钮 loading 状态防止重复提交",
+        "注册成功后自动跳转登录页",
+        "UI 符合设计系统（#6366F1 主色、8px 圆角）"
+      ],
+      "risk_tags": ["auth", "first_use"],
+      "test_tasks": [
+        "正常登录流程 → 跳转首页",
+        "错误凭证 → 显示错误提示",
+        "注册成功 → 跳转登录页",
+        "注册验证失败 → 显示字段错误"
+      ],
+      "smoke_required": true,
+      "files": ["frontend/src/pages/Login.tsx", "frontend/src/pages/Register.tsx"]
+    },
+    {
+      "id": "F03",
+      "phase": "P4",
+      "module": "frontend-auth",
+      "name": "路由守卫 + API 拦截器",
+      "description": "创建 ProtectedRoute 组件包裹需认证路由。更新 api.ts 的 fetch 拦截器自动注入 Authorization header。处理 401 自动登出。",
+      "verification": "F1",
+      "depends_on": ["F01", "B10"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "ProtectedRoute 组件：未登录跳转 /login，已登录渲染子路由",
+        "api.ts 的 fetch 拦截器自动注入 Authorization: Bearer {token}",
+        "API 返回 401 时自动清除 token 并跳转 /login",
+        "App.tsx 中 /login 和 /register 路由不需要守卫",
+        "其他所有路由被 ProtectedRoute 包裹"
+      ],
+      "risk_tags": ["auth", "first_use"],
+      "test_tasks": [
+        "未登录访问首页 → 跳转 /login",
+        "已登录访问首页 → 正常显示",
+        "API 401 → 自动跳转 /login",
+        "登录后带 token 访问 API"
+      ],
+      "files": ["frontend/src/components/ProtectedRoute.tsx", "frontend/src/services/api.ts", "frontend/src/App.tsx"]
+    },
+    {
+      "id": "F04",
+      "phase": "P4",
+      "module": "frontend-auth",
+      "name": "侧边栏用户信息 + 登出按钮",
+      "description": "在 Sidebar 底部展示当前用户信息（username），添加登出按钮。替换 X-UID 匿名机制为真实用户身份。",
+      "verification": "F1",
+      "depends_on": ["F01"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Sidebar 底部显示当前用户 username",
+        "登出按钮点击后清除 token 并跳转 /login",
+        "lib/uid.ts 的 X-UID 机制改为使用真实 user.id（保留日志追踪能力）",
+        "未登录状态不显示用户信息"
+      ],
+      "risk_tags": ["auth"],
+      "test_tasks": [
+        "登录后侧边栏显示 username",
+        "点击登出 → 跳转 /login → token 清除",
+        "X-UID header 改为真实 user.id"
+      ],
+      "files": ["frontend/src/components/layout/Sidebar.tsx", "frontend/src/lib/uid.ts"]
+    },
+    {
+      "id": "S02",
+      "phase": "P5",
+      "module": "auth",
+      "name": "全链路联调与首用验证",
+      "description": "端到端验证完整认证+数据隔离链路：注册→登录→创建数据→数据隔离→登出→重新登录。",
+      "verification": "L4",
+      "depends_on": ["B11", "F03", "F04"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "完整用户旅程：注册 → 登录 → 创建任务/笔记/灵感 → 数据只属于当前用户",
+        "双用户隔离：注册两个用户，互相看不到对方数据",
+        "登出后再登录，数据完整恢复",
+        "已有数据（_default 用户）可正常访问",
+        "Token 过期后自动跳转登录页"
+      ],
+      "risk_tags": ["auth", "first_use", "network"],
+      "test_tasks": [
+        "新用户注册→登录→创建条目→登出→再登录→数据仍在",
+        "两个用户数据完全隔离",
+        "Token 过期场景处理",
+        "已有数据迁移后完整"
+      ],
+      "smoke_required": true,
+      "files": []
+    }
+  ]
 }
