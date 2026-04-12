@@ -157,7 +157,7 @@ classDiagram
 
     class TaskParserGraph {
         +LLMCaller caller
-        +InMemorySaver checkpointer
+        +AsyncSqliteSaver checkpointer
         +StateGraph graph
         +stream_parse(text, thread_id) AsyncGenerator
         +clear_thread(thread_id)

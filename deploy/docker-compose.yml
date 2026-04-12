@@ -1,0 +1,59 @@
+# 个人成长助手 生产部署配置（单容器模式）
+# 使用方式: docker compose -f deploy/docker-compose.yml up -d
+#
+# 前置条件:
+#   1. 已构建镜像: bash deploy/build.sh
+#   2. 已存在 gateway 外部网络（由基础设施 Traefik 创建）
+
+services:
+  pga:
+    image: personal-growth-assistant:latest
+    container_name: pga
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      - DATA_DIR=/app/data
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USERNAME=${NEO4J_USERNAME:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-changeme123}
+      - QDRANT_URL=http://qdrant:6333
+      - LOG_SERVICE_URL=http://log-service:8001
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}
+      - LANGSMITH_TRACING=${LANGSMITH_TRACING:-false}
+      - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-personal-growth-assistant}
+    volumes:
+      - ../data:/app/data
+    networks:
+      - gateway
+      - infra-network
+    labels:
+      - "traefik.enable=true"
+      # API 路由（高优先级）: /growth/api/* → StripPrefix /growth/api → pga:8001
+      - "traefik.http.routers.pga-api.rule=PathPrefix(`/growth/api/`)"
+      - "traefik.http.routers.pga-api.priority=100"
+      - "traefik.http.routers.pga-api.entrypoints=web"
+      - "traefik.http.routers.pga-api.middlewares=pga-strip-api"
+      - "traefik.http.middlewares.pga-strip-api.stripprefix.prefixes=/growth/api"
+      - "traefik.http.routers.pga-api.service=pga"
+      # 静态文件路由（低优先级）: /growth/* → StripPrefix /growth → pga:8001
+      - "traefik.http.routers.pga-static.rule=PathPrefix(`/growth/`)"
+      - "traefik.http.routers.pga-static.priority=50"
+      - "traefik.http.routers.pga-static.entrypoints=web"
+      - "traefik.http.routers.pga-static.middlewares=pga-strip-static"
+      - "traefik.http.middlewares.pga-strip-static.stripprefix.prefixes=/growth"
+      - "traefik.http.routers.pga-static.service=pga"
+      # Service 端口
+      - "traefik.http.services.pga.loadbalancer.server.port=8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  gateway:
+    external: true
+  infra-network:
+    external: true

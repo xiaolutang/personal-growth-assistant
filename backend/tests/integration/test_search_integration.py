@@ -1,4 +1,9 @@
-"""Search API 集成测试 - 真实 Qdrant"""
+"""Search API 集成测试
+
+直连 Qdrant 的测试需要在容器网络内执行（docker exec）。
+E2E 测试通过 Traefik 网关，宿主机可直接执行。
+"""
+import os
 import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock
@@ -6,10 +11,19 @@ import httpx
 
 from app.models import Task, Category, TaskStatus, Priority
 
+# 检测是否在容器网络内（能直连 qdrant:6333）
+_IN_CONTAINER_NETWORK = os.getenv("QDRANT_URL", "").startswith("http://qdrant") or \
+    os.path.exists("/.dockerenv")
 
-@pytest.mark.integration
+requires_container_network = pytest.mark.integration and pytest.mark.skipif(
+    not _IN_CONTAINER_NETWORK,
+    reason="需要在容器网络内执行（docker exec pga ...）"
+)
+
+
+@requires_container_network
 class TestSearchIntegration:
-    """Search API 集成测试 - 真实 Qdrant"""
+    """Search API 集成测试 - 直连 Qdrant（需容器网络）"""
 
     @pytest.fixture
     def sample_entry(self):
@@ -165,9 +179,9 @@ class TestSearchIntegration:
         await client.delete_entry(sample_entry.id)
 
 
-@pytest.mark.integration
+@requires_container_network
 class TestSearchByVector:
-    """按向量搜索测试"""
+    """按向量搜索测试（需容器网络）"""
 
     async def test_search_by_vector(self, qdrant_client_with_container):
         """测试按向量搜索"""
@@ -181,9 +195,9 @@ class TestSearchByVector:
         assert isinstance(results, list)
 
 
-@pytest.mark.integration
+@requires_container_network
 class TestDimensionMismatch:
-    """维度不匹配时的处理测试"""
+    """维度不匹配时的处理测试（需容器网络）"""
 
     async def test_dimension_mismatch_auto_recreate(self, qdrant_url):
         """测试维度不匹配时自动重建 collection"""
@@ -237,13 +251,7 @@ class TestDimensionMismatch:
 
 @pytest.mark.integration
 class TestSearchAPIE2E:
-    """搜索 API 端到端测试"""
-
-    @pytest.fixture
-    def api_base_url(self):
-        """API 基础 URL"""
-        import os
-        return os.getenv("API_BASE_URL", "http://localhost:8080/growth/api")
+    """搜索 API 端到端测试（通过 Traefik 网关）"""
 
     async def test_search_api_returns_200(self, api_base_url):
         """测试搜索 API 返回 200"""

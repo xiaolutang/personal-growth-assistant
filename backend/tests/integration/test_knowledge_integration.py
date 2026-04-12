@@ -1,13 +1,25 @@
-"""Knowledge API 集成测试 - 真实 Neo4j"""
+"""Knowledge API 集成测试
+
+直连 Neo4j 的测试需要在容器网络内执行（docker exec）。
+"""
+import os
 import pytest
 from datetime import datetime
 
 from app.models import Task, Category, TaskStatus, Priority, Concept, ConceptRelation
 
+_IN_CONTAINER_NETWORK = os.getenv("NEO4J_URI", "").startswith("bolt://neo4j") or \
+    os.path.exists("/.dockerenv")
 
-@pytest.mark.integration
+requires_container_network = pytest.mark.integration and pytest.mark.skipif(
+    not _IN_CONTAINER_NETWORK,
+    reason="需要在容器网络内执行（docker exec pga ...）"
+)
+
+
+@requires_container_network
 class TestKnowledgeIntegration:
-    """Knowledge API 集成测试 - 真实 Neo4j"""
+    """Knowledge API 集成测试 - 直连 Neo4j（需容器网络）"""
 
     @pytest.fixture
     def sample_entry(self):
@@ -176,9 +188,9 @@ class TestKnowledgeIntegration:
             await client.delete_entry(entry.id)
 
 
-@pytest.mark.integration
+@requires_container_network
 class TestKnowledgeGraphTraversal:
-    """知识图谱遍历测试"""
+    """知识图谱遍历测试（需容器网络）"""
 
     async def test_get_entries_by_concept(self, neo4j_client_with_container):
         """测试获取提及某概念的所有条目"""

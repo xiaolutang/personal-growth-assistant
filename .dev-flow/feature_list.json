@@ -4,6 +4,7 @@
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
   "updated_at": "2026-04-12",
+  "active_phase": "P11",
   "status": "confirmed",
   "workflow": {
     "name": "B",
@@ -13,10 +14,10 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 33,
+    "total_tasks": 36,
     "pending": 0,
     "in_progress": 0,
-    "completed": 33,
+    "completed": 36,
     "cancelled": 0
   },
   "archived_phases": [
@@ -162,6 +163,11 @@
       "id": "P10",
       "name": "反馈功能接入",
       "description": "接入 log-service Issue API，实现用户反馈提交功能"
+    },
+    {
+      "id": "P11",
+      "name": "部署架构收敛",
+      "description": "生产部署从双容器收敛为单容器，与 log-service 标准一致"
     }
   ],
   "modules": [
@@ -214,6 +220,11 @@
       "id": "M10",
       "name": "反馈功能",
       "phase": "P10"
+    },
+    {
+      "id": "M11",
+      "name": "部署收敛",
+      "phase": "P11"
     }
   ],
   "tasks": [
@@ -1173,6 +1184,146 @@
       "actual_minutes": 8,
       "evidence_file": ".dev-flow/evidence/FB03.md",
       "execution_notes": "新增 submitFeedback() 与 200/503/422 单测，422 通过 ApiError 透传给 UI"
+    },
+    {
+      "id": "DP01",
+      "phase": "P11",
+      "module": "M11",
+      "name": "创建 deploy/ 单容器文件",
+      "description": "创建 deploy/ 目录，实现 3-stage Dockerfile（node 前端构建 → python 依赖安装（需 git 拉 SDK） → 运行时 + 前端 dist），新增 static_app.py 用 Starlette StaticFiles(html=True) 挂载前端 dist 到根路径。新增 build.sh 作为唯一构建入口（只负责镜像构建）。新增 deploy/docker-compose.yml 单服务 + 命名卷，含完整 Traefik 路由标签（API 高优先级 StripPrefix /growth/api，静态低优先级 StripPrefix /growth）。环境契约：FRONTEND_BASE_PATH=/growth/（构建时注入），LOG_SERVICE_URL=http://log-service:8001，ALLOWED_ORIGINS_ENV 从 .env 读取，ROOT_PATH 不设（Traefik StripPrefix 已处理）。",
+      "depends_on": [],
+      "acceptance_criteria": [
+        "deploy/Dockerfile 为 3-stage 构建（node → python deps → runtime）",
+        "Python deps stage 包含 git（log-service-sdk 来自 git source）",
+        "运行时 stage 同时包含 .venv + app/ + 前端 dist + static_app.py",
+        "deploy/static_app.py 在 app.main 路由注册后 mount StaticFiles(html=True) 到根路径",
+        "deploy/build.sh 为唯一构建入口（只负责 docker build）",
+        "deploy/docker-compose.yml 为单服务 pga + bind mount ../data:/app/data",
+        "Traefik 标签含两条路由：pga-api(priority=100, StripPrefix /growth/api) + pga-static(priority=50, StripPrefix /growth)",
+        "docker compose build 成功（build.sh 可独立执行）"
+      ],
+      "risk_tags": ["startup", "config"],
+      "verification": "L3",
+      "priority": "high",
+      "status": "completed",
+      "started_at": "2026-04-12T10:30:00+08:00",
+      "completed_at": "2026-04-12T10:45:00+08:00",
+      "actual_minutes": 15,
+      "evidence_file": ".dev-flow/evidence/DP01.md",
+      "test_tasks": [
+        {
+          "type": "integration",
+          "description": "Docker 构建成功",
+          "scenario": "bash deploy/build.sh 构建镜像成功，无报错"
+        },
+        {
+          "type": "unit",
+          "description": "static_app.py 模块结构验证",
+          "scenario": "确认 import 顺序：先 from app.main import app（触发所有路由注册），再 mount StaticFiles"
+        },
+        {
+          "type": "unit",
+          "description": "构建产物验证",
+          "scenario": "检查最终镜像包含 /app/.venv + /app/app + /app/static/frontend + /app/deploy/static_app.py"
+        }
+      ]
+    },
+    {
+      "id": "DP02",
+      "phase": "P11",
+      "module": "M11",
+      "name": "切换 deploy.sh + 清理旧文件",
+      "description": "更新 deploy/deploy.sh（原 scripts/deploy.sh）：加入 custom_build() 调用 deploy/build.sh，COMPOSE_FILE 指向 deploy/docker-compose.yml，HEALTH_PATH 保持 /growth/api/health。删除所有旧部署文件（生产 + 开发环境）：docker/Dockerfile.backend、docker/Dockerfile.frontend、docker/docker-compose.prod.yml、docker/nginx/frontend.conf、docker/docker-compose.dev.yml、docker/nginx/default.conf、docker/nginx/nginx.conf、scripts/dev.sh、scripts/deploy.sh。与 log-service 部署结构对齐。",
+      "depends_on": ["DP01"],
+      "acceptance_criteria": [
+        "deploy/deploy.sh 包含 custom_build()，调用 bash deploy/build.sh",
+        "deploy/deploy.sh 的 COMPOSE_FILE 指向 deploy/docker-compose.yml",
+        "旧生产文件已删除：docker/Dockerfile.backend、Dockerfile.frontend、docker-compose.prod.yml、nginx/frontend.conf",
+        "旧开发环境文件已删除：docker/docker-compose.dev.yml、docker/nginx/default.conf、docker/nginx/nginx.conf、scripts/dev.sh",
+        "scripts/deploy.sh 已迁移到 deploy/deploy.sh",
+        "docker/ 目录已完全移除，无残留文件",
+        "CLAUDE.md、README.md、docs/deploy.md 已更新，无旧文件引用"
+      ],
+      "risk_tags": ["config"],
+      "verification": "L3",
+      "priority": "high",
+      "status": "completed",
+      "started_at": "2026-04-12T10:45:00+08:00",
+      "completed_at": "2026-04-12T10:48:00+08:00",
+      "actual_minutes": 5,
+      "evidence_file": ".dev-flow/evidence/DP02.md",
+      "execution_notes": "旧生产文件 + 旧开发环境文件全部删除，docker/ 目录完全移除，文档同步更新",
+      "test_tasks": [
+        {
+          "type": "integration",
+          "description": "deploy.sh 路径验证",
+          "scenario": "source deploy/deploy.sh 确认 COMPOSE_FILE=deploy/docker-compose.yml 且 custom_build 函数存在"
+        },
+        {
+          "type": "integration",
+          "description": "旧文件已删除",
+          "scenario": "ls docker/ 返回不存在，ls scripts/dev.sh 返回不存在"
+        },
+        {
+          "type": "integration",
+          "description": "文档无残留引用",
+          "scenario": "grep -r docker-compose.dev nginx/default.conf dev.sh 在 CLAUDE.md README.md docs/deploy.md 无匹配"
+        }
+      ]
+    },
+    {
+      "id": "DP03",
+      "phase": "P11",
+      "module": "M11",
+      "name": "构建与运行态验证",
+      "description": "验证单容器部署的完整链路：docker build → compose up → 多维度路由验证。覆盖 SPA 深链路由、静态资源路径、API 文档、API/静态路由分离边界。",
+      "depends_on": ["DP02"],
+      "acceptance_criteria": [
+        "docker compose -f deploy/docker-compose.yml up 成功启动",
+        "健康检查通过（/growth/api/health 返回 200，不走静态路由）",
+        "前端首页可达（/growth/ 返回 HTML）",
+        "SPA 深链路由（/growth/tasks）返回 index.html（非 404）",
+        "静态资源路径（/growth/assets/xxx.js）返回正确 MIME 类型",
+        "API 文档（/growth/api/docs）正常加载",
+        "/growth/api/health 不被静态路由拦截（priority=100 优先）"
+      ],
+      "risk_tags": ["startup", "first_use"],
+      "smoke_required": true,
+      "verification": "L3",
+      "priority": "high",
+      "status": "completed",
+      "started_at": "2026-04-12T11:00:00+08:00",
+      "completed_at": "2026-04-12T11:10:00+08:00",
+      "actual_minutes": 10,
+      "evidence_file": ".dev-flow/evidence/DP03.md",
+      "execution_notes": "容器级 9/9 验证通过 + Traefik 网关 8/8 验证通过（/growth/api/health → JSON, /growth/ → HTML, /growth/tasks → SPA fallback, /growth/assets/*.js → JS MIME）+ dev/prod compose config 验证 + dev build 验证",
+      "test_tasks": [
+        {
+          "type": "integration",
+          "description": "健康检查",
+          "scenario": "curl /growth/api/health 返回 200 且响应含 health 相关字段"
+        },
+        {
+          "type": "integration",
+          "description": "SPA 深链路由",
+          "scenario": "curl /growth/tasks 返回 index.html（非 404）"
+        },
+        {
+          "type": "integration",
+          "description": "静态资源路径",
+          "scenario": "curl /growth/assets/xxx.js 返回 JS MIME 类型"
+        },
+        {
+          "type": "integration",
+          "description": "API 文档",
+          "scenario": "curl /growth/api/docs 返回 200"
+        },
+        {
+          "type": "integration",
+          "description": "路由优先级隔离",
+          "scenario": "/growth/api/health 返回 JSON（API 路由），/growth/ 返回 HTML（静态路由），两者互不干扰"
+        }
+      ]
     }
   ]
 }

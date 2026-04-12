@@ -64,20 +64,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build backend image
-        run: docker build -f docker/Dockerfile.backend -t pga-backend:test .
+      - name: Build single-container image
+        run: bash deploy/build.sh
 
-      - name: Build frontend image
-        run: docker build -f docker/Dockerfile.frontend -t pga-frontend:test .
-
-      - name: Test backend health
+      - name: Test container health
         run: |
-          docker run -d --name backend-test -p 8001:8001 \
+          docker run -d --name pga-test -p 8001:8001 \
+            -v $PWD/data:/app/data \
+            -e DATA_DIR=/app/data \
             -e LLM_API_KEY=test \
             -e LLM_BASE_URL=http://localhost \
             -e LLM_MODEL=test \
-            pga-backend:test
+            personal-growth-assistant:latest
           sleep 10
+          # API health
           curl -f http://localhost:8001/health || exit 1
-          docker stop backend-test
-          docker rm backend-test
+          # Frontend page
+          curl -sf -o /dev/null -w "%{http_code}" http://localhost:8001/ | grep -q 200 || exit 1
+          # SPA deep link (returns HTML, not 404)
+          SPA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8001/tasks)
+          [ "$SPA_STATUS" = "200" ] || (echo "SPA deep link /tasks returned $SPA_STATUS" && exit 1)
+          SPA_CT=$(curl -sI http://localhost:8001/tasks | grep -i content-type)
+          echo "$SPA_CT" | grep -q "text/html" || (echo "/tasks not HTML: $SPA_CT" && exit 1)
+          # Route isolation (/health returns JSON)
+          HEALTH_CT=$(curl -sI http://localhost:8001/health | grep -i content-type)
+          echo "$HEALTH_CT" | grep -q "application/json" || (echo "/health not JSON: $HEALTH_CT" && exit 1)
+          docker stop pga-test
+          docker rm pga-test

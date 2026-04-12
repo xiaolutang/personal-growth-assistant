@@ -8,38 +8,42 @@
 personal-growth-assistant/
 ├── backend/                   # FastAPI 后端
 │   ├── app/
-│   │   ├── main.py           # API 入口
-│   │   ├── config.py         # 配置管理
-│   │   ├── models/           # 数据模型
-│   │   │   └── task.py       # Task 模型
-│   │   ├── callers/          # LLM 调用层
-│   │   │   ├── base.py       # 抽象接口
-│   │   │   ├── api_caller.py # API 调用实现
-│   │   │   └── mock_caller.py# Mock 实现（测试用）
-│   │   └── services/         # 业务服务
-│   │       └── task_parser.py# 任务解析服务
-│   ├── tests/                # 测试
-│   │   ├── test_callers.py
-│   │   └── test_task_parser.py
-│   ├── pyproject.toml        # 依赖管理
-│   └── .env.example
+│   │   ├── main.py           # API 入口 + 生命周期
+│   │   ├── routers/          # API 路由
+│   │   ├── services/         # 业务服务（sync/entry/intent）
+│   │   ├── infrastructure/   # 基础设施（storage/llm）
+│   │   ├── graphs/           # LangGraph 图（task_parser_graph）
+│   │   ├── models/           # 数据模型（Task/Category/Status）
+│   │   ├── mcp/              # MCP Server（9 个 Tools）
+│   │   └── core/             # 配置与异常
+│   ├── tests/                # 单元测试 + 集成测试
+│   └── pyproject.toml
 ├── frontend/                  # React 前端
 │   ├── src/
+│   │   ├── pages/            # 页面（Home/Tasks/Projects/Notes/Inbox/Review）
 │   │   ├── components/       # 组件
-│   │   ├── pages/            # 页面
-│   │   ├── stores/           # 状态管理
+│   │   ├── stores/           # Zustand 状态管理
 │   │   └── services/         # API 服务
-│   ├── design-system.md      # ⭐ UI 设计规范
-│   └── package.json
-└── README.md
+│   └── design-system.md      # UI 设计规范
+├── deploy/                    # 单容器部署（Dockerfile + docker-compose + build.sh）
+├── scripts/                   # 部署与验证脚本
+└── docs/                      # 文档
 ```
 
 ## API 端点
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/health` | 健康检查 |
-| POST | `/parse` | 解析自然语言 → 结构化任务 |
+完整 API 文档请访问 `/docs`（Swagger UI）。
+
+| 主要端点 | 说明 |
+|---------|------|
+| `/entries` | 条目 CRUD（任务/笔记/灵感/项目） |
+| `/parse` | LLM 解析自然语言（SSE 流式） |
+| `/search` | 语义搜索 |
+| `/knowledge-graph` | 知识图谱与概念关系 |
+| `/intent` | 意图识别 |
+| `/feedback` | 用户反馈 |
+| `/review` | 统计回顾（日/周/月） |
+| `/sessions` | 对话会话管理 |
 
 ### 示例
 
@@ -47,8 +51,8 @@ personal-growth-assistant/
 # 健康检查
 curl http://localhost:8000/health
 
-# 解析任务
-curl -X POST "http://localhost:8000/parse?text=明天下午3点开会，讨论项目进度"
+# 条目列表
+curl http://localhost:8000/entries?limit=5
 ```
 
 ## 快速开始
@@ -108,33 +112,15 @@ open http://localhost:5173
 ### 目录结构
 
 ```
-docker/
-├── Dockerfile.backend      # 后端镜像
-├── Dockerfile.frontend     # 前端镜像
-├── docker-compose.dev.yml  # 开发环境
-├── docker-compose.prod.yml # 生产环境
-└── nginx/
-    ├── nginx.conf          # Nginx 主配置
-    └── templates/          # 配置模板（支持环境变量）
+deploy/
+├── Dockerfile              # 3-stage 单容器构建（前端 + 后端）
+├── static_app.py           # FastAPI + StaticFiles 入口
+├── build.sh                # 镜像构建脚本
+├── deploy.sh               # 一键部署（共享部署库）
+└── docker-compose.yml      # 生产部署（单容器 + Traefik）
 
 scripts/
-├── dev.sh                  # 开发环境启动
-└── deploy.sh               # 生产部署
-```
-
-### 开发环境
-
-```bash
-# 快速启动
-./scripts/dev.sh
-
-# 或手动启动
-docker compose -f docker/docker-compose.dev.yml up -d
-
-# 访问
-# 前端: http://localhost:8888/growth/
-# Neo4j: http://localhost:17474
-# Qdrant: http://localhost:16333
+└── test-docker.sh          # Docker 构建验证
 ```
 
 ### 生产部署
@@ -144,42 +130,41 @@ docker compose -f docker/docker-compose.dev.yml up -d
 cp .env.example .env
 # 编辑 .env 填入配置
 
-# 2. 一键部署
-./scripts/deploy.sh
+# 2. 一键部署（构建镜像 + 启动容器）
+./deploy/deploy.sh
 
 # 3. 不使用缓存构建
-./scripts/deploy.sh --no-cache
+./deploy/deploy.sh --no-cache
 
 # 访问
 # 前端: http://localhost/growth/
-# Neo4j: http://localhost:7474
-# Qdrant: http://localhost:6333
+# API 文档: http://localhost/growth/api/docs
 ```
 
 ### 常用命令
 
 ```bash
 # 查看日志
-docker compose -f docker/docker-compose.prod.yml logs -f
+docker compose -f deploy/docker-compose.yml logs -f
 
 # 停止服务
-docker compose -f docker/docker-compose.prod.yml down
+docker compose -f deploy/docker-compose.yml down
 
 # 重启服务
-docker compose -f docker/docker-compose.prod.yml restart
+docker compose -f deploy/docker-compose.yml restart
 
-# 进入后端容器
-docker exec -it pga-backend /bin/bash
+# 进入容器
+docker exec -it pga /bin/bash
 ```
 
 ## 技术栈
 
-- **后端**: FastAPI + Pydantic
+- **后端**: FastAPI + Pydantic + LangGraph
+- **存储**: Markdown（主数据源）+ Neo4j（知识图谱）+ Qdrant（向量检索）
 - **LLM**: OpenAI 兼容 API（通义千问、DeepSeek 等）
-- **包管理**: uv
-- **测试**: pytest + pytest-asyncio
-- **前端**: React 18 + TypeScript + Vite + shadcn/ui + Tailwind CSS
-- **数据库**: 待定（SQLite）
+- **前端**: React 18 + TypeScript + Vite + shadcn/ui + Tailwind CSS + Zustand
+- **部署**: Docker 单容器 + Traefik 网关
+- **测试**: pytest + pytest-asyncio + Vitest + Playwright
 
 ## UI 设计规范
 

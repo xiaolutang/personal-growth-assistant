@@ -77,7 +77,7 @@ backend/app/
 | 模式 | 说明 |
 |------|------|
 | 依赖注入 | deps.py 全局变量 + getter 函数 |
-| LangGraph 任务解析 | InMemorySaver + thread_id 会话隔离 + SSE 流式 |
+| LangGraph 任务解析 | AsyncSqliteSaver + thread_id 会话隔离 + SSE 流式 |
 | OpenAPI 类型同步 | 后端 schema → openapi-typescript → 前端类型 |
 | 跨项目日志 | log-service 独立部署，各项目通过 SDK 接入 |
 
@@ -147,3 +147,20 @@ backend/app/
 - `frontend/src/types/task.ts` — 反馈接口简单，不需要类型生成
 - `frontend/src/stores/` — 反馈是一次性操作，不需要 store
 - `backend/app/routers/deps.py` — feedback 不依赖存储层
+
+## 部署架构（P11）
+
+### 单容器模式
+
+生产环境采用单容器部署：FastAPI + Starlette StaticFiles 同时服务 API 和前端静态文件。
+
+```
+Traefik (:80)
+    ├── /growth/api/* (priority=100) → StripPrefix /growth/api → container:8001 (FastAPI routes)
+    └── /growth/*    (priority=50)  → StripPrefix /growth    → container:8001 (StaticFiles)
+```
+
+- 3-stage Dockerfile：node 前端构建 → python 依赖 → 运行时 + 静态文件
+- `static_app.py`：导入 FastAPI app 后 mount `/assets` 为 StaticFiles，catch-all 路由返回 index.html（SPA 深链回退）
+- 前端 `base: '/growth/'` 在 Vite 构建时注入，资源路径自动带前缀
+- 开发/测试环境复用同一 `deploy/` 单容器构建，`scripts/test-docker.sh` 验证构建与运行态

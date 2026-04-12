@@ -56,13 +56,9 @@ npm run gen:types
 ### Docker
 
 ```bash
-# 开发环境
-./scripts/dev.sh
-# 或 docker compose -f docker/docker-compose.dev.yml up -d
-
 # 生产部署
-./scripts/deploy.sh
-# 或 docker compose -f docker/docker-compose.prod.yml up -d
+./deploy/deploy.sh
+# 或 bash deploy/build.sh && docker compose -f deploy/docker-compose.yml up -d
 ```
 
 ## 架构概览
@@ -92,6 +88,8 @@ backend/app/
 │   ├── intent.py        # 意图识别
 │   ├── parse.py         # LLM 解析（SSE 流式）
 │   ├── review.py        # 统计回顾
+│   ├── feedback.py      # 用户反馈
+│   ├── playground.py    # Playground 调试
 │   └── deps.py          # 依赖注入
 ├── services/            # 业务服务
 │   ├── sync_service.py  # 存储同步
@@ -104,7 +102,7 @@ backend/app/
 ├── graphs/              # LangGraph 图
 │   └── task_parser_graph.py  # 任务解析图
 ├── models/              # 数据模型 (Task, Category, Status)
-└── mcp/                 # MCP Server (8 个 Tools)
+└── mcp/                 # MCP Server (9 个 Tools)
 ```
 
 ### 前端目录结构
@@ -145,7 +143,7 @@ entry_service = deps.get_entry_service()
 
 `TaskParserGraph` 使用 LangGraph 实现对话式任务解析：
 - 支持 SSE 流式输出
-- 使用 `InMemorySaver` 保存对话历史
+- 使用 `AsyncSqliteSaver` 保存对话历史（SQLite 存储）
 - 通过 `thread_id` 隔离不同会话
 
 ### OpenAPI 类型同步
@@ -178,6 +176,8 @@ entry_service = deps.get_entry_service()
 | `NEO4J_URI/USERNAME/PASSWORD` | Neo4j 连接 |
 | `QDRANT_URL/API_KEY` | Qdrant 连接 |
 | `DATA_DIR` | Markdown 数据目录 |
+| `LOG_SERVICE_URL` | 日志服务地址 |
+| `LOG_LEVEL` | 日志级别 |
 
 ## MCP Tools
 
@@ -193,3 +193,4 @@ entry_service = deps.get_entry_service()
 | `search_entries` | 语义搜索 |
 | `get_knowledge_graph` | 获取知识图谱 |
 | `get_related_concepts` | 获取相关概念 |
+| `get_project_progress` | 获取项目进度 |

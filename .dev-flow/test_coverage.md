@@ -33,3 +33,6 @@
 | 后端反馈路由 | FB01 | unit+flow | 正常提交/SDK不可达/title 422/severity 422 + 全链路集成8项 | completed | 4 unit + 8 flow tests in test_feedback_api.py + test_feedback_flow.py |
 | 前端反馈按钮 | FB02 | manual+unit | UI交互/构建通过/组件交互测试/浮层避让 | completed | 4 tests in frontend/src/components/FeedbackButton.test.tsx + npm run build |
 | 前端反馈 API | FB03 | unit | fetch 200/503/422 | completed | 3 tests in frontend/src/services/api.feedback.test.ts |
+| 单容器部署文件 | DP01 | integration | Docker 构建/static_app 导入/构建产物验证 | completed | bash deploy/build.sh 构建成功 |
+| 切换+清理旧文件 | DP02 | integration | deploy.sh 路径/旧文件删除(生产+开发)/文档同步 | completed | scripts/deploy.sh + 旧文件全部删除 + docker/ 目录移除 |
+| 构建与运行态验证 | DP03 | integration+smoke | 健康检查/SPA深链/静态资源/API文档/路由隔离/API端点 | completed | 容器级 9/9 验证通过 + dev/prod compose config 验证 + dev build 验证 |

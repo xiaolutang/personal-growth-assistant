@@ -1,4 +1,4 @@
-"""集成测试 Fixtures - 使用现有 Docker 容器"""
+"""集成测试 Fixtures - 通过 Docker 部署环境测试"""
 import os
 import pytest
 
@@ -9,22 +9,31 @@ def pytest_configure(config):
     )
 
 
-# 使用现有容器的配置
-QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:16333")
-NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:17687")
+# 通过 Traefik 网关访问（本地 Docker 部署后可用）
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost/growth/api")
+
+# 直连数据库配置（需要在 pga 容器网络内执行，或基础设施 debug 模式）
+QDRANT_URL = os.getenv("QDRANT_URL", "http://qdrant:6333")
+NEO4J_URI = os.getenv("NEO4J_URI", "bolt://neo4j:7687")
 NEO4J_USERNAME = os.getenv("NEO4J_USERNAME", "neo4j")
-NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "pga123456")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "changeme123")
+
+
+@pytest.fixture(scope="module")
+def api_base_url():
+    """通过 Traefik 网关的 API 基础 URL"""
+    return API_BASE_URL
 
 
 @pytest.fixture(scope="module")
 def qdrant_url():
-    """使用现有 Qdrant 容器的 URL"""
+    """Qdrant URL（容器网络内）"""
     return QDRANT_URL
 
 
 @pytest.fixture(scope="module")
 def neo4j_config():
-    """使用现有 Neo4j 容器的配置"""
+    """Neo4j 配置（容器网络内）"""
     return {
         "uri": NEO4J_URI,
         "username": NEO4J_USERNAME,
@@ -34,13 +43,11 @@ def neo4j_config():
 
 @pytest.fixture
 async def qdrant_client_with_container(qdrant_url):
-    """使用现有容器的 Qdrant 客户端"""
+    """使用容器内 Qdrant 的客户端（需要在容器网络内执行）"""
     from app.infrastructure.storage.qdrant_client import QdrantClient
 
-    # 创建 mock embedding 服务（不需要真实 LLM）
     class MockEmbeddingService:
         async def get_embedding(self, text: str):
-            # 返回固定的 mock 向量
             return [0.1] * 1024
 
     client = QdrantClient(
@@ -57,7 +64,7 @@ async def qdrant_client_with_container(qdrant_url):
 
 @pytest.fixture
 async def neo4j_client_with_container(neo4j_config):
-    """使用现有容器的 Neo4j 客户端"""
+    """使用容器内 Neo4j 的客户端（需要在容器网络内执行）"""
     from app.infrastructure.storage.neo4j_client import Neo4jClient
 
     client = Neo4jClient(
