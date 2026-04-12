@@ -90,3 +90,6 @@ log-service
 | d3150fe | TD07 | taskStore 单元测试 (32 tests) |
 | 12f189c | TD08 | 关键 hooks 和 lib 测试 (58 tests) |
 | 37fc585 | TD02 | docker 运行态验证 + simplify 证据 |
+| 77115d2 | TD11 | CORS 配置收紧 (4 tests) |
+| 27706d1 | TD01-TD11 | 补充 xlfoundry-code-review 证据 + 修复 commit 引用 |
+| 570d763 | TD01-TD11 | 批量补充 simplify/复测/运行态证据 |
