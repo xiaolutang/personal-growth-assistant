@@ -658,11 +658,11 @@
       "phase": "P6",
       "module": "M6",
       "name": "优化 Docker 构建脚本去掉 sed hack",
-      "description": "当前 Dockerfile.backend 使用 sed 修改 pyproject.toml 中的 log-service SDK 路径（../../log-service/sdks/python → /app/log-service-sdk），这很脆弱。改为在部署脚本中提前准备好正确的 pyproject.toml 片段，或使用环境变量覆盖。",
+      "description": "Dockerfile.backend 直接 COPY pyproject.toml，通过 [tool.uv.sources] git 引用拉取 log-service-sdk；deploy.sh 使用共享部署库 deploy-lib.sh 调用。消除旧的 sed hack 和本地路径复制逻辑。",
       "depends_on": [],
       "acceptance_criteria": [
-        "Dockerfile.backend 中不再有 sed 命令",
-        "deploy.sh 中 log-service-sdk 复制和路径处理逻辑清晰",
+        "Dockerfile.backend 直接 COPY pyproject.toml，无任何预处理（无 sed）",
+        "deploy.sh 使用共享部署库调用，职责清晰（23 行）",
         "docker compose build 成功",
         "后端容器启动后健康检查通过"
       ],
@@ -682,12 +682,12 @@
         {
           "type": "integration",
           "description": "Docker 构建并启动",
-          "scenario": "docker compose build && docker compose up → curl /growth/api/health 返回 200"
+          "scenario": "docker compose build && docker compose up → curl /health 返回 200"
         },
         {
           "type": "integration",
-          "description": "SDK 路径缺失时构建失败",
-          "scenario": "deploy.sh 中不复制 log-service-sdk 目录 → docker compose build 应失败并给出清晰错误信息"
+          "description": "构建链路无预处理",
+          "scenario": "Dockerfile.backend 无 sed 命令，pyproject.toml 使用 git source 引用 SDK"
         }
       ]
     },
