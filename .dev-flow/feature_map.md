@@ -51,9 +51,9 @@ log-service
 |------|--------|------|
 | log-service 服务端 | 89 | 全部通过 |
 | log-service SDK | 24 (11 unit + 13 e2e) | 全部通过 |
-| personal-growth-assistant 后端 | 272 | 全部通过 |
-| personal-growth-assistant 前端 | 56 | 全部通过 |
-| **总计** | **441** | **全部通过** |
+| personal-growth-assistant 后端 | 307 | 全部通过 (commit 1f37227) |
+| personal-growth-assistant 前端 | 170 | 全部通过 (commit 1f37227) |
+| **总计** | **590** | **全部通过** |
 
 ## 仓库提交记录
 
@@ -79,3 +79,5 @@ log-service
 |--------|------|------|
 | e582e8d | B010 | 移除本地日志模块 |
 | dff7002 | B010+B011 | 接入 log-service SDK |
+| 1f37227 | B010+B011 | SDK 异常处理 + 任务级测试 + 运行态验证 |
+| a15321c | B010+B011 | 跟踪文件同步至 1f37227 |
