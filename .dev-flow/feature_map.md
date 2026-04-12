@@ -51,9 +51,10 @@ log-service
 |------|--------|------|
 | log-service 服务端 | 89 | 全部通过 |
 | log-service SDK | 24 (11 unit + 13 e2e) | 全部通过 |
-| personal-growth-assistant 后端 | 307 | 全部通过 (commit 1f37227) |
-| personal-growth-assistant 前端 | 170 | 全部通过 (commit 1f37227) |
-| **总计** | **590** | **全部通过** |
+| personal-growth-assistant 后端 | 313 | 全部通过 (commit 37fc585) |
+| personal-growth-assistant 前端 | 170 | 全部通过 (commit 37fc585) |
+| E2E tests | 8 (6 pass, 2 skip) | 全部通过 (commit ca5af5f) |
+| **总计** | **590+** | **全部通过** |
 
 ## 仓库提交记录
 
@@ -83,3 +84,9 @@ log-service
 | a15321c | B010+B011 | 跟踪文件同步至 1f37227 |
 | 4160c2a | B010+B011 | 运行态验证 + feature_map 同步 |
 | 2810a6e | B011 | E2E 链路验证（log-service 可达场景） |
+| 391d2f5 | TD10/TD09/TD08 | codex 审核修复 |
+| b248277 | TD04 | MCP Server 拆分 (313 backend tests) |
+| f8ec6ce | TD05 | 前端 API 层类型安全升级 (openapi-fetch) |
+| d3150fe | TD07 | taskStore 单元测试 (32 tests) |
+| 12f189c | TD08 | 关键 hooks 和 lib 测试 (58 tests) |
+| 37fc585 | TD02 | docker 运行态验证 + simplify 证据 |
