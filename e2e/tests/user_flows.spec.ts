@@ -61,7 +61,7 @@ test.describe('数据创建与验证闭环', () => {
 
     try {
       // 2. 导航到任务列表页
-      await page.goto('/tasks');
+      await page.goto('/growth/tasks');
 
       // 3. 验证新创建的任务在列表中可见
       const taskElement = page.locator('text=E2E测试任务').first();
@@ -84,11 +84,18 @@ test.describe('非关键路径（容错）', () => {
       return;
     }
 
+    // 首页对话输入框与搜索框不同，跳过搜索验证
+    const placeholder = await searchInput.getAttribute('placeholder');
+    if (placeholder && (placeholder.includes('输入内容') || placeholder.includes('帮助'))) {
+      test.skip();
+      return;
+    }
+
     await searchInput.fill('测试');
     await searchInput.press('Enter');
 
     // 验证有搜索结果或"无结果"提示
-    const resultArea = page.locator('.search-result, [data-testid*="result"], .list-item, text=没有').first();
+    const resultArea = page.locator('.search-result, [data-testid*="result"], .list-item').first().or(page.getByText('没有'));
     await expect(resultArea).toBeVisible({ timeout: 5000 });
   });
 

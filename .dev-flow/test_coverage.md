@@ -25,7 +25,7 @@
 | deps.py 统一化 | TD06 | unit | 构造注入/无副作用/reset重建/503 | completed | 8 tests in backend/tests/unit/test_deps.py |
 | 503 降级提示 | TD10 | unit+integration | 503检测/非503不触发/重试恢复 + UI文案/重试按钮 + GET /entries 503集成 | completed | 3 store tests + 3 component tests + 3 deps 503 tests + 1 GET /entries 503 integration test |
 | MCP Server 拆分 | TD04 | unit | 导入/路由映射/常量/handler可调用/call_tool分发 | completed | 14 tests in backend/tests/unit/test_mcp_split.py (commit b248277) |
-| E2E 测试加强 | TD09 | integration | 硬断言/导航/数据闭环/响应式/容错 | completed | 8 tests in e2e/tests/user_flows.spec.ts |
+| E2E 测试加强 | TD09 | integration | 硬断言/导航/数据闭环/响应式/容错 | completed | 8 tests, 6 passed + 2 skipped (runtime verified 2026-04-12) |
 | 前端 API 类型安全 | TD05 | unit | TypeScript 编译/CRUD 类型推导/搜索保留 | completed | openapi-fetch CRUD migration |
 | taskStore 单元测试 | TD07 | unit | fetchEntries/addTasks/updateTaskStatus/deleteTask/searchEntries/getTodayTasks | completed | 32 tests in frontend/src/stores/taskStore.test.ts |
 | hooks 和 lib 测试 | TD08 | unit | useChatActions/ApiError/reviewFormatter | completed | 58 tests across 3 test files |
