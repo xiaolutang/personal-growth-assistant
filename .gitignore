@@ -45,8 +45,8 @@ dist/
 # Release directory (deprecated, use docker/ instead)
 release/
 
-# Build-time SDK copy (deploy.sh copies here temporarily)
+# Historical artifacts (no longer generated in current build pipeline)
 log-service-sdk/
 
-# Build-time pyproject override (deploy.sh generates this)
+# Historical artifacts (no longer generated — pyproject.toml uses [tool.uv.sources] git source)
 backend/docker-pyproject.toml
