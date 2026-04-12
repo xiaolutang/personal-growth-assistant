@@ -729,7 +729,8 @@
           "description": "main 入口可用",
           "scenario": "python -m app.mcp.server 或 __main__ 入口正常启动，不因 import 路径变更报错"
         }
-      ]
+      ],
+      "commit": "7676723"
     },
     {
       "id": "TD05",
@@ -774,7 +775,8 @@
           "description": "错误响应处理",
           "scenario": "API 返回 404/500 时，openapi-fetch client 抛出的错误能被现有 handleApiResponse 正确处理"
         }
-      ]
+      ],
+      "commit": "f8ec6ce"
     },
     {
       "id": "TD06",
@@ -794,7 +796,7 @@
       "completed_at": "2026-04-10T21:20:00Z",
       "actual_minutes": 10,
       "evidence_file": ".dev-flow/evidence/TD06.md",
-      "commit": "pending",
+      "commit": "8d68c29",
       "priority": "medium",
       "test_tasks": [
         {
@@ -871,7 +873,8 @@
       ],
       "verification": "F1",
       "priority": "high",
-      "risk_tags": []
+      "risk_tags": [],
+      "commit": "d3150fe"
     },
     {
       "id": "TD08",
@@ -894,7 +897,8 @@
       ],
       "verification": "F1",
       "priority": "medium",
-      "risk_tags": []
+      "risk_tags": [],
+      "commit": "12f189c"
     },
     {
       "id": "TD09",
@@ -922,7 +926,8 @@
           "description": "E2E 基本用例通过",
           "scenario": "npx playwright test --project=chromium 基本用例通过"
         }
-      ]
+      ],
+      "commit": "db6c50a"
     },
     {
       "evidence_file": ".dev-flow/evidence/TD10.md",
@@ -963,7 +968,8 @@
           "description": "后端真实 503 路径验证",
           "scenario": "测试中显式将 deps.storage 置为 None → 调用 GET /entries → 确认返回 503 且 body 含 '存储服务未初始化' → 前端降级 UI 正确显示该提示"
         }
-      ]
+      ],
+      "commit": "34ef7c0"
     },
     {
       "id": "TD11",
