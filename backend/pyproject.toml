@@ -28,6 +28,7 @@ dependencies = [
     "langsmith>=0.1.0",
     # Remote Logging
     "log-service-sdk",
+    "bcrypt>=4.0.0",
 ]
 
 [tool.uv.sources]

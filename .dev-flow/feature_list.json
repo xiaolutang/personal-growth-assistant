@@ -16,9 +16,9 @@
   },
   "summary": {
     "total_tasks": 17,
-    "pending": 16,
+    "pending": 15,
     "in_progress": 0,
-    "completed": 1,
+    "completed": 2,
     "cancelled": 0
   },
   "archived_cycles": [
@@ -86,7 +86,10 @@
       "description": "创建 users SQLite 表，实现 User CRUD（create, get_by_username, get_by_email, get_by_id），集成 passlib bcrypt 密码哈希。",
       "verification": "L1",
       "depends_on": ["S01"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-13",
+      "completed_at": "2026-04-13",
+      "evidence_file": ".dev-flow/evidence/B01.md",
       "priority": "high",
       "acceptance_criteria": [
         "users 表创建成功（id, username, email, hashed_password, is_active, created_at, updated_at）",
