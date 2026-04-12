@@ -88,7 +88,7 @@ log-service
 | b248277 | TD04 | MCP Server 拆分 (313 backend tests) |
 | f8ec6ce | TD05 | 前端 API 层类型安全升级 (openapi-fetch) |
 | d3150fe | TD07 | taskStore 单元测试 (32 tests) |
-| 12f189c | TD08 | 关键 hooks 和 lib 测试 (58 tests) |
+| 12f189c | TD08 | 关键 hooks 和 lib 测试 (76 tests, 25+22+29) |
 | 37fc585 | TD02 | docker 运行态验证 + simplify 证据 |
 | 77115d2 | TD11 | CORS 配置收紧 (4 tests) |
 | 27706d1 | TD01-TD11 | 补充 xlfoundry-code-review 证据 + 修复 commit 引用 |

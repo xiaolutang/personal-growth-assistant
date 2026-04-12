@@ -21,8 +21,8 @@
 | 死代码清理 | TD01 | unit | 构建通过/无残留引用 | completed | - |
 | nginx 配置统一 | TD02 | integration | nginx -t 通过/compose 路径正确 | completed | - |
 | CORS 配置收紧 | TD11 | unit | 预检/非法源/非法方法/GET CORS 头 | completed | 4 tests in backend/tests/unit/api/test_cors.py |
-| Docker sed hack | TD03 | integration | Docker build + 容器健康检查 | completed | deploy.sh 生成 docker-pyproject.toml |
-| deps.py 统一化 | TD06 | unit | 构造注入/无副作用/reset重建/503 | completed | 8 tests in backend/tests/unit/test_deps.py |
+| Docker sed hack | TD03 | integration | Docker build + 容器健康检查 | completed | deploy-lib 共享部署库 + git source 引用 |
+| deps.py 统一化 | TD06 | unit | 构造注入/无副作用/reset重建/503 | completed | 9 tests in backend/tests/unit/test_deps.py |
 | 503 降级提示 | TD10 | unit+integration | 503检测/非503不触发/重试恢复 + UI文案/重试按钮 + GET /entries 503集成 | completed | 3 store tests + 3 component tests + 3 deps 503 tests + 1 GET /entries 503 integration test |
 | MCP Server 拆分 | TD04 | unit | 导入/路由映射/常量/handler可调用/call_tool分发 | completed | 14 tests in backend/tests/unit/test_mcp_split.py (commit b248277) |
 | E2E 测试加强 | TD09 | integration | 硬断言/导航/数据闭环/响应式/容错 | completed | 8 tests, 6 passed + 2 skipped (runtime verified 2026-04-12) |
