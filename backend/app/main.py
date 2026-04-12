@@ -19,6 +19,7 @@ from app.routers import (
     parse_router,
     playground_router,
     feedback_router,
+    auth_router,
 )
 from app.routers import deps
 from app.services import init_storage
@@ -79,6 +80,10 @@ async def lifespan(app: FastAPI):
         # 注入到共享依赖模块
         deps.storage = storage
 
+        # 初始化 UserStorage
+        from app.infrastructure.storage.user_storage import UserStorage
+        deps._user_storage = UserStorage(f"{settings.DATA_DIR}/users.db")
+
         # 注入 LLM Caller 到意图识别服务（通过 deps）
         deps.reset_all_services()
         intent_service = deps.get_intent_service()
@@ -132,6 +137,7 @@ app.include_router(intent_router)
 app.include_router(parse_router)
 app.include_router(playground_router)
 app.include_router(feedback_router)
+app.include_router(auth_router)
 
 
 # === 健康检查 ===

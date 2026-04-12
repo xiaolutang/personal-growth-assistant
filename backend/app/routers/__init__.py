@@ -7,6 +7,7 @@ from .intent import router as intent_router
 from .parse import router as parse_router
 from .playground import router as playground_router
 from .feedback import router as feedback_router
+from .auth import router as auth_router
 
 __all__ = [
     "entries_router",
@@ -17,4 +18,5 @@ __all__ = [
     "parse_router",
     "playground_router",
     "feedback_router",
+    "auth_router",
 ]

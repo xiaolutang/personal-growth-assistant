@@ -1,0 +1,98 @@
+"""认证路由 - 注册/登录/登出/me"""
+
+from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+from app.models.user import UserCreate, UserLogin, UserResponse, Token
+from app.infrastructure.storage.user_storage import UserStorage, verify_password
+from app.services.auth_service import create_access_token, get_current_user_from_token
+from app.routers.deps import get_user_storage
+
+router = APIRouter(prefix="/auth", tags=["auth"])
+security = HTTPBearer()
+
+
+@router.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
+async def register(
+    user_data: UserCreate,
+    user_storage: UserStorage = Depends(get_user_storage),
+):
+    """注册新用户"""
+    try:
+        user = user_storage.create_user(user_data)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e),
+        )
+    return UserResponse(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        is_active=user.is_active,
+        created_at=user.created_at,
+    )
+
+
+@router.post("/login", response_model=Token)
+async def login(
+    credentials: UserLogin,
+    user_storage: UserStorage = Depends(get_user_storage),
+):
+    """用户登录，返回 access token"""
+    user = user_storage.get_by_username(credentials.username)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="用户名或密码错误",
+        )
+
+    if not verify_password(credentials.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="用户名或密码错误",
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="用户已停用",
+        )
+
+    access_token = create_access_token(user.id)
+    return Token(
+        access_token=access_token,
+        token_type="bearer",
+        expires_in=604800,
+        user=UserResponse(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            is_active=user.is_active,
+            created_at=user.created_at,
+        ),
+    )
+
+
+@router.post("/logout")
+async def logout(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """登出（前端清除 token）"""
+    return {"message": "logged out"}
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_me(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    user_storage: UserStorage = Depends(get_user_storage),
+):
+    """获取当前用户信息"""
+    user = get_current_user_from_token(credentials.credentials, user_storage)
+    return UserResponse(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        is_active=user.is_active,
+        created_at=user.created_at,
+    )

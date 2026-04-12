@@ -16,9 +16,9 @@
   },
   "summary": {
     "total_tasks": 17,
-    "pending": 15,
+    "pending": 14,
     "in_progress": 0,
-    "completed": 2,
+    "completed": 3,
     "cancelled": 0
   },
   "archived_cycles": [
@@ -115,7 +115,10 @@
       "description": "实现 auth_router，包含 POST /auth/register、POST /auth/login（返回 access_token，7天过期）、POST /auth/logout、GET /auth/me。不做 refresh_token。",
       "verification": "L2",
       "depends_on": ["B01"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-13",
+      "completed_at": "2026-04-13",
+      "evidence_file": ".dev-flow/evidence/B02.md",
       "priority": "high",
       "acceptance_criteria": [
         "POST /auth/register — 接收 username/email/password，创建用户，返回 201 + user info",

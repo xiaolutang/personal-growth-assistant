@@ -29,6 +29,7 @@ dependencies = [
     # Remote Logging
     "log-service-sdk",
     "bcrypt>=4.0.0",
+    "pyjwt>=2.12.1",
 ]
 
 [tool.uv.sources]

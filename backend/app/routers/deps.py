@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from app.services.intent_service import IntentService
     from app.services.review_service import ReviewService
     from app.services.knowledge_service import KnowledgeService
+    from app.infrastructure.storage.user_storage import UserStorage
 
 # 全局存储服务（由 main.py 初始化）
 storage: "SyncService" = None
@@ -18,6 +19,7 @@ _entry_service: "EntryService" = None
 _intent_service: "IntentService" = None
 _review_service: "ReviewService" = None
 _knowledge_service: "KnowledgeService" = None
+_user_storage: "UserStorage" = None
 
 
 def get_storage() -> "SyncService":
@@ -76,13 +78,22 @@ def get_knowledge_service() -> "KnowledgeService":
     return _knowledge_service
 
 
+def get_user_storage() -> "UserStorage":
+    """获取用户存储的依赖函数"""
+    global _user_storage
+    if _user_storage is None:
+        raise HTTPException(status_code=503, detail="用户存储服务未初始化")
+    return _user_storage
+
+
 def reset_all_services():
     """重置所有服务缓存（用于测试）"""
-    global _entry_service, _intent_service, _review_service, _knowledge_service
+    global _entry_service, _intent_service, _review_service, _knowledge_service, _user_storage
     _entry_service = None
     _intent_service = None
     _review_service = None
     _knowledge_service = None
+    _user_storage = None
 
 
 # 向后兼容
