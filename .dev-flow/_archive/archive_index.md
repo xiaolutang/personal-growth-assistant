@@ -2,9 +2,18 @@
 
 ## 进行中需求包
 
+### R004: Product Evolution Phase 1A
+
+- 状态: 规划完成，待执行
+- 分支: `feat/R004-product-evolution-phase1a`
+- 主题: 补闭环 — 趋势 API、灵感转化、反馈闭环、首页改版
+- 目录: `R004_product-evolution/`
+
+## 已完成需求包
+
 ### R003: Production Content Recovery
 
-- 状态: 已完成，待验收
+- 状态: 已完成
 - 分支: `fix/R003-production-content-recovery`
 - 主题: 修复认证上线后历史内容在线上不可见的问题
 - 目录: `R003_production-content-recovery/`

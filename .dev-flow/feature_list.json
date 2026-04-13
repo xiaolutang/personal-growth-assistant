@@ -3,38 +3,38 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-13",
-  "status": "completed",
-  "scope_notes": "R002 认证与隔离主链路已完成；R003 聚焦生产环境历史内容恢复、_default 数据认领和部署数据校验。MCP 9 个 Tools 的用户隔离仍作为后续候选。",
+  "updated_at": "2026-04-14",
+  "status": "in_progress",
+  "scope_notes": "R004 产品演进 Phase 1A：补闭环 — 回顾趋势 API、灵感转化、反馈闭环、首页改版「今天」",
   "active_requirement_cycle": {
-    "id": "R003",
-    "name": "production-content-recovery",
-    "status": "completed",
-    "branch": "fix/R003-production-content-recovery"
+    "id": "R004",
+    "name": "product-evolution-phase1a",
+    "status": "in_progress",
+    "branch": "feat/R004-product-evolution-phase1a"
   },
   "workflow": {
     "name": "XLFoundry",
-    "mode": "A",
-    "runtime": "team_orchestrated",
-    "review_provider": "local",
-    "audit_provider": "local",
-    "risk_provider": "local"
+    "mode": "B",
+    "runtime": "skill_orchestrated",
+    "review_provider": "codex_plugin",
+    "audit_provider": "codex_plugin",
+    "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 21,
-    "pending": 0,
+    "total_tasks": 6,
+    "pending": 6,
     "in_progress": 0,
-    "completed": 21,
+    "completed": 0,
     "blocked": 0,
     "cancelled": 0
   },
   "archived_requirement_cycles": [
     {
-      "id": "R001",
-      "name": "personal-growth-assistant-v1",
-      "status": "accepted",
-      "archive_dir": "_archive/R001_personal-growth-assistant-v1",
-      "branch": "feat/R001-personal-growth-assistant-v1"
+      "id": "R003",
+      "name": "production-content-recovery",
+      "status": "completed",
+      "archive_dir": "_archive/R003_production-content-recovery",
+      "branch": "fix/R003-production-content-recovery"
     }
   ],
   "archived_cycles": [
@@ -45,6 +45,15 @@
       "total_tasks": 36,
       "phases": ["P1","P2","P3","P4","P5","P6","P7","P8","P9","P10","P11"],
       "completed_at": "2026-04-13",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R003",
+      "name": "Production Content Recovery",
+      "archive_dir": "_archive/R003_production-content-recovery",
+      "total_tasks": 21,
+      "phases": ["P1","P2","P3","P4","P5","P6"],
+      "completed_at": "2026-04-14",
       "snapshot": "feature_list.snapshot.json"
     }
   ],
@@ -72,626 +81,227 @@
     {
       "id": "content-recovery",
       "name": "历史内容恢复模块",
-      "description": "修复 `_default` 历史数据在生产环境中对真实账号不可见的问题，补齐认领、回填和发布校验"
+      "description": "修复 `_default` 历史数据在生产环境中对真实账号不可见的问题"
+    },
+    {
+      "id": "review",
+      "name": "回顾模块",
+      "description": "成长回顾统计与趋势数据 API"
+    },
+    {
+      "id": "entry-management",
+      "name": "条目管理模块",
+      "description": "条目 CRUD 与 category 转化（灵感→任务/笔记）"
+    },
+    {
+      "id": "feedback-loop",
+      "name": "反馈闭环模块",
+      "description": "本地反馈存储 + 远端 log-service 双写 + 用户可追踪状态"
+    },
+    {
+      "id": "home",
+      "name": "首页模块",
+      "description": "首页改版为行动中心「今天」"
     }
   ],
   "tasks": [
     {
-      "id": "S01",
-      "phase": "P1",
-      "module": "auth",
-      "name": "认证契约与数据模型定义",
-      "description": "定义用户认证的 API 契约、JWT payload 结构、User 数据模型。R002 仅使用 access_token（7天过期），不做 refresh_token，后续版本按需添加。产出 api_contracts.md 中 auth 部分和 User Pydantic model。",
+      "id": "S05",
+      "phase": "P1A",
+      "module": "review",
+      "name": "Phase 1A 契约与模型定义",
+      "description": "定义 Phase 1A 所有新功能的 API 契约和数据模型：(1) TrendPeriod/TrendResponse 模型 + GET /review/trend 契约；(2) EntryUpdate 新增 category 字段（后端 schema + 前端类型同步）；(3) feedback 表 DDL + GET /feedback 和 GET /feedback/{id} 契约。执行 npm run gen:types 刷新前端 API 类型。",
       "verification": "L1",
       "depends_on": [],
-      "status": "completed",
+      "status": "pending",
       "priority": "high",
       "acceptance_criteria": [
-        "User Pydantic model 定义完成（id, username, email, hashed_password, created_at, is_active）",
-        "JWT payload 结构确定（sub=user_id, exp, type=access）",
-        "API 契约写入 api_contracts.md（POST /auth/register, POST /auth/login, POST /auth/logout, GET /auth/me）",
-        "Token 配置项加入 config.py（JWT_SECRET, JWT_ALGORITHM, ACCESS_TOKEN_EXPIRE_DAYS，默认 7 天）"
+        "TrendPeriod(date, total, completed, completion_rate, notes_count) 和 TrendResponse(periods) 模型定义在 review_service.py",
+        "EntryUpdate schema 新增 category: Optional[str] 字段",
+        "feedback 表 DDL 写入 api_contracts.md：(id, user_id, title, description, severity, log_service_issue_id, status, created_at)",
+        "GET /review/trend?period=daily&days=7 和 ?period=weekly&weeks=8 契约写入 api_contracts.md",
+        "GET /feedback 和 GET /feedback/{id} 契约写入 api_contracts.md",
+        "前端 types/task.ts EntryUpdate 新增 category?: string（注意：types/task.ts 为手写类型，api.generated.ts 为生成类型，两者需同时更新）",
+        "npm run gen:types 执行成功，api.generated.ts 中 EntryUpdate 包含 category 字段",
+        "uv run pytest backend/tests/ 全部通过"
       ],
-      "started_at": "2026-04-13",
-      "completed_at": "2026-04-13",
-      "evidence_file": ".dev-flow/evidence/S01.md",
-      "risk_tags": ["auth", "config"],
-      "test_tasks": ["契约字段完整性检查"],
-      "files": ["backend/app/models/user.py", "backend/app/core/config.py"]
-    },
-    {
-      "id": "B01",
-      "phase": "P1",
-      "module": "auth",
-      "name": "User 模型 + users 表 + 密码哈希",
-      "description": "创建 users SQLite 表，实现 User CRUD（create, get_by_username, get_by_email, get_by_id），集成 passlib bcrypt 密码哈希。",
-      "verification": "L1",
-      "depends_on": ["S01"],
-      "status": "completed",
-      "started_at": "2026-04-13",
-      "completed_at": "2026-04-13",
-      "evidence_file": ".dev-flow/evidence/B01.md",
-      "priority": "high",
-      "acceptance_criteria": [
-        "users 表创建成功（id, username, email, hashed_password, is_active, created_at, updated_at）",
-        "UserStorage 类提供 create_user, get_by_username, get_by_email, get_by_id 方法",
-        "密码哈希使用 bcrypt，verify_password 和 get_password_hash 函数可用",
-        "username 和 email 唯一约束生效",
-        "单元测试覆盖：创建用户、重复 username 报错、密码验证"
-      ],
-      "risk_tags": ["auth"],
-      "test_tasks": [
-        "创建用户成功，返回不含 hashed_password",
-        "重复 username 创建失败返回 409",
-        "密码哈希不可逆，verify_password 正确匹配",
-        "get_by_username 找不到返回 None"
-      ],
-      "files": ["backend/app/infrastructure/storage/user_storage.py", "backend/app/models/user.py"]
-    },
-    {
-      "id": "B02",
-      "phase": "P1",
-      "module": "auth",
-      "name": "认证 API（注册/登录/登出/me）",
-      "description": "实现 auth_router，包含 POST /auth/register、POST /auth/login（返回 access_token，7天过期）、POST /auth/logout、GET /auth/me。不做 refresh_token。",
-      "verification": "L2",
-      "depends_on": ["B01"],
-      "status": "completed",
-      "started_at": "2026-04-13",
-      "completed_at": "2026-04-13",
-      "evidence_file": ".dev-flow/evidence/B02.md",
-      "priority": "high",
-      "acceptance_criteria": [
-        "POST /auth/register — 接收 username/email/password，创建用户，返回 201 + user info",
-        "POST /auth/login — 验证凭证，返回 access_token（7天过期）",
-        "POST /auth/logout — 清除 token（前端同步清除 localStorage）",
-        "GET /auth/me — 返回当前用户信息（需 Authorization header）",
-        "register 的 email/password 基础校验（非空、email 格式、密码长度 >=6）",
-        "login 失败返回 401（不暴露是用户名还是密码错误）"
-      ],
-      "risk_tags": ["auth", "first_use"],
-      "test_tasks": [
-        "注册成功 → 登录成功 → 获取 me → 登出",
-        "注册重复 username/email → 409",
-        "登录错误密码 → 401",
-        "获取 me 无 token → 401",
-        "获取 me 过期 token → 401",
-        "首次注册后自动登录流程顺畅"
-      ],
-      "smoke_required": true,
-      "contract_refs": ["POST /auth/register", "POST /auth/login", "POST /auth/logout", "GET /auth/me"],
-      "files": ["backend/app/routers/auth.py", "backend/app/services/auth_service.py"]
-    },
-    {
-      "id": "B03",
-      "phase": "P1",
-      "module": "auth",
-      "name": "认证单元测试",
-      "description": "覆盖认证核心路径的单元测试：注册、登录、token 验证、密码哈希。",
-      "verification": "L1",
-      "depends_on": ["B02"],
-      "status": "completed",
-      "started_at": "2026-04-13",
-      "completed_at": "2026-04-13",
-      "evidence_file": ".dev-flow/evidence/B03.md",
-      "priority": "medium",
-      "acceptance_criteria": [
-        "测试覆盖：注册成功/失败、登录成功/失败、token 创建/验证/过期、密码哈希",
-        "所有测试通过 `uv run pytest tests/unit/test_auth.py`",
-        "边界场景：空密码、超长 username、特殊字符 email"
-      ],
-      "risk_tags": ["auth"],
-      "test_tasks": [
-        "正常路径：注册→登录→验证token→获取me",
-        "异常路径：重复注册、错误密码、过期token",
-        "边界：密码最短长度、username 最大长度"
-      ],
-      "files": ["backend/tests/unit/test_auth.py"]
-    },
-    {
-      "id": "B04",
-      "phase": "P2",
-      "module": "data-isolation",
-      "name": "SQLite entries 表添加 user_id + 数据迁移",
-      "description": "在 SQLite entries 表中添加 user_id 列和索引，实现数据迁移（已有数据分配给默认用户），修改所有查询方法加 user_id 过滤。",
-      "verification": "L1",
-      "depends_on": ["B01"],
-      "status": "completed",
-      "priority": "high",
-      "acceptance_criteria": [
-        "entries 表新增 user_id 列（TEXT, NOT NULL）和索引",
-        "数据迁移：已有条目 user_id 设为 '_default'",
-        "list_entries/search/count_entries 等方法新增 user_id 参数",
-        "create_entry 自动关联当前 user_id",
-        "迁移脚本可重复执行（幂等）"
-      ],
-      "risk_tags": ["auth", "startup"],
-      "test_tasks": [
-        "新建 entry 带上 user_id",
-        "list_entries 只返回当前用户数据",
-        "迁移后已有数据 user_id = '_default'",
-        "不同用户数据互不可见"
-      ],
-      "files": ["backend/app/infrastructure/storage/sqlite.py"]
-    },
-    {
-      "id": "B05",
-      "phase": "P2",
-      "module": "data-isolation",
-      "name": "Markdown 存储按用户隔离目录",
-      "description": "改造 MarkdownStorage 支持按用户隔离目录。数据目录从 data/{category}/ 变为 data/users/{user_id}/{category}/。提供存储工厂，按 user_id 创建隔离实例。",
-      "verification": "L1",
-      "depends_on": ["B01"],
-      "status": "completed",
-      "priority": "high",
-      "acceptance_criteria": [
-        "StorageFactory 类，按 user_id 创建/缓存 MarkdownStorage 实例",
-        "MarkdownStorage 构造函数接受 base_dir（如 data/users/{user_id}/）",
-        "新用户首次访问时自动创建目录结构（tasks/, notes/, projects/, inbox.md）",
-        "现有 data/ 目录内容迁移到 data/users/_default/",
-        "单元测试：不同用户目录隔离"
-      ],
-      "risk_tags": ["startup", "first_use"],
-      "test_tasks": [
-        "新用户首次操作自动创建目录",
-        "用户 A 的数据文件不存在于用户 B 的目录中",
-        "迁移后 _default 用户数据完整",
-        "StorageFactory 缓存命中验证"
-      ],
-      "smoke_required": true,
-      "files": ["backend/app/infrastructure/storage/markdown.py", "backend/app/infrastructure/storage/storage_factory.py"]
-    },
-    {
-      "id": "B06",
-      "phase": "P2",
-      "module": "data-isolation",
-      "name": "Neo4j 节点添加 user_id 属性",
-      "description": "为 Neo4j 中 Entry 和 Concept 节点添加 user_id 属性。修改所有 Cypher 查询添加 user_id 过滤。",
-      "verification": "L1",
-      "depends_on": ["B01"],
-      "status": "completed",
-      "priority": "medium",
-      "acceptance_criteria": [
-        "Entry 和 Concept 节点创建时自动带 user_id 属性",
-        "所有 MATCH 查询添加 WHERE e.user_id = $user_id 或 n.user_id = $user_id",
-        "已有节点批量设置 user_id = '_default'",
-        "get_entry/get_related_concepts 等方法新增 user_id 参数"
-      ],
-      "risk_tags": ["auth"],
-      "test_tasks": [
-        "创建节点带 user_id",
-        "查询只返回当前用户的节点",
-        "已有节点迁移成功"
-      ],
-      "files": ["backend/app/infrastructure/storage/neo4j_client.py"]
-    },
-    {
-      "id": "B07",
-      "phase": "P2",
-      "module": "data-isolation",
-      "name": "Qdrant payload 添加 user_id + 搜索过滤",
-      "description": "为 Qdrant collection 的 payload 添加 user_id 字段，修改搜索和索引方法添加 user_id filter。",
-      "verification": "L1",
-      "depends_on": ["B01"],
-      "status": "completed",
-      "priority": "medium",
-      "acceptance_criteria": [
-        "upsert 时 payload 包含 user_id 字段",
-        "search 方法新增 user_id 参数，添加 Filter(must=[FieldCondition(key='user_id', match=Value(string=user_id))])",
-        "已有向量数据批量补充 user_id = '_default'",
-        "delete_by_ids 方法保留 user_id 关联"
-      ],
-      "risk_tags": ["auth"],
-      "test_tasks": [
-        "upsert 向量带 user_id",
-        "search 只返回当前用户结果",
-        "已有数据迁移成功"
-      ],
-      "files": ["backend/app/infrastructure/storage/qdrant_client.py"]
-    },
-    {
-      "id": "B08",
-      "phase": "P2",
-      "module": "data-isolation",
-      "name": "SyncService + EntryService 传递用户上下文",
-      "description": "重构 SyncService 和 EntryService，所有方法增加 user_id 参数，调用存储层时传递用户上下文。",
-      "verification": "L2",
-      "depends_on": ["B04", "B05", "B06", "B07"],
-      "status": "completed",
-      "priority": "high",
-      "acceptance_criteria": [
-        "SyncService.sync_entry() 接受 user_id 参数，传递到 SQLite/Neo4j/Qdrant",
-        "EntryService 的 CRUD 方法全部接受 user_id 参数",
-        "sync_from_markdown() 按 user_id 同步该用户的数据",
-        "删除操作只影响当前用户数据"
-      ],
-      "risk_tags": ["auth"],
-      "test_tasks": [
-        "用户 A 创建条目 → sync → 各存储层都有 user_id",
-        "用户 B 查不到用户 A 的数据",
-        "删除操作只删当前用户数据"
-      ],
-      "files": ["backend/app/services/sync_service.py", "backend/app/services/entry_service.py"]
-    },
-    {
-      "id": "B09",
-      "phase": "P2",
-      "module": "data-isolation",
-      "name": "会话（Chat）按用户隔离",
-      "description": "改造 SessionMetaStore 按 user_id 隔离会话元数据。LangGraph checkpoint 隔离方案：在路由层将 thread_id 命名空间化为 '{user_id}:{session_id}'，不修改 LangGraph 库内部存储结构。",
-      "verification": "L2",
-      "depends_on": ["B01"],
-      "status": "completed",
-      "started_at": "2026-04-13",
-      "completed_at": "2026-04-13",
-      "evidence_file": ".dev-flow/evidence/B09.md",
-      "priority": "medium",
-      "acceptance_criteria": [
-        "SessionMetaStore 的 sessions 表添加 user_id 列",
-        "list_sessions 按 user_id 过滤",
-        "create_session 自动关联当前 user_id",
-        "已有会话数据 user_id 设为 '_default'",
-        "路由层 thread_id 改为 '{user_id}:{session_id}' 格式，实现 LangGraph checkpoint 天然隔离",
-        "parse.py 中 _graph.stream_parse / _graph.clear_thread 的 thread_id 参数使用命名空间化格式",
-        "session_id 合法字符约束：仅允许字母数字和连字符（UUID 格式），防止冒号分隔符冲突"
-      ],
-      "risk_tags": ["auth"],
-      "test_tasks": [
-        "创建会话关联 user_id",
-        "list_sessions 只返回当前用户会话",
-        "已有数据迁移成功",
-        "用户 A 的 thread_id 不能访问用户 B 的 checkpoint"
-      ],
-      "files": ["backend/app/services/session_meta_store.py", "backend/app/routers/parse.py"]
-    },
-    {
-      "id": "B10",
-      "phase": "P3",
-      "module": "route-guard",
-      "name": "认证中间件 + deps.py 用户上下文注入",
-      "description": "创建 get_current_user 依赖函数（从 Authorization header 提取 JWT → 验证 → 加载用户）。deps.py 保持全局单例模式，但在每个方法调用时传递 user_id 参数（非构造时注入）。",
-      "verification": "L2",
-      "depends_on": ["B02"],
-      "status": "completed",
-      "priority": "high",
-      "acceptance_criteria": [
-        "get_current_user 函数作为 FastAPI Depends，从 Bearer token 提取 user_id",
-        "deps.py 保持全局单例服务，get_entry_service() 等方法不变，user_id 在路由层通过方法参数传递",
-        "无效/过期 token 返回 401",
-        "缺失 token 返回 401（非 auth 路由）",
-        "不做 get_optional_current_user，所有数据路由必须认证"
-      ],
-      "risk_tags": ["auth", "first_use"],
-      "test_tasks": [
-        "有效 token → 返回 User 对象",
-        "过期 token → 401",
-        "无效 token → 401",
-        "无 token → 401"
-      ],
-      "smoke_required": true,
-      "files": ["backend/app/routers/deps.py", "backend/app/services/auth_service.py"]
-    },
-    {
-      "id": "B11",
-      "phase": "P3",
-      "module": "route-guard",
-      "name": "所有路由添加认证守卫",
-      "description": "为 entries、search、knowledge、intent、parse、review、feedback、playground 路由添加 Depends(get_current_user)。更新所有 endpoint 使用用户上下文。",
-      "verification": "L2",
-      "depends_on": ["B10", "B08", "B09"],
-      "status": "completed",
-      "started_at": "2026-04-13",
-      "completed_at": "2026-04-13",
-      "evidence_file": ".dev-flow/evidence/B11.md",
-      "priority": "high",
-      "acceptance_criteria": [
-        "所有 8 个路由文件的每个 endpoint 添加 user: User = Depends(get_current_user)",
-        "每个 endpoint 通过 user.id 调用服务层",
-        "auth_router 的 register/login 不需要认证",
-        "CORS 配置保持 Authorization header 允许",
-        "集成测试：未认证请求返回 401"
-      ],
-      "risk_tags": ["auth"],
-      "test_tasks": [
-        "entries CRUD 全流程带 token → 成功",
-        "entries CRUD 不带 token → 401",
-        "search 带 token → 只返回当前用户数据",
-        "parse（SSE）带 token → 正常工作"
-      ],
+      "contract_refs": ["CONTRACT-R01", "CONTRACT-E01", "CONTRACT-FB01", "CONTRACT-FB02"],
       "files": [
-        "backend/app/routers/entries.py",
-        "backend/app/routers/search.py",
-        "backend/app/routers/knowledge.py",
-        "backend/app/routers/intent.py",
-        "backend/app/routers/parse.py",
-        "backend/app/routers/review.py",
-        "backend/app/routers/feedback.py",
-        "backend/app/routers/playground.py"
+        "backend/app/services/review_service.py",
+        "backend/app/api/schemas/entry.py",
+        "frontend/src/types/task.ts",
+        ".dev-flow/api_contracts.md"
       ]
     },
     {
-      "id": "F01",
-      "phase": "P4",
-      "module": "frontend-auth",
-      "name": "用户状态管理 + Token 管理",
-      "description": "创建 Zustand userStore，管理用户状态（user, token, isAuthenticated）和 Token 持久化（localStorage）。",
-      "verification": "F1",
-      "depends_on": ["S01"],
-      "status": "completed",
-      "started_at": "2026-04-13",
-      "completed_at": "2026-04-13",
-      "evidence_file": ".dev-flow/evidence/F01.md",
+      "id": "B14",
+      "phase": "P1A",
+      "module": "review",
+      "name": "回顾趋势 API + review user_id 修复",
+      "description": "为回顾页新增跨期对比数据接口，并修复 ReviewService 所有方法未传 user_id 的数据隔离 Bug。ReviewService 的 get_daily_report/get_weekly_report/get_monthly_report 调用 list_entries() 时均未传 user_id（默认查 _default 数据），路由层已获取 user 但未传递。需：(1) 所有 ReviewService 方法新增 user_id 参数并传递到 list_entries；(2) review.py 路由层传递 user.id；(3) 新增 get_trend_data() 方法和 GET /review/trend 路由。注意：本任务仅交付后端 API，前端回顾页趋势折线图 UI 在 Phase 1B（T06）实现。",
+      "verification": "L2",
+      "depends_on": ["S05"],
+      "status": "pending",
       "priority": "high",
       "acceptance_criteria": [
-        "userStore 包含 user, token, isAuthenticated 状态",
-        "login(username, password) action 调用 API 并存储 token",
-        "logout() action 清除 token 和用户状态",
-        "token 持久化到 localStorage，刷新页面后恢复登录态",
-        "token 过期时自动清除状态"
-      ],
-      "risk_tags": ["auth", "first_use"],
-      "test_tasks": [
-        "login 成功后 isAuthenticated = true",
-        "logout 后 isAuthenticated = false",
-        "刷新页面后恢复登录态",
-        "token 过期后清除状态"
-      ],
-      "files": ["frontend/src/stores/userStore.ts"]
-    },
-    {
-      "id": "F02",
-      "phase": "P4",
-      "module": "frontend-auth",
-      "name": "登录/注册页面",
-      "description": "创建 Login.tsx 和 Register.tsx 页面，包含表单验证、错误提示、加载状态。符合设计规范（主色 #6366F1，圆角 8px）。",
-      "verification": "F2",
-      "depends_on": ["F01", "B02"],
-      "status": "completed",
-      "started_at": "2026-04-13",
-      "completed_at": "2026-04-13",
-      "evidence_file": ".dev-flow/evidence/F02.md",
-      "priority": "high",
-      "acceptance_criteria": [
-        "Login 页面：username + password 输入框，登录按钮，注册链接",
-        "Register 页面：username + email + password + confirm_password，注册按钮，登录链接",
-        "表单验证：必填项、密码长度 >= 6、email 格式",
-        "错误提示：API 返回的错误信息展示",
-        "加载状态：按钮 loading 状态防止重复提交",
-        "注册成功后自动跳转登录页",
-        "UI 符合设计系统（#6366F1 主色、8px 圆角）"
-      ],
-      "risk_tags": ["auth", "first_use"],
-      "test_tasks": [
-        "正常登录流程 → 跳转首页",
-        "错误凭证 → 显示错误提示",
-        "注册成功 → 跳转登录页",
-        "注册验证失败 → 显示字段错误"
-      ],
-      "smoke_required": true,
-      "files": ["frontend/src/pages/Login.tsx", "frontend/src/pages/Register.tsx"]
-    },
-    {
-      "id": "F03",
-      "phase": "P4",
-      "module": "frontend-auth",
-      "name": "路由守卫 + API 拦截器",
-      "description": "创建 ProtectedRoute 组件包裹需认证路由。更新 api.ts 的 fetch 拦截器自动注入 Authorization header。处理 401 自动登出。",
-      "verification": "F1",
-      "depends_on": ["F01", "B10"],
-      "status": "completed",
-      "started_at": "2026-04-13",
-      "completed_at": "2026-04-13",
-      "evidence_file": ".dev-flow/evidence/F03.md",
-      "priority": "high",
-      "acceptance_criteria": [
-        "ProtectedRoute 组件：未登录跳转 /login，已登录渲染子路由",
-        "api.ts 的 fetch 拦截器自动注入 Authorization: Bearer {token}",
-        "API 返回 401 时自动清除 token 并跳转 /login",
-        "App.tsx 中 /login 和 /register 路由不需要守卫",
-        "其他所有路由被 ProtectedRoute 包裹"
-      ],
-      "risk_tags": ["auth", "first_use"],
-      "test_tasks": [
-        "未登录访问首页 → 跳转 /login",
-        "已登录访问首页 → 正常显示",
-        "API 401 → 自动跳转 /login",
-        "登录后带 token 访问 API"
-      ],
-      "files": ["frontend/src/components/ProtectedRoute.tsx", "frontend/src/services/api.ts", "frontend/src/App.tsx"]
-    },
-    {
-      "id": "F04",
-      "phase": "P4",
-      "module": "frontend-auth",
-      "name": "侧边栏用户信息 + 登出按钮",
-      "description": "在 Sidebar 底部展示当前用户信息（username），添加登出按钮。替换 X-UID 匿名机制为真实用户身份。",
-      "verification": "F1",
-      "depends_on": ["F01"],
-      "status": "completed",
-      "started_at": "2026-04-13",
-      "completed_at": "2026-04-13",
-      "evidence_file": ".dev-flow/evidence/F04.md",
-      "priority": "medium",
-      "acceptance_criteria": [
-        "Sidebar 底部显示当前用户 username",
-        "登出按钮点击后清除 token 并跳转 /login",
-        "lib/uid.ts 的 X-UID 机制改为使用真实 user.id（保留日志追踪能力）",
-        "未登录状态不显示用户信息"
+        "ReviewService.get_daily_report/weekly/monthly 均接受 user_id 参数并传递到 list_entries",
+        "review.py 路由层通过 user.id 传递到 service 方法",
+        "GET /review/trend?period=daily&days=7 返回每日统计数组",
+        "GET /review/trend?period=weekly&weeks=8 返回每周统计数组",
+        "返回结构：{ periods: [{ date, total, completed, completion_rate, notes_count }] }",
+        "空数据返回空数组 periods: []",
+        "用户隔离：不同用户只能看到自己的统计数据",
+        "uv run pytest backend/tests/ 全部通过"
       ],
       "risk_tags": ["auth"],
       "test_tasks": [
-        "登录后侧边栏显示 username",
-        "点击登出 → 跳转 /login → token 清除",
-        "X-UID header 改为真实 user.id"
-      ],
-      "files": ["frontend/src/components/layout/Sidebar.tsx", "frontend/src/lib/uid.ts"]
-    },
-    {
-      "id": "S02",
-      "phase": "P5",
-      "module": "auth",
-      "name": "全链路联调与首用验证",
-      "description": "端到端验证完整认证+数据隔离链路：注册→登录→创建数据→数据隔离→登出→重新登录。",
-      "verification": "L4",
-      "depends_on": ["B11", "F03", "F04"],
-      "status": "completed",
-      "started_at": "2026-04-13",
-      "completed_at": "2026-04-13",
-      "evidence_file": ".dev-flow/evidence/S02.md",
-      "priority": "high",
-      "acceptance_criteria": [
-        "完整用户旅程：注册 → 登录 → 创建任务/笔记/灵感 → 数据只属于当前用户",
-        "双用户隔离：注册两个用户，互相看不到对方数据",
-        "登出后再登录，数据完整恢复",
-        "已有数据（_default 用户）可正常访问",
-        "Token 过期后自动跳转登录页"
-      ],
-      "risk_tags": ["auth", "first_use", "network"],
-      "test_tasks": [
-        "新用户注册→登录→创建条目→登出→再登录→数据仍在",
-        "两个用户数据完全隔离",
-        "Token 过期场景处理",
-        "已有数据迁移后完整"
+        "正常：有数据用户请求 trend 返回正确统计",
+        "边界：空数据用户返回空数组",
+        "边界：period=invalid 返回 422",
+        "边界：days=0 或 days=-1 返回 422 或空数组",
+        "边界：weeks=0 或 weeks=-1 返回 422 或空数组",
+        "边界：days/weeks 未传时使用默认值（7/8）",
+        "异常：无 token 请求返回 401",
+        "隔离：用户 A 的 trend 不含用户 B 的数据",
+        "回归：daily/weekly/monthly 报告传了 user_id 后仍正常",
+        "smoke：启动后首次请求 trend 返回空数组不报错"
       ],
       "smoke_required": true,
-      "files": []
+      "contract_refs": ["CONTRACT-R01"],
+      "files": [
+        "backend/app/services/review_service.py",
+        "backend/app/routers/review.py"
+      ]
     },
     {
-      "id": "S03",
-      "phase": "P6",
-      "module": "content-recovery",
-      "name": "生产内容恢复契约与验收定义",
-      "description": "补充 `_default` 历史数据的归属过渡规则，明确自动认领、显式认领、运维回填三种路径的触发条件、幂等约束和验收口径。",
-      "verification": "L1",
-      "depends_on": [],
-      "status": "completed",
-      "priority": "high",
-      "acceptance_criteria": [
-        "明确 `_default` 历史数据何时可被真实用户认领，避免长期悬空",
-        "明确已有线上账号的数据恢复路径，不要求删除重建账号",
-        "明确认领/回填的幂等规则和冲突处理，不覆盖已有用户数据",
-        "将验收口径写入 defect_feedback.md、test_coverage.md、alignment_checklist.md"
-      ],
-      "risk_tags": ["auth", "first_use", "startup", "config"],
-      "test_tasks": [
-        "正常：空账号首次登录后可恢复 `_default` 历史数据",
-        "边界：目标账号已有部分数据时不发生覆盖",
-        "异常：不存在 `_default` 数据时流程返回明确结果"
-      ],
-      "smoke_required": true,
-      "files": [".dev-flow/defect_feedback.md", ".dev-flow/test_coverage.md", ".dev-flow/alignment_checklist.md"],
-      "started_at": "2026-04-13",
-      "completed_at": "2026-04-13",
-      "evidence_file": ".dev-flow/evidence/S03.md"
-    },
-    {
-      "id": "B12",
-      "phase": "P6",
-      "module": "content-recovery",
-      "name": "实现 `_default` 历史数据认领与回填服务",
-      "description": "为生产缺陷新增历史数据归属修复能力。支持将 `_default` 下的 SQLite、Markdown、必要会话元数据一次性认领到指定真实用户，并保证重复执行安全。",
+      "id": "B15",
+      "phase": "P1A",
+      "module": "entry-management",
+      "name": "灵感转化 API — category 变更 + 文件迁移",
+      "description": "支持 inbox 条目转为 task 或 note。当前 entry_service.update_entry()（line 130-172）无 category 字段处理分支，MarkdownStorage 无文件移动方法。实现：(1) update_entry 检测 category 变更；(2) MarkdownStorage 新增 move_entry() 将文件从旧目录移到新目录（os.rename 原子操作）；(3) 更新 entry.category、entry.file_path、front matter 的 type 字段；(4) SQLite upsert_entry 更新索引。注意：CATEGORY_DIRS 中 INBOX 映射空字符串（根目录），文件路径变化为 data/users/{uid}/inbox-xxx.md → data/users/{uid}/tasks/inbox-xxx.md，entry_id 前缀不变。注意：MarkdownStorage.list_entries(category=INBOX) 当前只扫描 inbox.md 单文件，不扫描 inbox-xxx.md 模式文件。正常流程通过 SQLite 索引读取不受影响，但 Markdown 回退路径有此限制，可在后续版本修复。注意：本任务仅交付后端 API，前端 Inbox 页「转为任务/笔记」操作入口在 Phase 1B（T04）实现。",
       "verification": "L2",
-      "depends_on": ["S03"],
-      "status": "completed",
+      "depends_on": ["S05"],
+      "status": "pending",
       "priority": "high",
       "acceptance_criteria": [
-        "提供面向真实用户的数据认领/回填服务，不再要求人工逐表修改",
-        "SQLite entries、Markdown 用户目录、session_meta 的 `_default` 数据可迁移到目标 user_id",
-        "重复执行不会造成重复记录、覆盖已有数据或目录污染",
-        "执行结果可审计：返回迁移数量、跳过数量、失败原因"
+        "PUT /entries/{id} { \"category\": \"task\" } 成功返回",
+        "文件从 data/users/{uid}/inbox-xxx.md 移到 data/users/{uid}/tasks/inbox-xxx.md",
+        "entry_id 前缀不变（仍为 inbox-xxx）",
+        "front matter 的 type 字段同步更新为新 category",
+        "SQLite 索引中 category 和 file_path 同步更新",
+        "新 category 列表（如 GET /entries?type=task）可见该条目",
+        "旧路径文件已不存在",
+        "uv run pytest backend/tests/ 全部通过"
       ],
-      "risk_tags": ["auth", "first_use", "startup"],
       "test_tasks": [
-        "正常：`_default` 全量数据迁移到目标账号后立即可见",
-        "边界：目标账号已有同名文件或已有条目时按规则跳过或合并",
-        "异常：目标用户不存在、`_default` 不存在、部分文件损坏时不中断审计输出"
+        "正常：inbox→task 转化成功，文件移动",
+        "正常：inbox→note 转化成功",
+        "边界：同 category 转化（inbox→inbox）不产生文件移动",
+        "边界：不存在的 entry_id 返回错误",
+        "异常：目标目录不存在时自动创建",
+        "回归：其他 update_entry 字段（title/status/tags）仍正常"
       ],
-      "smoke_required": true,
-      "fix_level": "L2",
-      "root_cause_analysis": "R002 只完成了匿名历史数据写入 `_default`，但未定义从 `_default` 到真实用户的 owner claim 机制，导致线上真实账号登录后与历史数据断开。",
-      "similar_locations": [
-        "backend/app/infrastructure/storage/sqlite.py",
-        "backend/app/infrastructure/storage/storage_factory.py",
-        "backend/app/services/session_meta_store.py"
-      ],
-      "architecture_feedback": "补充“匿名到实名的数据迁移必须定义 owner claim 策略”的规划约束。",
+      "contract_refs": ["CONTRACT-E01"],
       "files": [
-        "backend/app/infrastructure/storage/sqlite.py",
-        "backend/app/infrastructure/storage/storage_factory.py",
-        "backend/app/services/session_meta_store.py",
-        "backend/app/services/auth_service.py",
-        "backend/app/routers/auth.py"
-      ],
-      "started_at": "2026-04-13",
-      "completed_at": "2026-04-13",
-      "evidence_file": ".dev-flow/evidence/B12.md"
+        "backend/app/services/entry_service.py",
+        "backend/app/infrastructure/storage/markdown.py"
+      ]
     },
     {
-      "id": "B13",
-      "phase": "P6",
-      "module": "content-recovery",
-      "name": "补部署前数据探针与运维回填命令",
-      "description": "补充面向远程服务器的 dry-run 检查和实际回填命令，校验 `DATA_DIR`、挂载卷、users.db、index.db 与 `data/users/*` 是否一致，避免发布后才发现空数据。",
-      "verification": "L3",
-      "depends_on": ["S03"],
-      "status": "completed",
+      "id": "B16",
+      "phase": "P1A",
+      "module": "feedback-loop",
+      "name": "反馈闭环后端 — feedback 表 + 双写 + 列表查询",
+      "description": "用户可查看自己提交的反馈列表和状态。当前 POST /feedback 是纯代理 log-service，用户端无本地记录。实现：(1) sqlite.py _init_db() 新增 CREATE TABLE IF NOT EXISTS feedback 表 + user_id 索引；(2) 新增 CRUD 方法（create_feedback, list_feedbacks_by_user, get_feedback_by_id）；(3) POST /feedback 改为先写本地 SQLite（status=pending），返回成功，再异步调 log-service：成功 → 更新 status=reported + 记录 log_service_issue_id；失败 → 保持 status=pending；(4) GET /feedback 按 user_id 过滤；(5) GET /feedback/{id} 返回单条详情。",
+      "verification": "L2",
+      "depends_on": ["S05"],
+      "status": "pending",
       "priority": "high",
       "acceptance_criteria": [
-        "提供 dry-run，能输出目标服务器当前数据目录、用户数、`_default` 条目数、目标账号条目数",
-        "提供实际执行命令或脚本，可对指定账号执行历史数据回填",
-        "部署脚本或运维文档纳入数据存在性检查，作为发布前门禁",
-        "不暴露密码/token 等敏感信息到日志"
+        "feedback 表在 _init_db() 中创建，含 user_id 索引",
+        "POST /feedback 先写本地 SQLite 再异步调 log-service",
+        "提交后 GET /feedback 立即可见（status=pending）",
+        "log-service 成功后 status 更新为 reported，log_service_issue_id 有值",
+        "log-service 失败时 status 保持 pending，不阻塞提交",
+        "GET /feedback 按用户隔离（只返回当前用户的反馈）",
+        "GET /feedback/{id} 返回单条详情",
+        "uv run pytest backend/tests/ 全部通过"
       ],
-      "risk_tags": ["startup", "config"],
+      "risk_tags": ["auth", "startup"],
       "test_tasks": [
-        "正常：dry-run 正确识别线上已有数据并给出回填建议",
-        "边界：空数据目录、只存在 Markdown 或只存在 SQLite 时返回明确提示",
-        "异常：卷未挂载、路径错误、数据库文件缺失时失败并阻止继续发布"
+        "正常：提交后本地立即可查",
+        "正常：log-service 异步成功后 status 变为 reported",
+        "边界：log-service 不可达时 status 保持 pending，提交不阻塞",
+        "边界：空反馈列表返回空数组",
+        "异常：无 token 返回 401",
+        "隔离：用户 A 看不到用户 B 的反馈",
+        "启动：_init_db() 幂等执行不报错",
+        "smoke：冷启动后首次提交反馈成功（表不存在时自动创建）",
+        "smoke：log-service URL 未配置时提交仍成功（status=pending）",
+        "smoke：GET /feedback/{id} 不属于当前用户返回 404"
       ],
       "smoke_required": true,
-      "fix_level": "L2",
-      "root_cause_analysis": "现有部署链路只验证服务可启动与页面可访问，没有把数据卷内容、`DATA_DIR` 和目标账号映射纳入发布门禁，导致“空数据上线”未被阻断。",
-      "similar_locations": [
-        "deploy/docker-compose.yml",
-        "deploy/remote-deploy.sh",
-        "scripts/test-docker.sh"
-      ],
+      "contract_refs": ["CONTRACT-FB01", "CONTRACT-FB02"],
       "files": [
-        "deploy/docker-compose.yml",
-        "deploy/remote-deploy.sh",
-        "scripts/test-docker.sh"
-      ],
-      "started_at": "2026-04-13",
-      "completed_at": "2026-04-13",
-      "evidence_file": ".dev-flow/evidence/B13.md"
+        "backend/app/infrastructure/storage/sqlite.py",
+        "backend/app/routers/feedback.py"
+      ]
     },
     {
-      "id": "S04",
-      "phase": "P6",
-      "module": "content-recovery",
-      "name": "生产恢复 smoke 与回归验证",
-      "description": "补远程部署后的真实回归链路，验证目标账号登录后能看到历史内容，并验证不存在误认领和误覆盖。",
-      "verification": "L4",
-      "depends_on": ["B12", "B13"],
-      "status": "completed",
+      "id": "F05",
+      "phase": "P1A",
+      "module": "home",
+      "name": "首页改版「今天」— 行动中心",
+      "description": "将首页从统计报表改为行动中心。当前 Home.tsx 展示今日进度卡片、整体统计卡片、今日任务列表（只读）、最近记录列表、最近灵感列表。重写为：(1) 精简顶部为今日进度（完成率+进度条）；(2) 今日任务区可直接操作：点击切换状态（doing↔complete），使用 taskStore.updateTaskStatus；(3) 最近灵感区增加未处理计数角标，显示未转化的 inbox 条目数；(4) 新增快速操作区：记灵感、建任务、写笔记（触发 FloatingChat 聚焦或跳转）；(5) 空数据时显示引导文案；(6) Sidebar 标签从「首页」改为「今天」。路由路径 / 保持不变。",
+      "verification": "F2",
+      "depends_on": ["S05"],
+      "status": "pending",
       "priority": "high",
       "acceptance_criteria": [
-        "目标账号登录后可见历史任务/笔记/项目内容",
-        "已有新数据与认领回填后的历史数据同时存在，未发生覆盖",
-        "非目标账号无法看到被回填的数据",
-        "部署后 smoke 结果写入 evidence"
+        "今日任务可直接点击切换状态（doing↔complete），有 loading 反馈",
+        "灵感区显示未处理 inbox 数量角标",
+        "快速操作区有「记灵感」「建任务」「写笔记」入口",
+        "空数据时显示引导文案",
+        "Sidebar 首项标签从「首页」改为「今天」",
+        "npm run build 构建通过",
+        "移动端窄屏下布局可适配"
       ],
-      "risk_tags": ["auth", "first_use", "startup", "config", "network"],
+      "risk_tags": ["first_use"],
       "test_tasks": [
-        "正常：目标账号登录后列表非空且可打开历史内容详情",
-        "边界：目标账号已存在新内容时历史数据合并后仍可区分",
-        "异常：回填失败后 smoke 阻止验收通过并保留排查输出"
+        "有任务时：点击任务切换状态，UI 更新",
+        "失败：状态切换 API 失败时显示错误提示，状态回滚",
+        "有灵感时：灵感区显示计数角标",
+        "无数据时：显示引导文案（首次使用、无任务、无灵感三种空态）",
+        "快速操作按钮可点击",
+        "loading：任务状态切换过程中显示 loading 态，防止重复点击"
       ],
-      "smoke_required": true,
-      "files": ["deploy/remote-deploy.sh", ".dev-flow/evidence/"],
-      "started_at": "2026-04-13",
-      "completed_at": "2026-04-13",
-      "evidence_file": ".dev-flow/evidence/S04.md"
+      "files": [
+        "frontend/src/pages/Home.tsx",
+        "frontend/src/components/layout/Sidebar.tsx"
+      ]
+    },
+    {
+      "id": "F06",
+      "phase": "P1A",
+      "module": "feedback-loop",
+      "name": "FeedbackButton 双 Tab — 提交 + 我的反馈",
+      "description": "改造 FeedbackButton 为双 Tab 面板。当前只有「提交反馈」表单，新增「我的反馈」Tab 展示用户历史反馈列表（标题、状态 pending/reported、时间）。实现：(1) FeedbackButton 内部状态增加 activeTab（submit | list）；(2) Tab 切换 UI；(3) 「我的反馈」Tab 调用 GET /feedback 获取列表；(4) 列表项显示 title、status（带颜色标识）、created_at；(5) api.ts 新增 getFeedbackList() 和 getFeedbackDetail() 调用；(6) 提交成功后自动切换到「我的反馈」Tab。",
+      "verification": "F1",
+      "depends_on": ["B16"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "双 Tab UI（提交反馈 / 我的反馈）可切换",
+        "「我的反馈」Tab 展示反馈列表（title、status、time）",
+        "status pending 和 reported 有不同颜色标识",
+        "提交成功后自动切换到「我的反馈」Tab",
+        "api.ts 新增 getFeedbackList() 函数",
+        "npm run build 构建通过"
+      ],
+      "files": [
+        "frontend/src/components/FeedbackButton.tsx",
+        "frontend/src/services/api.ts"
+      ]
     }
   ]
 }

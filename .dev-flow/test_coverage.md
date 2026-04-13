@@ -56,3 +56,9 @@
 | 数据认领与回填 | B12 | unit+integration | SQLite/Markdown/session 迁移幂等/冲突不覆盖/审计输出 | planned | risk: auth, first_use, startup |
 | 部署探针与回填命令 | B13 | integration+runtime | DATA_DIR/卷挂载/dry-run/实际回填/失败阻断 | planned | risk: startup, config |
 | 生产恢复回归 | S04 | smoke+manual | 目标账号历史内容可见/非目标账号隔离/失败阻断验收 | planned | risk: auth, first_use, startup, config, network |
+| Phase 1A 契约 | S05 | unit | 模型定义/schema 更新/类型生成/测试通过 | pending | - |
+| 回顾趋势 API | B14 | unit+integration | trend 正确统计/空数据/user_id 修复/隔离验证/参数边界（invalid period, days=0）/smoke 首次请求 | pending | risk: auth, smoke_required |
+| 灵感转化 API | B15 | unit+integration | inbox→task/note 文件移动/front matter 更新/SQLite 同步/旧文件删除 | pending | - |
+| 反馈闭环后端 | B16 | unit+integration | feedback 表创建/双写/列表查询/状态追踪/用户隔离/启动幂等/冷启动首次提交/log-service 不可达 smoke | pending | risk: auth, startup, smoke_required |
+| 首页改版「今天」 | F05 | manual+unit | 任务状态切换/灵感角标/快速操作/空状态引导/Sidebar 标签/构建通过/切换失败回滚/loading 态 | pending | risk: first_use |
+| FeedbackButton 双 Tab | F06 | manual+unit | 双 Tab 切换/反馈列表/状态标识/提交后跳转/构建通过 | pending | - |

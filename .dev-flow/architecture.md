@@ -157,43 +157,43 @@ backend/app/
 - 不包含 LangSmith（留在各项目内部）
 - Java SDK 后续补充
 
-## 反馈功能架构（P10）
+## 反馈功能架构（P10 → R004 Phase 1A 升级）
 
-### 数据流
+### 数据流（R004 双写策略）
 
 ```
 用户点击反馈按钮 → FeedbackButton 组件
   → submitFeedback() (api.ts, fetch POST /feedback)
     → feedback.py 路由
-      → log_service_sdk.report_issue()
-        → log-service POST /api/issues
+      → 先写本地 SQLite feedback 表（status=pending）→ 立即返回 200
+      → 异步调 log_service_sdk.report_issue()
+        → 成功 → 更新本地 status=reported + 记录 log_service_issue_id
+        → 失败 → 保持 status=pending，不阻塞用户
+  → GET /feedback → 查询本地 feedback 表（按 user_id 隔离）
+  → GET /feedback/{id} → 单条详情（含 status 和 log_service_issue_id）
 ```
 
 ### 后端
 
-- **路由**: `backend/app/routers/feedback.py`（新建）
-- **端点**: `POST /feedback`
+- **路由**: `backend/app/routers/feedback.py`
+- **端点**: `POST /feedback`, `GET /feedback`, `GET /feedback/{id}`
 - **请求模型**: `FeedbackRequest(title, description?, severity)`
-- **依赖**: `log_service_sdk.report_issue()` + `get_settings().LOG_SERVICE_URL`
-- **前置约束**: 先确认 `report_issue(title, description, severity)` 签名、异常类型和返回 `issue` 结构，再实现代理层
-- **错误处理**: SDK 异常 → 503, 参数校验 → 422
-- **不依赖**: deps.py（不使用存储层）
+- **本地存储**: SQLite feedback 表（id, user_id, title, description, severity, log_service_issue_id, status, created_at）
+- **双写策略**: 本地优先 + 远端 best-effort；本地写入即返回成功，远端异步上报不阻塞
+- **远端依赖**: `log_service_sdk.report_issue()` + `get_settings().LOG_SERVICE_URL`（不可达时不阻塞提交）
+- **前置约束**: 先确认 `report_issue(title, description, severity)` 签名、异常类型和返回 `issue` 结构
+- **错误处理**: 参数校验 → 422；本地写入失败 → 500；远端失败不影响响应
+- **依赖**: `deps.py`（使用 SQLite 存储层）
 
 ### 前端
 
-- **组件**: `frontend/src/components/FeedbackButton.tsx`（新建）
+- **组件**: `frontend/src/components/FeedbackButton.tsx`（双 Tab：提交 + 我的反馈）
 - **定位**: 固定定位右下角（z-50），位于 `FloatingChat` 上方并保持至少 `16px` 垂直间距
-- **UI**: 展开/折叠面板，不使用 Dialog/Toast
+- **UI**: 展开/折叠面板，双 Tab 切换（提交反馈 / 我的反馈）
 - **枚举**: 前后端共用同一业务枚举 `low | medium | high | critical`
-- **API**: `submitFeedback()` in `api.ts`，原生 fetch
+- **API**: `submitFeedback()` + `getFeedbackList()` + `getFeedbackDetail()` in `api.ts`
 - **挂载**: `App.tsx` 全局挂载
 - **响应式约束**: 移动端窄屏下反馈按钮与聊天入口不得互相遮挡，优先保留聊天入口可见性
-
-### 不修改的文件
-
-- `frontend/src/types/task.ts` — 反馈接口简单，不需要类型生成
-- `frontend/src/stores/` — 反馈是一次性操作，不需要 store
-- `backend/app/routers/deps.py` — feedback 不依赖存储层
 
 ## 部署架构（P11）
 

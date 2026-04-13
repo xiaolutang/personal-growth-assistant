@@ -1,38 +1,50 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.3.1
+> 版本：v0.4.0
 
 ## 目标
-- 修复认证上线后历史内容在生产环境不可见的问题
-- 保证认证迁移后的历史数据可被正确认领或回填到真实用户
-- 为远程部署补齐数据存在性校验，避免“应用可访问但内容为空”再次上线
+
+- 实施 R004 产品演进 Phase 1A「补闭环」
+- 新增回顾趋势数据 API，支持跨期对比
+- 新增灵感转化能力（inbox→task/note）
+- 补齐反馈闭环（本地存储 + 远端双写 + 状态追踪）
+- 首页从统计报表改版为行动中心「今天」
 
 ## 范围
 
 ### 包含
-- `_default` 历史数据归属规则补齐
-- 现有线上账号的数据认领/回填能力
-- 部署前后数据探针与 smoke 校验
-- 缺陷回流记录、修复任务拆解、验收标准更新
+- GET /review/trend 跨期趋势数据接口
+- ReviewService user_id 修复（数据隔离 Bug）
+- EntryUpdate 新增 category 字段 + 文件迁移
+- Feedback 本地表 + 双写 + 列表查询
+- 首页 UI 改版 + Sidebar 标签更新
+- FeedbackButton 双 Tab 改造
 
 ### 不包含
-- MCP Server 用户隔离扩展（仍为后续需求）
-- 新的认证模式或 refresh token
-- 非本次缺陷直接相关的 UI 重构
+- Phase 1B：灵感转化前端 UI（Inbox 页「转为任务/笔记」操作入口，r004-implementation-plan T04）、回顾页趋势折线图 UI（T06）— Phase 1A 仅交付后端 API 能力，前端 UI 消费在 Phase 1B 实现
+- Phase 2A/2B/2C（探索页、Onboarding、Export、关联等）
+- 图谱独立页、AI 内嵌、移动端 App
+- MCP Server 用户隔离扩展
 
 ## 用户路径
-1. 老数据拥有者登录已有账号后，可以看到迁移前已有内容，或通过一次性认领恢复内容可见性。
-2. 运维在部署前执行 dry-run 检查，确认 `DATA_DIR`、SQLite、Markdown 用户目录和目标账号映射一致。
-3. 部署完成后执行登录与内容列表 smoke，确认线上不是“空应用”状态。
+
+1. 用户打开首页，看到今日进度和可直接操作的任务列表
+2. 用户在灵感列表中选择一个灵感，转化为任务或笔记
+3. 用户提交反馈后，可在「我的反馈」Tab 查看状态
+4. 用户在回顾页查看趋势数据，了解完成率变化
 
 ## 技术约束
+
 - 后端：Python 3.11+ / FastAPI / SQLite / Markdown 存储
-- 数据迁移必须幂等，禁止覆盖已有用户数据
-- 修复同时覆盖 SQLite 与 Markdown 主数据源，必要时同步会话元数据
-- 部署仍使用 Docker Compose + `/growth/` 子路径
+- 前端：React 18 / Tailwind CSS / Vite / Zustand
+- 数据隔离：所有操作必须按 user_id 隔离
+- 文件迁移：os.rename 原子操作，entry_id 前缀不变
+- 双写策略：本地优先 + 远端 best-effort
 
 ## 交付边界
-- 后端：提供 `_default` 历史数据认领/回填能力与可审计日志
-- 运维：提供可重复执行的恢复/检查命令
-- 测试：补首用与生产回归 smoke，覆盖正常/边界/异常场景
+
+- 后端：新增 3 个 API 端点（review/trend、feedback CRUD、entries category 转化）+ 修复 review 数据隔离
+- 前端：首页改版 + 反馈组件升级（双 Tab）
+- 不含前端 UI：灵感转化操作入口（Phase 1B T04）和回顾趋势折线图（Phase 1B T06）
+- 测试：每个任务包含单元测试/集成测试
