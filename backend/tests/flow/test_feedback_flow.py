@@ -13,11 +13,7 @@ from httpx import ASGITransport, AsyncClient
 from app.main import app
 
 
-@pytest.fixture
-async def client():
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as test_client:
-        yield test_client
+# client fixture 直接复用根 conftest.py 的（自动注入 auth token）
 
 
 MOCK_ISSUE_RESPONSE = {

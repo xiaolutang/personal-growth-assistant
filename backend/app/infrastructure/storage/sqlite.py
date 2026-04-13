@@ -142,6 +142,20 @@ class SQLiteStorage:
         finally:
             conn.close()
 
+    # === 查询辅助 ===
+
+    def entry_belongs_to_user(self, entry_id: str, user_id: str) -> bool:
+        """检查条目是否属于指定用户（轻量存在性查询）"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT 1 FROM entries WHERE id = ? AND user_id = ? LIMIT 1",
+                (entry_id, user_id),
+            ).fetchone()
+            return row is not None
+        finally:
+            conn.close()
+
     # === CRUD 操作 ===
 
     def upsert_entry(self, entry: Task, user_id: str = "_default") -> bool:

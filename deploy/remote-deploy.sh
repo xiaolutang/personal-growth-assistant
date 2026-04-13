@@ -1,124 +1,35 @@
 #!/bin/bash
-# personal-growth-assistant 远端一键部署脚本
-# 使用方式: ./deploy/remote-deploy.sh [--skip-build]
+# personal-growth-assistant 远端一键部署
+# 使用方式: ./deploy/remote-deploy.sh [--skip-build] [--no-cache]
 #
-# 前提: 已配置 deploy/.remote.env，远端已部署基础设施（Traefik + Neo4j + Qdrant）
+# 服务器配置共享: ai_rules/infrastructure/.remote.env
 set -euo pipefail
 
-# 颜色
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# 加载共享部署库 + 服务器配置
+INFRA_DIR="$(cd "$(dirname "$0")" && pwd)/../../ai_rules/infrastructure"
+source "${INFRA_DIR}/deploy-lib.sh"
+_load_remote_env
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+# 项目参数
+PROJECT_NAME="personal-growth-assistant"
+COMPOSE_FILE="deploy/docker-compose.yml"
+HEALTH_PATH="/growth/api/health"
+DISPLAY_NAME="personal-growth-assistant"
+REMOTE_DEPLOY_DIR="/home/ubuntu/project/personal-growth-assistant"
+IMAGES=("personal-growth-assistant:latest")
+ACCESS_URLS=(
+  "前端|http://${REMOTE_HOST}/growth/"
+  "API|http://${REMOTE_HOST}/growth/api/docs"
+  "健康|http://${REMOTE_HOST}/growth/api/health"
+)
 
-# 读取配置
-ENV_FILE="$SCRIPT_DIR/.remote.env"
-if [ ! -f "$ENV_FILE" ]; then
-    echo -e "${RED}错误: 未找到 $ENV_FILE${NC}"
-    echo -e "${YELLOW}请复制模板并填写: cp deploy/.remote.env.example deploy/.remote.env${NC}"
-    exit 1
-fi
+# 自定义构建：带 FRONTEND_BASE_PATH 构建参数
+custom_remote_build() {
+  docker buildx build --platform "$REMOTE_PLATFORM" \
+    -f deploy/Dockerfile \
+    -t "personal-growth-assistant:latest" \
+    --build-arg FRONTEND_BASE_PATH="/growth/" \
+    $BUILD_CACHE_FLAG --load .
+}
 
-source "$ENV_FILE"
-
-if [ -z "$REMOTE_HOST" ]; then
-    echo -e "${RED}错误: 请在 $ENV_FILE 中填写 REMOTE_HOST${NC}"
-    exit 1
-fi
-
-REMOTE_USER="${REMOTE_USER:-ubuntu}"
-REMOTE_DEPLOY_DIR="${REMOTE_DEPLOY_DIR:-/home/ubuntu/project/personal-growth-assistant}"
-REMOTE_PLATFORM="${REMOTE_PLATFORM:-linux/amd64}"
-IMAGE_NAME="personal-growth-assistant:latest"
-TMP_FILE="/tmp/pga.tar.gz"
-
-echo -e "${BLUE}╔═══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║    personal-growth-assistant 远端一键部署                ║${NC}"
-echo -e "${BLUE}╚═══════════════════════════════════════════════════════════╝${NC}"
-echo ""
-echo -e "  服务器: ${GREEN}${REMOTE_USER}@${REMOTE_HOST}${NC}"
-echo -e "  部署目录: ${GREEN}${REMOTE_DEPLOY_DIR}${NC}"
-echo -e "  目标平台: ${GREEN}${REMOTE_PLATFORM}${NC}"
-echo ""
-
-# ===== 0. SSH 连通性检查 =====
-echo -e "${YELLOW}[0/5] 检查 SSH 连接...${NC}"
-if ! ssh -o ConnectTimeout=5 "${REMOTE_USER}@${REMOTE_HOST}" "echo ok" &>/dev/null; then
-    echo -e "${RED}错误: 无法连接 ${REMOTE_USER}@${REMOTE_HOST}${NC}"
-    exit 1
-fi
-echo -e "  ${GREEN}SSH 连接正常${NC}"
-
-# ===== 1. 本地构建 =====
-if [[ "${1:-}" != "--skip-build" ]]; then
-    echo -e "${YELLOW}[1/5] 构建镜像（平台: ${REMOTE_PLATFORM}）...${NC}"
-    cd "$PROJECT_DIR"
-    docker buildx build --platform "$REMOTE_PLATFORM" \
-        -f deploy/Dockerfile \
-        -t "$IMAGE_NAME" \
-        --build-arg FRONTEND_BASE_PATH="/growth/" \
-        --load .
-else
-    echo -e "${YELLOW}[1/5] 跳过构建（使用已有镜像）${NC}"
-fi
-
-# 检查镜像
-if ! docker image inspect "$IMAGE_NAME" &>/dev/null; then
-    echo -e "${RED}错误: 镜像 $IMAGE_NAME 不存在${NC}"
-    exit 1
-fi
-
-# ===== 2. 导出镜像 =====
-echo -e "${YELLOW}[2/5] 导出镜像...${NC}"
-docker save "$IMAGE_NAME" | gzip > "$TMP_FILE"
-IMAGE_SIZE=$(du -h "$TMP_FILE" | cut -f1)
-echo -e "  镜像大小: ${GREEN}${IMAGE_SIZE}${NC}"
-
-# ===== 3. 传输到服务器 =====
-echo -e "${YELLOW}[3/5] 传输到服务器...${NC}"
-scp -q "$TMP_FILE" "${REMOTE_USER}@${REMOTE_HOST}:/tmp/pga.tar.gz"
-scp -q "$SCRIPT_DIR/docker-compose.yml" "${REMOTE_USER}@${REMOTE_HOST}:/tmp/pga-compose.yml"
-rm -f "$TMP_FILE"
-
-# ===== 4. 远端加载并启动 =====
-echo -e "${YELLOW}[4/5] 远端加载并启动...${NC}"
-ssh "${REMOTE_USER}@${REMOTE_HOST}" \
-    "REMOTE_DEPLOY_DIR='${REMOTE_DEPLOY_DIR}' bash -s" <<'REMOTE_SCRIPT'
-set -euo pipefail
-
-echo "  加载镜像..."
-docker load < /tmp/pga.tar.gz
-rm -f /tmp/pga.tar.gz
-
-mkdir -p "${REMOTE_DEPLOY_DIR}/deploy"
-mv /tmp/pga-compose.yml "${REMOTE_DEPLOY_DIR}/deploy/docker-compose.yml"
-
-cd "${REMOTE_DEPLOY_DIR}"
-docker compose -f deploy/docker-compose.yml down 2>/dev/null || true
-docker compose -f deploy/docker-compose.yml up -d
-
-echo "  等待服务启动..."
-for i in $(seq 1 15); do
-    HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost/growth/api/health 2>/dev/null || echo 000)
-    if [ "$HTTP_CODE" = "200" ]; then
-        echo "  健康检查通过"
-        exit 0
-    fi
-    sleep 2
-done
-echo "HEALTH_CHECK_FAILED"
-REMOTE_SCRIPT
-
-# ===== 5. 输出结果 =====
-echo ""
-echo -e "${GREEN}╔═══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║                  部署完成！                              ║${NC}"
-echo -e "${GREEN}╠═══════════════════════════════════════════════════════════╣${NC}"
-echo -e "${GREEN}║  前端:  http://${REMOTE_HOST}/growth/                    ${NC}"
-echo -e "${GREEN}║  API:   http://${REMOTE_HOST}/growth/api/docs            ${NC}"
-echo -e "${GREEN}║  健康:  http://${REMOTE_HOST}/growth/api/health          ${NC}"
-echo -e "${GREEN}╚═══════════════════════════════════════════════════════════╝${NC}"
+run_remote_deploy "$@"

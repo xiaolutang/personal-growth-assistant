@@ -21,6 +21,21 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from httpx import AsyncClient, ASGITransport
 
 
+def _setup_test_auth():
+    """设置测试认证，返回 (token, user_id)"""
+    from app.services.auth_service import create_access_token
+    from app.infrastructure.storage.user_storage import UserStorage
+    from app.models.user import UserCreate
+    from app.routers import deps
+
+    user_db = tempfile.mktemp(suffix=".db")
+    deps._user_storage = UserStorage(user_db)
+    test_user = deps._user_storage.create_user(UserCreate(
+        username="testuser", email="test@example.com", password="testpass123",
+    ))
+    return create_access_token(test_user.id), test_user.id
+
+
 async def test_llm_parse_blocking():
     """测试 LLM 解析期间是否会阻塞其他请求"""
     from app.main import app
@@ -42,9 +57,12 @@ async def test_llm_parse_blocking():
     deps.reset_all_services()
     print("存储服务初始化完成")
 
+    token, _ = _setup_test_auth()
+
     # 先创建一些测试数据
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test", timeout=60.0) as client:
+        client.headers["Authorization"] = f"Bearer {token}"
         # 创建 5 条测试数据
         print("\n=== 准备测试数据 ===")
         for i in range(5):
@@ -193,8 +211,11 @@ async def test_parse_creates_entry_then_query():
     deps.storage = storage
     deps.reset_all_services()  # 重置缓存
 
+    token, _ = _setup_test_auth()
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test", timeout=60.0) as client:
+        client.headers["Authorization"] = f"Bearer {token}"
         # 创建一些已有数据
         print("\n=== 准备已有数据 ===")
         for i in range(3):

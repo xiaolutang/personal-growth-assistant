@@ -101,8 +101,16 @@ class EntryService:
 
         return EntryResponse(**EntryMapper.task_to_response(entry))
 
+    def _verify_entry_owner(self, entry_id: str, user_id: str) -> bool:
+        """验证条目是否属于当前用户"""
+        if not self.storage.sqlite:
+            return True  # 无 SQLite 时无法验证，放行
+        return self.storage.sqlite.entry_belongs_to_user(entry_id, user_id)
+
     async def get_entry(self, entry_id: str, user_id: str = "_default") -> Optional[EntryResponse]:
         """获取单个条目"""
+        if not self._verify_entry_owner(entry_id, user_id):
+            return None
         entry = self.storage.markdown.read_entry(entry_id)
         if not entry:
             return None
@@ -110,6 +118,8 @@ class EntryService:
 
     async def update_entry(self, entry_id: str, request: EntryUpdate, user_id: str = "_default") -> Tuple[bool, str]:
         """更新条目，返回 (成功, 消息)"""
+        if not self._verify_entry_owner(entry_id, user_id):
+            return False, f"条目不存在: {entry_id}"
         entry = self.storage.markdown.read_entry(entry_id)
         if not entry:
             return False, f"条目不存在: {entry_id}"
@@ -176,6 +186,9 @@ class EntryService:
 
     async def delete_entry(self, entry_id: str, user_id: str = "_default") -> Tuple[bool, str]:
         """删除条目，返回 (成功, 消息)"""
+        # 验证条目属于当前用户
+        if not self._verify_entry_owner(entry_id, user_id):
+            return False, f"条目不存在: {entry_id}"
         # 检查条目是否存在
         entry = self.storage.markdown.read_entry(entry_id)
         if not entry:
@@ -267,6 +280,9 @@ class EntryService:
 
     async def get_project_progress(self, entry_id: str, user_id: str = "_default") -> ProjectProgressResponse:
         """获取项目进度"""
+        # 验证条目属于当前用户
+        if not self._verify_entry_owner(entry_id, user_id):
+            raise ValueError(f"条目不存在: {entry_id}")
         # 检查项目是否存在
         entry = self.storage.markdown.read_entry(entry_id)
         if not entry:
