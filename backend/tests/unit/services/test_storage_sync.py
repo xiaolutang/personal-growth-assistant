@@ -175,6 +175,41 @@ async def test_sync_all(storage):
     assert result["failed"] == 0
 
 
+@pytest.mark.asyncio
+async def test_init_storage_migrates_root_markdown_to_default_user(temp_data_dir):
+    """启动时应将根目录遗留 Markdown 迁入 users/_default 并写入索引"""
+    from pathlib import Path
+    from app.services import init_storage
+
+    root_tasks = Path(temp_data_dir) / "tasks"
+    root_tasks.mkdir(parents=True)
+    (root_tasks / "legacy-task.md").write_text(
+        "---\n"
+        "id: legacy-task\n"
+        "type: task\n"
+        "title: 历史任务\n"
+        "status: doing\n"
+        "priority: medium\n"
+        "created_at: 2026-04-13T00:00:00\n"
+        "updated_at: 2026-04-13T00:00:00\n"
+        "tags: []\n"
+        "---\n\n历史内容\n",
+        encoding="utf-8",
+    )
+
+    storage = await init_storage(
+        data_dir=temp_data_dir,
+        neo4j_uri=None,
+        qdrant_url=None,
+        llm_caller=None,
+    )
+
+    assert (Path(temp_data_dir) / "users" / "_default" / "tasks" / "legacy-task.md").exists()
+    entry = storage.sqlite.get_entry("legacy-task", user_id="_default")
+    assert entry is not None
+    assert entry["title"] == "历史任务"
+
+
 # === 知识提取测试 ===
 
 @pytest.mark.asyncio

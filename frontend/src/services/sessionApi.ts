@@ -6,6 +6,7 @@
 
 import { API_BASE } from "@/config/api";
 import { handleApiResponse } from "@/lib/errors";
+import { authFetch } from "@/lib/authFetch";
 
 // === 类型定义 ===
 
@@ -33,7 +34,7 @@ export interface SessionUpdate {
  * 获取所有会话列表
  */
 export async function listSessions(): Promise<SessionInfo[]> {
-  const response = await fetch(`${API_BASE}/sessions`);
+  const response = await authFetch(`${API_BASE}/sessions`);
   return handleApiResponse<SessionInfo[]>(response);
 }
 
@@ -41,7 +42,7 @@ export async function listSessions(): Promise<SessionInfo[]> {
  * 获取指定会话的消息历史
  */
 export async function getSessionMessages(sessionId: string): Promise<MessageInfo[]> {
-  const response = await fetch(`${API_BASE}/sessions/${sessionId}/messages`);
+  const response = await authFetch(`${API_BASE}/sessions/${sessionId}/messages`);
   return handleApiResponse<MessageInfo[]>(response);
 }
 
@@ -52,7 +53,7 @@ export async function updateSessionTitle(
   sessionId: string,
   title: string
 ): Promise<SessionInfo> {
-  const response = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+  const response = await authFetch(`${API_BASE}/sessions/${sessionId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title }),
@@ -64,7 +65,7 @@ export async function updateSessionTitle(
  * 删除会话
  */
 export async function deleteSession(sessionId: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+  const response = await authFetch(`${API_BASE}/sessions/${sessionId}`, {
     method: "DELETE",
   });
   await handleApiResponse<void>(response as any);

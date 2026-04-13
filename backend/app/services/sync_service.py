@@ -3,9 +3,13 @@ import asyncio
 import logging
 from typing import List, Optional, Dict, Any
 
+from app.core.config import get_settings
 from app.models import Task
+from app.models.user import DefaultDataClaimResult, User
 from app.infrastructure.storage.markdown import MarkdownStorage
+from app.infrastructure.storage.storage_factory import StorageFactory
 from app.services.knowledge_service import KnowledgeService
+from app.services.session_meta_store import SessionMetaStore
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +36,14 @@ class SyncService:
     def __init__(
         self,
         markdown_storage: MarkdownStorage,
+        storage_factory: StorageFactory | None = None,
         sqlite_storage=None,
         neo4j_client=None,
         qdrant_client=None,
         llm_caller=None,
     ):
         self.markdown = markdown_storage
+        self.storage_factory = storage_factory
         self.sqlite = sqlite_storage
         self.neo4j = neo4j_client
         self.qdrant = qdrant_client
@@ -50,6 +56,49 @@ class SyncService:
             llm_caller=llm_caller,
         )
 
+    def get_markdown_storage(self, user_id: str = "_default") -> MarkdownStorage:
+        """按 user_id 获取 Markdown 存储"""
+        if self.storage_factory is not None:
+            return self.storage_factory.get_markdown_storage(user_id)
+        return self.markdown
+
+    def claim_default_data(self, user: User) -> DefaultDataClaimResult:
+        """将 `_default` 历史数据认领到指定用户"""
+        if not user.id or user.id == "_default":
+            return DefaultDataClaimResult(claimed=False, reason="invalid_target_user")
+
+        settings = get_settings()
+
+        sqlite_entries_claimed = 0
+        if self.sqlite is not None:
+            sqlite_entries_claimed = self.sqlite.claim_default_entries(user.id)
+
+        storage_factory = self.storage_factory or StorageFactory(settings.DATA_DIR)
+        markdown_files_copied, markdown_files_skipped = storage_factory.claim_default_user(user.id)
+
+        session_meta_store = SessionMetaStore(
+            settings.sqlite_checkpoints_path.replace(".db", "_meta.db")
+        )
+        session_count_claimed = session_meta_store.claim_default_sessions(user.id)
+
+        claimed = any(
+            [
+                sqlite_entries_claimed,
+                markdown_files_copied,
+                session_count_claimed,
+            ]
+        )
+        reason = "" if claimed else "no_default_data"
+
+        return DefaultDataClaimResult(
+            claimed=claimed,
+            reason=reason,
+            sqlite_entries_claimed=sqlite_entries_claimed,
+            markdown_files_copied=markdown_files_copied,
+            markdown_files_skipped=markdown_files_skipped,
+            session_count_claimed=session_count_claimed,
+        )
+
     async def sync_entry(self, entry: Task, user_id: str = "_default") -> bool:
         """
         同步单个条目到 SQLite + Neo4j + Qdrant
@@ -60,6 +109,9 @@ class SyncService:
         3. 并行同步到 Neo4j + Qdrant
         """
         try:
+            markdown = self.get_markdown_storage(user_id)
+            markdown.write_entry(entry)
+
             # 1. 同步到 SQLite（如果可用）- 同步执行，因为 SQLite 操作很快
             if self.sqlite:
                 self.sqlite.upsert_entry(entry, user_id=user_id)
@@ -173,7 +225,7 @@ class SyncService:
                 await asyncio.gather(*tasks, return_exceptions=True)
 
             # 3. 删除 Markdown 文件
-            self.markdown.delete_entry(entry_id)
+            self.get_markdown_storage(user_id).delete_entry(entry_id)
 
             return True
         except Exception as e:
@@ -182,23 +234,29 @@ class SyncService:
 
     async def sync_all(self) -> Dict[str, int]:
         """同步所有 Markdown 文件"""
-        entries = self.markdown.scan_all()
         success = 0
         failed = 0
 
-        for entry in entries:
-            if await self.sync_entry(entry):
-                success += 1
-            else:
-                failed += 1
+        if self.storage_factory:
+            user_ids = self.storage_factory.list_user_ids() or ["_default"]
+        else:
+            user_ids = ["_default"]
+
+        for user_id in user_ids:
+            entries = self.get_markdown_storage(user_id).scan_all()
+            for entry in entries:
+                if await self.sync_entry(entry, user_id=user_id):
+                    success += 1
+                else:
+                    failed += 1
 
         return {"success": success, "failed": failed}
 
-    async def resync_entry(self, entry_id: str) -> bool:
+    async def resync_entry(self, entry_id: str, user_id: str = "_default") -> bool:
         """重新同步单个条目（用于文件编辑后）"""
-        entry = self.markdown.read_entry(entry_id)
+        entry = self.get_markdown_storage(user_id).read_entry(entry_id)
         if entry:
-            return await self.sync_entry(entry)
+            return await self.sync_entry(entry, user_id=user_id)
         return False
 
     @property
@@ -221,8 +279,13 @@ async def init_storage(
     """初始化存储服务"""
     import os
 
-    # 创建存储实例
-    markdown_storage = MarkdownStorage(data_dir)
+    # 先迁移根目录遗留数据到 users/_default，再统一走按用户目录读写
+    storage_factory = StorageFactory(data_dir)
+    migrated_count = storage_factory.migrate_default_user(data_dir)
+    if migrated_count:
+        print(f"根目录历史 Markdown 已迁移到 users/_default: {migrated_count} 个文件")
+
+    markdown_storage = storage_factory.get_markdown_storage("_default")
 
     # 初始化 SQLite（默认开启）
     sqlite_storage = None
@@ -230,9 +293,14 @@ async def init_storage(
         try:
             db_path = sqlite_path or f"{data_dir}/index.db"
             sqlite_storage = SQLiteStorage(db_path)
-            # 从 Markdown 同步到 SQLite
-            count = sqlite_storage.sync_from_markdown(markdown_storage)
-            print(f"SQLite 索引同步完成: {count} 条记录")
+            total_count = 0
+            for user_id in storage_factory.list_user_ids() or ["_default"]:
+                count = sqlite_storage.sync_from_markdown(
+                    storage_factory.get_markdown_storage(user_id),
+                    user_id=user_id,
+                )
+                total_count += count
+            print(f"SQLite 索引同步完成: {total_count} 条记录")
         except Exception as e:
             print(f"SQLite 初始化失败: {e}")
             sqlite_storage = None
@@ -282,6 +350,7 @@ async def init_storage(
     # 创建同步服务
     sync_service = SyncService(
         markdown_storage=markdown_storage,
+        storage_factory=storage_factory,
         sqlite_storage=sqlite_storage,
         neo4j_client=neo4j_client,
         qdrant_client=qdrant_client,

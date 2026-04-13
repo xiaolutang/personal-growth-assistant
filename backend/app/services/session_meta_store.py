@@ -146,3 +146,18 @@ class SessionMetaStore:
             cursor = conn.cursor()
             cursor.execute("SELECT 1 FROM session_meta WHERE id = ? AND user_id = ?", (session_id, user_id))
             return cursor.fetchone() is not None
+
+    def claim_default_sessions(self, target_user_id: str) -> int:
+        """将 `_default` 用户下的会话元数据认领到目标用户"""
+        if not target_user_id or target_user_id == "_default":
+            return 0
+
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE session_meta SET user_id = ? WHERE user_id = ?",
+                (target_user_id, "_default"),
+            )
+            affected = cursor.rowcount
+            conn.commit()
+            return affected

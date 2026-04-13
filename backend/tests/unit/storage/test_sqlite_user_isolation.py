@@ -2,27 +2,11 @@
 
 测试 user_id 过滤在 entries 表各操作中的正确性。
 """
-from datetime import datetime
 
 import pytest
 
-from app.models import Task, Category, TaskStatus, Priority
-
-
-def _make_entry(entry_id: str, title: str = "测试条目", **kwargs) -> Task:
-    """快速创建测试用 Task"""
-    return Task(
-        id=entry_id,
-        title=title,
-        content=kwargs.get("content", ""),
-        category=kwargs.get("category", Category.TASK),
-        status=kwargs.get("status", TaskStatus.DOING),
-        priority=kwargs.get("priority", Priority.MEDIUM),
-        tags=kwargs.get("tags", []),
-        created_at=kwargs.get("created_at", datetime.now()),
-        updated_at=kwargs.get("updated_at", datetime.now()),
-        file_path=f"tasks/{entry_id}.md",
-    )
+from app.models import Category
+from tests.conftest import _make_entry
 
 
 class TestUserIsolation:
@@ -147,3 +131,28 @@ class TestUserIsolation:
         alice_tasks = sqlite_storage.list_entries(type="task", user_id="usr_alice")
         assert len(alice_tasks) == 1
         assert alice_tasks[0]["id"] == "alice-task"
+
+    def test_claim_default_entries(self, sqlite_storage):
+        """可将 `_default` 条目认领到真实用户"""
+        sqlite_storage.upsert_entry(_make_entry("legacy-1"), user_id="_default")
+        sqlite_storage.upsert_entry(_make_entry("legacy-2"), user_id="_default")
+
+        claimed = sqlite_storage.claim_default_entries("usr_alice")
+
+        assert claimed == 2
+        assert sqlite_storage.count_entries(user_id="_default") == 0
+        assert sqlite_storage.count_entries(user_id="usr_alice") == 2
+
+    def test_sync_from_markdown_default_does_not_override_claimed_owner(self, sqlite_storage, tmp_path):
+        """_default 启动同步不应覆盖已认领到真实用户的数据"""
+        from app.infrastructure.storage.markdown import MarkdownStorage
+
+        md = MarkdownStorage(str(tmp_path))
+        entry = _make_entry("claimed-entry")
+        md.write_entry(entry)
+        sqlite_storage.upsert_entry(entry, user_id="usr_alice")
+
+        count = sqlite_storage.sync_from_markdown(md, user_id="_default")
+
+        assert count == 0
+        assert sqlite_storage.get_entry_owner("claimed-entry") == "usr_alice"

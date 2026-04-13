@@ -2,6 +2,7 @@
 import asyncio
 import tempfile
 import shutil
+from datetime import datetime
 from typing import AsyncGenerator, Generator
 
 import pytest
@@ -108,6 +109,27 @@ def mock_llm_caller():
     from app.infrastructure.llm.mock_caller import MockCaller
 
     return MockCaller(response='{"intent": "create", "tasks": [], "tags": [], "concepts": [], "relations": []}')
+
+
+# === 共享辅助函数 ===
+
+
+def _make_entry(entry_id: str, title: str = "", content: str = "", **kwargs) -> "Task":
+    """快速创建测试用 Task（供各测试模块复用）"""
+    from app.models import Task, Category, TaskStatus, Priority
+
+    return Task(
+        id=entry_id,
+        title=title or f"测试-{entry_id}",
+        content=content,
+        category=kwargs.get("category", Category.TASK),
+        status=kwargs.get("status", TaskStatus.DOING),
+        priority=kwargs.get("priority", Priority.MEDIUM),
+        tags=kwargs.get("tags", []),
+        created_at=kwargs.get("created_at", datetime.now()),
+        updated_at=kwargs.get("updated_at", datetime.now()),
+        file_path=kwargs.get("file_path", f"tasks/{entry_id}.md"),
+    )
 
 
 @pytest.fixture

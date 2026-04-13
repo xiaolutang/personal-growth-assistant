@@ -108,3 +108,17 @@ def test_touch_session_respects_user_id():
 
         assert store.touch_session("s1", user_id="user_b") is False
         assert store.touch_session("s1", user_id="user_a") is True
+
+
+def test_claim_default_sessions():
+    """可将 `_default` 会话认领到目标用户"""
+    with tempfile.TemporaryDirectory() as tmp:
+        store = _make_store(tmp)
+        store.create_session("s1", "旧会话", user_id="_default")
+        store.create_session("s2", "旧会话2", user_id="_default")
+
+        claimed = store.claim_default_sessions("user_a")
+
+        assert claimed == 2
+        assert store.session_exists("s1", user_id="_default") is False
+        assert store.session_exists("s1", user_id="user_a") is True

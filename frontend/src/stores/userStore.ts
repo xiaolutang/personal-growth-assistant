@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { API_BASE } from "@/config/api";
+import { authFetch } from "@/lib/authFetch";
 
 const TOKEN_KEY = "pga_token";
 const USER_KEY = "pga_user";
@@ -82,7 +83,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       }
       set({ token, user, isAuthenticated: true, isLoading: true });
       // 验证 token 是否仍然有效
-      get().fetchMe().finally(() => {
+      return get().fetchMe().finally(() => {
         set({ isLoading: false });
       });
     }
@@ -92,7 +93,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     const { token } = get();
     if (!token) return;
     try {
-      const res = await fetch(`${API_BASE}/auth/me`);
+      const res = await authFetch(`${API_BASE}/auth/me`);
       if (!res.ok) {
         get().logout();
         return;

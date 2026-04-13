@@ -5,23 +5,8 @@ from pathlib import Path
 import pytest
 
 from app.infrastructure.storage.storage_factory import StorageFactory
-from app.models import Task, Category, TaskStatus, Priority
-from datetime import datetime
-
-
-def _make_entry(entry_id: str, category: Category = Category.TASK) -> Task:
-    return Task(
-        id=entry_id,
-        title=f"测试-{entry_id}",
-        content="测试内容",
-        category=category,
-        status=TaskStatus.DOING,
-        priority=Priority.MEDIUM,
-        tags=[],
-        created_at=datetime.now(),
-        updated_at=datetime.now(),
-        file_path=f"{category.value}/{entry_id}.md",
-    )
+from app.models import Category
+from tests.conftest import _make_entry
 
 
 class TestStorageFactory:
@@ -124,3 +109,27 @@ class TestStorageFactory:
         assert count == 1
         default_dir = tmp_path / "data" / "users" / "_default"
         assert (default_dir / "inbox.md").exists()
+
+    def test_claim_default_user(self, tmp_path):
+        """将 `_default` 文件复制到目标用户目录"""
+        factory = StorageFactory(str(tmp_path / "data"))
+        default_storage = factory.get_markdown_storage("_default")
+        default_storage.write_entry(_make_entry("legacy-task"))
+
+        copied, skipped = factory.claim_default_user("usr_alice")
+
+        assert copied == 1
+        assert skipped == 0
+        assert (tmp_path / "data" / "users" / "usr_alice" / "tasks" / "legacy-task.md").exists()
+
+    def test_claim_default_user_is_idempotent(self, tmp_path):
+        """重复认领不会重复复制"""
+        factory = StorageFactory(str(tmp_path / "data"))
+        default_storage = factory.get_markdown_storage("_default")
+        default_storage.write_entry(_make_entry("legacy-task"))
+
+        count1 = factory.claim_default_user("usr_alice")
+        count2 = factory.claim_default_user("usr_alice")
+
+        assert count1 == (1, 0)
+        assert count2 == (0, 1)

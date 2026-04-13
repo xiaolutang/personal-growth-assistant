@@ -1,16 +1,29 @@
 """认证路由 - 注册/登录/登出/me"""
 
+import logging
+
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.core.config import get_settings
-from app.models.user import UserCreate, UserLogin, UserResponse, Token
+from app.models.user import (
+    DefaultDataClaimResult,
+    UserCreate,
+    UserLogin,
+    UserResponse,
+    Token,
+)
 from app.infrastructure.storage.user_storage import UserStorage, verify_password
-from app.services.auth_service import create_access_token, get_current_user_from_token
-from app.routers.deps import get_user_storage
+from app.services.auth_service import (
+    auto_claim_default_user_data,
+    create_access_token,
+    get_current_user_from_token,
+)
+from app.routers.deps import get_current_user, get_storage, get_user_storage
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 security = HTTPBearer()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
@@ -39,6 +52,7 @@ async def register(
 async def login(
     credentials: UserLogin,
     user_storage: UserStorage = Depends(get_user_storage),
+    storage=Depends(get_storage),
 ):
     """用户登录，返回 access token"""
     user = user_storage.get_by_username(credentials.username)
@@ -64,6 +78,22 @@ async def login(
         )
 
     settings = get_settings()
+    claim_result = auto_claim_default_user_data(
+        user,
+        user_storage=user_storage,
+        sync_service=storage,
+    )
+    logger.info(
+        "Auto-claim result for user %s: claimed=%s reason=%s sqlite_entries_claimed=%s markdown_files_copied=%s markdown_files_skipped=%s session_count_claimed=%s",
+        user.id,
+        claim_result.claimed,
+        claim_result.reason,
+        claim_result.sqlite_entries_claimed,
+        claim_result.markdown_files_copied,
+        claim_result.markdown_files_skipped,
+        claim_result.session_count_claimed,
+    )
+
     access_token = create_access_token(user.id)
     return Token(
         access_token=access_token,
@@ -101,3 +131,12 @@ async def get_me(
         is_active=user.is_active,
         created_at=user.created_at,
     )
+
+
+@router.post("/claim-default-data", response_model=DefaultDataClaimResult)
+async def claim_default_data(
+    user=Depends(get_current_user),
+    storage=Depends(get_storage),
+):
+    """显式将 `_default` 历史数据认领到当前用户"""
+    return storage.claim_default_data(user)

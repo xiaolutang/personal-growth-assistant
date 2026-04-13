@@ -156,6 +156,18 @@ class SQLiteStorage:
         finally:
             conn.close()
 
+    def get_entry_owner(self, entry_id: str) -> Optional[str]:
+        """获取条目的当前 owner"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT user_id FROM entries WHERE id = ?",
+                (entry_id,),
+            ).fetchone()
+            return row["user_id"] if row else None
+        finally:
+            conn.close()
+
     # === CRUD 操作 ===
 
     def upsert_entry(self, entry: Task, user_id: str = "_default") -> bool:
@@ -411,6 +423,22 @@ class SQLiteStorage:
         finally:
             conn.close()
 
+    def claim_default_entries(self, target_user_id: str) -> int:
+        """将 `_default` 用户下的条目认领到目标用户"""
+        if not target_user_id or target_user_id == "_default":
+            return 0
+
+        conn = self._get_conn()
+        try:
+            cursor = conn.execute(
+                "UPDATE entries SET user_id = ? WHERE user_id = ?",
+                (target_user_id, "_default"),
+            )
+            conn.commit()
+            return cursor.rowcount
+        finally:
+            conn.close()
+
     # === 全文搜索 ===
 
     def search(self, query: str, limit: int = 10, user_id: str = "_default") -> List[Dict[str, Any]]:
@@ -461,12 +489,30 @@ class SQLiteStorage:
 
     # === 同步操作 ===
 
-    def sync_from_markdown(self, markdown_storage) -> int:
+    def sync_from_markdown(self, markdown_storage, user_id: str = "_default") -> int:
         """从 Markdown 存储同步所有条目"""
         entries = markdown_storage.scan_all()
+        if not entries:
+            return 0
+
+        # 批量预取已认领到真实用户的条目 ID，避免逐条查询
+        claimed_ids: set[str] = set()
+        if user_id == "_default":
+            conn = self._get_conn()
+            try:
+                rows = conn.execute(
+                    "SELECT id FROM entries WHERE user_id != ?",
+                    ("_default",),
+                ).fetchall()
+                claimed_ids = {row["id"] for row in rows}
+            finally:
+                conn.close()
+
         count = 0
         for entry in entries:
-            if self.upsert_entry(entry):
+            if entry.id in claimed_ids:
+                continue
+            if self.upsert_entry(entry, user_id=user_id):
                 count += 1
         return count
 

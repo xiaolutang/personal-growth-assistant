@@ -1,13 +1,36 @@
 """Auth API 单元测试 - 注册/登录/登出/me"""
 
+import sys
+import types
 import pytest
+from datetime import datetime
+from types import SimpleNamespace
 from unittest.mock import patch
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+if "langgraph.checkpoint.sqlite.aio" not in sys.modules:
+    sqlite_pkg = types.ModuleType("langgraph.checkpoint.sqlite")
+    aio_pkg = types.ModuleType("langgraph.checkpoint.sqlite.aio")
+
+    class AsyncSqliteSaver:  # pragma: no cover - 仅为测试导入兜底
+        pass
+
+    aio_pkg.AsyncSqliteSaver = AsyncSqliteSaver
+    sys.modules["langgraph.checkpoint.sqlite"] = sqlite_pkg
+    sys.modules["langgraph.checkpoint.sqlite.aio"] = aio_pkg
+
+from app.infrastructure.storage.sqlite import SQLiteStorage
+from app.infrastructure.storage.storage_factory import StorageFactory
 from app.infrastructure.storage.user_storage import UserStorage
-from app.models.user import UserCreate
-from app.routers import deps
+from app.models import Category, Priority, Task, TaskStatus
+import app.routers.deps as deps
+from app.services.sync_service import SyncService
+from app.services.session_meta_store import SessionMetaStore
+
+from app.routers.auth import router as auth_router
+from tests.conftest import _make_entry
 
 
 # --- Fixtures ---
@@ -23,18 +46,29 @@ def user_storage(tmp_path):
 @pytest.fixture
 def client(user_storage):
     """创建 TestClient，注入 user_storage 到 deps"""
+    data_dir = None
     # 设置 JWT_SECRET 环境变量（在 import 之前 mock）
-    with patch.dict("os.environ", {"JWT_SECRET": "test-secret-key-for-testing"}):
+    with patch.dict("os.environ", {"JWT_SECRET": "test-secret-key-for-testing", "DATA_DIR": str(user_storage.db_path.rsplit("/", 1)[0] + "/data")}):
         # 清除缓存的 settings
         from app.core.config import get_settings
         get_settings.cache_clear()
 
-        from app.main import app
+        settings = get_settings()
+        data_dir = settings.DATA_DIR
+        app = FastAPI()
+        app.include_router(auth_router)
         deps._user_storage = user_storage
+        storage_factory = StorageFactory(data_dir)
+        deps.storage = SyncService(
+            markdown_storage=storage_factory.get_markdown_storage("_default"),
+            storage_factory=storage_factory,
+            sqlite_storage=SQLiteStorage(f"{data_dir}/index.db"),
+        )
         yield TestClient(app)
 
         # 清理
         deps._user_storage = None
+        deps.storage = None
         get_settings.cache_clear()
 
 
@@ -164,6 +198,42 @@ class TestLogin:
         # 两种情况错误信息必须一致
         assert resp_wrong_pwd.json()["detail"] == resp_no_user.json()["detail"]
 
+    def test_login_auto_claims_default_data_for_first_user(self, client, sample_user):
+        """首个真实用户登录时自动认领 `_default` 历史数据"""
+        from app.core.config import get_settings
+
+        settings = get_settings()
+        deps.storage.sqlite.upsert_entry(_make_entry("legacy-task"), user_id="_default")
+        StorageFactory(settings.DATA_DIR).get_markdown_storage("_default").write_entry(_make_entry("legacy-task"))
+        SessionMetaStore(settings.sqlite_checkpoints_path.replace(".db", "_meta.db")).create_session(
+            "legacy-session", "旧会话", user_id="_default"
+        )
+
+        client.post("/auth/register", json=sample_user)
+        resp = client.post("/auth/login", json={"username": "testuser", "password": "secret123"})
+
+        assert resp.status_code == 200
+        user_id = resp.json()["user"]["id"]
+        assert deps.storage.sqlite.count_entries(user_id="_default") == 0
+        assert deps.storage.sqlite.count_entries(user_id=user_id) == 1
+        assert SessionMetaStore(settings.sqlite_checkpoints_path.replace(".db", "_meta.db")).session_exists(
+            "legacy-session", user_id=user_id
+        )
+
+    def test_login_does_not_auto_claim_when_multiple_users_exist(self, client, sample_user):
+        """多用户场景下不自动认领，避免误归属"""
+        deps.storage.sqlite.upsert_entry(_make_entry("legacy-task"), user_id="_default")
+        client.post("/auth/register", json=sample_user)
+        client.post(
+            "/auth/register",
+            json={"username": "user2", "email": "user2@example.com", "password": "secret123"},
+        )
+
+        resp = client.post("/auth/login", json={"username": "testuser", "password": "secret123"})
+
+        assert resp.status_code == 200
+        assert deps.storage.sqlite.count_entries(user_id="_default") == 1
+
 
 # --- Logout Tests ---
 
@@ -270,3 +340,60 @@ class TestMe:
         )
         assert resp.status_code == 401
         assert "用户不存在" in resp.json()["detail"]
+
+
+class TestClaimDefaultData:
+    """POST /auth/claim-default-data"""
+
+    def test_claim_default_data_success(self, client, sample_user):
+        """显式认领 `_default` 数据"""
+        from app.core.config import get_settings
+
+        settings = get_settings()
+        deps.storage.sqlite.upsert_entry(_make_entry("legacy-task"), user_id="_default")
+        StorageFactory(settings.DATA_DIR).get_markdown_storage("_default").write_entry(_make_entry("legacy-task"))
+
+        client.post("/auth/register", json=sample_user)
+        client.post(
+            "/auth/register",
+            json={"username": "user2", "email": "user2@example.com", "password": "secret123"},
+        )
+        login_resp = client.post("/auth/login", json={"username": "user2", "password": "secret123"})
+        token = login_resp.json()["access_token"]
+        user_id = login_resp.json()["user"]["id"]
+
+        resp = client.post(
+            "/auth/claim-default-data",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["claimed"] is True
+        assert data["sqlite_entries_claimed"] == 1
+        assert deps.storage.sqlite.count_entries(user_id=user_id) == 1
+
+    def test_claim_default_data_is_idempotent(self, client, sample_user):
+        """重复认领返回 no_default_data"""
+        deps.storage.sqlite.upsert_entry(_make_entry("legacy-task"), user_id="_default")
+        client.post("/auth/register", json=sample_user)
+        client.post(
+            "/auth/register",
+            json={"username": "user2", "email": "user2@example.com", "password": "secret123"},
+        )
+        login_resp = client.post("/auth/login", json={"username": "user2", "password": "secret123"})
+        token = login_resp.json()["access_token"]
+
+        first = client.post(
+            "/auth/claim-default-data",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        second = client.post(
+            "/auth/claim-default-data",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert first.status_code == 200
+        assert second.status_code == 200
+        assert second.json()["claimed"] is False
+        assert second.json()["reason"] == "no_default_data"

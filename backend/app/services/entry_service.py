@@ -27,6 +27,9 @@ class EntryService:
     def __init__(self, storage: SyncService):
         self.storage = storage
 
+    def _get_markdown_storage(self, user_id: str) -> MarkdownStorage:
+        return self.storage.get_markdown_storage(user_id)
+
     # === 辅助方法 ===
 
     def _parse_category(self, category_str: str) -> Category:
@@ -90,7 +93,7 @@ class EntryService:
         )
 
         # 写入 Markdown
-        self.storage.markdown.write_entry(entry)
+        self._get_markdown_storage(user_id).write_entry(entry)
 
         # SQLite 同步（同步执行）
         if self.storage.sqlite:
@@ -111,7 +114,7 @@ class EntryService:
         """获取单个条目"""
         if not self._verify_entry_owner(entry_id, user_id):
             return None
-        entry = self.storage.markdown.read_entry(entry_id)
+        entry = self._get_markdown_storage(user_id).read_entry(entry_id)
         if not entry:
             return None
         return EntryResponse(**EntryMapper.task_to_response(entry))
@@ -120,7 +123,7 @@ class EntryService:
         """更新条目，返回 (成功, 消息)"""
         if not self._verify_entry_owner(entry_id, user_id):
             return False, f"条目不存在: {entry_id}"
-        entry = self.storage.markdown.read_entry(entry_id)
+        entry = self._get_markdown_storage(user_id).read_entry(entry_id)
         if not entry:
             return False, f"条目不存在: {entry_id}"
 
@@ -173,7 +176,7 @@ class EntryService:
         entry.updated_at = datetime.now()
 
         # 写入 Markdown
-        self.storage.markdown.write_entry(entry)
+        self._get_markdown_storage(user_id).write_entry(entry)
 
         # SQLite 同步
         if self.storage.sqlite:
@@ -190,7 +193,7 @@ class EntryService:
         if not self._verify_entry_owner(entry_id, user_id):
             return False, f"条目不存在: {entry_id}"
         # 检查条目是否存在
-        entry = self.storage.markdown.read_entry(entry_id)
+        entry = self._get_markdown_storage(user_id).read_entry(entry_id)
         if not entry:
             return False, f"条目不存在: {entry_id}"
 
@@ -249,7 +252,7 @@ class EntryService:
         category = Category(type) if type else None
         task_status = TaskStatus(status) if status else None
 
-        entries = self.storage.markdown.list_entries(
+        entries = self._get_markdown_storage(user_id).list_entries(
             category=category,
             status=task_status,
             limit=limit,
@@ -265,7 +268,7 @@ class EntryService:
         # 优先使用混合搜索（需要 Qdrant 和 SQLite 都可用）
         if self.storage.qdrant and self.storage.sqlite:
             hybrid = HybridSearchService(self.storage)
-            entries = await hybrid.search(query, limit)
+            entries = await hybrid.search(query, user_id=user_id, limit=limit)
             return SearchResult(entries=entries, query=query)
 
         # 回退：仅 SQLite 全文搜索
@@ -284,7 +287,7 @@ class EntryService:
         if not self._verify_entry_owner(entry_id, user_id):
             raise ValueError(f"条目不存在: {entry_id}")
         # 检查项目是否存在
-        entry = self.storage.markdown.read_entry(entry_id)
+        entry = self._get_markdown_storage(user_id).read_entry(entry_id)
         if not entry:
             raise ValueError(f"条目不存在: {entry_id}")
 

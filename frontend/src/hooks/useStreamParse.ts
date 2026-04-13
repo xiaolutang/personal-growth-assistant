@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { API_BASE } from "@/config/api";
+import { authFetch } from "@/lib/authFetch";
 import type { Intent } from "@/lib/intentDetection";
 
 // 解析后的任务结构
@@ -147,7 +148,7 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
       return new Promise((resolve, reject) => {
         (async () => {
           try {
-            const res = await fetch(`${API_BASE}/chat`, {
+            const res = await authFetch(`${API_BASE}/chat`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
