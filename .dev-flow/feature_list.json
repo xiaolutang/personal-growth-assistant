@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 5,
+    "pending": 4,
     "in_progress": 0,
-    "completed": 1,
+    "completed": 2,
     "blocked": 0,
     "cancelled": 0
   },
@@ -141,10 +141,8 @@
       "description": "为回顾页新增跨期对比数据接口，并修复 ReviewService 所有方法未传 user_id 的数据隔离 Bug。ReviewService 的 get_daily_report/get_weekly_report/get_monthly_report 调用 list_entries() 时均未传 user_id（默认查 _default 数据），路由层已获取 user 但未传递。需：(1) 所有 ReviewService 方法新增 user_id 参数并传递到 list_entries；(2) review.py 路由层传递 user.id；(3) 新增 get_trend_data() 方法和 GET /review/trend 路由。注意：本任务仅交付后端 API，前端回顾页趋势折线图 UI 在 Phase 1B（T06）实现。",
       "verification": "L2",
       "depends_on": ["S05"],
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
-      "acceptance_criteria": [
-        "ReviewService.get_daily_report/weekly/monthly 均接受 user_id 参数并传递到 list_entries",
         "review.py 路由层通过 user.id 传递到 service 方法",
         "GET /review/trend?period=daily&days=7 返回每日统计数组",
         "GET /review/trend?period=weekly&weeks=8 返回每周统计数组",
