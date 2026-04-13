@@ -1,5 +1,14 @@
 # 归档索引
 
+## 进行中需求包
+
+### R003: Production Content Recovery
+
+- 状态: 已完成，待验收
+- 分支: `fix/R003-production-content-recovery`
+- 主题: 修复认证上线后历史内容在线上不可见的问题
+- 目录: `R003_production-content-recovery/`
+
 ## R001: Personal Growth Assistant v1
 
 - 归档时间: 2026-04-13

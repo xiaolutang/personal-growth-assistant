@@ -28,6 +28,7 @@ WORKDIR /app
 
 COPY --from=builder /app/.venv /app/.venv
 COPY backend/app /app/app
+COPY backend/scripts /app/scripts
 
 # Copy frontend build output
 COPY --from=frontend-builder /app/dist /app/static/frontend
