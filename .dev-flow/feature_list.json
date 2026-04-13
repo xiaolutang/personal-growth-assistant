@@ -16,9 +16,9 @@
   },
   "summary": {
     "total_tasks": 17,
-    "pending": 13,
+    "pending": 12,
     "in_progress": 0,
-    "completed": 4,
+    "completed": 5,
     "cancelled": 0
   },
   "archived_cycles": [
@@ -198,7 +198,7 @@
       "description": "改造 MarkdownStorage 支持按用户隔离目录。数据目录从 data/{category}/ 变为 data/users/{user_id}/{category}/。提供存储工厂，按 user_id 创建隔离实例。",
       "verification": "L1",
       "depends_on": ["B01"],
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "acceptance_criteria": [
         "StorageFactory 类，按 user_id 创建/缓存 MarkdownStorage 实例",
