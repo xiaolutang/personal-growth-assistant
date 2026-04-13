@@ -16,9 +16,9 @@
   },
   "summary": {
     "total_tasks": 17,
-    "pending": 12,
+    "pending": 10,
     "in_progress": 0,
-    "completed": 5,
+    "completed": 7,
     "cancelled": 0
   },
   "archived_cycles": [
@@ -225,7 +225,7 @@
       "description": "为 Neo4j 中 Entry 和 Concept 节点添加 user_id 属性。修改所有 Cypher 查询添加 user_id 过滤。",
       "verification": "L1",
       "depends_on": ["B01"],
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
       "acceptance_criteria": [
         "Entry 和 Concept 节点创建时自动带 user_id 属性",
@@ -249,7 +249,7 @@
       "description": "为 Qdrant collection 的 payload 添加 user_id 字段，修改搜索和索引方法添加 user_id filter。",
       "verification": "L1",
       "depends_on": ["B01"],
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
       "acceptance_criteria": [
         "upsert 时 payload 包含 user_id 字段",

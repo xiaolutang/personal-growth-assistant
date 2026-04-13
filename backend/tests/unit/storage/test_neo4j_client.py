@@ -277,8 +277,8 @@ class TestNeo4jClient:
 
         await client.create_indexes()
 
-        # 应该调用 4 次创建索引
-        assert mock_neo4j_session.run.call_count == 4
+        # 应该调用 6 次创建索引（Entry 4 + Concept 2）
+        assert mock_neo4j_session.run.call_count == 6
 
     async def test_list_entries_with_filter(self, mock_neo4j_session):
         """测试带过滤条件的列表查询"""

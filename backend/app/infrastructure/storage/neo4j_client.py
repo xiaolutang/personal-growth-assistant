@@ -51,7 +51,7 @@ class Neo4jClient:
 
     # ==================== Entry 节点操作 ====================
 
-    async def create_entry(self, entry: Task) -> bool:
+    async def create_entry(self, entry: Task, user_id: str = "_default") -> bool:
         """创建条目节点"""
         query = """
         MERGE (e:Entry {id: $id})
@@ -62,7 +62,8 @@ class Neo4jClient:
             e.created_at = datetime($created_at),
             e.updated_at = datetime($updated_at),
             e.file_path = $file_path,
-            e.parent_id = $parent_id
+            e.parent_id = $parent_id,
+            e.user_id = $user_id
         RETURN e
         """
         async with await self._get_session() as session:
@@ -77,36 +78,37 @@ class Neo4jClient:
                 updated_at=entry.updated_at.isoformat(),
                 file_path=entry.file_path,
                 parent_id=entry.parent_id,
+                user_id=user_id,
             )
             return await result.single() is not None
 
-    async def update_entry(self, entry: Task) -> bool:
+    async def update_entry(self, entry: Task, user_id: str = "_default") -> bool:
         """更新条目节点"""
-        return await self.create_entry(entry)  # MERGE 会自动更新
+        return await self.create_entry(entry, user_id=user_id)  # MERGE 会自动更新
 
-    async def delete_entry(self, entry_id: str) -> bool:
+    async def delete_entry(self, entry_id: str, user_id: str = "_default") -> bool:
         """删除条目节点及其关系"""
         query = """
-        MATCH (e:Entry {id: $id})
+        MATCH (e:Entry {id: $id, user_id: $user_id})
         DETACH DELETE e
         RETURN count(e) as deleted
         """
         async with await self._get_session() as session:
-            result = await session.run(query, id=entry_id)
+            result = await session.run(query, id=entry_id, user_id=user_id)
             record = await result.single()
             return record and record["deleted"] > 0
 
-    async def get_entry(self, entry_id: str) -> Optional[Dict[str, Any]]:
+    async def get_entry(self, entry_id: str, user_id: str = "_default") -> Optional[Dict[str, Any]]:
         """获取单个条目"""
         query = """
-        MATCH (e:Entry {id: $id})
+        MATCH (e:Entry {id: $id, user_id: $user_id})
         RETURN e.id as id, e.title as title, e.type as type,
                e.status as status, e.tags as tags,
                e.created_at as created_at, e.updated_at as updated_at,
                e.file_path as file_path, e.parent_id as parent_id
         """
         async with await self._get_session() as session:
-            result = await session.run(query, id=entry_id)
+            result = await session.run(query, id=entry_id, user_id=user_id)
             record = await result.single()
             if record:
                 return dict(record)
@@ -117,10 +119,11 @@ class Neo4jClient:
         entry_type: Optional[str] = None,
         status: Optional[str] = None,
         limit: int = 50,
+        user_id: str = "_default",
     ) -> List[Dict[str, Any]]:
         """列出条目"""
-        conditions = []
-        params = {"limit": limit}
+        conditions = ["e.user_id = $user_id"]
+        params = {"limit": limit, "user_id": user_id}
 
         if entry_type:
             conditions.append("e.type = $type")
@@ -150,10 +153,10 @@ class Neo4jClient:
 
     # ==================== Concept 节点操作 ====================
 
-    async def create_concept(self, concept: Concept) -> bool:
+    async def create_concept(self, concept: Concept, user_id: str = "_default") -> bool:
         """创建概念节点"""
         query = """
-        MERGE (c:Concept {name: $name})
+        MERGE (c:Concept {name: $name, user_id: $user_id})
         SET c.description = $description,
             c.category = $category
         RETURN c
@@ -164,24 +167,25 @@ class Neo4jClient:
                 name=concept.name,
                 description=concept.description or "",
                 category=concept.category or "技术",
+                user_id=user_id,
             )
             return await result.single() is not None
 
-    async def get_or_create_concept(self, name: str, category: str = "技术") -> bool:
+    async def get_or_create_concept(self, name: str, category: str = "技术", user_id: str = "_default") -> bool:
         """获取或创建概念"""
         return await self.create_concept(Concept(
             name=name,
             category=category,
-        ))
+        ), user_id=user_id)
 
-    async def get_concept(self, name: str) -> Optional[Dict[str, Any]]:
+    async def get_concept(self, name: str, user_id: str = "_default") -> Optional[Dict[str, Any]]:
         """获取概念"""
         query = """
-        MATCH (c:Concept {name: $name})
+        MATCH (c:Concept {name: $name, user_id: $user_id})
         RETURN c.name as name, c.description as description, c.category as category
         """
         async with await self._get_session() as session:
-            result = await session.run(query, name=name)
+            result = await session.run(query, name=name, user_id=user_id)
             record = await result.single()
             if record:
                 return dict(record)
@@ -192,7 +196,8 @@ class Neo4jClient:
     async def create_entry_mentions(
         self,
         entry_id: str,
-        concept_names: List[str]
+        concept_names: List[str],
+        user_id: str = "_default",
     ) -> bool:
         """创建条目与概念的 MENTIONS 关系"""
         if not concept_names:
@@ -201,7 +206,7 @@ class Neo4jClient:
         query = """
         MATCH (e:Entry {id: $entry_id})
         UNWIND $concepts as concept_name
-        MERGE (c:Concept {name: concept_name})
+        MERGE (c:Concept {name: concept_name, user_id: $user_id})
         MERGE (e)-[:MENTIONS]->(c)
         """
         async with await self._get_session() as session:
@@ -209,6 +214,7 @@ class Neo4jClient:
                 query,
                 entry_id=entry_id,
                 concepts=concept_names,
+                user_id=user_id,
             )
             return True
 
@@ -262,11 +268,12 @@ class Neo4jClient:
     async def get_knowledge_graph(
         self,
         concept_name: str,
-        depth: int = 2
+        depth: int = 2,
+        user_id: str = "_default",
     ) -> Dict[str, Any]:
         """获取概念的知识图谱"""
         query = f"""
-        MATCH path = (c:Concept {{name: $name}})-[*1..{depth}]-(related)
+        MATCH path = (c:Concept {{name: $name, user_id: $user_id}})-[*1..{depth}]-(related)
         RETURN c as center,
                collect(DISTINCT {{
                    node: related,
@@ -274,7 +281,7 @@ class Neo4jClient:
                }}) as connections
         """
         async with await self._get_session() as session:
-            result = await session.run(query, name=concept_name)
+            result = await session.run(query, name=concept_name, user_id=user_id)
             record = await result.single()
             if record:
                 return {
@@ -283,36 +290,36 @@ class Neo4jClient:
                 }
             return {"center": None, "connections": []}
 
-    async def get_related_concepts(self, concept_name: str) -> List[Dict[str, Any]]:
+    async def get_related_concepts(self, concept_name: str, user_id: str = "_default") -> List[Dict[str, Any]]:
         """获取相关概念"""
         query = """
-        MATCH (c:Concept {name: $name})-[:RELATED_TO|PART_OF|PREREQUISITE]-(related)
+        MATCH (c:Concept {name: $name, user_id: $user_id})-[:RELATED_TO|PART_OF|PREREQUISITE]-(related)
         RETURN related.name as name,
                related.description as description,
                related.category as category,
                type(related) as relation_type
         """
         async with await self._get_session() as session:
-            result = await session.run(query, name=concept_name)
+            result = await session.run(query, name=concept_name, user_id=user_id)
             return [dict(record) async for record in result]
 
-    async def get_entries_by_concept(self, concept_name: str) -> List[Dict[str, Any]]:
+    async def get_entries_by_concept(self, concept_name: str, user_id: str = "_default") -> List[Dict[str, Any]]:
         """获取提及某概念的所有条目"""
         query = """
-        MATCH (c:Concept {name: $name})<-[:MENTIONS]-(e:Entry)
+        MATCH (c:Concept {name: $name, user_id: $user_id})<-[:MENTIONS]-(e:Entry)
         RETURN e.id as id, e.title as title, e.type as type,
                e.status as status, e.tags as tags,
                e.created_at as created_at, e.updated_at as updated_at
         ORDER BY e.updated_at DESC
         """
         async with await self._get_session() as session:
-            result = await session.run(query, name=concept_name)
+            result = await session.run(query, name=concept_name, user_id=user_id)
             return [dict(record) async for record in result]
 
-    async def get_entry_with_relations(self, entry_id: str) -> Dict[str, Any]:
+    async def get_entry_with_relations(self, entry_id: str, user_id: str = "_default") -> Dict[str, Any]:
         """获取条目及其所有关系"""
         query = """
-        MATCH (e:Entry {id: $id})
+        MATCH (e:Entry {id: $id, user_id: $user_id})
         OPTIONAL MATCH (e)-[r]-(related)
         RETURN e as entry,
                collect({
@@ -322,7 +329,7 @@ class Neo4jClient:
                }) as relations
         """
         async with await self._get_session() as session:
-            result = await session.run(query, id=entry_id)
+            result = await session.run(query, id=entry_id, user_id=user_id)
             record = await result.single()
             if record:
                 return {
@@ -339,7 +346,9 @@ class Neo4jClient:
             "CREATE INDEX IF NOT EXISTS FOR (e:Entry) ON (e.id)",
             "CREATE INDEX IF NOT EXISTS FOR (e:Entry) ON (e.type)",
             "CREATE INDEX IF NOT EXISTS FOR (e:Entry) ON (e.status)",
+            "CREATE INDEX IF NOT EXISTS FOR (e:Entry) ON (e.user_id)",
             "CREATE INDEX IF NOT EXISTS FOR (c:Concept) ON (c.name)",
+            "CREATE INDEX IF NOT EXISTS FOR (c:Concept) ON (c.user_id)",
         ]
         async with await self._get_session() as session:
             for query in queries:
