@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 3,
+    "pending": 2,
     "in_progress": 0,
-    "completed": 3,
+    "completed": 4,
     "blocked": 0,
     "cancelled": 0
   },
@@ -217,10 +217,7 @@
       "description": "用户可查看自己提交的反馈列表和状态。当前 POST /feedback 是纯代理 log-service，用户端无本地记录。实现：(1) sqlite.py _init_db() 新增 CREATE TABLE IF NOT EXISTS feedback 表 + user_id 索引；(2) 新增 CRUD 方法（create_feedback, list_feedbacks_by_user, get_feedback_by_id）；(3) POST /feedback 改为先写本地 SQLite（status=pending），返回成功，再异步调 log-service：成功 → 更新 status=reported + 记录 log_service_issue_id；失败 → 保持 status=pending；(4) GET /feedback 按 user_id 过滤；(5) GET /feedback/{id} 返回单条详情。",
       "verification": "L2",
       "depends_on": ["S05"],
-      "status": "pending",
-      "priority": "high",
-      "acceptance_criteria": [
-        "feedback 表在 _init_db() 中创建，含 user_id 索引",
+      "status": "completed",
         "POST /feedback 先写本地 SQLite 再异步调 log-service",
         "提交后 GET /feedback 立即可见（status=pending）",
         "log-service 成功后 status 更新为 reported，log_service_issue_id 有值",

@@ -138,6 +138,21 @@ class SQLiteStorage:
                 END
             """)
 
+            # 反馈表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS feedback (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    severity TEXT DEFAULT 'medium',
+                    log_service_issue_id INTEGER,
+                    status TEXT DEFAULT 'pending',
+                    created_at TEXT NOT NULL
+                )
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_feedback_user_id ON feedback(user_id)")
+
             conn.commit()
         finally:
             conn.close()
@@ -527,6 +542,90 @@ class SQLiteStorage:
             return True
         except Exception as e:
             print(f"清空失败: {e}")
+            return False
+        finally:
+            conn.close()
+
+    # === 反馈操作 ===
+
+    def create_feedback(
+        self,
+        user_id: str,
+        title: str,
+        description: str | None = None,
+        severity: str = "medium",
+    ) -> dict[str, Any]:
+        """创建本地反馈记录，返回新记录"""
+        conn = self._get_conn()
+        try:
+            now = datetime.utcnow().isoformat()
+            cursor = conn.execute(
+                """
+                INSERT INTO feedback (user_id, title, description, severity, status, created_at)
+                VALUES (?, ?, ?, ?, 'pending', ?)
+                """,
+                (user_id, title, description, severity, now),
+            )
+            feedback_id = cursor.lastrowid
+            conn.commit()
+
+            # 读回完整记录
+            row = conn.execute(
+                "SELECT * FROM feedback WHERE id = ?", (feedback_id,)
+            ).fetchone()
+            return dict(row)
+        finally:
+            conn.close()
+
+    def list_feedbacks_by_user(self, user_id: str) -> list[dict[str, Any]]:
+        """列出用户的所有反馈，按创建时间倒序"""
+        conn = self._get_conn()
+        try:
+            cursor = conn.execute(
+                "SELECT * FROM feedback WHERE user_id = ? ORDER BY created_at DESC",
+                (user_id,),
+            )
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    def get_feedback_by_id(
+        self, feedback_id: int, user_id: str
+    ) -> Optional[dict[str, Any]]:
+        """获取单条反馈（含用户隔离）"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT * FROM feedback WHERE id = ? AND user_id = ?",
+                (feedback_id, user_id),
+            ).fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def update_feedback_status(
+        self,
+        feedback_id: int,
+        status: str,
+        log_service_issue_id: int | None = None,
+    ) -> bool:
+        """更新反馈状态（后台同步后调用）"""
+        conn = self._get_conn()
+        try:
+            if log_service_issue_id is not None:
+                conn.execute(
+                    "UPDATE feedback SET status = ?, log_service_issue_id = ? WHERE id = ?",
+                    (status, log_service_issue_id, feedback_id),
+                )
+            else:
+                conn.execute(
+                    "UPDATE feedback SET status = ? WHERE id = ?",
+                    (status, feedback_id),
+                )
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"更新反馈状态失败: {e}")
             return False
         finally:
             conn.close()
