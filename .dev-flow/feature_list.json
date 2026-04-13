@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 4,
+    "pending": 3,
     "in_progress": 0,
-    "completed": 2,
+    "completed": 3,
     "blocked": 0,
     "cancelled": 0
   },
@@ -176,6 +176,10 @@
       "phase": "P1A",
       "module": "entry-management",
       "name": "灵感转化 API — category 变更 + 文件迁移",
+      "description": "支持 inbox 条目转为 task 或 note。当前 entry_service.update_entry()（line 130-172）无 category 字段处理分支，MarkdownStorage 无文件移动方法。实现：(1) update_entry 检测 category 变更；(2) MarkdownStorage 新增 move_entry() 将文件从旧目录移到新目录（os.rename 原子操作）；(3) 更新 entry.category、entry.file_path、front matter 的 type 字段；(4) SQLite upsert_entry 更新索引。注意：CATEGORY_DIRS 中 INBOX 映射空字符串（根目录），文件路径变化为 data/users/{uid}/inbox-xxx.md → data/users/{uid}/tasks/inbox-xxx.md，entry_id 前缀不变。注意：MarkdownStorage.list_entries(category=INBOX) 当前只扫描 inbox.md 单文件，不扫描 inbox-xxx.md 模式文件。正常流程通过 SQLite 索引读取不受影响，但 Markdown 回退路径有此限制，可在后续版本修复。注意：本任务仅交付后端 API，前端 Inbox 页「转为任务/笔记」操作入口在 Phase 1B（T04）实现。",
+      "verification": "L2",
+      "depends_on": ["S05"],
+      "status": "completed",
       "description": "支持 inbox 条目转为 task 或 note。当前 entry_service.update_entry()（line 130-172）无 category 字段处理分支，MarkdownStorage 无文件移动方法。实现：(1) update_entry 检测 category 变更；(2) MarkdownStorage 新增 move_entry() 将文件从旧目录移到新目录（os.rename 原子操作）；(3) 更新 entry.category、entry.file_path、front matter 的 type 字段；(4) SQLite upsert_entry 更新索引。注意：CATEGORY_DIRS 中 INBOX 映射空字符串（根目录），文件路径变化为 data/users/{uid}/inbox-xxx.md → data/users/{uid}/tasks/inbox-xxx.md，entry_id 前缀不变。注意：MarkdownStorage.list_entries(category=INBOX) 当前只扫描 inbox.md 单文件，不扫描 inbox-xxx.md 模式文件。正常流程通过 SQLite 索引读取不受影响，但 Markdown 回退路径有此限制，可在后续版本修复。注意：本任务仅交付后端 API，前端 Inbox 页「转为任务/笔记」操作入口在 Phase 1B（T04）实现。",
       "verification": "L2",
       "depends_on": ["S05"],

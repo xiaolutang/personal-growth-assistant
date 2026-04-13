@@ -170,6 +170,33 @@ class EntryService:
                 entry.completed_at = parsed_date
                 updated = True
 
+        # Category 变更：文件迁移
+        old_file_path = None
+        if request.category is not None:
+            from app.models import Category as Cat
+            try:
+                new_category = Cat(request.category)
+            except ValueError:
+                return False, f"无效的 category: {request.category}"
+
+            if new_category != entry.category:
+                old_file_path = entry.file_path
+                entry.category = new_category
+                # 更新 front matter 中的 type 字段
+                if not entry.content.startswith("---"):
+                    # 如果没有 front matter，无需处理
+                    pass
+                else:
+                    import re
+                    entry.content = re.sub(
+                        r"^type:\s*\S+",
+                        f"type: {new_category.value}",
+                        entry.content,
+                        count=1,
+                        flags=re.MULTILINE,
+                    )
+                updated = True
+
         if not updated:
             return True, "无更新"
 
@@ -177,6 +204,16 @@ class EntryService:
 
         # 写入 Markdown
         self._get_markdown_storage(user_id).write_entry(entry)
+
+        # Category 变更后删除旧文件
+        if old_file_path:
+            import os
+            old_path = self._get_markdown_storage(user_id).data_dir / old_file_path
+            if old_path.exists() and str(old_path) != entry.file_path:
+                try:
+                    os.remove(old_path)
+                except OSError:
+                    pass  # 旧文件删除失败不阻塞
 
         # SQLite 同步
         if self.storage.sqlite:
