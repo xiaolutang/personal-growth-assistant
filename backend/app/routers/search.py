@@ -2,10 +2,11 @@
 import logging
 from typing import List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from app.routers.deps import get_storage
+from app.routers.deps import get_storage, get_current_user
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["search"])
@@ -37,7 +38,7 @@ class SearchResponse(BaseModel):
 # === API 端点 ===
 
 @router.post("/search", response_model=SearchResponse)
-async def search_entries(request: SearchRequest):
+async def search_entries(request: SearchRequest, user: User = Depends(get_current_user)):
     """语义搜索条目"""
     storage = get_storage()
 
@@ -47,7 +48,7 @@ async def search_entries(request: SearchRequest):
 
     try:
         # 向量搜索
-        hits = await storage.qdrant.search(request.query, request.limit)
+        hits = await storage.qdrant.search(request.query, request.limit, user_id=user.id)
 
         results = []
         for hit in hits:

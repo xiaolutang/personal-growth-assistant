@@ -1,9 +1,10 @@
 """知识图谱 API 路由"""
 from typing import List
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.routers.deps import get_knowledge_service
+from app.routers.deps import get_knowledge_service, get_current_user
+from app.models.user import User
 from app.services.knowledge_service import (
     ConceptNode,
     ConceptRelation,
@@ -19,12 +20,13 @@ router = APIRouter(tags=["knowledge"])
 async def get_knowledge_graph(
     concept: str,
     depth: int = Query(2, ge=1, le=3, description="关系深度"),
+    user: User = Depends(get_current_user),
 ):
     """获取概念的知识图谱"""
     knowledge_service = get_knowledge_service()
 
     try:
-        return await knowledge_service.get_knowledge_graph(concept, depth)
+        return await knowledge_service.get_knowledge_graph(concept, depth, user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
@@ -32,12 +34,12 @@ async def get_knowledge_graph(
 
 
 @router.get("/related-concepts/{concept}", response_model=RelatedConceptsResponse)
-async def get_related_concepts(concept: str):
+async def get_related_concepts(concept: str, user: User = Depends(get_current_user)):
     """获取相关概念"""
     knowledge_service = get_knowledge_service()
 
     try:
-        return await knowledge_service.get_related_concepts(concept)
+        return await knowledge_service.get_related_concepts(concept, user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
@@ -45,7 +47,7 @@ async def get_related_concepts(concept: str):
 
 
 @router.get("/learning-path/{concept}", response_model=LearningPathResponse)
-async def get_learning_path(concept: str):
+async def get_learning_path(concept: str, user: User = Depends(get_current_user)):
     """获取概念的学习路径
 
     返回：
@@ -58,6 +60,6 @@ async def get_learning_path(concept: str):
     knowledge_service = get_knowledge_service()
 
     try:
-        return await knowledge_service.get_learning_path(concept)
+        return await knowledge_service.get_learning_path(concept, user_id=user.id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")

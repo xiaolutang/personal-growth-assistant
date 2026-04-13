@@ -1,8 +1,9 @@
 """解析 API 路由"""
 import logging
+import re
 from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -10,10 +11,22 @@ from app.core.config import get_settings
 from app.graphs.task_parser_graph import TaskParserGraph
 from app.services.chat_service import ChatService
 from app.services.session_meta_store import SessionMetaStore, SessionMeta
+from app.routers.deps import get_current_user
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["parse"])
+
+# session_id 合法字符约束：仅允许字母数字和连字符（UUID 格式），防止冒号分隔符冲突
+_SESSION_ID_RE = re.compile(r"^[a-zA-Z0-9-]+$")
+
+
+def _namespaced_thread_id(user_id: str, session_id: str) -> str:
+    """将 session_id 命名空间化为 '{user_id}:{session_id}'，实现 LangGraph checkpoint 天然隔离"""
+    if not _SESSION_ID_RE.match(session_id):
+        raise HTTPException(status_code=400, detail="session_id 仅允许字母数字和连字符")
+    return f"{user_id}:{session_id}"
 
 
 # 全局 Graph 实例（由 main.py 注入）
@@ -94,25 +107,27 @@ SSE_HEADERS = {
 # === 路由 ===
 
 @router.post("/parse")
-async def parse(request: ParseRequest):
+async def parse(request: ParseRequest, user: User = Depends(get_current_user)):
     """
     解析自然语言文本，流式返回结果（SSE）
 
     使用 LangGraph Checkpointer 管理对话历史，
-    通过 thread_id（session_id）实现多轮对话。
+    通过 thread_id（{user_id}:{session_id}）实现多轮对话隔离。
     """
     if not _graph:
         raise HTTPException(status_code=503, detail="服务未初始化")
 
+    thread_id = _namespaced_thread_id(user.id, request.session_id)
+
     return StreamingResponse(
-        _graph.stream_parse(request.text, request.session_id),
+        _graph.stream_parse(request.text, thread_id),
         media_type="text/event-stream",
         headers=SSE_HEADERS,
     )
 
 
 @router.delete("/session/{session_id}", response_model=SessionResponse)
-async def clear_session(session_id: str):
+async def clear_session(session_id: str, user: User = Depends(get_current_user)):
     """
     清空指定会话的对话历史
 
@@ -121,12 +136,13 @@ async def clear_session(session_id: str):
     """
     if not _graph:
         raise HTTPException(status_code=503, detail="服务未初始化")
-    await _graph.clear_thread(session_id)
+    thread_id = _namespaced_thread_id(user.id, session_id)
+    await _graph.clear_thread(thread_id)
     return {"status": "ok", "message": f"会话 {session_id} 已清空"}
 
 
 @router.post("/chat")
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, user: User = Depends(get_current_user)):
     """
     统一聊天接口（一站式处理意图识别和操作执行）
 
@@ -148,6 +164,8 @@ async def chat(request: ChatRequest):
     """
     if not _chat_service:
         raise HTTPException(status_code=503, detail="服务未初始化")
+
+    thread_id = _namespaced_thread_id(user.id, request.session_id)
 
     async def generate():
         # Step 1: 意图识别
@@ -176,7 +194,7 @@ async def chat(request: ChatRequest):
             query=query,
             entities=entities,
             text=request.text,
-            session_id=request.session_id,
+            session_id=thread_id,
             confirm=confirm_dict,
         ):
             yield event
@@ -191,16 +209,16 @@ async def chat(request: ChatRequest):
 # === 会话管理 API ===
 
 @router.get("/sessions", response_model=list[SessionInfo])
-async def list_sessions():
+async def list_sessions(user: User = Depends(get_current_user)):
     """
-    获取所有会话列表
+    获取当前用户的所有会话列表
 
     返回会话 ID、标题、创建时间、更新时间
     """
     if not _session_meta_store:
         raise HTTPException(status_code=503, detail="服务未初始化")
 
-    sessions = _session_meta_store.get_all_sessions()
+    sessions = _session_meta_store.get_all_sessions(user_id=user.id)
     return [
         SessionInfo(
             id=s.id,
@@ -213,7 +231,7 @@ async def list_sessions():
 
 
 @router.get("/sessions/{session_id}/messages", response_model=list[MessageInfo])
-async def get_session_messages(session_id: str):
+async def get_session_messages(session_id: str, user: User = Depends(get_current_user)):
     """
     获取指定会话的消息历史
 
@@ -224,10 +242,11 @@ async def get_session_messages(session_id: str):
     if not _graph:
         raise HTTPException(status_code=503, detail="服务未初始化")
 
+    thread_id = _namespaced_thread_id(user.id, session_id)
     messages = []
     try:
         # 从 checkpointer 获取会话状态
-        config = {"configurable": {"thread_id": session_id}}
+        config = {"configurable": {"thread_id": thread_id}}
         state = await _graph.checkpointer.aget_tuple(config)
 
         if state and state.checkpoint:
@@ -256,13 +275,13 @@ async def get_session_messages(session_id: str):
                 ))
     except Exception as e:
         # 会话不存在或读取失败时返回空列表
-        logger.debug(f"Failed to get session messages for {session_id}: {e}")
+        logger.debug(f"Failed to get session messages for {thread_id}: {e}")
 
     return messages
 
 
 @router.patch("/sessions/{session_id}", response_model=SessionInfo)
-async def update_session(session_id: str, data: SessionUpdate):
+async def update_session(session_id: str, data: SessionUpdate, user: User = Depends(get_current_user)):
     """
     更新会话元数据（如标题）
     """
@@ -270,12 +289,12 @@ async def update_session(session_id: str, data: SessionUpdate):
         raise HTTPException(status_code=503, detail="服务未初始化")
 
     # 检查会话是否存在，不存在则创建
-    if not _session_meta_store.session_exists(session_id):
-        _session_meta_store.create_session(session_id, data.title)
+    if not _session_meta_store.session_exists(session_id, user_id=user.id):
+        _session_meta_store.create_session(session_id, data.title, user_id=user.id)
     else:
-        _session_meta_store.update_title(session_id, data.title)
+        _session_meta_store.update_title(session_id, data.title, user_id=user.id)
 
-    updated = _session_meta_store.get_session(session_id)
+    updated = _session_meta_store.get_session(session_id, user_id=user.id)
     if not updated:
         raise HTTPException(status_code=500, detail="更新失败")
 
@@ -288,17 +307,19 @@ async def update_session(session_id: str, data: SessionUpdate):
 
 
 @router.delete("/sessions/{session_id}", response_model=SessionResponse)
-async def delete_session(session_id: str):
+async def delete_session(session_id: str, user: User = Depends(get_current_user)):
     """
     删除会话（包括元数据和对话历史）
     """
     if not _graph or not _session_meta_store:
         raise HTTPException(status_code=503, detail="服务未初始化")
 
+    thread_id = _namespaced_thread_id(user.id, session_id)
+
     # 删除对话历史
-    await _graph.clear_thread(session_id)
+    await _graph.clear_thread(thread_id)
 
     # 删除元数据
-    _session_meta_store.delete_session(session_id)
+    _session_meta_store.delete_session(session_id, user_id=user.id)
 
     return {"status": "ok", "message": f"会话 {session_id} 已删除"}

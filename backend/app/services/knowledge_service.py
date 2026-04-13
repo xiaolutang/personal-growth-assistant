@@ -187,13 +187,14 @@ class KnowledgeService:
 
     # ==================== 知识图谱查询 ====================
 
-    async def get_knowledge_graph(self, concept: str, depth: int = 2) -> KnowledgeGraphResponse:
+    async def get_knowledge_graph(self, concept: str, depth: int = 2, user_id: str = "_default") -> KnowledgeGraphResponse:
         """
         获取概念的知识图谱
 
         Args:
             concept: 概念名称
             depth: 关系深度 (1-3)
+            user_id: 用户 ID
 
         Returns:
             KnowledgeGraphResponse: 知识图谱数据
@@ -201,7 +202,7 @@ class KnowledgeService:
         if not self.is_neo4j_available():
             raise ValueError("知识图谱服务未配置")
 
-        graph = await self._neo4j.get_knowledge_graph(concept, depth)
+        graph = await self._neo4j.get_knowledge_graph(concept, depth, user_id=user_id)
 
         center = None
         if graph.get("center"):
@@ -227,12 +228,13 @@ class KnowledgeService:
             connections=connections,
         )
 
-    async def get_related_concepts(self, concept: str) -> RelatedConceptsResponse:
+    async def get_related_concepts(self, concept: str, user_id: str = "_default") -> RelatedConceptsResponse:
         """
         获取相关概念
 
         Args:
             concept: 概念名称
+            user_id: 用户 ID
 
         Returns:
             RelatedConceptsResponse: 相关概念数据
@@ -240,7 +242,7 @@ class KnowledgeService:
         if not self.is_neo4j_available():
             raise ValueError("知识图谱服务未配置")
 
-        related = await self._neo4j.get_related_concepts(concept)
+        related = await self._neo4j.get_related_concepts(concept, user_id=user_id)
 
         concepts = []
         for c in related:
@@ -255,12 +257,13 @@ class KnowledgeService:
             related=concepts,
         )
 
-    async def get_learning_path(self, concept: str) -> LearningPathResponse:
+    async def get_learning_path(self, concept: str, user_id: str = "_default") -> LearningPathResponse:
         """
         获取概念的学习路径
 
         Args:
             concept: 概念名称
+            user_id: 用户 ID
 
         Returns:
             LearningPathResponse: 学习路径数据，包括:
@@ -275,7 +278,7 @@ class KnowledgeService:
         # 1. 从 Neo4j 获取前置知识和后续概念（如果可用）
         if self.is_neo4j_available():
             try:
-                graph = await self._neo4j.get_knowledge_graph(concept, depth=2)
+                graph = await self._neo4j.get_knowledge_graph(concept, depth=2, user_id=user_id)
 
                 # 分析关系类型
                 for conn in graph.get("connections", []):
@@ -302,18 +305,19 @@ class KnowledgeService:
 
         # 2. 从 SQLite 搜索相关内容
         if self._sqlite:
-            response = self._analyze_sqlite_data(concept, response)
+            response = self._analyze_sqlite_data(concept, response, user_id=user_id)
 
         return response
 
     def _analyze_sqlite_data(
         self,
         concept: str,
-        response: LearningPathResponse
+        response: LearningPathResponse,
+        user_id: str = "_default",
     ) -> LearningPathResponse:
         """分析 SQLite 数据来补充学习路径"""
         # 搜索包含该概念的条目
-        results = self._sqlite.search(concept, limit=20)
+        results = self._sqlite.search(concept, limit=20, user_id=user_id)
 
         # 统计掌握程度
         note_count = 0
@@ -353,17 +357,18 @@ class KnowledgeService:
 
         # 3. 如果 Neo4j 没有返回后续建议，从标签关联推荐
         if not response.next_steps:
-            response = self._recommend_from_tags(concept, response)
+            response = self._recommend_from_tags(concept, response, user_id=user_id)
 
         return response
 
     def _recommend_from_tags(
         self,
         concept: str,
-        response: LearningPathResponse
+        response: LearningPathResponse,
+        user_id: str = "_default",
     ) -> LearningPathResponse:
         """从标签关联推荐下一步学习内容"""
-        all_entries = self._sqlite.list_entries(limit=100)
+        all_entries = self._sqlite.list_entries(limit=100, user_id=user_id)
         seen_concepts = set()
 
         for entry in all_entries:

@@ -45,17 +45,43 @@ async def storage(temp_data_dir: str):
 
 @pytest.fixture
 async def client(storage) -> AsyncGenerator[AsyncClient, None]:
-    """创建测试客户端"""
+    """创建测试客户端（自动注入认证 token）"""
     from app.main import app
     from app.routers import deps
+    from app.services.auth_service import create_access_token
 
     # 注入存储服务并重置服务缓存
     deps.storage = storage
     deps.reset_all_services()
 
+    # 创建测试用户存储和 token
+    from app.infrastructure.storage.user_storage import UserStorage
+    import tempfile
+    user_db = tempfile.mktemp(suffix=".db")
+    deps._user_storage = UserStorage(user_db)
+
+    # 创建测试用户
+    from app.models.user import UserCreate
+    test_user = deps._user_storage.create_user(UserCreate(
+        username="testuser",
+        email="test@example.com",
+        password="testpass123",
+    ))
+
+    # 生成 token
+    token = create_access_token(test_user.id)
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test", timeout=60.0) as c:
+        c.headers["Authorization"] = f"Bearer {token}"
         yield c
+
+    # 清理临时 user db
+    import os
+    try:
+        os.unlink(user_db)
+    except OSError:
+        pass
 
 
 @pytest.fixture

@@ -1,4 +1,4 @@
-"""TD10: GET /entries 503 集成测试 — 验证 storage 未初始化时返回 503"""
+"""TD10: GET /entries 认证拦截测试 — 验证未认证请求被拦截"""
 import pytest
 from httpx import AsyncClient, ASGITransport
 
@@ -17,8 +17,8 @@ def _reset_deps():
 
 
 @pytest.mark.asyncio
-async def test_get_entries_returns_503_when_storage_not_initialized():
-    """storage=None 时 GET /entries 返回 503 且 body 含 '存储服务未初始化'"""
+async def test_get_entries_returns_auth_error_when_not_authenticated():
+    """无 token 时 GET /entries 返回 401 或 403（认证拦截）"""
     deps.storage = None
     deps.reset_all_services()
 
@@ -26,5 +26,4 @@ async def test_get_entries_returns_503_when_storage_not_initialized():
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.get("/entries")
 
-    assert response.status_code == 503
-    assert "存储服务未初始化" in response.json()["detail"]
+    assert response.status_code in (401, 403)

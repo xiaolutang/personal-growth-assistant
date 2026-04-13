@@ -102,12 +102,11 @@ def get_current_user(
 
 def reset_all_services():
     """重置所有服务缓存（用于测试）"""
-    global _entry_service, _intent_service, _review_service, _knowledge_service, _user_storage
+    global _entry_service, _intent_service, _review_service, _knowledge_service
     _entry_service = None
     _intent_service = None
     _review_service = None
     _knowledge_service = None
-    _user_storage = None
 
 
 # 向后兼容

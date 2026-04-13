@@ -4,7 +4,7 @@
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
   "updated_at": "2026-04-13",
-  "status": "in_progress",
+  "status": "completed",
   "scope_notes": "R002 不含 MCP Server 认证改造，MCP 9 个 Tools 的用户隔离方案作为 R003 候选",
   "workflow": {
     "name": "R002-user-auth",
@@ -16,9 +16,9 @@
   },
   "summary": {
     "total_tasks": 17,
-    "pending": 8,
+    "pending": 0,
     "in_progress": 0,
-    "completed": 9,
+    "completed": 17,
     "cancelled": 0
   },
   "archived_cycles": [
@@ -149,7 +149,10 @@
       "description": "覆盖认证核心路径的单元测试：注册、登录、token 验证、密码哈希。",
       "verification": "L1",
       "depends_on": ["B02"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-13",
+      "completed_at": "2026-04-13",
+      "evidence_file": ".dev-flow/evidence/B03.md",
       "priority": "medium",
       "acceptance_criteria": [
         "测试覆盖：注册成功/失败、登录成功/失败、token 创建/验证/过期、密码哈希",
@@ -297,7 +300,10 @@
       "description": "改造 SessionMetaStore 按 user_id 隔离会话元数据。LangGraph checkpoint 隔离方案：在路由层将 thread_id 命名空间化为 '{user_id}:{session_id}'，不修改 LangGraph 库内部存储结构。",
       "verification": "L2",
       "depends_on": ["B01"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-13",
+      "completed_at": "2026-04-13",
+      "evidence_file": ".dev-flow/evidence/B09.md",
       "priority": "medium",
       "acceptance_criteria": [
         "SessionMetaStore 的 sessions 表添加 user_id 列",
@@ -309,11 +315,6 @@
         "session_id 合法字符约束：仅允许字母数字和连字符（UUID 格式），防止冒号分隔符冲突"
       ],
       "risk_tags": ["auth"],
-      "test_tasks": [
-        "创建会话关联 user_id",
-        "list_sessions 只返回当前用户会话",
-        "已有数据迁移成功"
-      ],
       "test_tasks": [
         "创建会话关联 user_id",
         "list_sessions 只返回当前用户会话",
@@ -357,7 +358,10 @@
       "description": "为 entries、search、knowledge、intent、parse、review、feedback、playground 路由添加 Depends(get_current_user)。更新所有 endpoint 使用用户上下文。",
       "verification": "L2",
       "depends_on": ["B10", "B08", "B09"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-13",
+      "completed_at": "2026-04-13",
+      "evidence_file": ".dev-flow/evidence/B11.md",
       "priority": "high",
       "acceptance_criteria": [
         "所有 8 个路由文件的每个 endpoint 添加 user: User = Depends(get_current_user)",
@@ -392,7 +396,10 @@
       "description": "创建 Zustand userStore，管理用户状态（user, token, isAuthenticated）和 Token 持久化（localStorage）。",
       "verification": "F1",
       "depends_on": ["S01"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-13",
+      "completed_at": "2026-04-13",
+      "evidence_file": ".dev-flow/evidence/F01.md",
       "priority": "high",
       "acceptance_criteria": [
         "userStore 包含 user, token, isAuthenticated 状态",
@@ -418,7 +425,10 @@
       "description": "创建 Login.tsx 和 Register.tsx 页面，包含表单验证、错误提示、加载状态。符合设计规范（主色 #6366F1，圆角 8px）。",
       "verification": "F2",
       "depends_on": ["F01", "B02"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-13",
+      "completed_at": "2026-04-13",
+      "evidence_file": ".dev-flow/evidence/F02.md",
       "priority": "high",
       "acceptance_criteria": [
         "Login 页面：username + password 输入框，登录按钮，注册链接",
@@ -447,7 +457,10 @@
       "description": "创建 ProtectedRoute 组件包裹需认证路由。更新 api.ts 的 fetch 拦截器自动注入 Authorization header。处理 401 自动登出。",
       "verification": "F1",
       "depends_on": ["F01", "B10"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-13",
+      "completed_at": "2026-04-13",
+      "evidence_file": ".dev-flow/evidence/F03.md",
       "priority": "high",
       "acceptance_criteria": [
         "ProtectedRoute 组件：未登录跳转 /login，已登录渲染子路由",
@@ -473,7 +486,10 @@
       "description": "在 Sidebar 底部展示当前用户信息（username），添加登出按钮。替换 X-UID 匿名机制为真实用户身份。",
       "verification": "F1",
       "depends_on": ["F01"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-13",
+      "completed_at": "2026-04-13",
+      "evidence_file": ".dev-flow/evidence/F04.md",
       "priority": "medium",
       "acceptance_criteria": [
         "Sidebar 底部显示当前用户 username",
@@ -497,7 +513,10 @@
       "description": "端到端验证完整认证+数据隔离链路：注册→登录→创建数据→数据隔离→登出→重新登录。",
       "verification": "L4",
       "depends_on": ["B11", "F03", "F04"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-13",
+      "completed_at": "2026-04-13",
+      "evidence_file": ".dev-flow/evidence/S02.md",
       "priority": "high",
       "acceptance_criteria": [
         "完整用户旅程：注册 → 登录 → 创建任务/笔记/灵感 → 数据只属于当前用户",
