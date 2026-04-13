@@ -62,6 +62,12 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_DAYS: int = 7
 
+    def validate_jwt(self) -> bool:
+        """验证 JWT 配置是否完整"""
+        if not self.JWT_SECRET:
+            raise ValueError("JWT_SECRET 未设置，请在 .env 或环境变量中配置")
+        return True
+
     # CORS 配置
     ALLOWED_ORIGINS_ENV: str = ""  # 逗号分隔的域名列表，如 "http://localhost:3000,http://localhost"
 

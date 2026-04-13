@@ -3,6 +3,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
+from app.core.config import get_settings
 from app.models.user import UserCreate, UserLogin, UserResponse, Token
 from app.infrastructure.storage.user_storage import UserStorage, verify_password
 from app.services.auth_service import create_access_token, get_current_user_from_token
@@ -45,25 +46,29 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="用户名或密码错误",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     if not verify_password(credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="用户名或密码错误",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="用户已停用",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
+    settings = get_settings()
     access_token = create_access_token(user.id)
     return Token(
         access_token=access_token,
         token_type="bearer",
-        expires_in=604800,
+        expires_in=settings.ACCESS_TOKEN_EXPIRE_DAYS * 86400,
         user=UserResponse(
             id=user.id,
             username=user.username,

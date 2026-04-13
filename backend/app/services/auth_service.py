@@ -36,11 +36,13 @@ def get_current_user_from_token(token: str, user_storage) -> User:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token 已过期",
+            headers={"WWW-Authenticate": "Bearer"},
         )
     except jwt.InvalidTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="无效的 Token",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     user = user_storage.get_by_id(token_data.sub)
@@ -48,10 +50,12 @@ def get_current_user_from_token(token: str, user_storage) -> User:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="用户不存在",
+            headers={"WWW-Authenticate": "Bearer"},
         )
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="用户已停用",
+            headers={"WWW-Authenticate": "Bearer"},
         )
     return user

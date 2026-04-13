@@ -42,6 +42,12 @@ async def lifespan(app: FastAPI):
 
     settings = get_settings()
 
+    # 校验 JWT 配置（非阻塞警告）
+    try:
+        settings.validate_jwt()
+    except ValueError as e:
+        logger.warning("JWT 配置校验失败: %s（认证功能不可用）", e)
+
     # 初始化远程日志（log-service SDK，非阻塞，即使服务不可达也不影响启动）
     try:
         _log_handler = setup_remote_logging(
@@ -80,12 +86,12 @@ async def lifespan(app: FastAPI):
         # 注入到共享依赖模块
         deps.storage = storage
 
-        # 初始化 UserStorage
-        from app.infrastructure.storage.user_storage import UserStorage
-        deps._user_storage = UserStorage(f"{settings.DATA_DIR}/users.db")
-
         # 注入 LLM Caller 到意图识别服务（通过 deps）
         deps.reset_all_services()
+
+        # 初始化 UserStorage（必须在 reset_all_services 之后，否则会被清空）
+        from app.infrastructure.storage.user_storage import UserStorage
+        deps._user_storage = UserStorage(f"{settings.DATA_DIR}/users.db")
         intent_service = deps.get_intent_service()
         if graph.caller:
             intent_service.set_llm_caller(graph.caller)
