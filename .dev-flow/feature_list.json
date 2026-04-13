@@ -4,7 +4,7 @@
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
   "updated_at": "2026-04-13",
-  "status": "confirmed",
+  "status": "in_progress",
   "scope_notes": "R002 不含 MCP Server 认证改造，MCP 9 个 Tools 的用户隔离方案作为 R003 候选",
   "workflow": {
     "name": "R002-user-auth",
@@ -16,9 +16,9 @@
   },
   "summary": {
     "total_tasks": 17,
-    "pending": 14,
+    "pending": 13,
     "in_progress": 0,
-    "completed": 3,
+    "completed": 4,
     "cancelled": 0
   },
   "archived_cycles": [
@@ -172,7 +172,7 @@
       "description": "在 SQLite entries 表中添加 user_id 列和索引，实现数据迁移（已有数据分配给默认用户），修改所有查询方法加 user_id 过滤。",
       "verification": "L1",
       "depends_on": ["B01"],
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "acceptance_criteria": [
         "entries 表新增 user_id 列（TEXT, NOT NULL）和索引",
