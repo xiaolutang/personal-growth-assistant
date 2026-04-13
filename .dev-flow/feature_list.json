@@ -16,9 +16,9 @@
   },
   "summary": {
     "total_tasks": 17,
-    "pending": 10,
+    "pending": 9,
     "in_progress": 0,
-    "completed": 7,
+    "completed": 8,
     "cancelled": 0
   },
   "archived_cycles": [
@@ -273,7 +273,7 @@
       "description": "重构 SyncService 和 EntryService，所有方法增加 user_id 参数，调用存储层时传递用户上下文。",
       "verification": "L2",
       "depends_on": ["B04", "B05", "B06", "B07"],
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "acceptance_criteria": [
         "SyncService.sync_entry() 接受 user_id 参数，传递到 SQLite/Neo4j/Qdrant",

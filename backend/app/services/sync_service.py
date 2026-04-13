@@ -50,7 +50,7 @@ class SyncService:
             llm_caller=llm_caller,
         )
 
-    async def sync_entry(self, entry: Task) -> bool:
+    async def sync_entry(self, entry: Task, user_id: str = "_default") -> bool:
         """
         同步单个条目到 SQLite + Neo4j + Qdrant
 
@@ -62,7 +62,7 @@ class SyncService:
         try:
             # 1. 同步到 SQLite（如果可用）- 同步执行，因为 SQLite 操作很快
             if self.sqlite:
-                self.sqlite.upsert_entry(entry)
+                self.sqlite.upsert_entry(entry, user_id=user_id)
 
             # 2. 提取知识（委托给 KnowledgeService）
             knowledge = await self._knowledge_service.extract_knowledge(entry)
@@ -71,11 +71,11 @@ class SyncService:
             tasks = []
 
             if self.neo4j and self.neo4j._driver:
-                tasks.append(self._sync_to_neo4j(entry, knowledge))
+                tasks.append(self._sync_to_neo4j(entry, knowledge, user_id))
 
             if self.qdrant:
                 try:
-                    tasks.append(self.qdrant.upsert_entry(entry))
+                    tasks.append(self.qdrant.upsert_entry(entry, user_id=user_id))
                 except Exception as e:
                     logger.warning(f"Qdrant 任务创建失败，忽略: {e}")
 
@@ -93,7 +93,7 @@ class SyncService:
             logger.error(f"同步失败: {e}")
             return False
 
-    async def sync_to_graph_and_vector(self, entry: Task) -> bool:
+    async def sync_to_graph_and_vector(self, entry: Task, user_id: str = "_default") -> bool:
         """
         仅同步到 Neo4j + Qdrant（后台执行，不阻塞响应）
 
@@ -107,11 +107,11 @@ class SyncService:
             tasks = []
 
             if self.neo4j and self.neo4j._driver:
-                tasks.append(self._sync_to_neo4j(entry, knowledge))
+                tasks.append(self._sync_to_neo4j(entry, knowledge, user_id))
 
             if self.qdrant:
                 try:
-                    tasks.append(self.qdrant.upsert_entry(entry))
+                    tasks.append(self.qdrant.upsert_entry(entry, user_id=user_id))
                 except Exception as e:
                     logger.warning(f"Qdrant 同步失败，忽略: {e}")
 
@@ -123,21 +123,21 @@ class SyncService:
             logger.error(f"图谱/向量同步失败: {e}")
             return False
 
-    async def _sync_to_neo4j(self, entry: Task, knowledge):
+    async def _sync_to_neo4j(self, entry: Task, knowledge, user_id: str = "_default"):
         """同步到 Neo4j（内部方法）"""
-        await self.neo4j.create_entry(entry)
+        await self.neo4j.create_entry(entry, user_id=user_id)
 
         # 并行创建概念节点
         if knowledge.concepts:
             concept_tasks = [
-                self.neo4j.create_concept(concept)
+                self.neo4j.create_concept(concept, user_id=user_id)
                 for concept in knowledge.concepts
             ]
             await asyncio.gather(*concept_tasks, return_exceptions=True)
 
             # 创建条目与概念的关系
             concept_names = [c.name for c in knowledge.concepts]
-            await self.neo4j.create_entry_mentions(entry.id, concept_names)
+            await self.neo4j.create_entry_mentions(entry.id, concept_names, user_id=user_id)
 
         # 并行创建概念关系
         if knowledge.relations:
@@ -147,19 +147,19 @@ class SyncService:
             ]
             await asyncio.gather(*relation_tasks, return_exceptions=True)
 
-    async def delete_entry(self, entry_id: str) -> bool:
+    async def delete_entry(self, entry_id: str, user_id: str = "_default") -> bool:
         """删除条目及其关联数据（并行删除）"""
         try:
             tasks = []
 
             # 1. 删除 SQLite 索引（同步，因为很快)
             if self.sqlite:
-                self.sqlite.delete_entry(entry_id)
+                self.sqlite.delete_entry(entry_id, user_id=user_id)
 
             # 2. 并行删除 Neo4j 和 Qdrant
             if self.neo4j:
                 try:
-                    tasks.append(self.neo4j.delete_entry(entry_id))
+                    tasks.append(self.neo4j.delete_entry(entry_id, user_id=user_id))
                 except Exception as e:
                     logger.warning(f"Neo4j 删除失败，忽略: {e}")
 
