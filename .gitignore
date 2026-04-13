@@ -27,6 +27,7 @@ Thumbs.db
 
 # Local config
 *.local
+deploy/.remote.env
 
 # Runtime data
 data/index.db
