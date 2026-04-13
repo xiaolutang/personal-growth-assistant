@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Header } from "@/components/layout/Header";
 import { Calendar, CheckCircle, FileText, TrendingUp, BarChart3 } from "lucide-react";
 import { API_BASE } from "@/config/api";
+import { authFetch } from "@/lib/authFetch";
 
 // 响应类型
 interface TaskStats {
@@ -70,15 +71,15 @@ export function Review() {
       setIsLoading(true);
       try {
         if (reportType === "daily") {
-          const res = await fetch(`${API_BASE}/review/daily`);
+          const res = await authFetch(`${API_BASE}/review/daily`);
           const data = await res.json();
           setDailyReport(data);
         } else if (reportType === "weekly") {
-          const res = await fetch(`${API_BASE}/review/weekly`);
+          const res = await authFetch(`${API_BASE}/review/weekly`);
           const data = await res.json();
           setWeeklyReport(data);
         } else {
-          const res = await fetch(`${API_BASE}/review/monthly`);
+          const res = await authFetch(`${API_BASE}/review/monthly`);
           const data = await res.json();
           setMonthlyReport(data);
         }

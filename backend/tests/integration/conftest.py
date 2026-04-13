@@ -1,6 +1,7 @@
 """集成测试 Fixtures - 通过 Docker 部署环境测试"""
 import os
 import pytest
+import httpx
 
 # 标记所有集成测试
 def pytest_configure(config):
@@ -23,6 +24,30 @@ NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "changeme123")
 def api_base_url():
     """通过 Traefik 网关的 API 基础 URL"""
     return API_BASE_URL
+
+
+@pytest.fixture(scope="module")
+def auth_token(api_base_url):
+    """获取集成测试用的 auth token"""
+    import uuid
+    username = f"e2e_test_{uuid.uuid4().hex[:6]}"
+    # 注册
+    resp = httpx.post(
+        f"{api_base_url}/auth/register",
+        json={"username": username, "email": f"{username}@test.com", "password": "testpass123"},
+        timeout=10,
+    )
+    if resp.status_code not in (200, 201, 409):
+        pytest.skip("认证服务不可用，跳过集成测试")
+    # 登录
+    resp = httpx.post(
+        f"{api_base_url}/auth/login",
+        json={"username": username, "password": "testpass123"},
+        timeout=10,
+    )
+    if resp.status_code == 200:
+        return resp.json().get("access_token")
+    pytest.skip("登录失败，跳过集成测试")
 
 
 @pytest.fixture(scope="module")

@@ -234,22 +234,6 @@ class TestNeo4jClient:
 
     async def test_get_entries_by_concept(self, mock_neo4j_session):
         """测试获取提及某概念的所有条目"""
-        # 创建异步生成器 mock
-        class AsyncIterator:
-            def __init__(self, items):
-                self.items = items
-                self.index = 0
-
-            def __aiter__(self):
-                return self
-
-            async def __anext__(self):
-                if self.index >= len(self.items):
-                    raise StopAsyncIteration
-                item = self.items[self.index]
-                self.index += 1
-                return item
-
         records = [
             {"id": "entry-1", "title": "条目1"},
             {"id": "entry-2", "title": "条目2"},
@@ -277,27 +261,11 @@ class TestNeo4jClient:
 
         await client.create_indexes()
 
-        # 应该调用 4 次创建索引
-        assert mock_neo4j_session.run.call_count == 4
+        # 应该调用 6 次创建索引（Entry 4 + Concept 2）
+        assert mock_neo4j_session.run.call_count == 6
 
     async def test_list_entries_with_filter(self, mock_neo4j_session):
         """测试带过滤条件的列表查询"""
-        # 创建异步生成器 mock
-        class AsyncIterator:
-            def __init__(self, items):
-                self.items = items
-                self.index = 0
-
-            def __aiter__(self):
-                return self
-
-            async def __anext__(self):
-                if self.index >= len(self.items):
-                    raise StopAsyncIteration
-                item = self.items[self.index]
-                self.index += 1
-                return item
-
         records = [
             {"id": "entry-1", "title": "条目1", "type": "task", "status": "doing"},
         ]
@@ -390,3 +358,146 @@ class TestNeo4jClientUnavailable:
         # 当 driver 为 None 时，_get_session 会调用 connect()
         # connect 会尝试连接，如果失败会设置 _driver = None
         # 这会导致后续操作失败，但这是预期的行为
+
+
+class TestNeo4jUserIdIsolation:
+    """Neo4j 用户数据隔离测试"""
+
+    @pytest.fixture
+    def mock_session(self):
+        session = AsyncMock()
+        session.__aenter__ = AsyncMock(return_value=session)
+        session.__aexit__ = AsyncMock(return_value=None)
+        return session
+
+    @pytest.fixture
+    def client(self, mock_session):
+        c = Neo4jClient(uri="bolt://test:7687")
+        c._driver = MagicMock()
+        c._driver.session = MagicMock(return_value=mock_session)
+        return c
+
+    @pytest.fixture
+    def sample_entry(self):
+        return Task(
+            id="iso-entry-1",
+            title="隔离测试条目",
+            content="内容",
+            category=Category.TASK,
+            status=TaskStatus.DOING,
+            priority=Priority.MEDIUM,
+            tags=["iso"],
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+            file_path="tasks/iso-entry-1.md",
+        )
+
+    @pytest.fixture
+    def sample_concept(self):
+        return Concept(
+            name="隔离概念",
+            description="隔离测试概念",
+            category="技术",
+        )
+
+    async def test_create_entry_passes_user_id(self, client, mock_session, sample_entry):
+        """create_entry 应将 user_id 传入 Cypher"""
+        mock_result = MagicMock()
+        mock_result.single = AsyncMock(return_value={"e": {}})
+        mock_session.run = AsyncMock(return_value=mock_result)
+
+        await client.create_entry(sample_entry, user_id="user_alpha")
+
+        call_args = mock_session.run.call_args
+        cypher = call_args[0][0]
+        params = call_args[1] if len(call_args) > 1 else call_args[0][1] if len(call_args[0]) > 1 else {}
+        assert "user_id" in cypher or "user_id" in str(params)
+        if isinstance(params, dict):
+            assert params.get("user_id") == "user_alpha"
+
+    async def test_get_entry_isolates_by_user(self, client, mock_session):
+        """get_entry 使用 user_id 过滤，不同用户查不到"""
+        mock_result = MagicMock()
+        # 模拟用户 A 查询无结果
+        mock_result.single = AsyncMock(return_value=None)
+        mock_session.run = AsyncMock(return_value=mock_result)
+
+        result = await client.get_entry("entry-1", user_id="user_b")
+        assert result is None
+
+        # 验证 Cypher 包含 user_id
+        cypher = mock_session.run.call_args[0][0]
+        assert "user_id" in cypher
+
+    async def test_delete_entry_isolates_by_user(self, client, mock_session):
+        """delete_entry 使用 user_id 过滤"""
+        mock_result = MagicMock()
+        mock_result.single = AsyncMock(return_value={"deleted": 0})
+        mock_session.run = AsyncMock(return_value=mock_result)
+
+        result = await client.delete_entry("entry-1", user_id="user_b")
+        assert result is False
+
+        cypher = mock_session.run.call_args[0][0]
+        assert "user_id" in cypher
+
+    async def test_list_entries_filters_by_user(self, client, mock_session):
+        """list_entries 使用 user_id 过滤"""
+        mock_session.run = AsyncMock(return_value=AsyncIterator([]))
+
+        results = await client.list_entries(user_id="user_alpha")
+        assert len(results) == 0
+
+        cypher = mock_session.run.call_args[0][0]
+        assert "user_id" in cypher
+
+    async def test_create_concept_isolates_by_user(self, client, mock_session, sample_concept):
+        """create_concept 的 MERGE 包含 user_id"""
+        mock_result = MagicMock()
+        mock_result.single = AsyncMock(return_value={"c": {}})
+        mock_session.run = AsyncMock(return_value=mock_result)
+
+        await client.create_concept(sample_concept, user_id="user_alpha")
+
+        cypher = mock_session.run.call_args[0][0]
+        assert "user_id" in cypher
+
+    async def test_get_concept_isolates_by_user(self, client, mock_session):
+        """get_concept 按用户隔离"""
+        mock_result = MagicMock()
+        mock_result.single = AsyncMock(return_value=None)
+        mock_session.run = AsyncMock(return_value=mock_result)
+
+        result = await client.get_concept("概念A", user_id="other_user")
+        assert result is None
+
+        cypher = mock_session.run.call_args[0][0]
+        assert "user_id" in cypher
+
+    async def test_get_knowledge_graph_isolates_by_user(self, client, mock_session):
+        """知识图谱按用户隔离"""
+        mock_result = AsyncIterator([])
+        mock_result.single = AsyncMock(return_value=None)
+        mock_session.run = AsyncMock(return_value=mock_result)
+
+        await client.get_knowledge_graph("概念A", user_id="user_alpha")
+
+        cypher = mock_session.run.call_args[0][0]
+        assert "user_id" in cypher
+
+
+class AsyncIterator:
+    """异步迭代器辅助类"""
+    def __init__(self, items):
+        self.items = items
+        self.index = 0
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if self.index >= len(self.items):
+            raise StopAsyncIteration
+        item = self.items[self.index]
+        self.index += 1
+        return item

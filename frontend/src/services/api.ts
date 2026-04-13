@@ -10,11 +10,15 @@ import type {
 } from "@/types/task";
 import { API_BASE } from "@/config/api";
 import { handleApiResponse, ApiError } from "@/lib/errors";
+import { authFetch, buildAuthHeaders } from "@/lib/authFetch";
 import createClient from "openapi-fetch";
 import type { paths, components } from "@/types/api.generated";
 
 // === 类型安全的 OpenAPI client ===
-const client = createClient<paths>({ baseUrl: API_BASE });
+const client = createClient<paths>({
+  baseUrl: API_BASE,
+  fetch: async (request) => authFetch(request),
+});
 
 /**
  * 处理 openapi-fetch 返回值，统一错误处理
@@ -174,7 +178,9 @@ function normalizeSearchItem(e: any, defaultScore = 1): SearchResultItem {
 async function vectorSearch(query: string, limit: number): Promise<SearchResponse> {
   const response = await fetch(`${API_BASE}/search`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: buildAuthHeaders({
+      headers: { "Content-Type": "application/json" },
+    }),
     body: JSON.stringify({ query, limit }),
   });
 
@@ -192,9 +198,9 @@ async function vectorSearch(query: string, limit: number): Promise<SearchRespons
  * SQLite 全文搜索（FTS5）
  */
 async function sqliteSearch(query: string, limit: number): Promise<SearchResponse> {
-  const response = await fetch(
-    `${API_BASE}/entries/search/query?q=${encodeURIComponent(query)}&limit=${limit}`
-  );
+  const response = await fetch(`${API_BASE}/entries/search/query?q=${encodeURIComponent(query)}&limit=${limit}`, {
+    headers: buildAuthHeaders(),
+  });
 
   if (!response.ok) {
     throw new ApiError(response.status, `SQLite search failed: ${response.status}`);
@@ -299,9 +305,9 @@ export async function getKnowledgeGraph(
   concept: string,
   depth: number = 2
 ): Promise<KnowledgeGraphResponse> {
-  const response = await fetch(
-    `${API_BASE}/knowledge-graph/${encodeURIComponent(concept)}?depth=${depth}`
-  );
+  const response = await fetch(`${API_BASE}/knowledge-graph/${encodeURIComponent(concept)}?depth=${depth}`, {
+    headers: buildAuthHeaders(),
+  });
   return handleApiResponse<KnowledgeGraphResponse>(response);
 }
 
@@ -309,9 +315,9 @@ export async function getKnowledgeGraph(
  * 获取相关概念
  */
 export async function getRelatedConcepts(concept: string): Promise<RelatedConceptsResponse> {
-  const response = await fetch(
-    `${API_BASE}/related-concepts/${encodeURIComponent(concept)}`
-  );
+  const response = await fetch(`${API_BASE}/related-concepts/${encodeURIComponent(concept)}`, {
+    headers: buildAuthHeaders(),
+  });
   return handleApiResponse<RelatedConceptsResponse>(response);
 }
 
@@ -323,7 +329,9 @@ export async function getRelatedConcepts(concept: string): Promise<RelatedConcep
 export async function parseText(text: string, sessionId?: string): Promise<Response> {
   const response = await fetch(`${API_BASE}/parse`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: buildAuthHeaders({
+      headers: { "Content-Type": "application/json" },
+    }),
     body: JSON.stringify({ text, session_id: sessionId }),
   });
   if (!response.ok) {
@@ -338,6 +346,7 @@ export async function parseText(text: string, sessionId?: string): Promise<Respo
 export async function clearSession(sessionId: string): Promise<void> {
   const response = await fetch(`${API_BASE}/session/${sessionId}`, {
     method: "DELETE",
+    headers: buildAuthHeaders(),
   });
   await handleApiResponse<void>(response as any);
 }
@@ -364,7 +373,9 @@ export async function getProjectProgress(projectId: string): Promise<ProjectProg
 export async function submitFeedback(payload: FeedbackPayload): Promise<FeedbackResponse> {
   const response = await fetch(`${API_BASE}/feedback`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: buildAuthHeaders({
+      headers: { "Content-Type": "application/json" },
+    }),
     body: JSON.stringify(payload),
   });
   return handleApiResponse<FeedbackResponse>(response);
@@ -388,7 +399,9 @@ export interface IntentResponse {
 export async function detectIntent(text: string): Promise<IntentResponse> {
   const response = await fetch(`${API_BASE}/intent`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: buildAuthHeaders({
+      headers: { "Content-Type": "application/json" },
+    }),
     body: JSON.stringify({ text }),
   });
 

@@ -41,6 +41,7 @@ class HybridSearchService:
     async def search(
         self,
         query: str,
+        user_id: str = "_default",
         limit: int = 10,
         vector_weight: float = 0.7,
         text_weight: float = 0.3,
@@ -73,7 +74,7 @@ class HybridSearchService:
             if not self.storage.qdrant:
                 return {}
             try:
-                results = await self.storage.qdrant.search(query, limit=search_limit)
+                results = await self.storage.qdrant.search(query, limit=search_limit, user_id=user_id)
                 return {r["id"]: r.get("score", 0) for r in results if r.get("id")}
             except Exception as e:
                 logger.warning(f"向量搜索失败: {e}")
@@ -83,7 +84,7 @@ class HybridSearchService:
             if not self.storage.sqlite:
                 return {}
             try:
-                results = self.storage.sqlite.search(query, limit=search_limit)
+                results = self.storage.sqlite.search(query, limit=search_limit, user_id=user_id)
                 return {r["id"]: r for r in results if r.get("id")}
             except Exception as e:
                 logger.warning(f"全文搜索失败: {e}")
@@ -133,7 +134,7 @@ class HybridSearchService:
             if result.entry_data:
                 responses.append(EntryResponse(**EntryMapper.dict_to_response(result.entry_data)))
             else:
-                entry = self.storage.markdown.read_entry(result.entry_id)
+                entry = self.storage.get_markdown_storage(user_id).read_entry(result.entry_id)
                 if entry:
                     responses.append(EntryResponse(**EntryMapper.task_to_response(entry)))
 

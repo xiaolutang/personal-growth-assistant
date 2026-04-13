@@ -1,9 +1,10 @@
 """意图识别 API 路由"""
 from typing import Optional
 from pydantic import BaseModel, Field
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
-from app.routers.deps import get_intent_service
+from app.routers.deps import get_intent_service, get_current_user
+from app.models.user import User
 from app.services.intent_service import IntentResult
 
 router = APIRouter(tags=["intent"])
@@ -36,7 +37,7 @@ def _result_to_response(result: IntentResult) -> IntentResponse:
 
 
 @router.post("/intent", response_model=IntentResponse)
-async def detect_intent(request: IntentRequest):
+async def detect_intent(request: IntentRequest, user: User = Depends(get_current_user)):
     """
     检测用户输入的意图
 

@@ -3,7 +3,7 @@
 ## 架构概述
 
 ```
-Traefik 网关 (localhost:80)
+Traefik 网关 (localhost:443 HTTPS)
 ├── /growth/api/* (priority=100) → StripPrefix /growth/api → pga:8001 (FastAPI)
 └── /growth/*    (priority=50)  → StripPrefix /growth    → pga:8001 (StaticFiles)
 ```
@@ -24,9 +24,18 @@ Traefik 网关 (localhost:80)
 
 ### 1. 配置环境变量
 
+项目根目录 `.env` 文件需包含：
+
 ```bash
-cp .env.example .env
-# 编辑 .env 填入 LLM_API_KEY、LLM_BASE_URL、LLM_MODEL 等配置
+# 必填
+LLM_API_KEY=your-api-key
+LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+LLM_MODEL=glm-4.7
+JWT_SECRET=your-jwt-secret    # 认证密钥
+
+# 基础设施（与 ai_rules/infrastructure 保持一致）
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=changeme123
 ```
 
 ### 2. 一键部署
@@ -45,15 +54,15 @@ cp .env.example .env
 
 ```bash
 # 健康检查
-curl http://localhost/growth/api/health
+curl -sk https://localhost/growth/api/health
 # 期望: {"status":"ok"}
 
 # 前端页面
-curl -s -o /dev/null -w "%{http_code}" http://localhost/growth/
+curl -sk -o /dev/null -w "%{http_code}" https://localhost/growth/
 # 期望: 200
 
 # API 文档
-curl -s -o /dev/null -w "%{http_code}" http://localhost/growth/api/docs
+curl -sk -o /dev/null -w "%{http_code}" https://localhost/growth/api/docs
 # 期望: 200
 ```
 
@@ -95,7 +104,7 @@ docker logs pga --tail 20
 
 | 服务 | 地址 |
 |------|------|
-| 前端 | http://localhost/growth/ |
-| API 文档 | http://localhost/growth/api/docs |
-| 健康检查 | http://localhost/growth/api/health |
-| 日志面板 | http://localhost/logs/ |
+| 前端 | https://localhost/growth/ |
+| API 文档 | https://localhost/growth/api/docs |
+| 健康检查 | https://localhost/growth/api/health |
+| 日志面板 | https://localhost/logs/ |

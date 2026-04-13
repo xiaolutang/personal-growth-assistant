@@ -31,6 +31,7 @@ class SQLiteStorage:
             'parent_id': 'TEXT',
             'planned_date': 'DATE',
             'time_spent': 'INTEGER',
+            'user_id': 'TEXT NOT NULL DEFAULT "_default"',
         }
 
         # 添加缺失的列
@@ -79,6 +80,7 @@ class SQLiteStorage:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_type ON entries(type)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_status ON entries(status)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_updated ON entries(updated_at DESC)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_user_id ON entries(user_id)")
 
             # 标签表
             conn.execute("""
@@ -140,17 +142,43 @@ class SQLiteStorage:
         finally:
             conn.close()
 
+    # === 查询辅助 ===
+
+    def entry_belongs_to_user(self, entry_id: str, user_id: str) -> bool:
+        """检查条目是否属于指定用户（轻量存在性查询）"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT 1 FROM entries WHERE id = ? AND user_id = ? LIMIT 1",
+                (entry_id, user_id),
+            ).fetchone()
+            return row is not None
+        finally:
+            conn.close()
+
+    def get_entry_owner(self, entry_id: str) -> Optional[str]:
+        """获取条目的当前 owner"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT user_id FROM entries WHERE id = ?",
+                (entry_id,),
+            ).fetchone()
+            return row["user_id"] if row else None
+        finally:
+            conn.close()
+
     # === CRUD 操作 ===
 
-    def upsert_entry(self, entry: Task) -> bool:
+    def upsert_entry(self, entry: Task, user_id: str = "_default") -> bool:
         """插入或更新条目"""
         conn = self._get_conn()
         try:
             # 插入或更新主表
             conn.execute("""
                 INSERT INTO entries (id, type, title, status, priority, file_path, created_at, updated_at,
-                                     parent_id, planned_date, time_spent, content)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                     parent_id, planned_date, time_spent, content, user_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     type = excluded.type,
                     title = excluded.title,
@@ -162,7 +190,8 @@ class SQLiteStorage:
                     parent_id = excluded.parent_id,
                     planned_date = excluded.planned_date,
                     time_spent = excluded.time_spent,
-                    content = excluded.content
+                    content = excluded.content,
+                    user_id = excluded.user_id
             """, (
                 entry.id,
                 entry.category.value,
@@ -176,6 +205,7 @@ class SQLiteStorage:
                 entry.planned_date.isoformat() if entry.planned_date else None,
                 entry.time_spent,
                 entry.content,
+                user_id,
             ))
 
             # 更新标签
@@ -210,12 +240,12 @@ class SQLiteStorage:
                     (entry_id, row["id"])
                 )
 
-    def delete_entry(self, entry_id: str) -> bool:
+    def delete_entry(self, entry_id: str, user_id: str = "_default") -> bool:
         """删除条目"""
         conn = self._get_conn()
         try:
             # 由于有外键约束，删除 entries 会级联删除 entry_tags
-            conn.execute("DELETE FROM entries WHERE id = ?", (entry_id,))
+            conn.execute("DELETE FROM entries WHERE id = ? AND user_id = ?", (entry_id, user_id,))
             conn.commit()
             return True
         except Exception as e:
@@ -224,11 +254,11 @@ class SQLiteStorage:
         finally:
             conn.close()
 
-    def get_entry(self, entry_id: str) -> Optional[Dict[str, Any]]:
+    def get_entry(self, entry_id: str, user_id: str = "_default") -> Optional[Dict[str, Any]]:
         """获取单个条目"""
         conn = self._get_conn()
         try:
-            cursor = conn.execute("SELECT * FROM entries WHERE id = ?", (entry_id,))
+            cursor = conn.execute("SELECT * FROM entries WHERE id = ? AND user_id = ?", (entry_id, user_id,))
             row = cursor.fetchone()
             if not row:
                 return None
@@ -260,6 +290,7 @@ class SQLiteStorage:
         parent_id: Optional[str] = None,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
+        user_id: Optional[str] = None,
     ) -> tuple[str, List]:
         """构建筛选查询（复用逻辑）"""
         query = base_select
@@ -274,6 +305,11 @@ class SQLiteStorage:
                 WHERE t.name IN ({placeholders})
             """
             params.extend(tags)
+
+        # user_id 过滤
+        if user_id is not None:
+            conditions.append("e.user_id = ?")
+            params.append(user_id)
 
         if type:
             conditions.append("e.type = ?")
@@ -322,12 +358,13 @@ class SQLiteStorage:
         end_date: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
+        user_id: str = "_default",
     ) -> List[Dict[str, Any]]:
         """列出条目（支持筛选）"""
         conn = self._get_conn()
         try:
             query, params = self._build_filter_query(
-                "SELECT DISTINCT e.* FROM entries e", type, status, tags, parent_id, start_date, end_date
+                "SELECT DISTINCT e.* FROM entries e", type, status, tags, parent_id, start_date, end_date, user_id
             )
             query += " ORDER BY e.updated_at DESC LIMIT ? OFFSET ?"
             params.extend([limit, offset])
@@ -373,21 +410,38 @@ class SQLiteStorage:
         parent_id: Optional[str] = None,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
+        user_id: str = "_default",
     ) -> int:
         """统计条目数量"""
         conn = self._get_conn()
         try:
             query, params = self._build_filter_query(
-                "SELECT COUNT(DISTINCT e.id) as cnt FROM entries e", type, status, tags, parent_id, start_date, end_date
+                "SELECT COUNT(DISTINCT e.id) as cnt FROM entries e", type, status, tags, parent_id, start_date, end_date, user_id
             )
             cursor = conn.execute(query, params)
             return cursor.fetchone()["cnt"]
         finally:
             conn.close()
 
+    def claim_default_entries(self, target_user_id: str) -> int:
+        """将 `_default` 用户下的条目认领到目标用户"""
+        if not target_user_id or target_user_id == "_default":
+            return 0
+
+        conn = self._get_conn()
+        try:
+            cursor = conn.execute(
+                "UPDATE entries SET user_id = ? WHERE user_id = ?",
+                (target_user_id, "_default"),
+            )
+            conn.commit()
+            return cursor.rowcount
+        finally:
+            conn.close()
+
     # === 全文搜索 ===
 
-    def search(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
+    def search(self, query: str, limit: int = 10, user_id: str = "_default") -> List[Dict[str, Any]]:
         """全文搜索（支持中英文）"""
         conn = self._get_conn()
         try:
@@ -400,10 +454,10 @@ class SQLiteStorage:
                            e.created_at, e.updated_at, e.parent_id
                     FROM entries e
                     JOIN entries_fts fts ON e.id = fts.id
-                    WHERE entries_fts MATCH ?
+                    WHERE entries_fts MATCH ? AND e.user_id = ?
                     ORDER BY rank
                     LIMIT ?
-                """, (query, limit))
+                """, (query, user_id, limit))
 
                 for row in cursor.fetchall():
                     entry = dict(row)
@@ -419,10 +473,10 @@ class SQLiteStorage:
                     SELECT id, type, title, status, file_path,
                            created_at, updated_at, parent_id
                     FROM entries
-                    WHERE title LIKE ? OR content LIKE ?
+                    WHERE (title LIKE ? OR content LIKE ?) AND user_id = ?
                     ORDER BY updated_at DESC
                     LIMIT ?
-                """, (like_pattern, like_pattern, limit))
+                """, (like_pattern, like_pattern, user_id, limit))
 
                 for row in cursor.fetchall():
                     entry = dict(row)
@@ -435,12 +489,30 @@ class SQLiteStorage:
 
     # === 同步操作 ===
 
-    def sync_from_markdown(self, markdown_storage) -> int:
+    def sync_from_markdown(self, markdown_storage, user_id: str = "_default") -> int:
         """从 Markdown 存储同步所有条目"""
         entries = markdown_storage.scan_all()
+        if not entries:
+            return 0
+
+        # 批量预取已认领到真实用户的条目 ID，避免逐条查询
+        claimed_ids: set[str] = set()
+        if user_id == "_default":
+            conn = self._get_conn()
+            try:
+                rows = conn.execute(
+                    "SELECT id FROM entries WHERE user_id != ?",
+                    ("_default",),
+                ).fetchall()
+                claimed_ids = {row["id"] for row in rows}
+            finally:
+                conn.close()
+
         count = 0
         for entry in entries:
-            if self.upsert_entry(entry):
+            if entry.id in claimed_ids:
+                continue
+            if self.upsert_entry(entry, user_id=user_id):
                 count += 1
         return count
 

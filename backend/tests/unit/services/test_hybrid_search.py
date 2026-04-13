@@ -16,6 +16,7 @@ class TestHybridSearchService:
         storage.qdrant = MagicMock()
         storage.sqlite = MagicMock()
         storage.markdown = MagicMock()
+        storage.get_markdown_storage = MagicMock(return_value=storage.markdown)
         return storage
 
     @pytest.fixture

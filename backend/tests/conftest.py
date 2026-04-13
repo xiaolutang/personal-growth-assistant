@@ -2,6 +2,7 @@
 import asyncio
 import tempfile
 import shutil
+from datetime import datetime
 from typing import AsyncGenerator, Generator
 
 import pytest
@@ -45,17 +46,43 @@ async def storage(temp_data_dir: str):
 
 @pytest.fixture
 async def client(storage) -> AsyncGenerator[AsyncClient, None]:
-    """创建测试客户端"""
+    """创建测试客户端（自动注入认证 token）"""
     from app.main import app
     from app.routers import deps
+    from app.services.auth_service import create_access_token
 
     # 注入存储服务并重置服务缓存
     deps.storage = storage
     deps.reset_all_services()
 
+    # 创建测试用户存储和 token
+    from app.infrastructure.storage.user_storage import UserStorage
+    import tempfile
+    user_db = tempfile.mktemp(suffix=".db")
+    deps._user_storage = UserStorage(user_db)
+
+    # 创建测试用户
+    from app.models.user import UserCreate
+    test_user = deps._user_storage.create_user(UserCreate(
+        username="testuser",
+        email="test@example.com",
+        password="testpass123",
+    ))
+
+    # 生成 token
+    token = create_access_token(test_user.id)
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test", timeout=60.0) as c:
+        c.headers["Authorization"] = f"Bearer {token}"
         yield c
+
+    # 清理临时 user db
+    import os
+    try:
+        os.unlink(user_db)
+    except OSError:
+        pass
 
 
 @pytest.fixture
@@ -82,6 +109,27 @@ def mock_llm_caller():
     from app.infrastructure.llm.mock_caller import MockCaller
 
     return MockCaller(response='{"intent": "create", "tasks": [], "tags": [], "concepts": [], "relations": []}')
+
+
+# === 共享辅助函数 ===
+
+
+def _make_entry(entry_id: str, title: str = "", content: str = "", **kwargs) -> "Task":
+    """快速创建测试用 Task（供各测试模块复用）"""
+    from app.models import Task, Category, TaskStatus, Priority
+
+    return Task(
+        id=entry_id,
+        title=title or f"测试-{entry_id}",
+        content=content,
+        category=kwargs.get("category", Category.TASK),
+        status=kwargs.get("status", TaskStatus.DOING),
+        priority=kwargs.get("priority", Priority.MEDIUM),
+        tags=kwargs.get("tags", []),
+        created_at=kwargs.get("created_at", datetime.now()),
+        updated_at=kwargs.get("updated_at", datetime.now()),
+        file_path=kwargs.get("file_path", f"tasks/{entry_id}.md"),
+    )
 
 
 @pytest.fixture

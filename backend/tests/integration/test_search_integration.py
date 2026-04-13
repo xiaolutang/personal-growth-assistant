@@ -253,12 +253,13 @@ class TestDimensionMismatch:
 class TestSearchAPIE2E:
     """搜索 API 端到端测试（通过 Traefik 网关）"""
 
-    async def test_search_api_returns_200(self, api_base_url):
+    async def test_search_api_returns_200(self, api_base_url, auth_token):
         """测试搜索 API 返回 200"""
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 f"{api_base_url}/search",
                 json={"query": "测试查询", "limit": 5},
+                headers={"Authorization": f"Bearer {auth_token}"},
             )
 
             # 应该返回 200 或 503（如果 Qdrant 未配置）
@@ -269,24 +270,26 @@ class TestSearchAPIE2E:
                 assert "results" in data
                 assert isinstance(data["results"], list)
 
-    async def test_search_api_empty_query_validation(self, api_base_url):
+    async def test_search_api_empty_query_validation(self, api_base_url, auth_token):
         """测试搜索 API 空查询验证"""
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 f"{api_base_url}/search",
                 json={"query": "", "limit": 5},
+                headers={"Authorization": f"Bearer {auth_token}"},
             )
 
             # 空查询应该返回 422 (Validation Error)
             assert response.status_code == 422
 
-    async def test_search_api_limit_validation(self, api_base_url):
+    async def test_search_api_limit_validation(self, api_base_url, auth_token):
         """测试搜索 API limit 参数验证"""
         async with httpx.AsyncClient(timeout=30.0) as client:
             # limit 超过最大值
             response = await client.post(
                 f"{api_base_url}/search",
                 json={"query": "测试", "limit": 100},
+                headers={"Authorization": f"Bearer {auth_token}"},
             )
 
             # 应该返回 422 (Validation Error)

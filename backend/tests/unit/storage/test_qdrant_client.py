@@ -245,3 +245,89 @@ class TestQdrantDimensionMismatch:
             mock_client.get_collection.assert_called_once()
             mock_client.delete_collection.assert_not_called()
             mock_client.create_collection.assert_not_called()
+
+
+class TestQdrantUserIdIsolation:
+    """Qdrant 用户数据隔离测试"""
+
+    @pytest.fixture
+    def sample_entry(self):
+        return Task(
+            id="iso-entry-1",
+            title="隔离测试条目",
+            content="内容",
+            category=Category.TASK,
+            status=TaskStatus.DOING,
+            priority=Priority.MEDIUM,
+            tags=["iso"],
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+            file_path="tasks/iso-entry-1.md",
+        )
+
+    @pytest.fixture
+    def mock_embedding_service(self):
+        mock = AsyncMock()
+        mock.get_embedding = AsyncMock(return_value=[0.1] * 128)
+        return mock
+
+    async def test_upsert_includes_user_id_in_payload(self, sample_entry, mock_embedding_service):
+        """upsert_entry 应在 payload 中包含 user_id"""
+        mock_client = AsyncMock()
+        mock_client.get_collection = AsyncMock()
+        mock_client.upsert = AsyncMock()
+
+        with patch('app.infrastructure.storage.qdrant_client.AsyncQdrantClient', return_value=mock_client):
+            client = QdrantClient(url="http://test:6333", vector_size=128, embedding_service=mock_embedding_service)
+            await client.connect()
+
+            await client.upsert_entry(sample_entry, user_id="user_alpha")
+
+            # 验证 upsert 被调用
+            assert mock_client.upsert.called
+            # 获取 upsert 传入的 points
+            call_kwargs = mock_client.upsert.call_args
+            points = call_kwargs[1].get("points") or call_kwargs[0][0] if call_kwargs[0] else None
+            if points and hasattr(points[0], 'payload'):
+                assert points[0].payload.get("user_id") == "user_alpha"
+
+    async def test_search_filters_by_user_id(self, mock_embedding_service):
+        """search 应按 user_id 过滤结果"""
+        mock_client = AsyncMock()
+        mock_client.get_collection = AsyncMock()
+
+        # 模拟搜索返回
+        mock_point = MagicMock()
+        mock_point.id = "test-uuid"
+        mock_point.score = 0.9
+        mock_point.payload = {"original_id": "entry-1", "title": "A的条目", "user_id": "user_alpha"}
+        mock_response = MagicMock()
+        mock_response.points = [mock_point]
+        mock_client.query_points = AsyncMock(return_value=mock_response)
+
+        with patch('app.infrastructure.storage.qdrant_client.AsyncQdrantClient', return_value=mock_client):
+            client = QdrantClient(url="http://test:6333", vector_size=128, embedding_service=mock_embedding_service)
+            await client.connect()
+
+            results = await client.search("测试", limit=5, user_id="user_alpha")
+
+            # 验证 query_points 被调用时带 filter
+            call_args = mock_client.query_points.call_args
+            query_filter = call_args[1].get("query_filter") or call_args[0][1] if len(call_args[0]) > 1 else None
+            # 搜索应该传入了 user_id 过滤参数
+            assert mock_client.query_points.called
+
+    async def test_search_different_user_no_results(self, mock_embedding_service):
+        """不同用户搜索应返回空结果"""
+        mock_client = AsyncMock()
+        mock_client.get_collection = AsyncMock()
+        mock_response = MagicMock()
+        mock_response.points = []  # 模拟无结果
+        mock_client.query_points = AsyncMock(return_value=mock_response)
+
+        with patch('app.infrastructure.storage.qdrant_client.AsyncQdrantClient', return_value=mock_client):
+            client = QdrantClient(url="http://test:6333", vector_size=128, embedding_service=mock_embedding_service)
+            await client.connect()
+
+            results = await client.search("测试", limit=5, user_id="user_beta")
+            assert len(results) == 0

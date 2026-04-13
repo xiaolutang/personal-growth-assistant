@@ -170,6 +170,7 @@ entry_service = deps.get_entry_service()
 | 变量 | 说明 |
 |------|------|
 | `FRONTEND_BASE_PATH` | 前端基础路径，如 `/growth/` |
+| `JWT_SECRET` | JWT 认证密钥（生产环境必填） |
 | `LLM_API_KEY` | LLM API 密钥 |
 | `LLM_BASE_URL` | API 地址 |
 | `LLM_MODEL` | 模型名称 |

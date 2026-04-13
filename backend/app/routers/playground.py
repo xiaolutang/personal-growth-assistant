@@ -2,11 +2,13 @@
 import os
 import time
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.core.config import get_settings
 from app.infrastructure.llm import APICaller
+from app.routers.deps import get_current_user
+from app.models.user import User
 
 router = APIRouter(prefix="/playground", tags=["playground"])
 
@@ -21,7 +23,7 @@ class LLMTestResponse(BaseModel):
 
 
 @router.get("/llm-test", response_model=LLMTestResponse)
-async def test_llm():
+async def test_llm(user: User = Depends(get_current_user)):
     """
     测试 LLM 配置是否正常工作
 

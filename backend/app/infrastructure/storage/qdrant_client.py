@@ -100,7 +100,7 @@ class QdrantClient:
             return await self._embedding_service.get_embedding(text)
         raise NotImplementedError("Embedding service not configured")
 
-    def _build_payload(self, entry: Task) -> Dict[str, Any]:
+    def _build_payload(self, entry: Task, user_id: str = "_default") -> Dict[str, Any]:
         """构建向量存储的 payload"""
         return {
             "original_id": entry.id,
@@ -111,11 +111,12 @@ class QdrantClient:
             "file_path": entry.file_path,
             "created_at": entry.created_at.isoformat(),
             "updated_at": entry.updated_at.isoformat(),
+            "user_id": user_id,
         }
 
     # ==================== 向量操作 ====================
 
-    async def upsert_entry(self, entry: Task) -> bool:
+    async def upsert_entry(self, entry: Task, user_id: str = "_default") -> bool:
         """创建或更新条目向量"""
         if not self._client:
             await self.connect()
@@ -130,7 +131,7 @@ class QdrantClient:
                 models.PointStruct(
                     id=str_to_uuid(entry.id),
                     vector=vector,
-                    payload=self._build_payload(entry),
+                    payload=self._build_payload(entry, user_id),
                 )
             ],
         )
@@ -180,6 +181,7 @@ class QdrantClient:
         limit: int = 5,
         filter_type: Optional[str] = None,
         filter_status: Optional[str] = None,
+        user_id: str = "_default",
     ) -> List[Dict[str, Any]]:
         """语义搜索"""
         if not self._client:
@@ -189,7 +191,12 @@ class QdrantClient:
         query_vector = await self._get_embedding(query)
 
         # 构建过滤条件
-        must_conditions = []
+        must_conditions = [
+            models.FieldCondition(
+                key="user_id",
+                match=models.MatchValue(value=user_id),
+            )
+        ]
         if filter_type:
             must_conditions.append(
                 models.FieldCondition(
@@ -252,7 +259,7 @@ class QdrantClient:
 
     # ==================== 批量操作 ====================
 
-    async def batch_upsert(self, entries: List[Task]) -> int:
+    async def batch_upsert(self, entries: List[Task], user_id: str = "_default") -> int:
         """批量创建或更新向量（并行获取 embedding）"""
         if not entries:
             return 0
@@ -268,7 +275,7 @@ class QdrantClient:
             models.PointStruct(
                 id=str_to_uuid(entry.id),
                 vector=vector,
-                payload=self._build_payload(entry),
+                payload=self._build_payload(entry, user_id),
             )
             for entry, vector in zip(entries, vectors)
         ]

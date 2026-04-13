@@ -2,9 +2,10 @@
 from datetime import date, datetime
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.routers.deps import get_review_service
+from app.routers.deps import get_review_service, get_current_user
+from app.models.user import User
 from app.services.review_service import (
     TaskStats,
     NoteStats,
@@ -18,7 +19,8 @@ router = APIRouter(prefix="/review", tags=["review"])
 
 @router.get("/daily", response_model=DailyReport)
 async def get_daily_report(
-    date_param: Optional[str] = Query(None, alias="date", description="日期 (YYYY-MM-DD)，默认今天")
+    date_param: Optional[str] = Query(None, alias="date", description="日期 (YYYY-MM-DD)，默认今天"),
+    user: User = Depends(get_current_user),
 ):
     """获取日报"""
     review_service = get_review_service()
@@ -37,7 +39,8 @@ async def get_daily_report(
 
 @router.get("/weekly", response_model=WeeklyReport)
 async def get_weekly_report(
-    start_date: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)，默认本周一")
+    start_date: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)，默认本周一"),
+    user: User = Depends(get_current_user),
 ):
     """获取周报"""
     review_service = get_review_service()
@@ -60,7 +63,8 @@ async def get_weekly_report(
 
 @router.get("/monthly", response_model=MonthlyReport)
 async def get_monthly_report(
-    month: Optional[str] = Query(None, description="月份 (YYYY-MM)，默认本月")
+    month: Optional[str] = Query(None, description="月份 (YYYY-MM)，默认本月"),
+    user: User = Depends(get_current_user),
 ):
     """获取月报"""
     review_service = get_review_service()

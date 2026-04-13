@@ -58,6 +58,17 @@ class Token(BaseModel):
     user: UserResponse
 
 
+class DefaultDataClaimResult(BaseModel):
+    """`_default` 历史数据认领结果"""
+
+    claimed: bool
+    reason: str = ""
+    sqlite_entries_claimed: int = 0
+    markdown_files_copied: int = 0
+    markdown_files_skipped: int = 0
+    session_count_claimed: int = 0
+
+
 class TokenData(BaseModel):
     """JWT payload 结构"""
 

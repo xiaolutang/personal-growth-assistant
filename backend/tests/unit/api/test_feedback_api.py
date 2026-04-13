@@ -1,10 +1,10 @@
 """反馈 API 测试"""
 import importlib.util
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from httpx import ASGITransport, AsyncClient
 
 MODULE_PATH = Path(__file__).resolve().parents[3] / "app" / "routers" / "feedback.py"
@@ -14,15 +14,23 @@ assert SPEC and SPEC.loader
 SPEC.loader.exec_module(feedback_module)
 router = feedback_module.router
 
+# Mock user for auth bypass
+_mock_user = MagicMock()
+_mock_user.id = "test-user"
+
 
 @pytest.fixture
 async def client():
     app = FastAPI()
+    # Override auth dependency
+    from app.routers.deps import get_current_user
+    app.dependency_overrides[get_current_user] = lambda: _mock_user
     app.include_router(router)
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as test_client:
         yield test_client
+    app.dependency_overrides.clear()
 
 
 class TestFeedbackAPI:

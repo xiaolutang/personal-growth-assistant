@@ -1,11 +1,11 @@
 /**
- * 匿名用户标识 - 生成一次后持久化到 localStorage
- * 用于日志追踪，无需登录即可按"用户"维度排查问题
+ * 请求拦截 - 自动注入 Authorization 和 X-UID header
+ * X-UID 用于日志追踪（使用真实 user.id 或匿名 ID）
  */
 
 const UID_KEY = 'pga_uid';
 
-export function getOrCreateUid(): string {
+function getOrCreateUid(): string {
   let uid = localStorage.getItem(UID_KEY);
   if (!uid) {
     uid = crypto.randomUUID();
@@ -15,17 +15,37 @@ export function getOrCreateUid(): string {
 }
 
 /**
- * 全局 fetch 拦截 - 所有请求自动携带 X-UID header
+ * 全局 fetch 拦截 - 自动携带 Authorization 和 X-UID header
+ * 401 响应时自动清除 token 并跳转登录页
  */
-export function initUidHeader(): void {
+export function initFetchInterceptor(): void {
   const originalFetch = window.fetch;
-  const uid = getOrCreateUid();
 
   window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
     const headers = new Headers(init?.headers);
-    if (!headers.has('X-UID')) {
-      headers.set('X-UID', uid);
+
+    // 自动注入 Authorization header
+    const token = localStorage.getItem('pga_token');
+    if (token && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${token}`);
     }
-    return originalFetch(input, { ...init, headers });
+
+    // X-UID header 用于日志追踪
+    if (!headers.has('X-UID')) {
+      headers.set('X-UID', getOrCreateUid());
+    }
+
+    return originalFetch(input, { ...init, headers }).then((response) => {
+      // 401 自动登出并跳转登录页
+      if (response.status === 401) {
+        localStorage.removeItem('pga_token');
+        localStorage.removeItem('pga_user');
+        // 只在非登录页面时跳转
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+          window.location.href = `${import.meta.env.BASE_URL}login`;
+        }
+      }
+      return response;
+    });
   };
 }

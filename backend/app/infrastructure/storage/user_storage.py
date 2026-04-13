@@ -157,3 +157,12 @@ class UserStorage:
             return self._row_to_user(row)
         finally:
             conn.close()
+
+    def count_users(self) -> int:
+        """统计用户数量"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute("SELECT COUNT(*) AS cnt FROM users").fetchone()
+            return int(row["cnt"])
+        finally:
+            conn.close()

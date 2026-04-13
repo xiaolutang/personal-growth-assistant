@@ -27,6 +27,9 @@ class EntryService:
     def __init__(self, storage: SyncService):
         self.storage = storage
 
+    def _get_markdown_storage(self, user_id: str) -> MarkdownStorage:
+        return self.storage.get_markdown_storage(user_id)
+
     # === 辅助方法 ===
 
     def _parse_category(self, category_str: str) -> Category:
@@ -56,7 +59,7 @@ class EntryService:
 
     # === CRUD 操作 ===
 
-    async def create_entry(self, request: EntryCreate) -> EntryResponse:
+    async def create_entry(self, request: EntryCreate, user_id: str = "_default") -> EntryResponse:
         """创建条目"""
         # 解析类型（兼容 type 和 category 字段）
         category_str = getattr(request, 'category', None) or getattr(request, 'type', None)
@@ -90,27 +93,37 @@ class EntryService:
         )
 
         # 写入 Markdown
-        self.storage.markdown.write_entry(entry)
+        self._get_markdown_storage(user_id).write_entry(entry)
 
         # SQLite 同步（同步执行）
         if self.storage.sqlite:
-            self.storage.sqlite.upsert_entry(entry)
+            self.storage.sqlite.upsert_entry(entry, user_id=user_id)
 
         # Neo4j + Qdrant 后台同步
-        asyncio.create_task(self.storage.sync_to_graph_and_vector(entry))
+        asyncio.create_task(self.storage.sync_to_graph_and_vector(entry, user_id=user_id))
 
         return EntryResponse(**EntryMapper.task_to_response(entry))
 
-    async def get_entry(self, entry_id: str) -> Optional[EntryResponse]:
+    def _verify_entry_owner(self, entry_id: str, user_id: str) -> bool:
+        """验证条目是否属于当前用户"""
+        if not self.storage.sqlite:
+            return True  # 无 SQLite 时无法验证，放行
+        return self.storage.sqlite.entry_belongs_to_user(entry_id, user_id)
+
+    async def get_entry(self, entry_id: str, user_id: str = "_default") -> Optional[EntryResponse]:
         """获取单个条目"""
-        entry = self.storage.markdown.read_entry(entry_id)
+        if not self._verify_entry_owner(entry_id, user_id):
+            return None
+        entry = self._get_markdown_storage(user_id).read_entry(entry_id)
         if not entry:
             return None
         return EntryResponse(**EntryMapper.task_to_response(entry))
 
-    async def update_entry(self, entry_id: str, request: EntryUpdate) -> Tuple[bool, str]:
+    async def update_entry(self, entry_id: str, request: EntryUpdate, user_id: str = "_default") -> Tuple[bool, str]:
         """更新条目，返回 (成功, 消息)"""
-        entry = self.storage.markdown.read_entry(entry_id)
+        if not self._verify_entry_owner(entry_id, user_id):
+            return False, f"条目不存在: {entry_id}"
+        entry = self._get_markdown_storage(user_id).read_entry(entry_id)
         if not entry:
             return False, f"条目不存在: {entry_id}"
 
@@ -163,26 +176,29 @@ class EntryService:
         entry.updated_at = datetime.now()
 
         # 写入 Markdown
-        self.storage.markdown.write_entry(entry)
+        self._get_markdown_storage(user_id).write_entry(entry)
 
         # SQLite 同步
         if self.storage.sqlite:
-            self.storage.sqlite.upsert_entry(entry)
+            self.storage.sqlite.upsert_entry(entry, user_id=user_id)
 
         # Neo4j + Qdrant 后台同步
-        asyncio.create_task(self.storage.sync_to_graph_and_vector(entry))
+        asyncio.create_task(self.storage.sync_to_graph_and_vector(entry, user_id=user_id))
 
         return True, f"已更新条目: {entry_id}"
 
-    async def delete_entry(self, entry_id: str) -> Tuple[bool, str]:
+    async def delete_entry(self, entry_id: str, user_id: str = "_default") -> Tuple[bool, str]:
         """删除条目，返回 (成功, 消息)"""
+        # 验证条目属于当前用户
+        if not self._verify_entry_owner(entry_id, user_id):
+            return False, f"条目不存在: {entry_id}"
         # 检查条目是否存在
-        entry = self.storage.markdown.read_entry(entry_id)
+        entry = self._get_markdown_storage(user_id).read_entry(entry_id)
         if not entry:
             return False, f"条目不存在: {entry_id}"
 
         # 删除
-        success = await self.storage.delete_entry(entry_id)
+        success = await self.storage.delete_entry(entry_id, user_id=user_id)
 
         if success:
             return True, f"已删除条目: {entry_id}"
@@ -201,6 +217,7 @@ class EntryService:
         end_date: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
+        user_id: str = "_default",
     ) -> EntryListResponse:
         """列出条目"""
         # 优先使用 SQLite 索引
@@ -215,6 +232,7 @@ class EntryService:
                 end_date=end_date,
                 limit=limit,
                 offset=offset,
+                user_id=user_id,
             )
             total = self.storage.sqlite.count_entries(
                 type=type,
@@ -223,6 +241,7 @@ class EntryService:
                 parent_id=parent_id,
                 start_date=start_date,
                 end_date=end_date,
+                user_id=user_id,
             )
             return EntryListResponse(
                 entries=[EntryResponse(**EntryMapper.dict_to_response(e)) for e in entries],
@@ -233,7 +252,7 @@ class EntryService:
         category = Category(type) if type else None
         task_status = TaskStatus(status) if status else None
 
-        entries = self.storage.markdown.list_entries(
+        entries = self._get_markdown_storage(user_id).list_entries(
             category=category,
             status=task_status,
             limit=limit,
@@ -243,18 +262,18 @@ class EntryService:
             entries=[EntryResponse(**EntryMapper.task_to_response(e)) for e in entries]
         )
 
-    async def search_entries(self, query: str, limit: int = 10) -> SearchResult:
+    async def search_entries(self, query: str, limit: int = 10, user_id: str = "_default") -> SearchResult:
         """搜索条目 - 使用混合搜索（向量 + 全文）"""
 
         # 优先使用混合搜索（需要 Qdrant 和 SQLite 都可用）
         if self.storage.qdrant and self.storage.sqlite:
             hybrid = HybridSearchService(self.storage)
-            entries = await hybrid.search(query, limit)
+            entries = await hybrid.search(query, user_id=user_id, limit=limit)
             return SearchResult(entries=entries, query=query)
 
         # 回退：仅 SQLite 全文搜索
         if self.storage.sqlite:
-            results = self.storage.sqlite.search(query, limit=limit)
+            results = self.storage.sqlite.search(query, limit=limit, user_id=user_id)
             return SearchResult(
                 entries=[EntryResponse(**EntryMapper.dict_to_response(e)) for e in results],
                 query=query,
@@ -262,10 +281,13 @@ class EntryService:
 
         raise RuntimeError("没有可用的搜索服务")
 
-    async def get_project_progress(self, entry_id: str) -> ProjectProgressResponse:
+    async def get_project_progress(self, entry_id: str, user_id: str = "_default") -> ProjectProgressResponse:
         """获取项目进度"""
+        # 验证条目属于当前用户
+        if not self._verify_entry_owner(entry_id, user_id):
+            raise ValueError(f"条目不存在: {entry_id}")
         # 检查项目是否存在
-        entry = self.storage.markdown.read_entry(entry_id)
+        entry = self._get_markdown_storage(user_id).read_entry(entry_id)
         if not entry:
             raise ValueError(f"条目不存在: {entry_id}")
 
@@ -273,7 +295,7 @@ class EntryService:
             raise RuntimeError("SQLite 索引不可用")
 
         # 获取所有子任务
-        child_entries = self.storage.sqlite.list_entries(parent_id=entry_id, limit=1000)
+        child_entries = self.storage.sqlite.list_entries(parent_id=entry_id, limit=1000, user_id=user_id)
 
         total = len(child_entries)
         if total == 0:

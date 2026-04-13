@@ -174,6 +174,32 @@ class TestEntryServiceCRUD:
         assert response.title == "获取测试"
 
     @pytest.mark.asyncio
+    async def test_create_entry_writes_to_user_markdown_dir(self, service, temp_data_dir):
+        """创建条目应写入当前用户目录，而不是根 data 目录"""
+        request = EntryCreate(category="note", title="用户笔记")
+
+        created = await service.create_entry(request, user_id="usr_alice")
+
+        user_path = f"{temp_data_dir}/users/usr_alice/notes/{created.id}.md"
+        root_path = f"{temp_data_dir}/notes/{created.id}.md"
+        import os
+
+        assert os.path.exists(user_path)
+        assert not os.path.exists(root_path)
+
+    @pytest.mark.asyncio
+    async def test_get_entry_reads_from_user_markdown_dir(self, service):
+        """读取条目应从当前用户目录读取 Markdown"""
+        request = EntryCreate(category="project", title="Alice 项目")
+        created = await service.create_entry(request, user_id="usr_alice")
+
+        fetched = await service.get_entry(created.id, user_id="usr_alice")
+
+        assert fetched is not None
+        assert fetched.title == "Alice 项目"
+        assert await service.get_entry(created.id, user_id="usr_bob") is None
+
+    @pytest.mark.asyncio
     async def test_get_entry_not_found(self, service):
         """测试获取不存在的条目"""
         response = await service.get_entry("nonexistent-id")

@@ -1,6 +1,6 @@
 """条目管理 API 路由"""
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.api.schemas import (
     EntryCreate,
@@ -11,7 +11,8 @@ from app.api.schemas import (
     SuccessResponse,
     ProjectProgressResponse,
 )
-from app.routers.deps import get_entry_service, get_storage
+from app.routers.deps import get_entry_service, get_storage, get_current_user
+from app.models.user import User
 
 router = APIRouter(prefix="/entries", tags=["entries"])
 
@@ -26,6 +27,7 @@ async def list_entries(
     end_date: str | None = Query(None, description="结束日期 (YYYY-MM-DD)"),
     limit: int = Query(50, ge=1, le=100, description="返回数量限制"),
     offset: int = Query(0, ge=0, description="偏移量"),
+    user: User = Depends(get_current_user),
 ):
     """列出条目（优先从 SQLite 索引读取）"""
     service = get_entry_service()
@@ -38,35 +40,36 @@ async def list_entries(
         end_date=end_date,
         limit=limit,
         offset=offset,
+        user_id=user.id,
     )
 
 
 @router.get("/{entry_id}", response_model=EntryResponse)
-async def get_entry(entry_id: str):
+async def get_entry(entry_id: str, user: User = Depends(get_current_user)):
     """获取单个条目"""
     service = get_entry_service()
-    entry = await service.get_entry(entry_id)
+    entry = await service.get_entry(entry_id, user_id=user.id)
     if not entry:
         raise HTTPException(status_code=404, detail=f"条目不存在: {entry_id}")
     return entry
 
 
 @router.post("", response_model=EntryResponse)
-async def create_entry(request: EntryCreate):
+async def create_entry(request: EntryCreate, user: User = Depends(get_current_user)):
     """创建条目"""
     service = get_entry_service()
     try:
-        return await service.create_entry(request)
+        return await service.create_entry(request, user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.put("/{entry_id}", response_model=SuccessResponse)
-async def update_entry(entry_id: str, request: EntryUpdate):
+async def update_entry(entry_id: str, request: EntryUpdate, user: User = Depends(get_current_user)):
     """更新条目"""
     service = get_entry_service()
     try:
-        success, message = await service.update_entry(entry_id, request)
+        success, message = await service.update_entry(entry_id, request, user_id=user.id)
         if not success:
             raise HTTPException(status_code=404, detail=message)
         return SuccessResponse(success=success, message=message)
@@ -78,31 +81,32 @@ async def update_entry(entry_id: str, request: EntryUpdate):
 async def search_entries(
     q: str = Query(..., min_length=1, description="搜索关键词"),
     limit: int = Query(10, ge=1, le=50, description="返回数量限制"),
+    user: User = Depends(get_current_user),
 ):
     """全文搜索条目（使用 SQLite FTS5）"""
     service = get_entry_service()
     try:
-        return await service.search_entries(q, limit)
+        return await service.search_entries(q, limit, user_id=user.id)
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
 
 
 @router.delete("/{entry_id}", response_model=SuccessResponse)
-async def delete_entry(entry_id: str):
+async def delete_entry(entry_id: str, user: User = Depends(get_current_user)):
     """删除条目"""
     service = get_entry_service()
-    success, message = await service.delete_entry(entry_id)
+    success, message = await service.delete_entry(entry_id, user_id=user.id)
     if not success:
         raise HTTPException(status_code=404 if "不存在" in message else 500, detail=message)
     return SuccessResponse(success=success, message=message)
 
 
 @router.get("/{entry_id}/progress", response_model=ProjectProgressResponse)
-async def get_project_progress(entry_id: str):
+async def get_project_progress(entry_id: str, user: User = Depends(get_current_user)):
     """获取项目进度（子任务完成率）"""
     service = get_entry_service()
     try:
-        return await service.get_project_progress(entry_id)
+        return await service.get_project_progress(entry_id, user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except RuntimeError as e:
@@ -110,7 +114,7 @@ async def get_project_progress(entry_id: str):
 
 
 @router.post("/admin/sync-vectors", response_model=SuccessResponse)
-async def sync_vectors():
+async def sync_vectors(user: User = Depends(get_current_user)):
     """同步所有条目到向量数据库（Qdrant）"""
     storage = get_storage()
     if not storage.qdrant:

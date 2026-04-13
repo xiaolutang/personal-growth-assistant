@@ -10,9 +10,12 @@ import {
   MessageSquare,
   ChevronDown,
   ChevronRight,
+  LogOut,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SessionList } from "@/components/SessionList";
+import { useUserStore } from "@/stores/userStore";
 
 const navItems = [
   { to: "/", icon: Home, label: "首页" },
@@ -25,6 +28,8 @@ const navItems = [
 
 export function Sidebar() {
   const [isChatExpanded, setIsChatExpanded] = useState(false);
+  const user = useUserStore((s) => s.user);
+  const logout = useUserStore((s) => s.logout);
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r bg-card">
@@ -81,8 +86,26 @@ export function Sidebar() {
           )}
         </div>
 
-        {/* Footer */}
+        {/* Footer with user info */}
         <div className="border-t p-4">
+          {user && (
+            <div className="mb-2 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-foreground">
+                <User className="h-4 w-4" />
+                <span className="truncate">{user.username}</span>
+              </div>
+              <button
+                onClick={() => {
+                  logout();
+                  window.location.href = `${import.meta.env.BASE_URL}login`;
+                }}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                title="登出"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          )}
           <p className="text-xs text-muted-foreground">
             v0.1.0 - Personal Growth
           </p>

@@ -146,7 +146,7 @@ class TestSyncServiceErrors:
         result = await sync_service.sync_entry(sample_entry)
 
         assert result is True
-        mock_sqlite_storage.upsert_entry.assert_called_once_with(sample_entry)
+        mock_sqlite_storage.upsert_entry.assert_called_once_with(sample_entry, user_id="_default")
         mock_neo4j_available.create_entry.assert_called_once()
         mock_qdrant_available.upsert_entry.assert_called_once()
 
@@ -165,7 +165,7 @@ class TestSyncServiceErrors:
         result = await sync_service.sync_entry(sample_entry)
 
         assert result is True
-        mock_sqlite_storage.upsert_entry.assert_called_once_with(sample_entry)
+        mock_sqlite_storage.upsert_entry.assert_called_once_with(sample_entry, user_id="_default")
 
     async def test_delete_entry_partial_failure(
         self, mock_markdown_storage, mock_sqlite_storage,
@@ -184,7 +184,7 @@ class TestSyncServiceErrors:
         result = await sync_service.delete_entry("test-entry-1")
 
         # SQLite 和 Markdown 删除应该成功
-        mock_sqlite_storage.delete_entry.assert_called_once_with("test-entry-1")
+        mock_sqlite_storage.delete_entry.assert_called_once_with("test-entry-1", user_id="_default")
         # 返回 True 因为主要操作完成了
         assert result is True
 
