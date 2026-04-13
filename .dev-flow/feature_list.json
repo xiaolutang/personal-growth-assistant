@@ -5,9 +5,15 @@
   "created_at": "2026-03-28",
   "updated_at": "2026-04-13",
   "status": "completed",
-  "scope_notes": "R002 不含 MCP Server 认证改造，MCP 9 个 Tools 的用户隔离方案作为 R003 候选",
+  "scope_notes": "R002 认证与隔离主链路已完成；R003 聚焦生产环境历史内容恢复、_default 数据认领和部署数据校验。MCP 9 个 Tools 的用户隔离仍作为后续候选。",
+  "active_requirement_cycle": {
+    "id": "R003",
+    "name": "production-content-recovery",
+    "status": "completed",
+    "branch": "fix/R003-production-content-recovery"
+  },
   "workflow": {
-    "name": "R002-user-auth",
+    "name": "XLFoundry",
     "mode": "A",
     "runtime": "team_orchestrated",
     "review_provider": "local",
@@ -15,12 +21,22 @@
     "risk_provider": "local"
   },
   "summary": {
-    "total_tasks": 17,
+    "total_tasks": 21,
     "pending": 0,
     "in_progress": 0,
-    "completed": 17,
+    "completed": 21,
+    "blocked": 0,
     "cancelled": 0
   },
+  "archived_requirement_cycles": [
+    {
+      "id": "R001",
+      "name": "personal-growth-assistant-v1",
+      "status": "accepted",
+      "archive_dir": "_archive/R001_personal-growth-assistant-v1",
+      "branch": "feat/R001-personal-growth-assistant-v1"
+    }
+  ],
   "archived_cycles": [
     {
       "cycle_id": "R001",
@@ -52,6 +68,11 @@
       "id": "frontend-auth",
       "name": "前端认证模块",
       "description": "登录注册页面、路由守卫、Token 管理、用户状态"
+    },
+    {
+      "id": "content-recovery",
+      "name": "历史内容恢复模块",
+      "description": "修复 `_default` 历史数据在生产环境中对真实账号不可见的问题，补齐认领、回填和发布校验"
     }
   ],
   "tasks": [
@@ -534,6 +555,143 @@
       ],
       "smoke_required": true,
       "files": []
+    },
+    {
+      "id": "S03",
+      "phase": "P6",
+      "module": "content-recovery",
+      "name": "生产内容恢复契约与验收定义",
+      "description": "补充 `_default` 历史数据的归属过渡规则，明确自动认领、显式认领、运维回填三种路径的触发条件、幂等约束和验收口径。",
+      "verification": "L1",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "high",
+      "acceptance_criteria": [
+        "明确 `_default` 历史数据何时可被真实用户认领，避免长期悬空",
+        "明确已有线上账号的数据恢复路径，不要求删除重建账号",
+        "明确认领/回填的幂等规则和冲突处理，不覆盖已有用户数据",
+        "将验收口径写入 defect_feedback.md、test_coverage.md、alignment_checklist.md"
+      ],
+      "risk_tags": ["auth", "first_use", "startup", "config"],
+      "test_tasks": [
+        "正常：空账号首次登录后可恢复 `_default` 历史数据",
+        "边界：目标账号已有部分数据时不发生覆盖",
+        "异常：不存在 `_default` 数据时流程返回明确结果"
+      ],
+      "smoke_required": true,
+      "files": [".dev-flow/defect_feedback.md", ".dev-flow/test_coverage.md", ".dev-flow/alignment_checklist.md"],
+      "started_at": "2026-04-13",
+      "completed_at": "2026-04-13",
+      "evidence_file": ".dev-flow/evidence/S03.md"
+    },
+    {
+      "id": "B12",
+      "phase": "P6",
+      "module": "content-recovery",
+      "name": "实现 `_default` 历史数据认领与回填服务",
+      "description": "为生产缺陷新增历史数据归属修复能力。支持将 `_default` 下的 SQLite、Markdown、必要会话元数据一次性认领到指定真实用户，并保证重复执行安全。",
+      "verification": "L2",
+      "depends_on": ["S03"],
+      "status": "completed",
+      "priority": "high",
+      "acceptance_criteria": [
+        "提供面向真实用户的数据认领/回填服务，不再要求人工逐表修改",
+        "SQLite entries、Markdown 用户目录、session_meta 的 `_default` 数据可迁移到目标 user_id",
+        "重复执行不会造成重复记录、覆盖已有数据或目录污染",
+        "执行结果可审计：返回迁移数量、跳过数量、失败原因"
+      ],
+      "risk_tags": ["auth", "first_use", "startup"],
+      "test_tasks": [
+        "正常：`_default` 全量数据迁移到目标账号后立即可见",
+        "边界：目标账号已有同名文件或已有条目时按规则跳过或合并",
+        "异常：目标用户不存在、`_default` 不存在、部分文件损坏时不中断审计输出"
+      ],
+      "smoke_required": true,
+      "fix_level": "L2",
+      "root_cause_analysis": "R002 只完成了匿名历史数据写入 `_default`，但未定义从 `_default` 到真实用户的 owner claim 机制，导致线上真实账号登录后与历史数据断开。",
+      "similar_locations": [
+        "backend/app/infrastructure/storage/sqlite.py",
+        "backend/app/infrastructure/storage/storage_factory.py",
+        "backend/app/services/session_meta_store.py"
+      ],
+      "architecture_feedback": "补充“匿名到实名的数据迁移必须定义 owner claim 策略”的规划约束。",
+      "files": [
+        "backend/app/infrastructure/storage/sqlite.py",
+        "backend/app/infrastructure/storage/storage_factory.py",
+        "backend/app/services/session_meta_store.py",
+        "backend/app/services/auth_service.py",
+        "backend/app/routers/auth.py"
+      ],
+      "started_at": "2026-04-13",
+      "completed_at": "2026-04-13",
+      "evidence_file": ".dev-flow/evidence/B12.md"
+    },
+    {
+      "id": "B13",
+      "phase": "P6",
+      "module": "content-recovery",
+      "name": "补部署前数据探针与运维回填命令",
+      "description": "补充面向远程服务器的 dry-run 检查和实际回填命令，校验 `DATA_DIR`、挂载卷、users.db、index.db 与 `data/users/*` 是否一致，避免发布后才发现空数据。",
+      "verification": "L3",
+      "depends_on": ["S03"],
+      "status": "completed",
+      "priority": "high",
+      "acceptance_criteria": [
+        "提供 dry-run，能输出目标服务器当前数据目录、用户数、`_default` 条目数、目标账号条目数",
+        "提供实际执行命令或脚本，可对指定账号执行历史数据回填",
+        "部署脚本或运维文档纳入数据存在性检查，作为发布前门禁",
+        "不暴露密码/token 等敏感信息到日志"
+      ],
+      "risk_tags": ["startup", "config"],
+      "test_tasks": [
+        "正常：dry-run 正确识别线上已有数据并给出回填建议",
+        "边界：空数据目录、只存在 Markdown 或只存在 SQLite 时返回明确提示",
+        "异常：卷未挂载、路径错误、数据库文件缺失时失败并阻止继续发布"
+      ],
+      "smoke_required": true,
+      "fix_level": "L2",
+      "root_cause_analysis": "现有部署链路只验证服务可启动与页面可访问，没有把数据卷内容、`DATA_DIR` 和目标账号映射纳入发布门禁，导致“空数据上线”未被阻断。",
+      "similar_locations": [
+        "deploy/docker-compose.yml",
+        "deploy/remote-deploy.sh",
+        "scripts/test-docker.sh"
+      ],
+      "files": [
+        "deploy/docker-compose.yml",
+        "deploy/remote-deploy.sh",
+        "scripts/test-docker.sh"
+      ],
+      "started_at": "2026-04-13",
+      "completed_at": "2026-04-13",
+      "evidence_file": ".dev-flow/evidence/B13.md"
+    },
+    {
+      "id": "S04",
+      "phase": "P6",
+      "module": "content-recovery",
+      "name": "生产恢复 smoke 与回归验证",
+      "description": "补远程部署后的真实回归链路，验证目标账号登录后能看到历史内容，并验证不存在误认领和误覆盖。",
+      "verification": "L4",
+      "depends_on": ["B12", "B13"],
+      "status": "completed",
+      "priority": "high",
+      "acceptance_criteria": [
+        "目标账号登录后可见历史任务/笔记/项目内容",
+        "已有新数据与认领回填后的历史数据同时存在，未发生覆盖",
+        "非目标账号无法看到被回填的数据",
+        "部署后 smoke 结果写入 evidence"
+      ],
+      "risk_tags": ["auth", "first_use", "startup", "config", "network"],
+      "test_tasks": [
+        "正常：目标账号登录后列表非空且可打开历史内容详情",
+        "边界：目标账号已存在新内容时历史数据合并后仍可区分",
+        "异常：回填失败后 smoke 阻止验收通过并保留排查输出"
+      ],
+      "smoke_required": true,
+      "files": ["deploy/remote-deploy.sh", ".dev-flow/evidence/"],
+      "started_at": "2026-04-13",
+      "completed_at": "2026-04-13",
+      "evidence_file": ".dev-flow/evidence/S04.md"
     }
   ]
 }

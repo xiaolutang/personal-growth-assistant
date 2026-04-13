@@ -36,19 +36,23 @@
 | 单容器部署文件 | DP01 | integration | Docker 构建/static_app 导入/构建产物验证 | completed | bash deploy/build.sh 构建成功 |
 | 切换+清理旧文件 | DP02 | integration | deploy.sh 路径/旧文件删除(生产+开发)/文档同步 | completed | scripts/deploy.sh + 旧文件全部删除 + docker/ 目录移除 |
 | 构建与运行态验证 | DP03 | integration+smoke | 健康检查/SPA深链/静态资源/API文档/路由隔离/API端点 | completed | 容器级 9/9 验证通过 + dev/prod compose config 验证 + dev build 验证 |
-| 用户模型 | B01 | unit | 创建用户/重复username/密码哈希/get_by_username | pending | - |
-| 认证API | B02 | unit+integration | 注册成功/重复注册/登录成功/错误密码/获取me/token过期 | pending | risk: auth, first_use |
-| 认证测试 | B03 | unit | 注册成功失败/登录成功失败/token创建验证过期/密码哈希 | pending | - |
-| SQLite隔离 | B04 | unit | entry带user_id/list_entries过滤/数据迁移/多用户隔离 | pending | - |
-| Markdown隔离 | B05 | unit | 新用户目录创建/多用户目录隔离/迁移完整性/工厂缓存 | pending | risk: first_use, startup |
-| Neo4j隔离 | B06 | unit | 节点带user_id/查询过滤/迁移 | pending | - |
-| Qdrant隔离 | B07 | unit | payload带user_id/搜索过滤/迁移 | pending | - |
-| 服务层改造 | B08 | integration | 创建sync带user_id/跨用户不可见/删除隔离 | pending | - |
-| 会话隔离 | B09 | unit | 会话关联user_id/列表过滤/迁移 | pending | - |
-| 认证中间件 | B10 | unit | 有效token/过期token/无效token/无token | pending | risk: auth, first_use |
-| 路由守卫 | B11 | integration | 带token成功/不带token401/search隔离/SSE带token | pending | - |
-| 用户状态管理 | F01 | unit | login状态/logout状态/刷新恢复/token过期清除 | pending | risk: auth, first_use |
-| 登录注册页 | F02 | manual+unit | 正常登录/错误提示/注册流程/验证失败 | pending | risk: auth, first_use |
-| 路由守卫+拦截器 | F03 | unit | 未登录跳转/已登录正常/401自动登出/token注入 | pending | risk: auth, first_use |
-| 侧边栏用户信息 | F04 | unit | 显示username/登出流程/X-UID替换 | pending | - |
-| 全链路联调 | S02 | integration+smoke | 注册→登录→创建→隔离→登出→重登录/双用户/迁移数据 | pending | risk: auth, first_use, network |
+| 用户模型 | B01 | unit | 创建用户/重复username/密码哈希/get_by_username | completed | evidence/B01.md |
+| 认证API | B02 | unit+integration | 注册成功/重复注册/登录成功/错误密码/获取me/token过期 | completed | evidence/B02.md, risk: auth, first_use |
+| 认证测试 | B03 | unit | 注册成功失败/登录成功失败/token创建验证过期/密码哈希 | completed | evidence/B03.md |
+| SQLite隔离 | B04 | unit | entry带user_id/list_entries过滤/数据迁移/多用户隔离 | completed | evidence/B04.md |
+| Markdown隔离 | B05 | unit | 新用户目录创建/多用户目录隔离/迁移完整性/工厂缓存 | completed | evidence/B05.md, risk: first_use, startup |
+| Neo4j隔离 | B06 | unit | 节点带user_id/查询过滤/迁移 | completed | evidence/B06_B07.md |
+| Qdrant隔离 | B07 | unit | payload带user_id/搜索过滤/迁移 | completed | evidence/B06_B07.md |
+| 服务层改造 | B08 | integration | 创建sync带user_id/跨用户不可见/删除隔离 | completed | evidence/B08.md |
+| 会话隔离 | B09 | unit | 会话关联user_id/列表过滤/迁移 | completed | evidence/B09.md |
+| 认证中间件 | B10 | unit | 有效token/过期token/无效token/无token | completed | evidence/B10.md, risk: auth, first_use |
+| 路由守卫 | B11 | integration | 带token成功/不带token401/search隔离/SSE带token | completed | evidence/B11.md |
+| 用户状态管理 | F01 | unit | login状态/logout状态/刷新恢复/token过期清除 | completed | evidence/F01.md, risk: auth, first_use |
+| 登录注册页 | F02 | manual+unit | 正常登录/错误提示/注册流程/验证失败 | completed | evidence/F02.md, risk: auth, first_use |
+| 路由守卫+拦截器 | F03 | unit | 未登录跳转/已登录正常/401自动登出/token注入 | completed | evidence/F03.md, risk: auth, first_use |
+| 侧边栏用户信息 | F04 | unit | 显示username/登出流程/X-UID替换 | completed | evidence/F04.md |
+| 全链路联调 | S02 | integration+smoke | 注册→登录→创建→隔离→登出→重登录/双用户/迁移数据 | partial | 已验证 `_default` 迁移成立，但缺少真实线上账号认领与远程部署数据存在性 smoke |
+| 生产恢复契约 | S03 | unit+review | `_default` 归属规则/冲突规则/回填验收标准 | planned | 需补明确 claim 策略 |
+| 数据认领与回填 | B12 | unit+integration | SQLite/Markdown/session 迁移幂等/冲突不覆盖/审计输出 | planned | risk: auth, first_use, startup |
+| 部署探针与回填命令 | B13 | integration+runtime | DATA_DIR/卷挂载/dry-run/实际回填/失败阻断 | planned | risk: startup, config |
+| 生产恢复回归 | S04 | smoke+manual | 目标账号历史内容可见/非目标账号隔离/失败阻断验收 | planned | risk: auth, first_use, startup, config, network |

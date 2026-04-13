@@ -22,6 +22,10 @@ echo -e "${BLUE}║         Docker 构建验证 - 单容器模式               
 echo -e "${BLUE}╚═══════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
+TEST_PORT="${PGA_TEST_PORT:-18001}"
+BASE_URL="http://localhost:${TEST_PORT}"
+JWT_SECRET_VALUE="${JWT_SECRET:-test-secret-key-for-docker-validation}"
+
 echo -e "${YELLOW}=== 步骤 1/4: 构建单容器镜像 ===${NC}"
 bash deploy/build.sh
 
@@ -30,9 +34,10 @@ echo -e "${YELLOW}=== 步骤 2/4: 启动容器 ===${NC}"
 docker rm -f pga-test 2>/dev/null || true
 
 docker run -d --name pga-test \
-    -p 8001:8001 \
+    -p "${TEST_PORT}:8001" \
     -v "$PROJECT_ROOT/data:/app/data" \
     -e DATA_DIR=/app/data \
+    -e JWT_SECRET="$JWT_SECRET_VALUE" \
     -e LLM_API_KEY=test \
     -e LLM_BASE_URL=http://localhost \
     -e LLM_MODEL=test \
@@ -47,7 +52,7 @@ MAX_RETRIES=5
 RETRY_COUNT=0
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if curl -sf http://localhost:8001/health > /dev/null 2>&1; then
+    if curl -sf "${BASE_URL}/health" > /dev/null 2>&1; then
         echo -e "${GREEN}✅ 健康检查通过${NC}"
         break
     fi
@@ -70,11 +75,11 @@ echo ""
 echo -e "${YELLOW}=== 步骤 4/4: 端点验证 ===${NC}"
 
 # API 健康检查
-HEALTH_RESPONSE=$(curl -s http://localhost:8001/health)
+HEALTH_RESPONSE=$(curl -s "${BASE_URL}/health")
 echo "GET /health: $HEALTH_RESPONSE"
 
 # 前端静态文件
-FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8001/)
+FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/")
 if [ "$FRONTEND_STATUS" = "200" ]; then
     echo -e "${GREEN}✅ 前端页面可达 (HTTP $FRONTEND_STATUS)${NC}"
 else
@@ -85,28 +90,29 @@ else
 fi
 
 # API 文档
-DOCS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8001/docs)
+DOCS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/docs")
 if [ "$DOCS_STATUS" = "200" ]; then
     echo -e "${GREEN}✅ API 文档可达 (HTTP $DOCS_STATUS)${NC}"
 else
     echo -e "${RED}❌ API 文档不可达 (HTTP $DOCS_STATUS)${NC}"
 fi
 
-# SPA 深链路由（核心验证：/tasks 应返回 index.html 而非 404）
-SPA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8001/tasks)
-SPA_CONTENT_TYPE=$(curl -sI http://localhost:8001/tasks | grep -i content-type | tr -d '\r')
+# SPA 深链路由（选择不会与后端 API 冲突的前端路由）
+SPA_ROUTE="${PGA_SPA_ROUTE:-/login}"
+SPA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}${SPA_ROUTE}")
+SPA_CONTENT_TYPE=$(curl -s -D - -o /dev/null "${BASE_URL}${SPA_ROUTE}" | grep -i content-type | tr -d '\r')
 if [ "$SPA_STATUS" = "200" ] && echo "$SPA_CONTENT_TYPE" | grep -q "text/html"; then
-    echo -e "${GREEN}✅ SPA 深链 /tasks 返回 HTML (HTTP $SPA_STATUS)${NC}"
+    echo -e "${GREEN}✅ SPA 深链 ${SPA_ROUTE} 返回 HTML (HTTP $SPA_STATUS)${NC}"
 else
-    echo -e "${RED}❌ SPA 深链 /tasks 未返回 HTML (HTTP $SPA_STATUS, $SPA_CONTENT_TYPE)${NC}"
+    echo -e "${RED}❌ SPA 深链 ${SPA_ROUTE} 未返回 HTML (HTTP $SPA_STATUS, $SPA_CONTENT_TYPE)${NC}"
     docker rm -f pga-test
     exit 1
 fi
 
 # 静态资源 MIME 类型
-ASSET_FILE=$(curl -s http://localhost:8001/ | grep -o '/assets/[^"]*\.js' | head -1 | sed 's/^\///')
+ASSET_FILE=$(curl -s "${BASE_URL}/" | grep -o '/assets/[^"]*\.js' | head -1 | sed 's/^\///')
 if [ -n "$ASSET_FILE" ]; then
-    ASSET_CONTENT_TYPE=$(curl -sI "http://localhost:8001/$ASSET_FILE" | grep -i content-type | tr -d '\r')
+    ASSET_CONTENT_TYPE=$(curl -s -D - -o /dev/null "${BASE_URL}/$ASSET_FILE" | grep -i content-type | tr -d '\r')
     if echo "$ASSET_CONTENT_TYPE" | grep -q "javascript"; then
         echo -e "${GREEN}✅ 静态资源 MIME 正确 ($ASSET_FILE)${NC}"
     else
@@ -119,13 +125,46 @@ else
 fi
 
 # 路由优先级隔离（/health 返回 JSON，/ 返回 HTML）
-HEALTH_CT=$(curl -sI http://localhost:8001/health | grep -i content-type | tr -d '\r')
+HEALTH_CT=$(curl -s -D - -o /dev/null "${BASE_URL}/health" | grep -i content-type | tr -d '\r')
 if echo "$HEALTH_CT" | grep -q "application/json"; then
     echo -e "${GREEN}✅ 路由隔离正确：/health → JSON, / → HTML${NC}"
 else
     echo -e "${RED}❌ 路由隔离失败：/health 返回 $HEALTH_CT（期望 JSON）${NC}"
     docker rm -f pga-test
     exit 1
+fi
+
+# 数据探针 dry-run
+echo ""
+echo -e "${YELLOW}=== 数据探针 dry-run ===${NC}"
+if docker exec pga-test python /app/scripts/claim_default_data.py --data-dir /app/data ${PGA_REQUIRE_CONTENT_DATA:+--fail-if-empty}; then
+    echo -e "${GREEN}✅ 数据探针执行成功${NC}"
+else
+    echo -e "${RED}❌ 数据探针失败，请检查 DATA_DIR/挂载卷/历史内容${NC}"
+    docker logs pga-test --tail 20
+    docker rm -f pga-test
+    exit 1
+fi
+
+# 真实鉴权 smoke（可选）
+if [ -n "${PGA_SMOKE_USERNAME:-}" ] && [ -n "${PGA_SMOKE_PASSWORD:-}" ]; then
+    echo ""
+    echo -e "${YELLOW}=== 真实登录 Smoke ===${NC}"
+    TOKEN=$(curl -sS -X POST "${BASE_URL}/auth/login" \
+        -H "Content-Type: application/json" \
+        -d "{\"username\":\"${PGA_SMOKE_USERNAME}\",\"password\":\"${PGA_SMOKE_PASSWORD}\"}" \
+        | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')
+
+    ENTRIES_RESPONSE=$(curl -sS "${BASE_URL}/entries?limit=5" -H "Authorization: Bearer ${TOKEN}")
+    TOTAL=$(printf '%s' "$ENTRIES_RESPONSE" | python3 -c 'import json,sys; print(json.load(sys.stdin)["total"])')
+
+    if [ "$TOTAL" -gt 0 ]; then
+        echo -e "${GREEN}✅ 登录与内容接口通过 (total=${TOTAL})${NC}"
+    else
+        echo -e "${RED}❌ 登录成功但内容为空${NC}"
+        docker rm -f pga-test
+        exit 1
+    fi
 fi
 
 # 清理

@@ -1,48 +1,38 @@
 # 项目说明
 
-> 项目：log-service
-> 版本：v0.1.0
+> 项目：personal-growth-assistant
+> 版本：v0.3.1
 
 ## 目标
-- 将 personal-growth-assistant 的日志模块抽取为独立的可复用日志服务
-- 支持多项目、多语言通过 HTTP REST 接入
-- 提供统一的日志查看界面
-- 在 personal-growth-assistant 中补充用户反馈提交通道，接入 log-service Issue API
+- 修复认证上线后历史内容在生产环境不可见的问题
+- 保证认证迁移后的历史数据可被正确认领或回填到真实用户
+- 为远程部署补齐数据存在性校验，避免“应用可访问但内容为空”再次上线
 
 ## 范围
 
 ### 包含
-- log-service 独立仓库（FastAPI 服务端）
-- SQLite 日志存储（含扩展接口）
-- ingest API（接收外部日志）
-- query API（查询、统计、清理）
-- 通用中间件（RequestID / RequestLogging / ErrorHandler）
-- Python SDK（RemoteLogHandler）
-- logs-ui（React 前端，含 service_name 筛选）
-- Docker 部署配置
-- personal-growth-assistant 改造为 SDK 接入
-- personal-growth-assistant 反馈提交入口（前端按钮 + 后端代理）
+- `_default` 历史数据归属规则补齐
+- 现有线上账号的数据认领/回填能力
+- 部署前后数据探针与 smoke 校验
+- 缺陷回流记录、修复任务拆解、验收标准更新
 
 ### 不包含
-- Java SDK（后续补充）
-- LangSmith 集成（留在各项目内部）
-- 告警/通知功能
-- 用户认证/鉴权
+- MCP Server 用户隔离扩展（仍为后续需求）
+- 新的认证模式或 refresh token
+- 非本次缺陷直接相关的 UI 重构
 
 ## 用户路径
-1. 项目接入：各项目安装对应语言 SDK → 配置 endpoint → 日志自动上报
-2. 日志查看：访问 logs-ui → 按项目/级别/时间筛选 → 查看详情
-3. 日志管理：查看统计 → 清理过期日志
-4. 用户反馈：点击右下角反馈按钮 → 填写标题/描述/严重程度 → 提交到 log-service Issue API
+1. 老数据拥有者登录已有账号后，可以看到迁移前已有内容，或通过一次性认领恢复内容可见性。
+2. 运维在部署前执行 dry-run 检查，确认 `DATA_DIR`、SQLite、Markdown 用户目录和目标账号映射一致。
+3. 部署完成后执行登录与内容列表 smoke，确认线上不是“空应用”状态。
 
 ## 技术约束
-- 后端：Python 3.11+ / FastAPI / SQLite（默认）
-- 前端：React 18 / Tailwind CSS / Vite
-- 跨语言接入：HTTP REST（JSON）
-- 部署：Docker Compose
+- 后端：Python 3.11+ / FastAPI / SQLite / Markdown 存储
+- 数据迁移必须幂等，禁止覆盖已有用户数据
+- 修复同时覆盖 SQLite 与 Markdown 主数据源，必要时同步会话元数据
+- 部署仍使用 Docker Compose + `/growth/` 子路径
 
 ## 交付边界
-- 后端：独立 FastAPI 应用，暴露 ingest + query API
-- 前端：独立 SPA，通过 API 代理访问后端
-- SDK：Python 包，通过 pip 安装
-- 集成：personal-growth-assistant 作为首个接入方完成端到端验证
+- 后端：提供 `_default` 历史数据认领/回填能力与可审计日志
+- 运维：提供可重复执行的恢复/检查命令
+- 测试：补首用与生产回归 smoke，覆盖正常/边界/异常场景
