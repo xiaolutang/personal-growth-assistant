@@ -5,6 +5,20 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 
 
+class TrendPeriod(BaseModel):
+    """趋势统计周期"""
+    date: str = Field(..., description="日期（YYYY-MM-DD 或 YYYY-WXX）")
+    total: int = Field(0, description="总任务数")
+    completed: int = Field(0, description="已完成数")
+    completion_rate: float = Field(0.0, description="完成率（百分比）")
+    notes_count: int = Field(0, description="笔记数")
+
+
+class TrendResponse(BaseModel):
+    """趋势数据响应"""
+    periods: List[TrendPeriod] = Field(default_factory=list, description="统计周期数组")
+
+
 class TaskStats(BaseModel):
     """任务统计"""
     total: int = Field(..., description="总任务数")

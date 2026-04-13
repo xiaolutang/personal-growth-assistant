@@ -42,6 +42,7 @@ export interface EntryCreate {
 export interface EntryUpdate {
   title?: string;
   content?: string;
+  category?: Category;
   status?: TaskStatus;
   priority?: Priority;
   tags?: string[];

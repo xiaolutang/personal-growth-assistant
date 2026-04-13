@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 6,
+    "pending": 5,
     "in_progress": 0,
-    "completed": 0,
+    "completed": 1,
     "blocked": 0,
     "cancelled": 0
   },
@@ -113,7 +113,7 @@
       "description": "定义 Phase 1A 所有新功能的 API 契约和数据模型：(1) TrendPeriod/TrendResponse 模型 + GET /review/trend 契约；(2) EntryUpdate 新增 category 字段（后端 schema + 前端类型同步）；(3) feedback 表 DDL + GET /feedback 和 GET /feedback/{id} 契约。执行 npm run gen:types 刷新前端 API 类型。",
       "verification": "L1",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "acceptance_criteria": [
         "TrendPeriod(date, total, completed, completion_rate, notes_count) 和 TrendResponse(periods) 模型定义在 review_service.py",

@@ -306,7 +306,7 @@ export interface paths {
          * @description 解析自然语言文本，流式返回结果（SSE）
          *
          *     使用 LangGraph Checkpointer 管理对话历史，
-         *     通过 thread_id（session_id）实现多轮对话。
+         *     通过 thread_id（{user_id}:{session_id}）实现多轮对话隔离。
          */
         post: operations["parse_parse_post"];
         delete?: never;
@@ -349,18 +349,236 @@ export interface paths {
         put?: never;
         /**
          * Chat
-         * @description 统一聊天接口（合并意图检测和处理）
+         * @description 统一聊天接口（一站式处理意图识别和操作执行）
          *
          *     一次请求完成：
          *     1. 意图检测（可跳过）
-         *     2. 根据意图分发处理
+         *     2. 根据意图执行操作（create/update/delete/read 等）
+         *     3. 多选场景返回 confirm 事件，前端确认后携带 confirm 参数再次调用
          *
-         *     返回 SSE 流式响应：
+         *     SSE 事件：
          *     - event: intent  - 意图检测结果
          *     - event: content - 流式内容（create 意图）
-         *     - event: done    - 完成，包含 need_client_action 表示是否需要前端额外处理
+         *     - event: created - 创建成功
+         *     - event: updated - 更新成功
+         *     - event: deleted - 删除成功
+         *     - event: confirm - 需要用户确认（多选场景）
+         *     - event: results - 搜索结果（read 意图）
+         *     - event: done    - 完成
+         *     - event: error   - 错误
          */
         post: operations["chat_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Sessions
+         * @description 获取当前用户的所有会话列表
+         *
+         *     返回会话 ID、标题、创建时间、更新时间
+         */
+        get: operations["list_sessions_sessions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/{session_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Session Messages
+         * @description 获取指定会话的消息历史
+         *
+         *     从 LangGraph checkpointer 读取消息
+         */
+        get: operations["get_session_messages_sessions__session_id__messages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Session
+         * @description 删除会话（包括元数据和对话历史）
+         */
+        delete: operations["delete_session_sessions__session_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Session
+         * @description 更新会话元数据（如标题）
+         */
+        patch: operations["update_session_sessions__session_id__patch"];
+        trace?: never;
+    };
+    "/playground/llm-test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Test Llm
+         * @description 测试 LLM 配置是否正常工作
+         *
+         *     发送一个简单的测试消息，返回 LLM 的响应和配置信息
+         *     注意：此端点仅在开发环境可用
+         */
+        get: operations["test_llm_playground_llm_test_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Feedback
+         * @description 代理用户反馈到 log-service issue API
+         */
+        post: operations["submit_feedback_feedback_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register
+         * @description 注册新用户
+         */
+        post: operations["register_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Login
+         * @description 用户登录，返回 access token
+         */
+        post: operations["login_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Logout
+         * @description 登出（前端清除 token）
+         */
+        post: operations["logout_auth_logout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Me
+         * @description 获取当前用户信息
+         */
+        get: operations["get_me_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/claim-default-data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim Default Data
+         * @description 显式将 `_default` 历史数据认领到当前用户
+         */
+        post: operations["claim_default_data_auth_claim_default_data_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -413,6 +631,8 @@ export interface components {
              * @default false
              */
             skip_intent: boolean;
+            /** @description 确认操作（多选场景） */
+            confirm?: components["schemas"]["ConfirmAction"] | null;
         };
         /**
          * ConceptNode
@@ -439,6 +659,22 @@ export interface components {
             category?: string | null;
         };
         /**
+         * ConfirmAction
+         * @description 确认操作
+         */
+        ConfirmAction: {
+            /**
+             * Action
+             * @description 操作类型: update/delete
+             */
+            action: string;
+            /**
+             * Item Id
+             * @description 用户选择的条目 ID
+             */
+            item_id: string;
+        };
+        /**
          * DailyReport
          * @description 日报响应
          */
@@ -453,6 +689,39 @@ export interface components {
             }[];
             /** Ai Summary */
             ai_summary?: string | null;
+        };
+        /**
+         * DefaultDataClaimResult
+         * @description `_default` 历史数据认领结果
+         */
+        DefaultDataClaimResult: {
+            /** Claimed */
+            claimed: boolean;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /**
+             * Sqlite Entries Claimed
+             * @default 0
+             */
+            sqlite_entries_claimed: number;
+            /**
+             * Markdown Files Copied
+             * @default 0
+             */
+            markdown_files_copied: number;
+            /**
+             * Markdown Files Skipped
+             * @default 0
+             */
+            markdown_files_skipped: number;
+            /**
+             * Session Count Claimed
+             * @default 0
+             */
+            session_count_claimed: number;
         };
         /**
          * EntryCreate
@@ -572,6 +841,11 @@ export interface components {
              */
             content?: string | null;
             /**
+             * Category
+             * @description 条目分类: project/task/note/inbox
+             */
+            category?: string | null;
+            /**
              * Status
              * @description 新状态: waitStart/doing/complete/paused/cancelled
              */
@@ -606,6 +880,34 @@ export interface components {
              * @description 完成时间
              */
             completed_at?: string | null;
+        };
+        /**
+         * FeedbackRequest
+         * @description 前端反馈请求
+         */
+        FeedbackRequest: {
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Severity
+             * @default medium
+             * @enum {string}
+             */
+            severity: "low" | "medium" | "high" | "critical";
+        };
+        /**
+         * FeedbackResponse
+         * @description 反馈提交响应
+         */
+        FeedbackResponse: {
+            /** Success */
+            success: boolean;
+            /** Issue */
+            issue: {
+                [key: string]: unknown;
+            };
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -685,6 +987,24 @@ export interface components {
             connections: components["schemas"]["ConceptRelationModel"][];
         };
         /**
+         * LLMTestResponse
+         * @description LLM 测试响应
+         */
+        LLMTestResponse: {
+            /** Success */
+            success: boolean;
+            /** Config */
+            config: {
+                [key: string]: unknown;
+            };
+            /** Response Content */
+            response_content?: string | null;
+            /** Error */
+            error?: string | null;
+            /** Response Time Ms */
+            response_time_ms: number;
+        };
+        /**
          * LearningPathResponse
          * @description 学习路径响应
          */
@@ -716,6 +1036,20 @@ export interface components {
              * @default []
              */
             related_notes: string[];
+        };
+        /**
+         * MessageInfo
+         * @description 消息信息
+         */
+        MessageInfo: {
+            /** Id */
+            id: string;
+            /** Role */
+            role: string;
+            /** Content */
+            content: string;
+            /** Timestamp */
+            timestamp: string;
         };
         /**
          * MonthlyReport
@@ -820,6 +1154,20 @@ export interface components {
             results: components["schemas"]["app__routers__search__SearchResult"][];
         };
         /**
+         * SessionInfo
+         * @description 会话信息
+         */
+        SessionInfo: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /**
          * SessionResponse
          * @description 会话操作响应
          */
@@ -831,6 +1179,17 @@ export interface components {
              * @default
              */
             message: string;
+        };
+        /**
+         * SessionUpdate
+         * @description 会话更新请求
+         */
+        SessionUpdate: {
+            /**
+             * Title
+             * @description 会话标题
+             */
+            title: string;
         };
         /**
          * SuccessResponse
@@ -876,6 +1235,66 @@ export interface components {
              */
             completion_rate: number;
         };
+        /**
+         * Token
+         * @description Token 响应模型
+         */
+        Token: {
+            /** Access Token */
+            access_token: string;
+            /**
+             * Token Type
+             * @default bearer
+             */
+            token_type: string;
+            /**
+             * Expires In
+             * @default 604800
+             */
+            expires_in: number;
+            user: components["schemas"]["UserResponse"];
+        };
+        /**
+         * UserCreate
+         * @description 注册请求模型
+         */
+        UserCreate: {
+            /** Username */
+            username: string;
+            /** Email */
+            email: string;
+            /** Password */
+            password: string;
+        };
+        /**
+         * UserLogin
+         * @description 登录请求模型
+         */
+        UserLogin: {
+            /** Username */
+            username: string;
+            /** Password */
+            password: string;
+        };
+        /**
+         * UserResponse
+         * @description 用户响应模型 - 不含 hashed_password
+         */
+        UserResponse: {
+            /** Id */
+            id: string;
+            /** Username */
+            username: string;
+            /** Email */
+            email: string;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -884,6 +1303,10 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
         /**
          * WeeklyReport
@@ -1552,6 +1975,302 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sessions_sessions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionInfo"][];
+                };
+            };
+        };
+    };
+    get_session_messages_sessions__session_id__messages_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageInfo"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_session_sessions__session_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_session_sessions__session_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionInfo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_llm_playground_llm_test_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LLMTestResponse"];
+                };
+            };
+        };
+    };
+    submit_feedback_feedback_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_auth_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    login_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserLogin"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Token"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    logout_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_me_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+        };
+    };
+    claim_default_data_auth_claim_default_data_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefaultDataClaimResult"];
                 };
             };
         };
