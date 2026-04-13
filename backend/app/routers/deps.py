@@ -1,7 +1,8 @@
 """共享依赖"""
 from typing import TYPE_CHECKING
 
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 if TYPE_CHECKING:
     from app.services.sync_service import SyncService
@@ -10,6 +11,9 @@ if TYPE_CHECKING:
     from app.services.review_service import ReviewService
     from app.services.knowledge_service import KnowledgeService
     from app.infrastructure.storage.user_storage import UserStorage
+    from app.models.user import User
+
+_bearer_scheme = HTTPBearer()
 
 # 全局存储服务（由 main.py 初始化）
 storage: "SyncService" = None
@@ -84,6 +88,16 @@ def get_user_storage() -> "UserStorage":
     if _user_storage is None:
         raise HTTPException(status_code=503, detail="用户存储服务未初始化")
     return _user_storage
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer_scheme),
+) -> "User":
+    """从 Bearer token 提取并验证当前用户（FastAPI 依赖）"""
+    from app.services.auth_service import get_current_user_from_token
+
+    user_storage = get_user_storage()
+    return get_current_user_from_token(credentials.credentials, user_storage)
 
 
 def reset_all_services():

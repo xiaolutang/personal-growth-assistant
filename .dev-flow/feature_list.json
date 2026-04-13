@@ -16,9 +16,9 @@
   },
   "summary": {
     "total_tasks": 17,
-    "pending": 9,
+    "pending": 8,
     "in_progress": 0,
-    "completed": 8,
+    "completed": 9,
     "cancelled": 0
   },
   "archived_cycles": [
@@ -330,7 +330,7 @@
       "description": "创建 get_current_user 依赖函数（从 Authorization header 提取 JWT → 验证 → 加载用户）。deps.py 保持全局单例模式，但在每个方法调用时传递 user_id 参数（非构造时注入）。",
       "verification": "L2",
       "depends_on": ["B02"],
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "acceptance_criteria": [
         "get_current_user 函数作为 FastAPI Depends，从 Bearer token 提取 user_id",
