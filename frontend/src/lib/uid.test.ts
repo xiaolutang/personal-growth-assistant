@@ -63,7 +63,8 @@ describe("initFetchInterceptor", () => {
     // 恢复原始 fetch 以便重新初始化拦截器
     globalThis.fetch = originalFetch;
     mockFetch = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
-    globalThis.fetch = mockFetch;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    globalThis.fetch = mockFetch as any;
   });
 
   afterEach(() => {
@@ -72,7 +73,8 @@ describe("initFetchInterceptor", () => {
 
   it("有 token 时自动注入 Authorization header", async () => {
     localStorageMock.getItem.mockImplementation(
-      (key: string) => (key === "pga_token" ? "my-jwt-token" : key === "pga_uid" ? null : null)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (key: string) => (key === "pga_token" ? "my-jwt-token" : null) as any
     );
 
     const { initFetchInterceptor } = await import("./uid");
@@ -88,7 +90,7 @@ describe("initFetchInterceptor", () => {
   });
 
   it("无 token 时不注入 Authorization header", async () => {
-    localStorageMock.getItem.mockReturnValue(null);
+    localStorageMock.getItem.mockReturnValue(null as unknown as string);
 
     const { initFetchInterceptor } = await import("./uid");
     initFetchInterceptor();
@@ -103,7 +105,7 @@ describe("initFetchInterceptor", () => {
 
   it("401 响应时清除 token 和 user", async () => {
     localStorageMock.getItem.mockImplementation(
-      (key: string) => (key === "pga_token" ? "expired-token" : null)
+      (key: string) => (key === "pga_token" ? "expired-token" : null) as any
     );
     mockFetch.mockResolvedValue(new Response(null, { status: 401 }));
 
@@ -118,7 +120,8 @@ describe("initFetchInterceptor", () => {
 
   it("401 时在非登录页跳转到登录页", async () => {
     localStorageMock.getItem.mockImplementation(
-      (key: string) => (key === "pga_token" ? "expired-token" : null)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (key: string) => (key === "pga_token" ? "expired-token" : null) as any
     );
     mockFetch.mockResolvedValue(new Response(null, { status: 401 }));
 
@@ -132,7 +135,8 @@ describe("initFetchInterceptor", () => {
 
   it("200 响应时不清除 token", async () => {
     localStorageMock.getItem.mockImplementation(
-      (key: string) => (key === "pga_token" ? "valid-token" : null)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (key: string) => (key === "pga_token" ? "valid-token" : null) as any
     );
     mockFetch.mockResolvedValue(new Response(null, { status: 200 }));
 
@@ -146,7 +150,8 @@ describe("initFetchInterceptor", () => {
 
   it("已有 Authorization header 时不覆盖", async () => {
     localStorageMock.getItem.mockImplementation(
-      (key: string) => (key === "pga_token" ? "store-token" : null)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (key: string) => (key === "pga_token" ? "store-token" : null) as any
     );
 
     const { initFetchInterceptor } = await import("./uid");

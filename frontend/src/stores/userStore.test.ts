@@ -141,7 +141,7 @@ describe("useUserStore", () => {
                   email: "e@t.com",
                   is_active: true,
                 })
-              : null
+              : (null as unknown as string)
       );
 
       const mockUser = {
@@ -163,7 +163,7 @@ describe("useUserStore", () => {
     });
 
     it("无 token 时不应设置登录态", async () => {
-      localStorageMock.getItem.mockReturnValue(null);
+      localStorageMock.getItem.mockReturnValue(null as unknown as string);
 
       useUserStore.getState().loadFromStorage();
 
@@ -173,7 +173,7 @@ describe("useUserStore", () => {
 
     it("token 无效时应清除登录态", async () => {
       localStorageMock.getItem.mockImplementation(
-        (key: string) => (key === "pga_token" ? "expired-token" : null)
+        (key: string) => (key === "pga_token" ? "expired-token" : (null as unknown as string))
       );
 
       mockFetch.mockResolvedValueOnce({
