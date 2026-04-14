@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 7,
-    "pending": 3,
+    "pending": 2,
     "in_progress": 0,
-    "completed": 4,
+    "completed": 5,
     "blocked": 0,
     "cancelled": 0
   },
@@ -322,7 +322,10 @@
       "description": "强化探索页搜索体验。实现：(1) 搜索框输入 debounce 300ms 后自动搜索；(2) **搜索结果受当前类型 Tab 约束**：在 `/explore?type=inbox` 下搜索只返回 inbox 类型结果；实现方式为搜索时携带当前 Tab 的 type 参数，或在前端对搜索结果做二次过滤（后端 search API 支持 type 过滤时优先用后端）；(3) 搜索结果高亮关键词（简单 CSS 标记）；(4) `Cmd+K` / `Ctrl+K` 全局快捷键聚焦搜索框；(5) 搜索无结果时显示引导文案（而非空白）。注意：探索页已由 F10 创建，本任务在其基础上增强。",
       "verification": "F2",
       "depends_on": ["F10"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F11.md",
       "priority": "medium",
       "acceptance_criteria": [
         "输入 debounce 300ms 后自动触发搜索",

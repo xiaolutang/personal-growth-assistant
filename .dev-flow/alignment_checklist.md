@@ -30,4 +30,4 @@
 | Onboarding | onboarding_completed 字段 | CONTRACT-O01 | completed | not_applicable | completed | F09 后端部分 |
 | Onboarding | Onboarding 引导 UI | CONTRACT-O01/O02 | completed | completed | completed | F09 前端部分 |
 | 探索模块 | 探索页统一浏览 | - | not_applicable | completed | completed | F10 |
-| 探索模块 | 搜索增强 | - | not_applicable | pending | pending | F10 → F11 |
+| 探索模块 | 搜索增强 | - | not_applicable | completed | completed | F10 → F11 |

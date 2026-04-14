@@ -24,6 +24,7 @@ function filterByCategory(entries: Task[], tab: string): Task[] {
 }
 
 export function Explore() {
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const urlType = searchParams.get("type") ?? "";
@@ -34,6 +35,18 @@ export function Explore() {
   const [searchResults, setSearchResults] = useState<Task[] | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Cmd+K / Ctrl+K 全局聚焦搜索框
+  useEffect(() => {
+    const handleGlobalKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleGlobalKey);
+    return () => document.removeEventListener("keydown", handleGlobalKey);
+  }, []);
 
   // 根据 URL 参数同步 Tab
   useEffect(() => {
@@ -185,6 +198,7 @@ export function Explore() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
+            ref={searchInputRef}
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -235,7 +249,7 @@ export function Explore() {
         ) : searchError ? (
           <div className="p-4 text-center text-red-500">{searchError}</div>
         ) : (
-          <TaskList tasks={filteredTasks} emptyMessage={emptyMessage} />
+          <TaskList tasks={filteredTasks} emptyMessage={emptyMessage} highlightKeyword={searchQuery.trim()} />
         )}
       </Card>
     </main>

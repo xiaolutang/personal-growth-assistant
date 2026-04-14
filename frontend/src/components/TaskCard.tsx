@@ -13,9 +13,26 @@ import { toast } from "sonner";
 interface TaskCardProps {
   task: Task;
   showParent?: boolean;
+  highlightKeyword?: string;
 }
 
-export function TaskCard({ task, showParent = true }: TaskCardProps) {
+/** 高亮文本中的关键词 */
+function HighlightText({ text, keyword }: { text: string; keyword: string }) {
+  if (!keyword) return <>{text}</>;
+  const idx = text.toLowerCase().indexOf(keyword.toLowerCase());
+  if (idx === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">
+        {text.slice(idx, idx + keyword.length)}
+      </mark>
+      {text.slice(idx + keyword.length)}
+    </>
+  );
+}
+
+export function TaskCard({ task, showParent = true, highlightKeyword }: TaskCardProps) {
   const navigate = useNavigate();
   const updateTaskStatus = useTaskStore((state) => state.updateTaskStatus);
   const deleteTask = useTaskStore((state) => state.deleteTask);
@@ -134,7 +151,10 @@ export function TaskCard({ task, showParent = true }: TaskCardProps) {
             (task.status === "complete" || task.status === "cancelled") && "line-through text-muted-foreground"
           )}
         >
-          {task.title}
+          {highlightKeyword
+            ? <HighlightText text={task.title} keyword={highlightKeyword} />
+            : task.title
+          }
         </p>
 
         {/* Meta Info: parent, date, tags */}
