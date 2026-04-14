@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 
-import { submitFeedback } from "./api";
+import { submitFeedback, getFeedbackList, getFeedbackDetail } from "./api";
 
 describe("submitFeedback", () => {
   afterEach(() => {
@@ -10,10 +10,12 @@ describe("submitFeedback", () => {
   it("成功时返回反馈结果", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
       success: true,
-      issue: {
+      feedback: {
         id: 1,
         title: "搜索功能响应慢",
-        status: "open",
+        severity: "medium",
+        status: "pending",
+        log_service_issue_id: null,
         created_at: "2026-04-12T10:00:00Z",
       },
     }), {
@@ -28,7 +30,7 @@ describe("submitFeedback", () => {
     });
 
     expect(result.success).toBe(true);
-    expect(result.issue.id).toBe(1);
+    expect(result.feedback.id).toBe(1);
   });
 
   it("503 时抛出 ApiError", async () => {
@@ -62,6 +64,75 @@ describe("submitFeedback", () => {
     })).rejects.toMatchObject({
       status: 422,
       message: "title 不能为空",
+    });
+  });
+});
+
+describe("getFeedbackList", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("成功时返回反馈列表", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      items: [
+        { id: 1, title: "Bug A", severity: "high", status: "pending", log_service_issue_id: null, created_at: "2026-04-12T10:00:00Z" },
+        { id: 2, title: "Bug B", severity: "low", status: "reported", log_service_issue_id: 42, created_at: "2026-04-11T08:00:00Z" },
+      ],
+      total: 2,
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    })));
+
+    const result = await getFeedbackList();
+    expect(result.items).toHaveLength(2);
+    expect(result.total).toBe(2);
+    expect(result.items[0].title).toBe("Bug A");
+  });
+
+  it("503 时抛出 ApiError", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      detail: "存储服务未初始化",
+    }), {
+      status: 503,
+      headers: { "Content-Type": "application/json" },
+    })));
+
+    await expect(getFeedbackList()).rejects.toMatchObject({
+      status: 503,
+    });
+  });
+});
+
+describe("getFeedbackDetail", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("成功时返回单条反馈", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      id: 1, title: "Bug A", user_id: "u1", severity: "high", status: "pending", log_service_issue_id: null, created_at: "2026-04-12T10:00:00Z",
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    })));
+
+    const result = await getFeedbackDetail(1);
+    expect(result.id).toBe(1);
+    expect(result.title).toBe("Bug A");
+  });
+
+  it("404 时抛出 ApiError", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      detail: "反馈不存在",
+    }), {
+      status: 404,
+      headers: { "Content-Type": "application/json" },
+    })));
+
+    await expect(getFeedbackDetail(999)).rejects.toMatchObject({
+      status: 404,
     });
   });
 });

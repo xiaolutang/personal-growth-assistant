@@ -12,6 +12,7 @@ from app.services.review_service import (
     DailyReport,
     WeeklyReport,
     MonthlyReport,
+    TrendResponse,
 )
 
 router = APIRouter(prefix="/review", tags=["review"])
@@ -25,14 +26,13 @@ async def get_daily_report(
     """获取日报"""
     review_service = get_review_service()
 
-    # 解析日期
     try:
         target_date = review_service.parse_date(date_param)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
     try:
-        return review_service.get_daily_report(target_date)
+        return review_service.get_daily_report(target_date, user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
 
@@ -45,10 +45,8 @@ async def get_weekly_report(
     """获取周报"""
     review_service = get_review_service()
 
-    # 计算本周日期范围
     try:
         week_start = review_service.parse_date(start_date)
-        # 如果指定了日期，使用它；否则从周一开始
         if start_date is None:
             today = date.today()
             week_start = today - __import__('datetime').timedelta(days=today.weekday())
@@ -56,7 +54,7 @@ async def get_weekly_report(
         raise HTTPException(status_code=400, detail=str(e))
 
     try:
-        return review_service.get_weekly_report(week_start)
+        return review_service.get_weekly_report(week_start, user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
 
@@ -69,13 +67,36 @@ async def get_monthly_report(
     """获取月报"""
     review_service = get_review_service()
 
-    # 计算月份范围
     try:
         month_start = review_service.parse_month(month)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
     try:
-        return review_service.get_monthly_report(month_start)
+        return review_service.get_monthly_report(month_start, user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
+
+
+@router.get("/trend", response_model=TrendResponse)
+async def get_trend_data(
+    period: str = Query("daily", description="统计周期: daily 或 weekly"),
+    days: int = Query(7, description="daily 模式天数", ge=1, le=365),
+    weeks: int = Query(8, description="weekly 模式周数", ge=1, le=52),
+    user: User = Depends(get_current_user),
+):
+    """获取趋势数据"""
+    review_service = get_review_service()
+
+    if period not in ("daily", "weekly"):
+        raise HTTPException(status_code=422, detail="period 参数必须是 daily 或 weekly")
+
+    try:
+        return review_service.get_trend_data(
+            period=period,
+            days=days,
+            weeks=weeks,
+            user_id=user.id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

@@ -18,7 +18,7 @@ import { SessionList } from "@/components/SessionList";
 import { useUserStore } from "@/stores/userStore";
 
 const navItems = [
-  { to: "/", icon: Home, label: "首页" },
+  { to: "/", icon: Home, label: "今天" },
   { to: "/tasks", icon: CheckCircle, label: "任务" },
   { to: "/inbox", icon: Lightbulb, label: "灵感" },
   { to: "/notes", icon: FileText, label: "笔记" },

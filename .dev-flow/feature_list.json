@@ -3,14 +3,14 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-14",
+  "updated_at": "2026-04-15",
   "status": "in_progress",
-  "scope_notes": "R004 产品演进 Phase 1A：补闭环 — 回顾趋势 API、灵感转化、反馈闭环、首页改版「今天」",
+  "scope_notes": "R004 Phase 1B：灵感转化 UI + 回顾页趋势折线图",
   "active_requirement_cycle": {
     "id": "R004",
-    "name": "product-evolution-phase1a",
+    "name": "product-evolution-phase1b",
     "status": "in_progress",
-    "branch": "feat/R004-product-evolution-phase1a"
+    "branch": "feat/R004-product-evolution-phase1b"
   },
   "workflow": {
     "name": "XLFoundry",
@@ -21,10 +21,10 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 6,
-    "pending": 6,
+    "total_tasks": 2,
+    "pending": 0,
     "in_progress": 0,
-    "completed": 0,
+    "completed": 2,
     "blocked": 0,
     "cancelled": 0
   },
@@ -35,6 +35,13 @@
       "status": "completed",
       "archive_dir": "_archive/R003_production-content-recovery",
       "branch": "fix/R003-production-content-recovery"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase1a",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase1a",
+      "branch": "feat/R004-product-evolution-phase1a"
     }
   ],
   "archived_cycles": [
@@ -53,6 +60,15 @@
       "archive_dir": "_archive/R003_production-content-recovery",
       "total_tasks": 21,
       "phases": ["P1","P2","P3","P4","P5","P6"],
+      "completed_at": "2026-04-14",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R004",
+      "name": "Product Evolution Phase 1A",
+      "archive_dir": "_archive/R004_product-evolution-phase1a",
+      "total_tasks": 7,
+      "phases": ["P1A"],
       "completed_at": "2026-04-14",
       "snapshot": "feature_list.snapshot.json"
     }
@@ -86,12 +102,12 @@
     {
       "id": "review",
       "name": "回顾模块",
-      "description": "成长回顾统计与趋势数据 API"
+      "description": "成长回顾统计与趋势数据 API + 趋势图表 UI"
     },
     {
       "id": "entry-management",
       "name": "条目管理模块",
-      "description": "条目 CRUD 与 category 转化（灵感→任务/笔记）"
+      "description": "条目 CRUD 与 category 转化（灵感→任务/笔记）+ 转化操作 UI"
     },
     {
       "id": "feedback-loop",
@@ -106,201 +122,83 @@
   ],
   "tasks": [
     {
-      "id": "S05",
-      "phase": "P1A",
-      "module": "review",
-      "name": "Phase 1A 契约与模型定义",
-      "description": "定义 Phase 1A 所有新功能的 API 契约和数据模型：(1) TrendPeriod/TrendResponse 模型 + GET /review/trend 契约；(2) EntryUpdate 新增 category 字段（后端 schema + 前端类型同步）；(3) feedback 表 DDL + GET /feedback 和 GET /feedback/{id} 契约。执行 npm run gen:types 刷新前端 API 类型。",
-      "verification": "L1",
-      "depends_on": [],
-      "status": "pending",
-      "priority": "high",
-      "acceptance_criteria": [
-        "TrendPeriod(date, total, completed, completion_rate, notes_count) 和 TrendResponse(periods) 模型定义在 review_service.py",
-        "EntryUpdate schema 新增 category: Optional[str] 字段",
-        "feedback 表 DDL 写入 api_contracts.md：(id, user_id, title, description, severity, log_service_issue_id, status, created_at)",
-        "GET /review/trend?period=daily&days=7 和 ?period=weekly&weeks=8 契约写入 api_contracts.md",
-        "GET /feedback 和 GET /feedback/{id} 契约写入 api_contracts.md",
-        "前端 types/task.ts EntryUpdate 新增 category?: string（注意：types/task.ts 为手写类型，api.generated.ts 为生成类型，两者需同时更新）",
-        "npm run gen:types 执行成功，api.generated.ts 中 EntryUpdate 包含 category 字段",
-        "uv run pytest backend/tests/ 全部通过"
-      ],
-      "contract_refs": ["CONTRACT-R01", "CONTRACT-E01", "CONTRACT-FB01", "CONTRACT-FB02"],
-      "files": [
-        "backend/app/services/review_service.py",
-        "backend/app/api/schemas/entry.py",
-        "frontend/src/types/task.ts",
-        ".dev-flow/api_contracts.md"
-      ]
-    },
-    {
-      "id": "B14",
-      "phase": "P1A",
-      "module": "review",
-      "name": "回顾趋势 API + review user_id 修复",
-      "description": "为回顾页新增跨期对比数据接口，并修复 ReviewService 所有方法未传 user_id 的数据隔离 Bug。ReviewService 的 get_daily_report/get_weekly_report/get_monthly_report 调用 list_entries() 时均未传 user_id（默认查 _default 数据），路由层已获取 user 但未传递。需：(1) 所有 ReviewService 方法新增 user_id 参数并传递到 list_entries；(2) review.py 路由层传递 user.id；(3) 新增 get_trend_data() 方法和 GET /review/trend 路由。注意：本任务仅交付后端 API，前端回顾页趋势折线图 UI 在 Phase 1B（T06）实现。",
-      "verification": "L2",
-      "depends_on": ["S05"],
-      "status": "pending",
-      "priority": "high",
-      "acceptance_criteria": [
-        "ReviewService.get_daily_report/weekly/monthly 均接受 user_id 参数并传递到 list_entries",
-        "review.py 路由层通过 user.id 传递到 service 方法",
-        "GET /review/trend?period=daily&days=7 返回每日统计数组",
-        "GET /review/trend?period=weekly&weeks=8 返回每周统计数组",
-        "返回结构：{ periods: [{ date, total, completed, completion_rate, notes_count }] }",
-        "空数据返回空数组 periods: []",
-        "用户隔离：不同用户只能看到自己的统计数据",
-        "uv run pytest backend/tests/ 全部通过"
-      ],
-      "risk_tags": ["auth"],
-      "test_tasks": [
-        "正常：有数据用户请求 trend 返回正确统计",
-        "边界：空数据用户返回空数组",
-        "边界：period=invalid 返回 422",
-        "边界：days=0 或 days=-1 返回 422 或空数组",
-        "边界：weeks=0 或 weeks=-1 返回 422 或空数组",
-        "边界：days/weeks 未传时使用默认值（7/8）",
-        "异常：无 token 请求返回 401",
-        "隔离：用户 A 的 trend 不含用户 B 的数据",
-        "回归：daily/weekly/monthly 报告传了 user_id 后仍正常",
-        "smoke：启动后首次请求 trend 返回空数组不报错"
-      ],
-      "smoke_required": true,
-      "contract_refs": ["CONTRACT-R01"],
-      "files": [
-        "backend/app/services/review_service.py",
-        "backend/app/routers/review.py"
-      ]
-    },
-    {
-      "id": "B15",
-      "phase": "P1A",
+      "id": "F07",
+      "phase": "P1B",
       "module": "entry-management",
-      "name": "灵感转化 API — category 变更 + 文件迁移",
-      "description": "支持 inbox 条目转为 task 或 note。当前 entry_service.update_entry()（line 130-172）无 category 字段处理分支，MarkdownStorage 无文件移动方法。实现：(1) update_entry 检测 category 变更；(2) MarkdownStorage 新增 move_entry() 将文件从旧目录移到新目录（os.rename 原子操作）；(3) 更新 entry.category、entry.file_path、front matter 的 type 字段；(4) SQLite upsert_entry 更新索引。注意：CATEGORY_DIRS 中 INBOX 映射空字符串（根目录），文件路径变化为 data/users/{uid}/inbox-xxx.md → data/users/{uid}/tasks/inbox-xxx.md，entry_id 前缀不变。注意：MarkdownStorage.list_entries(category=INBOX) 当前只扫描 inbox.md 单文件，不扫描 inbox-xxx.md 模式文件。正常流程通过 SQLite 索引读取不受影响，但 Markdown 回退路径有此限制，可在后续版本修复。注意：本任务仅交付后端 API，前端 Inbox 页「转为任务/笔记」操作入口在 Phase 1B（T04）实现。",
-      "verification": "L2",
-      "depends_on": ["S05"],
-      "status": "pending",
+      "name": "灵感转化 UI — Inbox 页「转为任务/笔记」操作入口",
+      "description": "为 Inbox 页灵感项增加「转为任务」和「转为笔记」操作入口。当前 Inbox.tsx 使用 TaskList→TaskCard 渲染，TaskCard 有状态切换和删除但无 category 转化。实现：(1) 引入 sonner 作为 toast 方案（轻量、与 Tailwind 兼容，npm install sonner）；(2) 为 inbox 类型的 TaskCard 添加自定义下拉菜单（「...」按钮，使用 relative/absolute 定位 + useState 控制展开/收起，不依赖 Radix），包含「转为任务」「转为笔记」选项；菜单项点击需 e.stopPropagation() 阻止触发卡片根节点的导航跳转；(3) 调用 taskStore.updateEntry(id, { category: 'task'/'note' })；(4) 成功后 sonner toast 提示，条目因 category 变化从灵感列表自动消失（重新 fetchEntries 即可）；(5) 转化过程中使用条目级 loading（useState per-item），非全局页级，不影响其他 TaskCard 的状态切换和删除；(6) 转化失败显示错误 toast；(7) App.tsx 添加 Toaster 组件挂载。注意：后端 API 已在 Phase 1A B15 实现（PUT /entries/{id} { category: 'task' }），taskStore.updateEntry 已可用。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "completed",
       "priority": "high",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
       "acceptance_criteria": [
-        "PUT /entries/{id} { \"category\": \"task\" } 成功返回",
-        "文件从 data/users/{uid}/inbox-xxx.md 移到 data/users/{uid}/tasks/inbox-xxx.md",
-        "entry_id 前缀不变（仍为 inbox-xxx）",
-        "front matter 的 type 字段同步更新为新 category",
-        "SQLite 索引中 category 和 file_path 同步更新",
-        "新 category 列表（如 GET /entries?type=task）可见该条目",
-        "旧路径文件已不存在",
-        "uv run pytest backend/tests/ 全部通过"
+        "inbox 类型的条目有「转为任务」和「转为笔记」操作入口",
+        "点击转化后显示条目级 loading 状态，不影响其他 TaskCard 的状态切换和删除",
+        "转化成功：toast 提示 + 条目从灵感列表消失",
+        "转化成功：在对应列表（任务/笔记）可看到该条目",
+        "转化失败：显示错误 toast，条目仍在灵感列表",
+        "非 inbox 类型的条目不显示转化菜单",
+        "npm run build 构建通过"
       ],
+      "risk_tags": ["new-dep:sonner"],
       "test_tasks": [
-        "正常：inbox→task 转化成功，文件移动",
-        "正常：inbox→note 转化成功",
-        "边界：同 category 转化（inbox→inbox）不产生文件移动",
-        "边界：不存在的 entry_id 返回错误",
-        "异常：目标目录不存在时自动创建",
-        "回归：其他 update_entry 字段（title/status/tags）仍正常"
+        "正常：inbox 条目点击「转为任务」，成功后列表刷新",
+        "正常：inbox 条目点击「转为笔记」，成功后列表刷新",
+        "边界：转化过程中按钮显示 loading，不可重复点击",
+        "边界：转化过程中其他 TaskCard 的状态切换和删除不受影响（条目级 loading）",
+        "异常：API 返回错误时显示错误 toast，条目不受影响",
+        "边界：非 inbox 条目不显示转化操作入口",
+        "边界：点击菜单按钮或菜单项时不触发卡片根节点的详情导航跳转（stopPropagation）",
+        "回归：TaskCard 原有的状态切换和删除功能仍正常"
       ],
       "contract_refs": ["CONTRACT-E01"],
       "files": [
-        "backend/app/services/entry_service.py",
-        "backend/app/infrastructure/storage/markdown.py"
+        "frontend/src/pages/Inbox.tsx",
+        "frontend/src/components/TaskCard.tsx",
+        "frontend/src/App.tsx",
+        "frontend/package.json"
       ]
     },
     {
-      "id": "B16",
-      "phase": "P1A",
-      "module": "feedback-loop",
-      "name": "反馈闭环后端 — feedback 表 + 双写 + 列表查询",
-      "description": "用户可查看自己提交的反馈列表和状态。当前 POST /feedback 是纯代理 log-service，用户端无本地记录。实现：(1) sqlite.py _init_db() 新增 CREATE TABLE IF NOT EXISTS feedback 表 + user_id 索引；(2) 新增 CRUD 方法（create_feedback, list_feedbacks_by_user, get_feedback_by_id）；(3) POST /feedback 改为先写本地 SQLite（status=pending），返回成功，再异步调 log-service：成功 → 更新 status=reported + 记录 log_service_issue_id；失败 → 保持 status=pending；(4) GET /feedback 按 user_id 过滤；(5) GET /feedback/{id} 返回单条详情。",
-      "verification": "L2",
-      "depends_on": ["S05"],
-      "status": "pending",
-      "priority": "high",
-      "acceptance_criteria": [
-        "feedback 表在 _init_db() 中创建，含 user_id 索引",
-        "POST /feedback 先写本地 SQLite 再异步调 log-service",
-        "提交后 GET /feedback 立即可见（status=pending）",
-        "log-service 成功后 status 更新为 reported，log_service_issue_id 有值",
-        "log-service 失败时 status 保持 pending，不阻塞提交",
-        "GET /feedback 按用户隔离（只返回当前用户的反馈）",
-        "GET /feedback/{id} 返回单条详情",
-        "uv run pytest backend/tests/ 全部通过"
-      ],
-      "risk_tags": ["auth", "startup"],
-      "test_tasks": [
-        "正常：提交后本地立即可查",
-        "正常：log-service 异步成功后 status 变为 reported",
-        "边界：log-service 不可达时 status 保持 pending，提交不阻塞",
-        "边界：空反馈列表返回空数组",
-        "异常：无 token 返回 401",
-        "隔离：用户 A 看不到用户 B 的反馈",
-        "启动：_init_db() 幂等执行不报错",
-        "smoke：冷启动后首次提交反馈成功（表不存在时自动创建）",
-        "smoke：log-service URL 未配置时提交仍成功（status=pending）",
-        "smoke：GET /feedback/{id} 不属于当前用户返回 404"
-      ],
-      "smoke_required": true,
-      "contract_refs": ["CONTRACT-FB01", "CONTRACT-FB02"],
-      "files": [
-        "backend/app/infrastructure/storage/sqlite.py",
-        "backend/app/routers/feedback.py"
-      ]
-    },
-    {
-      "id": "F05",
-      "phase": "P1A",
-      "module": "home",
-      "name": "首页改版「今天」— 行动中心",
-      "description": "将首页从统计报表改为行动中心。当前 Home.tsx 展示今日进度卡片、整体统计卡片、今日任务列表（只读）、最近记录列表、最近灵感列表。重写为：(1) 精简顶部为今日进度（完成率+进度条）；(2) 今日任务区可直接操作：点击切换状态（doing↔complete），使用 taskStore.updateTaskStatus；(3) 最近灵感区增加未处理计数角标，显示未转化的 inbox 条目数；(4) 新增快速操作区：记灵感、建任务、写笔记（触发 FloatingChat 聚焦或跳转）；(5) 空数据时显示引导文案；(6) Sidebar 标签从「首页」改为「今天」。路由路径 / 保持不变。",
+      "id": "F08",
+      "phase": "P1B",
+      "module": "review",
+      "name": "回顾页趋势折线图 — 日/周完成率对比",
+      "description": "回顾页新增趋势卡片，展示完成率变化折线图。当前 Review.tsx 展示日报/周报/月报文本统计，无趋势可视化。实现：(1) 安装 recharts（npm install recharts）；(2) api.ts 新增 getReviewTrend(period, days/weeks) 函数调用 GET /review/trend，参数硬编码 days=7 和 weeks=8（MVP 不暴露为用户可调）；(3) Review.tsx 新增趋势卡片（位于报告类型选择下方）：默认最近 7 天日完成率折线图，可切换为周维度（最近 8 周）；(4) 趋势卡片使用独立的 loading/error/empty 状态（useState），与日报/周报/月报主报告区域完全隔离，趋势 API 失败时卡片内显示错误提示文案，不隐藏卡片，不影响主报告内容；(5) 折线图 X 轴日期、Y 轴完成率百分比；(6) 图表下方显示简单摘要（如「最近 7 天平均完成率 XX%」）；(7) 空数据时显示引导文案。注意：后端 API 已在 Phase 1A B14 实现（GET /review/trend），返回 { periods: [{ date, total, completed, completion_rate, notes_count }] }。",
       "verification": "F2",
-      "depends_on": ["S05"],
-      "status": "pending",
-      "priority": "high",
-      "acceptance_criteria": [
-        "今日任务可直接点击切换状态（doing↔complete），有 loading 反馈",
-        "灵感区显示未处理 inbox 数量角标",
-        "快速操作区有「记灵感」「建任务」「写笔记」入口",
-        "空数据时显示引导文案",
-        "Sidebar 首项标签从「首页」改为「今天」",
-        "npm run build 构建通过",
-        "移动端窄屏下布局可适配"
-      ],
-      "risk_tags": ["first_use"],
-      "test_tasks": [
-        "有任务时：点击任务切换状态，UI 更新",
-        "失败：状态切换 API 失败时显示错误提示，状态回滚",
-        "有灵感时：灵感区显示计数角标",
-        "无数据时：显示引导文案（首次使用、无任务、无灵感三种空态）",
-        "快速操作按钮可点击",
-        "loading：任务状态切换过程中显示 loading 态，防止重复点击"
-      ],
-      "files": [
-        "frontend/src/pages/Home.tsx",
-        "frontend/src/components/layout/Sidebar.tsx"
-      ]
-    },
-    {
-      "id": "F06",
-      "phase": "P1A",
-      "module": "feedback-loop",
-      "name": "FeedbackButton 双 Tab — 提交 + 我的反馈",
-      "description": "改造 FeedbackButton 为双 Tab 面板。当前只有「提交反馈」表单，新增「我的反馈」Tab 展示用户历史反馈列表（标题、状态 pending/reported、时间）。实现：(1) FeedbackButton 内部状态增加 activeTab（submit | list）；(2) Tab 切换 UI；(3) 「我的反馈」Tab 调用 GET /feedback 获取列表；(4) 列表项显示 title、status（带颜色标识）、created_at；(5) api.ts 新增 getFeedbackList() 和 getFeedbackDetail() 调用；(6) 提交成功后自动切换到「我的反馈」Tab。",
-      "verification": "F1",
-      "depends_on": ["B16"],
-      "status": "pending",
+      "depends_on": [],
+      "status": "completed",
       "priority": "medium",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
       "acceptance_criteria": [
-        "双 Tab UI（提交反馈 / 我的反馈）可切换",
-        "「我的反馈」Tab 展示反馈列表（title、status、time）",
-        "status pending 和 reported 有不同颜色标识",
-        "提交成功后自动切换到「我的反馈」Tab",
-        "api.ts 新增 getFeedbackList() 函数",
+        "趋势折线图显示完成率变化",
+        "可切换日（7 天）和周（8 周）维度",
+        "空数据时显示引导文案（非空白图表）",
+        "图表下方显示平均完成率摘要",
+        "趋势卡片使用独立状态，趋势 API 失败不影响日报/周报/月报主报告区域",
+        "趋势 API 失败时卡片内显示错误提示文案，不隐藏卡片",
+        "移动端窄屏下图表可适配",
         "npm run build 构建通过"
       ],
+      "risk_tags": ["new-dep:recharts"],
+      "test_tasks": [
+        "正常：有数据时折线图正确渲染",
+        "正常：切换日/周维度数据刷新",
+        "边界：空数据返回空数组时显示引导文案",
+        "边界：只有 1 天数据时折线图不报错",
+        "异常：趋势 API 返回错误时，卡片内显示错误提示，不影响主报告区域",
+        "回归：原有的日报/周报/月报统计仍正常显示",
+        "回归：报告类型切换不受影响",
+        "API单测：getReviewTrend() 正确传递 period/days/weeks 参数，错误透传"
+      ],
+      "contract_refs": ["CONTRACT-R01"],
       "files": [
-        "frontend/src/components/FeedbackButton.tsx",
-        "frontend/src/services/api.ts"
+        "frontend/src/pages/Review.tsx",
+        "frontend/src/services/api.ts",
+        "frontend/package.json"
       ]
     }
   ]

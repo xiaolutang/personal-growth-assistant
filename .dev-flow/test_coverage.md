@@ -56,9 +56,11 @@
 | 数据认领与回填 | B12 | unit+integration | SQLite/Markdown/session 迁移幂等/冲突不覆盖/审计输出 | planned | risk: auth, first_use, startup |
 | 部署探针与回填命令 | B13 | integration+runtime | DATA_DIR/卷挂载/dry-run/实际回填/失败阻断 | planned | risk: startup, config |
 | 生产恢复回归 | S04 | smoke+manual | 目标账号历史内容可见/非目标账号隔离/失败阻断验收 | planned | risk: auth, first_use, startup, config, network |
-| Phase 1A 契约 | S05 | unit | 模型定义/schema 更新/类型生成/测试通过 | pending | - |
-| 回顾趋势 API | B14 | unit+integration | trend 正确统计/空数据/user_id 修复/隔离验证/参数边界（invalid period, days=0）/smoke 首次请求 | pending | risk: auth, smoke_required |
-| 灵感转化 API | B15 | unit+integration | inbox→task/note 文件移动/front matter 更新/SQLite 同步/旧文件删除 | pending | - |
-| 反馈闭环后端 | B16 | unit+integration | feedback 表创建/双写/列表查询/状态追踪/用户隔离/启动幂等/冷启动首次提交/log-service 不可达 smoke | pending | risk: auth, startup, smoke_required |
-| 首页改版「今天」 | F05 | manual+unit | 任务状态切换/灵感角标/快速操作/空状态引导/Sidebar 标签/构建通过/切换失败回滚/loading 态 | pending | risk: first_use |
-| FeedbackButton 双 Tab | F06 | manual+unit | 双 Tab 切换/反馈列表/状态标识/提交后跳转/构建通过 | pending | - |
+| Phase 1A 契约 | S05 | unit | 模型定义/schema 更新/类型生成/测试通过 | completed | - |
+| 回顾趋势 API | B14 | unit+integration | trend 正确统计/空数据/user_id 修复/隔离验证/参数边界（invalid period, days=0）/smoke 首次请求 | completed | risk: auth, smoke_required |
+| 灵感转化 API | B15 | unit+integration | inbox→task/note 文件移动/front matter 更新/SQLite 同步/旧文件删除 | completed | - |
+| 反馈闭环后端 | B16 | unit+integration | feedback 表创建/双写/列表查询/状态追踪/用户隔离/启动幂等/冷启动首次提交/log-service 不可达 smoke | completed | risk: auth, startup, smoke_required |
+| 首页改版「今天」 | F05 | manual+unit | 任务状态切换/灵感角标/快速操作/空状态引导/Sidebar 标签/构建通过/切换失败回滚/loading 态 | completed | 194 frontend tests + npm run build passed |
+| FeedbackButton 双 Tab | F06 | manual+unit | 双 Tab 切换/反馈列表/状态标识/提交后跳转/构建通过/列表失败态/调用次数回归 | completed | 201 frontend tests + npm run build passed |
+| 灵感转化 UI | F07 | manual+unit | 转为任务/转为笔记/loading 防重复/成功 toast/失败 toast/非 inbox 隐藏/构建通过/回归原有功能 | completed | 209 frontend tests (含 8 个 F07 TaskCard 测试) + npm run build passed |
+| 回顾页趋势折线图 | F08 | manual+unit | 有数据渲染/日周切换/空数据引导/平均完成率摘要/API 错误隔离/错误不影响主报告/1天数据边界/移动端适配/构建通过/回归原有统计 | completed | 222 frontend tests (含 6 个 F08 API 测试 + 7 个 Review 页面测试) + npm run build passed |

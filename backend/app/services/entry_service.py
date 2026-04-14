@@ -170,6 +170,19 @@ class EntryService:
                 entry.completed_at = parsed_date
                 updated = True
 
+        # Category 变更：文件迁移
+        old_file_path = None
+        if request.category is not None:
+            try:
+                new_category = Category(request.category)
+            except ValueError:
+                return False, f"无效的 category: {request.category}"
+
+            if new_category != entry.category:
+                old_file_path = entry.file_path
+                entry.category = new_category
+                updated = True
+
         if not updated:
             return True, "无更新"
 
@@ -177,6 +190,15 @@ class EntryService:
 
         # 写入 Markdown
         self._get_markdown_storage(user_id).write_entry(entry)
+
+        # Category 变更后删除旧文件
+        if old_file_path:
+            old_path = self._get_markdown_storage(user_id).data_dir / old_file_path
+            if old_path.exists() and str(old_path) != entry.file_path:
+                try:
+                    old_path.unlink()
+                except OSError:
+                    pass  # 旧文件删除失败不阻塞
 
         # SQLite 同步
         if self.storage.sqlite:

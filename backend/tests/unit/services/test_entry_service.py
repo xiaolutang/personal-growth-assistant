@@ -400,3 +400,114 @@ class TestEntryServiceProjectProgress:
         with pytest.raises(ValueError) as exc_info:
             await service.get_project_progress("nonexistent")
         assert "不存在" in str(exc_info.value)
+
+
+class TestCategoryConversion:
+    """B15 灵感转化 — category 变更测试"""
+
+    @pytest.fixture
+    def service(self, storage):
+        return EntryService(storage=storage)
+
+    @pytest.mark.asyncio
+    async def test_inbox_to_task_conversion(self, service):
+        """测试 inbox→task 转化"""
+        entry = await service.create_entry(EntryCreate(
+            category="inbox",
+            title="测试灵感",
+            content="---\ntype: inbox\n---\n灵感内容",
+        ))
+        assert entry.category == Category.INBOX
+
+        # 转化为 task
+        success, msg = await service.update_entry(
+            entry.id,
+            EntryUpdate(category="task"),
+        )
+        assert success is True
+
+        # 验证 category 已变更
+        updated = await service.get_entry(entry.id)
+        assert updated is not None
+        assert updated.category == Category.TASK
+        # entry_id 前缀不变
+        assert updated.id.startswith("inbox-")
+        # 文件已移到 tasks 目录
+        assert updated.file_path.startswith("tasks/")
+
+    @pytest.mark.asyncio
+    async def test_inbox_to_note_conversion(self, service):
+        """测试 inbox→note 转化"""
+        entry = await service.create_entry(EntryCreate(
+            category="inbox",
+            title="测试灵感2",
+            content="---\ntype: inbox\n---\n内容",
+        ))
+
+        success, msg = await service.update_entry(
+            entry.id,
+            EntryUpdate(category="note"),
+        )
+        assert success is True
+
+        updated = await service.get_entry(entry.id)
+        assert updated.category == Category.NOTE
+        # 文件已移到 notes 目录
+        assert updated.file_path.startswith("notes/")
+
+    @pytest.mark.asyncio
+    async def test_same_category_no_op(self, service):
+        """测试同 category 转化不产生文件移动"""
+        entry = await service.create_entry(EntryCreate(
+            category="inbox",
+            title="测试灵感3",
+        ))
+
+        success, msg = await service.update_entry(
+            entry.id,
+            EntryUpdate(category="inbox"),
+        )
+        assert success is True
+        assert "无更新" in msg
+
+    @pytest.mark.asyncio
+    async def test_nonexistent_entry_returns_error(self, service):
+        """测试不存在的 entry_id 返回错误"""
+        success, msg = await service.update_entry(
+            "nonexistent-id",
+            EntryUpdate(category="task"),
+        )
+        assert success is False
+
+    @pytest.mark.asyncio
+    async def test_invalid_category_returns_error(self, service):
+        """测试无效 category 返回错误"""
+        entry = await service.create_entry(EntryCreate(
+            category="inbox",
+            title="测试灵感4",
+        ))
+
+        success, msg = await service.update_entry(
+            entry.id,
+            EntryUpdate(category="invalid"),
+        )
+        assert success is False
+        assert "无效" in msg
+
+    @pytest.mark.asyncio
+    async def test_other_update_fields_still_work(self, service):
+        """测试其他 update_entry 字段仍正常"""
+        entry = await service.create_entry(EntryCreate(
+            category="task",
+            title="原始标题",
+        ))
+
+        success, msg = await service.update_entry(
+            entry.id,
+            EntryUpdate(title="新标题", status="complete"),
+        )
+        assert success is True
+
+        updated = await service.get_entry(entry.id)
+        assert updated.title == "新标题"
+        assert updated.status == TaskStatus.COMPLETE

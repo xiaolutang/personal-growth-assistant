@@ -50,16 +50,23 @@ export interface FeedbackPayload {
   severity: FeedbackSeverity;
 }
 
-export interface FeedbackIssue {
+export interface FeedbackItem {
   id: number;
   title: string;
+  severity: string;
   status: string;
+  log_service_issue_id: number | null;
   created_at: string;
 }
 
-export interface FeedbackResponse {
+export interface FeedbackListResponse {
+  items: FeedbackItem[];
+  total: number;
+}
+
+export interface FeedbackSubmitResponse {
   success: boolean;
-  issue: FeedbackIssue;
+  feedback: FeedbackItem;
 }
 
 // === 条目管理 API ===
@@ -370,7 +377,7 @@ export async function getProjectProgress(projectId: string): Promise<ProjectProg
 /**
  * 提交用户反馈
  */
-export async function submitFeedback(payload: FeedbackPayload): Promise<FeedbackResponse> {
+export async function submitFeedback(payload: FeedbackPayload): Promise<FeedbackSubmitResponse> {
   const response = await fetch(`${API_BASE}/feedback`, {
     method: "POST",
     headers: buildAuthHeaders({
@@ -378,7 +385,27 @@ export async function submitFeedback(payload: FeedbackPayload): Promise<Feedback
     }),
     body: JSON.stringify(payload),
   });
-  return handleApiResponse<FeedbackResponse>(response);
+  return handleApiResponse<FeedbackSubmitResponse>(response);
+}
+
+/**
+ * 获取反馈列表
+ */
+export async function getFeedbackList(): Promise<FeedbackListResponse> {
+  const response = await fetch(`${API_BASE}/feedback`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<FeedbackListResponse>(response);
+}
+
+/**
+ * 获取单条反馈详情
+ */
+export async function getFeedbackDetail(id: number): Promise<FeedbackItem> {
+  const response = await fetch(`${API_BASE}/feedback/${id}`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<FeedbackItem>(response);
 }
 
 // === 意图识别 API ===
@@ -417,6 +444,41 @@ export async function detectIntent(text: string): Promise<IntentResponse> {
   }
 
   return response.json();
+}
+
+// === 回顾趋势 API ===
+
+export interface TrendPeriod {
+  date: string;
+  total: number;
+  completed: number;
+  completion_rate: number;
+  notes_count: number;
+}
+
+export interface ReviewTrendResponse {
+  periods: TrendPeriod[];
+}
+
+/**
+ * 获取回顾趋势数据
+ * @param period - "daily" | "weekly"
+ * @param count - daily 时传 days（默认 7），weekly 时传 weeks（默认 8）
+ */
+export async function getReviewTrend(
+  period: "daily" | "weekly",
+  count?: number
+): Promise<ReviewTrendResponse> {
+  const params = new URLSearchParams({ period });
+  if (period === "daily") {
+    params.set("days", String(count ?? 7));
+  } else {
+    params.set("weeks", String(count ?? 8));
+  }
+  const response = await fetch(`${API_BASE}/review/trend?${params}`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<ReviewTrendResponse>(response);
 }
 
 // 导出错误类供外部使用

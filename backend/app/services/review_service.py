@@ -5,6 +5,20 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 
 
+class TrendPeriod(BaseModel):
+    """趋势统计周期"""
+    date: str = Field(..., description="日期（YYYY-MM-DD 或 YYYY-WXX）")
+    total: int = Field(0, description="总任务数")
+    completed: int = Field(0, description="已完成数")
+    completion_rate: float = Field(0.0, description="完成率（百分比）")
+    notes_count: int = Field(0, description="笔记数")
+
+
+class TrendResponse(BaseModel):
+    """趋势数据响应"""
+    periods: List[TrendPeriod] = Field(default_factory=list, description="统计周期数组")
+
+
 class TaskStats(BaseModel):
     """任务统计"""
     total: int = Field(..., description="总任务数")
@@ -90,16 +104,8 @@ class ReviewService:
             recent_titles=[n.get("title", "")[:50] for n in notes[:5]],
         )
 
-    def get_daily_report(self, target_date: Optional[date] = None) -> DailyReport:
-        """
-        获取日报
-
-        Args:
-            target_date: 目标日期，默认今天
-
-        Returns:
-            DailyReport: 日报数据
-        """
+    def get_daily_report(self, target_date: Optional[date] = None, user_id: Optional[str] = None) -> DailyReport:
+        """获取日报"""
         if not self._sqlite:
             raise ValueError("SQLite 存储未初始化")
 
@@ -109,27 +115,24 @@ class ReviewService:
         date_str = target_date.isoformat()
         next_day = (target_date + timedelta(days=1)).isoformat()
 
-        # 获取当天任务
         tasks = self._sqlite.list_entries(
             type="task",
             start_date=date_str,
             end_date=next_day,
             limit=1000,
+            user_id=user_id,
         )
 
-        # 获取当天笔记
         notes = self._sqlite.list_entries(
             type="note",
             start_date=date_str,
             end_date=next_day,
             limit=1000,
+            user_id=user_id,
         )
 
-        # 统计
         task_stats = self.calculate_task_stats(tasks)
         note_stats = self.calculate_note_stats(notes)
-
-        # 获取完成的任务
         completed_tasks = [t for t in tasks if t.get("status") == "complete"]
 
         return DailyReport(
@@ -139,16 +142,8 @@ class ReviewService:
             completed_tasks=completed_tasks,
         )
 
-    def get_weekly_report(self, week_start: Optional[date] = None) -> WeeklyReport:
-        """
-        获取周报
-
-        Args:
-            week_start: 周开始日期，默认本周一
-
-        Returns:
-            WeeklyReport: 周报数据
-        """
+    def get_weekly_report(self, week_start: Optional[date] = None, user_id: Optional[str] = None) -> WeeklyReport:
+        """获取周报"""
         if not self._sqlite:
             raise ValueError("SQLite 存储未初始化")
 
@@ -161,12 +156,12 @@ class ReviewService:
         start_str = week_start.isoformat()
         end_str = (week_end + timedelta(days=1)).isoformat()
 
-        # 获取本周任务和笔记
         tasks = self._sqlite.list_entries(
             type="task",
             start_date=start_str,
             end_date=end_str,
             limit=1000,
+            user_id=user_id,
         )
 
         notes = self._sqlite.list_entries(
@@ -174,13 +169,12 @@ class ReviewService:
             start_date=start_str,
             end_date=end_str,
             limit=1000,
+            user_id=user_id,
         )
 
-        # 统计
         task_stats = self.calculate_task_stats(tasks)
         note_stats = self.calculate_note_stats(notes)
 
-        # 每日分解
         daily_breakdown = []
         for i in range(7):
             day = week_start + timedelta(days=i)
@@ -192,6 +186,7 @@ class ReviewService:
                 start_date=day_str,
                 end_date=next_day_str,
                 limit=1000,
+                user_id=user_id,
             )
 
             completed = sum(1 for t in day_tasks if t.get("status") == "complete")
@@ -209,16 +204,8 @@ class ReviewService:
             daily_breakdown=daily_breakdown,
         )
 
-    def get_monthly_report(self, month_start: Optional[date] = None) -> MonthlyReport:
-        """
-        获取月报
-
-        Args:
-            month_start: 月开始日期，默认本月第一天
-
-        Returns:
-            MonthlyReport: 月报数据
-        """
+    def get_monthly_report(self, month_start: Optional[date] = None, user_id: Optional[str] = None) -> MonthlyReport:
+        """获取月报"""
         if not self._sqlite:
             raise ValueError("SQLite 存储未初始化")
 
@@ -226,7 +213,6 @@ class ReviewService:
             today = date.today()
             month_start = date(today.year, today.month, 1)
 
-        # 计算月末
         if month_start.month == 12:
             month_end = date(month_start.year + 1, 1, 1) - timedelta(days=1)
         else:
@@ -235,12 +221,12 @@ class ReviewService:
         start_str = month_start.isoformat()
         end_str = (month_end + timedelta(days=1)).isoformat()
 
-        # 获取本月任务和笔记
         tasks = self._sqlite.list_entries(
             type="task",
             start_date=start_str,
             end_date=end_str,
             limit=1000,
+            user_id=user_id,
         )
 
         notes = self._sqlite.list_entries(
@@ -248,13 +234,12 @@ class ReviewService:
             start_date=start_str,
             end_date=end_str,
             limit=1000,
+            user_id=user_id,
         )
 
-        # 统计
         task_stats = self.calculate_task_stats(tasks)
         note_stats = self.calculate_note_stats(notes)
 
-        # 周分解
         weekly_breakdown = []
         current_week_start = month_start
         week_num = 1
@@ -267,6 +252,7 @@ class ReviewService:
                 start_date=current_week_start.isoformat(),
                 end_date=(week_end + timedelta(days=1)).isoformat(),
                 limit=1000,
+                user_id=user_id,
             )
 
             completed = sum(1 for t in week_tasks if t.get("status") == "complete")
@@ -287,6 +273,94 @@ class ReviewService:
             note_stats=note_stats,
             weekly_breakdown=weekly_breakdown,
         )
+
+    def get_trend_data(
+        self,
+        period: str = "daily",
+        days: int = 7,
+        weeks: int = 8,
+        user_id: Optional[str] = None,
+    ) -> TrendResponse:
+        """获取趋势数据"""
+        if not self._sqlite:
+            raise ValueError("SQLite 存储未初始化")
+
+        if period not in ("daily", "weekly"):
+            raise ValueError("period 参数必须是 daily 或 weekly")
+
+        periods: List[TrendPeriod] = []
+
+        if period == "daily":
+            count = max(1, min(days, 365))
+            today = date.today()
+            for i in range(count):
+                target_date = today - timedelta(days=i)
+                next_day = target_date + timedelta(days=1)
+
+                tasks = self._sqlite.list_entries(
+                    type="task",
+                    start_date=target_date.isoformat(),
+                    end_date=next_day.isoformat(),
+                    limit=1000,
+                    user_id=user_id,
+                )
+                notes = self._sqlite.list_entries(
+                    type="note",
+                    start_date=target_date.isoformat(),
+                    end_date=next_day.isoformat(),
+                    limit=1000,
+                    user_id=user_id,
+                )
+
+                total = len(tasks)
+                completed = sum(1 for t in tasks if t.get("status") == "complete")
+                completion_rate = round((completed / total * 100), 1) if total > 0 else 0.0
+
+                periods.append(TrendPeriod(
+                    date=target_date.isoformat(),
+                    total=total,
+                    completed=completed,
+                    completion_rate=completion_rate,
+                    notes_count=len(notes),
+                ))
+        else:  # weekly
+            count = max(1, min(weeks, 52))
+            today = date.today()
+            current_week_start = today - timedelta(days=today.weekday())
+
+            for i in range(count):
+                week_start = current_week_start - timedelta(weeks=i)
+                week_end = week_start + timedelta(days=6)
+                next_day_after_week = week_end + timedelta(days=1)
+
+                tasks = self._sqlite.list_entries(
+                    type="task",
+                    start_date=week_start.isoformat(),
+                    end_date=next_day_after_week.isoformat(),
+                    limit=1000,
+                    user_id=user_id,
+                )
+                notes = self._sqlite.list_entries(
+                    type="note",
+                    start_date=week_start.isoformat(),
+                    end_date=next_day_after_week.isoformat(),
+                    limit=1000,
+                    user_id=user_id,
+                )
+
+                total = len(tasks)
+                completed = sum(1 for t in tasks if t.get("status") == "complete")
+                completion_rate = round((completed / total * 100), 1) if total > 0 else 0.0
+
+                periods.append(TrendPeriod(
+                    date=week_start.isoformat(),
+                    total=total,
+                    completed=completed,
+                    completion_rate=completion_rate,
+                    notes_count=len(notes),
+                ))
+
+        return TrendResponse(periods=periods)
 
     @staticmethod
     def parse_date(date_str: Optional[str]) -> date:

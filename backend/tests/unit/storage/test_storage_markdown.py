@@ -91,6 +91,25 @@ class TestMarkdownStorage:
         result = storage.read_entry("nonexistent")
         assert result is None
 
+    def test_read_entry_fallback_to_root_data_dir(self, tmp_path):
+        """测试 read_entry 兜底回退：用户目录无文件时从 data/ 根目录读取"""
+        from pathlib import Path
+
+        # 构造 data/users/{uid} 结构
+        user_dir = tmp_path / "users" / "test-user"
+        user_dir.mkdir(parents=True)
+        storage = MarkdownStorage(data_dir=str(user_dir))
+
+        # 在 data/ 根目录放一个遗留文件（不在用户目录）
+        root_dir = tmp_path
+        legacy_file = root_dir / "inbox-legacy123.md"
+        legacy_file.write_text("---\ntype: inbox\n---\n遗留内容", encoding="utf-8")
+
+        # read_entry 应通过回退逻辑读到
+        result = storage.read_entry("inbox-legacy123")
+        assert result is not None
+        assert result.id == "inbox-legacy123"
+
     def test_delete_entry(self, temp_data_dir: str):
         """测试删除条目"""
         storage = MarkdownStorage(data_dir=temp_data_dir)

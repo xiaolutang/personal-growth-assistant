@@ -4,8 +4,18 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Header } from "@/components/layout/Header";
 import { Calendar, CheckCircle, FileText, TrendingUp, BarChart3 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
 import { API_BASE } from "@/config/api";
 import { authFetch } from "@/lib/authFetch";
+import { getReviewTrend, type TrendPeriod } from "@/services/api";
 
 // 响应类型
 interface TaskStats {
@@ -58,6 +68,7 @@ interface MonthlyReport {
 }
 
 type ReportType = "daily" | "weekly" | "monthly";
+type TrendPeriodType = "daily" | "weekly";
 
 export function Review() {
   const [reportType, setReportType] = useState<ReportType>("daily");
@@ -65,6 +76,12 @@ export function Review() {
   const [dailyReport, setDailyReport] = useState<DailyReport | null>(null);
   const [weeklyReport, setWeeklyReport] = useState<WeeklyReport | null>(null);
   const [monthlyReport, setMonthlyReport] = useState<MonthlyReport | null>(null);
+
+  // 趋势卡片独立状态
+  const [trendPeriod, setTrendPeriod] = useState<TrendPeriodType>("daily");
+  const [trendData, setTrendData] = useState<TrendPeriod[]>([]);
+  const [trendLoading, setTrendLoading] = useState(true);
+  const [trendError, setTrendError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -92,6 +109,25 @@ export function Review() {
 
     fetchReport();
   }, [reportType]);
+
+  // 趋势数据获取（独立于主报告）
+  useEffect(() => {
+    const fetchTrend = async () => {
+      setTrendLoading(true);
+      setTrendError(null);
+      try {
+        const data = await getReviewTrend(trendPeriod, trendPeriod === "daily" ? 7 : 8);
+        setTrendData(data.periods ?? []);
+      } catch (err) {
+        console.error("获取趋势数据失败:", err);
+        setTrendError("趋势数据加载失败，请稍后重试");
+      } finally {
+        setTrendLoading(false);
+      }
+    };
+
+    fetchTrend();
+  }, [trendPeriod]);
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -130,6 +166,107 @@ export function Review() {
             </Badge>
           ))}
         </div>
+
+        {/* 趋势折线图卡片 */}
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                完成率趋势
+              </CardTitle>
+              <div className="flex gap-1">
+                {(["daily", "weekly"] as TrendPeriodType[]).map((p) => (
+                  <Badge
+                    key={p}
+                    variant={trendPeriod === p ? "default" : "outline"}
+                    className="cursor-pointer px-3 py-1 text-xs"
+                    onClick={() => setTrendPeriod(p)}
+                  >
+                    {p === "daily" ? "日" : "周"}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {trendLoading ? (
+              <div className="flex items-center justify-center h-48">
+                <div className="text-muted-foreground text-sm">加载趋势数据...</div>
+              </div>
+            ) : trendError ? (
+              <div className="flex flex-col items-center justify-center h-48 text-center">
+                <p className="text-sm text-destructive">{trendError}</p>
+              </div>
+            ) : trendData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-48 text-center">
+                <TrendingUp className="h-8 w-8 text-muted-foreground/40 mb-2" />
+                <p className="text-sm text-muted-foreground">暂无趋势数据</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  持续记录任务完成情况，趋势图将自动生成
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="w-full" style={{ height: 220 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={trendData.map((d) => ({
+                        ...d,
+                        date: formatDate(d.date),
+                        completion_rate: Number(d.completion_rate.toFixed(1)),
+                      }))}
+                      margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 12 }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <YAxis
+                        domain={[0, 100]}
+                        tick={{ fontSize: 12 }}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(v: number) => `${v}%`}
+                        width={42}
+                      />
+                      <Tooltip
+                        formatter={(value) => [`${value}%`, "完成率"]}
+                        labelStyle={{ fontSize: 12 }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="completion_rate"
+                        stroke="#6366F1"
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: "#6366F1" }}
+                        activeDot={{ r: 5 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* 平均完成率摘要 */}
+                {trendData.length > 0 && (
+                  <div className="mt-3 pt-3 border-t flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      {trendPeriod === "daily" ? "近 7 天" : "近 8 周"}平均完成率
+                    </span>
+                    <span className="text-sm font-semibold">
+                      {(
+                        trendData.reduce((sum, d) => sum + d.completion_rate, 0) /
+                        trendData.length
+                      ).toFixed(1)}
+                      %
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
 
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
