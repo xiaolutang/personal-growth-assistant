@@ -4,9 +4,14 @@
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
   "updated_at": "2026-04-15",
-  "status": "completed",
-  "scope_notes": "R004 Phase 2：统一探索 + Export 导出 + 条目关联 + Onboarding（已归档）",
-  "active_requirement_cycle": null,
+  "status": "in_progress",
+  "scope_notes": "R004 Phase 2：统一探索 + Export 导出 + 条目关联 + Onboarding",
+  "active_requirement_cycle": {
+    "id": "R004",
+    "name": "product-evolution-phase2",
+    "status": "in_progress",
+    "branch": "feat/R004-product-evolution-phase2"
+  },
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -44,13 +49,6 @@
       "status": "completed",
       "archive_dir": "_archive/R004_product-evolution-phase1b",
       "branch": "feat/R004-product-evolution-phase1b"
-    },
-    {
-      "id": "R004",
-      "name": "product-evolution-phase2",
-      "status": "completed",
-      "archive_dir": "_archive/R004_product-evolution-phase2",
-      "branch": "feat/R004-product-evolution-phase2"
     }
   ],
   "archived_cycles": [
@@ -87,15 +85,6 @@
       "archive_dir": "_archive/R004_product-evolution-phase1b",
       "total_tasks": 2,
       "phases": ["P1B"],
-      "completed_at": "2026-04-15",
-      "snapshot": "feature_list.snapshot.json"
-    },
-    {
-      "cycle_id": "R004",
-      "name": "Product Evolution Phase 2",
-      "archive_dir": "_archive/R004_product-evolution-phase2",
-      "total_tasks": 7,
-      "phases": ["P2A","P2B","P2C"],
       "completed_at": "2026-04-15",
       "snapshot": "feature_list.snapshot.json"
     }
