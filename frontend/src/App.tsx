@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { FloatingChat } from "@/components/FloatingChat";
@@ -8,11 +8,9 @@ import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Home } from "@/pages/Home";
 import { Tasks } from "@/pages/Tasks";
-import { Inbox } from "@/pages/Inbox";
-import { Notes } from "@/pages/Notes";
-import { Projects } from "@/pages/Projects";
 import { EntryDetail } from "@/pages/EntryDetail";
 import { Review } from "@/pages/Review";
+import { Explore } from "@/pages/Explore";
 import { Login } from "@/pages/Login";
 import { Register } from "@/pages/Register";
 import { useChatStore } from "@/stores/chatStore";
@@ -83,10 +81,11 @@ function App() {
                 >
                   <Routes>
                     <Route path="/" element={<Home />} />
+                    <Route path="/explore" element={<Explore />} />
                     <Route path="/tasks" element={<Tasks />} />
-                    <Route path="/inbox" element={<Inbox />} />
-                    <Route path="/notes" element={<Notes />} />
-                    <Route path="/projects" element={<Projects />} />
+                    <Route path="/inbox" element={<Navigate to="/explore?type=inbox" replace />} />
+                    <Route path="/notes" element={<Navigate to="/explore?type=note" replace />} />
+                    <Route path="/projects" element={<Navigate to="/explore?type=project" replace />} />
                     <Route path="/review" element={<Review />} />
                     <Route path="/entries/:id" element={<EntryDetail />} />
                   </Routes>

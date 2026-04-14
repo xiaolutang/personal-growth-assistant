@@ -3,10 +3,8 @@ import { NavLink } from "react-router-dom";
 import {
   Home,
   CheckCircle,
-  Lightbulb,
-  FileText,
-  Folder,
   BarChart3,
+  Compass,
   MessageSquare,
   ChevronDown,
   ChevronRight,
@@ -19,10 +17,8 @@ import { useUserStore } from "@/stores/userStore";
 
 const navItems = [
   { to: "/", icon: Home, label: "今天" },
+  { to: "/explore", icon: Compass, label: "探索" },
   { to: "/tasks", icon: CheckCircle, label: "任务" },
-  { to: "/inbox", icon: Lightbulb, label: "灵感" },
-  { to: "/notes", icon: FileText, label: "笔记" },
-  { to: "/projects", icon: Folder, label: "项目" },
   { to: "/review", icon: BarChart3, label: "回顾" },
 ];
 
