@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 2,
+    "pending": 1,
     "in_progress": 0,
-    "completed": 4,
+    "completed": 5,
     "blocked": 0,
     "cancelled": 0
   },
@@ -254,7 +254,7 @@
       "description": "将首页从统计报表改为行动中心。当前 Home.tsx 展示今日进度卡片、整体统计卡片、今日任务列表（只读）、最近记录列表、最近灵感列表。重写为：(1) 精简顶部为今日进度（完成率+进度条）；(2) 今日任务区可直接操作：点击切换状态（doing↔complete），使用 taskStore.updateTaskStatus；(3) 最近灵感区增加未处理计数角标，显示未转化的 inbox 条目数；(4) 新增快速操作区：记灵感、建任务、写笔记（触发 FloatingChat 聚焦或跳转）；(5) 空数据时显示引导文案；(6) Sidebar 标签从「首页」改为「今天」。路由路径 / 保持不变。",
       "verification": "F2",
       "depends_on": ["S05"],
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "acceptance_criteria": [
         "今日任务可直接点击切换状态（doing↔complete），有 loading 反馈",
