@@ -432,8 +432,8 @@ class TestCategoryConversion:
         assert updated.category == Category.TASK
         # entry_id 前缀不变
         assert updated.id.startswith("inbox-")
-        # front matter type 已更新
-        assert "type: task" in updated.content
+        # 文件已移到 tasks 目录
+        assert updated.file_path.startswith("tasks/")
 
     @pytest.mark.asyncio
     async def test_inbox_to_note_conversion(self, service):
@@ -452,7 +452,8 @@ class TestCategoryConversion:
 
         updated = await service.get_entry(entry.id)
         assert updated.category == Category.NOTE
-        assert "type: note" in updated.content
+        # 文件已移到 notes 目录
+        assert updated.file_path.startswith("notes/")
 
     @pytest.mark.asyncio
     async def test_same_category_no_op(self, service):
