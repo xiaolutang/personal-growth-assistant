@@ -69,3 +69,16 @@ class SearchResult(BaseModel):
     """搜索结果"""
     entries: List[EntryResponse]
     query: str
+
+
+class RelatedEntry(BaseModel):
+    """关联条目"""
+    id: str
+    title: str
+    category: str
+    relevance_reason: str
+
+
+class RelatedEntriesResponse(BaseModel):
+    """关联条目列表响应"""
+    related: List[RelatedEntry]

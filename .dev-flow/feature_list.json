@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 7,
-    "pending": 2,
+    "pending": 1,
     "in_progress": 0,
-    "completed": 5,
+    "completed": 6,
     "blocked": 0,
     "cancelled": 0
   },
@@ -201,7 +201,10 @@
       "description": "为条目详情页提供关联推荐数据。当前只有 parent_id 的层级关系，无通用关联机制。实现：(1) `backend/app/routers/entries.py` 新增 `GET /entries/{id}/related` 端点；(2) 关联策略：同 parent_id 兄弟条目 → 标签重叠条目 → 向量相似条目，返回最多 5 条；(3) 每条关联条目包含 `relevance_reason` 字段（如「同项目」「标签重叠：React, Hooks」）；(4) 使用已有的 `list_entries`（标签过滤）+ `hybrid_search`（向量相似）能力；(5) 所有查询带 user_id 隔离。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/B19.md",
       "priority": "medium",
       "acceptance_criteria": [
         "GET /entries/:id/related 返回关联条目列表（最多 5 条）",

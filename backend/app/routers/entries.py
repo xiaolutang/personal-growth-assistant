@@ -14,6 +14,7 @@ from app.api.schemas import (
     SearchResult,
     SuccessResponse,
     ProjectProgressResponse,
+    RelatedEntriesResponse,
 )
 from app.routers.deps import get_entry_service, get_storage, get_current_user
 from app.models.user import User
@@ -108,6 +109,16 @@ async def export_entries(
         user_id=user.id,
     )
     return JSONResponse(content=data)
+
+
+@router.get("/{entry_id}/related", response_model=RelatedEntriesResponse)
+async def get_related_entries(entry_id: str, user: User = Depends(get_current_user)):
+    """获取条目的关联推荐"""
+    service = get_entry_service()
+    result = await service.get_related_entries(entry_id, user_id=user.id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"条目不存在: {entry_id}")
+    return result
 
 
 @router.get("/{entry_id}", response_model=EntryResponse)

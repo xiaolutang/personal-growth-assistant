@@ -60,7 +60,7 @@
 | 灵感转化 UI | F07 | manual+unit | 转为任务/转为笔记/loading 防重复/成功 toast/失败 toast/构建通过 | completed | 209 frontend tests |
 | 回顾页趋势折线图 | F08 | manual+unit | 有数据渲染/日周切换/空数据引导/平均完成率/API 错误隔离/1天边界/构建通过 | completed | 222 frontend tests |
 | Export 导出 API | B18 | unit+integration | markdown 导出返回 zip/json 导出返回数组/type 过滤/日期范围/空数据/用户隔离/无效 format 422 | completed | 22 tests in test_export.py, 454 total backend tests |
-| 条目关联 API | B19 | unit+integration | 关联列表含 relevance_reason/同项目优先/无关联空数组/最多5条/用户隔离/不存在404 | planned | - |
+| 条目关联 API | B19 | unit+integration | 关联列表含 relevance_reason/同项目优先/无关联空数组/最多5条/用户隔离/不存在404 | completed | 486 backend tests pass |
 | Onboarding 引导 | F09 | manual+unit | 新用户显示引导/完成更新状态/Skip 跳过/已有用户不显示/刷新不重复/PUT 失败不卡/构建通过 + inbox-{id}.md 全链路收敛 | completed | risk: first_use, startup, 486 backend tests + 225 frontend tests |
 | 探索页基础 | F10 | manual+unit | 混合列表展示/类型 Tab 切换/debounce 搜索+Enter/Sidebar 4项/旧路由重定向/空状态引导/构建通过 | completed | 486 backend + 225 frontend + build pass |
 | 搜索增强 | F11 | manual+unit | debounce 300ms/Cmd+K 聚焦/关键词高亮/无结果引导/构建通过 | completed | 225 frontend + build pass |

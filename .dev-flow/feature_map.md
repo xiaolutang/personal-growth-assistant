@@ -16,7 +16,7 @@ R004 Phase 2 (product-evolution-phase2)
 │   ├── [completed] F11 搜索增强 — 实时搜索 + Cmd+K 全局聚焦 ← F10
 │   └── [completed] F12 Export 导出 UI — 导出对话框 + Sidebar 入口 ← B18
 └── P2C: 条目关联
-    ├── [pending] B19 条目关联 API — GET /entries/:id/related
+    ├── [completed] B19 条目关联 API — GET /entries/:id/related
     └── [pending] F13 条目详情页关联面板 — 相关条目推荐 ← B19
 ```
 
@@ -34,9 +34,9 @@ B19 ──────→ F13
 
 | 状态 | 数量 |
 |------|------|
-| pending | 2 |
+| pending | 1 |
 | in_progress | 0 |
-| completed | 5 |
+| completed | 6 |
 | **总计** | **7** |
 
 ## 归档需求包

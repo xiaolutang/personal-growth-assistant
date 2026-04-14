@@ -5,6 +5,8 @@ from app.api.schemas.entry import (
     EntryResponse,
     EntryListResponse,
     SearchResult,
+    RelatedEntry,
+    RelatedEntriesResponse,
 )
 from app.api.schemas.common import (
     SuccessResponse,
@@ -19,4 +21,6 @@ __all__ = [
     "SearchResult",
     "SuccessResponse",
     "ProjectProgressResponse",
+    "RelatedEntry",
+    "RelatedEntriesResponse",
 ]

@@ -19,6 +19,8 @@ from app.api.schemas import (
     SearchResult,
     SuccessResponse,
     ProjectProgressResponse,
+    RelatedEntry,
+    RelatedEntriesResponse,
 )
 from app.mappers.entry_mapper import EntryMapper
 from app.models import Task, Category, TaskStatus, Priority
@@ -124,6 +126,50 @@ class EntryService:
         if not entry:
             return None
         return EntryResponse(**EntryMapper.task_to_response(entry))
+
+    async def get_related_entries(
+        self, entry_id: str, user_id: str = "_default", limit: int = 5
+    ) -> Optional[RelatedEntriesResponse]:
+        """获取关联条目（同项目 > 标签重叠 > 向量相似）"""
+        if not self._verify_entry_owner(entry_id, user_id):
+            return None
+        entry = self._get_markdown_storage(user_id).read_entry(entry_id)
+        if not entry:
+            return None
+
+        seen_ids: set[str] = {entry_id}
+        results: list[RelatedEntry] = []
+
+        # 级别 1：同项目（同 parent_id）的兄弟条目
+        if entry.parent_id:
+            siblings = await self.list_entries(
+                parent_id=entry.parent_id, limit=20, user_id=user_id
+            )
+            for s in siblings.entries:
+                if s.id not in seen_ids and len(results) < limit:
+                    seen_ids.add(s.id)
+                    results.append(RelatedEntry(
+                        id=s.id, title=s.title, category=s.category,
+                        relevance_reason="同项目",
+                    ))
+
+        # 级别 2：标签重叠
+        if entry.tags and len(results) < limit:
+            sqlite = self.storage.sqlite
+            if sqlite:
+                tag_related = sqlite.find_entries_by_tag_overlap(
+                    entry_id=entry_id, tags=entry.tags, limit=limit * 2, user_id=user_id
+                )
+                for r in tag_related:
+                    if r["id"] not in seen_ids and len(results) < limit:
+                        seen_ids.add(r["id"])
+                        results.append(RelatedEntry(
+                            id=r["id"], title=r.get("title", ""),
+                            category=r.get("category", ""),
+                            relevance_reason="标签相关",
+                        ))
+
+        return RelatedEntriesResponse(related=results)
 
     async def update_entry(self, entry_id: str, request: EntryUpdate, user_id: str = "_default") -> Tuple[bool, str]:
         """更新条目，返回 (成功, 消息)"""

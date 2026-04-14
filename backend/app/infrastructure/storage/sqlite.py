@@ -171,6 +171,31 @@ class SQLiteStorage:
         finally:
             conn.close()
 
+    def find_entries_by_tag_overlap(
+        self, entry_id: str, tags: List[str], limit: int = 10, user_id: str = "_default"
+    ) -> List[dict]:
+        """通过标签重叠查找相关条目，按重叠数量降序排列"""
+        if not tags:
+            return []
+        conn = self._get_conn()
+        try:
+            placeholders = ",".join("?" * len(tags))
+            rows = conn.execute(f"""
+                SELECT e.id, e.title, e.type as category, COUNT(et.tag_id) as overlap_count
+                FROM entries e
+                JOIN entry_tags et ON e.id = et.entry_id
+                JOIN tags t ON et.tag_id = t.id
+                WHERE t.name IN ({placeholders})
+                  AND e.id != ?
+                  AND e.user_id = ?
+                GROUP BY e.id
+                ORDER BY overlap_count DESC
+                LIMIT ?
+            """, (*tags, entry_id, user_id, limit)).fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
     def get_entry_owner(self, entry_id: str) -> Optional[str]:
         """获取条目的当前 owner"""
         conn = self._get_conn()
