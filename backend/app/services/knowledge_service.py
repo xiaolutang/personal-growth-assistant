@@ -2,6 +2,7 @@
 import json
 import re
 import logging
+from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, TYPE_CHECKING
 
 from pydantic import BaseModel, Field
@@ -48,6 +49,36 @@ class LearningPathResponse(BaseModel):
     next_steps: List[ConceptNode] = []      # 下一步建议
     related_projects: List[str] = []        # 相关项目
     related_notes: List[str] = []           # 相关笔记
+
+
+class MapNode(BaseModel):
+    """图谱节点"""
+    id: str
+    name: str
+    category: Optional[str] = None
+    mastery: str = "new"  # new/beginner/intermediate/advanced
+    entry_count: int = 0
+
+
+class MapEdge(BaseModel):
+    """图谱边"""
+    source: str
+    target: str
+    relationship: str = "RELATED_TO"
+
+
+class KnowledgeMapResponse(BaseModel):
+    """全局图谱响应"""
+    nodes: List[MapNode] = []
+    edges: List[MapEdge] = []
+
+
+class ConceptStatsResponse(BaseModel):
+    """概念统计响应"""
+    concept_count: int = 0
+    relation_count: int = 0
+    category_distribution: Dict[str, int] = {}
+    top_concepts: List[Dict[str, Any]] = []
 
 
 class KnowledgeService:
@@ -389,3 +420,329 @@ class KnowledgeService:
                 break
 
         return response
+
+    # ==================== 全局图谱与统计 ====================
+
+    async def get_knowledge_map(
+        self,
+        depth: int = 2,
+        view: str = "domain",
+        user_id: str = "_default",
+    ) -> KnowledgeMapResponse:
+        """
+        获取全局知识图谱
+
+        Args:
+            depth: 关系深度 (1-3)
+            view: 视图模式 (domain/mastery/project)
+            user_id: 用户 ID
+
+        Returns:
+            KnowledgeMapResponse: 全局图谱数据
+        """
+        nodes: List[MapNode] = []
+        edges: List[MapEdge] = []
+
+        if self.is_neo4j_available():
+            nodes, edges = await self._build_map_from_neo4j(depth, user_id)
+        elif self._sqlite:
+            nodes, edges = self._build_map_from_sqlite(user_id)
+
+        # 按 view 参数排序/分组（不影响数据内容，仅影响排序）
+        if view == "mastery":
+            nodes.sort(key=lambda n: {"advanced": 0, "intermediate": 1, "beginner": 2, "new": 3}.get(n.mastery, 4))
+        elif view == "domain":
+            nodes.sort(key=lambda n: (n.category or "zzz", n.name))
+        elif view == "project":
+            nodes.sort(key=lambda n: n.name)
+
+        return KnowledgeMapResponse(nodes=nodes, edges=edges)
+
+    async def _build_map_from_neo4j(
+        self, depth: int, user_id: str
+    ) -> tuple:
+        """从 Neo4j 构建图谱数据"""
+        concepts = await self._neo4j.get_all_concepts_with_stats(user_id=user_id)
+        relationships = await self._neo4j.get_all_relationships(user_id=user_id)
+
+        nodes = []
+        for c in concepts:
+            name = c.get("name", "")
+            entry_count = c.get("entry_count", 0)
+            mastery = await self._calculate_mastery_with_neo4j(name, entry_count, user_id)
+            nodes.append(MapNode(
+                id=name,
+                name=name,
+                category=c.get("category"),
+                mastery=mastery,
+                entry_count=entry_count,
+            ))
+
+        edges = []
+        for r in relationships:
+            edges.append(MapEdge(
+                source=r["source"],
+                target=r["target"],
+                relationship=r.get("type", "RELATED_TO"),
+            ))
+
+        return nodes, edges
+
+    async def _calculate_mastery_with_neo4j(
+        self, concept_name: str, entry_count: int, user_id: str
+    ) -> str:
+        """基于 Neo4j 数据计算掌握度"""
+        if entry_count == 0:
+            return "new"
+
+        # 获取提及该概念的条目详情
+        try:
+            entries = await self._neo4j.get_entries_by_concept(concept_name, user_id=user_id)
+        except Exception:
+            entries = []
+
+        if not entries:
+            return "new" if entry_count == 0 else "beginner"
+
+        recent_count = 0
+        note_count = 0
+        now = datetime.now()
+        thirty_days_ago = now - timedelta(days=30)
+
+        for e in entries:
+            entry_type = e.get("type", "task")
+            updated_str = e.get("updated_at", "")
+
+            if entry_type == "note":
+                note_count += 1
+
+            # 检查是否在最近 30 天内更新
+            try:
+                if updated_str:
+                    if isinstance(updated_str, str):
+                        updated_at = datetime.fromisoformat(updated_str.replace("Z", "+00:00"))
+                    else:
+                        updated_at = updated_str
+                    if updated_at >= thirty_days_ago:
+                        recent_count += 1
+            except (ValueError, TypeError):
+                pass
+
+        note_ratio = note_count / len(entries) if entries else 0
+
+        if entry_count >= 6 and note_ratio > 0.3:
+            return "advanced"
+        elif entry_count >= 3 and recent_count > 0:
+            return "intermediate"
+        elif entry_count >= 1:
+            return "beginner"
+        return "new"
+
+    def _build_map_from_sqlite(self, user_id: str) -> tuple:
+        """从 SQLite 构建图谱数据（Neo4j 不可用时的降级方案）"""
+        all_entries = self._sqlite.list_entries(limit=200, user_id=user_id)
+
+        # 从所有条目的 tags 中提取概念
+        concept_map: Dict[str, Dict] = {}
+        concept_pairs: set = set()
+
+        for entry in all_entries:
+            tags = entry.get("tags", [])
+            entry_type = entry.get("type", "task")
+
+            for tag in tags:
+                if tag not in concept_map:
+                    concept_map[tag] = {
+                        "name": tag,
+                        "category": "tag",
+                        "entry_count": 0,
+                        "recent_count": 0,
+                        "note_count": 0,
+                    }
+                concept_map[tag]["entry_count"] += 1
+
+                if entry_type == "note":
+                    concept_map[tag]["note_count"] += 1
+
+                # 检查是否在 30 天内更新
+                updated_str = entry.get("updated_at", "")
+                try:
+                    if updated_str:
+                        if isinstance(updated_str, str):
+                            updated_at = datetime.fromisoformat(updated_str.replace("Z", "+00:00"))
+                        else:
+                            updated_at = updated_str
+                        if updated_at >= datetime.now() - timedelta(days=30):
+                            concept_map[tag]["recent_count"] += 1
+                except (ValueError, TypeError):
+                    pass
+
+            # 构建概念之间的关联边（共同出现在同一条目中的 tags）
+            for i in range(len(tags)):
+                for j in range(i + 1, len(tags)):
+                    pair = tuple(sorted([tags[i], tags[j]]))
+                    concept_pairs.add(pair)
+
+        # 构建 nodes
+        nodes = []
+        for name, info in concept_map.items():
+            mastery = self._calculate_mastery_from_stats(
+                entry_count=info["entry_count"],
+                recent_count=info["recent_count"],
+                note_count=info["note_count"],
+            )
+            nodes.append(MapNode(
+                id=name,
+                name=name,
+                category=info.get("category"),
+                mastery=mastery,
+                entry_count=info["entry_count"],
+            ))
+
+        # 构建 edges
+        edges = []
+        for source, target in concept_pairs:
+            edges.append(MapEdge(
+                source=source,
+                target=target,
+                relationship="CO_OCCURS",
+            ))
+
+        return nodes, edges
+
+    def _calculate_mastery_from_stats(
+        self, entry_count: int, recent_count: int, note_count: int
+    ) -> str:
+        """根据统计数据计算掌握度"""
+        if entry_count == 0:
+            return "new"
+
+        note_ratio = note_count / entry_count if entry_count > 0 else 0
+
+        if entry_count >= 6 and note_ratio > 0.3:
+            return "advanced"
+        elif entry_count >= 3 and recent_count > 0:
+            return "intermediate"
+        elif entry_count >= 1:
+            return "beginner"
+        return "new"
+
+    def _calculate_mastery(self, concept_name: str, user_id: str = "_default") -> str:
+        """计算概念的掌握度（基于 SQLite 数据）"""
+        if not self._sqlite:
+            return "new"
+
+        # 搜索提及该概念的条目
+        results = self._sqlite.search(concept_name, limit=50, user_id=user_id)
+
+        if not results:
+            return "new"
+
+        entry_count = len(results)
+        recent_count = 0
+        note_count = 0
+        now = datetime.now()
+        thirty_days_ago = now - timedelta(days=30)
+
+        for entry in results:
+            entry_type = entry.get("type", "task")
+            if entry_type == "note":
+                note_count += 1
+
+            updated_str = entry.get("updated_at", "")
+            try:
+                if updated_str:
+                    if isinstance(updated_str, str):
+                        updated_at = datetime.fromisoformat(updated_str.replace("Z", "+00:00"))
+                    else:
+                        updated_at = updated_str
+                    if updated_at >= thirty_days_ago:
+                        recent_count += 1
+            except (ValueError, TypeError):
+                pass
+
+        return self._calculate_mastery_from_stats(entry_count, recent_count, note_count)
+
+    async def get_knowledge_stats(self, user_id: str = "_default") -> ConceptStatsResponse:
+        """
+        获取知识概念统计
+
+        Args:
+            user_id: 用户 ID
+
+        Returns:
+            ConceptStatsResponse: 统计数据
+        """
+        if self.is_neo4j_available():
+            return await self._stats_from_neo4j(user_id)
+        elif self._sqlite:
+            return self._stats_from_sqlite(user_id)
+        return ConceptStatsResponse()
+
+    async def _stats_from_neo4j(self, user_id: str) -> ConceptStatsResponse:
+        """从 Neo4j 获取统计"""
+        concepts = await self._neo4j.get_all_concepts_with_stats(user_id=user_id)
+        relationships = await self._neo4j.get_all_relationships(user_id=user_id)
+
+        category_dist: Dict[str, int] = {}
+        top_concepts: List[Dict[str, Any]] = []
+
+        for c in concepts:
+            cat = c.get("category") or "uncategorized"
+            category_dist[cat] = category_dist.get(cat, 0) + 1
+
+        # Top 10 by entry_count
+        sorted_concepts = sorted(concepts, key=lambda x: x.get("entry_count", 0), reverse=True)
+        for c in sorted_concepts[:10]:
+            top_concepts.append({
+                "name": c.get("name", ""),
+                "entry_count": c.get("entry_count", 0),
+                "category": c.get("category"),
+            })
+
+        return ConceptStatsResponse(
+            concept_count=len(concepts),
+            relation_count=len(relationships),
+            category_distribution=category_dist,
+            top_concepts=top_concepts,
+        )
+
+    def _stats_from_sqlite(self, user_id: str) -> ConceptStatsResponse:
+        """从 SQLite 获取统计"""
+        all_entries = self._sqlite.list_entries(limit=200, user_id=user_id)
+
+        concept_map: Dict[str, Dict] = {}
+
+        for entry in all_entries:
+            tags = entry.get("tags", [])
+            for tag in tags:
+                if tag not in concept_map:
+                    concept_map[tag] = {"name": tag, "entry_count": 0, "category": "tag"}
+                concept_map[tag]["entry_count"] += 1
+
+        category_dist: Dict[str, int] = {}
+        for info in concept_map.values():
+            cat = info.get("category") or "tag"
+            category_dist[cat] = category_dist.get(cat, 0) + 1
+
+        # 计算共现边数（co-occur pairs）
+        edge_count = 0
+        pair_set: set = set()
+        for entry in all_entries:
+            tags = entry.get("tags", [])
+            for i in range(len(tags)):
+                for j in range(i + 1, len(tags)):
+                    pair = tuple(sorted([tags[i], tags[j]]))
+                    if pair not in pair_set:
+                        pair_set.add(pair)
+                        edge_count += 1
+
+        sorted_concepts = sorted(concept_map.values(), key=lambda x: x["entry_count"], reverse=True)
+        top_concepts = sorted_concepts[:10]
+
+        return ConceptStatsResponse(
+            concept_count=len(concept_map),
+            relation_count=edge_count,
+            category_distribution=category_dist,
+            top_concepts=top_concepts,
+        )

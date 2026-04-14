@@ -338,6 +338,49 @@ class Neo4jClient:
                 }
             return {"entry": None, "relations": []}
 
+    # ==================== 全局图谱查询 ====================
+
+    async def get_all_concepts_with_stats(self, user_id: str = "_default") -> List[Dict[str, Any]]:
+        """获取所有概念及其统计信息"""
+        query = """
+        MATCH (c:Concept {user_id: $user_id})
+        OPTIONAL MATCH (e:Entry {user_id: $user_id})-[m:MENTIONS]->(c)
+        RETURN c.name as name,
+               c.category as category,
+               count(DISTINCT e) as entry_count,
+               count(DISTINCT m) as mention_count
+        ORDER BY entry_count DESC
+        """
+        async with await self._get_session() as session:
+            result = await session.run(query, user_id=user_id)
+            concepts = []
+            async for record in result:
+                concepts.append({
+                    "name": record["name"],
+                    "category": record["category"],
+                    "entry_count": record["entry_count"],
+                    "mention_count": record["mention_count"],
+                })
+            return concepts
+
+    async def get_all_relationships(self, user_id: str = "_default") -> List[Dict[str, Any]]:
+        """获取所有概念之间的关系"""
+        query = """
+        MATCH (c1:Concept {user_id: $user_id})-[r]->(c2:Concept {user_id: $user_id})
+        WHERE NOT type(r) = ''
+        RETURN c1.name as source, c2.name as target, type(r) as type
+        """
+        async with await self._get_session() as session:
+            result = await session.run(query, user_id=user_id)
+            relationships = []
+            async for record in result:
+                relationships.append({
+                    "source": record["source"],
+                    "target": record["target"],
+                    "type": record["type"],
+                })
+            return relationships
+
     # ==================== 初始化 ====================
 
     async def create_indexes(self):
