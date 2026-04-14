@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 1,
+    "pending": 0,
     "in_progress": 0,
-    "completed": 5,
+    "completed": 6,
     "blocked": 0,
     "cancelled": 0
   },
@@ -287,7 +287,7 @@
       "description": "改造 FeedbackButton 为双 Tab 面板。当前只有「提交反馈」表单，新增「我的反馈」Tab 展示用户历史反馈列表（标题、状态 pending/reported、时间）。实现：(1) FeedbackButton 内部状态增加 activeTab（submit | list）；(2) Tab 切换 UI；(3) 「我的反馈」Tab 调用 GET /feedback 获取列表；(4) 列表项显示 title、status（带颜色标识）、created_at；(5) api.ts 新增 getFeedbackList() 和 getFeedbackDetail() 调用；(6) 提交成功后自动切换到「我的反馈」Tab。",
       "verification": "F1",
       "depends_on": ["B16"],
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
       "acceptance_criteria": [
         "双 Tab UI（提交反馈 / 我的反馈）可切换",

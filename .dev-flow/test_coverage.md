@@ -61,4 +61,4 @@
 | 灵感转化 API | B15 | unit+integration | inbox→task/note 文件移动/front matter 更新/SQLite 同步/旧文件删除 | completed | - |
 | 反馈闭环后端 | B16 | unit+integration | feedback 表创建/双写/列表查询/状态追踪/用户隔离/启动幂等/冷启动首次提交/log-service 不可达 smoke | completed | risk: auth, startup, smoke_required |
 | 首页改版「今天」 | F05 | manual+unit | 任务状态切换/灵感角标/快速操作/空状态引导/Sidebar 标签/构建通过/切换失败回滚/loading 态 | completed | 194 frontend tests + npm run build passed |
-| FeedbackButton 双 Tab | F06 | manual+unit | 双 Tab 切换/反馈列表/状态标识/提交后跳转/构建通过 | pending | - |
+| FeedbackButton 双 Tab | F06 | manual+unit | 双 Tab 切换/反馈列表/状态标识/提交后跳转/构建通过/列表失败态/调用次数回归 | completed | 201 frontend tests + npm run build passed |

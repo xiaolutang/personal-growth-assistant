@@ -263,6 +263,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/review/trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Trend Data
+         * @description 获取趋势数据
+         */
+        get: operations["get_trend_data_review_trend_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/intent": {
         parameters: {
             query?: never;
@@ -472,13 +492,37 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List Feedbacks
+         * @description 获取当前用户的反馈列表
+         */
+        get: operations["list_feedbacks_feedback_get"];
         put?: never;
         /**
          * Submit Feedback
-         * @description 代理用户反馈到 log-service issue API
+         * @description 提交反馈：本地先写入，后台异步上报 log-service
          */
         post: operations["submit_feedback_feedback_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/feedback/{feedback_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Feedback
+         * @description 获取单条反馈详情
+         */
+        get: operations["get_feedback_feedback__feedback_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -882,6 +926,44 @@ export interface components {
             completed_at?: string | null;
         };
         /**
+         * FeedbackItem
+         * @description 单条反馈记录
+         */
+        FeedbackItem: {
+            /** Id */
+            id: number;
+            /** User Id */
+            user_id: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Severity
+             * @default medium
+             */
+            severity: string;
+            /** Log Service Issue Id */
+            log_service_issue_id?: number | null;
+            /**
+             * Status
+             * @default pending
+             */
+            status: string;
+            /** Created At */
+            created_at: string;
+        };
+        /**
+         * FeedbackListResponse
+         * @description 反馈列表响应
+         */
+        FeedbackListResponse: {
+            /** Items */
+            items: components["schemas"]["FeedbackItem"][];
+            /** Total */
+            total: number;
+        };
+        /**
          * FeedbackRequest
          * @description 前端反馈请求
          */
@@ -904,8 +986,8 @@ export interface components {
         FeedbackResponse: {
             /** Success */
             success: boolean;
-            /** Issue */
-            issue: {
+            /** Feedback */
+            feedback: {
                 [key: string]: unknown;
             };
         };
@@ -1253,6 +1335,52 @@ export interface components {
              */
             expires_in: number;
             user: components["schemas"]["UserResponse"];
+        };
+        /**
+         * TrendPeriod
+         * @description 趋势统计周期
+         */
+        TrendPeriod: {
+            /**
+             * Date
+             * @description 日期（YYYY-MM-DD 或 YYYY-WXX）
+             */
+            date: string;
+            /**
+             * Total
+             * @description 总任务数
+             * @default 0
+             */
+            total: number;
+            /**
+             * Completed
+             * @description 已完成数
+             * @default 0
+             */
+            completed: number;
+            /**
+             * Completion Rate
+             * @description 完成率（百分比）
+             * @default 0
+             */
+            completion_rate: number;
+            /**
+             * Notes Count
+             * @description 笔记数
+             * @default 0
+             */
+            notes_count: number;
+        };
+        /**
+         * TrendResponse
+         * @description 趋势数据响应
+         */
+        TrendResponse: {
+            /**
+             * Periods
+             * @description 统计周期数组
+             */
+            periods?: components["schemas"]["TrendPeriod"][];
         };
         /**
          * UserCreate
@@ -1849,6 +1977,42 @@ export interface operations {
             };
         };
     };
+    get_trend_data_review_trend_get: {
+        parameters: {
+            query?: {
+                /** @description 统计周期: daily 或 weekly */
+                period?: string;
+                /** @description daily 模式天数 */
+                days?: number;
+                /** @description weekly 模式周数 */
+                weeks?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     detect_intent_intent_post: {
         parameters: {
             query?: never;
@@ -2116,6 +2280,26 @@ export interface operations {
             };
         };
     };
+    list_feedbacks_feedback_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackListResponse"];
+                };
+            };
+        };
+    };
     submit_feedback_feedback_post: {
         parameters: {
             query?: never;
@@ -2136,6 +2320,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FeedbackResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_feedback_feedback__feedback_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feedback_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackItem"];
                 };
             };
             /** @description Validation Error */

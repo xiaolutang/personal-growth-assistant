@@ -33,10 +33,10 @@
 | 内容恢复 | `_default` 数据认领 | CONTRACT-A04 / data contracts | planned | not_applicable | planned | S03 → B12 |
 | 内容恢复 | 运维回填命令 | - | planned | not_applicable | planned | B13 |
 | 内容恢复 | 远程部署 smoke | All affected contracts | planned | not_applicable | planned | S04 |
-| 回顾模块 | 趋势数据 API | CONTRACT-R01 | pending | not_applicable | pending | S05 → B14 |
-| 回顾模块 | Review user_id 修复 | All review contracts | pending | not_applicable | pending | B14 |
-| 条目管理 | 灵感转化 category | CONTRACT-E01 | pending | not_applicable | pending | S05 → B15 |
-| 反馈闭环 | Feedback 双写 | CONTRACT-006 | pending | not_applicable | pending | S05 → B16 |
-| 反馈闭环 | Feedback 列表查询 | CONTRACT-FB01/FB02 | pending | not_applicable | pending | S05 → B16 |
-| 反馈闭环 | FeedbackButton 双 Tab | CONTRACT-FB01 | pending | pending | pending | B16 → F06 |
-| 首页模块 | 首页改版「今天」 | - | not_applicable | pending | pending | S05 → F05 |
+| 回顾模块 | 趋势数据 API | CONTRACT-R01 | completed | not_applicable | completed | S05 → B14 |
+| 回顾模块 | Review user_id 修复 | All review contracts | completed | not_applicable | completed | B14 |
+| 条目管理 | 灵感转化 category | CONTRACT-E01 | completed | not_applicable | completed | S05 → B15 |
+| 反馈闭环 | Feedback 双写 | CONTRACT-006 | completed | not_applicable | completed | S05 → B16 |
+| 反馈闭环 | Feedback 列表查询 | CONTRACT-FB01/FB02 | completed | not_applicable | completed | S05 → B16 |
+| 反馈闭环 | FeedbackButton 双 Tab | CONTRACT-FB01 | completed | completed | completed | B16 → F06 |
+| 首页模块 | 首页改版「今天」 | - | not_applicable | completed | completed | S05 → F05 |
