@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from "sonner";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { FloatingChat } from "@/components/FloatingChat";
 import { FeedbackButton } from "@/components/FeedbackButton";
@@ -52,6 +53,7 @@ function App() {
           path="/*"
           element={
             <ProtectedRoute>
+              <Toaster position="top-center" richColors />
               <div className="flex min-h-screen bg-background">
                 <Sidebar />
                 <div

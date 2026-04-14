@@ -39,4 +39,6 @@
 | 反馈闭环 | Feedback 双写 | CONTRACT-006 | completed | not_applicable | completed | S05 → B16 |
 | 反馈闭环 | Feedback 列表查询 | CONTRACT-FB01/FB02 | completed | not_applicable | completed | S05 → B16 |
 | 反馈闭环 | FeedbackButton 双 Tab | CONTRACT-FB01 | completed | completed | completed | B16 → F06 |
-| 首页模块 | 首页改版「今天」 | - | not_applicable | completed | completed | S05 → F05 |
+| 首页模块 | 首页改版「今天」 | - | not_applicable | completed | completed | completed | S05 → F05 |
+| 条目管理 | 灵感转化 UI | CONTRACT-E01 | completed | completed | completed | F07 |
+| 回顾模块 | 趋势折线图 | CONTRACT-R01 | completed | planned | planned | F08 |
