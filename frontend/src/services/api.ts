@@ -453,6 +453,38 @@ export async function getFeedbackDetail(id: number): Promise<FeedbackItem> {
   return handleApiResponse<FeedbackItem>(response);
 }
 
+// === AI 对话 API ===
+
+/**
+ * AI 对话页面上下文
+ */
+export interface AIChatContext {
+  page?: string;
+  selected_items?: string[];
+  filters?: Record<string, string>;
+}
+
+/**
+ * 发送 AI 对话消息（SSE 流式响应）
+ * 返回原始 Response 对象，调用方自行读取 ReadableStream
+ */
+export async function sendAIChat(
+  message: string,
+  context?: AIChatContext,
+): Promise<Response> {
+  const response = await fetch(`${API_BASE}/ai/chat`, {
+    method: "POST",
+    headers: buildAuthHeaders({
+      headers: { "Content-Type": "application/json" },
+    }),
+    body: JSON.stringify({ message, context }),
+  });
+  if (!response.ok) {
+    throw new ApiError(response.status, `AI Chat error: ${response.status}`);
+  }
+  return response;
+}
+
 // === 意图识别 API ===
 
 import { detectIntent as detectIntentLocal, type Intent } from "@/lib/intentDetection";

@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 7,
-    "pending": 2,
+    "pending": 1,
     "in_progress": 0,
-    "completed": 5,
+    "completed": 6,
     "blocked": 0,
     "cancelled": 0
   },
@@ -389,6 +389,11 @@
     },
     {
       "id": "F16",
+      "status": "completed",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F16.md",
+      "execution_notes": "npm run build 通过",
       "phase": "P3B",
       "module": "ai-assistant",
       "name": "日知 AI 内嵌组件 — 浮动助手 + 页面上下文",

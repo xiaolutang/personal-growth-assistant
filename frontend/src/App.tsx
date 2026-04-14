@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { FloatingChat } from "@/components/FloatingChat";
 import { FeedbackButton } from "@/components/FeedbackButton";
+import { PageAIAssistant } from "@/components/PageAIAssistant";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Home } from "@/pages/Home";
@@ -94,6 +95,7 @@ function App() {
                 </div>
                 <FeedbackButton />
                 <FloatingChat />
+                <PageAIAssistant pageContext={{ page: "global" }} />
               </div>
             </ProtectedRoute>
           }
