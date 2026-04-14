@@ -4,9 +4,14 @@
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
   "updated_at": "2026-04-15",
-  "status": "idle",
-  "scope_notes": "R004 Phase 1B 已归档，等待下一轮需求",
-  "active_requirement_cycle": null,
+  "status": "in_progress",
+  "scope_notes": "R004 Phase 2：统一探索 + Export 导出 + 条目关联 + Onboarding",
+  "active_requirement_cycle": {
+    "id": "R004",
+    "name": "product-evolution-phase2",
+    "status": "in_progress",
+    "branch": "feat/R004-product-evolution-phase2"
+  },
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -16,8 +21,8 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 0,
-    "pending": 0,
+    "total_tasks": 7,
+    "pending": 7,
     "in_progress": 0,
     "completed": 0,
     "blocked": 0,
@@ -129,7 +134,276 @@
       "id": "home",
       "name": "首页模块",
       "description": "首页改版为行动中心「今天」"
+    },
+    {
+      "id": "explore",
+      "name": "探索模块",
+      "description": "灵感/笔记/项目统一浏览 + 搜索主入口 + 类型 Tab 筛选"
+    },
+    {
+      "id": "export",
+      "name": "导出模块",
+      "description": "数据导出 API + 导出 UI，支持 Markdown zip 和 JSON 格式"
+    },
+    {
+      "id": "entry-relations",
+      "name": "条目关联模块",
+      "description": "条目关联 API + 详情页关联面板，基于标签和向量相似推荐"
+    },
+    {
+      "id": "onboarding",
+      "name": "Onboarding 模块",
+      "description": "新用户首次登录引导，对话式 Onboarding 流程"
     }
   ],
-  "tasks": []
+  "tasks": [
+    {
+      "id": "B18",
+      "phase": "P2B",
+      "module": "export",
+      "name": "Export 导出 API — zip/json 双格式",
+      "description": "新增条目数据导出端点，支持 Markdown zip 和 JSON 两种格式。当前后端无导出能力。实现：(1) `backend/app/routers/entries.py` 新增 `GET /entries/export` 端点，**必须声明在 `/{entry_id}` 动态路由之前**，避免被动态路由吞掉；(2) 参数：`format`（markdown/json，默认 markdown）、`type`（可选，按 category 过滤）、`start_date/end_date`（可选，日期范围）；(3) markdown 格式：遍历用户 data 目录，按 category 子目录组织，zip 打包返回（`StreamingResponse` + `zipfile.ZipFile`）；(4) json 格式：从 SQLite 查询条目 + 读取 Markdown 内容，返回 JSON 数组；(5) 所有查询必须带 user_id 隔离；(6) 大数据量使用流式响应，避免内存溢出。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "GET /entries/export?format=markdown 返回可下载的 zip 文件",
+        "GET /entries/export?format=json 返回 JSON 数组",
+        "type 参数过滤（如 type=inbox 只导出灵感）",
+        "start_date/end_date 日期范围过滤",
+        "数据按 user_id 隔离，只返回当前用户的条目",
+        "空数据时返回空 zip/空数组，不报错",
+        "zip 内文件按 category 子目录组织",
+        "单元测试覆盖双格式 + 过滤 + 空数据 + 用户隔离"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：markdown 格式导出返回 zip，文件按目录组织",
+        "正常：json 格式导出返回完整条目数组",
+        "边界：type 过滤只导出指定 category",
+        "边界：日期范围过滤正确",
+        "边界：空数据返回空 zip/空数组",
+        "异常：无效 format 参数返回 422",
+        "隔离：只导出当前用户条目"
+      ],
+      "contract_refs": ["CONTRACT-E02"],
+      "files": [
+        "backend/app/routers/entries.py",
+        "backend/app/services/entry_service.py"
+      ]
+    },
+    {
+      "id": "B19",
+      "phase": "P2C",
+      "module": "entry-relations",
+      "name": "条目关联 API — GET /entries/:id/related",
+      "description": "为条目详情页提供关联推荐数据。当前只有 parent_id 的层级关系，无通用关联机制。实现：(1) `backend/app/routers/entries.py` 新增 `GET /entries/{id}/related` 端点；(2) 关联策略：同 parent_id 兄弟条目 → 标签重叠条目 → 向量相似条目，返回最多 5 条；(3) 每条关联条目包含 `relevance_reason` 字段（如「同项目」「标签重叠：React, Hooks」）；(4) 使用已有的 `list_entries`（标签过滤）+ `hybrid_search`（向量相似）能力；(5) 所有查询带 user_id 隔离。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "GET /entries/:id/related 返回关联条目列表（最多 5 条）",
+        "每条包含 relevance_reason 字段",
+        "关联优先级：同项目 > 标签重叠 > 向量相似",
+        "数据按 user_id 隔离",
+        "无关联时返回空数组",
+        "单元测试覆盖关联逻辑和隔离"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：有条目返回关联列表含 relevance_reason",
+        "正常：同项目条目优先级高于标签重叠",
+        "边界：无关联条目时返回空数组",
+        "边界：最多返回 5 条",
+        "边界：目标条目无标签时仍能返回同项目关联",
+        "隔离：只返回当前用户的条目",
+        "异常：不存在的 entry_id 返回 404",
+        "降级：Qdrant 不可用时仍返回前两级（同项目 + 标签重叠）关联结果",
+        "降级：去重和优先级稳定性验证（不重复返回同一条目）"
+      ],
+      "contract_refs": ["CONTRACT-E03"],
+      "files": [
+        "backend/app/routers/entries.py",
+        "backend/app/services/entry_service.py"
+      ]
+    },
+    {
+      "id": "F09",
+      "phase": "P2A",
+      "module": "onboarding",
+      "name": "Onboarding 对话引导 — 新用户首次登录引导",
+      "description": "新用户首次登录后通过日知对话引导完成第一次记录。实现：(1) 后端 `backend/app/models/user.py` users 表新增 `onboarding_completed` 布尔字段（默认 FALSE）；(2) 后端 `backend/app/routers/auth.py` 新增 `PUT /auth/me` 端点（接受 `onboarding_completed` 字段），`GET /auth/me` 返回 `onboarding_completed` 字段；(3) `backend/app/infrastructure/storage/user_storage.py` 的 `create_user` 和 `get_user` 方法同步更新 schema；(4) **已有用户迁移规则**：后端启动时检测 `onboarding_completed` 列是否存在，不存在则 ALTER TABLE 添加；同时为已存在用户批量设置 `onboarding_completed=true`（判断条件：用户有至少 1 条 entry 记录）；(5) 前端 `frontend/src/stores/userStore.ts` 存储 `onboarding_completed` 状态；(6) 前端 `frontend/src/components/OnboardingFlow.tsx` 新建引导组件：欢迎语 → 引导记录第一条（可跳过）→ 标记完成；(7) `frontend/src/App.tsx` 在 ProtectedRoute 内条件渲染：登录后检查 `onboarding_completed`，未完成则显示 OnboardingFlow 覆盖层；(8) 引导完成后调用 `PUT /auth/me` 更新 `onboarding_completed=true`，失败时前端提示并可重试；(9) OpenAPI schema 更新后运行 `npm run gen:types` 同步前端类型。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "users 表新增 onboarding_completed 字段",
+        "GET /auth/me 返回 onboarding_completed",
+        "新用户登录后看到 Onboarding 引导",
+        "引导可跳过（Skip 按钮）",
+        "引导完成后不再显示",
+        "已有用户（有数据的）不受影响",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": ["first_use", "startup"],
+      "test_tasks": [
+        "正常：新用户登录后显示引导组件",
+        "正常：完成引导后 onboarding_completed 更新为 true",
+        "正常：点击 Skip 跳过引导",
+        "边界：已有用户（onboarding_completed=true）不显示引导",
+        "边界：刷新页面后引导不重复显示",
+        "边界：数据库 schema 迁移幂等（重复启动不报错）",
+        "边界：老用户升级后有 entry 的自动设为 true",
+        "异常：PUT /auth/me 失败时显示重试提示",
+        "异常：PUT /auth/me 失败时引导不卡住（可关闭）",
+        "回归：现有登录/注册流程不受影响",
+        "smoke：首次注册→登录→onboarding 引导出现→完成→不再出现"
+      ],
+      "contract_refs": ["CONTRACT-O01", "CONTRACT-O02"],
+      "files": [
+        "backend/app/models/user.py",
+        "backend/app/routers/auth.py",
+        "backend/app/infrastructure/storage/user_storage.py",
+        "frontend/src/components/OnboardingFlow.tsx",
+        "frontend/src/stores/userStore.ts",
+        "frontend/src/App.tsx"
+      ]
+    },
+    {
+      "id": "F10",
+      "phase": "P2B",
+      "module": "explore",
+      "name": "探索页基础 — 灵感/笔记/项目统一浏览 + Sidebar 改造",
+      "description": "灵感/笔记/项目三页合并为统一探索页，Sidebar 从 6 项缩减为 5 项。实现：(1) 新建 `frontend/src/pages/Explore.tsx`：搜索栏 + 类型 Tab（全部/灵感/笔记/项目）+ 混合列表；(2) **探索页使用独立本地状态管理列表数据**（组件内 useState），不复用 taskStore 的全局 tasks 列表，避免筛选/搜索覆写全局状态影响其他页面（首页/任务页等）；(3) Sidebar 更新：今天/探索/任务/回顾（移除灵感/笔记/项目 3 项，新增探索 1 项）；(4) `frontend/src/App.tsx` 新增 `/explore` 路由，旧路由 `/inbox` `/notes` `/projects` 重定向到 `/explore?type=xxx`；(5) 混合列表使用 TaskCard 组件复用（已有 inbox 转化菜单和状态切换）；(6) 类型 Tab 切换时直接调用 API 获取对应类型条目到本地状态；(7) 搜索栏使用已有的 `searchEntries` 语义搜索，结果同样写入本地状态；(8) 空状态引导文案。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "探索页展示所有类型条目（灵感/笔记/项目）",
+        "类型 Tab 可筛选（全部/灵感/笔记/项目）",
+        "搜索栏输入触发语义搜索",
+        "Sidebar 从 6 项缩减为 5 项（今天/探索/任务/回顾 + 用户区）",
+        "旧路由 /inbox /notes /projects 重定向到 /explore",
+        "首页「最近灵感」区点击跳转到 /explore?type=inbox",
+        "空状态有引导文案",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：探索页展示混合列表",
+        "正常：类型 Tab 切换过滤正确",
+        "正常：搜索栏输入触发搜索",
+        "边界：空数据时显示引导文案",
+        "回归：TaskCard 的转化菜单和状态切换仍正常",
+        "回归：旧 URL /inbox 重定向到 /explore?type=inbox",
+        "回归：现有首页和任务页不受影响"
+      ],
+      "contract_refs": [],
+      "files": [
+        "frontend/src/pages/Explore.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/App.tsx",
+        "frontend/src/pages/Home.tsx"
+      ]
+    },
+    {
+      "id": "F11",
+      "phase": "P2B",
+      "module": "explore",
+      "name": "搜索增强 — 实时搜索 + Cmd+K 全局聚焦",
+      "description": "强化探索页搜索体验。实现：(1) 搜索框输入 debounce 300ms 后自动搜索；(2) **搜索结果受当前类型 Tab 约束**：在 `/explore?type=inbox` 下搜索只返回 inbox 类型结果；实现方式为搜索时携带当前 Tab 的 type 参数，或在前端对搜索结果做二次过滤（后端 search API 支持 type 过滤时优先用后端）；(3) 搜索结果高亮关键词（简单 CSS 标记）；(4) `Cmd+K` / `Ctrl+K` 全局快捷键聚焦搜索框；(5) 搜索无结果时显示引导文案（而非空白）。注意：探索页已由 F10 创建，本任务在其基础上增强。",
+      "verification": "F2",
+      "depends_on": ["F10"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "输入 debounce 300ms 后自动触发搜索",
+        "搜索结果中关键词高亮",
+        "Cmd+K 全局快捷键聚焦搜索框",
+        "搜索无结果时显示引导文案",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：输入 300ms 后触发搜索",
+        "正常：Cmd+K 聚焦搜索框",
+        "正常：搜索结果受当前 Tab 类型约束（inbox Tab 下搜索只返回 inbox 结果）",
+        "边界：快速连续输入不触发多次搜索（debounce）",
+        "边界：搜索无结果显示引导文案",
+        "回归：Tab 切换和列表渲染不受影响"
+      ],
+      "contract_refs": [],
+      "files": [
+        "frontend/src/pages/Explore.tsx"
+      ]
+    },
+    {
+      "id": "F12",
+      "phase": "P2B",
+      "module": "export",
+      "name": "Export 导出 UI — 导出对话框 + Sidebar 入口",
+      "description": "前端导出功能入口。实现：(1) 新建 `frontend/src/components/ExportDialog.tsx`：对话框包含格式选择（Markdown zip / JSON）、可选类型过滤、日期范围、导出按钮；(2) 导出按钮点击后调用 `GET /entries/export` 下载文件（使用 `fetch` + `blob` + `URL.createObjectURL` + `<a>` 点击下载）；(3) Sidebar 底部新增导出入口（下载图标按钮）；(4) api.ts 新增 `exportEntries` 函数；(5) 导出中显示 loading 态。",
+      "verification": "F1",
+      "depends_on": ["B18"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Sidebar 底部有导出按钮入口",
+        "点击打开导出对话框，可选择格式和过滤条件",
+        "点击导出后下载对应文件",
+        "导出中显示 loading 态",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：选择 Markdown 格式导出下载 zip",
+        "正常：选择 JSON 格式导出下载 JSON",
+        "正常：类型过滤选项正确传递",
+        "边界：导出中按钮 disabled 显示 loading",
+        "异常：API 失败时显示错误提示"
+      ],
+      "contract_refs": ["CONTRACT-E02"],
+      "files": [
+        "frontend/src/components/ExportDialog.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/services/api.ts"
+      ]
+    },
+    {
+      "id": "F13",
+      "phase": "P2C",
+      "module": "entry-relations",
+      "name": "条目详情页关联面板 — 相关条目推荐",
+      "description": "条目详情页底部新增「相关条目」卡片。实现：(1) api.ts 新增 `getRelatedEntries(id)` 函数调用 `GET /entries/{id}/related`；(2) `frontend/src/pages/EntryDetail.tsx` 底部新增关联面板：标题「相关条目」+ 列表（标题 + 类型 Badge + relevance_reason）；(3) 列表项可点击跳转到对应条目详情；(4) 无关联时显示引导文案（「暂无关联条目，添加更多标签可自动发现关联」）；(5) 关联数据使用独立 loading/error 状态，不影响详情页主体内容。",
+      "verification": "F2",
+      "depends_on": ["B19"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "详情页底部显示「相关条目」面板",
+        "关联条目列表含标题、类型、关联原因",
+        "点击关联条目跳转到对应详情页",
+        "无关联时显示引导文案",
+        "关联 API 失败不影响详情页主体内容",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：有关联条目时面板显示列表",
+        "正常：点击条目跳转到详情页",
+        "边界：无关联时显示引导文案",
+        "异常：API 失败时面板显示错误提示，详情页主体不受影响",
+        "回归：现有详情页内容展示不受影响"
+      ],
+      "contract_refs": ["CONTRACT-E03"],
+      "files": [
+        "frontend/src/pages/EntryDetail.tsx",
+        "frontend/src/services/api.ts"
+      ]
+    }
+  ]
 }
