@@ -19,6 +19,8 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [format, setFormat] = useState<"markdown" | "json">("markdown");
   const [type, setType] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +38,12 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
     setIsExporting(true);
     setError(null);
     try {
-      const options: ExportOptions = { format, type: type || undefined };
+      const options: ExportOptions = {
+        format,
+        type: type || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+      };
       const blob = await exportEntries(options);
 
       const ext = format === "markdown" ? "zip" : "json";
@@ -115,6 +122,28 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
               </option>
             ))}
           </select>
+        </div>
+
+        {/* 日期范围 */}
+        <div className="mb-4 grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-sm font-medium mb-2 block">开始日期</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">结束日期</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
         </div>
 
         {/* 错误提示 */}

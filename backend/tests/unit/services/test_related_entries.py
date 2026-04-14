@@ -186,3 +186,35 @@ class TestGetRelatedEntries:
         assert result is not None
         assert len(result.related) == 1
         assert result.related[0].relevance_reason == "同项目"
+
+    @pytest.mark.asyncio
+    async def test_user_id_isolation(self, service, storage):
+        """不同用户的条目不互相可见"""
+        entry = _make_task("task-1", "任务1", tags=["react"])
+
+        md_storage = MagicMock()
+        md_storage.read_entry = MagicMock(return_value=entry)
+        storage.get_markdown_storage = MagicMock(return_value=md_storage)
+        # _verify_entry_owner 返回 False 表示不属于当前用户
+        service._verify_entry_owner = MagicMock(return_value=False)
+
+        result = await service.get_related_entries("task-1", user_id="other_user")
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_owner_verification_called_with_correct_user_id(self, service, storage):
+        """_verify_entry_owner 被正确调用，传入 user_id"""
+        entry = _make_task("task-1", "任务1")
+
+        md_storage = MagicMock()
+        md_storage.read_entry = MagicMock(return_value=entry)
+        storage.get_markdown_storage = MagicMock(return_value=md_storage)
+        service._verify_entry_owner = MagicMock(return_value=True)
+        service.list_entries = AsyncMock(return_value=MagicMock(entries=[entry]))
+        storage.sqlite = None
+
+        with patch("app.services.entry_service.HybridSearchService") as MockSearch:
+            MockSearch.return_value.search = AsyncMock(return_value=[])
+            await service.get_related_entries("task-1", user_id="user-abc")
+
+        service._verify_entry_owner.assert_called_once_with("task-1", "user-abc")
