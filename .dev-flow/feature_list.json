@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 7,
-    "pending": 1,
+    "pending": 0,
     "in_progress": 0,
-    "completed": 6,
+    "completed": 7,
     "blocked": 0,
     "cancelled": 0
   },
@@ -394,7 +394,10 @@
       "description": "条目详情页底部新增「相关条目」卡片。实现：(1) api.ts 新增 `getRelatedEntries(id)` 函数调用 `GET /entries/{id}/related`；(2) `frontend/src/pages/EntryDetail.tsx` 底部新增关联面板：标题「相关条目」+ 列表（标题 + 类型 Badge + relevance_reason）；(3) 列表项可点击跳转到对应条目详情；(4) 无关联时显示引导文案（「暂无关联条目，添加更多标签可自动发现关联」）；(5) 关联数据使用独立 loading/error 状态，不影响详情页主体内容。",
       "verification": "F2",
       "depends_on": ["B19"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F13.md",
       "priority": "medium",
       "acceptance_criteria": [
         "详情页底部显示「相关条目」面板",

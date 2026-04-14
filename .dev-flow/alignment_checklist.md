@@ -26,7 +26,7 @@
 | 导出模块 | Export 导出 API | CONTRACT-E02 | completed | not_applicable | completed | B18, 22 tests |
 | 导出模块 | Export 导出 UI | CONTRACT-E02 | completed | completed | completed | B18 → F12 |
 | 条目关联 | 关联推荐 API | CONTRACT-E03 | completed | not_applicable | completed | B19 |
-| 条目关联 | 关联面板 UI | CONTRACT-E03 | pending | pending | pending | B19 → F13 |
+| 条目关联 | 关联面板 UI | CONTRACT-E03 | completed | completed | completed | B19 → F13 |
 | Onboarding | onboarding_completed 字段 | CONTRACT-O01 | completed | not_applicable | completed | F09 后端部分 |
 | Onboarding | Onboarding 引导 UI | CONTRACT-O01/O02 | completed | completed | completed | F09 前端部分 |
 | 探索模块 | 探索页统一浏览 | - | not_applicable | completed | completed | F10 |

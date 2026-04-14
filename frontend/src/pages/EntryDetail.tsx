@@ -24,7 +24,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { getEntry, getEntries, getProjectProgress } from "@/services/api";
+import { getEntry, getEntries, getProjectProgress, getRelatedEntries } from "@/services/api";
+import type { RelatedEntry } from "@/services/api";
 import { useTaskStore } from "@/stores/taskStore";
 import type { Task } from "@/types/task";
 import type { ProjectProgressResponse } from "@/services/api";
@@ -41,6 +42,7 @@ export function EntryDetail() {
   const [projectProgress, setProjectProgress] = useState<ProjectProgressResponse | null>(null);
   const [parentEntry, setParentEntry] = useState<Task | null>(null);
   const [referencedNotes, setReferencedNotes] = useState<Map<string, Task>>(new Map());
+  const [relatedEntries, setRelatedEntries] = useState<RelatedEntry[]>([]);
 
   // 编辑模式状态
   const [isEditing, setIsEditing] = useState(false);
@@ -114,6 +116,14 @@ export function EntryDetail() {
             })
           );
           setReferencedNotes(notesMap);
+        }
+
+        // 加载关联条目
+        try {
+          const related = await getRelatedEntries(id);
+          setRelatedEntries(related);
+        } catch {
+          // 关联加载失败不影响页面
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "获取条目失败");
@@ -447,6 +457,38 @@ export function EntryDetail() {
               </Card>
             )}
           </div>
+        )}
+
+        {/* 相关条目 */}
+        {relatedEntries.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Link2 className="h-4 w-4" />
+                相关条目 ({relatedEntries.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {relatedEntries.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/entries/${item.id}`)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{item.title}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {(categoryConfig as Record<string, { label: string }>)[item.category]?.label || item.category}
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{item.relevance_reason}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

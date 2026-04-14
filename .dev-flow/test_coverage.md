@@ -65,4 +65,4 @@
 | 探索页基础 | F10 | manual+unit | 混合列表展示/类型 Tab 切换/debounce 搜索+Enter/Sidebar 4项/旧路由重定向/空状态引导/构建通过 | completed | 486 backend + 225 frontend + build pass |
 | 搜索增强 | F11 | manual+unit | debounce 300ms/Cmd+K 聚焦/关键词高亮/无结果引导/构建通过 | completed | 225 frontend + build pass |
 | Export 导出 UI | F12 | manual+unit | Sidebar 导出入口/格式选择/下载文件/loading 态/构建通过 | completed | 486 backend + 225 frontend + build pass |
-| 条目关联面板 | F13 | manual+unit | 关联条目列表/点击跳转/无关联引导/API 失败不影响详情页/构建通过 | planned | - |
+| 条目关联面板 | F13 | manual+unit | 关联条目列表/点击跳转/无关联引导/API 失败不影响详情页/构建通过 | completed | 225 frontend + build pass |

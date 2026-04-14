@@ -509,3 +509,22 @@ export async function exportEntries(options: ExportOptions): Promise<Blob> {
   }
   return response.blob();
 }
+
+/**
+ * 获取条目的关联推荐
+ */
+export interface RelatedEntry {
+  id: string;
+  title: string;
+  category: string;
+  relevance_reason: string;
+}
+
+export async function getRelatedEntries(entryId: string): Promise<RelatedEntry[]> {
+  const response = await fetch(`${API_BASE}/entries/${encodeURIComponent(entryId)}/related`, {
+    headers: buildAuthHeaders(),
+  });
+  if (!response.ok) return [];
+  const data = await response.json();
+  return data.related ?? [];
+}
