@@ -21,10 +21,10 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 6,
+    "total_tasks": 7,
     "pending": 0,
     "in_progress": 0,
-    "completed": 6,
+    "completed": 7,
     "blocked": 0,
     "cancelled": 0
   },
@@ -300,6 +300,42 @@
       "files": [
         "frontend/src/components/FeedbackButton.tsx",
         "frontend/src/services/api.ts"
+      ]
+    },
+    {
+      "id": "B17",
+      "phase": "P1A",
+      "module": "content-recovery",
+      "name": "修复 R003 迁移遗漏 — inbox Markdown 文件未复制到用户目录",
+      "description": "R003 迁移时 SQLite entries 表的 user_id 已更新为真实用户，但 inbox-xxx.md 文件仍留在 data/ 根目录，未复制到 data/users/{uid}/。导致 list_entries 走 SQLite 索引能查到，但 get_entry/update_entry 走 Markdown 文件读取返回 404。影响范围：14 个 inbox 条目无法查看详情或执行灵感转化。修复方案：(1) 写迁移脚本将 data/inbox-xxx.md 复制到 data/users/usr_be24f1f666ce/；(2) 同时检查 tasks/notes/projects 目录是否有遗漏文件（对比 SQLite 索引 vs 实际文件）；(3) 补一个防御性修复：read_entry 找不到文件时，回退到 data/ 根目录查找（兜底策略，防未来再漏）。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "high",
+      "acceptance_criteria": [
+        "GET /entries/{inbox-id} 对已迁移用户返回 200（不再是 404）",
+        "PUT /entries/{inbox-id} {\"category\":\"task\"} 灵感转化成功",
+        "迁移脚本幂等执行不报错",
+        "所有 inbox 文件已从 data/ 复制到 data/users/{uid}/",
+        "tasks/notes/projects 目录无遗漏文件",
+        "uv run pytest backend/tests/ 全部通过"
+      ],
+      "risk_tags": ["first_use"],
+      "test_tasks": [
+        "正常：迁移后 GET inbox 条目返回 200",
+        "正常：迁移后 PUT inbox 条目 category 变更成功",
+        "边界：迁移脚本重复执行不报错（幂等）",
+        "边界：已存在文件不覆盖",
+        "异常：文件不存在时 read_entry 回退策略生效"
+      ],
+      "smoke_required": true,
+      "fix_level": "L2",
+      "root_cause_analysis": "R003 迁移脚本只更新了 SQLite entries.user_id，未同步复制 Markdown 文件到用户目录。Markdown 是 Source of Truth，SQLite 只是索引层，迁移漏了文件层。",
+      "similar_locations": ["entry_service._verify_entry_owner", "MarkdownStorage.read_entry"],
+      "files": [
+        "backend/app/services/entry_service.py",
+        "backend/app/infrastructure/storage/markdown.py",
+        "scripts/fix_inbox_migration.py"
       ]
     }
   ]

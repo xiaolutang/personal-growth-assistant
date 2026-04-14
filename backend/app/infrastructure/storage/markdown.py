@@ -28,6 +28,13 @@ class MarkdownStorage:
         for category_dir in ["projects", "tasks", "notes"]:
             (self.data_dir / category_dir).mkdir(parents=True, exist_ok=True)
 
+    def _safe_relative_path(self, file_path: Path) -> str:
+        """安全获取相对路径，回退到文件名"""
+        try:
+            return str(file_path.relative_to(self.data_dir))
+        except ValueError:
+            return file_path.name
+
     def _get_file_path(self, entry_id: str, category: Category) -> Path:
         """获取文件路径"""
         dir_name = self.CATEGORY_DIRS.get(category, "notes")
@@ -188,7 +195,7 @@ class MarkdownStorage:
     # === 公共 API ===
 
     def read_entry(self, entry_id: str, category: Optional[Category] = None) -> Optional[Task]:
-        """读取条目"""
+        """读取条目，带 data/ 根目录回退兜底"""
         if category:
             file_path = self._get_file_path(entry_id, category)
             if file_path.exists():
@@ -198,6 +205,14 @@ class MarkdownStorage:
                 file_path = self._get_file_path(entry_id, cat)
                 if file_path.exists():
                     return self._parse_file(file_path)
+
+        # 兜底：尝试从 data/ 根目录查找（R003 迁移遗漏文件）
+        # data_dir 在用户态为 data/users/{uid}，需要走两级到 data/
+        project_data_root = self.data_dir.parent.parent
+        root_file = project_data_root / f"{entry_id}.md"
+        if root_file.exists():
+            return self._parse_file(root_file)
+
         return None
 
     def _parse_file(self, file_path: Path) -> Task:
@@ -228,7 +243,7 @@ class MarkdownStorage:
                 completed_at=self._parse_datetime(metadata.get('completed_at')),
                 time_spent=metadata.get('time_spent'),
                 parent_id=metadata.get('parent_id'),
-                file_path=str(file_path.relative_to(self.data_dir)),
+                file_path=self._safe_relative_path(file_path),
             )
         else:
             # 旧格式：从正文提取元数据
@@ -247,7 +262,7 @@ class MarkdownStorage:
                 tags=tags,
                 created_at=created_at,
                 updated_at=datetime.now(),
-                file_path=str(file_path.relative_to(self.data_dir)),
+                file_path=self._safe_relative_path(file_path),
             )
 
     def write_entry(self, entry: Task) -> str:
