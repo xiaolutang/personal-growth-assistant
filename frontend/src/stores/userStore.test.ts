@@ -66,6 +66,7 @@ describe("useUserStore", () => {
         username: "testuser",
         email: "test@example.com",
         is_active: true,
+        onboarding_completed: false,
       };
 
       mockFetch
@@ -113,6 +114,7 @@ describe("useUserStore", () => {
           username: "u",
           email: "e@t.com",
           is_active: true,
+          onboarding_completed: true,
         },
         isAuthenticated: true,
       });
@@ -140,6 +142,7 @@ describe("useUserStore", () => {
                   username: "u",
                   email: "e@t.com",
                   is_active: true,
+                  onboarding_completed: true,
                 })
               : (null as unknown as string)
       );
@@ -149,6 +152,7 @@ describe("useUserStore", () => {
         username: "u",
         email: "e@t.com",
         is_active: true,
+        onboarding_completed: true,
       };
       mockFetch.mockResolvedValueOnce({
         ok: true,

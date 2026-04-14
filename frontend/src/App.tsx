@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { FloatingChat } from "@/components/FloatingChat";
 import { FeedbackButton } from "@/components/FeedbackButton";
+import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Home } from "@/pages/Home";
 import { Tasks } from "@/pages/Tasks";
@@ -27,6 +28,23 @@ function App() {
   const fetchEntries = useTaskStore((state) => state.fetchEntries);
   const isAuthenticated = useUserStore((state) => state.isAuthenticated);
   const loadFromStorage = useUserStore((state) => state.loadFromStorage);
+  const user = useUserStore((state) => state.user);
+  const fetchMe = useUserStore((state) => state.fetchMe);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // 用户加载完成后决定是否显示 onboarding
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      setShowOnboarding(!user.onboarding_completed);
+    } else {
+      setShowOnboarding(false);
+    }
+  }, [isAuthenticated, user]);
+
+  function handleOnboardingComplete() {
+    setShowOnboarding(false);
+    fetchMe();
+  }
 
   // 初始化用户状态（从 localStorage 恢复登录态）
   useEffect(() => {
@@ -53,6 +71,9 @@ function App() {
           path="/*"
           element={
             <ProtectedRoute>
+              {showOnboarding && (
+                <OnboardingFlow onComplete={handleOnboardingComplete} />
+              )}
               <Toaster position="top-center" richColors />
               <div className="flex min-h-screen bg-background">
                 <Sidebar />

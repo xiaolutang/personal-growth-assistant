@@ -9,7 +9,7 @@
 ```
 R004 Phase 2 (product-evolution-phase2)
 ├── P2A: Onboarding
-│   └── [pending] F09 Onboarding 对话引导 — 新用户首次登录引导
+│   └── [completed] F09 Onboarding 对话引导 — 新用户首次登录引导
 ├── P2B: 统一探索 + Export
 │   ├── [completed] B18 Export 导出 API — zip/json 双格式
 │   ├── [pending] F10 探索页基础 — 灵感/笔记/项目统一浏览 + Sidebar 改造
@@ -34,9 +34,9 @@ B19 ──────→ F13
 
 | 状态 | 数量 |
 |------|------|
-| pending | 6 |
+| pending | 5 |
 | in_progress | 0 |
-| completed | 1 |
+| completed | 2 |
 | **总计** | **7** |
 
 ## 归档需求包

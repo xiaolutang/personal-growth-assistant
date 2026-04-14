@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 7,
-    "pending": 6,
+    "pending": 5,
     "in_progress": 0,
-    "completed": 1,
+    "completed": 2,
     "blocked": 0,
     "cancelled": 0
   },
@@ -237,7 +237,7 @@
       "description": "新用户首次登录后通过日知对话引导完成第一次记录。实现：(1) 后端 `backend/app/models/user.py` users 表新增 `onboarding_completed` 布尔字段（默认 FALSE）；(2) 后端 `backend/app/routers/auth.py` 新增 `PUT /auth/me` 端点（接受 `onboarding_completed` 字段），`GET /auth/me` 返回 `onboarding_completed` 字段；(3) `backend/app/infrastructure/storage/user_storage.py` 的 `create_user` 和 `get_user` 方法同步更新 schema；(4) **已有用户迁移规则**：后端启动时检测 `onboarding_completed` 列是否存在，不存在则 ALTER TABLE 添加；同时为已存在用户批量设置 `onboarding_completed=true`（判断条件：用户有至少 1 条 entry 记录）；(5) 前端 `frontend/src/stores/userStore.ts` 存储 `onboarding_completed` 状态；(6) 前端 `frontend/src/components/OnboardingFlow.tsx` 新建引导组件：欢迎语 → 引导记录第一条（可跳过）→ 标记完成；(7) `frontend/src/App.tsx` 在 ProtectedRoute 内条件渲染：登录后检查 `onboarding_completed`，未完成则显示 OnboardingFlow 覆盖层；(8) 引导完成后调用 `PUT /auth/me` 更新 `onboarding_completed=true`，失败时前端提示并可重试；(9) OpenAPI schema 更新后运行 `npm run gen:types` 同步前端类型。",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "acceptance_criteria": [
         "users 表新增 onboarding_completed 字段",

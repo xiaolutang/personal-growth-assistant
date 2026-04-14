@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 from typing import Dict, Optional
 
-from app.infrastructure.storage.markdown import MarkdownStorage
+from app.infrastructure.storage.markdown import MarkdownStorage, _INBOX_FILE_RE
 
 
 class StorageFactory:
@@ -15,6 +15,7 @@ class StorageFactory:
         data/users/{user_id}/notes/
         data/users/{user_id}/projects/
         data/users/{user_id}/inbox.md
+        data/users/{user_id}/inbox-{id}.md
     """
 
     def __init__(self, base_data_dir: str):
@@ -39,7 +40,7 @@ class StorageFactory:
             (user_dir / subdir).mkdir(parents=True, exist_ok=True)
 
     def _copy_user_md_files(self, src_dir: Path, dst_dir: Path) -> tuple[int, int]:
-        """复制用户 Markdown 文件（子目录 + inbox.md）
+        """复制用户 Markdown 文件（子目录 + inbox 文件）
 
         Returns:
             (copied_count, skipped_count)
@@ -63,14 +64,16 @@ class StorageFactory:
                 shutil.copy2(md_file, dst_file)
                 copied += 1
 
-        src_inbox = src_dir / "inbox.md"
-        if src_inbox.exists():
-            dst_inbox = dst_dir / "inbox.md"
-            if dst_inbox.exists():
-                skipped += 1
-            else:
-                shutil.copy2(src_inbox, dst_inbox)
-                copied += 1
+        # 复制根目录 inbox 文件（使用与 MarkdownStorage 一致的正则）
+        if src_dir.is_dir():
+            for f in src_dir.iterdir():
+                if _INBOX_FILE_RE.match(f.name):
+                    dst_file = dst_dir / f.name
+                    if dst_file.exists():
+                        skipped += 1
+                    else:
+                        shutil.copy2(f, dst_file)
+                        copied += 1
 
         return copied, skipped
 

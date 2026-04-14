@@ -10,6 +10,7 @@ export interface UserInfo {
   username: string;
   email: string;
   is_active: boolean;
+  onboarding_completed: boolean;
 }
 
 interface UserState {
@@ -23,6 +24,7 @@ interface UserState {
   logout: () => void;
   loadFromStorage: () => void;
   fetchMe: () => Promise<void>;
+  updateMe: (data: { onboarding_completed?: boolean }) => Promise<UserInfo>;
 }
 
 export const useUserStore = create<UserState>((set, get) => ({
@@ -104,5 +106,23 @@ export const useUserStore = create<UserState>((set, get) => ({
     } catch {
       get().logout();
     }
+  },
+
+  updateMe: async (data: { onboarding_completed?: boolean }) => {
+    const { token } = get();
+    if (!token) throw new Error("未登录");
+    const res = await authFetch(`${API_BASE}/auth/me`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "更新失败" }));
+      throw new Error(err.detail || "更新失败");
+    }
+    const user = await res.json();
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    set({ user });
+    return user as UserInfo;
   },
 }));

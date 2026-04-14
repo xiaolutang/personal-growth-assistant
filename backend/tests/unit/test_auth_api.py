@@ -397,3 +397,103 @@ class TestClaimDefaultData:
         assert second.status_code == 200
         assert second.json()["claimed"] is False
         assert second.json()["reason"] == "no_default_data"
+
+
+# --- Onboarding Tests ---
+
+
+class TestOnboarding:
+    """GET/PUT /auth/me — onboarding_completed 字段"""
+
+    def test_new_user_onboarding_not_completed(self, client, sample_user):
+        """新注册用户 onboarding_completed 默认为 false"""
+        resp = client.post("/auth/register", json=sample_user)
+        assert resp.status_code == 201
+        assert resp.json()["onboarding_completed"] is False
+
+    def test_login_returns_onboarding_not_completed(self, client, sample_user):
+        """登录返回 onboarding_completed 字段"""
+        client.post("/auth/register", json=sample_user)
+        resp = client.post("/auth/login", json={
+            "username": "testuser",
+            "password": "secret123",
+        })
+        assert resp.status_code == 200
+        assert resp.json()["user"]["onboarding_completed"] is False
+
+    def test_me_returns_onboarding_not_completed(self, client, sample_user):
+        """GET /auth/me 返回 onboarding_completed"""
+        client.post("/auth/register", json=sample_user)
+        login_resp = client.post("/auth/login", json={
+            "username": "testuser",
+            "password": "secret123",
+        })
+        token = login_resp.json()["access_token"]
+
+        resp = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+        assert resp.status_code == 200
+        assert resp.json()["onboarding_completed"] is False
+
+    def test_update_onboarding_completed(self, client, sample_user):
+        """PUT /auth/me 更新 onboarding_completed 为 true"""
+        client.post("/auth/register", json=sample_user)
+        login_resp = client.post("/auth/login", json={
+            "username": "testuser",
+            "password": "secret123",
+        })
+        token = login_resp.json()["access_token"]
+
+        resp = client.put(
+            "/auth/me",
+            json={"onboarding_completed": True},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["onboarding_completed"] is True
+
+        # 确认后续 GET 也返回 true
+        me_resp = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+        assert me_resp.json()["onboarding_completed"] is True
+
+    def test_update_me_no_token(self, client):
+        """无 token PUT /auth/me 返回 401"""
+        resp = client.put("/auth/me", json={"onboarding_completed": True})
+        assert resp.status_code == 401
+
+    def test_update_me_invalid_token(self, client):
+        """无效 token PUT /auth/me 返回 401"""
+        resp = client.put(
+            "/auth/me",
+            json={"onboarding_completed": True},
+            headers={"Authorization": "Bearer invalid-token"},
+        )
+        assert resp.status_code == 401
+
+    def test_update_me_ignores_unknown_fields(self, client, sample_user):
+        """PUT /auth/me 忽略未知字段，只处理 onboarding_completed"""
+        client.post("/auth/register", json=sample_user)
+        login_resp = client.post("/auth/login", json={
+            "username": "testuser",
+            "password": "secret123",
+        })
+        token = login_resp.json()["access_token"]
+
+        # 发送带有未知字段的请求
+        resp = client.put(
+            "/auth/me",
+            json={
+                "onboarding_completed": True,
+                "username": "hacker",
+                "email": "hacked@example.com",
+                "is_active": False,
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        # onboarding_completed 被更新
+        assert data["onboarding_completed"] is True
+        # 其他字段未被修改
+        assert data["username"] == "testuser"
+        assert data["email"] == "test@example.com"
+        assert data["is_active"] is True

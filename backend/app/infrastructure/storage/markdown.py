@@ -7,6 +7,10 @@ from typing import List, Optional, Tuple
 
 from app.models import Task, Category, TaskStatus, Priority
 
+# inbox 文件匹配正则：inbox.md 或 inbox-{hexid}.md
+# 与 EntryService._generate_entry_id 生成的 inbox-{hex} 格式一致
+_INBOX_FILE_RE = re.compile(r"^inbox(-[a-f0-9]+)?\.md$")
+
 
 class MarkdownStorage:
     """Markdown 文件存储 - 支持 YAML Front Matter"""
@@ -94,7 +98,7 @@ class MarkdownStorage:
             elif dir_name == "notes":
                 return Category.NOTE
 
-        if file_path.name == "inbox.md":
+        if _INBOX_FILE_RE.match(file_path.name):
             return Category.INBOX
 
         return Category.NOTE
@@ -322,15 +326,16 @@ class MarkdownStorage:
                 except Exception:
                     continue
 
-        # 处理 inbox.md
-        inbox_path = self.data_dir / "inbox.md"
-        if inbox_path.exists() and (category is None or category == Category.INBOX):
-            try:
-                entry = self._parse_file(inbox_path)
-                if status is None or entry.status == status:
-                    entries.append(entry)
-            except Exception:
-                pass
+        # 处理根目录 inbox 文件（使用共享正则 _INBOX_FILE_RE）
+        if category is None or category == Category.INBOX:
+            for f in self.data_dir.iterdir():
+                if _INBOX_FILE_RE.match(f.name):
+                    try:
+                        entry = self._parse_file(f)
+                        if status is None or entry.status == status:
+                            entries.append(entry)
+                    except Exception:
+                        continue
 
         entries.sort(key=lambda e: e.updated_at, reverse=True)
         return entries[:limit]
