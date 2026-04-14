@@ -130,7 +130,7 @@ class EntryService:
     async def get_related_entries(
         self, entry_id: str, user_id: str = "_default", limit: int = 5
     ) -> Optional[RelatedEntriesResponse]:
-        """获取关联条目（同项目 > 标签重叠 > 向量相似）"""
+        """获取关联条目（同项目 > 标签重叠 > 搜索相关）"""
         if not self._verify_entry_owner(entry_id, user_id):
             return None
         entry = self._get_markdown_storage(user_id).read_entry(entry_id)
@@ -168,6 +168,25 @@ class EntryService:
                             category=r.get("category", ""),
                             relevance_reason="标签相关",
                         ))
+
+        # 级别 3：搜索相关（混合搜索：向量 + 全文）
+        if len(results) < limit:
+            try:
+                search_service = HybridSearchService(self.storage)
+                search_results = await search_service.search(
+                    query=entry.title or entry.content or "",
+                    user_id=user_id,
+                    limit=limit * 2,
+                )
+                for vr in search_results:
+                    if vr.id not in seen_ids and len(results) < limit:
+                        seen_ids.add(vr.id)
+                        results.append(RelatedEntry(
+                            id=vr.id, title=vr.title, category=vr.category,
+                            relevance_reason="搜索相关",
+                        ))
+            except Exception:
+                logger.warning("搜索关联失败，跳过第3层关联")
 
         return RelatedEntriesResponse(related=results)
 

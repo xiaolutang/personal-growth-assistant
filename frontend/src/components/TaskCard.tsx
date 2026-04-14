@@ -16,20 +16,26 @@ interface TaskCardProps {
   highlightKeyword?: string;
 }
 
-/** 高亮文本中的关键词 */
+/** 高亮文本中所有匹配的关键词（大小写不敏感，索引安全） */
 function HighlightText({ text, keyword }: { text: string; keyword: string }) {
   if (!keyword) return <>{text}</>;
-  const idx = text.toLowerCase().indexOf(keyword.toLowerCase());
-  if (idx === -1) return <>{text}</>;
-  return (
-    <>
-      {text.slice(0, idx)}
-      <mark className="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">
-        {text.slice(idx, idx + keyword.length)}
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(escaped, "gi");
+  const matches = [...text.matchAll(regex)];
+  if (matches.length === 0) return <>{text}</>;
+  const parts: (string | React.ReactElement)[] = [];
+  let lastIndex = 0;
+  for (const m of matches) {
+    if (m.index > lastIndex) parts.push(text.slice(lastIndex, m.index));
+    parts.push(
+      <mark key={m.index} className="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">
+        {m[0]}
       </mark>
-      {text.slice(idx + keyword.length)}
-    </>
-  );
+    );
+    lastIndex = m.index + m[0].length;
+  }
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+  return <>{parts}</>;
 }
 
 export function TaskCard({ task, showParent = true, highlightKeyword }: TaskCardProps) {

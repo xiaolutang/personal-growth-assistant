@@ -173,3 +173,58 @@ describe("TaskCard — 灵感转化", () => {
     expect(menuBtn).toBeDisabled();
   });
 });
+
+describe("TaskCard — HighlightText 关键词高亮", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("高亮所有匹配的关键词", () => {
+    const task = createTaskItem({ title: "foo bar foo baz foo" });
+    const { container } = renderWithRouter(<TaskCard task={task} highlightKeyword="foo" />);
+    const marks = container.querySelectorAll("mark");
+    expect(marks.length).toBe(3);
+    marks.forEach((m) => expect(m.textContent).toBe("foo"));
+  });
+
+  it("大小写不敏感高亮", () => {
+    const task = createTaskItem({ title: "React Hooks" });
+    const { container } = renderWithRouter(<TaskCard task={task} highlightKeyword="react" />);
+    const marks = container.querySelectorAll("mark");
+    expect(marks.length).toBe(1);
+    expect(marks[0].textContent).toBe("React");
+  });
+
+  it("无匹配时返回原文", () => {
+    const task = createTaskItem({ title: "Hello World" });
+    renderWithRouter(<TaskCard task={task} highlightKeyword="xyz" />);
+    expect(screen.getByText("Hello World")).toBeInTheDocument();
+  });
+
+  it("空关键词时不高亮", () => {
+    const task = createTaskItem({ title: "Hello World" });
+    renderWithRouter(<TaskCard task={task} highlightKeyword="" />);
+    expect(screen.getByText("Hello World")).toBeInTheDocument();
+  });
+
+  it("特殊正则字符安全转义", () => {
+    const task = createTaskItem({ title: "price: $10 (50%)" });
+    const { container } = renderWithRouter(<TaskCard task={task} highlightKeyword="$10" />);
+    const marks = container.querySelectorAll("mark");
+    expect(marks.length).toBe(1);
+    expect(marks[0].textContent).toBe("$10");
+  });
+
+  it("Unicode 大小写边界：原始索引安全，精确高亮不污染", () => {
+    const task = createTaskItem({ title: "Straße strasse" });
+    const { container } = renderWithRouter(<TaskCard task={task} highlightKeyword="straße" />);
+    const marks = container.querySelectorAll("mark");
+    // matchAll 在原始文本上匹配，精确匹配到 "Straße"
+    expect(marks.length).toBe(1);
+    expect(marks[0].textContent).toBe("Straße");
+    // 确认 "strasse" 未被误高亮——任何 mark 内都不包含 "strasse"
+    for (const m of marks) {
+      expect(m.textContent).not.toBe("strasse");
+    }
+  });
+});

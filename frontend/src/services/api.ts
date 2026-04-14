@@ -524,7 +524,9 @@ export async function getRelatedEntries(entryId: string): Promise<RelatedEntry[]
   const response = await fetch(`${API_BASE}/entries/${encodeURIComponent(entryId)}/related`, {
     headers: buildAuthHeaders(),
   });
-  if (!response.ok) return [];
+  if (!response.ok) {
+    throw new Error(`Failed to fetch related entries: ${response.status}`);
+  }
   const data = await response.json();
   return data.related ?? [];
 }
