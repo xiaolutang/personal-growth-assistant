@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 7,
-    "pending": 7,
+    "pending": 6,
     "in_progress": 0,
-    "completed": 0,
+    "completed": 1,
     "blocked": 0,
     "cancelled": 0
   },
@@ -165,7 +165,7 @@
       "description": "新增条目数据导出端点，支持 Markdown zip 和 JSON 两种格式。当前后端无导出能力。实现：(1) `backend/app/routers/entries.py` 新增 `GET /entries/export` 端点，**必须声明在 `/{entry_id}` 动态路由之前**，避免被动态路由吞掉；(2) 参数：`format`（markdown/json，默认 markdown）、`type`（可选，按 category 过滤）、`start_date/end_date`（可选，日期范围）；(3) markdown 格式：遍历用户 data 目录，按 category 子目录组织，zip 打包返回（`StreamingResponse` + `zipfile.ZipFile`）；(4) json 格式：从 SQLite 查询条目 + 读取 Markdown 内容，返回 JSON 数组；(5) 所有查询必须带 user_id 隔离；(6) 大数据量使用流式响应，避免内存溢出。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "acceptance_criteria": [
         "GET /entries/export?format=markdown 返回可下载的 zip 文件",

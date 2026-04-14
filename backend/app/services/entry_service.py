@@ -1,9 +1,15 @@
 """条目业务服务层"""
 
 import asyncio
+import logging
+import os
+import tempfile
 import uuid
+import zipfile
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import AsyncGenerator, Optional, Tuple
+
+logger = logging.getLogger(__name__)
 
 from app.api.schemas import (
     EntryCreate,
@@ -347,3 +353,105 @@ class EntryService:
             progress_percentage=round(progress, 1),
             status_distribution=status_counts
         )
+
+    # === 导出操作 ===
+
+    async def export_markdown_stream(
+        self,
+        type: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        user_id: str = "_default",
+    ) -> AsyncGenerator[bytes, None]:
+        """流式导出为 Markdown zip 格式，分块 yield 字节数据"""
+        md_storage = self._get_markdown_storage(user_id)
+        _EXPORT_LIMIT = 100_000
+        _CHUNK_SIZE = 8192
+
+        # 从 SQLite 获取符合条件的条目列表
+        if self.storage.sqlite:
+            entries = self.storage.sqlite.list_entries(
+                type=type,
+                start_date=start_date,
+                end_date=end_date,
+                limit=_EXPORT_LIMIT,
+                offset=0,
+                user_id=user_id,
+            )
+        else:
+            # 回退：直接遍历 Markdown 文件
+            category = Category(type) if type else None
+            tasks = md_storage.list_entries(category=category, limit=_EXPORT_LIMIT)
+            entries = [EntryMapper.task_to_response(t) for t in tasks]
+
+        if len(entries) >= _EXPORT_LIMIT:
+            logger.warning(
+                "export_markdown_stream 达到 limit=%d 上限，可能有数据被截断, user_id=%s",
+                _EXPORT_LIMIT, user_id,
+            )
+
+        # 使用临时文件写 zip，然后分块读取流式返回
+        fd, tmp_path = tempfile.mkstemp(suffix=".zip")
+        os.close(fd)
+
+        try:
+            # 逐条写入 zip entry
+            with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                for entry_data in entries:
+                    entry_id = entry_data["id"] if isinstance(entry_data, dict) else entry_data.id
+                    file_path = entry_data.get("file_path", "") if isinstance(entry_data, dict) else entry_data.file_path
+
+                    # 从磁盘读取原始 Markdown 文件内容
+                    md_path = md_storage.data_dir / file_path if file_path else None
+                    if md_path and md_path.exists():
+                        content = md_path.read_text(encoding="utf-8")
+                        category = entry_data.get("category") or entry_data.get("type", "note") if isinstance(entry_data, dict) else entry_data.category.value
+                        dir_name = MarkdownStorage.CATEGORY_DIRS.get(Category(category), "")
+                        if not dir_name:
+                            dir_name = category
+                        arc_name = f"{dir_name}/{entry_id}.md"
+                        zf.writestr(arc_name, content)
+
+            # 分块读取临时文件并 yield
+            with open(tmp_path, "rb") as f:
+                while chunk := f.read(_CHUNK_SIZE):
+                    yield chunk
+        finally:
+            os.unlink(tmp_path)
+
+    async def export_json(
+        self,
+        type: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        user_id: str = "_default",
+    ) -> list[dict]:
+        """导出为 JSON 格式，返回条目列表"""
+        _EXPORT_LIMIT = 100_000
+
+        if self.storage.sqlite:
+            entries = self.storage.sqlite.list_entries(
+                type=type,
+                start_date=start_date,
+                end_date=end_date,
+                limit=_EXPORT_LIMIT,
+                offset=0,
+                user_id=user_id,
+            )
+            if len(entries) >= _EXPORT_LIMIT:
+                logger.warning(
+                    "export_json 达到 limit=%d 上限，可能有数据被截断, user_id=%s",
+                    _EXPORT_LIMIT, user_id,
+                )
+            return [EntryMapper.dict_to_response(e) for e in entries]
+
+        # 回退：直接从 Markdown 读取
+        md_storage = self._get_markdown_storage(user_id)
+        category = Category(type) if type else None
+        tasks = md_storage.list_entries(category=category, limit=_EXPORT_LIMIT)
+        if len(tasks) >= _EXPORT_LIMIT:
+            logger.warning(
+                "export_json (markdown fallback) 达到 limit=%d 上限，可能有数据被截断, user_id=%s",
+                _EXPORT_LIMIT, user_id,
+            )
+        return [EntryMapper.task_to_response(t) for t in tasks]
