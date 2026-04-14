@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 2,
-    "pending": 1,
+    "pending": 0,
     "in_progress": 0,
-    "completed": 1,
+    "completed": 2,
     "blocked": 0,
     "cancelled": 0
   },
@@ -169,8 +169,10 @@
       "description": "回顾页新增趋势卡片，展示完成率变化折线图。当前 Review.tsx 展示日报/周报/月报文本统计，无趋势可视化。实现：(1) 安装 recharts（npm install recharts）；(2) api.ts 新增 getReviewTrend(period, days/weeks) 函数调用 GET /review/trend，参数硬编码 days=7 和 weeks=8（MVP 不暴露为用户可调）；(3) Review.tsx 新增趋势卡片（位于报告类型选择下方）：默认最近 7 天日完成率折线图，可切换为周维度（最近 8 周）；(4) 趋势卡片使用独立的 loading/error/empty 状态（useState），与日报/周报/月报主报告区域完全隔离，趋势 API 失败时卡片内显示错误提示文案，不隐藏卡片，不影响主报告内容；(5) 折线图 X 轴日期、Y 轴完成率百分比；(6) 图表下方显示简单摘要（如「最近 7 天平均完成率 XX%」）；(7) 空数据时显示引导文案。注意：后端 API 已在 Phase 1A B14 实现（GET /review/trend），返回 { periods: [{ date, total, completed, completion_rate, notes_count }] }。",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
       "acceptance_criteria": [
         "趋势折线图显示完成率变化",
         "可切换日（7 天）和周（8 周）维度",

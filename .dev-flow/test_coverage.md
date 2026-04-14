@@ -63,4 +63,4 @@
 | 首页改版「今天」 | F05 | manual+unit | 任务状态切换/灵感角标/快速操作/空状态引导/Sidebar 标签/构建通过/切换失败回滚/loading 态 | completed | 194 frontend tests + npm run build passed |
 | FeedbackButton 双 Tab | F06 | manual+unit | 双 Tab 切换/反馈列表/状态标识/提交后跳转/构建通过/列表失败态/调用次数回归 | completed | 201 frontend tests + npm run build passed |
 | 灵感转化 UI | F07 | manual+unit | 转为任务/转为笔记/loading 防重复/成功 toast/失败 toast/非 inbox 隐藏/构建通过/回归原有功能 | completed | 209 frontend tests (含 8 个 F07 TaskCard 测试) + npm run build passed |
-| 回顾页趋势折线图 | F08 | manual+unit | 有数据渲染/日周切换/空数据引导/平均完成率摘要/移动端适配/构建通过/回归原有统计 | planned | - |
+| 回顾页趋势折线图 | F08 | manual+unit | 有数据渲染/日周切换/空数据引导/平均完成率摘要/API 错误隔离/错误不影响主报告/1天数据边界/移动端适配/构建通过/回归原有统计 | completed | 222 frontend tests (含 6 个 F08 API 测试 + 7 个 Review 页面测试) + npm run build passed |

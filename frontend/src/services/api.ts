@@ -446,5 +446,40 @@ export async function detectIntent(text: string): Promise<IntentResponse> {
   return response.json();
 }
 
+// === 回顾趋势 API ===
+
+export interface TrendPeriod {
+  date: string;
+  total: number;
+  completed: number;
+  completion_rate: number;
+  notes_count: number;
+}
+
+export interface ReviewTrendResponse {
+  periods: TrendPeriod[];
+}
+
+/**
+ * 获取回顾趋势数据
+ * @param period - "daily" | "weekly"
+ * @param count - daily 时传 days（默认 7），weekly 时传 weeks（默认 8）
+ */
+export async function getReviewTrend(
+  period: "daily" | "weekly",
+  count?: number
+): Promise<ReviewTrendResponse> {
+  const params = new URLSearchParams({ period });
+  if (period === "daily") {
+    params.set("days", String(count ?? 7));
+  } else {
+    params.set("weeks", String(count ?? 8));
+  }
+  const response = await fetch(`${API_BASE}/review/trend?${params}`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<ReviewTrendResponse>(response);
+}
+
 // 导出错误类供外部使用
 export { ApiError } from "@/lib/errors";
