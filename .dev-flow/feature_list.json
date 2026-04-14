@@ -4,14 +4,9 @@
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
   "updated_at": "2026-04-15",
-  "status": "in_progress",
-  "scope_notes": "R004 Phase 1B：灵感转化 UI + 回顾页趋势折线图",
-  "active_requirement_cycle": {
-    "id": "R004",
-    "name": "product-evolution-phase1b",
-    "status": "in_progress",
-    "branch": "feat/R004-product-evolution-phase1b"
-  },
+  "status": "idle",
+  "scope_notes": "R004 Phase 1B 已归档，等待下一轮需求",
+  "active_requirement_cycle": null,
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -21,10 +16,10 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 2,
+    "total_tasks": 0,
     "pending": 0,
     "in_progress": 0,
-    "completed": 2,
+    "completed": 0,
     "blocked": 0,
     "cancelled": 0
   },
@@ -42,6 +37,13 @@
       "status": "completed",
       "archive_dir": "_archive/R004_product-evolution-phase1a",
       "branch": "feat/R004-product-evolution-phase1a"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase1b",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase1b",
+      "branch": "feat/R004-product-evolution-phase1b"
     }
   ],
   "archived_cycles": [
@@ -70,6 +72,15 @@
       "total_tasks": 7,
       "phases": ["P1A"],
       "completed_at": "2026-04-14",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R004",
+      "name": "Product Evolution Phase 1B",
+      "archive_dir": "_archive/R004_product-evolution-phase1b",
+      "total_tasks": 2,
+      "phases": ["P1B"],
+      "completed_at": "2026-04-15",
       "snapshot": "feature_list.snapshot.json"
     }
   ],
@@ -120,86 +131,5 @@
       "description": "首页改版为行动中心「今天」"
     }
   ],
-  "tasks": [
-    {
-      "id": "F07",
-      "phase": "P1B",
-      "module": "entry-management",
-      "name": "灵感转化 UI — Inbox 页「转为任务/笔记」操作入口",
-      "description": "为 Inbox 页灵感项增加「转为任务」和「转为笔记」操作入口。当前 Inbox.tsx 使用 TaskList→TaskCard 渲染，TaskCard 有状态切换和删除但无 category 转化。实现：(1) 引入 sonner 作为 toast 方案（轻量、与 Tailwind 兼容，npm install sonner）；(2) 为 inbox 类型的 TaskCard 添加自定义下拉菜单（「...」按钮，使用 relative/absolute 定位 + useState 控制展开/收起，不依赖 Radix），包含「转为任务」「转为笔记」选项；菜单项点击需 e.stopPropagation() 阻止触发卡片根节点的导航跳转；(3) 调用 taskStore.updateEntry(id, { category: 'task'/'note' })；(4) 成功后 sonner toast 提示，条目因 category 变化从灵感列表自动消失（重新 fetchEntries 即可）；(5) 转化过程中使用条目级 loading（useState per-item），非全局页级，不影响其他 TaskCard 的状态切换和删除；(6) 转化失败显示错误 toast；(7) App.tsx 添加 Toaster 组件挂载。注意：后端 API 已在 Phase 1A B15 实现（PUT /entries/{id} { category: 'task' }），taskStore.updateEntry 已可用。",
-      "verification": "F2",
-      "depends_on": [],
-      "status": "completed",
-      "priority": "high",
-      "started_at": "2026-04-15",
-      "completed_at": "2026-04-15",
-      "acceptance_criteria": [
-        "inbox 类型的条目有「转为任务」和「转为笔记」操作入口",
-        "点击转化后显示条目级 loading 状态，不影响其他 TaskCard 的状态切换和删除",
-        "转化成功：toast 提示 + 条目从灵感列表消失",
-        "转化成功：在对应列表（任务/笔记）可看到该条目",
-        "转化失败：显示错误 toast，条目仍在灵感列表",
-        "非 inbox 类型的条目不显示转化菜单",
-        "npm run build 构建通过"
-      ],
-      "risk_tags": ["new-dep:sonner"],
-      "test_tasks": [
-        "正常：inbox 条目点击「转为任务」，成功后列表刷新",
-        "正常：inbox 条目点击「转为笔记」，成功后列表刷新",
-        "边界：转化过程中按钮显示 loading，不可重复点击",
-        "边界：转化过程中其他 TaskCard 的状态切换和删除不受影响（条目级 loading）",
-        "异常：API 返回错误时显示错误 toast，条目不受影响",
-        "边界：非 inbox 条目不显示转化操作入口",
-        "边界：点击菜单按钮或菜单项时不触发卡片根节点的详情导航跳转（stopPropagation）",
-        "回归：TaskCard 原有的状态切换和删除功能仍正常"
-      ],
-      "contract_refs": ["CONTRACT-E01"],
-      "files": [
-        "frontend/src/pages/Inbox.tsx",
-        "frontend/src/components/TaskCard.tsx",
-        "frontend/src/App.tsx",
-        "frontend/package.json"
-      ]
-    },
-    {
-      "id": "F08",
-      "phase": "P1B",
-      "module": "review",
-      "name": "回顾页趋势折线图 — 日/周完成率对比",
-      "description": "回顾页新增趋势卡片，展示完成率变化折线图。当前 Review.tsx 展示日报/周报/月报文本统计，无趋势可视化。实现：(1) 安装 recharts（npm install recharts）；(2) api.ts 新增 getReviewTrend(period, days/weeks) 函数调用 GET /review/trend，参数硬编码 days=7 和 weeks=8（MVP 不暴露为用户可调）；(3) Review.tsx 新增趋势卡片（位于报告类型选择下方）：默认最近 7 天日完成率折线图，可切换为周维度（最近 8 周）；(4) 趋势卡片使用独立的 loading/error/empty 状态（useState），与日报/周报/月报主报告区域完全隔离，趋势 API 失败时卡片内显示错误提示文案，不隐藏卡片，不影响主报告内容；(5) 折线图 X 轴日期、Y 轴完成率百分比；(6) 图表下方显示简单摘要（如「最近 7 天平均完成率 XX%」）；(7) 空数据时显示引导文案。注意：后端 API 已在 Phase 1A B14 实现（GET /review/trend），返回 { periods: [{ date, total, completed, completion_rate, notes_count }] }。",
-      "verification": "F2",
-      "depends_on": [],
-      "status": "completed",
-      "priority": "medium",
-      "started_at": "2026-04-15",
-      "completed_at": "2026-04-15",
-      "acceptance_criteria": [
-        "趋势折线图显示完成率变化",
-        "可切换日（7 天）和周（8 周）维度",
-        "空数据时显示引导文案（非空白图表）",
-        "图表下方显示平均完成率摘要",
-        "趋势卡片使用独立状态，趋势 API 失败不影响日报/周报/月报主报告区域",
-        "趋势 API 失败时卡片内显示错误提示文案，不隐藏卡片",
-        "移动端窄屏下图表可适配",
-        "npm run build 构建通过"
-      ],
-      "risk_tags": ["new-dep:recharts"],
-      "test_tasks": [
-        "正常：有数据时折线图正确渲染",
-        "正常：切换日/周维度数据刷新",
-        "边界：空数据返回空数组时显示引导文案",
-        "边界：只有 1 天数据时折线图不报错",
-        "异常：趋势 API 返回错误时，卡片内显示错误提示，不影响主报告区域",
-        "回归：原有的日报/周报/月报统计仍正常显示",
-        "回归：报告类型切换不受影响",
-        "API单测：getReviewTrend() 正确传递 period/days/weeks 参数，错误透传"
-      ],
-      "contract_refs": ["CONTRACT-R01"],
-      "files": [
-        "frontend/src/pages/Review.tsx",
-        "frontend/src/services/api.ts",
-        "frontend/package.json"
-      ]
-    }
-  ]
+  "tasks": []
 }
