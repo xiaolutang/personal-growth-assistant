@@ -241,6 +241,10 @@
       "verification": "F2",
       "depends_on": [],
       "status": "completed",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F09.md",
+      "execution_notes": "9 轮 code review (R1-R8 fix→R9 pass)，inbox 正则三处入口收敛，Codex Plugin audit R1 partial→修复后 done",
       "priority": "high",
       "acceptance_criteria": [
         "users 表新增 onboarding_completed 字段",
