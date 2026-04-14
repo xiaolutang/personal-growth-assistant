@@ -28,6 +28,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/entries/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Entries
+         * @description 导出条目数据
+         */
+        get: operations["export_entries_entries_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/entries/{entry_id}": {
         parameters: {
             query?: never;
@@ -601,7 +621,11 @@ export interface paths {
          * @description 获取当前用户信息
          */
         get: operations["get_me_auth_me_get"];
-        put?: never;
+        /**
+         * Update Me
+         * @description 更新当前用户信息（onboarding_completed 等）
+         */
+        put: operations["update_me_auth_me_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1418,10 +1442,23 @@ export interface components {
             /** Is Active */
             is_active: boolean;
             /**
+             * Onboarding Completed
+             * @default false
+             */
+            onboarding_completed: boolean;
+            /**
              * Created At
              * Format: date-time
              */
             created_at: string;
+        };
+        /**
+         * UserUpdate
+         * @description 用户信息更新请求模型
+         */
+        UserUpdate: {
+            /** Onboarding Completed */
+            onboarding_completed?: boolean | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -1557,6 +1594,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EntryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_entries_entries_export_get: {
+        parameters: {
+            query?: {
+                /** @description 导出格式: markdown 或 json */
+                format?: string;
+                /** @description 条目类型: project/task/note/inbox */
+                type?: string | null;
+                /** @description 开始日期 (YYYY-MM-DD) */
+                start_date?: string | null;
+                /** @description 结束日期 (YYYY-MM-DD) */
+                end_date?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -2466,6 +2541,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+        };
+    };
+    update_me_auth_me_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

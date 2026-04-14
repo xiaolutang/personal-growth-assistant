@@ -13,9 +13,32 @@ import { toast } from "sonner";
 interface TaskCardProps {
   task: Task;
   showParent?: boolean;
+  highlightKeyword?: string;
 }
 
-export function TaskCard({ task, showParent = true }: TaskCardProps) {
+/** 高亮文本中所有匹配的关键词（大小写不敏感，索引安全） */
+function HighlightText({ text, keyword }: { text: string; keyword: string }) {
+  if (!keyword) return <>{text}</>;
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(escaped, "gi");
+  const matches = [...text.matchAll(regex)];
+  if (matches.length === 0) return <>{text}</>;
+  const parts: (string | React.ReactElement)[] = [];
+  let lastIndex = 0;
+  for (const m of matches) {
+    if (m.index > lastIndex) parts.push(text.slice(lastIndex, m.index));
+    parts.push(
+      <mark key={m.index} className="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">
+        {m[0]}
+      </mark>
+    );
+    lastIndex = m.index + m[0].length;
+  }
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+  return <>{parts}</>;
+}
+
+export function TaskCard({ task, showParent = true, highlightKeyword }: TaskCardProps) {
   const navigate = useNavigate();
   const updateTaskStatus = useTaskStore((state) => state.updateTaskStatus);
   const deleteTask = useTaskStore((state) => state.deleteTask);
@@ -134,7 +157,10 @@ export function TaskCard({ task, showParent = true }: TaskCardProps) {
             (task.status === "complete" || task.status === "cancelled") && "line-through text-muted-foreground"
           )}
         >
-          {task.title}
+          {highlightKeyword
+            ? <HighlightText text={task.title} keyword={highlightKeyword} />
+            : task.title
+          }
         </p>
 
         {/* Meta Info: parent, date, tags */}

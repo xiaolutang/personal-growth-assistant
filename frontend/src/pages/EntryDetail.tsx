@@ -24,7 +24,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { getEntry, getEntries, getProjectProgress } from "@/services/api";
+import { getEntry, getEntries, getProjectProgress, getRelatedEntries } from "@/services/api";
+import type { RelatedEntry } from "@/services/api";
 import { useTaskStore } from "@/stores/taskStore";
 import type { Task } from "@/types/task";
 import type { ProjectProgressResponse } from "@/services/api";
@@ -41,6 +42,9 @@ export function EntryDetail() {
   const [projectProgress, setProjectProgress] = useState<ProjectProgressResponse | null>(null);
   const [parentEntry, setParentEntry] = useState<Task | null>(null);
   const [referencedNotes, setReferencedNotes] = useState<Map<string, Task>>(new Map());
+  const [relatedEntries, setRelatedEntries] = useState<RelatedEntry[]>([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
+  const [relatedError, setRelatedError] = useState(false);
 
   // 编辑模式状态
   const [isEditing, setIsEditing] = useState(false);
@@ -123,6 +127,25 @@ export function EntryDetail() {
     };
 
     fetchEntry();
+  }, [id]);
+
+  // 关联条目独立加载，不阻塞主页面
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setRelatedLoading(true);
+    setRelatedError(false);
+    getRelatedEntries(id)
+      .then((related) => {
+        if (!cancelled) setRelatedEntries(related);
+      })
+      .catch(() => {
+        if (!cancelled) setRelatedError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setRelatedLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [id]);
 
   if (isLoading) {
@@ -447,6 +470,59 @@ export function EntryDetail() {
               </Card>
             )}
           </div>
+        )}
+
+        {/* 相关条目 */}
+        {!relatedLoading && !relatedError && (
+          <Card className="mt-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Link2 className="h-4 w-4" />
+                相关条目 {relatedEntries.length > 0 && `(${relatedEntries.length})`}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {relatedEntries.length > 0 ? (
+                <div className="space-y-2">
+                  {relatedEntries.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => navigate(`/entries/${item.id}`)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{item.title}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {(categoryConfig as Record<string, { label: string }>)[item.category]?.label || item.category}
+                        </Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{item.relevance_reason}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground py-2">
+                  暂无关联条目，添加更多标签可自动发现关联
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+        {relatedError && (
+          <Card className="mt-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Link2 className="h-4 w-4" />
+                相关条目
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground py-2">
+                关联条目加载失败，不影响当前条目查看
+              </p>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

@@ -92,6 +92,30 @@ async def lifespan(app: FastAPI):
         # 初始化 UserStorage（必须在 reset_all_services 之后，否则会被清空）
         from app.infrastructure.storage.user_storage import UserStorage
         deps._user_storage = UserStorage(f"{settings.DATA_DIR}/users.db")
+
+        # 迁移 onboarding_completed 列（幂等），已有数据用户自动标记为已完成
+        try:
+            from app.infrastructure.storage.user_storage import check_user_markdown_data
+
+            def _has_user_data(user_id: str) -> bool:
+                """检查用户是否有历史数据：同时检查 SQLite 和 Markdown 目录。"""
+                # 1. 检查 SQLite 中的 entry 数量
+                if storage and storage.sqlite:
+                    try:
+                        if storage.sqlite.count_entries(user_id=user_id) > 0:
+                            return True
+                    except Exception:
+                        pass
+
+                # 2. 兜底检查 Markdown 数据目录（白名单）
+                user_data_dir = os.path.join(settings.DATA_DIR, "users", user_id)
+                return check_user_markdown_data(user_data_dir)
+
+            deps._user_storage.migrate_onboarding_column(
+                has_user_data_fn=_has_user_data
+            )
+        except Exception as e:
+            logger.warning("onboarding_completed 迁移失败（不影响启动）: %s", e)
         intent_service = deps.get_intent_service()
         if graph.caller:
             intent_service.set_llm_caller(graph.caller)

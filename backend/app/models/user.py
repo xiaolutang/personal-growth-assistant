@@ -18,6 +18,7 @@ class User(UserBase):
     id: str
     hashed_password: str  # 仅内部使用，不返回给前端
     is_active: bool = True
+    onboarding_completed: bool = False
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -29,6 +30,7 @@ class UserResponse(BaseModel):
     username: str
     email: str
     is_active: bool
+    onboarding_completed: bool = False
     created_at: datetime
 
 
@@ -47,6 +49,12 @@ class UserLogin(BaseModel):
 
     username: str
     password: str
+
+
+class UserUpdate(BaseModel):
+    """用户信息更新请求模型"""
+
+    onboarding_completed: Optional[bool] = None
 
 
 class Token(BaseModel):

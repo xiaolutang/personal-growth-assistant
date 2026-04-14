@@ -133,3 +133,46 @@ class TestStorageFactory:
 
         assert count1 == (1, 0)
         assert count2 == (0, 1)
+
+    def test_migrate_inbox_with_id(self, tmp_path):
+        """迁移 inbox-{id}.md 文件"""
+        original = tmp_path / "original"
+        original.mkdir()
+        (original / "inbox-abc12345.md").write_text("---\ntype: inbox\n---\n灵感")
+        (original / "inbox-def67890.md").write_text("---\ntype: inbox\n---\n另一个灵感")
+
+        factory = StorageFactory(str(tmp_path / "data"))
+        count = factory.migrate_default_user(str(original))
+
+        assert count == 2
+        default_dir = tmp_path / "data" / "users" / "_default"
+        assert (default_dir / "inbox-abc12345.md").exists()
+        assert (default_dir / "inbox-def67890.md").exists()
+
+    def test_migrate_inbox_copy_not_copied(self, tmp_path):
+        """inbox-copy.md 不应被迁移"""
+        original = tmp_path / "original"
+        original.mkdir()
+        (original / "inbox-copy.md").write_text("# Copy")
+
+        factory = StorageFactory(str(tmp_path / "data"))
+        count = factory.migrate_default_user(str(original))
+
+        assert count == 0
+        default_dir = tmp_path / "data" / "users" / "_default"
+        assert not (default_dir / "inbox-copy.md").exists()
+
+    def test_claim_includes_inbox_id_files(self, tmp_path):
+        """claim_default_user 复制 inbox-{id}.md"""
+        factory = StorageFactory(str(tmp_path / "data"))
+        default_storage = factory.get_markdown_storage("_default")
+        default_dir = tmp_path / "data" / "users" / "_default"
+
+        # 在 _default 根目录放 inbox-{id}.md
+        (default_dir / "inbox-abc12345.md").write_text("---\ntype: inbox\n---\n灵感")
+
+        copied, skipped = factory.claim_default_user("usr_alice")
+
+        assert copied == 1
+        alice_dir = tmp_path / "data" / "users" / "usr_alice"
+        assert (alice_dir / "inbox-abc12345.md").exists()

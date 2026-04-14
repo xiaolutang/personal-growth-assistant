@@ -102,7 +102,7 @@ export function Home() {
             </p>
             <div className="flex gap-3">
               <button
-                onClick={() => navigate("/inbox")}
+                onClick={() => navigate("/explore?type=inbox")}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
               >
                 <Lightbulb className="h-4 w-4" />
@@ -209,7 +209,7 @@ export function Home() {
                 </CardTitle>
                 {recentInbox.length > 0 && (
                   <Link
-                    to="/inbox"
+                    to="/explore?type=inbox"
                     className="flex items-center text-xs text-muted-foreground hover:text-primary transition-colors"
                   >
                     查看全部
@@ -254,7 +254,7 @@ export function Home() {
                 <QuickActionButton
                   icon={<Lightbulb className="h-5 w-5" />}
                   label="记灵感"
-                  onClick={() => navigate("/inbox")}
+                  onClick={() => navigate("/explore?type=inbox")}
                 />
                 <QuickActionButton
                   icon={<PlusCircle className="h-5 w-5" />}
@@ -264,7 +264,7 @@ export function Home() {
                 <QuickActionButton
                   icon={<FileText className="h-5 w-5" />}
                   label="写笔记"
-                  onClick={() => navigate("/notes")}
+                  onClick={() => navigate("/explore?type=note")}
                 />
               </div>
             </div>

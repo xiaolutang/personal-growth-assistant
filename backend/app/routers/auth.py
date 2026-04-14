@@ -11,6 +11,7 @@ from app.models.user import (
     UserCreate,
     UserLogin,
     UserResponse,
+    UserUpdate,
     Token,
 )
 from app.infrastructure.storage.user_storage import UserStorage, verify_password
@@ -44,6 +45,7 @@ async def register(
         username=user.username,
         email=user.email,
         is_active=user.is_active,
+        onboarding_completed=user.onboarding_completed,
         created_at=user.created_at,
     )
 
@@ -104,6 +106,7 @@ async def login(
             username=user.username,
             email=user.email,
             is_active=user.is_active,
+            onboarding_completed=user.onboarding_completed,
             created_at=user.created_at,
         ),
     )
@@ -129,6 +132,30 @@ async def get_me(
         username=user.username,
         email=user.email,
         is_active=user.is_active,
+        onboarding_completed=user.onboarding_completed,
+        created_at=user.created_at,
+    )
+
+
+@router.put("/me", response_model=UserResponse)
+async def update_me(
+    update_data: UserUpdate,
+    user=Depends(get_current_user),
+    user_storage: UserStorage = Depends(get_user_storage),
+):
+    """更新当前用户信息（onboarding_completed 等）"""
+    if update_data.onboarding_completed is not None:
+        user_storage.update_onboarding_completed(
+            user.id, update_data.onboarding_completed
+        )
+        user = user_storage.get_by_id(user.id)
+
+    return UserResponse(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        is_active=user.is_active,
+        onboarding_completed=user.onboarding_completed,
         created_at=user.created_at,
     )
 

@@ -3,31 +3,30 @@ import { NavLink } from "react-router-dom";
 import {
   Home,
   CheckCircle,
-  Lightbulb,
-  FileText,
-  Folder,
   BarChart3,
+  Compass,
   MessageSquare,
   ChevronDown,
   ChevronRight,
   LogOut,
   User,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SessionList } from "@/components/SessionList";
 import { useUserStore } from "@/stores/userStore";
+import { ExportDialog } from "@/components/ExportDialog";
 
 const navItems = [
   { to: "/", icon: Home, label: "今天" },
+  { to: "/explore", icon: Compass, label: "探索" },
   { to: "/tasks", icon: CheckCircle, label: "任务" },
-  { to: "/inbox", icon: Lightbulb, label: "灵感" },
-  { to: "/notes", icon: FileText, label: "笔记" },
-  { to: "/projects", icon: Folder, label: "项目" },
   { to: "/review", icon: BarChart3, label: "回顾" },
 ];
 
 export function Sidebar() {
   const [isChatExpanded, setIsChatExpanded] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const user = useUserStore((s) => s.user);
   const logout = useUserStore((s) => s.logout);
 
@@ -94,7 +93,15 @@ export function Sidebar() {
                 <User className="h-4 w-4" />
                 <span className="truncate">{user.username}</span>
               </div>
-              <button
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setShowExport(true)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  title="导出数据"
+                >
+                  <Download className="h-4 w-4" />
+                </button>
+                <button
                 onClick={() => {
                   logout();
                   window.location.href = `${import.meta.env.BASE_URL}login`;
@@ -103,7 +110,8 @@ export function Sidebar() {
                 title="登出"
               >
                 <LogOut className="h-4 w-4" />
-              </button>
+                </button>
+              </div>
             </div>
           )}
           <p className="text-xs text-muted-foreground">
@@ -111,6 +119,7 @@ export function Sidebar() {
           </p>
         </div>
       </div>
+      <ExportDialog open={showExport} onClose={() => setShowExport(false)} />
     </aside>
   );
 }

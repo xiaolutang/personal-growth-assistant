@@ -1,6 +1,10 @@
 """条目管理 API 路由"""
 
+import re
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.api.schemas import (
     EntryCreate,
@@ -10,11 +14,15 @@ from app.api.schemas import (
     SearchResult,
     SuccessResponse,
     ProjectProgressResponse,
+    RelatedEntriesResponse,
 )
 from app.routers.deps import get_entry_service, get_storage, get_current_user
 from app.models.user import User
 
 router = APIRouter(prefix="/entries", tags=["entries"])
+
+_VALID_EXPORT_TYPES = {"inbox", "task", "note", "project"}
+_ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 @router.get("", response_model=EntryListResponse)
@@ -42,6 +50,75 @@ async def list_entries(
         offset=offset,
         user_id=user.id,
     )
+
+
+@router.get("/export")
+async def export_entries(
+    format: str = Query("markdown", description="导出格式: markdown 或 json"),
+    type: str | None = Query(None, description="条目类型: project/task/note/inbox"),
+    start_date: str | None = Query(None, description="开始日期 (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="结束日期 (YYYY-MM-DD)"),
+    user: User = Depends(get_current_user),
+):
+    """导出条目数据"""
+    if format not in ("markdown", "json"):
+        raise HTTPException(status_code=422, detail="format 参数必须是 markdown 或 json")
+
+    # 参数校验: type
+    if type is not None and type not in _VALID_EXPORT_TYPES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"type 参数必须是 {', '.join(sorted(_VALID_EXPORT_TYPES))} 之一",
+        )
+
+    # 参数校验: start_date / end_date 格式
+    for param_name, param_val in [("start_date", start_date), ("end_date", end_date)]:
+        if param_val is not None:
+            if not _ISO_DATE_RE.match(param_val):
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"{param_name} 格式无效，必须为 YYYY-MM-DD",
+                )
+            try:
+                date.fromisoformat(param_val)
+            except ValueError:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"{param_name} 不是合法日期: {param_val}",
+                )
+
+    service = get_entry_service()
+
+    if format == "markdown":
+        return StreamingResponse(
+            service.export_markdown_stream(
+                type=type,
+                start_date=start_date,
+                end_date=end_date,
+                user_id=user.id,
+            ),
+            media_type="application/zip",
+            headers={"Content-Disposition": "attachment; filename=entries_export.zip"},
+        )
+
+    # json 格式
+    data = await service.export_json(
+        type=type,
+        start_date=start_date,
+        end_date=end_date,
+        user_id=user.id,
+    )
+    return JSONResponse(content=data)
+
+
+@router.get("/{entry_id}/related", response_model=RelatedEntriesResponse)
+async def get_related_entries(entry_id: str, user: User = Depends(get_current_user)):
+    """获取条目的关联推荐"""
+    service = get_entry_service()
+    result = await service.get_related_entries(entry_id, user_id=user.id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"条目不存在: {entry_id}")
+    return result
 
 
 @router.get("/{entry_id}", response_model=EntryResponse)

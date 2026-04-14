@@ -343,3 +343,93 @@ updated_at: '2026-03-20T10:00:00'
         assert "tag1" in entry.tags
         assert "tag2" in entry.tags
         assert "正文内容" in entry.content
+
+
+class TestInboxFileRecognition:
+    """验证 MarkdownStorage 对 inbox 文件的识别与列举"""
+
+    def test_category_from_path_inbox_md(self, temp_data_dir: str):
+        """inbox.md 被识别为 INBOX 类别"""
+        storage = MarkdownStorage(data_dir=temp_data_dir)
+        f = Path(temp_data_dir) / "inbox.md"
+        f.write_text("---\ntype: inbox\n---\n内容", encoding="utf-8")
+        entry = storage.read_entry("inbox")
+        assert entry is not None
+        assert entry.category == Category.INBOX
+
+    def test_category_from_path_inbox_with_hex_id(self, temp_data_dir: str):
+        """inbox-{hex}.md 被识别为 INBOX 类别"""
+        storage = MarkdownStorage(data_dir=temp_data_dir)
+        f = Path(temp_data_dir) / "inbox-abc12345.md"
+        f.write_text("---\ntype: inbox\n---\n灵感", encoding="utf-8")
+        entry = storage.read_entry("inbox-abc12345")
+        assert entry is not None
+        assert entry.category == Category.INBOX
+
+    def test_list_entries_includes_inbox_id_files(self, temp_data_dir: str):
+        """list_entries(category=INBOX) 包含 inbox-{id}.md 文件"""
+        storage = MarkdownStorage(data_dir=temp_data_dir)
+        now = datetime.now()
+
+        # 写入 inbox-{id}.md 格式的条目
+        task = Task(
+            id="inbox-abc12345",
+            title="灵感1",
+            content="内容",
+            category=Category.INBOX,
+            status=TaskStatus.DOING,
+            priority=Priority.MEDIUM,
+            tags=[],
+            created_at=now,
+            updated_at=now,
+            file_path="inbox-abc12345.md",
+        )
+        storage.write_entry(task)
+
+        entries = storage.list_entries(category=Category.INBOX)
+        ids = [e.id for e in entries]
+        assert "inbox-abc12345" in ids
+
+    def test_scan_all_includes_inbox_id_files(self, temp_data_dir: str):
+        """scan_all 包含 inbox-{id}.md 文件"""
+        storage = MarkdownStorage(data_dir=temp_data_dir)
+        now = datetime.now()
+
+        task = Task(
+            id="inbox-def67890",
+            title="灵感2",
+            content="内容",
+            category=Category.INBOX,
+            status=TaskStatus.DOING,
+            priority=Priority.MEDIUM,
+            tags=[],
+            created_at=now,
+            updated_at=now,
+            file_path="inbox-def67890.md",
+        )
+        storage.write_entry(task)
+
+        entries = storage.scan_all()
+        ids = [e.id for e in entries]
+        assert "inbox-def67890" in ids
+
+    def test_inbox_copy_not_in_list_entries(self, temp_data_dir: str):
+        """inbox-copy.md 不被 list_entries(category=INBOX) 列出"""
+        storage = MarkdownStorage(data_dir=temp_data_dir)
+        # 不写 front matter，仅通过文件名判定
+        f = Path(temp_data_dir) / "inbox-copy.md"
+        f.write_text("# Some copy\n内容", encoding="utf-8")
+
+        entries = storage.list_entries(category=Category.INBOX)
+        names = [Path(e.file_path).name for e in entries]
+        assert "inbox-copy.md" not in names
+
+    def test_inbox_backup_not_in_list_entries(self, temp_data_dir: str):
+        """inbox_backup.md 不被 list_entries(category=INBOX) 列出"""
+        storage = MarkdownStorage(data_dir=temp_data_dir)
+        f = Path(temp_data_dir) / "inbox_backup.md"
+        f.write_text("# Backup\n内容", encoding="utf-8")
+
+        entries = storage.list_entries(category=Category.INBOX)
+        names = [Path(e.file_path).name for e in entries]
+        assert "inbox_backup.md" not in names

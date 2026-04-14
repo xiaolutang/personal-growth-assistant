@@ -483,3 +483,50 @@ export async function getReviewTrend(
 
 // 导出错误类供外部使用
 export { ApiError } from "@/lib/errors";
+
+/**
+ * 导出条目 — markdown (zip) 或 json
+ */
+export interface ExportOptions {
+  format: "markdown" | "json";
+  type?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export async function exportEntries(options: ExportOptions): Promise<Blob> {
+  const params = new URLSearchParams();
+  params.set("format", options.format);
+  if (options.type) params.set("type", options.type);
+  if (options.startDate) params.set("start_date", options.startDate);
+  if (options.endDate) params.set("end_date", options.endDate);
+
+  const response = await fetch(`${API_BASE}/entries/export?${params.toString()}`, {
+    headers: buildAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error(`导出失败: ${response.status}`);
+  }
+  return response.blob();
+}
+
+/**
+ * 获取条目的关联推荐
+ */
+export interface RelatedEntry {
+  id: string;
+  title: string;
+  category: string;
+  relevance_reason: string;
+}
+
+export async function getRelatedEntries(entryId: string): Promise<RelatedEntry[]> {
+  const response = await fetch(`${API_BASE}/entries/${encodeURIComponent(entryId)}/related`, {
+    headers: buildAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch related entries: ${response.status}`);
+  }
+  const data = await response.json();
+  return data.related ?? [];
+}
