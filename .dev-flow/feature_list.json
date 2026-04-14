@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 7,
-    "pending": 5,
+    "pending": 4,
     "in_progress": 0,
-    "completed": 2,
+    "completed": 3,
     "blocked": 0,
     "cancelled": 0
   },
@@ -231,6 +231,11 @@
     },
     {
       "id": "B21",
+      "status": "completed",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/B21.md",
+      "execution_notes": "27 个 review API 测试通过, 572 后端测试通过",
       "phase": "P3A",
       "module": "review",
       "name": "AI 总结 + 知识热力图 API",

@@ -65,6 +65,8 @@ def get_review_service() -> "ReviewService":
     if _review_service is None:
         from app.services.review_service import ReviewService
         _review_service = ReviewService(sqlite_storage=storage.sqlite)
+        if hasattr(storage, "llm_caller") and storage.llm_caller:
+            _review_service.set_llm_caller(storage.llm_caller)
     return _review_service
 
 
