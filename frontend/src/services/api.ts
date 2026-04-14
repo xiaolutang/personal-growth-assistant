@@ -328,6 +328,51 @@ export async function getRelatedConcepts(concept: string): Promise<RelatedConcep
   return handleApiResponse<RelatedConceptsResponse>(response);
 }
 
+// === 全局图谱 API ===
+
+export interface MapNode {
+  id: string;
+  name: string;
+  category: string | null;
+  mastery: "new" | "beginner" | "intermediate" | "advanced";
+  entry_count: number;
+}
+
+export interface MapEdge {
+  source: string;
+  target: string;
+  relationship: string;
+}
+
+export interface KnowledgeMapResponse {
+  nodes: MapNode[];
+  edges: MapEdge[];
+}
+
+export interface ConceptStatsResponse {
+  concept_count: number;
+  relation_count: number;
+  category_distribution: Record<string, number>;
+  top_concepts: Array<{ name: string; entry_count: number; category: string | null }>;
+}
+
+export async function getKnowledgeMap(
+  depth: number = 2,
+  view: string = "domain"
+): Promise<KnowledgeMapResponse> {
+  const response = await fetch(`${API_BASE}/knowledge-map?depth=${depth}&view=${view}`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<KnowledgeMapResponse>(response);
+}
+
+export async function getKnowledgeStats(): Promise<ConceptStatsResponse> {
+  const response = await fetch(`${API_BASE}/knowledge/stats`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<ConceptStatsResponse>(response);
+}
+
 // === 解析 API (旧接口) ===
 
 /**

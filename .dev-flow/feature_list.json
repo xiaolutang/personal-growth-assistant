@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 7,
-    "pending": 7,
+    "pending": 5,
     "in_progress": 0,
-    "completed": 0,
+    "completed": 2,
     "blocked": 0,
     "cancelled": 0
   },
@@ -196,7 +196,12 @@
       "description": "为图谱独立页提供数据支撑。当前 knowledge API 只支持按单个概念查询，缺少全局视图和统计能力。实现：(1) `backend/app/routers/knowledge.py` 新增 `GET /knowledge-map` 端点，返回用户全量概念图谱（nodes + edges），支持 depth 参数（默认 2）；(2) 新增 `GET /knowledge/stats` 端点，返回概念统计（概念总数、关系总数、按 category 分布、top 概念列表）；(3) 新增掌握度计算：基于关联条目数量 + 最近活跃时间 + 条目类型分布（笔记权重 > 任务权重），输出 beginner/intermediate/advanced/new；(4) `GET /knowledge-map` 支持 `view` 参数：domain（按领域）/ mastery（按掌握度）/ project（按项目），同一数据不同聚合视角；(5) 所有查询带 user_id 隔离。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/B20.md",
+      "commit": "04e7530",
+      "execution_notes": "17 个单元测试通过，563 后端测试通过",
       "priority": "high",
       "acceptance_criteria": [
         "GET /knowledge-map 返回 nodes + edges，每个 node 含 id/name/category/mastery/entry_count",
@@ -261,6 +266,11 @@
     },
     {
       "id": "F14",
+      "status": "completed",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F14.md",
+      "execution_notes": "npm run build 通过, simplify 通过",
       "phase": "P3A",
       "module": "knowledge-graph",
       "name": "图谱独立页 — @xyflow/react 可视化 + Sidebar 更新",
