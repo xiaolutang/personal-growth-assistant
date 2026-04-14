@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 7,
-    "pending": 3,
+    "pending": 2,
     "in_progress": 0,
-    "completed": 4,
+    "completed": 5,
     "blocked": 0,
     "cancelled": 0
   },
@@ -350,6 +350,11 @@
     },
     {
       "id": "B22",
+      "status": "completed",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/B22.md",
+      "execution_notes": "6 个 AI chat 测试通过, 578 后端测试通过",
       "phase": "P3B",
       "module": "ai-assistant",
       "name": "页面级上下文 AI API — 上下文感知对话",
