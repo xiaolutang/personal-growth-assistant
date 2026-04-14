@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 7,
-    "pending": 4,
+    "pending": 3,
     "in_progress": 0,
-    "completed": 3,
+    "completed": 4,
     "blocked": 0,
     "cancelled": 0
   },
@@ -312,6 +312,11 @@
     },
     {
       "id": "F15",
+      "status": "completed",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F15.md",
+      "execution_notes": "npm run build 通过",
       "phase": "P3A",
       "module": "review",
       "name": "回顾页增强 — AI 总结卡片 + 知识热力图",

@@ -526,6 +526,45 @@ export async function getReviewTrend(
   return handleApiResponse<ReviewTrendResponse>(response);
 }
 
+// === 知识热力图 API ===
+
+export interface HeatmapItem {
+  concept: string;
+  mastery: "new" | "beginner" | "intermediate" | "advanced";
+  entry_count: number;
+  category: string | null;
+}
+
+export interface HeatmapResponse {
+  items: HeatmapItem[];
+}
+
+export interface GrowthCurvePoint {
+  week: string;
+  total_concepts: number;
+  advanced_count: number;
+  intermediate_count: number;
+  beginner_count: number;
+}
+
+export interface GrowthCurveResponse {
+  points: GrowthCurvePoint[];
+}
+
+export async function getKnowledgeHeatmap(): Promise<HeatmapResponse> {
+  const response = await fetch(`${API_BASE}/review/knowledge-heatmap`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<HeatmapResponse>(response);
+}
+
+export async function getGrowthCurve(weeks: number = 8): Promise<GrowthCurveResponse> {
+  const response = await fetch(`${API_BASE}/review/growth-curve?weeks=${weeks}`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<GrowthCurveResponse>(response);
+}
+
 // 导出错误类供外部使用
 export { ApiError } from "@/lib/errors";
 
