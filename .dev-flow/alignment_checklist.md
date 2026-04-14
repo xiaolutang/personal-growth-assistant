@@ -24,7 +24,7 @@
 | 反馈闭环 | Feedback 双写+列表 | CONTRACT-006/FB01/FB02 | completed | completed | completed | B16 → F06 |
 | 首页模块 | 首页改版「今天」 | - | not_applicable | completed | completed | F05 |
 | 导出模块 | Export 导出 API | CONTRACT-E02 | completed | not_applicable | completed | B18, 22 tests |
-| 导出模块 | Export 导出 UI | CONTRACT-E02 | pending | pending | pending | B18 → F12 |
+| 导出模块 | Export 导出 UI | CONTRACT-E02 | completed | completed | completed | B18 → F12 |
 | 条目关联 | 关联推荐 API | CONTRACT-E03 | pending | not_applicable | pending | B19 |
 | 条目关联 | 关联面板 UI | CONTRACT-E03 | pending | pending | pending | B19 → F13 |
 | Onboarding | onboarding_completed 字段 | CONTRACT-O01 | completed | not_applicable | completed | F09 后端部分 |
