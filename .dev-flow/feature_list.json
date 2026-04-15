@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 8,
-    "pending": 3,
+    "pending": 2,
     "in_progress": 0,
-    "completed": 5,
+    "completed": 6,
     "blocked": 0,
     "cancelled": 0
   },
@@ -305,7 +305,7 @@
       "description": "增强 EntryDetail 编辑体验。当前编辑模式是整体 textarea，改为分区编辑。实现：(1) 标题改为 inline editable（点击变为 input）；(2) 标签区域增加编辑按钮，弹出 tag input（支持回车添加 + 点击删除）；(3) 状态/优先级/计划日期增加下拉选择器（编辑模式才显示）；(4) 内容编辑区分割线区分 Markdown 源码和预览（左右分栏或 Tab 切换），默认预览模式；(5) 保存按钮改为自动保存（debounce 1s + 离开页面提示未保存变更）。",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
       "acceptance_criteria": [
         "标题 inline editable",
@@ -333,7 +333,12 @@
       "files": [
         "frontend/src/pages/EntryDetail.tsx",
         "frontend/src/services/api.ts"
-      ]
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F19.md",
+      "commit": "pending",
+      "execution_notes": "分区编辑 + 标签管理 + 元数据下拉 + 预览/编辑 Tab + 自动保存 + 离开提示，build 通过"
     },
     {
       "id": "B24",
@@ -451,7 +456,7 @@
       "started_at": "2026-04-15",
       "completed_at": "2026-04-15",
       "evidence_file": ".dev-flow/evidence/F21.md",
-      "commit": "pending",
+      "commit": "332bbe3",
       "execution_notes": "搜索建议面板 + 搜索历史 + 热门标签 + 结果高亮，build 通过"
     },
     {

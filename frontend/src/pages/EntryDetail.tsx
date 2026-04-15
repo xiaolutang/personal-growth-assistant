@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -18,6 +18,10 @@ import {
   Save,
   X,
   FileText,
+  Eye,
+  Code,
+  Plus,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,10 +31,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { getEntry, getEntries, getProjectProgress, getRelatedEntries } from "@/services/api";
 import type { RelatedEntry } from "@/services/api";
 import { useTaskStore } from "@/stores/taskStore";
-import type { Task } from "@/types/task";
+import type { Task, TaskStatus, Priority } from "@/types/task";
 import type { ProjectProgressResponse } from "@/services/api";
 import { statusConfig, categoryConfig, priorityConfig } from "@/config/constants";
 import { TaskList } from "@/components/TaskList";
+
+type ContentTab = "preview" | "edit";
 
 export function EntryDetail() {
   const { id } = useParams<{ id: string }>();
@@ -49,13 +55,25 @@ export function EntryDetail() {
   // 编辑模式状态
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
+  const [editTitle, setEditTitle] = useState("");
+  const [editTags, setEditTags] = useState<string[]>([]);
+  const [editStatus, setEditStatus] = useState<TaskStatus>("waitStart");
+  const [editPriority, setEditPriority] = useState<Priority>("medium");
+  const [editPlannedDate, setEditPlannedDate] = useState("");
+  const [newTagInput, setNewTagInput] = useState("");
+  const [contentTab, setContentTab] = useState<ContentTab>("preview");
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const { updateEntry } = useTaskStore();
+
+  // 自动保存 debounce
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>(null);
+  const lastSavedContent = useRef("");
 
   // 解析内容中的 [[note-id]] 引用
   const parsedContent = useMemo(() => {
     if (!entry?.content) return entry?.content || "";
-    // 将 [[note-id]] 替换为可点击的链接
     return entry.content.replace(/\[\[([^\]]+)\]\]/g, (_match, noteId) => {
       const refNote = referencedNotes.get(noteId);
       if (refNote) {
@@ -82,8 +100,13 @@ export function EntryDetail() {
         const data = await getEntry(id);
         setEntry(data);
         setEditContent(data.content || "");
+        setEditTitle(data.title || "");
+        setEditTags(data.tags || []);
+        setEditStatus(data.status || "waitStart");
+        setEditPriority(data.priority || "medium");
+        setEditPlannedDate(data.planned_date ? data.planned_date.split("T")[0] : "");
+        lastSavedContent.current = data.content || "";
 
-        // 如果是项目类型，获取子任务和进度
         if (data.category === "project") {
           const [tasksRes, progressRes] = await Promise.all([
             getEntries({ parent_id: id, limit: 100 }),
@@ -93,17 +116,15 @@ export function EntryDetail() {
           setProjectProgress(progressRes);
         }
 
-        // 如果有父条目，获取父条目信息
         if (data.parent_id) {
           try {
             const parentData = await getEntry(data.parent_id);
             setParentEntry(parentData);
           } catch {
-            // 父条目可能已被删除，忽略错误
+            // parent may be deleted
           }
         }
 
-        // 解析并加载引用的笔记
         const noteIds = data.content?.match(/\[\[([^\]]+)\]\]/g)?.map((m) => m.slice(2, -2)) || [];
         if (noteIds.length > 0) {
           const notesMap = new Map<string, Task>();
@@ -113,7 +134,7 @@ export function EntryDetail() {
                 const noteData = await getEntry(noteId);
                 notesMap.set(noteId, noteData);
               } catch {
-                // 引用的笔记可能不存在，忽略
+                // referenced note may not exist
               }
             })
           );
@@ -129,7 +150,7 @@ export function EntryDetail() {
     fetchEntry();
   }, [id]);
 
-  // 关联条目独立加载，不阻塞主页面
+  // 关联条目独立加载
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
@@ -147,6 +168,137 @@ export function EntryDetail() {
       });
     return () => { cancelled = true; };
   }, [id]);
+
+  // 检测未保存变更
+  useEffect(() => {
+    if (!entry || !isEditing) {
+      setHasUnsavedChanges(false);
+      return;
+    }
+    const contentChanged = editContent !== (entry.content || "");
+    const titleChanged = editTitle !== (entry.title || "");
+    const tagsChanged = JSON.stringify(editTags) !== JSON.stringify(entry.tags || []);
+    const statusChanged = editStatus !== entry.status;
+    const priorityChanged = editPriority !== (entry.priority || "medium");
+    const dateChanged = editPlannedDate !== (entry.planned_date ? entry.planned_date.split("T")[0] : "");
+    setHasUnsavedChanges(contentChanged || titleChanged || tagsChanged || statusChanged || priorityChanged || dateChanged);
+  }, [isEditing, editContent, editTitle, editTags, editStatus, editPriority, editPlannedDate, entry]);
+
+  // 离开页面提示
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // 自动保存：内容变化后 debounce 1s
+  useEffect(() => {
+    if (!isEditing || !id || !entry) return;
+    if (editContent === lastSavedContent.current) return;
+
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      try {
+        await updateEntry(id, { content: editContent });
+        lastSavedContent.current = editContent;
+        setEntry((prev) => prev ? { ...prev, content: editContent } : prev);
+        setSaveError(null);
+      } catch {
+        setSaveError("自动保存失败，请手动保存");
+      }
+    }, 1000);
+    return () => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    };
+  }, [editContent, isEditing, id, entry, updateEntry]);
+
+  // 开始编辑
+  const handleStartEdit = () => {
+    if (!entry) return;
+    setEditContent(entry.content || "");
+    setEditTitle(entry.title || "");
+    setEditTags([...(entry.tags || [])]);
+    setEditStatus(entry.status || "waitStart");
+    setEditPriority(entry.priority || "medium");
+    setEditPlannedDate(entry.planned_date ? entry.planned_date.split("T")[0] : "");
+    setContentTab("preview");
+    setSaveError(null);
+    setIsEditing(true);
+  };
+
+  // 取消编辑
+  const handleCancelEdit = () => {
+    if (!entry) return;
+    setEditContent(entry.content || "");
+    setEditTitle(entry.title || "");
+    setEditTags([...(entry.tags || [])]);
+    setEditStatus(entry.status || "waitStart");
+    setEditPriority(entry.priority || "medium");
+    setEditPlannedDate(entry.planned_date ? entry.planned_date.split("T")[0] : "");
+    setIsEditing(false);
+    setSaveError(null);
+  };
+
+  // 保存所有编辑
+  const handleSaveAll = async () => {
+    if (!id) return;
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      const update: Record<string, unknown> = {};
+      if (editTitle !== (entry?.title || "")) update.title = editTitle;
+      if (editContent !== (entry?.content || "")) update.content = editContent;
+      if (JSON.stringify(editTags) !== JSON.stringify(entry?.tags || [])) update.tags = editTags;
+      if (editStatus !== entry?.status) update.status = editStatus;
+      if (editPriority !== (entry?.priority || "medium")) update.priority = editPriority;
+      if (editPlannedDate !== (entry?.planned_date ? entry.planned_date.split("T")[0] : "")) update.planned_date = editPlannedDate || null;
+
+      if (Object.keys(update).length > 0) {
+        await updateEntry(id, update);
+        setEntry((prev) => prev ? {
+          ...prev,
+          title: editTitle,
+          content: editContent,
+          tags: editTags,
+          status: editStatus,
+          priority: editPriority,
+          planned_date: editPlannedDate || prev.planned_date,
+        } : prev);
+        lastSavedContent.current = editContent;
+      }
+      setIsEditing(false);
+    } catch (err) {
+      setSaveError("保存失败，请重试");
+      console.error("保存失败:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // 添加标签
+  const handleAddTag = useCallback(() => {
+    const tag = newTagInput.trim();
+    if (!tag || editTags.includes(tag)) return;
+    setEditTags((prev) => [...prev, tag]);
+    setNewTagInput("");
+  }, [newTagInput, editTags]);
+
+  // 删除标签
+  const handleRemoveTag = useCallback((tag: string) => {
+    setEditTags((prev) => prev.filter((t) => t !== tag));
+  }, []);
+
+  // 导航拦截
+  const handleNavigateBack = useCallback(() => {
+    if (hasUnsavedChanges) {
+      const ok = window.confirm("有未保存的变更，确定要离开吗？");
+      if (!ok) return;
+    }
+    navigate(-1);
+  }, [hasUnsavedChanges, navigate]);
 
   if (isLoading) {
     return (
@@ -169,49 +321,15 @@ export function EntryDetail() {
 
   const statusInfo = statusConfig[entry.status];
   const categoryInfo = categoryConfig[entry.category];
-  const priorityInfo = entry.priority ? priorityConfig[entry.priority] : null;
   const CategoryIcon = categoryInfo.icon;
 
-  // 渲染状态图标
-  const renderStatusIcon = () => {
-    switch (entry.status) {
-      case "complete":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case "doing":
-        return <Circle className="h-4 w-4 text-yellow-500" />;
-      case "paused":
-        return <Pause className="h-4 w-4 text-orange-500" />;
-      case "cancelled":
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      default:
-        return <Circle className="h-4 w-4" />;
-    }
-  };
-
-  // 开始编辑
-  const handleStartEdit = () => {
-    setEditContent(entry.content || "");
-    setIsEditing(true);
-  };
-
-  // 取消编辑
-  const handleCancelEdit = () => {
-    setEditContent(entry.content || "");
-    setIsEditing(false);
-  };
-
-  // 保存编辑
-  const handleSaveEdit = async () => {
-    if (!id) return;
-    setIsSaving(true);
-    try {
-      await updateEntry(id, { content: editContent });
-      setEntry((prev) => prev ? { ...prev, content: editContent } : prev);
-      setIsEditing(false);
-    } catch (err) {
-      console.error("保存失败:", err);
-    } finally {
-      setIsSaving(false);
+  const renderStatusIcon = (status: TaskStatus) => {
+    switch (status) {
+      case "complete": return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case "doing": return <Circle className="h-4 w-4 text-yellow-500" />;
+      case "paused": return <Pause className="h-4 w-4 text-orange-500" />;
+      case "cancelled": return <XCircle className="h-4 w-4 text-red-500" />;
+      default: return <Circle className="h-4 w-4" />;
     }
   };
 
@@ -220,27 +338,39 @@ export function EntryDetail() {
       <div className="max-w-4xl mx-auto p-4 md:p-6">
         {/* Header */}
         <div className="mb-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(-1)}
-            className="mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            返回
-          </Button>
-
-          {/* 编辑按钮 */}
-          {!isEditing && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleStartEdit}
-              className="mb-4 ml-2"
-            >
-              <Edit2 className="h-4 w-4 mr-2" />
-              编辑
+          <div className="flex items-center gap-2 mb-4">
+            <Button variant="ghost" size="sm" onClick={handleNavigateBack}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              返回
             </Button>
+            {!isEditing ? (
+              <Button variant="outline" size="sm" onClick={handleStartEdit}>
+                <Edit2 className="h-4 w-4 mr-2" />
+                编辑
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleSaveAll} disabled={isSaving}>
+                  {isSaving ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />保存中...</>
+                  ) : (
+                    <><Save className="h-4 w-4 mr-2" />保存</>
+                  )}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleCancelEdit} disabled={isSaving}>
+                  <X className="h-4 w-4 mr-2" />
+                  取消
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* 保存错误提示 */}
+          {saveError && (
+            <div className="flex items-center gap-2 mb-4 p-2 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-sm">
+              <AlertCircle className="h-4 w-4" />
+              {saveError}
+            </div>
           )}
 
           <div className="flex items-start gap-4">
@@ -248,29 +378,85 @@ export function EntryDetail() {
               <CategoryIcon className="h-6 w-6 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold mb-2">{entry.title}</h1>
+              {/* 标题 — inline editable */}
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="text-2xl font-bold mb-2 w-full border-b-2 border-primary bg-transparent focus:outline-none"
+                  placeholder="输入标题..."
+                />
+              ) : (
+                <h1 className="text-2xl font-bold mb-2">{entry.title}</h1>
+              )}
+
               <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                 {/* Category */}
                 <Badge variant="secondary">{categoryInfo.label}</Badge>
 
                 {/* Status */}
-                <div className="flex items-center gap-1">
-                  {renderStatusIcon()}
-                  <span>{statusInfo.label}</span>
-                </div>
+                {isEditing ? (
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as TaskStatus)}
+                    className="text-sm border rounded px-1.5 py-0.5 bg-background"
+                  >
+                    {Object.entries(statusConfig).map(([key, cfg]) => (
+                      <option key={key} value={key}>{cfg.label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    {renderStatusIcon(entry.status)}
+                    <span>{statusInfo.label}</span>
+                  </div>
+                )}
 
                 {/* Priority */}
-                {priorityInfo && entry.priority !== "medium" && (
-                  <Badge variant={priorityInfo.variant}>优先级: {priorityInfo.label}</Badge>
+                {isEditing ? (
+                  <select
+                    value={editPriority}
+                    onChange={(e) => setEditPriority(e.target.value as Priority)}
+                    className="text-sm border rounded px-1.5 py-0.5 bg-background"
+                  >
+                    {Object.entries(priorityConfig).map(([key, cfg]) => (
+                      <option key={key} value={key}>优先级: {cfg.label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  entry.priority && entry.priority !== "medium" && (
+                    <Badge variant={priorityConfig[entry.priority].variant}>
+                      优先级: {priorityConfig[entry.priority].label}
+                    </Badge>
+                  )
+                )}
+
+                {/* Planned Date */}
+                {isEditing ? (
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    <input
+                      type="date"
+                      value={editPlannedDate}
+                      onChange={(e) => setEditPlannedDate(e.target.value)}
+                      className="text-sm border rounded px-1.5 py-0.5 bg-background"
+                    />
+                  </div>
+                ) : (
+                  entry.planned_date && (
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      <span>计划 {new Date(entry.planned_date).toLocaleDateString()}</span>
+                    </div>
+                  )
                 )}
 
                 {/* Created date */}
                 {entry.created_at && (
                   <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    <span>
-                      创建于 {new Date(entry.created_at).toLocaleDateString()}
-                    </span>
+                    <Clock className="h-4 w-4" />
+                    <span>创建于 {new Date(entry.created_at).toLocaleDateString()}</span>
                   </div>
                 )}
 
@@ -278,28 +464,55 @@ export function EntryDetail() {
                 {entry.updated_at && entry.updated_at !== entry.created_at && (
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
-                    <span>
-                      更新于 {new Date(entry.updated_at).toLocaleDateString()}
-                    </span>
+                    <span>更新于 {new Date(entry.updated_at).toLocaleDateString()}</span>
                   </div>
                 )}
               </div>
 
               {/* Tags */}
-              {entry.tags && entry.tags.length > 0 && (
-                <div className="flex items-center gap-2 mt-3">
-                  <Tag className="h-4 w-4 text-muted-foreground" />
-                  <div className="flex flex-wrap gap-1">
-                    {entry.tags.map((tag) => (
-                      <Badge key={tag} variant="outline" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
+              <div className="flex items-center gap-2 mt-3">
+                <Tag className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div className="flex flex-wrap gap-1">
+                  {(isEditing ? editTags : entry.tags || []).map((tag) => (
+                    <Badge key={tag} variant="outline" className="text-xs group">
+                      {tag}
+                      {isEditing && (
+                        <button
+                          onClick={() => handleRemoveTag(tag)}
+                          className="ml-1 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </Badge>
+                  ))}
+                  {isEditing && (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        value={newTagInput}
+                        onChange={(e) => setNewTagInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddTag();
+                          }
+                        }}
+                        placeholder="添加标签"
+                        className="text-xs border rounded px-1.5 py-0.5 w-20 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                      <button
+                        onClick={handleAddTag}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
 
-              {/* Parent Entry (关联展示) */}
+              {/* Parent Entry */}
               {parentEntry && (
                 <div className="flex items-center gap-2 mt-3">
                   <Link2 className="h-4 w-4 text-muted-foreground" />
@@ -316,7 +529,7 @@ export function EntryDetail() {
           </div>
         </div>
 
-        {/* Project Progress Section (only for projects) */}
+        {/* Project Progress Section */}
         {entry.category === "project" && projectProgress && (
           <Card className="mb-6">
             <CardHeader className="pb-2">
@@ -352,24 +565,48 @@ export function EntryDetail() {
           </Card>
         )}
 
-        {/* Child Tasks Section (only for projects) */}
+        {/* Child Tasks Section */}
         {entry.category === "project" && childTasks.length > 0 && (
           <Card className="mb-6">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">子任务 ({childTasks.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              <TaskList
-                tasks={childTasks}
-                emptyMessage="暂无子任务"
-              />
+              <TaskList tasks={childTasks} emptyMessage="暂无子任务" />
             </CardContent>
           </Card>
         )}
 
-        {/* Content */}
-        {isEditing ? (
-          <div className="space-y-4">
+        {/* Content — 预览/编辑 Tab 切换 */}
+        {isEditing && (
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              onClick={() => setContentTab("preview")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                contentTab === "preview"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              <Eye className="h-4 w-4" />
+              预览
+            </button>
+            <button
+              onClick={() => setContentTab("edit")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                contentTab === "edit"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              <Code className="h-4 w-4" />
+              编辑
+            </button>
+          </div>
+        )}
+
+        {isEditing && contentTab === "edit" ? (
+          <div className="space-y-3">
             <Textarea
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
@@ -377,29 +614,7 @@ export function EntryDetail() {
               className="min-h-[300px] md:min-h-[400px] font-mono text-sm w-full"
               disabled={isSaving}
             />
-            <div className="flex gap-2">
-              <Button onClick={handleSaveEdit} disabled={isSaving}>
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    保存中...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    保存
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleCancelEdit}
-                disabled={isSaving}
-              >
-                <X className="h-4 w-4 mr-2" />
-                取消
-              </Button>
-            </div>
+            <p className="text-xs text-muted-foreground">内容修改后 1 秒自动保存</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -407,7 +622,6 @@ export function EntryDetail() {
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  // 处理链接点击，支持内部链接跳转
                   a: ({ href, children }) => {
                     if (href?.startsWith("/entry/")) {
                       return (
@@ -423,7 +637,7 @@ export function EntryDetail() {
                   },
                 }}
               >
-                {parsedContent || "暂无内容"}
+                {(isEditing ? editContent : parsedContent) || "暂无内容"}
               </ReactMarkdown>
             </div>
 
@@ -448,9 +662,7 @@ export function EntryDetail() {
                         >
                           <div className="flex items-center gap-2">
                             <FileText className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">
-                              {note?.title || noteId}
-                            </span>
+                            <span className="text-sm">{note?.title || noteId}</span>
                             {note && (
                               <Badge variant="outline" className="text-xs">
                                 {categoryConfig[note.category]?.label || note.category}
