@@ -57,16 +57,32 @@ export function NotificationCenter() {
   }
 
   async function handleDismiss(id: string) {
-    await dismissNotification(id);
+    // 乐观更新，失败时回滚
+    const prevItems = items;
+    const prevCount = unreadCount;
     setItems((prev) => prev.map((n) => (n.id === id ? { ...n, dismissed: true } : n)));
     setUnreadCount((c) => Math.max(0, c - 1));
+    try {
+      await dismissNotification(id);
+    } catch {
+      setItems(prevItems);
+      setUnreadCount(prevCount);
+    }
   }
 
   async function handleDismissAll() {
     const undimissed = items.filter((n) => !n.dismissed);
-    await Promise.all(undimissed.map((n) => dismissNotification(n.id)));
+    if (undimissed.length === 0) return;
+    const prevItems = items;
+    const prevCount = unreadCount;
     setItems((prev) => prev.map((n) => ({ ...n, dismissed: true })));
     setUnreadCount(0);
+    try {
+      await Promise.all(undimissed.map((n) => dismissNotification(n.id)));
+    } catch {
+      setItems(prevItems);
+      setUnreadCount(prevCount);
+    }
   }
 
   function handleClickNotification(n: NotificationItem) {

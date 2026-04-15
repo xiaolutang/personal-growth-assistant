@@ -156,38 +156,45 @@ class NotificationService:
         unread = [i for i in items if not i.dismissed]
         return NotificationResponse(items=items, unread_count=len(unread))
 
-    # === 数据查询（复用 list_entries） ===
+    # === 数据查询（直接 SQL，避免全量加载） ===
 
     def _get_overdue_tasks(self, user_id: str, today: str) -> List[Dict[str, Any]]:
-        entries = self._sqlite.list_entries(
-            type="task", status=None, limit=100, user_id=user_id,
-        )
-        result = []
-        for e in entries:
-            pd = e.get("planned_date")
-            if not pd:
-                continue
-            if e.get("status") in ("complete", "cancelled"):
-                continue
-            pd_date = datetime.fromisoformat(pd).date() if "T" in pd else date.fromisoformat(pd)
-            if pd_date < date.today():
-                result.append({"id": e["id"], "title": e["title"], "planned_date": str(pd_date), "priority": e.get("priority", "medium")})
-        result.sort(key=lambda x: {"high": 0, "medium": 1, "low": 2}.get(x["priority"], 1))
-        return result[:5]
+        conn = self._sqlite._get_conn()
+        try:
+            rows = conn.execute(
+                """SELECT id, title, planned_date, priority FROM entries
+                   WHERE user_id = ? AND type = 'task'
+                     AND planned_date IS NOT NULL AND planned_date != ''
+                     AND status NOT IN ('complete', 'cancelled')
+                     AND planned_date < ?
+                   ORDER BY CASE priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END
+                   LIMIT 5""",
+                (user_id, today),
+            ).fetchall()
+            result = []
+            for r in rows:
+                pd = r["planned_date"]
+                pd_date = datetime.fromisoformat(pd).date() if "T" in pd else date.fromisoformat(pd)
+                result.append({"id": r["id"], "title": r["title"], "planned_date": str(pd_date), "priority": r["priority"] or "medium"})
+            return result
+        finally:
+            conn.close()
 
     def _get_stale_inbox(self, user_id: str) -> List[Dict[str, Any]]:
         three_days_ago = (datetime.now() - timedelta(days=3)).isoformat()
-        entries = self._sqlite.list_entries(
-            type="inbox", limit=100, user_id=user_id,
-        )
-        result = []
-        for e in entries:
-            if e.get("status") in ("complete", "cancelled"):
-                continue
-            created = e.get("created_at", "")
-            if created and created <= three_days_ago:
-                result.append({"id": e["id"], "title": e["title"], "created_at": created})
-        return result[:5]
+        conn = self._sqlite._get_conn()
+        try:
+            rows = conn.execute(
+                """SELECT id, title, created_at FROM entries
+                   WHERE user_id = ? AND type = 'inbox'
+                     AND status NOT IN ('complete', 'cancelled')
+                     AND created_at <= ?
+                   LIMIT 5""",
+                (user_id, three_days_ago),
+            ).fetchall()
+            return [{"id": r["id"], "title": r["title"], "created_at": r["created_at"]} for r in rows]
+        finally:
+            conn.close()
 
     def _check_no_recent_activity(self, user_id: str) -> bool:
         two_days_ago = (datetime.now() - timedelta(days=2)).isoformat()
