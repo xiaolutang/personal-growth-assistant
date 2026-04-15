@@ -597,6 +597,49 @@ export async function getGrowthCurve(weeks: number = 8): Promise<GrowthCurveResp
   return handleApiResponse<GrowthCurveResponse>(response);
 }
 
+// === AI 晨报 ===
+
+export interface MorningDigestTodo {
+  id: string;
+  title: string;
+  priority: string;
+  planned_date: string | null;
+}
+
+export interface MorningDigestOverdue {
+  id: string;
+  title: string;
+  priority: string;
+  planned_date: string | null;
+}
+
+export interface MorningDigestStaleInbox {
+  id: string;
+  title: string;
+  created_at: string;
+}
+
+export interface MorningDigestWeeklySummary {
+  new_concepts: string[];
+  entries_count: number;
+}
+
+export interface MorningDigestResponse {
+  date: string;
+  ai_suggestion: string;
+  todos: MorningDigestTodo[];
+  overdue: MorningDigestOverdue[];
+  stale_inbox: MorningDigestStaleInbox[];
+  weekly_summary: MorningDigestWeeklySummary;
+}
+
+export async function getMorningDigest(): Promise<MorningDigestResponse> {
+  const response = await fetch(`${API_BASE}/review/morning-digest`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<MorningDigestResponse>(response);
+}
+
 // 导出错误类供外部使用
 export { ApiError } from "@/lib/errors";
 
