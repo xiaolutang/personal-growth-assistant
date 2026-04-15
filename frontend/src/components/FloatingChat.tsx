@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Send,
   Loader2,
@@ -15,7 +16,7 @@ import { useConfirmHandler } from "@/hooks/useConfirmHandler";
 import { useIntentDispatcher } from "@/hooks/useIntentDispatcher";
 import { useChatActions } from "@/hooks/useChatActions";
 import { useTaskStore } from "@/stores/taskStore";
-import { useChatStore } from "@/stores/chatStore";
+import { useChatStore, type PageContext } from "@/stores/chatStore";
 import { SearchResultList } from "@/components/SearchResultCard";
 import { KnowledgeGraphInline } from "@/components/KnowledgeGraph";
 import type { Intent } from "@/lib/intentDetection";
@@ -57,9 +58,44 @@ export function FloatingChat() {
     clearLastOperation,
     fetchSessions,
     fetchSessionMessages,
+    pageContext,
+    setPageContext,
   } = useChatStore();
 
   const currentSession = getCurrentSession();
+
+  // 路由感知：根据当前路径更新 pageContext
+  const location = useLocation();
+
+  useEffect(() => {
+    const path = location.pathname;
+    const base = (import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL?.replace(/\/$/, "") || "";
+    const relativePath = base ? path.replace(base, "") || "/" : path;
+
+    let ctx: PageContext | null = null;
+
+    if (relativePath === "/" || relativePath === "") {
+      ctx = { page_type: "home" };
+    } else if (relativePath.startsWith("/explore")) {
+      ctx = { page_type: "explore" };
+    } else if (relativePath.startsWith("/entries/")) {
+      const entryId = relativePath.split("/entries/")[1]?.split("/")[0] || undefined;
+      ctx = { page_type: "entry", entry_id: entryId };
+    } else if (relativePath.startsWith("/review")) {
+      ctx = { page_type: "review" };
+    } else if (relativePath.startsWith("/graph")) {
+      ctx = { page_type: "graph" };
+    }
+
+    // 仅在上下文实际变化时更新，避免不必要的 re-render
+    const current = pageContext;
+    if (
+      current?.page_type !== ctx?.page_type ||
+      current?.entry_id !== ctx?.entry_id
+    ) {
+      setPageContext(ctx);
+    }
+  }, [location.pathname]);
 
   // 初始化时加载会话列表
   useEffect(() => {
@@ -178,7 +214,7 @@ export function FloatingChat() {
     clearKnowledgeGraph();
 
     try {
-      const response = await parse(userMessage, activeSessionId);
+      const response = await parse(userMessage, activeSessionId, undefined, pageContext);
       const intent = response.intent.intent as Intent;
       setCurrentIntent(intent);
       const { query, entities } = response.intent;

@@ -33,6 +33,13 @@ export interface ChatSession {
   updatedAt: number;
 }
 
+// 页面级 AI 上下文
+export interface PageContext {
+  page_type: string;                    // home / explore / entry / review / graph
+  entry_id?: string;                    // 详情页条目 ID
+  extra?: Record<string, string | number>; // 扩展字段
+}
+
 // 操作状态（用于状态提示条）
 export interface OperationStatus {
   type: Intent | "tool" | "skill";  // 操作类型
@@ -49,6 +56,7 @@ interface ChatStore {
   panelHeight: number; // FloatingChat 面板高度
   lastOperation: OperationStatus | null; // 最近操作状态
   isLoading: boolean; // 加载状态
+  pageContext: PageContext | null; // 页面级 AI 上下文
 
   // API 操作
   fetchSessions: () => Promise<void>;
@@ -68,6 +76,7 @@ interface ChatStore {
   setPanelHeight: (height: number) => void;
   setLastOperation: (op: OperationStatus | null) => void;
   clearLastOperation: () => void;
+  setPageContext: (ctx: PageContext | null) => void;
 }
 
 // 默认面板高度
@@ -118,6 +127,7 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
   panelHeight: loadPanelHeight(),
   lastOperation: null,
   isLoading: false,
+  pageContext: null,
 
   fetchSessions: async () => {
     set({ isLoading: true });
@@ -244,5 +254,9 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
 
   clearLastOperation: () => {
     set({ lastOperation: null });
+  },
+
+  setPageContext: (ctx: PageContext | null) => {
+    set({ pageContext: ctx });
   },
 }));

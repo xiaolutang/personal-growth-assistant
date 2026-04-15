@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { API_BASE } from "@/config/api";
 import { authFetch } from "@/lib/authFetch";
 import type { Intent } from "@/lib/intentDetection";
+import type { PageContext } from "@/stores/chatStore";
 
 // 解析后的任务结构
 export interface ParsedTask {
@@ -135,7 +136,7 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
   optionsRef.current = options;
 
   const parse = useCallback(
-    async (text: string, sessionId: string = "default", confirm?: ConfirmRequest): Promise<ParseResponse> => {
+    async (text: string, sessionId: string = "default", confirm?: ConfirmRequest, pageContext?: PageContext | null): Promise<ParseResponse> => {
       if (!text.trim()) throw new Error("文本为空");
 
       optionsRef.current.onMessage?.("user", text);
@@ -154,7 +155,8 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
               body: JSON.stringify({
                 text,
                 session_id: sessionId,
-                confirm
+                confirm,
+                page_context: pageContext || null,
               }),
             });
 
