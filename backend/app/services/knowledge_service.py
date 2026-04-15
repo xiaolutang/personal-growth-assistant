@@ -560,9 +560,9 @@ class KnowledgeService:
             try:
                 if updated_str:
                     if isinstance(updated_str, str):
-                        updated_at = datetime.fromisoformat(updated_str.replace("Z", "+00:00"))
+                        updated_at = datetime.fromisoformat(updated_str.replace("Z", "").replace("+00:00", ""))
                     else:
-                        updated_at = updated_str
+                        updated_at = updated_str if updated_str.tzinfo is None else updated_str.replace(tzinfo=None)
                     if updated_at >= thirty_days_ago:
                         recent_count += 1
             except (ValueError, TypeError):
@@ -580,7 +580,9 @@ class KnowledgeService:
 
     def _build_map_from_sqlite(self, user_id: str) -> tuple:
         """从 SQLite 构建图谱数据（Neo4j 不可用时的降级方案）"""
-        all_entries = self._sqlite.list_entries(limit=200, user_id=user_id)
+        all_entries = self._sqlite.list_entries(limit=10000, user_id=user_id)
+        now = datetime.now()
+        thirty_days_ago = now - timedelta(days=30)
 
         # 从所有条目的 tags 中提取概念
         concept_map: Dict[str, Dict] = {}
@@ -609,10 +611,10 @@ class KnowledgeService:
                 try:
                     if updated_str:
                         if isinstance(updated_str, str):
-                            updated_at = datetime.fromisoformat(updated_str.replace("Z", "+00:00"))
+                            updated_at = datetime.fromisoformat(updated_str.replace("Z", "").replace("+00:00", ""))
                         else:
-                            updated_at = updated_str
-                        if updated_at >= datetime.now() - timedelta(days=30):
+                            updated_at = updated_at if updated_at.tzinfo is None else updated_at.replace(tzinfo=None)
+                        if updated_at >= thirty_days_ago:
                             concept_map[tag]["recent_count"] += 1
                 except (ValueError, TypeError):
                     pass
@@ -693,9 +695,9 @@ class KnowledgeService:
             try:
                 if updated_str:
                     if isinstance(updated_str, str):
-                        updated_at = datetime.fromisoformat(updated_str.replace("Z", "+00:00"))
+                        updated_at = datetime.fromisoformat(updated_str.replace("Z", "").replace("+00:00", ""))
                     else:
-                        updated_at = updated_str
+                        updated_at = updated_str if updated_str.tzinfo is None else updated_str.replace(tzinfo=None)
                     if updated_at >= thirty_days_ago:
                         recent_count += 1
             except (ValueError, TypeError):
@@ -749,7 +751,7 @@ class KnowledgeService:
 
     def _stats_from_sqlite(self, user_id: str) -> ConceptStatsResponse:
         """从 SQLite 获取统计"""
-        all_entries = self._sqlite.list_entries(limit=200, user_id=user_id)
+        all_entries = self._sqlite.list_entries(limit=10000, user_id=user_id)
 
         concept_map: Dict[str, Dict] = {}
 
@@ -825,7 +827,7 @@ class KnowledgeService:
         self, query: str, limit: int, user_id: str
     ) -> ConceptSearchResponse:
         """从 SQLite tags 搜索概念（降级，mastery=null）"""
-        all_entries = self._sqlite.list_entries(limit=200, user_id=user_id)
+        all_entries = self._sqlite.list_entries(limit=10000, user_id=user_id)
         q_lower = query.lower()
         concept_map: Dict[str, int] = {}
 
@@ -870,7 +872,7 @@ class KnowledgeService:
     ) -> ConceptTimelineResponse:
         """从 SQLite 获取时间线（基于 tags + title/content 搜索）"""
         # 同时搜索 tags 和全文，避免标签概念被遗漏
-        tag_results = self._sqlite.list_entries(limit=200, user_id=user_id)
+        tag_results = self._sqlite.list_entries(limit=10000, user_id=user_id)
         results = [
             e for e in tag_results
             if concept.lower() in [t.lower() for t in e.get("tags", [])]
@@ -892,9 +894,9 @@ class KnowledgeService:
                 continue
             try:
                 if isinstance(created_str, str):
-                    created_at = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
+                    created_at = datetime.fromisoformat(created_str.replace("Z", "").replace("+00:00", ""))
                 else:
-                    created_at = created_str
+                    created_at = created_str if created_str.tzinfo is None else created_str.replace(tzinfo=None)
             except (ValueError, TypeError):
                 continue
 

@@ -436,6 +436,14 @@ export function GraphPage() {
     if (!searchQuery.trim()) {
       setSearchResults(null);
       setSearchError(null);
+      // 恢复原始节点（移除高亮），如果之前是聚合模式则重新应用聚合
+      if (aggregateMode && mapData) {
+        const { aggregates, remaining } = aggregateByCategory(mapData.nodes);
+        const layouted = layoutNodes(remaining);
+        setNodes([...aggregates, ...layouted]);
+        setEdges([]);
+        return;
+      }
       // 恢复原始节点（移除高亮）
       if (mapData) {
         const displayNodes = mapData.nodes.length > NODE_THRESHOLD && !showAllNodes
@@ -454,6 +462,7 @@ export function GraphPage() {
     searchTimerRef.current = setTimeout(async () => {
       setSearchLoading(true);
       setSearchError(null);
+      setAggregateMode(false); // 搜索时退出聚合模式
       try {
         const result = await getKnowledgeSearch(searchQuery.trim());
         setSearchResults(result);
