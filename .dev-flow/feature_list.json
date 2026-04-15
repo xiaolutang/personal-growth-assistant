@@ -246,7 +246,7 @@
       "description": "配置 Playwright webServer 自动启停前端 dev server（npm run dev，端口 5173）和后端（uvicorn，端口 18929），前端通过 vite proxy 转发 /api 到后端。创建认证 fixture（API 方式注册+登录获取 JWT token），创建 API 辅助函数（条目 CRUD 封装）。E2E 测试通过前端 URL 访问页面，API 调用走 /api 代理。",
       "verification": "L3",
       "depends_on": ["B34"],
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "acceptance_criteria": [
         "playwright.config.ts 配置 webServer 启动后端（uvicorn :18929，健康检查 GET /health）",
