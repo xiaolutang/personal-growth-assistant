@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Sparkles, X, Send, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import { Sparkles, X, Send, Loader2, Trash2 } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { sendAIChat, type AIChatContext } from "@/services/api";
 import { useChatStore } from "@/stores/chatStore";
+import { useTaskStore } from "@/stores/taskStore";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 interface ChatMessage {
@@ -11,20 +13,54 @@ interface ChatMessage {
 
 interface PageAIAssistantProps {
   pageContext?: AIChatContext;
+  pageData?: Record<string, string | number>;
 }
 
 const FLOATING_GAP = 16;
 const MOBILE_NAV_HEIGHT = 56;
 
-export function PageAIAssistant({ pageContext }: PageAIAssistantProps) {
+export function PageAIAssistant({ pageContext, pageData }: PageAIAssistantProps) {
   const panelHeight = useChatStore((state) => state.panelHeight);
   const isMobile = useIsMobile();
+  const location = useLocation();
+  const tasks = useTaskStore((state) => state.tasks);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  // 自动感知当前页面并生成上下文
+  const autoPageData = useMemo((): Record<string, string | number> => {
+    const path = location.pathname;
+    const today = new Date().toISOString().split("T")[0];
+
+    if (path === "/" || path === "") {
+      const todayTasks = tasks.filter((t) =>
+        t.planned_date?.startsWith(today) || t.created_at?.startsWith(today)
+      );
+      const overdue = tasks.filter((t) =>
+        t.planned_date && t.planned_date.split("T")[0] < today && t.status !== "complete"
+      );
+      return { todo_count: todayTasks.length, overdue_count: overdue.length, total_tasks: tasks.length };
+    }
+    if (path === "/explore") {
+      const recentTitles = tasks.slice(0, 5).map((t) => t.title).join(", ");
+      return { total_entries: tasks.length, recent_titles: recentTitles || "暂无" };
+    }
+    if (path === "/tasks") {
+      const doing = tasks.filter((t) => t.category === "task" && t.status === "doing").length;
+      const complete = tasks.filter((t) => t.category === "task" && t.status === "complete").length;
+      return { total_tasks: tasks.filter((t) => t.category === "task").length, doing, complete };
+    }
+    if (path === "/review") {
+      return { total_entries: tasks.length };
+    }
+    return {};
+  }, [location.pathname, tasks]);
+
+  const effectivePageData = pageData ?? autoPageData;
 
   // 计算 bottom 偏移：FloatingChat panelHeight + FeedbackButton 区域(~80px) + gap
   const bottomOffset = panelHeight + 80 + FLOATING_GAP + (isMobile ? MOBILE_NAV_HEIGHT : 0);
@@ -39,7 +75,6 @@ export function PageAIAssistant({ pageContext }: PageAIAssistantProps) {
 
   function handleClose() {
     setIsOpen(false);
-    // 取消正在进行的请求
     if (abortRef.current) {
       abortRef.current.abort();
       abortRef.current = null;
@@ -54,23 +89,37 @@ export function PageAIAssistant({ pageContext }: PageAIAssistantProps) {
     }
   }
 
+  function handleClearChat() {
+    setMessages([]);
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
+    setIsStreaming(false);
+  }
+
   async function handleSend() {
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
 
-    // 添加用户消息
     const userMessage: ChatMessage = { role: "user", content: trimmed };
-    setMessages((prev) => [...prev, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInput("");
     setIsStreaming(true);
 
-    // 添加空的 AI 消息占位
     const assistantMessage: ChatMessage = { role: "assistant", content: "" };
     setMessages((prev) => [...prev, assistantMessage]);
 
     try {
       abortRef.current = new AbortController();
-      const response = await sendAIChat(trimmed, pageContext);
+      // 构建带历史消息和页面数据的上下文
+      const contextWithHistory: AIChatContext = {
+        ...pageContext,
+        page_data: effectivePageData,
+        messages: newMessages.slice(-10).map((m) => ({ role: m.role, content: m.content })),
+      };
+      const response = await sendAIChat(trimmed, contextWithHistory);
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
@@ -101,7 +150,6 @@ export function PageAIAssistant({ pageContext }: PageAIAssistantProps) {
                     return updated;
                   });
                 }
-                // 兼容：有些后端直接返回 content 字段
                 if (parsed.content && !parsed.token) {
                   accumulated += parsed.content;
                   const currentContent = accumulated;
@@ -115,13 +163,12 @@ export function PageAIAssistant({ pageContext }: PageAIAssistantProps) {
                   });
                 }
               } catch {
-                // 非 JSON 数据，忽略
+                // non-JSON data
               }
             }
           }
         }
 
-        // 如果流结束但没有收到任何 token，显示回退文本
         if (!accumulated) {
           setMessages((prev) => {
             const updated = [...prev];
@@ -134,7 +181,6 @@ export function PageAIAssistant({ pageContext }: PageAIAssistantProps) {
         }
       }
     } catch (error) {
-      // 只有非 abort 的错误才显示
       if (error instanceof Error && error.name !== "AbortError") {
         setMessages((prev) => {
           const updated = [...prev];
@@ -174,14 +220,26 @@ export function PageAIAssistant({ pageContext }: PageAIAssistantProps) {
               <Sparkles className="h-4 w-4 text-indigo-500" />
               <span className="text-sm font-semibold">日知 AI</span>
             </div>
-            <button
-              type="button"
-              onClick={handleClose}
-              className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              aria-label="关闭"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              {messages.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearChat}
+                  className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label="清空对话"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleClose}
+                className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="关闭"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
           {/* Messages */}

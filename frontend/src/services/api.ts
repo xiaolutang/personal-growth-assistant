@@ -462,6 +462,8 @@ export interface AIChatContext {
   page?: string;
   selected_items?: string[];
   filters?: Record<string, string>;
+  page_data?: Record<string, string | number>;
+  messages?: Array<{ role: string; content: string }>;
 }
 
 /**

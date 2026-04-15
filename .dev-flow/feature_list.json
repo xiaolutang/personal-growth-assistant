@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 8,
-    "pending": 2,
+    "pending": 1,
     "in_progress": 0,
-    "completed": 6,
+    "completed": 7,
     "blocked": 0,
     "cancelled": 0
   },
@@ -337,7 +337,7 @@
       "started_at": "2026-04-15",
       "completed_at": "2026-04-15",
       "evidence_file": ".dev-flow/evidence/F19.md",
-      "commit": "pending",
+      "commit": "358555a",
       "execution_notes": "分区编辑 + 标签管理 + 元数据下拉 + 预览/编辑 Tab + 自动保存 + 离开提示，build 通过"
     },
     {
@@ -467,7 +467,7 @@
       "description": "打磨 PageAIAssistant 对话质量。实现：(1) `ai_chat_service.py` 系统提示词强化：加入日知角色设定（博学但不卖弄的朋友，平实准确偶尔温厚）+ 3 种交互模式（教练/助手/镜子）；(2) 页面上下文注入增强：扩展 context.page_data 字段，前端注入当前页面关键数据摘要（如今天页传 todo_count/overdue_count，探索页传 recent_titles）；(3) 多轮对话记忆：前端通过 conversation_id 管理，每次请求携带最近 5 轮历史（messages 数组传给后端），后端注入 system prompt，不新增后端存储层；(4) 前端对话面板增加清空对话按钮（清除 conversation_id 和本地消息列表）。",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
       "acceptance_criteria": [
         "日知回复符合角色设定（平实、准确）",
@@ -491,7 +491,12 @@
       "files": [
         "backend/app/services/ai_chat_service.py",
         "frontend/src/components/PageAIAssistant.tsx"
-      ]
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F22.md",
+      "commit": "pending",
+      "execution_notes": "日知角色强化 + page_data 上下文 + 多轮记忆 + 清空对话，build + 6 个测试通过"
     },
     {
       "id": "F23",
