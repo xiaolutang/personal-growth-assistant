@@ -21,12 +21,12 @@ export type Intent =
 // 意图配置
 export const intentConfig: Record<Intent, { label: string; color: string; description: string }> = {
   create: { label: "创建", color: "text-primary", description: "创建任务、笔记或灵感" },
-  read: { label: "查询", color: "text-blue-500", description: "搜索和查看内容" },
-  update: { label: "更新", color: "text-orange-500", description: "修改已有内容" },
-  delete: { label: "删除", color: "text-red-500", description: "删除不需要的内容" },
-  knowledge: { label: "知识图谱", color: "text-purple-500", description: "查看知识关联" },
-  review: { label: "回顾", color: "text-green-500", description: "查看成长报告" },
-  help: { label: "帮助", color: "text-gray-500", description: "查看使用说明" },
+  read: { label: "查询", color: "text-blue-500 dark:text-blue-400", description: "搜索和查看内容" },
+  update: { label: "更新", color: "text-orange-500 dark:text-orange-400", description: "修改已有内容" },
+  delete: { label: "删除", color: "text-red-500 dark:text-red-400", description: "删除不需要的内容" },
+  knowledge: { label: "知识图谱", color: "text-purple-500 dark:text-purple-400", description: "查看知识关联" },
+  review: { label: "回顾", color: "text-green-500 dark:text-green-400", description: "查看成长报告" },
+  help: { label: "帮助", color: "text-gray-500 dark:text-gray-400", description: "查看使用说明" },
 };
 
 // 意图图标映射

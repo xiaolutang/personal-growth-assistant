@@ -26,8 +26,8 @@ export function ActionIndicator({
       className={cn(
         "flex items-center gap-2 px-2 py-1 rounded text-xs",
         status === "running" && "animate-pulse",
-        status === "success" && "bg-green-50 text-green-700",
-        status === "error" && "bg-red-50 text-red-700",
+        status === "success" && "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300",
+        status === "error" && "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300",
         status === "pending" && "bg-muted"
       )}
     >

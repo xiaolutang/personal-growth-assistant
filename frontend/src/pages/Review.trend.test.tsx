@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
 import { Review } from "./Review";
+import { ThemeProvider } from "@/lib/theme";
 
 // --- Mocks ---
 
@@ -63,7 +64,9 @@ function makeTrendPeriods(count: number) {
 function renderReview() {
   return render(
     <MemoryRouter>
-      <Review />
+      <ThemeProvider>
+        <Review />
+      </ThemeProvider>
     </MemoryRouter>,
   );
 }

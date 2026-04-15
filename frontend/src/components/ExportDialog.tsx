@@ -148,7 +148,7 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
 
         {/* 错误提示 */}
         {error && (
-          <p className="text-sm text-red-500 mb-3">{error}</p>
+          <p className="text-sm text-red-500 dark:text-red-400 mb-3">{error}</p>
         )}
 
         {/* 操作按钮 */}

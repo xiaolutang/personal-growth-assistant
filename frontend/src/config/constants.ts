@@ -3,20 +3,20 @@ import { CheckCircle, FileText, Lightbulb, Folder } from "lucide-react";
 
 // 状态配置
 export const statusConfig: Record<TaskStatus, { label: string; color: string; variant: "secondary" | "warning" | "success" | "destructive" | "outline" }> = {
-  waitStart: { label: "待开始", color: "bg-gray-500", variant: "secondary" },
-  doing: { label: "进行中", color: "bg-blue-500", variant: "warning" },
-  complete: { label: "已完成", color: "bg-green-500", variant: "success" },
-  paused: { label: "已挂起", color: "bg-orange-500", variant: "outline" },
-  cancelled: { label: "已取消", color: "bg-red-500", variant: "destructive" },
+  waitStart: { label: "待开始", color: "bg-gray-500 dark:bg-gray-600", variant: "secondary" },
+  doing: { label: "进行中", color: "bg-blue-500 dark:bg-blue-600", variant: "warning" },
+  complete: { label: "已完成", color: "bg-green-500 dark:bg-green-600", variant: "success" },
+  paused: { label: "已挂起", color: "bg-orange-500 dark:bg-orange-600", variant: "outline" },
+  cancelled: { label: "已取消", color: "bg-red-500 dark:bg-red-600", variant: "destructive" },
 };
 
 // 状态图标颜色
 export const statusIconColor: Record<TaskStatus, string> = {
   waitStart: "",
-  doing: "text-yellow-500",
-  complete: "text-green-500",
-  paused: "text-orange-500",
-  cancelled: "text-red-500",
+  doing: "text-yellow-500 dark:text-yellow-400",
+  complete: "text-green-500 dark:text-green-400",
+  paused: "text-orange-500 dark:text-orange-400",
+  cancelled: "text-red-500 dark:text-red-400",
 };
 
 // 状态转换映射
@@ -30,17 +30,17 @@ export const nextStatusMap: Record<TaskStatus, TaskStatus> = {
 
 // 优先级配置
 export const priorityConfig: Record<Priority, { label: string; color: string; variant: "destructive" | "warning" | "secondary" }> = {
-  high: { label: "高", color: "bg-red-500", variant: "destructive" },
-  medium: { label: "中", color: "bg-yellow-500", variant: "warning" },
-  low: { label: "低", color: "bg-gray-500", variant: "secondary" },
+  high: { label: "高", color: "bg-red-500 dark:bg-red-600", variant: "destructive" },
+  medium: { label: "中", color: "bg-yellow-500 dark:bg-yellow-600", variant: "warning" },
+  low: { label: "低", color: "bg-gray-500 dark:bg-gray-600", variant: "secondary" },
 };
 
 // 分类配置
 export const categoryConfig: Record<Category, { label: string; icon: typeof FileText; color: string }> = {
-  task: { label: "任务", icon: CheckCircle, color: "text-green-500" },
-  inbox: { label: "灵感", icon: Lightbulb, color: "text-yellow-500" },
-  note: { label: "笔记", icon: FileText, color: "text-blue-500" },
-  project: { label: "项目", icon: Folder, color: "text-purple-500" },
+  task: { label: "任务", icon: CheckCircle, color: "text-green-500 dark:text-green-400" },
+  inbox: { label: "灵感", icon: Lightbulb, color: "text-yellow-500 dark:text-yellow-400" },
+  note: { label: "笔记", icon: FileText, color: "text-blue-500 dark:text-blue-400" },
+  project: { label: "项目", icon: Folder, color: "text-purple-500 dark:text-purple-400" },
 };
 
 // 分类目录映射（与后端 MarkdownStorage.CATEGORY_DIRS 一致）

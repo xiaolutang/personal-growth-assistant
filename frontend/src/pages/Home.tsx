@@ -153,7 +153,7 @@ export function Home() {
           <>
             {/* ====== AI 晨报卡片 ====== */}
             {!digestCollapsed && (
-              <Card className="border-l-4 border-l-indigo-500 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30">
+              <Card className="border-l-4 border-l-indigo-500 dark:border-l-indigo-400 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30">
                 <CardContent className="pt-4 pb-4">
                   {digestLoading ? (
                     <div className="space-y-3">
@@ -197,25 +197,25 @@ export function Home() {
                           icon={<Clock className="h-3.5 w-3.5" />}
                           label="待办"
                           count={digest.todos.length}
-                          color="text-blue-500"
+                          color="text-blue-500 dark:text-blue-400"
                         />
                         <DigestStat
                           icon={<AlertTriangle className="h-3.5 w-3.5" />}
                           label="逾期"
                           count={digest.overdue.length}
-                          color="text-red-500"
+                          color="text-red-500 dark:text-red-400"
                         />
                         <DigestStat
                           icon={<Inbox className="h-3.5 w-3.5" />}
                           label="待跟进"
                           count={digest.stale_inbox.length}
-                          color="text-yellow-500"
+                          color="text-yellow-500 dark:text-yellow-400"
                         />
                         <DigestStat
                           icon={<BookOpen className="h-3.5 w-3.5" />}
                           label="新概念"
                           count={digest.weekly_summary.new_concepts.length}
-                          color="text-green-500"
+                          color="text-green-500 dark:text-green-400"
                         />
                       </div>
                     </div>
@@ -243,15 +243,15 @@ export function Home() {
                     </div>
                     <div className="flex gap-4 text-xs text-muted-foreground pt-0.5">
                       <span className="flex items-center gap-1">
-                        <CheckCircle className="h-3 w-3 text-green-500" />
+                        <CheckCircle className="h-3 w-3 text-green-500 dark:text-green-400" />
                         完成 {todayStats.completed}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3 text-yellow-500" />
+                        <Clock className="h-3 w-3 text-yellow-500 dark:text-yellow-400" />
                         进行中 {todayStats.doing}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Circle className="h-3 w-3 text-gray-400" />
+                        <Circle className="h-3 w-3 text-gray-400 dark:text-gray-500" />
                         待开始 {todayStats.waitStart}
                       </span>
                     </div>
@@ -304,7 +304,7 @@ export function Home() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4 text-yellow-500" />
+                  <Lightbulb className="h-4 w-4 text-yellow-500 dark:text-yellow-400" />
                   最近灵感
                   {unprocessedInbox.length > 0 && (
                     <span className="inline-flex items-center justify-center h-5 min-w-[20px] rounded-full bg-primary px-1.5 text-[10px] font-medium text-primary-foreground">
@@ -331,7 +331,7 @@ export function Home() {
                         to={`/entries/${item.id}`}
                         className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-accent/50 transition-colors"
                       >
-                        <Lightbulb className="h-3.5 w-3.5 text-yellow-500 shrink-0" />
+                        <Lightbulb className="h-3.5 w-3.5 text-yellow-500 dark:text-yellow-400 shrink-0" />
                         <span className="text-sm truncate flex-1">{item.title}</span>
                         {item.status !== "complete" && (
                           <span className="text-[10px] text-muted-foreground shrink-0">
@@ -407,9 +407,9 @@ function TodayTaskItem({ task, isToggling, onToggle }: TodayTaskItemProps) {
         aria-label={isComplete ? "标为未完成" : "标为完成"}
       >
         {isComplete ? (
-          <CheckCircle className="h-5 w-5 text-green-500" />
+          <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400" />
         ) : task.status === "doing" ? (
-          <Clock className="h-5 w-5 text-yellow-500" />
+          <Clock className="h-5 w-5 text-yellow-500 dark:text-yellow-400" />
         ) : (
           <Circle className="h-5 w-5 text-muted-foreground" />
         )}

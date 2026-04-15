@@ -325,10 +325,10 @@ export function EntryDetail() {
 
   const renderStatusIcon = (status: TaskStatus) => {
     switch (status) {
-      case "complete": return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case "doing": return <Circle className="h-4 w-4 text-yellow-500" />;
-      case "paused": return <Pause className="h-4 w-4 text-orange-500" />;
-      case "cancelled": return <XCircle className="h-4 w-4 text-red-500" />;
+      case "complete": return <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />;
+      case "doing": return <Circle className="h-4 w-4 text-yellow-500 dark:text-yellow-400" />;
+      case "paused": return <Pause className="h-4 w-4 text-orange-500 dark:text-orange-400" />;
+      case "cancelled": return <XCircle className="h-4 w-4 text-red-500 dark:text-red-400" />;
       default: return <Circle className="h-4 w-4" />;
     }
   };

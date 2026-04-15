@@ -240,7 +240,7 @@ export function Review() {
     if (reportType === "monthly" || reportType === "trend") return null;
 
     return (
-      <Card className="border-l-4 border-l-indigo-500">
+      <Card className="border-l-4 border-l-indigo-500 dark:border-l-indigo-400">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-indigo-500" />
@@ -261,7 +261,7 @@ export function Review() {
               {aiSummary.length > 80 && (
                 <button
                   onClick={() => setAiSummaryExpanded(!aiSummaryExpanded)}
-                  className="mt-2 text-xs text-indigo-500 hover:text-indigo-600 flex items-center gap-1"
+                  className="mt-2 text-xs text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 flex items-center gap-1"
                 >
                   {aiSummaryExpanded ? (
                     <>
@@ -679,15 +679,15 @@ export function Review() {
                             <div className="text-xs text-muted-foreground">总任务</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-green-500">{taskStats.completed}</div>
+                            <div className="text-2xl font-bold text-green-500 dark:text-green-400">{taskStats.completed}</div>
                             <div className="text-xs text-muted-foreground">已完成</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-yellow-500">{taskStats.doing}</div>
+                            <div className="text-2xl font-bold text-yellow-500 dark:text-yellow-400">{taskStats.doing}</div>
                             <div className="text-xs text-muted-foreground">进行中</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-gray-400">{taskStats.wait_start}</div>
+                            <div className="text-2xl font-bold text-gray-400 dark:text-gray-500">{taskStats.wait_start}</div>
                             <div className="text-xs text-muted-foreground">待开始</div>
                           </div>
                         </div>
@@ -751,7 +751,7 @@ export function Review() {
                             </div>
                             <div className="flex items-center gap-4 text-sm">
                               <span>{day.total} 个任务</span>
-                              <span className="text-green-500">{day.completed} 完成</span>
+                              <span className="text-green-500 dark:text-green-400">{day.completed} 完成</span>
                             </div>
                           </div>
                         ))}
@@ -784,7 +784,7 @@ export function Review() {
                             </div>
                             <div className="flex items-center gap-4 text-sm">
                               <span>{week.total} 个任务</span>
-                              <span className="text-green-500">{week.completed} 完成</span>
+                              <span className="text-green-500 dark:text-green-400">{week.completed} 完成</span>
                             </div>
                           </div>
                         ))}
@@ -798,7 +798,7 @@ export function Review() {
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
                         今日完成 ({dailyReport.completed_tasks.length})
                       </CardTitle>
                     </CardHeader>
@@ -809,7 +809,7 @@ export function Review() {
                             key={task.id}
                             className="flex items-center gap-2 p-2 rounded-lg bg-green-50 dark:bg-green-950/20"
                           >
-                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
                             <span className="text-sm">{task.title}</span>
                           </div>
                         ))}

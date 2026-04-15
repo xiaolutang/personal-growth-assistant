@@ -78,7 +78,19 @@
       "name": "Personal Growth Assistant v1",
       "archive_dir": "_archive/R001_personal-growth-assistant-v1",
       "total_tasks": 36,
-      "phases": ["P1","P2","P3","P4","P5","P6","P7","P8","P9","P10","P11"],
+      "phases": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5",
+        "P6",
+        "P7",
+        "P8",
+        "P9",
+        "P10",
+        "P11"
+      ],
       "completed_at": "2026-04-13",
       "snapshot": "feature_list.snapshot.json"
     },
@@ -87,7 +99,14 @@
       "name": "Production Content Recovery",
       "archive_dir": "_archive/R003_production-content-recovery",
       "total_tasks": 21,
-      "phases": ["P1","P2","P3","P4","P5","P6"],
+      "phases": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5",
+        "P6"
+      ],
       "completed_at": "2026-04-14",
       "snapshot": "feature_list.snapshot.json"
     },
@@ -96,7 +115,9 @@
       "name": "Product Evolution Phase 1A",
       "archive_dir": "_archive/R004_product-evolution-phase1a",
       "total_tasks": 7,
-      "phases": ["P1A"],
+      "phases": [
+        "P1A"
+      ],
       "completed_at": "2026-04-14",
       "snapshot": "feature_list.snapshot.json"
     },
@@ -105,7 +126,9 @@
       "name": "Product Evolution Phase 1B",
       "archive_dir": "_archive/R004_product-evolution-phase1b",
       "total_tasks": 2,
-      "phases": ["P1B"],
+      "phases": [
+        "P1B"
+      ],
       "completed_at": "2026-04-15",
       "snapshot": "feature_list.snapshot.json"
     },
@@ -114,7 +137,11 @@
       "name": "Product Evolution Phase 2",
       "archive_dir": "_archive/R004_product-evolution-phase2",
       "total_tasks": 7,
-      "phases": ["P2A","P2B","P2C"],
+      "phases": [
+        "P2A",
+        "P2B",
+        "P2C"
+      ],
       "completed_at": "2026-04-15",
       "snapshot": "feature_list.snapshot.json"
     },
@@ -123,7 +150,10 @@
       "name": "Product Evolution Phase 3",
       "archive_dir": "_archive/R005_product-evolution-phase3",
       "total_tasks": 7,
-      "phases": ["P3A","P3B"],
+      "phases": [
+        "P3A",
+        "P3B"
+      ],
       "completed_at": "2026-04-15",
       "snapshot": "feature_list.snapshot.json"
     },
@@ -132,7 +162,11 @@
       "name": "Product Polish",
       "archive_dir": "_archive/R006_product-polish",
       "total_tasks": 8,
-      "phases": ["P4A","P4B","P4C"],
+      "phases": [
+        "P4A",
+        "P4B",
+        "P4C"
+      ],
       "completed_at": "2026-04-15",
       "snapshot": "feature_list.snapshot.json"
     }
@@ -253,7 +287,7 @@
       "description": "完善深色模式支持。实现：(1) 新建 ThemeProvider/useTheme hook — 支持 light/dark/system 三档切换，localStorage 持久化，监听 system preference 变化；(2) Header 右上角新增 theme toggle 按钮（Sun/Moon 图标切换）；(3) 全局审计所有页面和组件，补齐缺失的 dark: 变体（背景色、文字色、边框色、卡片色）；(4) Sidebar/MobileNavBar/Header 三个布局组件优先保证深色模式正确。",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "in_progress",
       "priority": "high",
       "acceptance_criteria": [
         "Header 有 theme toggle 按钮，点击切换 light/dark",
@@ -281,7 +315,9 @@
         "frontend/src/components/layout/Sidebar.tsx",
         "frontend/src/components/layout/MobileNavBar.tsx",
         "frontend/src/App.tsx"
-      ]
+      ],
+      "started_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F24.md"
     },
     {
       "id": "B25",
@@ -301,7 +337,9 @@
         "移动端浏览器显示「添加到主屏幕」提示",
         "npm run build 构建通过"
       ],
-      "risk_tags": ["config"],
+      "risk_tags": [
+        "config"
+      ],
       "test_tasks": [
         "正常：manifest.json 可访问",
         "正常：SW 注册成功（DevTools Application tab 可见）",
@@ -351,7 +389,12 @@
         "隔离：只返回当前用户通知",
         "回归：现有 API 不受影响"
       ],
-      "contract_refs": ["CONTRACT-NT01", "CONTRACT-NT02", "CONTRACT-NT03", "CONTRACT-NT04"],
+      "contract_refs": [
+        "CONTRACT-NT01",
+        "CONTRACT-NT02",
+        "CONTRACT-NT03",
+        "CONTRACT-NT04"
+      ],
       "files": [
         "backend/app/routers/notifications.py",
         "backend/app/services/notification_service.py"
@@ -382,7 +425,9 @@
         "隔离：只返回当前用户数据",
         "回归：现有 review API 不受影响"
       ],
-      "contract_refs": ["CONTRACT-HM01"],
+      "contract_refs": [
+        "CONTRACT-HM01"
+      ],
       "files": [
         "backend/app/routers/review.py",
         "backend/app/services/review_service.py"
@@ -395,7 +440,9 @@
       "name": "通知中心 UI — Header 铃铛 + 下拉面板 + 偏好设置",
       "description": "前端通知中心。实现：(1) Header 右上角新增铃铛图标（带未读数角标）；(2) 点击展开下拉面板，列出通知（类型图标 + 文案 + 时间 + 可点击跳转）；(3) 单条已读/全部已读按钮；(4) 设置页或面板底部增加提醒偏好开关（拖延/灵感/回顾三档）；(5) api.ts 新增 getNotifications, dismissNotification, getNotificationPreferences, updateNotificationPreferences 函数。",
       "verification": "F2",
-      "depends_on": ["B26"],
+      "depends_on": [
+        "B26"
+      ],
       "status": "pending",
       "priority": "medium",
       "acceptance_criteria": [
@@ -418,7 +465,12 @@
         "异常：通知接口失败时 Header 不阻塞，铃铛隐藏角标",
         "回归：Header 其他功能不受影响"
       ],
-      "contract_refs": ["CONTRACT-NT01", "CONTRACT-NT02", "CONTRACT-NT03", "CONTRACT-NT04"],
+      "contract_refs": [
+        "CONTRACT-NT01",
+        "CONTRACT-NT02",
+        "CONTRACT-NT03",
+        "CONTRACT-NT04"
+      ],
       "files": [
         "frontend/src/components/NotificationCenter.tsx",
         "frontend/src/components/layout/Header.tsx",
@@ -432,7 +484,9 @@
       "name": "学习热力图日历 — GitHub 风格贡献日历",
       "description": "回顾页新增 GitHub 风格活动热力图。实现：(1) `Review.tsx` 新增热力图日历卡片；(2) 调用 GET /review/activity-heatmap 获取数据；(3) 按周排列的方格矩阵，颜色深浅表示活动量（0=空, 1-2=浅, 3-5=中, 6+=深）；(4) hover 显示日期 + 条目数 tooltip；(5) 点击日期跳转到探索页，携带 start_date 和 end_date 参数筛选该日条目（复用 Explore 已有的 start_date/end_date 查询能力）；(6) 年份切换按钮。",
       "verification": "F2",
-      "depends_on": ["B27"],
+      "depends_on": [
+        "B27"
+      ],
       "status": "pending",
       "priority": "medium",
       "acceptance_criteria": [
@@ -455,7 +509,9 @@
         "异常：API 失败时显示错误提示，不阻塞页面",
         "回归：现有回顾页功能不受影响"
       ],
-      "contract_refs": ["CONTRACT-HM01"],
+      "contract_refs": [
+        "CONTRACT-HM01"
+      ],
       "files": [
         "frontend/src/pages/Review.tsx",
         "frontend/src/services/api.ts"
