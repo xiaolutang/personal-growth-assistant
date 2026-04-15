@@ -335,31 +335,32 @@
       "id": "B38",
       "phase": "P2",
       "module": "ai-assistant",
-      "name": "Chat 对话 E2E 测试（skip_intent 路径）",
-      "description": "覆盖 Chat 对话的 skip_intent=create 路径（前端已确认创建意图，跳过 LLM 意图检测）：通过 Chat 创建条目 → 验证 created 事件 → 通过 Chat 搜索 → 验证 results 事件。跳过需要真实 LLM 的意图检测路径。会话列表展示和 SSE 超时处理。",
+      "name": "Chat 对话 E2E 测试（read/delete 路径）",
+      "description": "覆盖 Chat 对话的 read 和 delete 路径（不触发 LLM）：通过 Chat 搜索已有条目 → 验证 results 事件；通过 Chat 删除条目 → 验证 deleted 事件。create 路径因 stream_parse 依赖 LLM，仅作为可选 smoke 测试。read/delete 路径通过 search_entries/delete_entry 直接操作，无需 LLM。",
       "verification": "L3",
       "depends_on": ["B35"],
       "status": "pending",
       "priority": "medium",
       "acceptance_criteria": [
-        "Chat skip_intent=true 创建条目成功（created 事件）",
-        "Chat 搜索返回结果（results 事件）",
+        "Chat read 搜索已有条目返回 results 事件（不需要 LLM）",
+        "Chat delete 删除已有条目返回 deleted 事件（不需要 LLM）",
         "会话列表展示已创建的会话",
         "SSE 超时有合理处理",
-        "不需要真实 LLM API key（skip_intent 绕过意图检测）"
+        "不需要真实 LLM API key"
       ],
       "risk_tags": ["network"],
       "test_tasks": [
-        "正常：skip_intent=true Chat 创建条目 → 验证 created 事件",
-        "正常：Chat read 搜索条目 → 验证 results 事件",
+        "正常：先通过 API 创建 seed 条目，Chat read 搜索 → 验证 results 事件",
+        "正常：先通过 API 创建 seed 条目，Chat delete 删除 → 验证 deleted 事件",
         "边界：Chat 超时/无响应不崩溃",
-        "边界：空输入不发送请求"
+        "边界：空输入不发送请求",
+        "可选 smoke（需 LLM）：skip_intent=true Chat create → 验证 created 事件，LLM 不可用时 skip"
       ],
       "contract_refs": ["POST /chat"],
       "files": [
         "e2e/tests/chat.spec.ts"
       ],
-      "planning_notes": "使用 skip_intent=true 绕过 LLM 意图检测，Chat 创建仍需 LLM 解析任务（stream_parse）。如果 LLM 不可用，此测试标记为 skip。真实 LLM 路径作为额外 smoke 测试，不阻塞 CI。"
+      "planning_notes": "read/delete 路径走 search_entries/delete_entry，完全不触发 stream_parse，因此不需要 LLM。create 路径即使用 skip_intent=true 也仍需 graph.stream_parse() 做任务解析，所以从主测试范围中移除，仅作为可选 smoke。"
     },
     {
       "id": "B39",
@@ -373,20 +374,27 @@
       "priority": "medium",
       "acceptance_criteria": [
         "回顾页加载成功，统计区域可见",
-        "有 seed 数据时日统计卡片显示正确数值",
-        "趋势图表渲染（图表容器元素存在）",
-        "知识热力图渲染（热力图元素存在）",
+        "有 seed 数据时日统计卡片显示正确数值（GET /review/daily）",
+        "周统计卡片显示正确数值（GET /review/weekly）",
+        "月统计卡片显示正确数值（GET /review/monthly）",
+        "趋势图表渲染（图表容器元素存在，GET /review/trend）",
+        "知识热力图渲染（热力图元素存在，GET /review/knowledge-heatmap）",
+        "成长曲线渲染（GET /review/growth-curve）",
+        "活动热力图渲染（GET /review/activity-heatmap）",
         "无数据时显示空状态"
       ],
       "risk_tags": [],
       "test_tasks": [
-        "正常：先创建 seed 数据 → 日统计卡片显示非零数值",
+        "正常：创建 seed 数据（覆盖最近 90 天，含已完成任务）→ 日统计卡片显示非零数值",
+        "正常：周统计卡片显示非零数值（seed 数据覆盖本周和上周）",
+        "正常：月统计卡片显示非零数值（seed 数据覆盖本月）",
         "正常：趋势图表元素可见（GET /review/trend）",
         "正常：知识热力图元素可见（GET /review/knowledge-heatmap）",
+        "正常：成长曲线元素可见（GET /review/growth-curve）",
         "正常：活动热力图元素可见（GET /review/activity-heatmap）",
         "边界：无 seed 数据时显示空状态提示"
       ],
-      "contract_refs": ["GET /review/daily", "GET /review/weekly", "GET /review/trend", "GET /review/knowledge-heatmap", "GET /review/activity-heatmap"],
+      "contract_refs": ["GET /review/daily", "GET /review/weekly", "GET /review/monthly", "GET /review/trend", "GET /review/knowledge-heatmap", "GET /review/growth-curve", "GET /review/activity-heatmap"],
       "files": [
         "e2e/tests/review.spec.ts"
       ]
@@ -398,7 +406,7 @@
       "name": "GitHub Actions CI Pipeline",
       "description": "更新 .github/workflows/ci.yml 配置，覆盖 PR 和 main 分支的自动化检查：后端 unit test（uv run pytest）、前端 test + build（npm run test:run + npm run build）、E2E 测试（main 分支，仅 B36/B37 认证+CRUD 路径）。",
       "verification": "L3",
-      "depends_on": ["B36", "B37", "B38", "B39"],
+      "depends_on": ["B36", "B37"],
       "status": "pending",
       "priority": "medium",
       "acceptance_criteria": [
@@ -417,7 +425,7 @@
       "files": [
         ".github/workflows/ci.yml"
       ],
-      "planning_notes": "当前已有 .github/workflows/ci.yml 骨架，需要更新。不包含 backend lint（项目未配置 ruff/pylint）。E2E 范围先收敛到 B36 认证 + B37 CRUD，B38/B39 作为可选 smoke。"
+      "planning_notes": "当前已有 .github/workflows/ci.yml（含 backend-test、frontend-test、docker-build-test 三段），更新为：保留 docker-build-test 作为独立 job，backend-test/frontend-test 更新命令，新增 e2e-test job（仅 main 分支，跑 B36/B37 认证+CRUD）。B38/B39 作为可选 smoke 不阻塞 CI。不包含 backend lint（项目未配置 ruff/pylint）。"
     },
     {
       "id": "B41",
