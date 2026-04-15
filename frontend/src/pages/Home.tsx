@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Header } from "@/components/layout/Header";
 import { useTaskStore } from "@/stores/taskStore";
@@ -11,10 +11,18 @@ import {
   FileText,
   Zap,
   ArrowRight,
+  Sparkles,
+  AlertTriangle,
+  Inbox,
+  BookOpen,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import type { TaskStatus } from "@/types/task";
 import { nextStatusMap } from "@/config/constants";
+import {
+  getMorningDigest,
+  type MorningDigestResponse,
+} from "@/services/api";
 
 export function Home() {
   const tasks = useTaskStore((state) => state.tasks);
@@ -71,6 +79,30 @@ export function Home() {
   // 是否完全无数据
   const isEmpty = tasks.length === 0;
 
+  // AI 晨报状态
+  const [digest, setDigest] = useState<MorningDigestResponse | null>(null);
+  const [digestLoading, setDigestLoading] = useState(true);
+  const [digestError, setDigestError] = useState(false);
+  const [digestCollapsed, setDigestCollapsed] = useState(() => {
+    const dismissedDate = localStorage.getItem("morning_digest_dismissed");
+    return dismissedDate === new Date().toISOString().split("T")[0];
+  });
+
+  useEffect(() => {
+    getMorningDigest()
+      .then((data) => setDigest(data))
+      .catch(() => setDigestError(true))
+      .finally(() => setDigestLoading(false));
+  }, []);
+
+  const handleDismissDigest = () => {
+    setDigestCollapsed(true);
+    localStorage.setItem(
+      "morning_digest_dismissed",
+      new Date().toISOString().split("T")[0]
+    );
+  };
+
   // 任务状态切换
   const handleToggleStatus = useCallback(
     async (taskId: string, currentStatus: TaskStatus) => {
@@ -119,6 +151,79 @@ export function Home() {
           </div>
         ) : (
           <>
+            {/* ====== AI 晨报卡片 ====== */}
+            {!digestCollapsed && (
+              <Card className="border-l-4 border-l-indigo-500 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30">
+                <CardContent className="pt-4 pb-4">
+                  {digestLoading ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-primary/20 animate-pulse" />
+                        <div className="h-4 bg-primary/10 rounded animate-pulse flex-1" />
+                      </div>
+                      <div className="h-4 bg-primary/10 rounded animate-pulse w-full" />
+                      <div className="grid grid-cols-4 gap-3">
+                        {Array.from({ length: 4 }).map((_, i) => (
+                          <div key={i} className="h-10 bg-primary/10 rounded animate-pulse" />
+                        ))}
+                      </div>
+                    </div>
+                  ) : digestError ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Sparkles className="h-4 w-4 text-indigo-400" />
+                      <span>晨报加载失败，请稍后刷新</span>
+                    </div>
+                  ) : digest && (
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-5 w-5 text-indigo-500" />
+                          <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+                            日知晨报
+                          </span>
+                        </div>
+                        <button
+                          onClick={handleDismissDigest}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          收起
+                        </button>
+                      </div>
+                      <p className="text-sm text-foreground/80 leading-relaxed">
+                        {digest.ai_suggestion}
+                      </p>
+                      <div className="grid grid-cols-4 gap-2">
+                        <DigestStat
+                          icon={<Clock className="h-3.5 w-3.5" />}
+                          label="待办"
+                          count={digest.todos.length}
+                          color="text-blue-500"
+                        />
+                        <DigestStat
+                          icon={<AlertTriangle className="h-3.5 w-3.5" />}
+                          label="逾期"
+                          count={digest.overdue.length}
+                          color="text-red-500"
+                        />
+                        <DigestStat
+                          icon={<Inbox className="h-3.5 w-3.5" />}
+                          label="待跟进"
+                          count={digest.stale_inbox.length}
+                          color="text-yellow-500"
+                        />
+                        <DigestStat
+                          icon={<BookOpen className="h-3.5 w-3.5" />}
+                          label="新概念"
+                          count={digest.weekly_summary.new_concepts.length}
+                          color="text-green-500"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* ====== 今日进度 ====== */}
             <Card>
               <CardContent className="pt-4 pb-4">
@@ -250,7 +355,7 @@ export function Home() {
             {/* ====== 快捷操作 ====== */}
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-3">快捷操作</h3>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <QuickActionButton
                   icon={<Lightbulb className="h-5 w-5" />}
                   label="记灵感"
@@ -339,5 +444,26 @@ function QuickActionButton({ icon, label, onClick }: QuickActionButtonProps) {
       <span className="text-primary">{icon}</span>
       <span>{label}</span>
     </button>
+  );
+}
+
+/* ====== 晨报统计小卡 ====== */
+function DigestStat({
+  icon,
+  label,
+  count,
+  color,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  count: number;
+  color: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1 rounded-lg bg-background/50 p-2">
+      <span className={color}>{icon}</span>
+      <span className="text-lg font-bold">{count}</span>
+      <span className="text-[10px] text-muted-foreground">{label}</span>
+    </div>
   );
 }

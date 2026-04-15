@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
+import { MobileNavBar } from "@/components/layout/MobileNavBar";
 import { FloatingChat } from "@/components/FloatingChat";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import { PageAIAssistant } from "@/components/PageAIAssistant";
@@ -23,8 +25,38 @@ import { initFetchInterceptor } from "@/lib/uid";
 // 在首次渲染前初始化 fetch 拦截器，确保所有请求都带 auth header
 initFetchInterceptor();
 
-function App() {
+function AppLayout() {
   const panelHeight = useChatStore((state) => state.panelHeight);
+  const { isOpen, close } = useSidebar();
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      <Sidebar isOpen={isOpen} onClose={close} />
+      <div
+        className="flex flex-1 flex-col md:ml-64 pb-16 md:pb-0"
+        style={{ paddingBottom: panelHeight }}
+      >
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/explore" element={<Explore />} />
+          <Route path="/graph" element={<GraphPage />} />
+          <Route path="/tasks" element={<Tasks />} />
+          <Route path="/inbox" element={<Navigate to="/explore?type=inbox" replace />} />
+          <Route path="/notes" element={<Navigate to="/explore?type=note" replace />} />
+          <Route path="/projects" element={<Navigate to="/explore?type=project" replace />} />
+          <Route path="/review" element={<Review />} />
+          <Route path="/entries/:id" element={<EntryDetail />} />
+        </Routes>
+      </div>
+      <FeedbackButton />
+      <FloatingChat />
+      <PageAIAssistant pageContext={{ page: "global" }} />
+      <MobileNavBar />
+    </div>
+  );
+}
+
+function App() {
   const fetchEntries = useTaskStore((state) => state.fetchEntries);
   const isAuthenticated = useUserStore((state) => state.isAuthenticated);
   const loadFromStorage = useUserStore((state) => state.loadFromStorage);
@@ -71,32 +103,13 @@ function App() {
           path="/*"
           element={
             <ProtectedRoute>
-              {showOnboarding && (
-                <OnboardingFlow onComplete={handleOnboardingComplete} />
-              )}
-              <Toaster position="top-center" richColors />
-              <div className="flex min-h-screen bg-background">
-                <Sidebar />
-                <div
-                  className="flex flex-1 flex-col ml-64"
-                  style={{ paddingBottom: panelHeight }}
-                >
-                  <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/explore" element={<Explore />} />
-                    <Route path="/graph" element={<GraphPage />} />
-                    <Route path="/tasks" element={<Tasks />} />
-                    <Route path="/inbox" element={<Navigate to="/explore?type=inbox" replace />} />
-                    <Route path="/notes" element={<Navigate to="/explore?type=note" replace />} />
-                    <Route path="/projects" element={<Navigate to="/explore?type=project" replace />} />
-                    <Route path="/review" element={<Review />} />
-                    <Route path="/entries/:id" element={<EntryDetail />} />
-                  </Routes>
-                </div>
-                <FeedbackButton />
-                <FloatingChat />
-                <PageAIAssistant pageContext={{ page: "global" }} />
-              </div>
+              <SidebarProvider>
+                {showOnboarding && (
+                  <OnboardingFlow onComplete={handleOnboardingComplete} />
+                )}
+                <Toaster position="top-center" richColors />
+                <AppLayout />
+              </SidebarProvider>
             </ProtectedRoute>
           }
         />

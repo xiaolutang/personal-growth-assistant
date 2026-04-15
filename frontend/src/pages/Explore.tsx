@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, Lightbulb, FileText, Folder, Layers } from "lucide-react";
+import { Search, Lightbulb, FileText, Folder, Layers, Clock, X, TrendingUp } from "lucide-react";
 import { getEntries, searchEntries } from "../services/api";
 import { TaskList } from "../components/TaskList";
 import type { Task } from "../types/task";
@@ -16,6 +16,45 @@ const TABS = [
 
 // 探索页只展示 inbox/note/project，不含 task
 const EXPLORE_CATEGORIES = new Set(["inbox", "note", "project"]);
+
+// === 搜索历史管理 ===
+const SEARCH_HISTORY_KEY = "search_history";
+const MAX_HISTORY = 5;
+
+function getSearchHistory(): string[] {
+  try {
+    const raw = localStorage.getItem(SEARCH_HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function addToSearchHistory(query: string) {
+  if (!query.trim()) return;
+  const history = getSearchHistory().filter((h) => h !== query.trim());
+  history.unshift(query.trim());
+  localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY)));
+}
+
+function removeFromSearchHistory(query: string) {
+  const history = getSearchHistory().filter((h) => h !== query);
+  localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history));
+}
+
+// === 热门标签（基于条目 tags 频率） ===
+function getPopularTags(entries: Task[], limit = 5): string[] {
+  const tagCount: Record<string, number> = {};
+  for (const entry of entries) {
+    for (const tag of entry.tags || []) {
+      tagCount[tag] = (tagCount[tag] || 0) + 1;
+    }
+  }
+  return Object.entries(tagCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([tag]) => tag);
+}
 
 function filterByCategory(entries: Task[], tab: string): Task[] {
   const filtered = entries.filter((t) => EXPLORE_CATEGORIES.has(t.category));
@@ -35,6 +74,8 @@ export function Explore() {
   const [searchResults, setSearchResults] = useState<Task[] | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchHistory, setSearchHistory] = useState<string[]>(getSearchHistory());
 
   // Cmd+K / Ctrl+K 全局聚焦搜索框
   useEffect(() => {
@@ -85,6 +126,8 @@ export function Explore() {
             parent_id: r.parent_id ?? null,
           }));
           setSearchResults(mapped);
+          addToSearchHistory(searchQuery.trim());
+          setSearchHistory(getSearchHistory());
         }
       } catch {
         if (!cancelled) {
@@ -120,6 +163,9 @@ export function Explore() {
     return () => { cancelled = true; };
   }, []);
 
+  // 热门标签
+  const popularTags = useMemo(() => getPopularTags(entries), [entries]);
+
   const filteredTasks = useMemo(() => {
     const source = searchResults ?? entries;
     return filterByCategory(source, activeTab);
@@ -131,6 +177,7 @@ export function Explore() {
       setSearchResults(null);
       setSearchError(null);
       setSearchQuery("");
+      setShowSuggestions(false);
       if (key) {
         setSearchParams({ type: key });
       } else {
@@ -150,6 +197,7 @@ export function Explore() {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     setIsSearching(true);
     setSearchError(null);
+    setShowSuggestions(false);
     try {
       const result = await searchEntries(searchQuery.trim(), 20);
       const mapped: Task[] = (result.results ?? []).map((r: any) => ({
@@ -166,6 +214,8 @@ export function Explore() {
         parent_id: r.parent_id ?? null,
       }));
       setSearchResults(mapped);
+      addToSearchHistory(searchQuery.trim());
+      setSearchHistory(getSearchHistory());
     } catch {
       setSearchResults(null);
       setSearchError("搜索失败，请稍后重试");
@@ -181,6 +231,17 @@ export function Explore() {
     [handleSearch]
   );
 
+  const handleSuggestionClick = useCallback((query: string) => {
+    setSearchQuery(query);
+    setShowSuggestions(false);
+  }, []);
+
+  const handleDeleteHistory = useCallback((query: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    removeFromSearchHistory(query);
+    setSearchHistory(getSearchHistory());
+  }, []);
+
   const emptyMessage = searchError
     ? searchError
     : searchResults !== null
@@ -189,12 +250,15 @@ export function Explore() {
         ? `暂无${TABS.find((t) => t.key === activeTab)?.label ?? ""}内容，快去记录吧`
         : "还没有任何内容，开始记录你的想法吧";
 
+  // 搜索建议面板显示条件：搜索框聚焦且无查询内容
+  const showPanel = showSuggestions && !searchQuery.trim();
+
   return (
-    <main className="flex-1 p-6 pb-32 overflow-y-auto">
+    <main className="flex-1 p-4 md:p-6 pb-32 overflow-y-auto">
       <Header title="探索" />
 
       {/* 搜索栏 */}
-      <div className="mb-4">
+      <div className="mb-4 relative">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
@@ -203,10 +267,64 @@ export function Explore() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="搜索灵感、笔记、项目..."
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+            placeholder="试试搜索：最近学习的主题..."
             className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
+
+        {/* 搜索建议面板 */}
+        {showPanel && (searchHistory.length > 0 || popularTags.length > 0) && (
+          <div className="absolute z-20 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
+            {/* 搜索历史 */}
+            {searchHistory.length > 0 && (
+              <div className="p-3">
+                <div className="text-xs text-muted-foreground font-medium mb-2 flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  最近搜索
+                </div>
+                <div className="space-y-0.5">
+                  {searchHistory.map((query) => (
+                    <div
+                      key={query}
+                      className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-accent/50 cursor-pointer text-sm"
+                      onMouseDown={() => handleSuggestionClick(query)}
+                    >
+                      <span className="truncate">{query}</span>
+                      <button
+                        onClick={(e) => handleDeleteHistory(query, e)}
+                        className="text-muted-foreground hover:text-foreground shrink-0 ml-2"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* 热门标签 */}
+            {popularTags.length > 0 && (
+              <div className="p-3 border-t">
+                <div className="text-xs text-muted-foreground font-medium mb-2 flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3" />
+                  热门标签
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {popularTags.map((tag) => (
+                    <button
+                      key={tag}
+                      onMouseDown={() => handleSuggestionClick(tag)}
+                      className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 类型 Tab */}

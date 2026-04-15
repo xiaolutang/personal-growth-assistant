@@ -14,7 +14,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Link } from "react-router-dom";
-import { Loader2, X, AlertCircle, Compass } from "lucide-react";
+import { Loader2, X, AlertCircle, Compass, Plus, Layers } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import {
   getKnowledgeMap,
@@ -82,7 +82,31 @@ function ConceptNode({ data }: NodeProps) {
   );
 }
 
-const nodeTypes = { concept: ConceptNode };
+// === 性能优化常量 ===
+const NODE_THRESHOLD = 50;
+const EDGE_LABEL_THRESHOLD = 100;
+
+// === 聚合节点组件 ===
+function AggregateNode({ data }: NodeProps) {
+  const nodeData = data as unknown as { name: string; count: number; category: string };
+  return (
+    <div
+      className="rounded-lg border-2 border-dashed border-gray-400 shadow-lg cursor-pointer transition-transform hover:scale-105 bg-gray-200 dark:bg-gray-700"
+      style={{ minWidth: 100, maxWidth: 160 }}
+    >
+      <Handle type="target" position={Position.Top} className="!bg-white/50" />
+      <div className="px-3 py-2 text-center">
+        <div className="text-xs font-bold text-gray-700 dark:text-gray-200 truncate">{nodeData.name}</div>
+        <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+          {nodeData.count} 个节点
+        </div>
+      </div>
+      <Handle type="source" position={Position.Bottom} className="!bg-white/50" />
+    </div>
+  );
+}
+
+const nodeTypes = { concept: ConceptNode, aggregate: AggregateNode };
 
 // === 布局：圆形排列 ===
 function layoutNodes(nodes: MapNode[]): Node[] {
@@ -99,12 +123,49 @@ function layoutNodes(nodes: MapNode[]): Node[] {
   });
 }
 
-function buildEdges(edges: MapEdge[]): Edge[] {
+// 按关联数排序，取 top N
+function getTopNodes(nodes: MapNode[], limit: number): MapNode[] {
+  return [...nodes].sort((a, b) => b.entry_count - a.entry_count).slice(0, limit);
+}
+
+// 聚合同 category 节点
+function aggregateByCategory(nodes: MapNode[]): { aggregates: Node[]; remaining: MapNode[] } {
+  const categoryGroups: Record<string, MapNode[]> = {};
+  for (const node of nodes) {
+    const cat = node.category || "未分类";
+    if (!categoryGroups[cat]) categoryGroups[cat] = [];
+    categoryGroups[cat].push(node);
+  }
+
+  const aggregates: Node[] = [];
+  const remaining: MapNode[] = [];
+  let angleIdx = 0;
+  const totalAgg = Object.keys(categoryGroups).length;
+  const radius = Math.max(200, totalAgg * 40);
+
+  for (const [cat, group] of Object.entries(categoryGroups)) {
+    if (group.length > 3) {
+      const angle = (2 * Math.PI * angleIdx) / totalAgg;
+      aggregates.push({
+        id: `agg-${cat}`,
+        type: "aggregate",
+        position: { x: radius * Math.cos(angle), y: radius * Math.sin(angle) },
+        data: { name: cat, count: group.length, category: cat } as Record<string, unknown>,
+      });
+      angleIdx++;
+    } else {
+      remaining.push(...group);
+    }
+  }
+  return { aggregates, remaining };
+}
+
+function buildEdges(edges: MapEdge[], hideLabels: boolean): Edge[] {
   return edges.map((e, i) => ({
     id: `e-${i}`,
     source: e.source,
     target: e.target,
-    label: e.relationship,
+    label: hideLabels ? undefined : e.relationship,
     animated: false,
     style: { stroke: "#94a3b8", strokeWidth: 1.5 },
     labelStyle: { fontSize: 10, fill: "#64748b" },
@@ -122,44 +183,70 @@ function DetailPanel({
   onClose: () => void;
 }) {
   return (
-    <div className="w-72 border-l bg-card p-4 flex flex-col gap-4 overflow-y-auto">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-base truncate">{node.name}</h3>
-        <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-          <X className="h-4 w-4" />
-        </button>
+    <>
+      {/* 移动端：底部抽屉 */}
+      <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={onClose} />
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t rounded-t-xl p-4 z-50 md:hidden max-h-[50vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-base truncate">{node.name}</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <DetailPanelContent node={node} stats={stats} />
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <span
-            className="inline-block w-3 h-3 rounded-full"
-            style={{ backgroundColor: masteryColors[node.mastery] }}
-          />
-          <span className="text-sm">{masteryLabels[node.mastery] || node.mastery}</span>
+      {/* 桌面端：右侧面板 */}
+      <div className="hidden md:flex w-72 border-l bg-card p-4 flex-col gap-4 overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-base truncate">{node.name}</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
         </div>
+        <DetailPanelContent node={node} stats={stats} />
+      </div>
+    </>
+  );
+}
 
-        {node.category && (
-          <div>
-            <span className="text-xs text-muted-foreground">分类：</span>
-            <span className="text-sm ml-1">{node.category}</span>
-          </div>
-        )}
+function DetailPanelContent({
+  node,
+  stats,
+}: {
+  node: MapNode;
+  stats: ConceptStatsResponse | null;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <span
+          className="inline-block w-3 h-3 rounded-full"
+          style={{ backgroundColor: masteryColors[node.mastery] }}
+        />
+        <span className="text-sm">{masteryLabels[node.mastery] || node.mastery}</span>
+      </div>
 
+      {node.category && (
         <div>
-          <span className="text-xs text-muted-foreground">关联条目：</span>
-          <span className="text-sm ml-1">{node.entry_count} 条</span>
+          <span className="text-xs text-muted-foreground">分类：</span>
+          <span className="text-sm ml-1">{node.category}</span>
         </div>
+      )}
 
-        <div className="pt-2 border-t">
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {masterySuggestions[node.mastery] || "继续学习这个概念。"}
-          </p>
-        </div>
+      <div>
+        <span className="text-xs text-muted-foreground">关联条目：</span>
+        <span className="text-sm ml-1">{node.entry_count} 条</span>
+      </div>
+
+      <div className="pt-2 border-t">
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          {masterySuggestions[node.mastery] || "继续学习这个概念。"}
+        </p>
       </div>
 
       {stats && (
-        <div className="mt-auto pt-4 border-t space-y-2">
+        <div className="pt-4 border-t space-y-2">
           <p className="text-xs font-medium text-muted-foreground">图谱统计</p>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div>
@@ -185,15 +272,21 @@ export function GraphPage() {
   const [mapData, setMapData] = useState<KnowledgeMapResponse | null>(null);
   const [stats, setStats] = useState<ConceptStatsResponse | null>(null);
   const [selectedNode, setSelectedNode] = useState<MapNode | null>(null);
+  const [showAllNodes, setShowAllNodes] = useState(false);
+  const [aggregateMode, setAggregateMode] = useState(false);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+  const totalNodes = mapData?.nodes.length ?? 0;
 
   // 加载图谱数据
   const loadMap = useCallback(async (view: ViewKey) => {
     setLoading(true);
     setError(null);
     setSelectedNode(null);
+    setShowAllNodes(false);
+    setAggregateMode(false);
     try {
       const [mapResult, statsResult] = await Promise.all([
         getKnowledgeMap(2, view),
@@ -201,8 +294,20 @@ export function GraphPage() {
       ]);
       setMapData(mapResult);
       setStats(statsResult);
-      setNodes(layoutNodes(mapResult.nodes));
-      setEdges(buildEdges(mapResult.edges));
+
+      // 根据节点数决定初始渲染
+      const allNodes = mapResult.nodes;
+      const displayNodes = allNodes.length > NODE_THRESHOLD
+        ? getTopNodes(allNodes, NODE_THRESHOLD)
+        : allNodes;
+      setNodes(layoutNodes(displayNodes));
+
+      // 只渲染显示节点之间的边
+      const displayNodeIds = new Set(displayNodes.map((n) => n.id));
+      const displayEdges = mapResult.edges.filter(
+        (e) => displayNodeIds.has(e.source) && displayNodeIds.has(e.target)
+      );
+      setEdges(buildEdges(displayEdges, displayEdges.length > EDGE_LABEL_THRESHOLD));
     } catch (err: any) {
       setError(err.message || "加载图谱失败");
     } finally {
@@ -228,6 +333,39 @@ export function GraphPage() {
     setSelectedNode(null);
   }, []);
 
+  // 加载全部节点
+  const handleShowAllNodes = useCallback(() => {
+    if (!mapData) return;
+    setShowAllNodes(true);
+    setNodes(layoutNodes(mapData.nodes));
+    setEdges(buildEdges(mapData.edges, mapData.edges.length > EDGE_LABEL_THRESHOLD));
+  }, [mapData, setNodes, setEdges]);
+
+  // 切换聚合模式
+  const handleToggleAggregate = useCallback(() => {
+    if (!mapData) return;
+    const newMode = !aggregateMode;
+    setAggregateMode(newMode);
+
+    if (newMode) {
+      const { aggregates, remaining } = aggregateByCategory(mapData.nodes);
+      const layouted = layoutNodes(remaining);
+      setNodes([...aggregates, ...layouted]);
+      // 聚合模式下不显示边
+      setEdges([]);
+    } else {
+      const displayNodes = mapData.nodes.length > NODE_THRESHOLD && !showAllNodes
+        ? getTopNodes(mapData.nodes, NODE_THRESHOLD)
+        : mapData.nodes;
+      setNodes(layoutNodes(displayNodes));
+      const displayNodeIds = new Set(displayNodes.map((n) => n.id));
+      const displayEdges = mapData.edges.filter(
+        (e) => displayNodeIds.has(e.source) && displayNodeIds.has(e.target)
+      );
+      setEdges(buildEdges(displayEdges, displayEdges.length > EDGE_LABEL_THRESHOLD));
+    }
+  }, [mapData, aggregateMode, showAllNodes, setNodes, setEdges]);
+
   // MiniMap 节点颜色
   const miniMapNodeColor = useCallback((node: Node) => {
     const data = node.data as unknown as MapNode;
@@ -241,7 +379,7 @@ export function GraphPage() {
       <Header title="知识图谱" />
 
       {/* Tab 栏 */}
-      <div className="flex items-center border-b px-6 gap-1 bg-card">
+      <div className="flex items-center border-b px-4 md:px-6 gap-1 bg-card">
         {viewTabs.map((tab) => (
           <button
             key={tab.key}
@@ -296,7 +434,33 @@ export function GraphPage() {
           )}
 
           {!isEmpty && (
-            <ReactFlow
+            <>
+              {/* 性能控制按钮 */}
+              {totalNodes > NODE_THRESHOLD && (
+                <div className="absolute top-3 left-3 z-20 flex gap-2">
+                  {!showAllNodes && !aggregateMode && (
+                    <button
+                      onClick={handleShowAllNodes}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border shadow-sm text-xs font-medium hover:bg-accent transition-colors"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      加载全部 ({totalNodes})
+                    </button>
+                  )}
+                  <button
+                    onClick={handleToggleAggregate}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border shadow-sm text-xs font-medium transition-colors ${
+                      aggregateMode
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-card hover:bg-accent"
+                    }`}
+                  >
+                    <Layers className="h-3.5 w-3.5" />
+                    {aggregateMode ? "展开" : "聚合"}
+                  </button>
+                </div>
+              )}
+              <ReactFlow
               nodes={nodes}
               edges={edges}
               onNodesChange={onNodesChange}
@@ -317,6 +481,7 @@ export function GraphPage() {
                 maskColor="rgba(0,0,0,0.1)"
               />
             </ReactFlow>
+            </>
           )}
         </div>
 

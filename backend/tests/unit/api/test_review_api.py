@@ -591,3 +591,242 @@ class TestReviewAISummary:
 
         # 清理
         review_svc.set_llm_caller(None)
+
+
+class TestMorningDigestAPI:
+    """AI 晨报 API 测试"""
+
+    @pytest.fixture(autouse=True)
+    async def setup_data(self, storage, client):
+        """每个测试前准备数据"""
+        if storage.sqlite:
+            storage.sqlite.clear_all()
+
+        user_id = _make_test_user_id(client)
+        today = datetime.now()
+        today_date = date.today()
+
+        # 今日待办（waitStart + planned_date=today）
+        for i in range(3):
+            entry = Task(
+                id=f"digest-todo-{i}",
+                title=f"晨报待办-{i}",
+                content="",
+                category=Category.TASK,
+                status=TaskStatus.WAIT_START if i == 0 else TaskStatus.DOING,
+                priority=Priority.HIGH if i == 0 else Priority.MEDIUM,
+                tags=["digest-test"],
+                planned_date=today,
+                created_at=today,
+                updated_at=today,
+                file_path=f"tasks/digest-todo-{i}.md",
+            )
+            storage.sqlite.upsert_entry(entry, user_id=user_id)
+
+        # 逾期任务（planned_date=昨天，status=doing）
+        overdue_entry = Task(
+            id="digest-overdue-1",
+            title="逾期任务-1",
+            content="",
+            category=Category.TASK,
+            status=TaskStatus.DOING,
+            priority=Priority.HIGH,
+            tags=["digest-test"],
+            planned_date=today - timedelta(days=1),
+            created_at=today - timedelta(days=2),
+            updated_at=today - timedelta(days=1),
+            file_path="tasks/digest-overdue-1.md",
+        )
+        storage.sqlite.upsert_entry(overdue_entry, user_id=user_id)
+
+        # 已完成的任务（不应出现在 todos/overdue）
+        complete_entry = Task(
+            id="digest-complete-1",
+            title="已完成任务",
+            content="",
+            category=Category.TASK,
+            status=TaskStatus.COMPLETE,
+            priority=Priority.MEDIUM,
+            tags=["digest-test"],
+            planned_date=today,
+            created_at=today,
+            updated_at=today,
+            file_path="tasks/digest-complete-1.md",
+        )
+        storage.sqlite.upsert_entry(complete_entry, user_id=user_id)
+
+        # 未跟进灵感（>3天）
+        old_inbox = Task(
+            id="digest-inbox-old",
+            title="旧灵感-未跟进",
+            content="",
+            category=Category.INBOX,
+            status=TaskStatus.WAIT_START,
+            priority=Priority.MEDIUM,
+            tags=["old-idea"],
+            created_at=today - timedelta(days=5),
+            updated_at=today - timedelta(days=5),
+            file_path="inbox/digest-inbox-old.md",
+        )
+        storage.sqlite.upsert_entry(old_inbox, user_id=user_id)
+
+        # 最近的灵感（不应出现在 stale）
+        new_inbox = Task(
+            id="digest-inbox-new",
+            title="新灵感",
+            content="",
+            category=Category.INBOX,
+            status=TaskStatus.WAIT_START,
+            priority=Priority.MEDIUM,
+            tags=[],
+            created_at=today,
+            updated_at=today,
+            file_path="inbox/digest-inbox-new.md",
+        )
+        storage.sqlite.upsert_entry(new_inbox, user_id=user_id)
+
+    async def test_morning_digest_basic(self, client: AsyncClient):
+        """测试晨报基本结构"""
+        response = await client.get("/review/morning-digest")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "date" in data
+        assert "ai_suggestion" in data
+        assert "todos" in data
+        assert "overdue" in data
+        assert "stale_inbox" in data
+        assert "weekly_summary" in data
+
+        assert data["date"] == date.today().isoformat()
+        assert isinstance(data["ai_suggestion"], str)
+        assert len(data["ai_suggestion"]) > 0
+
+    async def test_morning_digest_todos(self, client: AsyncClient):
+        """测试晨报待办列表"""
+        response = await client.get("/review/morning-digest")
+        data = response.json()
+
+        todos = data["todos"]
+        assert len(todos) == 3
+
+        # 第一个应为高优先级
+        assert todos[0]["priority"] == "high"
+
+        for todo in todos:
+            assert "id" in todo
+            assert "title" in todo
+            assert "priority" in todo
+
+    async def test_morning_digest_overdue(self, client: AsyncClient):
+        """测试晨报逾期列表"""
+        response = await client.get("/review/morning-digest")
+        data = response.json()
+
+        overdue = data["overdue"]
+        assert len(overdue) == 1
+        assert overdue[0]["title"] == "逾期任务-1"
+
+    async def test_morning_digest_stale_inbox(self, client: AsyncClient):
+        """测试晨报未跟进灵感"""
+        response = await client.get("/review/morning-digest")
+        data = response.json()
+
+        stale = data["stale_inbox"]
+        assert len(stale) == 1
+        assert stale[0]["title"] == "旧灵感-未跟进"
+
+    async def test_morning_digest_weekly_summary(self, client: AsyncClient):
+        """测试晨报本周摘要"""
+        response = await client.get("/review/morning-digest")
+        data = response.json()
+
+        summary = data["weekly_summary"]
+        assert "new_concepts" in summary
+        assert "entries_count" in summary
+        assert summary["entries_count"] > 0
+
+    async def test_morning_digest_no_auth(self, storage):
+        """测试无 token 返回 401"""
+        from httpx import ASGITransport, AsyncClient
+        from app.main import app
+        from app.routers import deps
+
+        deps.storage = storage
+        deps.reset_all_services()
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as c:
+            response = await c.get("/review/morning-digest")
+            assert response.status_code == 401
+
+    async def test_morning_digest_user_isolation(self, storage, client: AsyncClient):
+        """测试用户隔离"""
+        other_user_id = "other-digest-user"
+
+        other_entry = Task(
+            id="digest-other-overdue",
+            title="其他用户逾期任务",
+            content="",
+            category=Category.TASK,
+            status=TaskStatus.DOING,
+            priority=Priority.HIGH,
+            tags=[],
+            planned_date=datetime.now() - timedelta(days=2),
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+            file_path="tasks/digest-other-overdue.md",
+        )
+        storage.sqlite.upsert_entry(other_entry, user_id=other_user_id)
+
+        response = await client.get("/review/morning-digest")
+        assert response.status_code == 200
+
+        data = response.json()
+        overdue_ids = [o["id"] for o in data["overdue"]]
+        assert "digest-other-overdue" not in overdue_ids
+
+    async def test_morning_digest_empty_data(self, storage, client: AsyncClient):
+        """测试空数据场景"""
+        storage.sqlite.clear_all()
+
+        response = await client.get("/review/morning-digest")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["todos"] == []
+        assert data["overdue"] == []
+        assert data["stale_inbox"] == []
+        assert data["weekly_summary"]["entries_count"] == 0
+        assert "没有待办任务" in data["ai_suggestion"]
+
+    async def test_morning_digest_llm_degradation(self, storage, client: AsyncClient):
+        """测试 LLM 不可用时降级为模板文本"""
+        from app.routers import deps
+
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(None)
+
+        response = await client.get("/review/morning-digest")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert len(data["ai_suggestion"]) > 0
+
+    async def test_morning_digest_with_llm(self, storage, client: AsyncClient):
+        """测试 LLM 生成 AI 建议"""
+        from app.routers import deps
+        from app.infrastructure.llm.mock_caller import MockCaller
+
+        mock_llm = MockCaller(response="今天有3个任务待完成，建议先做晨报待办-0...")
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(mock_llm)
+
+        response = await client.get("/review/morning-digest")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "晨报待办" in data["ai_suggestion"]
+
+        # 清理
+        review_svc.set_llm_caller(None)

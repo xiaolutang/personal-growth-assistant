@@ -18,6 +18,8 @@
 | CONTRACT-O02 | PUT | /auth/me | 更新 onboarding 状态 | F09 |
 | CONTRACT-FB01 | GET | /feedback | 反馈列表查询 | S05, B16, F06 |
 | CONTRACT-FB02 | GET | /feedback/{id} | 反馈详情查询 | S05, B16 |
+| CONTRACT-MD01 | GET | /review/morning-digest | AI 晨报（每日主动建议） | B24, F20 |
+| CONTRACT-AI01 | POST | /ai/chat | 页面级 AI 对话（SSE 流式） | F22 |
 | CONTRACT-A01 | POST | /auth/register | 用户注册 | S01, B02 |
 | CONTRACT-A02 | POST | /auth/login | 用户登录 | S01, B02 |
 | CONTRACT-A03 | POST | /auth/logout | 用户登出 | S01, B02 |
@@ -421,3 +423,110 @@ weeks=8           # period=weekly 时有效，默认 8
   "created_at": "2026-04-13T10:00:00Z"
 }
 ```
+
+---
+
+## AI 晨报
+
+### 获取每日晨报
+
+| 字段 | 值 |
+|------|----|
+| ID | CONTRACT-MD01 |
+| Method | GET |
+| Path | /review/morning-digest |
+| Auth | Bearer Token |
+| Related Tasks | B24, F20 |
+
+#### Response 200
+
+```json
+{
+  "date": "2026-04-15",
+  "ai_suggestion": "你有3个任务待完成，建议先做 R003代码审查...",
+  "todos": [
+    {"id": "task-abc", "title": "R003 代码审查", "priority": "high", "planned_date": "2026-04-13"}
+  ],
+  "overdue": [
+    {"id": "task-def", "title": "Review 代码", "priority": "medium", "planned_date": "2026-04-10"}
+  ],
+  "stale_inbox": [
+    {"id": "inbox-ghi", "title": "AI读书摘要", "created_at": "2026-04-12T10:00:00"}
+  ],
+  "weekly_summary": {
+    "new_concepts": ["Rust", "React Hooks"],
+    "entries_count": 12
+  }
+}
+```
+
+#### Notes
+
+- LLM 不可用时 `ai_suggestion` 降级为模板文本
+- 同一天内多次请求返回缓存结果（按 date 缓存）
+- 所有查询带 user_id 隔离
+- 空数据时各数组为空，ai_suggestion 为引导文案
+
+#### Errors
+
+| Code | Meaning |
+|------|---------|
+| 401 | Token 缺失、无效或过期 |
+
+---
+
+## 页面级 AI 对话
+
+### 上下文感知对话（SSE 流式）
+
+| 字段 | 值 |
+|------|----|
+| ID | CONTRACT-AI01 |
+| Method | POST |
+| Path | /ai/chat |
+| Auth | Bearer Token |
+| Related Tasks | F22 |
+
+#### Request
+
+```json
+{
+  "message": "帮我看看今天的任务",
+  "context": {
+    "page": "home",
+    "page_data": {"todo_count": 3, "overdue_count": 1},
+    "selected_items": [],
+    "filters": {}
+  },
+  "conversation_id": "conv-abc123",
+  "messages": [
+    {"role": "user", "content": "今天有什么任务？"},
+    {"role": "assistant", "content": "你有3个任务待完成..."}
+  ]
+}
+```
+
+#### Response 200 (SSE)
+
+```
+Content-Type: text/event-stream
+
+data: {"token": "你"}
+data: {"token": "今天"}
+data: {"token": "有3个任务"}
+```
+
+#### Notes
+
+- conversation_id 由前端生成，用于隔离不同对话面板的上下文
+- messages 数组由前端携带最近 5 轮历史（role + content），不新增后端存储层
+- page_data 由前端注入当前页面关键数据摘要
+- LLM 不可用时返回 503
+
+#### Errors
+
+| Code | Meaning |
+|------|---------|
+| 401 | Token 缺失、无效或过期 |
+| 422 | message 为空 |
+| 503 | LLM 服务不可用 |

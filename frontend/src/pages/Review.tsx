@@ -414,7 +414,7 @@ export function Review() {
   return (
     <>
       <Header title="成长回顾" />
-      <main className="flex-1 p-6 pb-32 overflow-y-auto">
+      <main className="flex-1 p-4 md:p-6 pb-32 overflow-y-auto">
         {/* 报告类型选择 */}
         <div className="flex gap-2 mb-6">
           {(["daily", "weekly", "monthly", "trend"] as ReportType[]).map((type) => (

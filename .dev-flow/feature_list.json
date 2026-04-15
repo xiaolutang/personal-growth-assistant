@@ -5,12 +5,12 @@
   "created_at": "2026-03-28",
   "updated_at": "2026-04-15",
   "status": "in_progress",
-  "scope_notes": "R005 Phase 3：图谱独立页 + 回顾增强 + AI 内嵌 + MCP 终端接入",
+  "scope_notes": "R006 产品打磨 — 响应式布局 + 条目编辑增强 + AI 晨报 + 搜索增强",
   "active_requirement_cycle": {
-    "id": "R005",
-    "name": "product-evolution-phase3",
+    "id": "R006",
+    "name": "product-polish",
     "status": "in_progress",
-    "branch": "feat/R005-product-evolution-phase3"
+    "branch": "feat/R006-product-polish"
   },
   "workflow": {
     "name": "XLFoundry",
@@ -21,10 +21,10 @@
     "risk_provider": "local"
   },
   "summary": {
-    "total_tasks": 7,
+    "total_tasks": 8,
     "pending": 0,
     "in_progress": 0,
-    "completed": 7,
+    "completed": 8,
     "blocked": 0,
     "cancelled": 0
   },
@@ -56,6 +56,13 @@
       "status": "completed",
       "archive_dir": "_archive/R004_product-evolution-phase2",
       "branch": "feat/R004-product-evolution-phase2"
+    },
+    {
+      "id": "R005",
+      "name": "product-evolution-phase3",
+      "status": "completed",
+      "archive_dir": "_archive/R005_product-evolution-phase3",
+      "branch": "feat/R005-product-evolution-phase3"
     }
   ],
   "archived_cycles": [
@@ -103,6 +110,15 @@
       "phases": ["P2A","P2B","P2C"],
       "completed_at": "2026-04-15",
       "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R005",
+      "name": "Product Evolution Phase 3",
+      "archive_dir": "_archive/R005_product-evolution-phase3",
+      "total_tasks": 7,
+      "phases": ["P3A","P3B"],
+      "completed_at": "2026-04-15",
+      "snapshot": "feature_list.snapshot.json"
     }
   ],
   "modules": [
@@ -134,7 +150,7 @@
     {
       "id": "review",
       "name": "回顾模块",
-      "description": "成长回顾统计与趋势数据 API + 趋势图表 UI"
+      "description": "成长回顾统计与趋势数据 API + 趋势图表 UI + AI 总结 + 知识热力图"
     },
     {
       "id": "entry-management",
@@ -185,286 +201,338 @@
       "id": "mcp-terminal",
       "name": "MCP 终端模块",
       "description": "MCP Server 认证增强 + 用户隔离 + 新工具"
+    },
+    {
+      "id": "responsive",
+      "name": "响应式布局模块",
+      "description": "移动端适配 — Sidebar 抽屉化 + 卡片自适应 + 底部导航"
+    },
+    {
+      "id": "morning-digest",
+      "name": "AI 晨报模块",
+      "description": "AI 晨报生成 + 首页展示 — 主动引导用户行动"
     }
   ],
   "tasks": [
     {
-      "id": "B20",
-      "phase": "P3A",
-      "module": "knowledge-graph",
-      "name": "图谱数据 API — 全局图谱 + 概念统计 + 掌握度",
-      "description": "为图谱独立页提供数据支撑。当前 knowledge API 只支持按单个概念查询，缺少全局视图和统计能力。实现：(1) `backend/app/routers/knowledge.py` 新增 `GET /knowledge-map` 端点，返回用户全量概念图谱（nodes + edges），支持 depth 参数（默认 2）；(2) 新增 `GET /knowledge/stats` 端点，返回概念统计（概念总数、关系总数、按 category 分布、top 概念列表）；(3) 新增掌握度计算：基于关联条目数量 + 最近活跃时间 + 条目类型分布（笔记权重 > 任务权重），输出 beginner/intermediate/advanced/new；(4) `GET /knowledge-map` 支持 `view` 参数：domain（按领域）/ mastery（按掌握度）/ project（按项目），同一数据不同聚合视角；(5) 所有查询带 user_id 隔离。",
-      "verification": "L2",
+      "id": "F17",
+      "phase": "P4A",
+      "module": "responsive",
+      "name": "移动端响应式布局 — Sidebar 抽屉 + 底部导航",
+      "description": "当前 Sidebar 固定 w-64，移动端完全不可用。实现：(1) `Sidebar.tsx` 添加 md 以下自动隐藏，通过 hamburger 按钮触发抽屉式展开（overlay + 左滑入）；(2) `App.tsx` 主内容区 `ml-64` 改为 `md:ml-64`，移动端 `ml-0`；(3) 新增 `MobileNavBar.tsx` 组件：移动端底部固定导航栏（今天/探索/图谱/任务/回顾 5 个图标），仅 `md:hidden` 显示；(4) `Home.tsx` 快捷操作 grid 从 `grid-cols-3` 改为 `grid-cols-1 sm:grid-cols-3`；(5) 所有页面卡片和列表增加响应式间距和宽度适配。",
+      "verification": "F2",
       "depends_on": [],
       "status": "completed",
-      "started_at": "2026-04-15",
-      "completed_at": "2026-04-15",
-      "evidence_file": ".dev-flow/evidence/B20.md",
-      "commit": "04e7530",
-      "execution_notes": "17 个单元测试通过，563 后端测试通过",
       "priority": "high",
       "acceptance_criteria": [
-        "GET /knowledge-map 返回 nodes + edges，每个 node 含 id/name/category/mastery/entry_count",
-        "GET /knowledge/stats 返回 concept_count/relation_count/category_distribution/top_concepts",
-        "掌握度计算基于条目数量 + 活跃时间 + 类型分布",
-        "view 参数切换聚合视角（domain/mastery/project）",
-        "数据按 user_id 隔离",
-        "空图谱时返回空 nodes + edges",
-        "单元测试覆盖全局图谱、统计、掌握度计算、用户隔离"
+        "移动端（<768px）Sidebar 隐藏，通过 hamburger 按钮展开抽屉",
+        "移动端底部固定导航栏显示 5 个页面入口",
+        "主内容区在移动端全宽显示（无 ml-64）",
+        "卡片和列表在小屏幕上自适应",
+        "桌面端（>=768px）布局不变",
+        "npm run build 构建通过"
       ],
       "risk_tags": [],
       "test_tasks": [
-        "正常：有条目时返回图谱数据含 nodes 和 edges",
-        "正常：掌握度计算正确（多条目→advanced，无条目→new）",
-        "正常：统计接口返回正确计数和分布",
-        "边界：空图谱返回空数据",
-        "边界：depth 参数限制图谱深度",
-        "隔离：只返回当前用户的概念",
-        "回归：现有 knowledge API 不受影响"
+        "正常：桌面端布局与当前一致",
+        "正常：移动端 Sidebar 变为抽屉",
+        "正常：移动端底部导航显示正确",
+        "正常：点击遮罩层关闭 Sidebar 抽屉",
+        "边界：768px 断点处无布局跳动",
+        "边界：底部导航不超出 safe-area",
+        "回归：所有页面在两种模式下可正常操作"
       ],
-      "contract_refs": ["CONTRACT-G01"],
+      "contract_refs": [],
       "files": [
-        "backend/app/routers/knowledge.py",
-        "backend/app/services/knowledge_service.py",
-        "backend/app/infrastructure/storage/neo4j_client.py"
-      ]
-    },
-    {
-      "id": "B21",
-      "status": "completed",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/components/layout/MobileNavBar.tsx",
+        "frontend/src/components/layout/Header.tsx",
+        "frontend/src/App.tsx",
+        "frontend/src/pages/Home.tsx"
+      ],
       "started_at": "2026-04-15",
       "completed_at": "2026-04-15",
-      "evidence_file": ".dev-flow/evidence/B21.md",
-      "execution_notes": "27 个 review API 测试通过, 572 后端测试通过",
-      "phase": "P3A",
-      "module": "review",
-      "name": "AI 总结 + 知识热力图 API",
-      "description": "增强回顾模块，补充 AI 摘要生成和知识掌握度分布。当前 review 的 ai_summary 字段为占位，未接入 LLM。实现：(1) `backend/app/services/review_service.py` 新增 `_generate_ai_summary` 方法，调用 LLM 基于日报/周报/月报数据生成自然语言总结；(2) 激活现有 review 端点的 ai_summary 字段，按需生成（首次请求时生成并缓存，后续直接返回）；(3) 新增 `GET /review/knowledge-heatmap` 端点，复用 B20 掌握度数据，返回各概念掌握度分布（用于前端热力图展示）；(4) 新增 `GET /review/growth-curve` 端点，返回按周的知识掌握度变化趋势。",
-      "verification": "L2",
-      "depends_on": ["B20"],
+      "evidence_file": ".dev-flow/evidence/F17.md",
+      "commit": "709fb41",
+      "execution_notes": "Sidebar 抽屉 + MobileNavBar + 响应式布局 + 浮动组件适配，build 通过"
+    },
+    {
+      "id": "F18",
+      "phase": "P4A",
+      "module": "responsive",
+      "name": "图谱页 + 回顾页 + 详情页移动端适配",
+      "status": "completed",
+      "description": "补齐核心页面的移动端适配。实现：(1) `GraphPage.tsx` 图谱画布在小屏缩小到 100% 宽度，DetailPanel 改为底部抽屉（非右侧面板）；(2) `Review.tsx` 趋势图表和热力图在小屏纵向堆叠；(3) `EntryDetail.tsx` max-w-4xl 保持但 padding 缩减，编辑模式 textarea 全宽；(4) 浮动组件（FloatingChat/FeedbackButton/PageAIAssistant）在移动端 z-index 重新分层，避免遮挡底部导航。",
+      "verification": "F2",
+      "depends_on": ["F17"],
       "status": "pending",
       "priority": "high",
       "acceptance_criteria": [
-        "GET /review/daily 的 ai_summary 返回 LLM 生成的自然语言总结",
-        "GET /review/weekly 的 ai_summary 返回周总结",
-        "GET /review/knowledge-heatmap 返回概念掌握度分布",
-        "GET /review/growth-curve 返回掌握度周趋势",
-        "LLM 不可用时 ai_summary 降级为空字符串",
-        "数据按 user_id 隔离"
+        "图谱页在移动端可操作，详情面板为底部抽屉",
+        "回顾页卡片纵向堆叠",
+        "详情页内容全宽可读",
+        "浮动组件不遮挡底部导航",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：图谱页移动端可拖拽和点击节点",
+        "正常：回顾页趋势图和热力图可见",
+        "正常：详情页可滚动和编辑",
+        "边界：浮动组件与底部导航不重叠",
+        "回归：桌面端布局不变"
+      ],
+      "contract_refs": [],
+      "files": [
+        "frontend/src/pages/GraphPage.tsx",
+        "frontend/src/pages/Review.tsx",
+        "frontend/src/pages/EntryDetail.tsx",
+        "frontend/src/components/PageAIAssistant.tsx",
+        "frontend/src/components/FloatingChat.tsx",
+        "frontend/src/components/FeedbackButton.tsx"
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F18.md",
+      "commit": "1864421",
+      "execution_notes": "GraphPage 底部抽屉 + Review/EntryDetail 响应式间距"
+    },
+    {
+      "id": "F19",
+      "phase": "P4A",
+      "module": "entry-management",
+      "name": "条目详情页编辑增强 — 分区编辑 + 标签管理 + 元数据编辑",
+      "description": "增强 EntryDetail 编辑体验。当前编辑模式是整体 textarea，改为分区编辑。实现：(1) 标题改为 inline editable（点击变为 input）；(2) 标签区域增加编辑按钮，弹出 tag input（支持回车添加 + 点击删除）；(3) 状态/优先级/计划日期增加下拉选择器（编辑模式才显示）；(4) 内容编辑区分割线区分 Markdown 源码和预览（左右分栏或 Tab 切换），默认预览模式；(5) 保存按钮改为自动保存（debounce 1s + 离开页面提示未保存变更）。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "标题 inline editable",
+        "标签可添加和删除",
+        "状态/优先级/计划日期有下拉编辑器",
+        "内容区支持预览/编辑 Tab 切换",
+        "内容修改后 debounce 1s 自动保存，保存失败时显示错误提示",
+        "有未保存变更时离开页面弹出确认提示",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：点击标题进入编辑",
+        "正常：添加和删除标签",
+        "正常：切换状态和优先级",
+        "正常：预览/编辑 Tab 切换",
+        "正常：内容修改后自动保存",
+        "异常：保存失败时显示错误提示",
+        "异常：空标题保存时提示",
+        "边界：快速连续修改不重复保存（debounce）",
+        "边界：离开页面有未保存变更时弹出确认",
+        "回归：现有查看模式不受影响"
+      ],
+      "contract_refs": [],
+      "files": [
+        "frontend/src/pages/EntryDetail.tsx",
+        "frontend/src/services/api.ts"
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F19.md",
+      "commit": "358555a",
+      "execution_notes": "分区编辑 + 标签管理 + 元数据下拉 + 预览/编辑 Tab + 自动保存 + 离开提示，build 通过"
+    },
+    {
+      "id": "B24",
+      "phase": "P4B",
+      "module": "morning-digest",
+      "name": "AI 晨报生成 API — 每日主动建议",
+      "description": "为「今天」页提供 AI 晨报数据。实现：(1) `backend/app/routers/review.py` 新增 `GET /review/morning-digest` 端点；(2) `backend/app/services/review_service.py` 新增 `get_morning_digest(user_id)` 方法，聚合：今日待办（优先级排序）+ 拖延任务（planned_date 已过）+ 未跟进灵感（>3天未转化）+ 本周学习摘要（概念新增）；(3) 可选调用 LLM 生成自然语言建议（降级为模板文本）；(4) 结果缓存到当日（同一天只生成一次）。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "high",
+      "acceptance_criteria": [
+        "GET /review/morning-digest 返回待办/拖延/灵感/学习摘要",
+        "数据按 user_id 隔离",
+        "LLM 不可用时降级为模板文本",
+        "同一天内多次请求返回缓存结果",
+        "单元测试覆盖正常 + 降级 + 空数据 + 隔离"
       ],
       "risk_tags": ["network"],
       "test_tasks": [
-        "正常：日报 ai_summary 包含任务完成和笔记摘要",
-        "正常：知识热力图返回概念掌握度列表",
-        "正常：成长曲线返回周趋势数据",
-        "边界：无数据时 ai_summary 为空字符串",
-        "边界：LLM 超时时降级处理",
-        "异常：LLM 返回异常时 ai_summary 不崩溃",
-        "隔离：只返回当前用户的数据"
+        "正常：返回包含今日待办和拖延任务",
+        "正常：LLM 生成自然语言建议",
+        "边界：无任务时返回空列表和引导文案",
+        "边界：LLM 超时降级为模板文本",
+        "边界：LLM 返回异常内容时不崩溃",
+        "边界：同一天多次请求返回缓存（不重复调用 LLM）",
+        "边界：跨天后缓存失效，重新生成",
+        "隔离：只返回当前用户数据",
+        "回归：现有 review API 不受影响"
       ],
-      "contract_refs": ["CONTRACT-R01"],
+      "contract_refs": ["CONTRACT-MD01"],
       "files": [
         "backend/app/routers/review.py",
-        "backend/app/services/review_service.py",
-        "backend/app/infrastructure/llm/api_caller.py"
-      ]
-    },
-    {
-      "id": "F14",
-      "status": "completed",
+        "backend/app/services/review_service.py"
+      ],
       "started_at": "2026-04-15",
       "completed_at": "2026-04-15",
-      "evidence_file": ".dev-flow/evidence/F14.md",
-      "execution_notes": "npm run build 通过, simplify 通过",
-      "phase": "P3A",
-      "module": "knowledge-graph",
-      "name": "图谱独立页 — @xyflow/react 可视化 + Sidebar 更新",
-      "description": "新增知识图谱独立页面，使用已有 @xyflow/react 库渲染交互式图谱。实现：(1) 新建 `frontend/src/pages/GraphPage.tsx`：调用 GET /knowledge-map 获取数据，使用 @xyflow/react 渲染节点和边；(2) 节点样式按掌握度着色（advanced=绿, intermediate=蓝, beginner=橙, new=灰）；(3) 点击节点展开详情面板（概念名、掌握度、关联条目数、最近学习时间、建议下一步）；(4) 点击边显示关系类型标签；(5) 维度切换 Tab：领域 / 掌握度 / 项目，调用对应 view 参数；(6) `frontend/src/App.tsx` 新增 `/graph` 路由；(7) `frontend/src/components/layout/Sidebar.tsx` 添加图谱导航项（图标 Brain/Network），Sidebar 扩为 5 项：今天/探索/图谱/任务/回顾；(8) `frontend/src/services/api.ts` 新增 getKnowledgeMap/getKnowledgeStats 函数。",
+      "evidence_file": ".dev-flow/evidence/B24.md",
+      "commit": "d486290",
+      "execution_notes": "晨报 API 完成含 10 个测试，LLM 降级和用户隔离验证通过"
+    },
+    {
+      "id": "F20",
+      "phase": "P4B",
+      "module": "home",
+      "name": "「今天」页 AI 晨报卡片 — 主动行动建议",
+      "status": "completed",
+      "description": "在「今天」页顶部新增 AI 晨报卡片。实现：(1) `Home.tsx` 顶部新增晨报卡片（靛蓝渐变背景，日知头像 + 自然语言建议 + 待办/拖延/灵感/学习 4 个摘要数字）；(2) 调用 GET /review/morning-digest 获取数据；(3) 卡片可折叠（默认展开，用户关闭后当日不再自动展开）；(4) loading 态为骨架屏；(5) api.ts 新增 getMorningDigest 函数。",
       "verification": "F2",
-      "depends_on": ["B20"],
+      "depends_on": ["B24"],
       "status": "pending",
       "priority": "high",
       "acceptance_criteria": [
-        "图谱页展示交互式知识图谱（节点 + 边）",
-        "节点按掌握度着色",
-        "点击节点展开详情面板",
-        "维度切换 Tab 切换聚合视角",
-        "Sidebar 新增图谱入口，扩为 5 项",
-        "/graph 路由可访问",
+        "今天页顶部显示 AI 晨报卡片",
+        "卡片包含日知建议 + 4 个摘要数字",
+        "LLM 降级时显示模板文本",
+        "卡片可折叠",
         "npm run build 构建通过"
       ],
       "risk_tags": [],
       "test_tasks": [
-        "正常：图谱页渲染节点和边",
-        "正常：点击节点展开详情",
-        "正常：维度切换调用对应 API 参数",
-        "边界：空图谱时显示引导文案",
-        "回归：现有 Sidebar 其他导航项不受影响",
-        "回归：现有路由不受影响"
+        "正常：晨报卡片显示建议和摘要",
+        "正常：折叠后隐藏",
+        "正常：用户关闭后当日不再自动展开（localStorage 持久化）",
+        "正常：次日重新自动展开",
+        "边界：无数据时显示空状态引导",
+        "边界：loading 骨架屏",
+        "边界：API 失败时显示错误提示",
+        "回归：现有今日任务和灵感卡片不受影响"
       ],
-      "contract_refs": ["CONTRACT-G01"],
+      "contract_refs": [],
       "files": [
-        "frontend/src/pages/GraphPage.tsx",
-        "frontend/src/components/layout/Sidebar.tsx",
-        "frontend/src/App.tsx",
+        "frontend/src/pages/Home.tsx",
         "frontend/src/services/api.ts"
-      ]
-    },
-    {
-      "id": "F15",
-      "status": "completed",
+      ],
       "started_at": "2026-04-15",
       "completed_at": "2026-04-15",
-      "evidence_file": ".dev-flow/evidence/F15.md",
-      "execution_notes": "npm run build 通过",
-      "phase": "P3A",
-      "module": "review",
-      "name": "回顾页增强 — AI 总结卡片 + 知识热力图",
-      "description": "增强现有回顾页，添加 AI 总结展示和知识热力图。实现：(1) `frontend/src/pages/Review.tsx` 顶部新增 AI 总结卡片，展示日报/周报的 ai_summary 内容（流式显示 + 折叠）；(2) 新增知识热力图区域，调用 GET /review/knowledge-heatmap，展示各概念掌握度（色块 + 标签）；(3) Tab 导航增强为 4 项：日报 | 周报 | 月报 | 趋势（保持现有趋势 Tab）；(4) AI 总结 loading 态和 LLM 降级态处理。",
+      "evidence_file": ".dev-flow/evidence/F20.md",
+      "commit": "1303f9a",
+      "execution_notes": "晨报卡片完成含骨架屏+折叠+降级+4统计数字"
+    },
+    {
+      "id": "F21",
+      "phase": "P4C",
+      "module": "explore",
+      "name": "搜索增强 — 搜索建议 + 最近搜索 + 结果高亮优化",
+      "description": "增强探索页搜索体验。实现：(1) 搜索框聚焦时展开下拉面板：显示最近 5 条搜索历史（localStorage 存储）+ 热门标签（基于用户条目 tags 频率排序取 top 5）；(2) 搜索历史：每条可点击重新搜索，可逐条删除；(3) 搜索结果关键词高亮改为背景色高亮（当前为 text 标记），多关键词分别着色；(4) 搜索框空态显示「试试搜索：最近学习的主题」占位文案。",
       "verification": "F2",
-      "depends_on": ["B21"],
-      "status": "pending",
+      "depends_on": [],
+      "status": "completed",
       "priority": "medium",
       "acceptance_criteria": [
-        "回顾页顶部显示 AI 总结卡片",
-        "知识热力图展示概念掌握度分布",
-        "Tab 导航包含日报/周报/月报/趋势",
-        "AI 总结有 loading 态",
-        "LLM 降级时 AI 总结区域不报错",
+        "搜索框聚焦显示搜索历史和热门标签",
+        "搜索历史可点击和删除",
+        "搜索结果关键词高亮",
         "npm run build 构建通过"
       ],
       "risk_tags": [],
       "test_tasks": [
-        "正常：日报 Tab 显示 AI 总结",
-        "正常：知识热力图渲染概念色块",
-        "正常：Tab 切换正常",
-        "边界：无数据时热力图显示空状态",
-        "边界：AI 总结为空时显示占位文案",
-        "回归：现有趋势图表不受影响"
+        "正常：聚焦显示搜索建议面板",
+        "正常：点击历史项触发搜索",
+        "正常：删除历史项",
+        "正常：多关键词分别着色高亮",
+        "边界：无历史时只显示热门标签",
+        "边界：无标签时显示占位文案",
+        "边界：重复搜索词去重（最新排最前）",
+        "异常：localStorage 损坏时降级为空历史",
+        "回归：现有搜索功能不受影响"
       ],
-      "contract_refs": ["CONTRACT-R01"],
+      "contract_refs": [],
       "files": [
-        "frontend/src/pages/Review.tsx",
+        "frontend/src/pages/Explore.tsx",
         "frontend/src/services/api.ts"
-      ]
-    },
-    {
-      "id": "B22",
-      "status": "completed",
+      ],
       "started_at": "2026-04-15",
       "completed_at": "2026-04-15",
-      "evidence_file": ".dev-flow/evidence/B22.md",
-      "execution_notes": "6 个 AI chat 测试通过, 578 后端测试通过",
-      "phase": "P3B",
+      "evidence_file": ".dev-flow/evidence/F21.md",
+      "commit": "332bbe3",
+      "execution_notes": "搜索建议面板 + 搜索历史 + 热门标签 + 结果高亮，build 通过"
+    },
+    {
+      "id": "F22",
+      "phase": "P4C",
       "module": "ai-assistant",
-      "name": "页面级上下文 AI API — 上下文感知对话",
-      "description": "新增上下文感知 AI 对话端点，支持基于当前页面上下文的智能响应。实现：(1) `backend/app/routers/` 新建 `ai_chat.py`，新增 `POST /ai/chat` 端点；(2) 请求体：`{ message, context: { page, selected_items, filters }, conversation_id? }`；(3) 系统提示词注入页面上下文（如「用户正在查看图谱页，当前筛选领域=Rust」）；(4) 复用已有 LLM client 的 stream 方法，SSE 流式返回；(5) 对话历史通过 conversation_id 隔离，使用已有 AsyncSqliteSaver；(6) 所有请求带 user_id 隔离。",
-      "verification": "L2",
+      "name": "日知角色打磨 — 上下文质量 + 多轮记忆 + 人设强化",
+      "description": "打磨 PageAIAssistant 对话质量。实现：(1) `ai_chat_service.py` 系统提示词强化：加入日知角色设定（博学但不卖弄的朋友，平实准确偶尔温厚）+ 3 种交互模式（教练/助手/镜子）；(2) 页面上下文注入增强：扩展 context.page_data 字段，前端注入当前页面关键数据摘要（如今天页传 todo_count/overdue_count，探索页传 recent_titles）；(3) 多轮对话记忆：前端通过 conversation_id 管理，每次请求携带最近 5 轮历史（messages 数组传给后端），后端注入 system prompt，不新增后端存储层；(4) 前端对话面板增加清空对话按钮（清除 conversation_id 和本地消息列表）。",
+      "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
       "acceptance_criteria": [
-        "POST /ai/chat 接受 message + context，SSE 流式返回",
-        "系统提示词包含页面上下文信息",
-        "conversation_id 隔离对话历史",
-        "数据按 user_id 隔离",
-        "无 context 时降级为通用对话",
-        "单元测试覆盖上下文注入 + 流式 + 隔离"
+        "日知回复符合角色设定（平实、准确）",
+        "上下文包含页面关键数据（不仅 page 名）",
+        "多轮对话保持上下文连贯",
+        "前端可清空对话",
+        "npm run build 构建通过"
       ],
       "risk_tags": [],
       "test_tasks": [
-        "正常：带 context 的请求返回上下文相关的 AI 响应",
-        "正常：SSE 流式返回 token",
-        "边界：无 context 时正常响应",
-        "边界：空消息返回 422",
-        "隔离：不同 user_id 的对话不互通",
-        "回归：现有 parse 对话流不受影响"
+        "正常：日知回复语气符合设定",
+        "正常：上下文包含页面数据（page_data 字段）",
+        "正常：多轮对话引用前文（messages 数组传递）",
+        "正常：清空对话后重新开始（新 conversation_id）",
+        "边界：无上下文时降级为通用回复",
+        "边界：无页面数据时仅用 page 名",
+        "异常：不同 conversation_id 对话不互通",
+        "回归：现有 AI 对话功能不受影响"
       ],
-      "contract_refs": ["CONTRACT-A01"],
+      "contract_refs": ["CONTRACT-AI01"],
       "files": [
-        "backend/app/routers/ai_chat.py",
         "backend/app/services/ai_chat_service.py",
-        "backend/app/infrastructure/llm/api_caller.py"
-      ]
-    },
-    {
-      "id": "F16",
-      "status": "completed",
+        "frontend/src/components/PageAIAssistant.tsx"
+      ],
       "started_at": "2026-04-15",
       "completed_at": "2026-04-15",
-      "evidence_file": ".dev-flow/evidence/F16.md",
-      "execution_notes": "npm run build 通过",
-      "phase": "P3B",
-      "module": "ai-assistant",
-      "name": "日知 AI 内嵌组件 — 浮动助手 + 页面上下文",
-      "description": "在各页面内嵌日知 AI 助手，基于页面上下文提供智能建议。实现：(1) 新建 `frontend/src/components/PageAIAssistant.tsx`：右下角浮动按钮（与现有 FeedbackButton/FloatingChat 共存，z-index 分层），点击展开对话面板；(2) 对话面板：输入框 + 消息列表 + SSE 流式渲染；(3) 自动注入当前页面上下文（路由 + 可见数据摘要）到 context 参数；(4) 集成位置：`App.tsx` 全局挂载，各页面通过 props 传递上下文；(5) api.ts 新增 `sendAIChat` 函数调用 POST /ai/chat。",
+      "evidence_file": ".dev-flow/evidence/F22.md",
+      "commit": "6a6a4d7",
+      "execution_notes": "日知角色强化 + page_data 上下文 + 多轮记忆 + 清空对话，build + 6 个测试通过"
+    },
+    {
+      "id": "F23",
+      "phase": "P4C",
+      "module": "knowledge-graph",
+      "name": "图谱页性能优化 — 大数据量懒加载 + 节点折叠",
+      "description": "优化图谱页在大数据量下的渲染性能。实现：(1) `GraphPage.tsx` 添加节点数量阈值（>50 节点时默认只渲染 top-50 + 直接关联节点）；(2) 「加载更多」按钮逐步展开剩余节点；(3) 节点聚合：同 category 节点可选择聚合为单个大节点（显示数量角标）；(4) 边渲染优化：>100 条边时隐藏边的标签，hover 才显示。",
       "verification": "F2",
-      "depends_on": ["B22"],
-      "status": "pending",
-      "priority": "medium",
+      "depends_on": ["F18"],
+      "status": "completed",
+      "priority": "low",
       "acceptance_criteria": [
-        "各页面可见浮动 AI 助手按钮",
-        "点击展开对话面板，可输入消息",
-        "AI 响应基于当前页面上下文",
-        "SSE 流式渲染 AI 响应",
-        "与现有浮动组件（FeedbackButton/FloatingChat）不遮挡",
+        "大数据量（>50 节点）时默认只渲染部分",
+        "可逐步加载更多节点",
+        "同 category 可聚合显示",
         "npm run build 构建通过"
       ],
-      "risk_tags": ["first_use"],
+      "risk_tags": [],
       "test_tasks": [
-        "正常：浮动按钮可见且可点击展开",
-        "正常：发送消息收到 AI 响应",
-        "正常：页面上下文注入（如图谱页上下文含当前概念）",
-        "边界：快速连续发送消息不重复触发",
-        "异常：API 失败时显示错误提示",
-        "回归：现有对话功能和反馈按钮不受影响"
+        "正常：大数据量时默认渲染 top 节点",
+        "正常：加载更多按钮可用",
+        "正常：聚合模式显示角标",
+        "边界：少量节点（<50）时显示全部，不显示加载更多",
+        "边界：50-100 节点时阈值切换平滑",
+        "边界：>100 条边时标签隐藏，hover 显示",
+        "回归：现有图谱交互（拖拽、点击、Tab 切换）不受影响"
       ],
-      "contract_refs": ["CONTRACT-A01"],
+      "contract_refs": [],
       "files": [
-        "frontend/src/components/PageAIAssistant.tsx",
-        "frontend/src/App.tsx",
-        "frontend/src/services/api.ts"
-      ]
-    },
-    {
-      "id": "B23",
-      "phase": "P3B",
-      "module": "mcp-terminal",
-      "name": "MCP Server 认证增强 — JWT + 用户隔离 + 新工具",
-      "description": "增强 MCP Server 安全性和能力。当前 9 个 MCP 工具无认证、无用户隔离。实现：(1) `backend/app/mcp/server.py` 添加 JWT 认证：从环境变量或启动参数获取 token，连接时验证；(2) 所有 MCP 工具添加 user_id 参数，通过认证后注入，确保数据隔离；(3) 新增 2 个工具：`get_review_summary`（回顾摘要）和 `get_knowledge_stats`（知识图谱统计）；(4) 更新 MCP 工具文档（tool description 补充使用说明）；(5) 新增 MCP 配置说明文档。",
-      "verification": "L2",
-      "depends_on": [],
-      "status": "completed",
+        "frontend/src/pages/GraphPage.tsx"
+      ],
       "started_at": "2026-04-15",
       "completed_at": "2026-04-15",
-      "evidence_file": ".dev-flow/evidence/B23.md",
-      "commit": "6e20fed",
-      "execution_notes": "32 个 MCP 测试通过 (18 新 + 14 回归), 596 后端测试通过",
-      "priority": "medium",
-      "acceptance_criteria": [
-        "MCP Server 连接时验证 JWT token",
-        "所有 MCP 工具操作按 user_id 隔离",
-        "新增 get_review_summary 工具",
-        "新增 get_knowledge_stats 工具",
-        "无效 token 时拒绝连接",
-        "单元测试覆盖认证 + 隔离 + 新工具"
-      ],
-      "risk_tags": ["auth"],
-      "test_tasks": [
-        "正常：有效 token 连接成功",
-        "正常：get_review_summary 返回回顾数据",
-        "正常：get_knowledge_stats 返回统计",
-        "异常：无效 token 拒绝连接",
-        "异常：空 token 拒绝连接",
-        "隔离：不同 user_id 数据不互通",
-        "回归：现有 9 个工具功能正常"
-      ],
-      "contract_refs": ["CONTRACT-M01"],
-      "files": [
-        "backend/app/mcp/server.py",
-        "backend/app/mcp/handlers.py",
-        "backend/app/mcp/tools.py"
-      ]
+      "evidence_file": ".dev-flow/evidence/F23.md",
+      "commit": "a85d7e0",
+      "execution_notes": "节点阈值懒加载 + 聚合模式 + 边标签优化，build 通过"
     }
   ]
 }
