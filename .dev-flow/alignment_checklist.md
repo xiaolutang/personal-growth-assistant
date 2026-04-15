@@ -31,3 +31,10 @@
 | Onboarding | Onboarding 引导 UI | CONTRACT-O01/O02 | completed | completed | completed | F09 前端部分 |
 | 探索模块 | 探索页统一浏览 | - | not_applicable | completed | completed | F10 |
 | 探索模块 | 搜索增强 | - | not_applicable | completed | completed | F10 → F11 |
+| 主题模块 | 深色模式 toggle | - | not_applicable | pending | pending | F24 |
+| PWA 模块 | manifest + SW + 离线 | - | not_applicable | pending | pending | B25 |
+| 通知模块 | 通知生成 API | CONTRACT-NT01/NT02 | pending | not_applicable | pending | B26 |
+| 通知模块 | 提醒偏好 API | CONTRACT-NT03/NT04 | pending | pending | pending | B26 → F25 |
+| 通知模块 | 通知中心 UI | CONTRACT-NT01/NT02 | completed | pending | pending | F25 ← B26 |
+| 回顾模块 | 活动热力图 API | CONTRACT-HM01 | pending | not_applicable | pending | B27 |
+| 回顾模块 | 热力图日历 UI | CONTRACT-HM01 | completed | pending | pending | F26 ← B27 |

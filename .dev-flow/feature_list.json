@@ -270,6 +270,8 @@
         "正常：跟随系统偏好自动切换",
         "正常：所有页面深色模式可读",
         "边界：首次访问默认跟随系统",
+        "边界：深色模式首屏不闪白（ThemeProvider 在 App 渲染前注入 class）",
+        "异常：localStorage 损坏时降级为 system 模式",
         "回归：浅色模式不受影响"
       ],
       "contract_refs": [],
@@ -307,6 +309,8 @@
         "正常：beforeinstallprompt 触发安装提示",
         "边界：首次安装后图标显示正确",
         "边界：SW 更新后自动激活",
+        "边界：/growth/ base path 下 manifest 路径正确（/growth/manifest.json），SW scope 覆盖 /growth/",
+        "边界：离线刷新非根路由（如 /growth/review）不白屏（SPA 回退正确）",
         "异常：SW 注册失败时应用正常运行（降级为非 PWA）",
         "回归：现有功能不受影响"
       ],
@@ -322,7 +326,7 @@
       "phase": "P1B",
       "module": "notification",
       "name": "通知/提醒 API — 按需生成 + 已读状态 + 偏好设置",
-      "description": "为前端通知中心提供后端支持。实现：(1) `backend/app/routers/notifications.py` 新增三个端点：GET /notifications（按需生成通知列表）、POST /notifications/{id}/dismiss（标记已读）、GET/PUT /notification-preferences（偏好读写）；(2) 通知类型：overdue_task（拖延任务）、stale_inbox（未转化灵感 >3天）、review_prompt（回顾提醒）；(3) 按需生成：每次 GET 时从当前数据实时计算，已 dismiss 的记录到 SQLite notifications 表（id, user_id, notification_type, ref_id, dismissed_at, created_at）避免重复展示；(4) 偏好：用户可按类型开关提醒，存 SQLite notification_preferences 表。",
+      "description": "为前端通知中心提供后端支持。实现：(1) `backend/app/routers/notifications.py` 新增三个端点：GET /notifications（按需生成通知列表）、POST /notifications/{id}/dismiss（标记已读）、GET/PUT /notification-preferences（偏好读写）；(2) 通知类型与规则：overdue_task（planned_date < 今天且 status != complete 的任务）、stale_inbox（created_at 距今 >3 天且 category 仍为 inbox 的灵感）、review_prompt（最近 2 天内无任何条目创建/更新时触发，按天去重）；(3) 通知 ID 格式：`{type}:{ref_id}:{date}`（当日日期），用于 dismiss 去重；(4) 按需生成：每次 GET 时从当前数据实时计算（复用晨报的拖延/灵感判定逻辑），已 dismiss 的记录到 SQLite notifications 表（notification_id, user_id, notification_type, ref_id, dismissed_at, created_at），同一天内不再重复生成；(5) dismiss 去重周期：当日有效，跨天后 dismiss 记录不影响新一天的通知生成；(6) 偏好：用户可按类型开关提醒（默认全开），存 SQLite notification_preferences 表（user_id, overdue_task_enabled, stale_inbox_enabled, review_prompt_enabled）。",
       "verification": "L2",
       "depends_on": [],
       "status": "pending",
@@ -347,7 +351,7 @@
         "隔离：只返回当前用户通知",
         "回归：现有 API 不受影响"
       ],
-      "contract_refs": [],
+      "contract_refs": ["CONTRACT-NT01", "CONTRACT-NT02", "CONTRACT-NT03", "CONTRACT-NT04"],
       "files": [
         "backend/app/routers/notifications.py",
         "backend/app/services/notification_service.py"
@@ -358,7 +362,7 @@
       "phase": "P1B",
       "module": "review",
       "name": "活动热力图 API — 每日活动统计",
-      "description": "为回顾页热力图日历提供后端数据。实现：(1) `backend/app/routers/review.py` 新增 GET /review/activity-heatmap?year=2026；(2) 返回 { items: [{ date, count }] }，count 为当日创建或更新的条目数；(3) 按 user_id 隔离；(4) 复用现有 list_entries 查询。",
+      "description": "为回顾页热力图日历提供后端数据。实现：(1) `backend/app/routers/review.py` 新增 GET /review/activity-heatmap?year=2026；(2) 返回 { year, items: [{ date, count }] }，count 为当日 created_at 的条目数（统计口径：created_at，与现有 list_entries 查询能力一致，不新增 updated_at 查询）；(3) 按 user_id 隔离；(4) 复用现有 list_entries 查询。",
       "verification": "L2",
       "depends_on": [],
       "status": "pending",
@@ -378,7 +382,7 @@
         "隔离：只返回当前用户数据",
         "回归：现有 review API 不受影响"
       ],
-      "contract_refs": [],
+      "contract_refs": ["CONTRACT-HM01"],
       "files": [
         "backend/app/routers/review.py",
         "backend/app/services/review_service.py"
@@ -411,9 +415,10 @@
         "正常：偏好开关可切换",
         "边界：无通知时显示空状态",
         "边界：大量通知时滚动",
+        "异常：通知接口失败时 Header 不阻塞，铃铛隐藏角标",
         "回归：Header 其他功能不受影响"
       ],
-      "contract_refs": [],
+      "contract_refs": ["CONTRACT-NT01", "CONTRACT-NT02", "CONTRACT-NT03", "CONTRACT-NT04"],
       "files": [
         "frontend/src/components/NotificationCenter.tsx",
         "frontend/src/components/layout/Header.tsx",
@@ -425,7 +430,7 @@
       "phase": "P2A",
       "module": "review",
       "name": "学习热力图日历 — GitHub 风格贡献日历",
-      "description": "回顾页新增 GitHub 风格活动热力图。实现：(1) `Review.tsx` 新增热力图日历卡片；(2) 调用 GET /review/activity-heatmap 获取数据；(3) 按周排列的方格矩阵，颜色深浅表示活动量（0=空, 1-2=浅, 3-5=中, 6+=深）；(4) hover 显示日期 + 条目数 tooltip；(5) 点击日期跳转到探索页筛选该日条目；(6) 年份切换按钮。",
+      "description": "回顾页新增 GitHub 风格活动热力图。实现：(1) `Review.tsx` 新增热力图日历卡片；(2) 调用 GET /review/activity-heatmap 获取数据；(3) 按周排列的方格矩阵，颜色深浅表示活动量（0=空, 1-2=浅, 3-5=中, 6+=深）；(4) hover 显示日期 + 条目数 tooltip；(5) 点击日期跳转到探索页，携带 start_date 和 end_date 参数筛选该日条目（复用 Explore 已有的 start_date/end_date 查询能力）；(6) 年份切换按钮。",
       "verification": "F2",
       "depends_on": ["B27"],
       "status": "pending",
@@ -434,6 +439,7 @@
         "回顾页显示 GitHub 风格热力图日历",
         "颜色深浅反映活动量",
         "hover 显示日期和条目数",
+        "点击日期跳转到探索页并筛选当日条目（start_date/end_date 参数）",
         "可切换年份",
         "npm run build 构建通过"
       ],
@@ -442,12 +448,14 @@
         "正常：热力图正确渲染",
         "正常：颜色深浅对应活动量",
         "正常：hover tooltip 显示正确",
+        "正常：点击日期跳转到探索页，URL 携带 start_date/end_date，页面筛选当日条目",
         "正常：年份切换刷新数据",
         "边界：全年无活动时全空",
         "边界：每日大量活动时最深色",
+        "异常：API 失败时显示错误提示，不阻塞页面",
         "回归：现有回顾页功能不受影响"
       ],
-      "contract_refs": [],
+      "contract_refs": ["CONTRACT-HM01"],
       "files": [
         "frontend/src/pages/Review.tsx",
         "frontend/src/services/api.ts"

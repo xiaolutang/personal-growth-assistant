@@ -20,6 +20,11 @@
 | CONTRACT-FB02 | GET | /feedback/{id} | 反馈详情查询 | S05, B16 |
 | CONTRACT-MD01 | GET | /review/morning-digest | AI 晨报（每日主动建议） | B24, F20 |
 | CONTRACT-AI01 | POST | /ai/chat | 页面级 AI 对话（SSE 流式） | F22 |
+| CONTRACT-NT01 | GET | /notifications | 获取当前用户通知列表（按需生成） | B26, F25 |
+| CONTRACT-NT02 | POST | /notifications/{id}/dismiss | 标记通知已读 | B26, F25 |
+| CONTRACT-NT03 | GET | /notification-preferences | 获取提醒偏好 | B26, F25 |
+| CONTRACT-NT04 | PUT | /notification-preferences | 更新提醒偏好 | B26, F25 |
+| CONTRACT-HM01 | GET | /review/activity-heatmap | 年度每日活动热力图 | B27, F26 |
 | CONTRACT-A01 | POST | /auth/register | 用户注册 | S01, B02 |
 | CONTRACT-A02 | POST | /auth/login | 用户登录 | S01, B02 |
 | CONTRACT-A03 | POST | /auth/logout | 用户登出 | S01, B02 |
@@ -530,3 +535,190 @@ data: {"token": "有3个任务"}
 | 401 | Token 缺失、无效或过期 |
 | 422 | message 为空 |
 | 503 | LLM 服务不可用 |
+
+---
+
+## 通知/提醒
+
+### 获取当前用户通知列表（按需生成）
+
+| 字段 | 值 |
+|------|----|
+| ID | CONTRACT-NT01 |
+| Method | GET |
+| Path | /notifications |
+| Auth | Bearer Token |
+| Related Tasks | B26, F25 |
+
+#### Response 200
+
+```json
+{
+  "items": [
+    {
+      "id": "overdue:task-abc:2026-04-15",
+      "type": "overdue_task",
+      "title": "任务已拖延",
+      "message": "\"R003 代码审查\" 已超过计划日期 2 天",
+      "ref_id": "task-abc",
+      "created_at": "2026-04-15T09:00:00",
+      "dismissed": false
+    },
+    {
+      "id": "stale_inbox:inbox-def:2026-04-15",
+      "type": "stale_inbox",
+      "title": "灵感未转化",
+      "message": "\"AI读书摘要\" 已在收件箱 4 天，考虑转化为任务或笔记",
+      "ref_id": "inbox-def",
+      "created_at": "2026-04-15T09:00:00",
+      "dismissed": false
+    },
+    {
+      "id": "review_prompt:2026-04-13",
+      "type": "review_prompt",
+      "title": "回顾提醒",
+      "message": "你已 2 天没有记录，回顾一下最近的学习进展吧",
+      "ref_id": null,
+      "created_at": "2026-04-15T09:00:00",
+      "dismissed": false
+    }
+  ],
+  "unread_count": 3
+}
+```
+
+#### Notes
+
+- 通知按需生成：每次 GET 时从当前数据实时计算，不依赖后台调度
+- 通知 ID 格式：`{type}:{ref_id}:{date}`（当日日期），用于 dismiss 去重
+- 已 dismiss 的通知记录到 SQLite `notifications` 表（id, user_id, notification_type, ref_id, dismissed_at, created_at），同一天内不再重复生成
+- 通知类型规则：
+  - `overdue_task`：planned_date < 今天 且 status != complete 的任务
+  - `stale_inbox`：created_at 距今 > 3 天 且 category 仍为 inbox 的灵感
+  - `review_prompt`：最近 2 天内无任何条目创建/更新时触发
+- review_prompt 触发窗口：检测最近 2 天（含今天）是否有条目活动，无活动则生成
+- review_prompt 生成频率：按天去重（同一天只生成一条，dismiss 后当日不再出现）
+- dismiss 去重周期：当日有效，跨天后 dismiss 记录不影响新一天的通知生成
+- 所有查询带 user_id 隔离
+
+#### Errors
+
+| Code | Meaning |
+|------|---------|
+| 401 | Token 缺失、无效或过期 |
+
+---
+
+### 标记通知已读
+
+| 字段 | 值 |
+|------|----|
+| ID | CONTRACT-NT02 |
+| Method | POST |
+| Path | /notifications/{id}/dismiss |
+| Auth | Bearer Token |
+| Related Tasks | B26, F25 |
+
+#### Path Params
+
+- `id`: 通知 ID（如 `overdue:task-abc:2026-04-15`）
+
+#### Response 200
+
+```json
+{
+  "success": true
+}
+```
+
+#### Notes
+
+- dismiss 后写入 SQLite，当日不再重复展示该通知
+- 跨天后 dismiss 记录不影响新一天的通知生成
+
+#### Errors
+
+| Code | Meaning |
+|------|---------|
+| 401 | Token 缺失、无效或过期 |
+| 404 | 通知不存在 |
+
+---
+
+### 获取/更新提醒偏好
+
+| 字段 | 值 |
+|------|----|
+| ID | CONTRACT-NT03 / CONTRACT-NT04 |
+| Method | GET / PUT |
+| Path | /notification-preferences |
+| Auth | Bearer Token |
+| Related Tasks | B26, F25 |
+
+#### Response 200 (GET) / Request (PUT)
+
+```json
+{
+  "overdue_task_enabled": true,
+  "stale_inbox_enabled": true,
+  "review_prompt_enabled": true
+}
+```
+
+#### Notes
+
+- 偏好存储在 SQLite `notification_preferences` 表（user_id, overdue_task_enabled, stale_inbox_enabled, review_prompt_enabled）
+- 某类型 enabled=false 时，GET /notifications 不生成该类型通知
+- 默认全部 enabled=true
+
+#### Errors
+
+| Code | Meaning |
+|------|---------|
+| 401 | Token 缺失、无效或过期 |
+
+---
+
+## 活动热力图
+
+### 获取年度每日活动数据
+
+| 字段 | 值 |
+|------|----|
+| ID | CONTRACT-HM01 |
+| Method | GET |
+| Path | /review/activity-heatmap |
+| Auth | Bearer Token |
+| Related Tasks | B27, F26 |
+
+#### Request (Query Params)
+
+```
+year=2026    # 年份，默认当前年
+```
+
+#### Response 200
+
+```json
+{
+  "year": 2026,
+  "items": [
+    {"date": "2026-04-14", "count": 5},
+    {"date": "2026-04-13", "count": 2},
+    {"date": "2026-04-12", "count": 0}
+  ]
+}
+```
+
+#### Notes
+
+- count 统计口径：当日 **created_at** 的条目数（与现有 list_entries 查询能力一致，不新增 updated_at 查询）
+- 返回全年 365/366 天数据，无活动日期 count=0
+- 所有查询带 user_id 隔离
+- 复用现有 list_entries 的时间筛选能力
+
+#### Errors
+
+| Code | Meaning |
+|------|---------|
+| 401 | Token 缺失、无效或过期 |
