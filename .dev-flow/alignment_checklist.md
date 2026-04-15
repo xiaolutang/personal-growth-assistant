@@ -1,40 +1,49 @@
-# 前后端对齐清单
+# 对齐清单
 
-| Module | Feature | Contract | Backend | Frontend | Integration | Notes |
-|--------|---------|----------|---------|----------|-------------|-------|
-| 日志服务 | 批量写入 | CONTRACT-001 | completed | not_applicable | completed | log-service commit ee26119 |
-| 日志服务 | 日志查询 | CONTRACT-002 | completed | completed | completed | log-service commit ddb6a3e |
-| 日志服务 | 日志统计 | CONTRACT-003 | completed | completed | completed | log-service commit ddb6a3e |
-| 日志服务 | 日志清理 | CONTRACT-004 | completed | not_applicable | completed | log-service commit ddb6a3e |
-| 日志服务 | 健康检查 | CONTRACT-005 | completed | not_applicable | completed | log-service commit e7a9b08 |
-| Python SDK | RemoteLogHandler | CONTRACT-001 | completed | not_applicable | completed | log-service commit 3dc7634 |
-| logs-ui | 日志列表+筛选 | CONTRACT-002 | completed | completed | completed | log-service commit d4b87dc |
-| 反馈功能 | SDK 契约确认 | CONTRACT-006 | completed | not_applicable | not_applicable | S004 |
-| 反馈功能 | 后端反馈路由 | CONTRACT-006 | completed | not_applicable | completed | FB01 |
-| 反馈功能 | 反馈按钮+API | CONTRACT-006 | completed | completed | completed | FB02 + FB03 |
-| 用户认证 | 注册/登录/登出 | CONTRACT-A01/A02/A03 | completed | completed | completed | S01 → B02 → F02 |
-| 用户认证 | 获取当前用户 | CONTRACT-A04 | completed | completed | completed | S01 → B02 → F01 |
-| 用户认证 | 路由守卫 | All contracts | completed | completed | completed | B10 → B11 |
-| 数据隔离 | 四层存储 user_id | All data contracts | completed | not_applicable | completed | B04 → B07 |
-| 前端认证 | 登录注册页面 | CONTRACT-A01/A02 | not_applicable | completed | completed | F02 |
-| 前端认证 | 路由守卫+拦截器 | All contracts | not_applicable | completed | completed | F03 |
-| 前端认证 | 侧边栏用户信息 | CONTRACT-A04 | not_applicable | completed | completed | F04 |
-| 回顾模块 | 趋势数据 API | CONTRACT-R01 | completed | completed | completed | B14 → F08 |
-| 条目管理 | 灵感转化 category | CONTRACT-E01 | completed | completed | completed | B15 → F07 |
-| 反馈闭环 | Feedback 双写+列表 | CONTRACT-006/FB01/FB02 | completed | completed | completed | B16 → F06 |
-| 首页模块 | 首页改版「今天」 | - | not_applicable | completed | completed | F05 |
-| 导出模块 | Export 导出 API | CONTRACT-E02 | completed | not_applicable | completed | B18, 22 tests |
-| 导出模块 | Export 导出 UI | CONTRACT-E02 | completed | completed | completed | B18 → F12 |
-| 条目关联 | 关联推荐 API | CONTRACT-E03 | completed | not_applicable | completed | B19 |
-| 条目关联 | 关联面板 UI | CONTRACT-E03 | completed | completed | completed | B19 → F13 |
-| Onboarding | onboarding_completed 字段 | CONTRACT-O01 | completed | not_applicable | completed | F09 后端部分 |
-| Onboarding | Onboarding 引导 UI | CONTRACT-O01/O02 | completed | completed | completed | F09 前端部分 |
-| 探索模块 | 探索页统一浏览 | - | not_applicable | completed | completed | F10 |
-| 探索模块 | 搜索增强 | - | not_applicable | completed | completed | F10 → F11 |
-| 主题模块 | 深色模式 toggle | - | not_applicable | pending | pending | F24 |
-| PWA 模块 | manifest + SW + 离线 | - | not_applicable | pending | pending | B25 |
-| 通知模块 | 通知生成 API | CONTRACT-NT01/NT02 | pending | not_applicable | pending | B26 |
-| 通知模块 | 提醒偏好 API | CONTRACT-NT03/NT04 | pending | pending | pending | B26 → F25 |
-| 通知模块 | 通知中心 UI | CONTRACT-NT01/NT02 | completed | pending | pending | F25 ← B26 |
-| 回顾模块 | 活动热力图 API | CONTRACT-HM01 | pending | not_applicable | pending | B27 |
-| 回顾模块 | 热力图日历 UI | CONTRACT-HM01 | completed | pending | pending | F26 ← B27 |
+## R008: 智能化 & 全端适配
+
+### 契约对齐
+
+- [ ] B28: CONTRACT-KG01 (knowledge/search) 已定义 → 前端 F27 调用
+- [ ] B28: CONTRACT-KG02 (concept timeline) 已定义 → 前端 F27 调用（含 days 参数）
+- [ ] B28: CONTRACT-KG03 (mastery distribution) 已定义 → 前端 F27 调用
+- [ ] B30: CONTRACT-AI01 (ai-summary) 已定义 → 前端 F28 调用
+- [ ] B31: CONTRACT-AI02 (chat page_context) 已定义 → 前端 F30 调用
+- [ ] B29: CONTRACT-MCP01 (MCP 工具增强) 已定义（含超限行为 + 认证失败行为）
+
+### 依赖对齐
+
+- [ ] F27 depends_on B28 ✓（知识图谱页需要搜索/时间线/掌握度 API）
+- [ ] F28 depends_on B30 ✓（摘要 UI 需要摘要 API）
+- [ ] F30 depends_on B31 ✓（前端 pageContext 注入需要后端 ChatRequest 扩展）
+- [ ] F29 无依赖 ✓（纯前端布局优化）
+- [ ] B28 无依赖 ✓（增强现有 knowledge router）
+- [ ] B29 无依赖 ✓（增强现有 MCP tools，注意不重复 get_knowledge_stats）
+- [ ] B30 无依赖 ✓（新增 ai_summary 字段 + LLM 调用）
+- [ ] B31 无依赖 ✓（扩展 ChatRequest + chat_service prompt 注入）
+
+### 架构对齐
+
+- [ ] 所有新 API 通过 Depends(get_current_user) 认证 ✓
+- [ ] 所有数据按 user_id 隔离 ✓
+- [ ] Neo4j 功能有 SQLite 降级 ✓（CONTRACT-KG01 降级时 mastery=null）
+- [ ] 新增 SQLite 字段在 _migrate_schema 中处理 ✓（ai_summary）
+- [ ] MCP 工具遵循现有 handler 模式 ✓
+- [ ] 前端遵循现有 api.ts + 类型定义模式 ✓
+- [ ] B31 不改变现有 /chat 无 page_context 时的行为 ✓
+- [ ] B31 schema 变更后需执行 npm run gen:types ✓
+
+### 验收对齐
+
+- [ ] 每个任务有 acceptance_criteria ✓
+- [ ] 每个任务有 test_tasks ✓
+- [ ] B29 有 risk_tags: auth（MCP 认证场景）✓
+- [ ] 前端任务都要求 npm run build 通过 ✓
+- [ ] B30 test_tasks 包含迁移测试 ✓
+- [ ] F27 test_tasks 包含异常状态测试 ✓
+- [ ] B28 test_tasks 包含 days 参数测试 ✓
+- [ ] F28 触发时机统一为「首次展开」✓
+- [ ] F28 test_tasks 包含 loading/缓存/空内容/失败测试 ✓
+- [ ] F29 包含 FeedbackButton + FloatingChat + MobileNavBar 三者共存测试 ✓
+- [ ] B29 test_tasks 包含认证失败场景 ✓
+- [ ] CONTRACT-MCP01 定义了批量超限行为（拒绝，不截断）✓

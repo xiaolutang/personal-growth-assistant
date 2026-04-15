@@ -4,13 +4,13 @@
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
   "updated_at": "2026-04-15",
-  "status": "completed",
-  "scope_notes": "R007 用户粘性 & 体验深度 — 深色模式 + PWA + 通知提醒 + 热力图日历",
+  "status": "planning",
+  "scope_notes": "R008 智能化 & 全端适配 — 知识图谱增强 + AI 助手内嵌 + MCP 增强 + 移动端适配",
   "active_requirement_cycle": {
-    "id": "R007",
-    "name": "engagement-experience",
+    "id": "R008",
+    "name": "intelligence-omni",
     "status": "planning",
-    "branch": "feat/R007-engagement-experience"
+    "branch": "feat/R008-intelligence-omni"
   },
   "workflow": {
     "name": "XLFoundry",
@@ -21,10 +21,10 @@
     "risk_provider": "local"
   },
   "summary": {
-    "total_tasks": 6,
-    "pending": 0,
+    "total_tasks": 8,
+    "pending": 8,
     "in_progress": 0,
-    "completed": 6,
+    "completed": 0,
     "blocked": 0,
     "cancelled": 0
   },
@@ -62,14 +62,21 @@
       "name": "product-evolution-phase3",
       "status": "completed",
       "archive_dir": "_archive/R005_product-evolution-phase3",
-      "branch": "feat/R005-product-evolution-phase3"
+      "branch": "feat/R005_product-evolution-phase3"
     },
     {
       "id": "R006",
       "name": "product-polish",
       "status": "completed",
       "archive_dir": "_archive/R006_product-polish",
-      "branch": "feat/R006-product-polish"
+      "branch": "feat/R006_product-polish"
+    },
+    {
+      "id": "R007",
+      "name": "engagement-experience",
+      "status": "completed",
+      "archive_dir": "_archive/R007_engagement-experience",
+      "branch": "feat/R007-engagement-experience"
     }
   ],
   "archived_cycles": [
@@ -78,19 +85,7 @@
       "name": "Personal Growth Assistant v1",
       "archive_dir": "_archive/R001_personal-growth-assistant-v1",
       "total_tasks": 36,
-      "phases": [
-        "P1",
-        "P2",
-        "P3",
-        "P4",
-        "P5",
-        "P6",
-        "P7",
-        "P8",
-        "P9",
-        "P10",
-        "P11"
-      ],
+      "phases": ["P1","P2","P3","P4","P5","P6","P7","P8","P9","P10","P11"],
       "completed_at": "2026-04-13",
       "snapshot": "feature_list.snapshot.json"
     },
@@ -99,14 +94,7 @@
       "name": "Production Content Recovery",
       "archive_dir": "_archive/R003_production-content-recovery",
       "total_tasks": 21,
-      "phases": [
-        "P1",
-        "P2",
-        "P3",
-        "P4",
-        "P5",
-        "P6"
-      ],
+      "phases": ["P1","P2","P3","P4","P5","P6"],
       "completed_at": "2026-04-14",
       "snapshot": "feature_list.snapshot.json"
     },
@@ -115,9 +103,7 @@
       "name": "Product Evolution Phase 1A",
       "archive_dir": "_archive/R004_product-evolution-phase1a",
       "total_tasks": 7,
-      "phases": [
-        "P1A"
-      ],
+      "phases": ["P1A"],
       "completed_at": "2026-04-14",
       "snapshot": "feature_list.snapshot.json"
     },
@@ -126,9 +112,7 @@
       "name": "Product Evolution Phase 1B",
       "archive_dir": "_archive/R004_product-evolution-phase1b",
       "total_tasks": 2,
-      "phases": [
-        "P1B"
-      ],
+      "phases": ["P1B"],
       "completed_at": "2026-04-15",
       "snapshot": "feature_list.snapshot.json"
     },
@@ -137,11 +121,7 @@
       "name": "Product Evolution Phase 2",
       "archive_dir": "_archive/R004_product-evolution-phase2",
       "total_tasks": 7,
-      "phases": [
-        "P2A",
-        "P2B",
-        "P2C"
-      ],
+      "phases": ["P2A","P2B","P2C"],
       "completed_at": "2026-04-15",
       "snapshot": "feature_list.snapshot.json"
     },
@@ -150,10 +130,7 @@
       "name": "Product Evolution Phase 3",
       "archive_dir": "_archive/R005_product-evolution-phase3",
       "total_tasks": 7,
-      "phases": [
-        "P3A",
-        "P3B"
-      ],
+      "phases": ["P3A","P3B"],
       "completed_at": "2026-04-15",
       "snapshot": "feature_list.snapshot.json"
     },
@@ -162,363 +139,320 @@
       "name": "Product Polish",
       "archive_dir": "_archive/R006_product-polish",
       "total_tasks": 8,
-      "phases": [
-        "P4A",
-        "P4B",
-        "P4C"
-      ],
+      "phases": ["P4A","P4B","P4C"],
+      "completed_at": "2026-04-15",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R007",
+      "name": "Engagement & Experience",
+      "archive_dir": "_archive/R007_engagement-experience",
+      "total_tasks": 6,
+      "phases": ["P1A","P1B","P2A"],
       "completed_at": "2026-04-15",
       "snapshot": "feature_list.snapshot.json"
     }
   ],
   "modules": [
-    {
-      "id": "auth",
-      "name": "认证模块",
-      "description": "用户注册、登录、登出、JWT Token 管理"
-    },
-    {
-      "id": "data-isolation",
-      "name": "数据隔离模块",
-      "description": "SQLite/Markdown/Neo4j/Qdrant 四层存储的用户隔离改造"
-    },
-    {
-      "id": "route-guard",
-      "name": "路由守卫模块",
-      "description": "后端全路由认证守卫和用户上下文注入"
-    },
-    {
-      "id": "frontend-auth",
-      "name": "前端认证模块",
-      "description": "登录注册页面、路由守卫、Token 管理、用户状态"
-    },
-    {
-      "id": "content-recovery",
-      "name": "历史内容恢复模块",
-      "description": "修复 `_default` 历史数据在生产环境中对真实账号不可见的问题"
-    },
-    {
-      "id": "review",
-      "name": "回顾模块",
-      "description": "成长回顾统计与趋势数据 API + 趋势图表 UI + AI 总结 + 知识热力图"
-    },
-    {
-      "id": "entry-management",
-      "name": "条目管理模块",
-      "description": "条目 CRUD 与 category 转化（灵感→任务/笔记）+ 转化操作 UI"
-    },
-    {
-      "id": "feedback-loop",
-      "name": "反馈闭环模块",
-      "description": "本地反馈存储 + 远端 log-service 双写 + 用户可追踪状态"
-    },
-    {
-      "id": "home",
-      "name": "首页模块",
-      "description": "首页改版为行动中心「今天」"
-    },
-    {
-      "id": "explore",
-      "name": "探索模块",
-      "description": "灵感/笔记/项目统一浏览 + 搜索主入口 + 类型 Tab 筛选"
-    },
-    {
-      "id": "export",
-      "name": "导出模块",
-      "description": "数据导出 API + 导出 UI，支持 Markdown zip 和 JSON 格式"
-    },
-    {
-      "id": "entry-relations",
-      "name": "条目关联模块",
-      "description": "条目关联 API + 详情页关联面板，基于标签和向量相似推荐"
-    },
-    {
-      "id": "onboarding",
-      "name": "Onboarding 模块",
-      "description": "新用户首次登录引导，对话式 Onboarding 流程"
-    },
-    {
-      "id": "knowledge-graph",
-      "name": "知识图谱模块",
-      "description": "图谱独立页 + 概念统计 + 掌握度可视化，基于 Neo4j"
-    },
-    {
-      "id": "ai-assistant",
-      "name": "AI 助手模块",
-      "description": "页面级上下文 AI — 日知角色内嵌到各页面"
-    },
-    {
-      "id": "mcp-terminal",
-      "name": "MCP 终端模块",
-      "description": "MCP Server 认证增强 + 用户隔离 + 新工具"
-    },
-    {
-      "id": "responsive",
-      "name": "响应式布局模块",
-      "description": "移动端适配 — Sidebar 抽屉化 + 卡片自适应 + 底部导航"
-    },
-    {
-      "id": "morning-digest",
-      "name": "AI 晨报模块",
-      "description": "AI 晨报生成 + 首页展示 — 主动引导用户行动"
-    },
-    {
-      "id": "theme",
-      "name": "主题模块",
-      "description": "深色/浅色模式切换 + 系统偏好检测 + 持久化"
-    },
-    {
-      "id": "pwa",
-      "name": "PWA 模块",
-      "description": "PWA manifest + Service Worker + 离线缓存 + 安装提示"
-    },
-    {
-      "id": "notification",
-      "name": "通知模块",
-      "description": "通知/提醒生成 API + 通知中心 UI + 提醒偏好"
-    }
+    {"id": "auth", "name": "认证模块", "description": "用户注册、登录、登出、JWT Token 管理"},
+    {"id": "data-isolation", "name": "数据隔离模块", "description": "SQLite/Markdown/Neo4j/Qdrant 四层存储的用户隔离改造"},
+    {"id": "route-guard", "name": "路由守卫模块", "description": "后端全路由认证守卫和用户上下文注入"},
+    {"id": "frontend-auth", "name": "前端认证模块", "description": "登录注册页面、路由守卫、Token 管理、用户状态"},
+    {"id": "review", "name": "回顾模块", "description": "成长回顾统计、趋势、热力图、AI 晨报"},
+    {"id": "entry-management", "name": "条目管理模块", "description": "条目 CRUD 与转化"},
+    {"id": "feedback-loop", "name": "反馈闭环模块", "description": "本地 + 远端双写反馈"},
+    {"id": "home", "name": "首页模块", "description": "首页行动中心"},
+    {"id": "explore", "name": "探索模块", "description": "统一浏览 + 搜索"},
+    {"id": "export", "name": "导出模块", "description": "数据导出 zip/json"},
+    {"id": "entry-relations", "name": "条目关联模块", "description": "标签+向量关联推荐"},
+    {"id": "onboarding", "name": "Onboarding 模块", "description": "新用户引导"},
+    {"id": "knowledge-graph", "name": "知识图谱模块", "description": "图谱可视化 + 概念统计 + 掌握度 + 搜索 + 学习路径"},
+    {"id": "ai-assistant", "name": "AI 助手模块", "description": "页面级上下文 AI + AI 摘要 + 多轮对话"},
+    {"id": "mcp-terminal", "name": "MCP 终端模块", "description": "MCP Server 批量操作 + 降级搜索 + 新工具"},
+    {"id": "responsive", "name": "响应式布局模块", "description": "移动端/平板适配 + 导航统一 + 大屏优化"},
+    {"id": "theme", "name": "主题模块", "description": "深色/浅色模式"},
+    {"id": "pwa", "name": "PWA 模块", "description": "PWA + 离线缓存"},
+    {"id": "notification", "name": "通知模块", "description": "通知/提醒 + 偏好管理"}
   ],
   "tasks": [
     {
-      "id": "F24",
-      "phase": "P1A",
-      "module": "theme",
-      "name": "深色模式完善 — 全局 theme toggle + dark 样式补齐",
-      "description": "完善深色模式支持。实现：(1) 新建 ThemeProvider/useTheme hook — 支持 light/dark/system 三档切换，localStorage 持久化，监听 system preference 变化；(2) Header 右上角新增 theme toggle 按钮（Sun/Moon 图标切换）；(3) 全局审计所有页面和组件，补齐缺失的 dark: 变体（背景色、文字色、边框色、卡片色）；(4) Sidebar/MobileNavBar/Header 三个布局组件优先保证深色模式正确。",
-      "verification": "F2",
+      "id": "B28",
+      "phase": "P1",
+      "module": "knowledge-graph",
+      "name": "知识图谱增强 API — 概念搜索 + 时间维度 + 掌握度统计",
+      "description": "为知识图谱页增强提供后端支持。(1) GET /knowledge/search?q=keyword — 模糊搜索概念名（Neo4j 优先，SQLite tags 降级），返回 [{name, entry_count, mastery}]；(2) GET /knowledge/concepts/{name}/timeline — 概念学习时间线，返回 [{date, entries: [{id, title, type}]}]，按 created_at 聚合；(3) GET /knowledge/mastery-distribution — 掌握度分布统计 {new, beginner, intermediate, advanced} 各多少概念。所有端点按 user_id 隔离。",
+      "verification": "L2",
       "depends_on": [],
-      "status": "completed",
+      "status": "pending",
       "priority": "high",
       "acceptance_criteria": [
-        "Header 有 theme toggle 按钮，点击切换 light/dark",
-        "支持 system 跟随模式（自动检测系统偏好）",
-        "所有页面在深色模式下可读、无白底黑字问题",
-        "Sidebar/MobileNavBar/Header 深色模式正确",
-        "选择持久化到 localStorage，刷新后保持",
+        "GET /knowledge/search?q=xxx 返回匹配概念列表",
+        "GET /knowledge/concepts/{name}/timeline 返回学习时间线",
+        "GET /knowledge/mastery-distribution 返回掌握度分布",
+        "GET /knowledge/concepts/{name}/timeline?days=N 支持自定义时间范围",
+        "Neo4j 不可用时降级到 SQLite tags 查询",
+        "数据按 user_id 隔离",
+        "单元测试覆盖搜索 + 时间线 + 分布 + 降级 + 隔离"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：搜索返回匹配概念",
+        "正常：时间线按日期聚合",
+        "正常：days 参数控制时间范围（默认 90 天）",
+        "边界：days=0 返回空时间线",
+        "边界：days=365 覆盖全年数据",
+        "正常：掌握度分布正确",
+        "边界：搜索无结果返回空列表",
+        "边界：概念无关联条目时间线为空",
+        "降级：Neo4j 不可用时从 SQLite 降级，mastery 字段为 null",
+        "隔离：只返回当前用户数据",
+        "回归：现有知识图谱 API 不受影响"
+      ],
+      "contract_refs": ["CONTRACT-KG01", "CONTRACT-KG02", "CONTRACT-KG03"],
+      "files": [
+        "backend/app/routers/knowledge.py",
+        "backend/app/services/knowledge_service.py",
+        "backend/app/infrastructure/storage/neo4j_client.py"
+      ]
+    },
+    {
+      "id": "B29",
+      "phase": "P1",
+      "module": "mcp-terminal",
+      "name": "MCP 工具增强 — 批量操作 + 降级搜索 + 学习路径",
+      "description": "增强 MCP Server 工具集。注意：get_knowledge_stats 已存在于现有 11 个工具中，本次不重复。(1) batch_create_entries — 批量创建条目（接受 JSON 数组），单次最多 10 条，超过 10 条返回错误提示（不截断、不部分成功）；(2) batch_update_status — 批量更新状态（接受 id 数组 + 目标状态，同理 max 10，超限返回错误）；(3) search_entries 增强：Qdrant 不可用时自动降级到 SQLite LIKE 搜索（当前仅走 Qdrant 无 fallback）；(4) get_learning_path — 暴露现有 knowledge_service 的学习路径能力为 MCP 工具（当前仅 API 端点，未注册为 MCP 工具）。认证失败（无 token / token 过期 / 无效）统一返回权限错误，不做任何数据操作。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "batch_create_entries 支持一次创建多条条目",
+        "batch_update_status 支持批量状态变更",
+        "search_entries 无 Qdrant 时降级到 SQLite LIKE",
+        "get_learning_path 作为新 MCP 工具注册（复用现有 knowledge_service.get_learning_path）",
+        "所有工具按 user_id 隔离",
+        "现有 11 个 MCP 工具功能不受影响"
+      ],
+      "risk_tags": ["auth"],
+      "test_tasks": [
+        "正常：批量创建多条条目",
+        "正常：批量更新状态",
+        "正常：搜索降级到 SQLite LIKE",
+        "正常：get_learning_path MCP 工具返回学习路径",
+        "边界：批量超过 10 条返回错误提示（拒绝执行，不截断）",
+        "边界：空数组批量操作返回友好提示",
+        "异常：Qdrant 不可用时降级搜索仍返回结果",
+        "认证：无 token 时工具调用返回权限错误",
+        "认证：token 过期时工具调用返回权限错误",
+        "回归：现有 11 个 MCP 工具（含 get_knowledge_stats）不受影响"
+      ],
+      "contract_refs": ["CONTRACT-MCP01"],
+      "files": [
+        "backend/app/mcp/tools.py",
+        "backend/app/mcp/handlers.py"
+      ]
+    },
+    {
+      "id": "B30",
+      "phase": "P1",
+      "module": "ai-assistant",
+      "name": "AI 条目摘要 API — 自动生成条目摘要",
+      "description": "为条目详情页 AI 摘要提供后端支持。(1) POST /entries/{id}/ai-summary — 调用 LLM 为指定条目生成摘要（200 字以内），返回 {summary, generated_at}；(2) 摘要缓存到 SQLite entries 表（新增 ai_summary TEXT 字段），重复请求直接返回缓存；(3) LLM prompt：总结条目内容、关键知识点、行动项（如有）；(4) 仅在条目有 content 时生成，空内容返回 null。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "POST /entries/{id}/ai-summary 返回摘要文本",
+        "摘要缓存在 SQLite，重复请求不调用 LLM",
+        "空内容条目返回 null",
+        "数据按 user_id 隔离",
+        "单元测试覆盖生成 + 缓存 + 空内容 + 隔离"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：生成条目摘要",
+        "正常：缓存命中时直接返回",
+        "边界：条目内容为空返回 null",
+        "边界：条目不存在返回 404",
+        "迁移：ai_summary 字段在 _migrate_schema 中自动添加，旧数据不受影响",
+        "异常：LLM 不可用时返回 503 或 null，不崩溃",
+        "隔离：只能为自己条目生成摘要",
+        "回归：现有条目 API 不受影响"
+      ],
+      "contract_refs": ["CONTRACT-AI01"],
+      "files": [
+        "backend/app/routers/entries.py",
+        "backend/app/services/entry_service.py",
+        "backend/app/infrastructure/storage/sqlite.py"
+      ]
+    },
+    {
+      "id": "F27",
+      "phase": "P2",
+      "module": "knowledge-graph",
+      "name": "知识图谱页增强 — 搜索 + 掌握度卡片 + 概念时间线",
+      "description": "增强知识图谱页功能。(1) GraphPage 顶部新增搜索框，输入关键词实时过滤/高亮概念节点；(2) 侧边栏/下方新增掌握度分布卡片（环形图或分级条），展示 new/beginner/intermediate/advanced 概念数量；(3) 点击概念节点弹出详情面板，包含学习时间线（最近学习日期 + 关联条目列表）；(4) api.ts 新增 getKnowledgeSearch, getConceptTimeline, getMasteryDistribution 函数。",
+      "verification": "F2",
+      "depends_on": ["B28"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "搜索框输入关键词过滤图谱节点",
+        "掌握度分布卡片正确显示",
+        "点击概念弹出详情含学习时间线",
         "npm run build 构建通过"
       ],
       "risk_tags": [],
       "test_tasks": [
-        "正常：点击 toggle 切换主题",
-        "正常：刷新后保持选择",
-        "正常：跟随系统偏好自动切换",
-        "正常：所有页面深色模式可读",
-        "边界：首次访问默认跟随系统",
-        "边界：深色模式首屏不闪白（ThemeProvider 在 App 渲染前注入 class）",
-        "异常：localStorage 损坏时降级为 system 模式",
-        "回归：浅色模式不受影响"
+        "正常：搜索过滤节点",
+        "正常：掌握度卡片渲染",
+        "正常：概念详情面板展示",
+        "边界：搜索无结果提示",
+        "边界：空图谱友好提示",
+        "异常：API 加载中显示 loading",
+        "异常：API 失败显示错误提示",
+        "回归：现有图谱页功能不受影响"
+      ],
+      "contract_refs": ["CONTRACT-KG01", "CONTRACT-KG02", "CONTRACT-KG03"],
+      "files": [
+        "frontend/src/pages/GraphPage.tsx",
+        "frontend/src/services/api.ts"
+      ]
+    },
+    {
+      "id": "F28",
+      "phase": "P2",
+      "module": "ai-assistant",
+      "name": "AI 条目摘要 UI — EntryDetail 摘要卡片",
+      "description": "在条目详情页展示 AI 摘要。(1) EntryDetail 页面内容区域下方新增「AI 摘要」折叠卡片；(2) 首次展开时自动请求生成摘要（POST /entries/{id}/ai-summary），生成中显示 loading spinner；(3) 摘要展示后可收起/展开，带生成时间标记；(4) api.ts 新增 generateEntrySummary 函数；(5) 空内容条目不显示摘要卡片（非灰色占位，直接隐藏）；(6) 缓存命中时直接展示已有摘要，标注「已缓存」。",
+      "verification": "F2",
+      "depends_on": ["B30"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "EntryDetail 页面有 AI 摘要折叠卡片（非空内容条目）",
+        "首次展开时自动生成摘要，生成中显示 loading",
+        "摘要可收起/展开",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：首次展开生成摘要",
+        "正常：摘要内容展示正确",
+        "正常：收起/展开交互",
+        "正常：缓存命中时直接展示（标注已缓存）",
+        "正常：生成中显示 loading spinner",
+        "边界：空内容条目不显示摘要卡片（完全隐藏）",
+        "异常：API 失败显示错误提示，支持重试",
+        "回归：现有 EntryDetail 功能不受影响"
+      ],
+      "contract_refs": ["CONTRACT-AI01"],
+      "files": [
+        "frontend/src/pages/EntryDetail.tsx",
+        "frontend/src/services/api.ts"
+      ]
+    },
+    {
+      "id": "F29",
+      "phase": "P1",
+      "module": "responsive",
+      "name": "移动端适配优化 — 导航统一 + 平板布局 + 浮窗协调",
+      "description": "优化移动端/平板端体验。(1) 新建 navConfig.ts（新文件）— 共享导航项配置（Sidebar + MobileNavBar 共用，消除重复定义）；(2) 平板布局优化（md-lg 断点 768-1024px）— Sidebar 可收起为 icon-only 模式，主内容区自适应；(3) FloatingChat 移动端与 MobileNavBar 协调 — 面板高度不超过可视区域 70%，底部留出 NavBar 空间；(4) 大屏优化（xl 1280px+）— 内容区最大宽度限制，减少超宽屏幕阅读疲劳。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "navConfig.ts 统一导航项，Sidebar 和 MobileNavBar 共用",
+        "平板端 Sidebar 有 icon-only 模式",
+        "FloatingChat 移动端不遮挡 MobileNavBar",
+        "FloatingChat + FeedbackButton + MobileNavBar 移动端三者在屏幕上不互相遮挡",
+        "大屏内容区有最大宽度限制",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：导航项统一无差异",
+        "正常：平板端 Sidebar icon-only 模式",
+        "正常：FloatingChat 不遮挡底部导航",
+        "正常：FloatingChat + FeedbackButton 不互相遮挡",
+        "正常：移动端 FloatingChat + FeedbackButton + MobileNavBar 三者同屏共存、不遮挡、可点击",
+        "边界：超小屏（320px）三者仍不溢出",
+        "边界：超宽屏（2560px）内容居中",
+        "回归：桌面端布局不受影响"
       ],
       "contract_refs": [],
       "files": [
-        "frontend/src/lib/theme.tsx",
-        "frontend/src/components/layout/Header.tsx",
+        "frontend/src/components/layout/navConfig.ts",
         "frontend/src/components/layout/Sidebar.tsx",
         "frontend/src/components/layout/MobileNavBar.tsx",
+        "frontend/src/components/FloatingChat.tsx",
         "frontend/src/App.tsx"
-      ],
-      "started_at": "2026-04-15",
-      "completed_at": "2026-04-15",
-      "evidence_file": ".dev-flow/evidence/F24.md"
+      ]
     },
     {
-      "id": "B25",
-      "phase": "P1A",
-      "module": "pwa",
-      "name": "PWA 基础支持 — manifest + Service Worker + 离线缓存 + 安装提示",
-      "description": "添加 PWA 支持，使应用可安装到手机主屏幕。实现：(1) 使用 vite-plugin-pwa 插件；(2) 配置 manifest.json（name, icons, theme_color, display: standalone）；(3) Service Worker 策略：静态资源 precache，API 请求 network-first；(4) 首次访问时显示「添加到主屏幕」提示（beforeinstallprompt 事件）；(5) 生成 PWA 图标（192x192, 512x512）。",
-      "verification": "L3",
-      "depends_on": [],
-      "status": "completed",
-      "priority": "high",
-      "acceptance_criteria": [
-        "Chrome DevTools Lighthouse PWA 审计通过基本项",
-        "manifest.json 正确配置",
-        "Service Worker 注册成功",
-        "离线时静态页面可加载（API 数据不可用但页面不白屏）",
-        "移动端浏览器显示「添加到主屏幕」提示",
-        "npm run build 构建通过"
-      ],
-      "risk_tags": [
-        "config"
-      ],
-      "test_tasks": [
-        "正常：manifest.json 可访问",
-        "正常：SW 注册成功（DevTools Application tab 可见）",
-        "正常：离线时页面不白屏",
-        "正常：beforeinstallprompt 触发安装提示",
-        "边界：首次安装后图标显示正确",
-        "边界：SW 更新后自动激活",
-        "边界：/growth/ base path 下 manifest 路径正确（/growth/manifest.json），SW scope 覆盖 /growth/",
-        "边界：离线刷新非根路由（如 /growth/review）不白屏（SPA 回退正确）",
-        "异常：SW 注册失败时应用正常运行（降级为非 PWA）",
-        "回归：现有功能不受影响"
-      ],
-      "contract_refs": [],
-      "files": [
-        "frontend/vite.config.ts",
-        "frontend/package.json",
-        "frontend/src/App.tsx"
-      ],
-      "started_at": "2026-04-15",
-      "completed_at": "2026-04-15",
-      "evidence_file": ".dev-flow/evidence/B25.md"
-    },
-    {
-      "id": "B26",
-      "phase": "P1B",
-      "module": "notification",
-      "name": "通知/提醒 API — 按需生成 + 已读状态 + 偏好设置",
-      "description": "为前端通知中心提供后端支持。实现：(1) `backend/app/routers/notifications.py` 新增三个端点：GET /notifications（按需生成通知列表）、POST /notifications/{id}/dismiss（标记已读）、GET/PUT /notification-preferences（偏好读写）；(2) 通知类型与规则：overdue_task（planned_date < 今天且 status != complete 的任务）、stale_inbox（created_at 距今 >3 天且 category 仍为 inbox 的灵感）、review_prompt（最近 2 天内无任何条目创建/更新时触发，按天去重）；(3) 通知 ID 格式：`{type}:{ref_id}:{date}`（当日日期），用于 dismiss 去重；(4) 按需生成：每次 GET 时从当前数据实时计算（复用晨报的拖延/灵感判定逻辑），已 dismiss 的记录到 SQLite notifications 表（notification_id, user_id, notification_type, ref_id, dismissed_at, created_at），同一天内不再重复生成；(5) dismiss 去重周期：当日有效，跨天后 dismiss 记录不影响新一天的通知生成；(6) 偏好：用户可按类型开关提醒（默认全开），存 SQLite notification_preferences 表（user_id, overdue_task_enabled, stale_inbox_enabled, review_prompt_enabled）。",
+      "id": "B31",
+      "phase": "P1",
+      "module": "ai-assistant",
+      "name": "页面级 AI 上下文后端 — ChatRequest 扩展 + prompt 注入",
+      "description": "为浮动聊天 AI 提供页面感知的后端支持。当前 ChatRequest 仅有 text/session_id/skip_intent/confirm 四个字段，无页面上下文。(1) ChatRequest 新增 page_context 字段（Optional[PageContext]），PageContext 包含 page_type: str（home/explore/entry/review/graph）、entry_id: Optional[str]、extra: Optional[dict]；(2) parse.py 的 generate() 将 page_context 传递给 detect_intent 和 process_intent；(3) chat_service 在构建 LLM prompt 时追加页面上下文指令（如详情页时「用户正在查看 xxx 条目」）；(4) page_context 为 None 时行为与现有一致，不影响无上下文场景；(5) schema 变更后执行 npm run gen:types 更新前端类型。",
       "verification": "L2",
       "depends_on": [],
-      "status": "in_progress",
+      "status": "pending",
       "priority": "medium",
       "acceptance_criteria": [
-        "GET /notifications 返回当前用户未读通知（拖延/灵感/回顾）",
-        "POST /notifications/{id}/dismiss 标记已读",
-        "已 dismiss 通知不再出现",
-        "GET/PUT /notification-preferences 读写偏好",
-        "数据按 user_id 隔离",
-        "单元测试覆盖生成 + 已读 + 偏好 + 隔离"
+        "ChatRequest 接受可选 page_context 字段",
+        "page_context 传入时 LLM prompt 包含页面上下文指令",
+        "page_context 为 None 时现有行为不变",
+        "单元测试覆盖有/无上下文 + 详情页场景",
+        "npm run gen:types 成功生成前端类型"
       ],
       "risk_tags": [],
       "test_tasks": [
-        "正常：返回拖延任务通知",
-        "正常：返回未转化灵感通知",
-        "正常：返回回顾提醒通知",
-        "正常：dismiss 后不再出现",
-        "正常：偏好设置可读写",
-        "边界：无待提醒数据时返回空列表",
-        "边界：同一天多次 dismiss 同一通知",
-        "隔离：只返回当前用户通知",
-        "回归：现有 API 不受影响"
+        "正常：page_context 传入时 prompt 包含上下文",
+        "正常：entry_id 传入时 prompt 包含条目信息",
+        "正常：page_context=None 时行为与现有一致",
+        "边界：未知 page_type 时不影响正常回复",
+        "类型同步：npm run gen:types 后前端 ChatRequest 类型包含 page_context",
+        "回归：现有 /chat 端点无 page_context 时仍正常工作"
       ],
-      "contract_refs": [
-        "CONTRACT-NT01",
-        "CONTRACT-NT02",
-        "CONTRACT-NT03",
-        "CONTRACT-NT04"
-      ],
+      "contract_refs": ["CONTRACT-AI02"],
       "files": [
-        "backend/app/routers/notifications.py",
-        "backend/app/services/notification_service.py"
+        "backend/app/routers/parse.py",
+        "backend/app/services/chat_service.py",
+        "backend/app/services/intent_service.py"
       ]
     },
     {
-      "id": "B27",
-      "phase": "P1B",
-      "module": "review",
-      "name": "活动热力图 API — 每日活动统计",
-      "description": "为回顾页热力图日历提供后端数据。实现：(1) `backend/app/routers/review.py` 新增 GET /review/activity-heatmap?year=2026；(2) 返回 { year, items: [{ date, count }] }，count 为当日 created_at 的条目数（统计口径：created_at，与现有 list_entries 查询能力一致，不新增 updated_at 查询）；(3) 按 user_id 隔离；(4) 复用现有 list_entries 查询。",
-      "verification": "L2",
-      "depends_on": [],
-      "status": "completed",
-      "priority": "medium",
-      "acceptance_criteria": [
-        "GET /review/activity-heatmap 返回年度每日活动数据",
-        "数据按 user_id 隔离",
-        "无数据日期返回 count=0",
-        "单元测试覆盖正常 + 空数据 + 隔离"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "正常：返回年度每日活动数据",
-        "正常：有活动的日期 count>0",
-        "边界：无活动年份返回全 0",
-        "边界：跨年数据隔离",
-        "隔离：只返回当前用户数据",
-        "回归：现有 review API 不受影响"
-      ],
-      "contract_refs": [
-        "CONTRACT-HM01"
-      ],
-      "files": [
-        "backend/app/routers/review.py",
-        "backend/app/services/review_service.py"
-      ]
-    },
-    {
-      "id": "F25",
-      "phase": "P2A",
-      "module": "notification",
-      "name": "通知中心 UI — Header 铃铛 + 下拉面板 + 偏好设置",
-      "description": "前端通知中心。实现：(1) Header 右上角新增铃铛图标（带未读数角标）；(2) 点击展开下拉面板，列出通知（类型图标 + 文案 + 时间 + 可点击跳转）；(3) 单条已读/全部已读按钮；(4) 设置页或面板底部增加提醒偏好开关（拖延/灵感/回顾三档）；(5) api.ts 新增 getNotifications, dismissNotification, getNotificationPreferences, updateNotificationPreferences 函数。",
+      "id": "F30",
+      "phase": "P2",
+      "module": "ai-assistant",
+      "name": "页面级 AI 上下文前端 — chatStore + FloatingChat 注入",
+      "description": "为 FloatingChat（主聊天，走 POST /chat + useStreamParse）添加页面感知。注意：PageAIAssistant 是独立系统（走 POST /ai/chat + sendAIChat），已有自己的上下文机制，本任务不涉及。(1) chatStore 新增 pageContext state — 记录当前页面类型（home/explore/entry/review/graph）、当前条目 ID；(2) useStreamParse hook 扩展，将 pageContext 注入到 POST /chat 请求的 page_context 字段（对应 B31 的 ChatRequest 扩展）；(3) 各页面组件通过 useEffect 在挂载时更新 chatStore 的 pageContext（使用 react-router 的 useLocation）；(4) FloatingChat 发送消息时自动附带最新 pageContext。",
       "verification": "F2",
-      "depends_on": [
-        "B26"
-      ],
-      "status": "completed",
+      "depends_on": ["B31"],
+      "status": "pending",
       "priority": "medium",
       "acceptance_criteria": [
-        "Header 铃铛图标显示未读数角标",
-        "下拉面板展示通知列表",
-        "通知可点击跳转到对应页面",
-        "可标记单条/全部已读",
-        "提醒偏好可按类型开关",
+        "chatStore 维护当前页面上下文状态",
+        "FloatingChat 发送消息时自动附带 pageContext",
+        "详情页时 pageContext 包含当前条目 ID",
         "npm run build 构建通过"
       ],
       "risk_tags": [],
       "test_tasks": [
-        "正常：铃铛显示未读角标",
-        "正常：下拉面板展示通知",
-        "正常：点击通知跳转到对应条目",
-        "正常：标记已读后角标更新",
-        "正常：偏好开关可切换",
-        "边界：无通知时显示空状态",
-        "边界：大量通知时滚动",
-        "异常：通知接口失败时 Header 不阻塞，铃铛隐藏角标",
-        "回归：Header 其他功能不受影响"
+        "正常：首页 pageContext.page_type 为 home",
+        "正常：详情页 pageContext 包含 entry_id",
+        "正常：页面切换时 pageContext 自动更新",
+        "边界：无上下文时 AI 仍正常工作（B31 兼容）",
+        "回归：现有聊天功能不受影响"
       ],
-      "contract_refs": [
-        "CONTRACT-NT01",
-        "CONTRACT-NT02",
-        "CONTRACT-NT03",
-        "CONTRACT-NT04"
-      ],
+      "contract_refs": ["CONTRACT-AI02"],
       "files": [
-        "frontend/src/components/NotificationCenter.tsx",
-        "frontend/src/components/layout/Header.tsx",
-        "frontend/src/services/api.ts"
-      ]
-    },
-    {
-      "id": "F26",
-      "phase": "P2A",
-      "module": "review",
-      "name": "学习热力图日历 — GitHub 风格贡献日历",
-      "description": "回顾页新增 GitHub 风格活动热力图。",
-      "verification": "F2",
-      "depends_on": [
-        "B27"
-      ],
-      "status": "completed",
-      "priority": "medium",
-      "acceptance_criteria": [
-        "回顾页显示 GitHub 风格热力图日历",
-        "颜色深浅反映活动量",
-        "hover 显示日期和条目数",
-        "点击日期跳转到探索页并筛选当日条目（start_date/end_date 参数）",
-        "可切换年份",
-        "npm run build 构建通过"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "正常：热力图正确渲染",
-        "正常：颜色深浅对应活动量",
-        "正常：hover tooltip 显示正确",
-        "正常：点击日期跳转到探索页，URL 携带 start_date/end_date，页面筛选当日条目",
-        "正常：年份切换刷新数据",
-        "边界：全年无活动时全空",
-        "边界：每日大量活动时最深色",
-        "异常：API 失败时显示错误提示，不阻塞页面",
-        "回归：现有回顾页功能不受影响"
-      ],
-      "contract_refs": [
-        "CONTRACT-HM01"
-      ],
-      "files": [
-        "frontend/src/pages/Review.tsx",
-        "frontend/src/services/api.ts"
+        "frontend/src/stores/chatStore.ts",
+        "frontend/src/hooks/useStreamParse.ts",
+        "frontend/src/components/FloatingChat.tsx"
       ]
     }
   ]

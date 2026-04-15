@@ -1,56 +1,55 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.5.0
+> 版本：v0.6.0
 
 ## 目标
 
-- 实施 R004 产品演进 Phase 2：统一探索 + Export 导出 + 条目关联 + Onboarding
-- 完善信息架构（Sidebar 6→5 项）、新增数据导出能力、条目关联推荐、新用户引导
+- R008 智能化 & 全端适配 — 知识图谱增强 + AI 助手内嵌 + MCP 增强 + 移动端适配
 
-## 前置依赖（Phase 1A/1B 已完成）
+## 前置依赖（R001-R007 已完成）
 
-- B14: GET /review/trend 趋势数据 API
-- B15: PUT /entries/{id} category 转化 API + 文件迁移
-- B16: 反馈闭环后端 + 双写
-- F05: 首页改版「今天」
-- F06: FeedbackButton 双 Tab
-- F07: 灵感转化 UI
-- F08: 回顾页趋势折线图
+- 知识图谱基础：Neo4j 客户端 + 概念提取 + 图谱 API + GraphPage
+- AI 基础：LangGraph 任务解析 + 浮动聊天 + 意图检测
+- MCP 基础：11 个工具 + JWT 认证 + 用户隔离
+- 响应式基础：Sidebar 抽屉 + MobileNavBar + md: 断点
 
 ## 范围
 
 ### 包含
-- B18: Export 导出 API — zip/json 双格式
-- B19: 条目关联 API — GET /entries/:id/related
-- F09: Onboarding 对话引导 — 新用户首次登录引导
-- F10: 探索页基础 — 灵感/笔记/项目统一浏览 + Sidebar 改造
-- F11: 搜索增强 — 实时搜索 + Cmd+K 全局聚焦
-- F12: Export 导出 UI — 导出对话框 + Sidebar 入口
-- F13: 条目详情页关联面板 — 相关条目推荐
+- B28: 知识图谱增强 API — 概念搜索 + 时间维度 + 掌握度统计
+- B29: MCP 工具增强 — 批量操作 + 降级搜索 + 学习路径（不重复已有 get_knowledge_stats）
+- B30: AI 条目摘要 API — 自动生成条目摘要 + 缓存
+- B31: 页面级 AI 上下文后端 — ChatRequest 扩展 + prompt 注入
+- F27: 知识图谱页增强 — 搜索 + 掌握度卡片 + 概念时间线
+- F28: AI 条目摘要 UI — EntryDetail 摘要卡片
+- F29: 移动端适配优化 — 导航统一 + 平板布局 + 浮窗协调
+- F30: 页面级 AI 上下文前端 — chatStore + 浮动聊天注入
 
 ### 不包含
-- Phase 3（图谱独立页、AI 内嵌、移动端 App）
-- MCP Server 用户隔离扩展
-- 知识图谱可视化
+- AI 多轮对话记忆（LangGraph 多节点图扩展）
+- MCP 流式响应 / 实时通知
+- 知识图谱手动编辑
+- 横屏模式适配
 
 ## 用户路径
 
-1. 新用户首次登录 → 看到 Onboarding 引导 → 可跳过或完成首次记录
-2. 用户在探索页浏览所有条目 → 类型 Tab 筛选 → 搜索栏搜索 → Cmd+K 快捷聚焦
-3. 用户点击 Sidebar 导出按钮 → 选择格式和过滤 → 下载文件
-4. 用户在条目详情页底部看到「相关条目」推荐 → 点击跳转
+1. 用户在图谱页搜索框输入关键词 → 节点过滤/高亮 → 点击查看概念详情和学习时间线
+2. 用户在条目详情页看到 AI 摘要卡片 → 展开查看/收起
+3. 用户在任意页面打开浮动聊天 → AI 自动感知当前页面上下文给出针对性回复
+4. 用户在平板上使用 → Sidebar 自动收为图标模式 → 聊天面板不遮挡底部导航
+5. Claude Code 通过 MCP 批量创建条目、搜索（无 Qdrant 时也能工作）
 
 ## 技术约束
 
-- 后端：Python 3.11+ / FastAPI / SQLite / Markdown 存储
-- 前端：React 18 / Tailwind CSS / Vite / Zustand
-- 数据隔离：所有操作必须按 user_id 隔离
-- 大数据量导出使用 StreamingResponse 流式响应
-- 关联推荐：同项目 → 标签重叠 → 向量相似，最多 5 条
+- Neo4j 可选：所有图谱功能必须有 SQLite 降级
+- LLM 依赖：摘要生成依赖 LLM_API_KEY 配置
+- MCP 协议：stdio 传输，环境变量认证
+- ReactFlow 性能：>50 节点自动截取
+- Tailwind 断点：md=768px, lg=1024px, xl=1280px
 
 ## 交付边界
 
-- 后端：2 个新端点（/entries/export, /entries/{id}/related）+ 1 个字段扩展（onboarding_completed）
-- 前端：5 个页面/组件改造（Explore.tsx, OnboardingFlow.tsx, ExportDialog.tsx, EntryDetail.tsx, Sidebar.tsx）
-- 路由调整：Sidebar 6→5 项，旧路由重定向到 /explore
+- 后端：3 个新端点（知识图谱搜索/时间线/掌握度）+ 1 个字段扩展（ai_summary）+ ChatRequest page_context 扩展 + 4 个 MCP 新工具/增强
+- 前端：GraphPage 增强 + EntryDetail 摘要 + 浮动聊天页面上下文 + 布局优化
+- 导航：navConfig.ts（新文件）统一 + Sidebar icon-only 模式
