@@ -209,6 +209,7 @@ async def chat(request: ChatRequest, user: User = Depends(get_current_user)):
             entities=entities,
             text=request.text,
             session_id=thread_id,
+            user_id=user.id,
             confirm=confirm_dict,
             page_context=page_ctx,
         ):

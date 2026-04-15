@@ -45,44 +45,58 @@ async def storage(temp_data_dir: str):
 
 
 @pytest.fixture
-async def client(storage) -> AsyncGenerator[AsyncClient, None]:
-    """创建测试客户端（自动注入认证 token）"""
-    from app.main import app
+async def test_user(storage):
+    """创建测试用户（独立 fixture，供 client 和测试共用）"""
     from app.routers import deps
-    from app.services.auth_service import create_access_token
+    from app.infrastructure.storage.user_storage import UserStorage
+    import tempfile
 
-    # 注入存储服务并重置服务缓存
+    # 保存之前的全局状态，确保 teardown 后完整恢复
+    _DEPS_GLOBALS = [
+        'storage', '_user_storage',
+        '_entry_service', '_intent_service',
+        '_review_service', '_knowledge_service',
+        '_notification_service',
+    ]
+    _prev = {k: getattr(deps, k, None) for k in _DEPS_GLOBALS}
+
     deps.storage = storage
     deps.reset_all_services()
 
-    # 创建测试用户存储和 token
-    from app.infrastructure.storage.user_storage import UserStorage
-    import tempfile
     user_db = tempfile.mktemp(suffix=".db")
     deps._user_storage = UserStorage(user_db)
 
-    # 创建测试用户
     from app.models.user import UserCreate
-    test_user = deps._user_storage.create_user(UserCreate(
+    user = deps._user_storage.create_user(UserCreate(
         username="testuser",
         email="test@example.com",
         password="testpass123",
     ))
+    yield user
 
-    # 生成 token
+    # 恢复全局状态（包括 reset_all_services 清空的缓存）
+    for k, v in _prev.items():
+        setattr(deps, k, v)
+
+    import os
+    try:
+        os.unlink(user_db)
+    except OSError:
+        pass
+
+
+@pytest.fixture
+async def client(storage, test_user) -> AsyncGenerator[AsyncClient, None]:
+    """创建测试客户端（自动注入认证 token）"""
+    from app.main import app
+    from app.services.auth_service import create_access_token
+
     token = create_access_token(test_user.id)
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test", timeout=60.0) as c:
         c.headers["Authorization"] = f"Bearer {token}"
         yield c
-
-    # 清理临时 user db
-    import os
-    try:
-        os.unlink(user_db)
-    except OSError:
-        pass
 
 
 @pytest.fixture

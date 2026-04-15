@@ -4,14 +4,13 @@
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
   "updated_at": "2026-04-16",
-  "status": "completed",
-  "scope_notes": "R008 已完成并归档",
+  "status": "active",
+  "scope_notes": "R009 Chat 用户 ID 透传 — 修复 chat_service 所有 entry 操作未传递 user_id 的架构债务",
   "active_requirement_cycle": {
-    "id": "R008",
-    "name": "intelligence-omni",
-    "status": "completed",
-    "branch": "feat/R008-intelligence-omni",
-    "archived_to": "_archive/R008_intelligence-omni/"
+    "id": "R009",
+    "name": "chat-user-id-threading",
+    "status": "planning",
+    "branch": "feat/R009-chat-user-id-threading"
   },
   "workflow": {
     "name": "XLFoundry",
@@ -22,10 +21,10 @@
     "risk_provider": "local"
   },
   "summary": {
-    "total_tasks": 8,
-    "pending": 0,
+    "total_tasks": 2,
+    "pending": 2,
     "in_progress": 0,
-    "completed": 8,
+    "completed": 0,
     "blocked": 0,
     "cancelled": 0
   },
@@ -78,6 +77,13 @@
       "status": "completed",
       "archive_dir": "_archive/R007_engagement-experience",
       "branch": "feat/R007-engagement-experience"
+    },
+    {
+      "id": "R008",
+      "name": "intelligence-omni",
+      "status": "completed",
+      "archive_dir": "_archive/R008_intelligence-omni",
+      "branch": "feat/R008-intelligence-omni"
     }
   ],
   "archived_cycles": [
@@ -152,6 +158,15 @@
       "phases": ["P1A","P1B","P2A"],
       "completed_at": "2026-04-15",
       "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R008",
+      "name": "Intelligence Omni",
+      "archive_dir": "_archive/R008_intelligence-omni",
+      "total_tasks": 8,
+      "phases": ["P1","P2"],
+      "completed_at": "2026-04-16",
+      "snapshot": "feature_list.snapshot.json"
     }
   ],
   "modules": [
@@ -177,283 +192,76 @@
   ],
   "tasks": [
     {
-      "id": "B28",
+      "id": "B32",
       "phase": "P1",
-      "module": "knowledge-graph",
-      "name": "知识图谱增强 API — 概念搜索 + 时间维度 + 掌握度统计",
-      "description": "为知识图谱页增强提供后端支持。(1) GET /knowledge/search?q=keyword — 模糊搜索概念名（Neo4j 优先，SQLite tags 降级），返回 [{name, entry_count, mastery}]；(2) GET /knowledge/concepts/{name}/timeline — 概念学习时间线，返回 [{date, entries: [{id, title, type}]}]，按 created_at 聚合；(3) GET /knowledge/mastery-distribution — 掌握度分布统计 {new, beginner, intermediate, advanced} 各多少概念。所有端点按 user_id 隔离。",
+      "module": "ai-assistant",
+      "name": "ChatService user_id 透传 — 签名扩展 + 调用链改造",
+      "description": "修复 chat_service.py 中所有 entry_service 调用未传递 user_id 的架构债务。(1) process_intent() 新增 user_id 参数；(2) _handle_create() 新增 user_id，传递给 self.entry_service.create_entry(..., user_id=user_id)；(3) _handle_update() 新增 user_id，传递给 search_entries 和 update_entry；(4) _handle_delete() 新增 user_id，传递给 search_entries 和 delete_entry；(5) _handle_read() 新增 user_id，传递给 search_entries；(6) parse.py /chat 端点将 user.id 传递给 process_intent()。当前所有操作默认走 user_id='_default'，修复后走认证用户的真实 ID。",
       "verification": "L2",
       "depends_on": [],
       "status": "pending",
       "priority": "high",
       "acceptance_criteria": [
-        "GET /knowledge/search?q=xxx 返回匹配概念列表",
-        "GET /knowledge/concepts/{name}/timeline 返回学习时间线",
-        "GET /knowledge/mastery-distribution 返回掌握度分布",
-        "GET /knowledge/concepts/{name}/timeline?days=N 支持自定义时间范围",
-        "Neo4j 不可用时降级到 SQLite tags 查询",
-        "数据按 user_id 隔离",
-        "单元测试覆盖搜索 + 时间线 + 分布 + 降级 + 隔离"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "正常：搜索返回匹配概念",
-        "正常：时间线按日期聚合",
-        "正常：days 参数控制时间范围（默认 90 天）",
-        "边界：days=0 返回空时间线",
-        "边界：days=365 覆盖全年数据",
-        "正常：掌握度分布正确",
-        "边界：搜索无结果返回空列表",
-        "边界：概念无关联条目时间线为空",
-        "降级：Neo4j 不可用时从 SQLite 降级，mastery 字段为 null",
-        "隔离：只返回当前用户数据",
-        "回归：现有知识图谱 API 不受影响"
-      ],
-      "contract_refs": ["CONTRACT-KG01", "CONTRACT-KG02", "CONTRACT-KG03"],
-      "files": [
-        "backend/app/routers/knowledge.py",
-        "backend/app/services/knowledge_service.py",
-        "backend/app/infrastructure/storage/neo4j_client.py"
-      ]
-    },
-    {
-      "id": "B29",
-      "phase": "P1",
-      "module": "mcp-terminal",
-      "name": "MCP 工具增强 — 批量操作 + 降级搜索 + 学习路径",
-      "description": "增强 MCP Server 工具集。注意：get_knowledge_stats 已存在于现有 11 个工具中，本次不重复。(1) batch_create_entries — 批量创建条目（接受 JSON 数组），单次最多 10 条，超过 10 条返回错误提示（不截断、不部分成功）；(2) batch_update_status — 批量更新状态（接受 id 数组 + 目标状态，同理 max 10，超限返回错误）；(3) search_entries 增强：Qdrant 不可用时自动降级到 SQLite LIKE 搜索（当前仅走 Qdrant 无 fallback）；(4) get_learning_path — 暴露现有 knowledge_service 的学习路径能力为 MCP 工具（当前仅 API 端点，未注册为 MCP 工具）。认证失败（无 token / token 过期 / 无效）统一返回权限错误，不做任何数据操作。",
-      "verification": "L2",
-      "depends_on": [],
-      "status": "pending",
-      "priority": "medium",
-      "acceptance_criteria": [
-        "batch_create_entries 支持一次创建多条条目",
-        "batch_update_status 支持批量状态变更",
-        "search_entries 无 Qdrant 时降级到 SQLite LIKE",
-        "get_learning_path 作为新 MCP 工具注册（复用现有 knowledge_service.get_learning_path）",
-        "所有工具按 user_id 隔离",
-        "现有 11 个 MCP 工具功能不受影响"
+        "chat_service.process_intent() 接受 user_id 参数",
+        "_handle_create 中 entry_service.create_entry 传入 user_id",
+        "_handle_update 中 search_entries 和 update_entry 传入 user_id",
+        "_handle_delete 中 search_entries 和 delete_entry 传入 user_id",
+        "_handle_read 中 search_entries 传入 user_id",
+        "parse.py /chat 端点透传 user.id 到 process_intent",
+        "uv run pytest backend/tests/ 全部通过"
       ],
       "risk_tags": ["auth"],
       "test_tasks": [
-        "正常：批量创建多条条目",
-        "正常：批量更新状态",
-        "正常：搜索降级到 SQLite LIKE",
-        "正常：get_learning_path MCP 工具返回学习路径",
-        "边界：批量超过 10 条返回错误提示（拒绝执行，不截断）",
-        "边界：空数组批量操作返回友好提示",
-        "异常：Qdrant 不可用时降级搜索仍返回结果",
-        "认证：无 token 时工具调用返回权限错误",
-        "认证：token 过期时工具调用返回权限错误",
-        "回归：现有 11 个 MCP 工具（含 get_knowledge_stats）不受影响"
-      ],
-      "contract_refs": ["CONTRACT-MCP01"],
-      "files": [
-        "backend/app/mcp/tools.py",
-        "backend/app/mcp/handlers.py"
-      ]
-    },
-    {
-      "id": "B30",
-      "phase": "P1",
-      "module": "ai-assistant",
-      "name": "AI 条目摘要 API — 自动生成条目摘要",
-      "description": "为条目详情页 AI 摘要提供后端支持。(1) POST /entries/{id}/ai-summary — 调用 LLM 为指定条目生成摘要（200 字以内），返回 {summary, generated_at}；(2) 摘要缓存到 SQLite entries 表（新增 ai_summary TEXT 字段），重复请求直接返回缓存；(3) LLM prompt：总结条目内容、关键知识点、行动项（如有）；(4) 仅在条目有 content 时生成，空内容返回 null。",
-      "verification": "L2",
-      "depends_on": [],
-      "status": "pending",
-      "priority": "high",
-      "acceptance_criteria": [
-        "POST /entries/{id}/ai-summary 返回摘要文本",
-        "摘要缓存在 SQLite，重复请求不调用 LLM",
-        "空内容条目返回 null",
-        "数据按 user_id 隔离",
-        "单元测试覆盖生成 + 缓存 + 空内容 + 隔离"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "正常：生成条目摘要",
-        "正常：缓存命中时直接返回",
-        "边界：条目内容为空返回 null",
-        "边界：条目不存在返回 404",
-        "迁移：ai_summary 字段在 _migrate_schema 中自动添加，旧数据不受影响",
-        "异常：LLM 不可用时返回 503 或 null，不崩溃",
-        "隔离：只能为自己条目生成摘要",
-        "回归：现有条目 API 不受影响"
-      ],
-      "contract_refs": ["CONTRACT-AI01"],
-      "files": [
-        "backend/app/routers/entries.py",
-        "backend/app/services/entry_service.py",
-        "backend/app/infrastructure/storage/sqlite.py"
-      ]
-    },
-    {
-      "id": "F27",
-      "phase": "P2",
-      "module": "knowledge-graph",
-      "name": "知识图谱页增强 — 搜索 + 掌握度卡片 + 概念时间线",
-      "description": "增强知识图谱页功能。(1) GraphPage 顶部新增搜索框，输入关键词实时过滤/高亮概念节点；(2) 侧边栏/下方新增掌握度分布卡片（环形图或分级条），展示 new/beginner/intermediate/advanced 概念数量；(3) 点击概念节点弹出详情面板，包含学习时间线（最近学习日期 + 关联条目列表）；(4) api.ts 新增 getKnowledgeSearch, getConceptTimeline, getMasteryDistribution 函数。",
-      "verification": "F2",
-      "depends_on": ["B28"],
-      "status": "pending",
-      "priority": "high",
-      "acceptance_criteria": [
-        "搜索框输入关键词过滤图谱节点",
-        "掌握度分布卡片正确显示",
-        "点击概念弹出详情含学习时间线",
-        "npm run build 构建通过"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "正常：搜索过滤节点",
-        "正常：掌握度卡片渲染",
-        "正常：概念详情面板展示",
-        "边界：搜索无结果提示",
-        "边界：空图谱友好提示",
-        "异常：API 加载中显示 loading",
-        "异常：API 失败显示错误提示",
-        "回归：现有图谱页功能不受影响"
-      ],
-      "contract_refs": ["CONTRACT-KG01", "CONTRACT-KG02", "CONTRACT-KG03"],
-      "files": [
-        "frontend/src/pages/GraphPage.tsx",
-        "frontend/src/services/api.ts"
-      ]
-    },
-    {
-      "id": "F28",
-      "phase": "P2",
-      "module": "ai-assistant",
-      "name": "AI 条目摘要 UI — EntryDetail 摘要卡片",
-      "description": "在条目详情页展示 AI 摘要。(1) EntryDetail 页面内容区域下方新增「AI 摘要」折叠卡片；(2) 首次展开时自动请求生成摘要（POST /entries/{id}/ai-summary），生成中显示 loading spinner；(3) 摘要展示后可收起/展开，带生成时间标记；(4) api.ts 新增 generateEntrySummary 函数；(5) 空内容条目不显示摘要卡片（非灰色占位，直接隐藏）；(6) 缓存命中时直接展示已有摘要，标注「已缓存」。",
-      "verification": "F2",
-      "depends_on": ["B30"],
-      "status": "pending",
-      "priority": "high",
-      "acceptance_criteria": [
-        "EntryDetail 页面有 AI 摘要折叠卡片（非空内容条目）",
-        "首次展开时自动生成摘要，生成中显示 loading",
-        "摘要可收起/展开",
-        "npm run build 构建通过"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "正常：首次展开生成摘要",
-        "正常：摘要内容展示正确",
-        "正常：收起/展开交互",
-        "正常：缓存命中时直接展示（标注已缓存）",
-        "正常：生成中显示 loading spinner",
-        "边界：空内容条目不显示摘要卡片（完全隐藏）",
-        "异常：API 失败显示错误提示，支持重试",
-        "回归：现有 EntryDetail 功能不受影响"
-      ],
-      "contract_refs": ["CONTRACT-AI01"],
-      "files": [
-        "frontend/src/pages/EntryDetail.tsx",
-        "frontend/src/services/api.ts"
-      ]
-    },
-    {
-      "id": "F29",
-      "phase": "P1",
-      "module": "responsive",
-      "name": "移动端适配优化 — 导航统一 + 平板布局 + 浮窗协调",
-      "description": "优化移动端/平板端体验。(1) 新建 navConfig.ts（新文件）— 共享导航项配置（Sidebar + MobileNavBar 共用，消除重复定义）；(2) 平板布局优化（md-lg 断点 768-1024px）— Sidebar 可收起为 icon-only 模式，主内容区自适应；(3) FloatingChat 移动端与 MobileNavBar 协调 — 面板高度不超过可视区域 70%，底部留出 NavBar 空间；(4) 大屏优化（xl 1280px+）— 内容区最大宽度限制，减少超宽屏幕阅读疲劳。",
-      "verification": "F1",
-      "depends_on": [],
-      "status": "pending",
-      "priority": "medium",
-      "acceptance_criteria": [
-        "navConfig.ts 统一导航项，Sidebar 和 MobileNavBar 共用",
-        "平板端 Sidebar 有 icon-only 模式",
-        "FloatingChat 移动端不遮挡 MobileNavBar",
-        "FloatingChat + FeedbackButton + MobileNavBar 移动端三者在屏幕上不互相遮挡",
-        "大屏内容区有最大宽度限制",
-        "npm run build 构建通过"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "正常：导航项统一无差异",
-        "正常：平板端 Sidebar icon-only 模式",
-        "正常：FloatingChat 不遮挡底部导航",
-        "正常：FloatingChat + FeedbackButton 不互相遮挡",
-        "正常：移动端 FloatingChat + FeedbackButton + MobileNavBar 三者同屏共存、不遮挡、可点击",
-        "边界：超小屏（320px）三者仍不溢出",
-        "边界：超宽屏（2560px）内容居中",
-        "回归：桌面端布局不受影响"
+        "正常：通过 chat 创建条目 → 条目属于当前用户",
+        "正常：通过 chat 更新条目 → 只能更新自己的条目",
+        "正常：通过 chat 删除条目 → 只能删除自己的条目",
+        "正常：通过 chat 搜索条目 → 只返回当前用户的条目",
+        "正常：confirm 操作（多选确认）传递 user_id",
+        "隔离：用户 A 通过 chat 看不到用户 B 的条目",
+        "隔离：用户 A 通过 chat 无法修改/删除用户 B 的条目",
+        "边界：search_entries 无结果时不崩溃",
+        "回归：detect_intent 不受影响（不需要 user_id）",
+        "回归：review/knowledge/help 意图不受影响（不走 entry_service）"
       ],
       "contract_refs": [],
       "files": [
-        "frontend/src/components/layout/navConfig.ts",
-        "frontend/src/components/layout/Sidebar.tsx",
-        "frontend/src/components/layout/MobileNavBar.tsx",
-        "frontend/src/components/FloatingChat.tsx",
-        "frontend/src/App.tsx"
-      ]
+        "backend/app/services/chat_service.py",
+        "backend/app/routers/parse.py"
+      ],
+      "planning_notes": "R008 Codex 审核第 4 轮发现此架构债务（F1），当时标记为非 R008 范围。本任务专门修复。"
     },
     {
-      "id": "B31",
+      "id": "B33",
       "phase": "P1",
       "module": "ai-assistant",
-      "name": "页面级 AI 上下文后端 — ChatRequest 扩展 + prompt 注入",
-      "description": "为浮动聊天 AI 提供页面感知的后端支持。当前 ChatRequest 仅有 text/session_id/skip_intent/confirm 四个字段，无页面上下文。(1) ChatRequest 新增 page_context 字段（Optional[PageContext]），PageContext 包含 page_type: str（home/explore/entry/review/graph）、entry_id: Optional[str]、extra: Optional[dict]；(2) parse.py 的 generate() 将 page_context 传递给 detect_intent 和 process_intent；(3) chat_service 在构建 LLM prompt 时追加页面上下文指令（如详情页时「用户正在查看 xxx 条目」）；(4) page_context 为 None 时行为与现有一致，不影响无上下文场景；(5) schema 变更后执行 npm run gen:types 更新前端类型。",
+      "name": "Chat 用户隔离单元测试",
+      "description": "为 B32 的 user_id 透传补充独立测试文件。覆盖所有意图路径（create/update/delete/read/confirm）的用户隔离验证。使用 mock 验证 entry_service 调用时传入了正确的 user_id。",
       "verification": "L2",
-      "depends_on": [],
+      "depends_on": ["B32"],
       "status": "pending",
-      "priority": "medium",
+      "priority": "high",
       "acceptance_criteria": [
-        "ChatRequest 接受可选 page_context 字段",
-        "page_context 传入时 LLM prompt 包含页面上下文指令",
-        "page_context 为 None 时现有行为不变",
-        "单元测试覆盖有/无上下文 + 详情页场景",
-        "npm run gen:types 成功生成前端类型"
+        "新建 test_chat_user_isolation.py 测试文件",
+        "覆盖 create/update/delete/read 四个意图的 user_id 传递",
+        "覆盖 confirm 场景的 user_id 传递",
+        "覆盖用户隔离（A 看不到 B 的数据）",
+        "uv run pytest tests/unit/test_chat_user_isolation.py 全部通过"
       ],
       "risk_tags": [],
       "test_tasks": [
-        "正常：page_context 传入时 prompt 包含上下文",
-        "正常：entry_id 传入时 prompt 包含条目信息",
-        "正常：page_context=None 时行为与现有一致",
-        "边界：未知 page_type 时不影响正常回复",
-        "类型同步：npm run gen:types 后前端 ChatRequest 类型包含 page_context",
-        "回归：现有 /chat 端点无 page_context 时仍正常工作"
+        "正常：_handle_create 传入正确 user_id",
+        "正常：_handle_update 搜索和更新都传入 user_id",
+        "正常：_handle_delete 搜索和删除都传入 user_id",
+        "正常：_handle_read 搜索传入 user_id",
+        "正常：confirm 更新操作传入 user_id",
+        "正常：confirm 删除操作传入 user_id",
+        "隔离：用户 A 搜索不到用户 B 的条目",
+        "回归：review/knowledge/help 意图不调用 entry_service",
+        "集成：/chat API 端到端传递 user_id 到 entry_service"
       ],
-      "contract_refs": ["CONTRACT-AI02"],
+      "contract_refs": [],
       "files": [
-        "backend/app/routers/parse.py",
-        "backend/app/services/chat_service.py",
-        "backend/app/services/intent_service.py"
-      ]
-    },
-    {
-      "id": "F30",
-      "phase": "P2",
-      "module": "ai-assistant",
-      "name": "页面级 AI 上下文前端 — chatStore + FloatingChat 注入",
-      "description": "为 FloatingChat（主聊天，走 POST /chat + useStreamParse）添加页面感知。注意：PageAIAssistant 是独立系统（走 POST /ai/chat + sendAIChat），已有自己的上下文机制，本任务不涉及。(1) chatStore 新增 pageContext state — 记录当前页面类型（home/explore/entry/review/graph）、当前条目 ID；(2) useStreamParse hook 扩展，将 pageContext 注入到 POST /chat 请求的 page_context 字段（对应 B31 的 ChatRequest 扩展）；(3) 各页面组件通过 useEffect 在挂载时更新 chatStore 的 pageContext（使用 react-router 的 useLocation）；(4) FloatingChat 发送消息时自动附带最新 pageContext。",
-      "verification": "F2",
-      "depends_on": ["B31"],
-      "status": "pending",
-      "priority": "medium",
-      "acceptance_criteria": [
-        "chatStore 维护当前页面上下文状态",
-        "FloatingChat 发送消息时自动附带 pageContext",
-        "详情页时 pageContext 包含当前条目 ID",
-        "npm run build 构建通过"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "正常：首页 pageContext.page_type 为 home",
-        "正常：详情页 pageContext 包含 entry_id",
-        "正常：页面切换时 pageContext 自动更新",
-        "边界：无上下文时 AI 仍正常工作（B31 兼容）",
-        "回归：现有聊天功能不受影响"
-      ],
-      "contract_refs": ["CONTRACT-AI02"],
-      "files": [
-        "frontend/src/stores/chatStore.ts",
-        "frontend/src/hooks/useStreamParse.ts",
-        "frontend/src/components/FloatingChat.tsx"
+        "backend/tests/unit/test_chat_user_isolation.py"
       ]
     }
   ]
