@@ -80,14 +80,13 @@ export function NotificationCenter() {
   }
 
   async function togglePref(key: keyof NotificationPreferences) {
-    const next = { ...prefs, [key]: !prefs[key] };
-    setPrefs(next);
-    try {
-      await updateNotificationPreferences(next);
-    } catch {
-      // 静默回滚
-      setPrefs(prefs);
-    }
+    setPrefs(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      updateNotificationPreferences(next).catch(() => {
+        setPrefs(prev2 => ({ ...prev2, [key]: !prev2[key] }));
+      });
+      return next;
+    });
   }
 
   useEffect(() => {

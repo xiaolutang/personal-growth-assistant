@@ -1,6 +1,6 @@
 """通知/提醒 API 路由"""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from app.routers.deps import get_current_user, get_notification_service
 from app.models.user import User
