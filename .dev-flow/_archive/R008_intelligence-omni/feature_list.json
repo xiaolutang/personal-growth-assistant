@@ -3,15 +3,14 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-16",
-  "status": "completed",
-  "scope_notes": "R008 已完成并归档",
+  "updated_at": "2026-04-15",
+  "status": "planning",
+  "scope_notes": "R008 智能化 & 全端适配 — 知识图谱增强 + AI 助手内嵌 + MCP 增强 + 移动端适配",
   "active_requirement_cycle": {
     "id": "R008",
     "name": "intelligence-omni",
-    "status": "completed",
-    "branch": "feat/R008-intelligence-omni",
-    "archived_to": "_archive/R008_intelligence-omni/"
+    "status": "planning",
+    "branch": "feat/R008-intelligence-omni"
   },
   "workflow": {
     "name": "XLFoundry",
@@ -23,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 8,
-    "pending": 0,
+    "pending": 8,
     "in_progress": 0,
-    "completed": 8,
+    "completed": 0,
     "blocked": 0,
     "cancelled": 0
   },

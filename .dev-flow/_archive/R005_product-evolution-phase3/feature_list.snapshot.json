@@ -1,0 +1,470 @@
+{
+  "version": "1.4",
+  "plan_version": "2.0",
+  "project": "personal-growth-assistant",
+  "created_at": "2026-03-28",
+  "updated_at": "2026-04-15",
+  "status": "in_progress",
+  "scope_notes": "R005 Phase 3：图谱独立页 + 回顾增强 + AI 内嵌 + MCP 终端接入",
+  "active_requirement_cycle": {
+    "id": "R005",
+    "name": "product-evolution-phase3",
+    "status": "in_progress",
+    "branch": "feat/R005-product-evolution-phase3"
+  },
+  "workflow": {
+    "name": "XLFoundry",
+    "mode": "A",
+    "runtime": "skill_orchestrated",
+    "review_provider": "local",
+    "audit_provider": "local",
+    "risk_provider": "local"
+  },
+  "summary": {
+    "total_tasks": 7,
+    "pending": 0,
+    "in_progress": 0,
+    "completed": 7,
+    "blocked": 0,
+    "cancelled": 0
+  },
+  "archived_requirement_cycles": [
+    {
+      "id": "R003",
+      "name": "production-content-recovery",
+      "status": "completed",
+      "archive_dir": "_archive/R003_production-content-recovery",
+      "branch": "fix/R003-production-content-recovery"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase1a",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase1a",
+      "branch": "feat/R004-product-evolution-phase1a"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase1b",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase1b",
+      "branch": "feat/R004-product-evolution-phase1b"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase2",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase2",
+      "branch": "feat/R004-product-evolution-phase2"
+    }
+  ],
+  "archived_cycles": [
+    {
+      "cycle_id": "R001",
+      "name": "Personal Growth Assistant v1",
+      "archive_dir": "_archive/R001_personal-growth-assistant-v1",
+      "total_tasks": 36,
+      "phases": ["P1","P2","P3","P4","P5","P6","P7","P8","P9","P10","P11"],
+      "completed_at": "2026-04-13",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R003",
+      "name": "Production Content Recovery",
+      "archive_dir": "_archive/R003_production-content-recovery",
+      "total_tasks": 21,
+      "phases": ["P1","P2","P3","P4","P5","P6"],
+      "completed_at": "2026-04-14",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R004",
+      "name": "Product Evolution Phase 1A",
+      "archive_dir": "_archive/R004_product-evolution-phase1a",
+      "total_tasks": 7,
+      "phases": ["P1A"],
+      "completed_at": "2026-04-14",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R004",
+      "name": "Product Evolution Phase 1B",
+      "archive_dir": "_archive/R004_product-evolution-phase1b",
+      "total_tasks": 2,
+      "phases": ["P1B"],
+      "completed_at": "2026-04-15",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R004",
+      "name": "Product Evolution Phase 2",
+      "archive_dir": "_archive/R004_product-evolution-phase2",
+      "total_tasks": 7,
+      "phases": ["P2A","P2B","P2C"],
+      "completed_at": "2026-04-15",
+      "snapshot": "feature_list.snapshot.json"
+    }
+  ],
+  "modules": [
+    {
+      "id": "auth",
+      "name": "认证模块",
+      "description": "用户注册、登录、登出、JWT Token 管理"
+    },
+    {
+      "id": "data-isolation",
+      "name": "数据隔离模块",
+      "description": "SQLite/Markdown/Neo4j/Qdrant 四层存储的用户隔离改造"
+    },
+    {
+      "id": "route-guard",
+      "name": "路由守卫模块",
+      "description": "后端全路由认证守卫和用户上下文注入"
+    },
+    {
+      "id": "frontend-auth",
+      "name": "前端认证模块",
+      "description": "登录注册页面、路由守卫、Token 管理、用户状态"
+    },
+    {
+      "id": "content-recovery",
+      "name": "历史内容恢复模块",
+      "description": "修复 `_default` 历史数据在生产环境中对真实账号不可见的问题"
+    },
+    {
+      "id": "review",
+      "name": "回顾模块",
+      "description": "成长回顾统计与趋势数据 API + 趋势图表 UI"
+    },
+    {
+      "id": "entry-management",
+      "name": "条目管理模块",
+      "description": "条目 CRUD 与 category 转化（灵感→任务/笔记）+ 转化操作 UI"
+    },
+    {
+      "id": "feedback-loop",
+      "name": "反馈闭环模块",
+      "description": "本地反馈存储 + 远端 log-service 双写 + 用户可追踪状态"
+    },
+    {
+      "id": "home",
+      "name": "首页模块",
+      "description": "首页改版为行动中心「今天」"
+    },
+    {
+      "id": "explore",
+      "name": "探索模块",
+      "description": "灵感/笔记/项目统一浏览 + 搜索主入口 + 类型 Tab 筛选"
+    },
+    {
+      "id": "export",
+      "name": "导出模块",
+      "description": "数据导出 API + 导出 UI，支持 Markdown zip 和 JSON 格式"
+    },
+    {
+      "id": "entry-relations",
+      "name": "条目关联模块",
+      "description": "条目关联 API + 详情页关联面板，基于标签和向量相似推荐"
+    },
+    {
+      "id": "onboarding",
+      "name": "Onboarding 模块",
+      "description": "新用户首次登录引导，对话式 Onboarding 流程"
+    },
+    {
+      "id": "knowledge-graph",
+      "name": "知识图谱模块",
+      "description": "图谱独立页 + 概念统计 + 掌握度可视化，基于 Neo4j"
+    },
+    {
+      "id": "ai-assistant",
+      "name": "AI 助手模块",
+      "description": "页面级上下文 AI — 日知角色内嵌到各页面"
+    },
+    {
+      "id": "mcp-terminal",
+      "name": "MCP 终端模块",
+      "description": "MCP Server 认证增强 + 用户隔离 + 新工具"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "B20",
+      "phase": "P3A",
+      "module": "knowledge-graph",
+      "name": "图谱数据 API — 全局图谱 + 概念统计 + 掌握度",
+      "description": "为图谱独立页提供数据支撑。当前 knowledge API 只支持按单个概念查询，缺少全局视图和统计能力。实现：(1) `backend/app/routers/knowledge.py` 新增 `GET /knowledge-map` 端点，返回用户全量概念图谱（nodes + edges），支持 depth 参数（默认 2）；(2) 新增 `GET /knowledge/stats` 端点，返回概念统计（概念总数、关系总数、按 category 分布、top 概念列表）；(3) 新增掌握度计算：基于关联条目数量 + 最近活跃时间 + 条目类型分布（笔记权重 > 任务权重），输出 beginner/intermediate/advanced/new；(4) `GET /knowledge-map` 支持 `view` 参数：domain（按领域）/ mastery（按掌握度）/ project（按项目），同一数据不同聚合视角；(5) 所有查询带 user_id 隔离。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/B20.md",
+      "commit": "04e7530",
+      "execution_notes": "17 个单元测试通过，563 后端测试通过",
+      "priority": "high",
+      "acceptance_criteria": [
+        "GET /knowledge-map 返回 nodes + edges，每个 node 含 id/name/category/mastery/entry_count",
+        "GET /knowledge/stats 返回 concept_count/relation_count/category_distribution/top_concepts",
+        "掌握度计算基于条目数量 + 活跃时间 + 类型分布",
+        "view 参数切换聚合视角（domain/mastery/project）",
+        "数据按 user_id 隔离",
+        "空图谱时返回空 nodes + edges",
+        "单元测试覆盖全局图谱、统计、掌握度计算、用户隔离"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：有条目时返回图谱数据含 nodes 和 edges",
+        "正常：掌握度计算正确（多条目→advanced，无条目→new）",
+        "正常：统计接口返回正确计数和分布",
+        "边界：空图谱返回空数据",
+        "边界：depth 参数限制图谱深度",
+        "隔离：只返回当前用户的概念",
+        "回归：现有 knowledge API 不受影响"
+      ],
+      "contract_refs": ["CONTRACT-G01"],
+      "files": [
+        "backend/app/routers/knowledge.py",
+        "backend/app/services/knowledge_service.py",
+        "backend/app/infrastructure/storage/neo4j_client.py"
+      ]
+    },
+    {
+      "id": "B21",
+      "status": "completed",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/B21.md",
+      "execution_notes": "27 个 review API 测试通过, 572 后端测试通过",
+      "phase": "P3A",
+      "module": "review",
+      "name": "AI 总结 + 知识热力图 API",
+      "description": "增强回顾模块，补充 AI 摘要生成和知识掌握度分布。当前 review 的 ai_summary 字段为占位，未接入 LLM。实现：(1) `backend/app/services/review_service.py` 新增 `_generate_ai_summary` 方法，调用 LLM 基于日报/周报/月报数据生成自然语言总结；(2) 激活现有 review 端点的 ai_summary 字段，按需生成（首次请求时生成并缓存，后续直接返回）；(3) 新增 `GET /review/knowledge-heatmap` 端点，复用 B20 掌握度数据，返回各概念掌握度分布（用于前端热力图展示）；(4) 新增 `GET /review/growth-curve` 端点，返回按周的知识掌握度变化趋势。",
+      "verification": "L2",
+      "depends_on": ["B20"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "GET /review/daily 的 ai_summary 返回 LLM 生成的自然语言总结",
+        "GET /review/weekly 的 ai_summary 返回周总结",
+        "GET /review/knowledge-heatmap 返回概念掌握度分布",
+        "GET /review/growth-curve 返回掌握度周趋势",
+        "LLM 不可用时 ai_summary 降级为空字符串",
+        "数据按 user_id 隔离"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        "正常：日报 ai_summary 包含任务完成和笔记摘要",
+        "正常：知识热力图返回概念掌握度列表",
+        "正常：成长曲线返回周趋势数据",
+        "边界：无数据时 ai_summary 为空字符串",
+        "边界：LLM 超时时降级处理",
+        "异常：LLM 返回异常时 ai_summary 不崩溃",
+        "隔离：只返回当前用户的数据"
+      ],
+      "contract_refs": ["CONTRACT-R01"],
+      "files": [
+        "backend/app/routers/review.py",
+        "backend/app/services/review_service.py",
+        "backend/app/infrastructure/llm/api_caller.py"
+      ]
+    },
+    {
+      "id": "F14",
+      "status": "completed",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F14.md",
+      "execution_notes": "npm run build 通过, simplify 通过",
+      "phase": "P3A",
+      "module": "knowledge-graph",
+      "name": "图谱独立页 — @xyflow/react 可视化 + Sidebar 更新",
+      "description": "新增知识图谱独立页面，使用已有 @xyflow/react 库渲染交互式图谱。实现：(1) 新建 `frontend/src/pages/GraphPage.tsx`：调用 GET /knowledge-map 获取数据，使用 @xyflow/react 渲染节点和边；(2) 节点样式按掌握度着色（advanced=绿, intermediate=蓝, beginner=橙, new=灰）；(3) 点击节点展开详情面板（概念名、掌握度、关联条目数、最近学习时间、建议下一步）；(4) 点击边显示关系类型标签；(5) 维度切换 Tab：领域 / 掌握度 / 项目，调用对应 view 参数；(6) `frontend/src/App.tsx` 新增 `/graph` 路由；(7) `frontend/src/components/layout/Sidebar.tsx` 添加图谱导航项（图标 Brain/Network），Sidebar 扩为 5 项：今天/探索/图谱/任务/回顾；(8) `frontend/src/services/api.ts` 新增 getKnowledgeMap/getKnowledgeStats 函数。",
+      "verification": "F2",
+      "depends_on": ["B20"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "图谱页展示交互式知识图谱（节点 + 边）",
+        "节点按掌握度着色",
+        "点击节点展开详情面板",
+        "维度切换 Tab 切换聚合视角",
+        "Sidebar 新增图谱入口，扩为 5 项",
+        "/graph 路由可访问",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：图谱页渲染节点和边",
+        "正常：点击节点展开详情",
+        "正常：维度切换调用对应 API 参数",
+        "边界：空图谱时显示引导文案",
+        "回归：现有 Sidebar 其他导航项不受影响",
+        "回归：现有路由不受影响"
+      ],
+      "contract_refs": ["CONTRACT-G01"],
+      "files": [
+        "frontend/src/pages/GraphPage.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/App.tsx",
+        "frontend/src/services/api.ts"
+      ]
+    },
+    {
+      "id": "F15",
+      "status": "completed",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F15.md",
+      "execution_notes": "npm run build 通过",
+      "phase": "P3A",
+      "module": "review",
+      "name": "回顾页增强 — AI 总结卡片 + 知识热力图",
+      "description": "增强现有回顾页，添加 AI 总结展示和知识热力图。实现：(1) `frontend/src/pages/Review.tsx` 顶部新增 AI 总结卡片，展示日报/周报的 ai_summary 内容（流式显示 + 折叠）；(2) 新增知识热力图区域，调用 GET /review/knowledge-heatmap，展示各概念掌握度（色块 + 标签）；(3) Tab 导航增强为 4 项：日报 | 周报 | 月报 | 趋势（保持现有趋势 Tab）；(4) AI 总结 loading 态和 LLM 降级态处理。",
+      "verification": "F2",
+      "depends_on": ["B21"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "回顾页顶部显示 AI 总结卡片",
+        "知识热力图展示概念掌握度分布",
+        "Tab 导航包含日报/周报/月报/趋势",
+        "AI 总结有 loading 态",
+        "LLM 降级时 AI 总结区域不报错",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：日报 Tab 显示 AI 总结",
+        "正常：知识热力图渲染概念色块",
+        "正常：Tab 切换正常",
+        "边界：无数据时热力图显示空状态",
+        "边界：AI 总结为空时显示占位文案",
+        "回归：现有趋势图表不受影响"
+      ],
+      "contract_refs": ["CONTRACT-R01"],
+      "files": [
+        "frontend/src/pages/Review.tsx",
+        "frontend/src/services/api.ts"
+      ]
+    },
+    {
+      "id": "B22",
+      "status": "completed",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/B22.md",
+      "execution_notes": "6 个 AI chat 测试通过, 578 后端测试通过",
+      "phase": "P3B",
+      "module": "ai-assistant",
+      "name": "页面级上下文 AI API — 上下文感知对话",
+      "description": "新增上下文感知 AI 对话端点，支持基于当前页面上下文的智能响应。实现：(1) `backend/app/routers/` 新建 `ai_chat.py`，新增 `POST /ai/chat` 端点；(2) 请求体：`{ message, context: { page, selected_items, filters }, conversation_id? }`；(3) 系统提示词注入页面上下文（如「用户正在查看图谱页，当前筛选领域=Rust」）；(4) 复用已有 LLM client 的 stream 方法，SSE 流式返回；(5) 对话历史通过 conversation_id 隔离，使用已有 AsyncSqliteSaver；(6) 所有请求带 user_id 隔离。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "POST /ai/chat 接受 message + context，SSE 流式返回",
+        "系统提示词包含页面上下文信息",
+        "conversation_id 隔离对话历史",
+        "数据按 user_id 隔离",
+        "无 context 时降级为通用对话",
+        "单元测试覆盖上下文注入 + 流式 + 隔离"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：带 context 的请求返回上下文相关的 AI 响应",
+        "正常：SSE 流式返回 token",
+        "边界：无 context 时正常响应",
+        "边界：空消息返回 422",
+        "隔离：不同 user_id 的对话不互通",
+        "回归：现有 parse 对话流不受影响"
+      ],
+      "contract_refs": ["CONTRACT-A01"],
+      "files": [
+        "backend/app/routers/ai_chat.py",
+        "backend/app/services/ai_chat_service.py",
+        "backend/app/infrastructure/llm/api_caller.py"
+      ]
+    },
+    {
+      "id": "F16",
+      "status": "completed",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F16.md",
+      "execution_notes": "npm run build 通过",
+      "phase": "P3B",
+      "module": "ai-assistant",
+      "name": "日知 AI 内嵌组件 — 浮动助手 + 页面上下文",
+      "description": "在各页面内嵌日知 AI 助手，基于页面上下文提供智能建议。实现：(1) 新建 `frontend/src/components/PageAIAssistant.tsx`：右下角浮动按钮（与现有 FeedbackButton/FloatingChat 共存，z-index 分层），点击展开对话面板；(2) 对话面板：输入框 + 消息列表 + SSE 流式渲染；(3) 自动注入当前页面上下文（路由 + 可见数据摘要）到 context 参数；(4) 集成位置：`App.tsx` 全局挂载，各页面通过 props 传递上下文；(5) api.ts 新增 `sendAIChat` 函数调用 POST /ai/chat。",
+      "verification": "F2",
+      "depends_on": ["B22"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "各页面可见浮动 AI 助手按钮",
+        "点击展开对话面板，可输入消息",
+        "AI 响应基于当前页面上下文",
+        "SSE 流式渲染 AI 响应",
+        "与现有浮动组件（FeedbackButton/FloatingChat）不遮挡",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": ["first_use"],
+      "test_tasks": [
+        "正常：浮动按钮可见且可点击展开",
+        "正常：发送消息收到 AI 响应",
+        "正常：页面上下文注入（如图谱页上下文含当前概念）",
+        "边界：快速连续发送消息不重复触发",
+        "异常：API 失败时显示错误提示",
+        "回归：现有对话功能和反馈按钮不受影响"
+      ],
+      "contract_refs": ["CONTRACT-A01"],
+      "files": [
+        "frontend/src/components/PageAIAssistant.tsx",
+        "frontend/src/App.tsx",
+        "frontend/src/services/api.ts"
+      ]
+    },
+    {
+      "id": "B23",
+      "phase": "P3B",
+      "module": "mcp-terminal",
+      "name": "MCP Server 认证增强 — JWT + 用户隔离 + 新工具",
+      "description": "增强 MCP Server 安全性和能力。当前 9 个 MCP 工具无认证、无用户隔离。实现：(1) `backend/app/mcp/server.py` 添加 JWT 认证：从环境变量或启动参数获取 token，连接时验证；(2) 所有 MCP 工具添加 user_id 参数，通过认证后注入，确保数据隔离；(3) 新增 2 个工具：`get_review_summary`（回顾摘要）和 `get_knowledge_stats`（知识图谱统计）；(4) 更新 MCP 工具文档（tool description 补充使用说明）；(5) 新增 MCP 配置说明文档。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/B23.md",
+      "commit": "6e20fed",
+      "execution_notes": "32 个 MCP 测试通过 (18 新 + 14 回归), 596 后端测试通过",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "MCP Server 连接时验证 JWT token",
+        "所有 MCP 工具操作按 user_id 隔离",
+        "新增 get_review_summary 工具",
+        "新增 get_knowledge_stats 工具",
+        "无效 token 时拒绝连接",
+        "单元测试覆盖认证 + 隔离 + 新工具"
+      ],
+      "risk_tags": ["auth"],
+      "test_tasks": [
+        "正常：有效 token 连接成功",
+        "正常：get_review_summary 返回回顾数据",
+        "正常：get_knowledge_stats 返回统计",
+        "异常：无效 token 拒绝连接",
+        "异常：空 token 拒绝连接",
+        "隔离：不同 user_id 数据不互通",
+        "回归：现有 9 个工具功能正常"
+      ],
+      "contract_refs": ["CONTRACT-M01"],
+      "files": [
+        "backend/app/mcp/server.py",
+        "backend/app/mcp/handlers.py",
+        "backend/app/mcp/tools.py"
+      ]
+    }
+  ]
+}

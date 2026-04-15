@@ -1,0 +1,538 @@
+{
+  "version": "1.4",
+  "plan_version": "2.0",
+  "project": "personal-growth-assistant",
+  "created_at": "2026-03-28",
+  "updated_at": "2026-04-15",
+  "status": "in_progress",
+  "scope_notes": "R006 产品打磨 — 响应式布局 + 条目编辑增强 + AI 晨报 + 搜索增强",
+  "active_requirement_cycle": {
+    "id": "R006",
+    "name": "product-polish",
+    "status": "in_progress",
+    "branch": "feat/R006-product-polish"
+  },
+  "workflow": {
+    "name": "XLFoundry",
+    "mode": "A",
+    "runtime": "skill_orchestrated",
+    "review_provider": "local",
+    "audit_provider": "local",
+    "risk_provider": "local"
+  },
+  "summary": {
+    "total_tasks": 8,
+    "pending": 0,
+    "in_progress": 0,
+    "completed": 8,
+    "blocked": 0,
+    "cancelled": 0
+  },
+  "archived_requirement_cycles": [
+    {
+      "id": "R003",
+      "name": "production-content-recovery",
+      "status": "completed",
+      "archive_dir": "_archive/R003_production-content-recovery",
+      "branch": "fix/R003-production-content-recovery"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase1a",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase1a",
+      "branch": "feat/R004-product-evolution-phase1a"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase1b",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase1b",
+      "branch": "feat/R004-product-evolution-phase1b"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase2",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase2",
+      "branch": "feat/R004-product-evolution-phase2"
+    },
+    {
+      "id": "R005",
+      "name": "product-evolution-phase3",
+      "status": "completed",
+      "archive_dir": "_archive/R005_product-evolution-phase3",
+      "branch": "feat/R005-product-evolution-phase3"
+    }
+  ],
+  "archived_cycles": [
+    {
+      "cycle_id": "R001",
+      "name": "Personal Growth Assistant v1",
+      "archive_dir": "_archive/R001_personal-growth-assistant-v1",
+      "total_tasks": 36,
+      "phases": ["P1","P2","P3","P4","P5","P6","P7","P8","P9","P10","P11"],
+      "completed_at": "2026-04-13",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R003",
+      "name": "Production Content Recovery",
+      "archive_dir": "_archive/R003_production-content-recovery",
+      "total_tasks": 21,
+      "phases": ["P1","P2","P3","P4","P5","P6"],
+      "completed_at": "2026-04-14",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R004",
+      "name": "Product Evolution Phase 1A",
+      "archive_dir": "_archive/R004_product-evolution-phase1a",
+      "total_tasks": 7,
+      "phases": ["P1A"],
+      "completed_at": "2026-04-14",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R004",
+      "name": "Product Evolution Phase 1B",
+      "archive_dir": "_archive/R004_product-evolution-phase1b",
+      "total_tasks": 2,
+      "phases": ["P1B"],
+      "completed_at": "2026-04-15",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R004",
+      "name": "Product Evolution Phase 2",
+      "archive_dir": "_archive/R004_product-evolution-phase2",
+      "total_tasks": 7,
+      "phases": ["P2A","P2B","P2C"],
+      "completed_at": "2026-04-15",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R005",
+      "name": "Product Evolution Phase 3",
+      "archive_dir": "_archive/R005_product-evolution-phase3",
+      "total_tasks": 7,
+      "phases": ["P3A","P3B"],
+      "completed_at": "2026-04-15",
+      "snapshot": "feature_list.snapshot.json"
+    }
+  ],
+  "modules": [
+    {
+      "id": "auth",
+      "name": "认证模块",
+      "description": "用户注册、登录、登出、JWT Token 管理"
+    },
+    {
+      "id": "data-isolation",
+      "name": "数据隔离模块",
+      "description": "SQLite/Markdown/Neo4j/Qdrant 四层存储的用户隔离改造"
+    },
+    {
+      "id": "route-guard",
+      "name": "路由守卫模块",
+      "description": "后端全路由认证守卫和用户上下文注入"
+    },
+    {
+      "id": "frontend-auth",
+      "name": "前端认证模块",
+      "description": "登录注册页面、路由守卫、Token 管理、用户状态"
+    },
+    {
+      "id": "content-recovery",
+      "name": "历史内容恢复模块",
+      "description": "修复 `_default` 历史数据在生产环境中对真实账号不可见的问题"
+    },
+    {
+      "id": "review",
+      "name": "回顾模块",
+      "description": "成长回顾统计与趋势数据 API + 趋势图表 UI + AI 总结 + 知识热力图"
+    },
+    {
+      "id": "entry-management",
+      "name": "条目管理模块",
+      "description": "条目 CRUD 与 category 转化（灵感→任务/笔记）+ 转化操作 UI"
+    },
+    {
+      "id": "feedback-loop",
+      "name": "反馈闭环模块",
+      "description": "本地反馈存储 + 远端 log-service 双写 + 用户可追踪状态"
+    },
+    {
+      "id": "home",
+      "name": "首页模块",
+      "description": "首页改版为行动中心「今天」"
+    },
+    {
+      "id": "explore",
+      "name": "探索模块",
+      "description": "灵感/笔记/项目统一浏览 + 搜索主入口 + 类型 Tab 筛选"
+    },
+    {
+      "id": "export",
+      "name": "导出模块",
+      "description": "数据导出 API + 导出 UI，支持 Markdown zip 和 JSON 格式"
+    },
+    {
+      "id": "entry-relations",
+      "name": "条目关联模块",
+      "description": "条目关联 API + 详情页关联面板，基于标签和向量相似推荐"
+    },
+    {
+      "id": "onboarding",
+      "name": "Onboarding 模块",
+      "description": "新用户首次登录引导，对话式 Onboarding 流程"
+    },
+    {
+      "id": "knowledge-graph",
+      "name": "知识图谱模块",
+      "description": "图谱独立页 + 概念统计 + 掌握度可视化，基于 Neo4j"
+    },
+    {
+      "id": "ai-assistant",
+      "name": "AI 助手模块",
+      "description": "页面级上下文 AI — 日知角色内嵌到各页面"
+    },
+    {
+      "id": "mcp-terminal",
+      "name": "MCP 终端模块",
+      "description": "MCP Server 认证增强 + 用户隔离 + 新工具"
+    },
+    {
+      "id": "responsive",
+      "name": "响应式布局模块",
+      "description": "移动端适配 — Sidebar 抽屉化 + 卡片自适应 + 底部导航"
+    },
+    {
+      "id": "morning-digest",
+      "name": "AI 晨报模块",
+      "description": "AI 晨报生成 + 首页展示 — 主动引导用户行动"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "F17",
+      "phase": "P4A",
+      "module": "responsive",
+      "name": "移动端响应式布局 — Sidebar 抽屉 + 底部导航",
+      "description": "当前 Sidebar 固定 w-64，移动端完全不可用。实现：(1) `Sidebar.tsx` 添加 md 以下自动隐藏，通过 hamburger 按钮触发抽屉式展开（overlay + 左滑入）；(2) `App.tsx` 主内容区 `ml-64` 改为 `md:ml-64`，移动端 `ml-0`；(3) 新增 `MobileNavBar.tsx` 组件：移动端底部固定导航栏（今天/探索/图谱/任务/回顾 5 个图标），仅 `md:hidden` 显示；(4) `Home.tsx` 快捷操作 grid 从 `grid-cols-3` 改为 `grid-cols-1 sm:grid-cols-3`；(5) 所有页面卡片和列表增加响应式间距和宽度适配。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "high",
+      "acceptance_criteria": [
+        "移动端（<768px）Sidebar 隐藏，通过 hamburger 按钮展开抽屉",
+        "移动端底部固定导航栏显示 5 个页面入口",
+        "主内容区在移动端全宽显示（无 ml-64）",
+        "卡片和列表在小屏幕上自适应",
+        "桌面端（>=768px）布局不变",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：桌面端布局与当前一致",
+        "正常：移动端 Sidebar 变为抽屉",
+        "正常：移动端底部导航显示正确",
+        "正常：点击遮罩层关闭 Sidebar 抽屉",
+        "边界：768px 断点处无布局跳动",
+        "边界：底部导航不超出 safe-area",
+        "回归：所有页面在两种模式下可正常操作"
+      ],
+      "contract_refs": [],
+      "files": [
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/components/layout/MobileNavBar.tsx",
+        "frontend/src/components/layout/Header.tsx",
+        "frontend/src/App.tsx",
+        "frontend/src/pages/Home.tsx"
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F17.md",
+      "commit": "709fb41",
+      "execution_notes": "Sidebar 抽屉 + MobileNavBar + 响应式布局 + 浮动组件适配，build 通过"
+    },
+    {
+      "id": "F18",
+      "phase": "P4A",
+      "module": "responsive",
+      "name": "图谱页 + 回顾页 + 详情页移动端适配",
+      "status": "completed",
+      "description": "补齐核心页面的移动端适配。实现：(1) `GraphPage.tsx` 图谱画布在小屏缩小到 100% 宽度，DetailPanel 改为底部抽屉（非右侧面板）；(2) `Review.tsx` 趋势图表和热力图在小屏纵向堆叠；(3) `EntryDetail.tsx` max-w-4xl 保持但 padding 缩减，编辑模式 textarea 全宽；(4) 浮动组件（FloatingChat/FeedbackButton/PageAIAssistant）在移动端 z-index 重新分层，避免遮挡底部导航。",
+      "verification": "F2",
+      "depends_on": ["F17"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "图谱页在移动端可操作，详情面板为底部抽屉",
+        "回顾页卡片纵向堆叠",
+        "详情页内容全宽可读",
+        "浮动组件不遮挡底部导航",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：图谱页移动端可拖拽和点击节点",
+        "正常：回顾页趋势图和热力图可见",
+        "正常：详情页可滚动和编辑",
+        "边界：浮动组件与底部导航不重叠",
+        "回归：桌面端布局不变"
+      ],
+      "contract_refs": [],
+      "files": [
+        "frontend/src/pages/GraphPage.tsx",
+        "frontend/src/pages/Review.tsx",
+        "frontend/src/pages/EntryDetail.tsx",
+        "frontend/src/components/PageAIAssistant.tsx",
+        "frontend/src/components/FloatingChat.tsx",
+        "frontend/src/components/FeedbackButton.tsx"
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F18.md",
+      "commit": "1864421",
+      "execution_notes": "GraphPage 底部抽屉 + Review/EntryDetail 响应式间距"
+    },
+    {
+      "id": "F19",
+      "phase": "P4A",
+      "module": "entry-management",
+      "name": "条目详情页编辑增强 — 分区编辑 + 标签管理 + 元数据编辑",
+      "description": "增强 EntryDetail 编辑体验。当前编辑模式是整体 textarea，改为分区编辑。实现：(1) 标题改为 inline editable（点击变为 input）；(2) 标签区域增加编辑按钮，弹出 tag input（支持回车添加 + 点击删除）；(3) 状态/优先级/计划日期增加下拉选择器（编辑模式才显示）；(4) 内容编辑区分割线区分 Markdown 源码和预览（左右分栏或 Tab 切换），默认预览模式；(5) 保存按钮改为自动保存（debounce 1s + 离开页面提示未保存变更）。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "标题 inline editable",
+        "标签可添加和删除",
+        "状态/优先级/计划日期有下拉编辑器",
+        "内容区支持预览/编辑 Tab 切换",
+        "内容修改后 debounce 1s 自动保存，保存失败时显示错误提示",
+        "有未保存变更时离开页面弹出确认提示",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：点击标题进入编辑",
+        "正常：添加和删除标签",
+        "正常：切换状态和优先级",
+        "正常：预览/编辑 Tab 切换",
+        "正常：内容修改后自动保存",
+        "异常：保存失败时显示错误提示",
+        "异常：空标题保存时提示",
+        "边界：快速连续修改不重复保存（debounce）",
+        "边界：离开页面有未保存变更时弹出确认",
+        "回归：现有查看模式不受影响"
+      ],
+      "contract_refs": [],
+      "files": [
+        "frontend/src/pages/EntryDetail.tsx",
+        "frontend/src/services/api.ts"
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F19.md",
+      "commit": "358555a",
+      "execution_notes": "分区编辑 + 标签管理 + 元数据下拉 + 预览/编辑 Tab + 自动保存 + 离开提示，build 通过"
+    },
+    {
+      "id": "B24",
+      "phase": "P4B",
+      "module": "morning-digest",
+      "name": "AI 晨报生成 API — 每日主动建议",
+      "description": "为「今天」页提供 AI 晨报数据。实现：(1) `backend/app/routers/review.py` 新增 `GET /review/morning-digest` 端点；(2) `backend/app/services/review_service.py` 新增 `get_morning_digest(user_id)` 方法，聚合：今日待办（优先级排序）+ 拖延任务（planned_date 已过）+ 未跟进灵感（>3天未转化）+ 本周学习摘要（概念新增）；(3) 可选调用 LLM 生成自然语言建议（降级为模板文本）；(4) 结果缓存到当日（同一天只生成一次）。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "high",
+      "acceptance_criteria": [
+        "GET /review/morning-digest 返回待办/拖延/灵感/学习摘要",
+        "数据按 user_id 隔离",
+        "LLM 不可用时降级为模板文本",
+        "同一天内多次请求返回缓存结果",
+        "单元测试覆盖正常 + 降级 + 空数据 + 隔离"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        "正常：返回包含今日待办和拖延任务",
+        "正常：LLM 生成自然语言建议",
+        "边界：无任务时返回空列表和引导文案",
+        "边界：LLM 超时降级为模板文本",
+        "边界：LLM 返回异常内容时不崩溃",
+        "边界：同一天多次请求返回缓存（不重复调用 LLM）",
+        "边界：跨天后缓存失效，重新生成",
+        "隔离：只返回当前用户数据",
+        "回归：现有 review API 不受影响"
+      ],
+      "contract_refs": ["CONTRACT-MD01"],
+      "files": [
+        "backend/app/routers/review.py",
+        "backend/app/services/review_service.py"
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/B24.md",
+      "commit": "d486290",
+      "execution_notes": "晨报 API 完成含 10 个测试，LLM 降级和用户隔离验证通过"
+    },
+    {
+      "id": "F20",
+      "phase": "P4B",
+      "module": "home",
+      "name": "「今天」页 AI 晨报卡片 — 主动行动建议",
+      "status": "completed",
+      "description": "在「今天」页顶部新增 AI 晨报卡片。实现：(1) `Home.tsx` 顶部新增晨报卡片（靛蓝渐变背景，日知头像 + 自然语言建议 + 待办/拖延/灵感/学习 4 个摘要数字）；(2) 调用 GET /review/morning-digest 获取数据；(3) 卡片可折叠（默认展开，用户关闭后当日不再自动展开）；(4) loading 态为骨架屏；(5) api.ts 新增 getMorningDigest 函数。",
+      "verification": "F2",
+      "depends_on": ["B24"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "今天页顶部显示 AI 晨报卡片",
+        "卡片包含日知建议 + 4 个摘要数字",
+        "LLM 降级时显示模板文本",
+        "卡片可折叠",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：晨报卡片显示建议和摘要",
+        "正常：折叠后隐藏",
+        "正常：用户关闭后当日不再自动展开（localStorage 持久化）",
+        "正常：次日重新自动展开",
+        "边界：无数据时显示空状态引导",
+        "边界：loading 骨架屏",
+        "边界：API 失败时显示错误提示",
+        "回归：现有今日任务和灵感卡片不受影响"
+      ],
+      "contract_refs": [],
+      "files": [
+        "frontend/src/pages/Home.tsx",
+        "frontend/src/services/api.ts"
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F20.md",
+      "commit": "1303f9a",
+      "execution_notes": "晨报卡片完成含骨架屏+折叠+降级+4统计数字"
+    },
+    {
+      "id": "F21",
+      "phase": "P4C",
+      "module": "explore",
+      "name": "搜索增强 — 搜索建议 + 最近搜索 + 结果高亮优化",
+      "description": "增强探索页搜索体验。实现：(1) 搜索框聚焦时展开下拉面板：显示最近 5 条搜索历史（localStorage 存储）+ 热门标签（基于用户条目 tags 频率排序取 top 5）；(2) 搜索历史：每条可点击重新搜索，可逐条删除；(3) 搜索结果关键词高亮改为背景色高亮（当前为 text 标记），多关键词分别着色；(4) 搜索框空态显示「试试搜索：最近学习的主题」占位文案。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "搜索框聚焦显示搜索历史和热门标签",
+        "搜索历史可点击和删除",
+        "搜索结果关键词高亮",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：聚焦显示搜索建议面板",
+        "正常：点击历史项触发搜索",
+        "正常：删除历史项",
+        "正常：多关键词分别着色高亮",
+        "边界：无历史时只显示热门标签",
+        "边界：无标签时显示占位文案",
+        "边界：重复搜索词去重（最新排最前）",
+        "异常：localStorage 损坏时降级为空历史",
+        "回归：现有搜索功能不受影响"
+      ],
+      "contract_refs": [],
+      "files": [
+        "frontend/src/pages/Explore.tsx",
+        "frontend/src/services/api.ts"
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F21.md",
+      "commit": "332bbe3",
+      "execution_notes": "搜索建议面板 + 搜索历史 + 热门标签 + 结果高亮，build 通过"
+    },
+    {
+      "id": "F22",
+      "phase": "P4C",
+      "module": "ai-assistant",
+      "name": "日知角色打磨 — 上下文质量 + 多轮记忆 + 人设强化",
+      "description": "打磨 PageAIAssistant 对话质量。实现：(1) `ai_chat_service.py` 系统提示词强化：加入日知角色设定（博学但不卖弄的朋友，平实准确偶尔温厚）+ 3 种交互模式（教练/助手/镜子）；(2) 页面上下文注入增强：扩展 context.page_data 字段，前端注入当前页面关键数据摘要（如今天页传 todo_count/overdue_count，探索页传 recent_titles）；(3) 多轮对话记忆：前端通过 conversation_id 管理，每次请求携带最近 5 轮历史（messages 数组传给后端），后端注入 system prompt，不新增后端存储层；(4) 前端对话面板增加清空对话按钮（清除 conversation_id 和本地消息列表）。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "日知回复符合角色设定（平实、准确）",
+        "上下文包含页面关键数据（不仅 page 名）",
+        "多轮对话保持上下文连贯",
+        "前端可清空对话",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：日知回复语气符合设定",
+        "正常：上下文包含页面数据（page_data 字段）",
+        "正常：多轮对话引用前文（messages 数组传递）",
+        "正常：清空对话后重新开始（新 conversation_id）",
+        "边界：无上下文时降级为通用回复",
+        "边界：无页面数据时仅用 page 名",
+        "异常：不同 conversation_id 对话不互通",
+        "回归：现有 AI 对话功能不受影响"
+      ],
+      "contract_refs": ["CONTRACT-AI01"],
+      "files": [
+        "backend/app/services/ai_chat_service.py",
+        "frontend/src/components/PageAIAssistant.tsx"
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F22.md",
+      "commit": "6a6a4d7",
+      "execution_notes": "日知角色强化 + page_data 上下文 + 多轮记忆 + 清空对话，build + 6 个测试通过"
+    },
+    {
+      "id": "F23",
+      "phase": "P4C",
+      "module": "knowledge-graph",
+      "name": "图谱页性能优化 — 大数据量懒加载 + 节点折叠",
+      "description": "优化图谱页在大数据量下的渲染性能。实现：(1) `GraphPage.tsx` 添加节点数量阈值（>50 节点时默认只渲染 top-50 + 直接关联节点）；(2) 「加载更多」按钮逐步展开剩余节点；(3) 节点聚合：同 category 节点可选择聚合为单个大节点（显示数量角标）；(4) 边渲染优化：>100 条边时隐藏边的标签，hover 才显示。",
+      "verification": "F2",
+      "depends_on": ["F18"],
+      "status": "completed",
+      "priority": "low",
+      "acceptance_criteria": [
+        "大数据量（>50 节点）时默认只渲染部分",
+        "可逐步加载更多节点",
+        "同 category 可聚合显示",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：大数据量时默认渲染 top 节点",
+        "正常：加载更多按钮可用",
+        "正常：聚合模式显示角标",
+        "边界：少量节点（<50）时显示全部，不显示加载更多",
+        "边界：50-100 节点时阈值切换平滑",
+        "边界：>100 条边时标签隐藏，hover 显示",
+        "回归：现有图谱交互（拖拽、点击、Tab 切换）不受影响"
+      ],
+      "contract_refs": [],
+      "files": [
+        "frontend/src/pages/GraphPage.tsx"
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F23.md",
+      "commit": "a85d7e0",
+      "execution_notes": "节点阈值懒加载 + 聚合模式 + 边标签优化，build 通过"
+    }
+  ]
+}

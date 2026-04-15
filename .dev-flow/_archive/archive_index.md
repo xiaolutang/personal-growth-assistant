@@ -2,6 +2,17 @@
 
 ## 已完成需求包
 
+### R008: Intelligence Omni
+
+- 状态: 已完成
+- 分支: `feat/R008-intelligence-omni`
+- 主题: 智能全栈增强 — 知识图谱+AI摘要+MCP+移动端
+- 目录: `R008_intelligence-omni/`
+- 完成时间: 2026-04-16
+- 任务数: 8 (B28, B29, B30, B31, F27, F28, F29, F30)
+- Codex 审核轮次: 4 轮（计划审核 3 轮 + 代码审核 4 轮）
+- 关键修复: MCP 用户隔离、Neo4j 降级、AI 摘要缓存失效、时区统一
+
 ### R004: Product Evolution Phase 1B
 
 - 状态: 已完成
