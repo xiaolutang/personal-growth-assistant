@@ -221,6 +221,10 @@ async def handle_update_entry(storage: SyncService, args: dict, user_id: str) ->
     # 统一走 sync_entry（内部自动按 user_id 路由到正确 Markdown 目录）
     await storage.sync_entry(entry, user_id=user_id)
 
+    # title/content 变更时清除 AI 摘要缓存
+    if storage.sqlite and ("title" in args or "content" in args):
+        storage.sqlite.save_ai_summary(entry_id, "", user_id=user_id)
+
     return [TextContent(type="text", text=f"已更新条目: {entry_id}")]
 
 
@@ -248,21 +252,29 @@ async def handle_search_entries(storage: SyncService, args: dict, user_id: str) 
     query = args["query"]
     limit = args.get("limit", 5)
 
-    # 1. 优先使用 Qdrant 向量搜索
+    # 1. 优先使用 Qdrant 向量搜索（传递 user_id 进行隔离）
     try:
-        results = await storage.qdrant.search(query, limit)
+        if storage.qdrant:
+            results = await storage.qdrant.search(query, limit, user_id=user_id)
 
-        if results:
-            result = "# 搜索结果\n\n"
-            for i, hit in enumerate(results, 1):
-                payload = hit.payload
-                result += f"## {i}. {payload['title']}\n"
-                result += f"- ID: {hit.id}\n"
-                result += f"- 类型: {payload['type']}\n"
-                result += f"- 相似度: {hit.score:.2f}\n"
-                result += f"- 标签: {', '.join(payload.get('tags', []))}\n\n"
+            if results:
+                result = "# 搜索结果\n\n"
+                for i, hit in enumerate(results, 1):
+                    # Qdrant 客户端返回 dict 格式
+                    payload = hit.get("payload", hit) if isinstance(hit, dict) else getattr(hit, "payload", {})
+                    entry_id = hit.get("id", "") if isinstance(hit, dict) else getattr(hit, "id", "")
+                    score = hit.get("score", 0) if isinstance(hit, dict) else getattr(hit, "score", 0)
+                    title = payload.get("title", "N/A") if isinstance(payload, dict) else "N/A"
+                    entry_type = payload.get("type", "N/A") if isinstance(payload, dict) else "N/A"
+                    tags = payload.get("tags", []) if isinstance(payload, dict) else []
 
-            return [TextContent(type="text", text=result)]
+                    result += f"## {i}. {title}\n"
+                    result += f"- ID: {entry_id}\n"
+                    result += f"- 类型: {entry_type}\n"
+                    result += f"- 相似度: {score:.2f}\n"
+                    result += f"- 标签: {', '.join(tags)}\n\n"
+
+                return [TextContent(type="text", text=result)]
     except Exception as e:
         logger.warning(f"Qdrant 搜索失败，降级到 SQLite LIKE: {e}")
 
