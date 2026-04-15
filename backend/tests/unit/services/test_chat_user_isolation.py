@@ -11,19 +11,24 @@ from unittest.mock import AsyncMock, MagicMock
 
 # ---------------------------------------------------------------------------
 # 预先 mock app.routers 及其子模块，避免循环导入
+# 仅在 app.routers 尚未加载时才 mock（隔离运行需要），
+# 全量测试时 app.routers 已被其他模块加载，不需要也不应覆盖。
 # ---------------------------------------------------------------------------
-_routers_mock = types.ModuleType("app.routers")
-_routers_mock.__path__ = []  # 让 Python 认为这是包
+_NEED_ROUTER_MOCK = "app.routers" not in sys.modules
 
-_intent_mock = types.ModuleType("app.routers.intent")
-_intent_mock.get_intent_service = MagicMock()
+if _NEED_ROUTER_MOCK:
+    _routers_mock = types.ModuleType("app.routers")
+    _routers_mock.__path__ = []
 
-_deps_mock = types.ModuleType("app.routers.deps")
-_deps_mock.get_entry_service = MagicMock()
+    _intent_mock = types.ModuleType("app.routers.intent")
+    _intent_mock.get_intent_service = MagicMock()
 
-sys.modules.setdefault("app.routers", _routers_mock)
-sys.modules.setdefault("app.routers.intent", _intent_mock)
-sys.modules.setdefault("app.routers.deps", _deps_mock)
+    _deps_mock = types.ModuleType("app.routers.deps")
+    _deps_mock.get_entry_service = MagicMock()
+
+    sys.modules["app.routers"] = _routers_mock
+    sys.modules["app.routers.intent"] = _intent_mock
+    sys.modules["app.routers.deps"] = _deps_mock
 
 from app.api.schemas import EntryCreate, EntryUpdate, EntryResponse, SearchResult
 from app.services.chat_service import ChatService, sse_event
