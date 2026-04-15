@@ -692,6 +692,28 @@ export async function getRelatedEntries(entryId: string): Promise<RelatedEntry[]
   return data.related ?? [];
 }
 
+// === AI 条目摘要 API ===
+
+export interface EntrySummaryResponse {
+  summary: string;
+  generated_at: string;
+  cached: boolean;
+}
+
+/**
+ * 生成/获取条目的 AI 摘要
+ * POST /entries/{id}/ai-summary
+ */
+export async function generateEntrySummary(entryId: string): Promise<EntrySummaryResponse> {
+  const response = await fetch(`${API_BASE}/entries/${encodeURIComponent(entryId)}/ai-summary`, {
+    method: "POST",
+    headers: buildAuthHeaders({
+      headers: { "Content-Type": "application/json" },
+    }),
+  });
+  return handleApiResponse<EntrySummaryResponse>(response);
+}
+
 // === 通知 API ===
 
 export interface NotificationItem {
@@ -744,6 +766,78 @@ export async function updateNotificationPreferences(prefs: NotificationPreferenc
     body: JSON.stringify(prefs),
   });
   return handleApiResponse<NotificationPreferences>(response);
+}
+
+// === 知识图谱增强 API (F27) ===
+
+export interface KnowledgeSearchItem {
+  name: string;
+  entry_count: number;
+  mastery: "new" | "beginner" | "intermediate" | "advanced";
+}
+
+export interface KnowledgeSearchResponse {
+  items: KnowledgeSearchItem[];
+}
+
+export interface ConceptTimelineEntry {
+  id: string;
+  title: string;
+  type: string;
+}
+
+export interface ConceptTimelineDay {
+  date: string;
+  entries: ConceptTimelineEntry[];
+}
+
+export interface ConceptTimelineResponse {
+  concept: string;
+  items: ConceptTimelineDay[];
+}
+
+export interface MasteryDistributionResponse {
+  new: number;
+  beginner: number;
+  intermediate: number;
+  advanced: number;
+  total: number;
+}
+
+/**
+ * 搜索知识概念
+ */
+export async function getKnowledgeSearch(query: string, limit?: number): Promise<KnowledgeSearchResponse> {
+  const params = new URLSearchParams({ q: query });
+  if (limit !== undefined) params.set("limit", String(limit));
+  const response = await fetch(`${API_BASE}/knowledge/search?${params}`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<KnowledgeSearchResponse>(response);
+}
+
+/**
+ * 获取概念学习时间线
+ */
+export async function getConceptTimeline(concept: string, days?: number): Promise<ConceptTimelineResponse> {
+  const params = new URLSearchParams();
+  if (days !== undefined) params.set("days", String(days));
+  const qs = params.toString();
+  const url = `${API_BASE}/knowledge/concepts/${encodeURIComponent(concept)}/timeline${qs ? `?${qs}` : ""}`;
+  const response = await fetch(url, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<ConceptTimelineResponse>(response);
+}
+
+/**
+ * 获取掌握度分布
+ */
+export async function getMasteryDistribution(): Promise<MasteryDistributionResponse> {
+  const response = await fetch(`${API_BASE}/knowledge/mastery-distribution`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<MasteryDistributionResponse>(response);
 }
 
 // === 活动热力图 API ===

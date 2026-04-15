@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   ReactFlow,
   Background,
@@ -14,15 +14,21 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Link } from "react-router-dom";
-import { Loader2, X, AlertCircle, Compass, Plus, Layers } from "lucide-react";
+import { Loader2, X, AlertCircle, Compass, Plus, Layers, Search, BarChart3, Clock, FileText } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import {
   getKnowledgeMap,
   getKnowledgeStats,
+  getKnowledgeSearch,
+  getConceptTimeline,
+  getMasteryDistribution,
   type MapNode,
   type MapEdge,
   type KnowledgeMapResponse,
   type ConceptStatsResponse,
+  type KnowledgeSearchResponse,
+  type ConceptTimelineResponse,
+  type MasteryDistributionResponse,
 } from "@/services/api";
 
 // === 掌握度颜色映射 ===
@@ -58,12 +64,17 @@ type ViewKey = (typeof viewTabs)[number]["key"];
 
 // === 自定义节点组件 ===
 function ConceptNode({ data }: NodeProps) {
-  const nodeData = data as unknown as MapNode;
+  const nodeData = data as unknown as MapNode & { highlighted?: boolean };
   const bgColor = masteryColors[nodeData.mastery] || "#9ca3af";
+  const isHighlighted = nodeData.highlighted === true;
 
   return (
     <div
-      className="rounded-lg border-2 border-white/30 shadow-lg cursor-pointer transition-transform hover:scale-105"
+      className={`rounded-lg border-2 shadow-lg cursor-pointer transition-all hover:scale-105 ${
+        isHighlighted
+          ? "border-yellow-400 ring-2 ring-yellow-300/60 scale-110"
+          : "border-white/30"
+      }`}
       style={{ backgroundColor: bgColor, minWidth: 80, maxWidth: 140 }}
     >
       <Handle type="target" position={Position.Top} className="!bg-white/50" />
@@ -182,6 +193,29 @@ function DetailPanel({
   stats: ConceptStatsResponse | null;
   onClose: () => void;
 }) {
+  // 时间线状态
+  const [timeline, setTimeline] = useState<ConceptTimelineResponse | null>(null);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+  const [timelineError, setTimelineError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!node.name) return;
+    let cancelled = false;
+    setTimelineLoading(true);
+    setTimelineError(null);
+    getConceptTimeline(node.name, 30)
+      .then((data) => {
+        if (!cancelled) setTimeline(data);
+      })
+      .catch((err: any) => {
+        if (!cancelled) setTimelineError(err.message || "加载时间线失败");
+      })
+      .finally(() => {
+        if (!cancelled) setTimelineLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [node.name]);
+
   return (
     <>
       {/* 移动端：底部抽屉 */}
@@ -193,18 +227,18 @@ function DetailPanel({
             <X className="h-4 w-4" />
           </button>
         </div>
-        <DetailPanelContent node={node} stats={stats} />
+        <DetailPanelContent node={node} stats={stats} timeline={timeline} timelineLoading={timelineLoading} timelineError={timelineError} />
       </div>
 
       {/* 桌面端：右侧面板 */}
-      <div className="hidden md:flex w-72 border-l bg-card p-4 flex-col gap-4 overflow-y-auto">
+      <div className="hidden md:flex w-80 border-l bg-card p-4 flex-col gap-4 overflow-y-auto">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-base truncate">{node.name}</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="h-4 w-4" />
           </button>
         </div>
-        <DetailPanelContent node={node} stats={stats} />
+        <DetailPanelContent node={node} stats={stats} timeline={timeline} timelineLoading={timelineLoading} timelineError={timelineError} />
       </div>
     </>
   );
@@ -213,9 +247,15 @@ function DetailPanel({
 function DetailPanelContent({
   node,
   stats,
+  timeline,
+  timelineLoading,
+  timelineError,
 }: {
   node: MapNode;
   stats: ConceptStatsResponse | null;
+  timeline: ConceptTimelineResponse | null;
+  timelineLoading: boolean;
+  timelineError: string | null;
 }) {
   return (
     <div className="space-y-3">
@@ -243,6 +283,49 @@ function DetailPanelContent({
         <p className="text-sm text-muted-foreground leading-relaxed">
           {masterySuggestions[node.mastery] || "继续学习这个概念。"}
         </p>
+      </div>
+
+      {/* 学习时间线 */}
+      <div className="pt-2 border-t space-y-2">
+        <div className="flex items-center gap-1.5">
+          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+          <p className="text-xs font-medium text-muted-foreground">学习时间线</p>
+        </div>
+
+        {timelineLoading && (
+          <div className="flex items-center gap-2 py-2">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span className="text-xs text-muted-foreground">加载中...</span>
+          </div>
+        )}
+
+        {timelineError && (
+          <p className="text-xs text-destructive">{timelineError}</p>
+        )}
+
+        {timeline && timeline.items.length === 0 && !timelineLoading && (
+          <p className="text-xs text-muted-foreground">暂无学习记录</p>
+        )}
+
+        {timeline && timeline.items.length > 0 && (
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {timeline.items.map((day) => (
+              <div key={day.date} className="space-y-1">
+                <p className="text-[10px] font-medium text-muted-foreground">{day.date}</p>
+                {day.entries.map((entry) => (
+                  <Link
+                    key={entry.id}
+                    to={`/entries/${entry.id}`}
+                    className="flex items-center gap-1.5 px-2 py-1 rounded text-xs hover:bg-accent transition-colors"
+                  >
+                    <FileText className="h-3 w-3 text-muted-foreground shrink-0" />
+                    <span className="truncate">{entry.title}</span>
+                  </Link>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {stats && (
@@ -275,6 +358,18 @@ export function GraphPage() {
   const [showAllNodes, setShowAllNodes] = useState(false);
   const [aggregateMode, setAggregateMode] = useState(false);
 
+  // F27: 搜索状态
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<KnowledgeSearchResponse | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // F27: 掌握度分布状态
+  const [masteryDist, setMasteryDist] = useState<MasteryDistributionResponse | null>(null);
+  const [masteryDistLoading, setMasteryDistLoading] = useState(false);
+  const [masteryDistError, setMasteryDistError] = useState<string | null>(null);
+
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
@@ -287,6 +382,9 @@ export function GraphPage() {
     setSelectedNode(null);
     setShowAllNodes(false);
     setAggregateMode(false);
+    setSearchQuery("");
+    setSearchResults(null);
+    setSearchError(null);
     try {
       const [mapResult, statsResult] = await Promise.all([
         getKnowledgeMap(2, view),
@@ -318,6 +416,73 @@ export function GraphPage() {
   useEffect(() => {
     loadMap(activeView);
   }, [activeView, loadMap]);
+
+  // F27: 加载掌握度分布
+  useEffect(() => {
+    setMasteryDistLoading(true);
+    setMasteryDistError(null);
+    getMasteryDistribution()
+      .then((data) => setMasteryDist(data))
+      .catch((err: any) => setMasteryDistError(err.message || "加载掌握度分布失败"))
+      .finally(() => setMasteryDistLoading(false));
+  }, []);
+
+  // F27: 搜索概念（防抖 300ms）
+  useEffect(() => {
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+    }
+
+    if (!searchQuery.trim()) {
+      setSearchResults(null);
+      setSearchError(null);
+      // 恢复原始节点（移除高亮）
+      if (mapData) {
+        const displayNodes = mapData.nodes.length > NODE_THRESHOLD && !showAllNodes
+          ? getTopNodes(mapData.nodes, NODE_THRESHOLD)
+          : mapData.nodes;
+        setNodes(layoutNodes(displayNodes));
+        const displayNodeIds = new Set(displayNodes.map((n) => n.id));
+        const displayEdges = mapData.edges.filter(
+          (e) => displayNodeIds.has(e.source) && displayNodeIds.has(e.target)
+        );
+        setEdges(buildEdges(displayEdges, displayEdges.length > EDGE_LABEL_THRESHOLD));
+      }
+      return;
+    }
+
+    searchTimerRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      setSearchError(null);
+      try {
+        const result = await getKnowledgeSearch(searchQuery.trim());
+        setSearchResults(result);
+
+        // 高亮匹配的节点
+        if (mapData) {
+          const matchedNames = new Set(result.items.map((item) => item.name));
+          const displayNodes = mapData.nodes.length > NODE_THRESHOLD && !showAllNodes
+            ? getTopNodes(mapData.nodes, NODE_THRESHOLD)
+            : mapData.nodes;
+          const enrichedNodes = displayNodes.map((n) => ({
+            ...n,
+            highlighted: matchedNames.has(n.name),
+          }));
+          setNodes(layoutNodes(enrichedNodes as MapNode[] & { highlighted?: boolean }[]));
+        }
+      } catch (err: any) {
+        setSearchError(err.message || "搜索失败");
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+    };
+  }, [searchQuery, mapData, showAllNodes, setNodes, setEdges]);
 
   // 点击节点
   const onNodeClick = useCallback(
@@ -378,7 +543,7 @@ export function GraphPage() {
     <div className="flex flex-1 flex-col h-[calc(100vh-0px)]">
       <Header title="知识图谱" />
 
-      {/* Tab 栏 */}
+      {/* Tab 栏 + 搜索框 */}
       <div className="flex items-center border-b px-4 md:px-6 gap-1 bg-card">
         {viewTabs.map((tab) => (
           <button
@@ -393,7 +558,34 @@ export function GraphPage() {
             {tab.label}
           </button>
         ))}
+
+        {/* F27: 搜索框 */}
+        <div className="ml-auto relative w-48 md:w-64">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="搜索概念..."
+            className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+          />
+          {searchLoading && (
+            <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />
+          )}
+        </div>
       </div>
+
+      {/* 搜索结果提示 */}
+      {searchError && (
+        <div className="px-4 py-2 bg-destructive/10 text-destructive text-xs">
+          {searchError}
+        </div>
+      )}
+      {searchResults && searchResults.items.length === 0 && !searchLoading && searchQuery.trim() && (
+        <div className="px-4 py-2 bg-muted/50 text-muted-foreground text-xs">
+          未找到与 "{searchQuery.trim()}" 匹配的概念
+        </div>
+      )}
 
       {/* 主内容区 */}
       <div className="flex flex-1 overflow-hidden">
@@ -484,6 +676,115 @@ export function GraphPage() {
             </>
           )}
         </div>
+
+        {/* F27: 掌握度分布卡片（侧边栏下方，仅桌面端显示，无选中节点时） */}
+        {!selectedNode && (
+          <div className="hidden md:flex w-64 border-l bg-card flex-col">
+            <div className="p-4 border-b">
+              <div className="flex items-center gap-1.5 mb-3">
+                <BarChart3 className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold">掌握度分布</h3>
+              </div>
+
+              {masteryDistLoading && (
+                <div className="flex items-center gap-2 py-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span className="text-xs text-muted-foreground">加载中...</span>
+                </div>
+              )}
+
+              {masteryDistError && (
+                <div className="space-y-2">
+                  <p className="text-xs text-destructive">{masteryDistError}</p>
+                  <button
+                    onClick={() => {
+                      setMasteryDistLoading(true);
+                      setMasteryDistError(null);
+                      getMasteryDistribution()
+                        .then((data) => setMasteryDist(data))
+                        .catch((err: any) => setMasteryDistError(err.message || "加载掌握度分布失败"))
+                        .finally(() => setMasteryDistLoading(false));
+                    }}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    重试
+                  </button>
+                </div>
+              )}
+
+              {masteryDist && !masteryDistLoading && (
+                <div className="space-y-2.5">
+                  {(["advanced", "intermediate", "beginner", "new"] as const).map((level) => {
+                    const count = masteryDist[level];
+                    const total = masteryDist.total || 1;
+                    const pct = Math.round((count / total) * 100);
+                    return (
+                      <div key={level}>
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className="inline-block w-2.5 h-2.5 rounded-full"
+                              style={{ backgroundColor: masteryColors[level] }}
+                            />
+                            <span className="text-xs">{masteryLabels[level]}</span>
+                          </div>
+                          <span className="text-xs font-medium">{count}</span>
+                        </div>
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${pct}%`,
+                              backgroundColor: masteryColors[level],
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="pt-2 border-t text-center">
+                    <span className="text-xs text-muted-foreground">
+                      共 {masteryDist.total} 个概念
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 搜索结果列表 */}
+            {searchResults && searchResults.items.length > 0 && (
+              <div className="p-4 flex-1 overflow-y-auto">
+                <p className="text-xs font-medium text-muted-foreground mb-2">
+                  搜索结果 ({searchResults.items.length})
+                </p>
+                <div className="space-y-1.5">
+                  {searchResults.items.map((item) => (
+                    <button
+                      key={item.name}
+                      onClick={() => {
+                        // 找到对应节点并选中
+                        const matchNode = mapData?.nodes.find((n) => n.name === item.name);
+                        if (matchNode) setSelectedNode(matchNode);
+                      }}
+                      className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-accent transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="inline-block w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: masteryColors[item.mastery] }}
+                        />
+                        <span className="text-xs font-medium truncate">{item.name}</span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground ml-4">
+                        {item.entry_count} 条记录 · {masteryLabels[item.mastery]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 详情面板 */}
         {selectedNode && (
