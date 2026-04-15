@@ -54,7 +54,7 @@ export function ActivityHeatmap() {
     gridStart.setDate(gridStart.getDate() - dayOfWeek);
 
     const result: { date: string; count: number; inYear: boolean }[][] = [];
-    let current = new Date(gridStart);
+    const current = new Date(gridStart);
 
     while (current.getFullYear() <= year) {
       const week: { date: string; count: number; inYear: boolean }[] = [];
