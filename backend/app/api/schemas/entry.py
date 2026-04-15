@@ -82,3 +82,10 @@ class RelatedEntry(BaseModel):
 class RelatedEntriesResponse(BaseModel):
     """关联条目列表响应"""
     related: List[RelatedEntry]
+
+
+class EntrySummaryResponse(BaseModel):
+    """AI 摘要响应"""
+    summary: Optional[str] = None
+    generated_at: Optional[str] = None
+    cached: bool = False

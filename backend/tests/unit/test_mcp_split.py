@@ -19,13 +19,16 @@ from app.mcp.handlers import (
     handle_get_project_progress,
     handle_get_review_summary,
     handle_get_knowledge_stats,
+    handle_batch_create_entries,
+    handle_batch_update_status,
+    handle_get_learning_path,
 )
 
 
 class TestToolsModule:
     def test_tools_count(self):
-        """TOOL 列表包含 11 个工具"""
-        assert len(TOOLS) == 11
+        """TOOL 列表包含 14 个工具"""
+        assert len(TOOLS) == 14
         assert isinstance(TOOLS, tuple)
 
     def test_tool_names(self):
@@ -36,6 +39,7 @@ class TestToolsModule:
             "delete_entry", "search_entries", "get_knowledge_graph",
             "get_related_concepts", "get_project_progress",
             "get_review_summary", "get_knowledge_stats",
+            "batch_create_entries", "batch_update_status", "get_learning_path",
         }
         assert names == expected
 
@@ -49,6 +53,8 @@ class TestHandlersModule:
             handle_get_knowledge_graph, handle_get_related_concepts,
             handle_get_project_progress,
             handle_get_review_summary, handle_get_knowledge_stats,
+            handle_batch_create_entries, handle_batch_update_status,
+            handle_get_learning_path,
         ]
         for h in handlers:
             assert callable(h)
@@ -58,7 +64,7 @@ class TestServerRouting:
     def test_tool_handlers_map_completeness(self):
         """TOOL_HANDLERS 映射覆盖所有 tool name"""
         from app.mcp.server import TOOL_HANDLERS
-        assert len(TOOL_HANDLERS) == 11
+        assert len(TOOL_HANDLERS) == 14
         for tool in TOOLS:
             assert tool.name in TOOL_HANDLERS, f"Missing handler for: {tool.name}"
             assert callable(TOOL_HANDLERS[tool.name])
@@ -73,6 +79,8 @@ class TestServerRouting:
             id(handle_get_knowledge_graph), id(handle_get_related_concepts),
             id(handle_get_project_progress),
             id(handle_get_review_summary), id(handle_get_knowledge_stats),
+            id(handle_batch_create_entries), id(handle_batch_update_status),
+            id(handle_get_learning_path),
         }
         assert handler_ids == expected_ids
 

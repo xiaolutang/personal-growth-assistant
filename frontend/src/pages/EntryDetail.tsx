@@ -22,14 +22,18 @@ import {
   Code,
   Plus,
   AlertCircle,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { getEntry, getEntries, getProjectProgress, getRelatedEntries } from "@/services/api";
-import type { RelatedEntry } from "@/services/api";
+import { getEntry, getEntries, getProjectProgress, getRelatedEntries, generateEntrySummary } from "@/services/api";
+import type { RelatedEntry, EntrySummaryResponse } from "@/services/api";
 import { useTaskStore } from "@/stores/taskStore";
 import type { Task, TaskStatus, Priority } from "@/types/task";
 import type { ProjectProgressResponse } from "@/services/api";
@@ -51,6 +55,13 @@ export function EntryDetail() {
   const [relatedEntries, setRelatedEntries] = useState<RelatedEntry[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [relatedError, setRelatedError] = useState(false);
+
+  // AI 摘要状态
+  const [aiSummaryExpanded, setAiSummaryExpanded] = useState(false);
+  const [aiSummaryData, setAiSummaryData] = useState<EntrySummaryResponse | null>(null);
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
+  const [aiSummaryError, setAiSummaryError] = useState<string | null>(null);
+  const aiSummaryFetched = useRef(false);
 
   // 编辑模式状态
   const [isEditing, setIsEditing] = useState(false);
@@ -167,6 +178,58 @@ export function EntryDetail() {
         if (!cancelled) setRelatedLoading(false);
       });
     return () => { cancelled = true; };
+  }, [id]);
+
+  // AI 摘要加载：首次展开时自动请求，id 变化时重置
+  useEffect(() => {
+    setAiSummaryData(null);
+    setAiSummaryError(null);
+    setAiSummaryLoading(false);
+    setAiSummaryExpanded(false);
+    aiSummaryFetched.current = false;
+  }, [id]);
+
+  const handleToggleAiSummary = useCallback(() => {
+    if (!aiSummaryExpanded) {
+      // 展开
+      setAiSummaryExpanded(true);
+      if (!aiSummaryFetched.current && !aiSummaryLoading) {
+        setAiSummaryLoading(true);
+        setAiSummaryError(null);
+        aiSummaryFetched.current = true;
+        generateEntrySummary(id!)
+          .then((data) => {
+            setAiSummaryData(data);
+          })
+          .catch((err) => {
+            setAiSummaryError(err instanceof Error ? err.message : "生成摘要失败");
+            aiSummaryFetched.current = false; // 允许重试
+          })
+          .finally(() => {
+            setAiSummaryLoading(false);
+          });
+      }
+    } else {
+      // 收起
+      setAiSummaryExpanded(false);
+    }
+  }, [aiSummaryExpanded, aiSummaryLoading, id]);
+
+  const handleRetryAiSummary = useCallback(() => {
+    setAiSummaryError(null);
+    setAiSummaryLoading(true);
+    aiSummaryFetched.current = true;
+    generateEntrySummary(id!)
+      .then((data) => {
+        setAiSummaryData(data);
+      })
+      .catch((err) => {
+        setAiSummaryError(err instanceof Error ? err.message : "生成摘要失败");
+        aiSummaryFetched.current = false;
+      })
+      .finally(() => {
+        setAiSummaryLoading(false);
+      });
   }, [id]);
 
   // 检测未保存变更
@@ -682,6 +745,70 @@ export function EntryDetail() {
               </Card>
             )}
           </div>
+        )}
+
+        {/* AI 摘要折叠卡片 — 仅非空内容且非编辑模式时显示 */}
+        {!isEditing && entry.content && entry.content.trim().length > 0 && (
+          <Card className="mt-6">
+            <CardHeader
+              className="pb-2 cursor-pointer select-none"
+              onClick={handleToggleAiSummary}
+            >
+              <CardTitle className="text-base flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  AI 摘要
+                </span>
+                {aiSummaryExpanded ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
+              </CardTitle>
+            </CardHeader>
+            {aiSummaryExpanded && (
+              <CardContent>
+                {aiSummaryLoading && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    正在生成摘要...
+                  </div>
+                )}
+                {aiSummaryError && !aiSummaryLoading && (
+                  <div className="flex items-center justify-between py-2">
+                    <div className="flex items-center gap-2 text-sm text-destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      {aiSummaryError}
+                    </div>
+                    <Button variant="outline" size="sm" onClick={handleRetryAiSummary}>
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      重试
+                    </Button>
+                  </div>
+                )}
+                {aiSummaryData && !aiSummaryLoading && (
+                  <div className="space-y-3">
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {aiSummaryData.summary}
+                      </ReactMarkdown>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      {aiSummaryData.cached && (
+                        <Badge variant="secondary" className="text-xs">已缓存</Badge>
+                      )}
+                      {aiSummaryData.generated_at && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {new Date(aiSummaryData.generated_at).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            )}
+          </Card>
         )}
 
         {/* 相关条目 */}

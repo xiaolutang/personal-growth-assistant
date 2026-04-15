@@ -59,12 +59,23 @@ class ConfirmAction(BaseModel):
     item_id: str = Field(..., description="用户选择的条目 ID")
 
 
+class PageContext(BaseModel):
+    """页面级上下文，标识用户当前所在的页面"""
+    page_type: str = Field(
+        ...,
+        description="页面类型: home/explore/entry/review/graph",
+    )
+    entry_id: Optional[str] = Field(default=None, description="当前查看的条目 ID（entry 页面时使用）")
+    extra: Optional[dict] = Field(default=None, description="附加上下文信息")
+
+
 class ChatRequest(BaseModel):
     """统一聊天请求"""
     text: str = Field(..., min_length=1, description="用户输入文本")
     session_id: str = Field(default="default", description="会话 ID")
     skip_intent: bool = Field(default=False, description="跳过意图检测（前端已确认为 create）")
     confirm: Optional[ConfirmAction] = Field(default=None, description="确认操作（多选场景）")
+    page_context: Optional[PageContext] = Field(default=None, description="页面级上下文")
 
 
 class SessionResponse(BaseModel):
@@ -169,6 +180,7 @@ async def chat(request: ChatRequest, user: User = Depends(get_current_user)):
 
     async def generate():
         # Step 1: 意图识别
+        page_ctx = request.page_context
         if request.skip_intent:
             intent_result = {
                 "intent": "create",
@@ -177,7 +189,9 @@ async def chat(request: ChatRequest, user: User = Depends(get_current_user)):
                 "entities": {},
             }
         else:
-            intent_result = await _chat_service.detect_intent(request.text)
+            intent_result = await _chat_service.detect_intent(
+                request.text, page_context=page_ctx
+            )
 
         intent = intent_result["intent"]
         query = intent_result["query"]
@@ -196,6 +210,7 @@ async def chat(request: ChatRequest, user: User = Depends(get_current_user)):
             text=request.text,
             session_id=thread_id,
             confirm=confirm_dict,
+            page_context=page_ctx,
         ):
             yield event
 

@@ -7,7 +7,7 @@ import tempfile
 import uuid
 import zipfile
 from datetime import datetime
-from typing import AsyncGenerator, Optional, Tuple
+from typing import AsyncGenerator, Optional, Tuple, Any
 
 logger = logging.getLogger(__name__)
 
@@ -271,9 +271,11 @@ class EntryService:
                 except OSError:
                     pass  # 旧文件删除失败不阻塞
 
-        # SQLite 同步
+        # SQLite 同步 + 清除 AI 摘要缓存（内容变更后旧摘要失效）
         if self.storage.sqlite:
             self.storage.sqlite.upsert_entry(entry, user_id=user_id)
+            if request.title is not None or request.content is not None:
+                self.storage.sqlite.save_ai_summary(entry_id, "", user_id=user_id)
 
         # Neo4j + Qdrant 后台同步
         asyncio.create_task(self.storage.sync_to_graph_and_vector(entry, user_id=user_id))
@@ -520,3 +522,71 @@ class EntryService:
                 _EXPORT_LIMIT, user_id,
             )
         return [EntryMapper.task_to_response(t) for t in tasks]
+
+    # === AI 摘要 ===
+
+    async def generate_summary(
+        self, entry_id: str, user_id: str = "_default"
+    ) -> Optional[dict[str, Any]]:
+        """为条目生成 AI 摘要
+
+        Returns:
+            {"summary": str, "generated_at": str, "cached": bool}
+            条目不存在返回 None
+            条目不属于当前用户抛出 PermissionError
+            无内容时返回 {"summary": null, "generated_at": null, "cached": False}
+        """
+        # 读取条目
+        entry = self._get_markdown_storage(user_id).read_entry(entry_id)
+        if not entry:
+            # 检查是否属于其他用户
+            if self.storage.sqlite:
+                db_entry = self.storage.sqlite.get_entry(entry_id)
+                if db_entry and db_entry.get("user_id") and db_entry["user_id"] != user_id:
+                    raise PermissionError(f"无权访问条目: {entry_id}")
+            return None
+
+        # 空内容返回 null
+        if not entry.content or not entry.content.strip():
+            return {"summary": None, "generated_at": None, "cached": False}
+
+        # 检查缓存
+        if self.storage.sqlite:
+            cached = self.storage.sqlite.get_ai_summary(entry_id, user_id=user_id)
+            if cached:
+                return {"summary": cached["summary"], "generated_at": cached["generated_at"], "cached": True}
+
+        # 检查 LLM 是否可用
+        llm_caller = self.storage.llm_caller
+        if not llm_caller:
+            raise RuntimeError("LLM 服务不可用")
+
+        # 调用 LLM 生成摘要
+        prompt = (
+            "请用中文对以下条目内容进行总结，要求：\n"
+            "1. 总结条目的核心内容（不超过200字）\n"
+            "2. 提炼关键知识点\n"
+            "3. 如果有行动项或待办事项，请一并列出\n\n"
+            f"条目标题：{entry.title or '无标题'}\n\n"
+            f"条目内容：\n{entry.content}"
+        )
+        messages = [
+            {"role": "system", "content": "你是一个专业的内容总结助手。请简洁、准确地总结内容。"},
+            {"role": "user", "content": prompt},
+        ]
+        try:
+            summary = await llm_caller.call(messages)
+        except Exception as e:
+            logger.error("LLM 生成摘要失败: %s", e)
+            raise RuntimeError(f"LLM 服务不可用: {e}") from e
+
+        # 截断到 200 字
+        if len(summary) > 200:
+            summary = summary[:200]
+
+        # 缓存到 SQLite
+        generated_at = datetime.now().isoformat()
+        if self.storage.sqlite:
+            self.storage.sqlite.save_ai_summary(entry_id, summary, user_id=user_id, generated_at=generated_at)
+
+        return {"summary": summary, "generated_at": generated_at, "cached": False}

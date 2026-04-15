@@ -13,6 +13,9 @@ from app.services.knowledge_service import (
     LearningPathResponse,
     KnowledgeMapResponse,
     ConceptStatsResponse,
+    ConceptSearchResponse,
+    ConceptTimelineResponse,
+    MasteryDistributionResponse,
 )
 
 router = APIRouter(tags=["knowledge"])
@@ -95,5 +98,46 @@ async def get_knowledge_stats(user: User = Depends(get_current_user)):
 
     try:
         return await knowledge_service.get_knowledge_stats(user_id=user.id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+
+
+@router.get("/knowledge/search", response_model=ConceptSearchResponse)
+async def search_concepts(
+    q: str = Query(..., min_length=1, description="搜索关键词"),
+    limit: int = Query(20, ge=1, le=100, description="最大返回数"),
+    user: User = Depends(get_current_user),
+):
+    """搜索概念（Neo4j 优先，SQLite tags 降级）"""
+    knowledge_service = get_knowledge_service()
+
+    try:
+        return await knowledge_service.search_concepts(q, limit=limit, user_id=user.id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"搜索失败: {str(e)}")
+
+
+@router.get("/knowledge/concepts/{name}/timeline", response_model=ConceptTimelineResponse)
+async def get_concept_timeline(
+    name: str,
+    days: int = Query(90, ge=1, le=365, description="最近 N 天"),
+    user: User = Depends(get_current_user),
+):
+    """概念学习时间线"""
+    knowledge_service = get_knowledge_service()
+
+    try:
+        return await knowledge_service.get_concept_timeline(name, days=days, user_id=user.id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+
+
+@router.get("/knowledge/mastery-distribution", response_model=MasteryDistributionResponse)
+async def get_mastery_distribution(user: User = Depends(get_current_user)):
+    """掌握度分布统计"""
+    knowledge_service = get_knowledge_service()
+
+    try:
+        return await knowledge_service.get_mastery_distribution(user_id=user.id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")

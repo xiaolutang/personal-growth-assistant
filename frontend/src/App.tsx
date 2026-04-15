@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -26,28 +26,51 @@ import { initFetchInterceptor } from "@/lib/uid";
 // 在首次渲染前初始化 fetch 拦截器，确保所有请求都带 auth header
 initFetchInterceptor();
 
+// 平板断点：768-1024px 时默认收起 sidebar
+const TABLET_BREAKPOINT = 1024;
+
 function AppLayout() {
   const panelHeight = useChatStore((state) => state.panelHeight);
   const { isOpen, close } = useSidebar();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < TABLET_BREAKPOINT : false
+  );
+
+  // 监听窗口大小变化，自动切换平板折叠状态
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${TABLET_BREAKPOINT - 1}px)`);
+    const handler = (e: MediaQueryListEvent) => setSidebarCollapsed(e.matches);
+    mql.addEventListener("change", handler);
+    setSidebarCollapsed(mql.matches);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+
+  const toggleCollapse = useCallback(() => setSidebarCollapsed((v) => !v), []);
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar isOpen={isOpen} onClose={close} />
+      <Sidebar isOpen={isOpen} onClose={close} collapsed={sidebarCollapsed} onToggleCollapse={toggleCollapse} />
       <div
-        className="flex flex-1 flex-col md:ml-64 pb-16 md:pb-0"
-        style={{ paddingBottom: panelHeight }}
+        className={`flex flex-1 flex-col transition-all duration-300 pb-16 lg:pb-0`}
+        style={{
+          marginLeft: sidebarCollapsed ? "4rem" : "16rem",
+          paddingBottom: panelHeight,
+        }}
       >
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/explore" element={<Explore />} />
-          <Route path="/graph" element={<GraphPage />} />
-          <Route path="/tasks" element={<Tasks />} />
-          <Route path="/inbox" element={<Navigate to="/explore?type=inbox" replace />} />
-          <Route path="/notes" element={<Navigate to="/explore?type=note" replace />} />
-          <Route path="/projects" element={<Navigate to="/explore?type=project" replace />} />
-          <Route path="/review" element={<Review />} />
-          <Route path="/entries/:id" element={<EntryDetail />} />
-        </Routes>
+        {/* 大屏内容区最大宽度限制 */}
+        <div className="mx-auto w-full max-w-[1280px]">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/explore" element={<Explore />} />
+            <Route path="/graph" element={<GraphPage />} />
+            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/inbox" element={<Navigate to="/explore?type=inbox" replace />} />
+            <Route path="/notes" element={<Navigate to="/explore?type=note" replace />} />
+            <Route path="/projects" element={<Navigate to="/explore?type=project" replace />} />
+            <Route path="/review" element={<Review />} />
+            <Route path="/entries/:id" element={<EntryDetail />} />
+          </Routes>
+        </div>
       </div>
       <FeedbackButton />
       <FloatingChat />

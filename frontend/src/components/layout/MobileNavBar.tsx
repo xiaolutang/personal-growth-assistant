@@ -1,19 +1,11 @@
 import { NavLink } from "react-router-dom";
-import { Home, CheckCircle, BarChart3, Compass, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const navItems = [
-  { to: "/", icon: Home, label: "今天" },
-  { to: "/explore", icon: Compass, label: "探索" },
-  { to: "/graph", icon: Brain, label: "图谱" },
-  { to: "/tasks", icon: CheckCircle, label: "任务" },
-  { to: "/review", icon: BarChart3, label: "回顾" },
-];
+import { navItems } from "@/components/layout/navConfig";
 
 export function MobileNavBar() {
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-30 border-t bg-background md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-30 border-t bg-background lg:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div className="flex items-center justify-around h-14">

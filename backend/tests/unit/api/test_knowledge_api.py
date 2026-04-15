@@ -365,3 +365,159 @@ class TestKnowledgeMapAPI:
         # 验证 top_concepts 中不包含其他用户的概念
         top_names = [c["name"] for c in data["top_concepts"]]
         assert "其他用户独有概念" not in top_names
+
+    # ==================== B28: 搜索 + 时间线 + 掌握度分布 ====================
+
+    async def test_search_concepts(self, client: AsyncClient):
+        """搜索返回匹配概念"""
+        response = await client.get("/knowledge/search?q=Python")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "items" in data
+        assert len(data["items"]) > 0
+        # SQLite 降级时 mastery 为 null
+        for item in data["items"]:
+            assert "name" in item
+            assert "entry_count" in item
+            assert "mastery" in item
+        # 应匹配到 Python
+        names = [i["name"] for i in data["items"]]
+        assert "Python" in names
+
+    async def test_search_no_results(self, storage, client: AsyncClient):
+        """搜索无结果返回空列表"""
+        storage.sqlite.clear_all()
+        response = await client.get("/knowledge/search?q=nonexistent_xyz")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["items"] == []
+
+    async def test_search_sqlite_mastery_null(self, client: AsyncClient):
+        """SQLite 降级时 mastery 为 null"""
+        response = await client.get("/knowledge/search?q=Python&limit=5")
+        assert response.status_code == 200
+        data = response.json()
+        for item in data["items"]:
+            # 无 Neo4j 时 mastery 应为 null
+            assert item["mastery"] is None
+
+    async def test_concept_timeline(self, client: AsyncClient):
+        """时间线按日期聚合"""
+        response = await client.get("/knowledge/concepts/Python/timeline")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["concept"] == "Python"
+        assert "items" in data
+        # 有数据时 items 不为空
+        if data["items"]:
+            for day in data["items"]:
+                assert "date" in day
+                assert "entries" in day
+                for entry in day["entries"]:
+                    assert "id" in entry
+                    assert "title" in entry
+                    assert "type" in entry
+
+    async def test_concept_timeline_days_param(self, storage, client: AsyncClient):
+        """days 参数控制时间范围"""
+        user_id = _make_test_user_id(client)
+        storage.sqlite.clear_all()
+
+        # 创建一个旧条目（120 天前）
+        old_date = datetime.now() - timedelta(days=120)
+        old_entry = Task(
+            id="kmap-timeline-old",
+            title="旧Python条目",
+            content="old",
+            category=Category.NOTE,
+            status=TaskStatus.DOING,
+            priority=Priority.LOW,
+            tags=["Python"],
+            created_at=old_date,
+            updated_at=old_date,
+            file_path="notes/kmap-timeline-old.md",
+        )
+        storage.sqlite.upsert_entry(old_entry, user_id=user_id)
+
+        # 创建一个新条目（5 天前）
+        recent_date = datetime.now() - timedelta(days=5)
+        recent_entry = Task(
+            id="kmap-timeline-recent",
+            title="新Python条目",
+            content="recent",
+            category=Category.NOTE,
+            status=TaskStatus.DOING,
+            priority=Priority.LOW,
+            tags=["Python"],
+            created_at=recent_date,
+            updated_at=recent_date,
+            file_path="notes/kmap-timeline-recent.md",
+        )
+        storage.sqlite.upsert_entry(recent_entry, user_id=user_id)
+
+        # days=90 应只返回新条目
+        response = await client.get("/knowledge/concepts/Python/timeline?days=90")
+        assert response.status_code == 200
+        data = response.json()
+        all_dates = [day["date"] for day in data["items"]]
+        # 旧条目日期不应在结果中
+        old_date_str = old_date.strftime("%Y-%m-%d")
+        assert old_date_str not in all_dates
+
+    async def test_concept_timeline_empty(self, storage, client: AsyncClient):
+        """概念无关联条目时间线为空"""
+        response = await client.get("/knowledge/concepts/nonexistent_xyz/timeline")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["concept"] == "nonexistent_xyz"
+        assert data["items"] == []
+
+    async def test_mastery_distribution(self, client: AsyncClient):
+        """掌握度分布正确"""
+        response = await client.get("/knowledge/mastery-distribution")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "new" in data
+        assert "beginner" in data
+        assert "intermediate" in data
+        assert "advanced" in data
+        assert "total" in data
+        assert data["total"] > 0
+        assert data["total"] == data["new"] + data["beginner"] + data["intermediate"] + data["advanced"]
+
+    async def test_search_isolation(self, storage, client: AsyncClient):
+        """搜索只返回当前用户数据"""
+        other_user_id = "other-search-user"
+        entry = Task(
+            id="kmap-search-other",
+            title="其他用户搜索任务",
+            content="secret",
+            category=Category.TASK,
+            status=TaskStatus.DOING,
+            priority=Priority.MEDIUM,
+            tags=["SecretTag"],
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+            file_path="tasks/kmap-search-other.md",
+        )
+        storage.sqlite.upsert_entry(entry, user_id=other_user_id)
+
+        response = await client.get("/knowledge/search?q=SecretTag")
+        assert response.status_code == 200
+        data = response.json()
+        names = [i["name"] for i in data["items"]]
+        assert "SecretTag" not in names
+
+    async def test_new_apis_no_auth(self):
+        """新端点未认证返回 401"""
+        from httpx import ASGITransport, AsyncClient
+        from app.main import app
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as c:
+            assert (await c.get("/knowledge/search?q=test")).status_code == 401
+            assert (await c.get("/knowledge/concepts/test/timeline")).status_code == 401
+            assert (await c.get("/knowledge/mastery-distribution")).status_code == 401
