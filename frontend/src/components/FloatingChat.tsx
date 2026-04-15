@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   Send,
   Loader2,
@@ -21,12 +21,16 @@ import { KnowledgeGraphInline } from "@/components/KnowledgeGraph";
 import type { Intent } from "@/lib/intentDetection";
 import { OperationStatusBar } from "@/components/OperationStatusBar";
 import { ActionIndicator } from "@/components/ActionIndicator";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 // 最小和最大面板高度
 const MIN_HEIGHT = 200;
-const MAX_HEIGHT = 600;
+const MAX_HEIGHT_DESKTOP = 600;
+const MOBILE_NAV_HEIGHT = 56; // h-14 = 56px
+const MOBILE_MAX_RATIO = 0.7; // 移动端面板不超过可视区域 70%
 
 export function FloatingChat() {
+  const isMobile = useIsMobile();
   const [input, setInput] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [currentIntent, setCurrentIntent] = useState<Intent | null>(null);
@@ -198,6 +202,14 @@ export function FloatingChat() {
     setIsSubmitting(false);
   };
 
+  // 移动端最大高度 = 可视区域 70% - NavBar 高度
+  const mobileMaxHeight = useMemo(
+    () => Math.floor(window.innerHeight * MOBILE_MAX_RATIO) - MOBILE_NAV_HEIGHT,
+    []
+  );
+
+  const effectiveMaxHeight = isMobile ? mobileMaxHeight : MAX_HEIGHT_DESKTOP;
+
   // 拖拽调整高度
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -209,7 +221,7 @@ export function FloatingChat() {
 
     const handleMouseMove = (e: MouseEvent) => {
       const newHeight = window.innerHeight - e.clientY;
-      setPanelHeight(Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, newHeight)));
+      setPanelHeight(Math.min(effectiveMaxHeight, Math.max(MIN_HEIGHT, newHeight)));
     };
 
     const handleMouseUp = () => setIsDragging(false);
@@ -221,14 +233,20 @@ export function FloatingChat() {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDragging, setPanelHeight]);
+  }, [isDragging, setPanelHeight, effectiveMaxHeight]);
+
+  // 移动端底部留出 NavBar 空间
+  const mobileBottomOffset = isMobile ? MOBILE_NAV_HEIGHT : 0;
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 md:left-64 bg-background border-t z-50 flex flex-col ${
+      className={`fixed left-0 right-0 lg:left-64 bg-background border-t z-50 flex flex-col ${
         isDragging ? "select-none" : ""
       }`}
-      style={{ height: panelHeight }}
+      style={{
+        height: panelHeight,
+        bottom: mobileBottomOffset,
+      }}
     >
       {/* 拖拽条 */}
       <div
