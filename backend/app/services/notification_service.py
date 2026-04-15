@@ -31,12 +31,15 @@ class NotificationService:
     def __init__(self, sqlite_storage):
         self._sqlite = sqlite_storage
 
+    def _get_conn(self):
+        return self._sqlite._get_conn()
+
     # === 偏好 ===
 
     def get_preferences(self, user_id: str, conn=None) -> NotificationPreferences:
         own_conn = conn is None
         if own_conn:
-            conn = self._sqlite._get_conn()
+            conn = self._get_conn()
         try:
             row = conn.execute(
                 "SELECT * FROM notification_preferences WHERE user_id = ?",
@@ -54,7 +57,7 @@ class NotificationService:
                 conn.close()
 
     def update_preferences(self, user_id: str, prefs: NotificationPreferences) -> NotificationPreferences:
-        conn = self._sqlite._get_conn()
+        conn = self._get_conn()
         try:
             conn.execute(
                 """INSERT INTO notification_preferences (user_id, overdue_task_enabled, stale_inbox_enabled, review_prompt_enabled)
@@ -76,7 +79,7 @@ class NotificationService:
     def dismiss_notification(self, notification_id: str, user_id: str) -> bool:
         today = date.today().isoformat()
         now = datetime.now().isoformat()
-        conn = self._sqlite._get_conn()
+        conn = self._get_conn()
         try:
             conn.execute(
                 """INSERT OR IGNORE INTO notifications (notification_id, user_id, notification_type, ref_id, dismissed_at, created_at)
@@ -92,7 +95,7 @@ class NotificationService:
     def _get_dismissed_ids(self, user_id: str, today: str, conn=None) -> set:
         own_conn = conn is None
         if own_conn:
-            conn = self._sqlite._get_conn()
+            conn = self._get_conn()
         try:
             rows = conn.execute(
                 "SELECT notification_id FROM notifications WHERE user_id = ? AND created_at = ?",
@@ -103,64 +106,45 @@ class NotificationService:
             if own_conn:
                 conn.close()
 
-    # === 按需生成 ===
+    # === 按需生成（单连接完成全部查询） ===
 
     def get_notifications(self, user_id: str) -> NotificationResponse:
         today = date.today().isoformat()
         now = datetime.now().isoformat()
-
-        # 单连接完成全部查询
-        conn = self._sqlite._get_conn()
+        conn = self._get_conn()
         try:
-            prefs = self._get_preferences_conn(conn, user_id)
-            dismissed = self._get_dismissed_ids_conn(conn, user_id, today)
+            prefs = self.get_preferences(user_id, conn=conn)
+            dismissed = self._get_dismissed_ids(user_id, today, conn=conn)
             items: List[NotificationItem] = []
 
-            # 1. 逾期任务
             if prefs.overdue_task_enabled:
-                overdue = self._get_overdue_tasks_conn(conn, user_id, today)
-                for task in overdue:
+                for task in self._get_overdue_tasks(conn, user_id, today):
                     nid = f"overdue_task:{task['id']}:{today}"
                     days_overdue = (date.today() - datetime.fromisoformat(task["planned_date"]).date()).days
                     items.append(NotificationItem(
-                        id=nid,
-                        type="overdue_task",
-                        title="任务已拖延",
+                        id=nid, type="overdue_task", title="任务已拖延",
                         message=f"「{task['title']}」已超过计划日期 {days_overdue} 天",
-                        ref_id=task["id"],
-                        created_at=now,
-                        dismissed=nid in dismissed,
+                        ref_id=task["id"], created_at=now, dismissed=nid in dismissed,
                     ))
 
-            # 2. 未转化灵感
             if prefs.stale_inbox_enabled:
-                stale = self._get_stale_inbox_conn(conn, user_id)
-                for inbox in stale:
+                for inbox in self._get_stale_inbox(conn, user_id):
                     nid = f"stale_inbox:{inbox['id']}:{today}"
                     created = datetime.fromisoformat(inbox["created_at"])
                     days_stale = (datetime.now() - created).days
                     items.append(NotificationItem(
-                        id=nid,
-                        type="stale_inbox",
-                        title="灵感未转化",
+                        id=nid, type="stale_inbox", title="灵感未转化",
                         message=f"「{inbox['title']}」已在收件箱 {days_stale} 天，考虑转化为任务或笔记",
-                        ref_id=inbox["id"],
-                        created_at=now,
-                        dismissed=nid in dismissed,
+                        ref_id=inbox["id"], created_at=now, dismissed=nid in dismissed,
                     ))
 
-            # 3. 回顾提醒
             if prefs.review_prompt_enabled:
-                if self._check_no_recent_activity_conn(conn, user_id):
+                if self._check_no_recent_activity(conn, user_id):
                     nid = f"review_prompt:{today}"
                     items.append(NotificationItem(
-                        id=nid,
-                        type="review_prompt",
-                        title="回顾提醒",
+                        id=nid, type="review_prompt", title="回顾提醒",
                         message="你已 2 天没有记录，回顾一下最近的学习进展吧",
-                        ref_id=None,
-                        created_at=now,
-                        dismissed=nid in dismissed,
+                        ref_id=None, created_at=now, dismissed=nid in dismissed,
                     ))
 
             unread = [i for i in items if not i.dismissed]
@@ -168,29 +152,9 @@ class NotificationService:
         finally:
             conn.close()
 
-    # === 连接复用版本（内部方法，由 get_notifications 调用） ===
+    # === 内部查询方法（接收 conn 参数，由 get_notifications 透传） ===
 
-    def _get_preferences_conn(self, conn, user_id: str) -> NotificationPreferences:
-        row = conn.execute(
-            "SELECT * FROM notification_preferences WHERE user_id = ?",
-            (user_id,),
-        ).fetchone()
-        if row is None:
-            return NotificationPreferences()
-        return NotificationPreferences(
-            overdue_task_enabled=bool(row["overdue_task_enabled"]),
-            stale_inbox_enabled=bool(row["stale_inbox_enabled"]),
-            review_prompt_enabled=bool(row["review_prompt_enabled"]),
-        )
-
-    def _get_dismissed_ids_conn(self, conn, user_id: str, today: str) -> set:
-        rows = conn.execute(
-            "SELECT notification_id FROM notifications WHERE user_id = ? AND created_at = ?",
-            (user_id, today),
-        ).fetchall()
-        return {row["notification_id"] for row in rows}
-
-    def _get_overdue_tasks_conn(self, conn, user_id: str, today: str) -> List[Dict[str, Any]]:
+    def _get_overdue_tasks(self, conn, user_id: str, today: str) -> List[Dict[str, Any]]:
         rows = conn.execute(
             """SELECT id, title, planned_date, priority FROM entries
                WHERE user_id = ? AND type = 'task'
@@ -208,7 +172,7 @@ class NotificationService:
             result.append({"id": r["id"], "title": r["title"], "planned_date": str(pd_date), "priority": r["priority"] or "medium"})
         return result
 
-    def _get_stale_inbox_conn(self, conn, user_id: str) -> List[Dict[str, Any]]:
+    def _get_stale_inbox(self, conn, user_id: str) -> List[Dict[str, Any]]:
         three_days_ago = (datetime.now() - timedelta(days=3)).isoformat()
         rows = conn.execute(
             """SELECT id, title, created_at FROM entries
@@ -220,7 +184,7 @@ class NotificationService:
         ).fetchall()
         return [{"id": r["id"], "title": r["title"], "created_at": r["created_at"]} for r in rows]
 
-    def _check_no_recent_activity_conn(self, conn, user_id: str) -> bool:
+    def _check_no_recent_activity(self, conn, user_id: str) -> bool:
         two_days_ago = (datetime.now() - timedelta(days=2)).isoformat()
         row = conn.execute(
             "SELECT COUNT(*) as cnt FROM entries WHERE user_id = ? AND created_at >= ?",

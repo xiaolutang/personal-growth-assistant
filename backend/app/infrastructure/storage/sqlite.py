@@ -81,6 +81,7 @@ class SQLiteStorage:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_status ON entries(status)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_updated ON entries(updated_at DESC)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_user_id ON entries(user_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_user_created ON entries(user_id, created_at)")
 
             # 标签表
             conn.execute("""

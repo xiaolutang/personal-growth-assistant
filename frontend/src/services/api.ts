@@ -723,10 +723,11 @@ export async function getNotifications(): Promise<NotificationResponse> {
 }
 
 export async function dismissNotification(id: string): Promise<void> {
-  await fetch(`${API_BASE}/notifications/${encodeURIComponent(id)}/dismiss`, {
+  const response = await fetch(`${API_BASE}/notifications/${encodeURIComponent(id)}/dismiss`, {
     method: "POST",
     headers: buildAuthHeaders(),
   });
+  if (!response.ok) throw new ApiError(response.status, `dismiss failed: ${response.status}`);
 }
 
 export async function getNotificationPreferences(): Promise<NotificationPreferences> {

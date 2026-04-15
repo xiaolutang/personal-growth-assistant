@@ -59,7 +59,7 @@ export function ActivityHeatmap() {
     while (current.getFullYear() <= year) {
       const week: { date: string; count: number; inYear: boolean }[] = [];
       for (let d = 0; d < 7; d++) {
-        const dateStr = current.toISOString().slice(0, 10);
+        const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}-${String(current.getDate()).padStart(2, "0")}`;
         week.push({
           date: dateStr,
           count: dateMap.get(dateStr) || 0,
@@ -93,8 +93,10 @@ export function ActivityHeatmap() {
     navigate(`/explore?start_date=${date}&end_date=${date}`);
   }
 
-  const totalActivity = items.reduce((s, i) => s + i.count, 0);
-  const activeDays = items.filter((i) => i.count > 0).length;
+  const { totalActivity, activeDays } = useMemo(() => ({
+    totalActivity: items.reduce((s, i) => s + i.count, 0),
+    activeDays: items.filter((i) => i.count > 0).length,
+  }), [items]);
 
   return (
     <div className="rounded-xl border bg-card p-4">
