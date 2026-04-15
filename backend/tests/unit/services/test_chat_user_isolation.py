@@ -28,20 +28,22 @@ _mock_deps.get_entry_service = MagicMock()
 
 # 先让 chat_service.py 能 import app.api.schemas 和 app.graphs（这些无循环依赖）
 # 只有 app.routers.intent 和 app.routers.deps 会触发循环
+# 必须同时 mock app.routers 包本身，阻止 __init__.py 执行（否则会加载 parse → chat_service 循环）
 import sys
 _prev = {}
-for key in ("app.routers.intent", "app.routers.deps"):
+for key in ("app.routers", "app.routers.intent", "app.routers.deps"):
     _prev[key] = sys.modules.get(key)
     sys.modules[key] = MagicMock()
 
-_SPEC.loader.exec_module(_chat_svc_module)
-
-# 恢复 sys.modules（不保留 mock）
-for key, val in _prev.items():
-    if val is None:
-        del sys.modules[key]
-    else:
-        sys.modules[key] = val
+try:
+    _SPEC.loader.exec_module(_chat_svc_module)
+finally:
+    # 恢复 sys.modules（无论 exec 是否成功都必须清理）
+    for key, val in _prev.items():
+        if val is None:
+            sys.modules.pop(key, None)
+        else:
+            sys.modules[key] = val
 
 ChatService = _chat_svc_module.ChatService
 sse_event = _chat_svc_module.sse_event
