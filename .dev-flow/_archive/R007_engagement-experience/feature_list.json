@@ -1,0 +1,525 @@
+{
+  "version": "1.4",
+  "plan_version": "2.0",
+  "project": "personal-growth-assistant",
+  "created_at": "2026-03-28",
+  "updated_at": "2026-04-15",
+  "status": "completed",
+  "scope_notes": "R007 用户粘性 & 体验深度 — 深色模式 + PWA + 通知提醒 + 热力图日历",
+  "active_requirement_cycle": {
+    "id": "R007",
+    "name": "engagement-experience",
+    "status": "planning",
+    "branch": "feat/R007-engagement-experience"
+  },
+  "workflow": {
+    "name": "XLFoundry",
+    "mode": "A",
+    "runtime": "skill_orchestrated",
+    "review_provider": "local",
+    "audit_provider": "local",
+    "risk_provider": "local"
+  },
+  "summary": {
+    "total_tasks": 6,
+    "pending": 0,
+    "in_progress": 0,
+    "completed": 6,
+    "blocked": 0,
+    "cancelled": 0
+  },
+  "archived_requirement_cycles": [
+    {
+      "id": "R003",
+      "name": "production-content-recovery",
+      "status": "completed",
+      "archive_dir": "_archive/R003_production-content-recovery",
+      "branch": "fix/R003-production-content-recovery"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase1a",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase1a",
+      "branch": "feat/R004-product-evolution-phase1a"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase1b",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase1b",
+      "branch": "feat/R004-product-evolution-phase1b"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase2",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase2",
+      "branch": "feat/R004-product-evolution-phase2"
+    },
+    {
+      "id": "R005",
+      "name": "product-evolution-phase3",
+      "status": "completed",
+      "archive_dir": "_archive/R005_product-evolution-phase3",
+      "branch": "feat/R005-product-evolution-phase3"
+    },
+    {
+      "id": "R006",
+      "name": "product-polish",
+      "status": "completed",
+      "archive_dir": "_archive/R006_product-polish",
+      "branch": "feat/R006-product-polish"
+    }
+  ],
+  "archived_cycles": [
+    {
+      "cycle_id": "R001",
+      "name": "Personal Growth Assistant v1",
+      "archive_dir": "_archive/R001_personal-growth-assistant-v1",
+      "total_tasks": 36,
+      "phases": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5",
+        "P6",
+        "P7",
+        "P8",
+        "P9",
+        "P10",
+        "P11"
+      ],
+      "completed_at": "2026-04-13",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R003",
+      "name": "Production Content Recovery",
+      "archive_dir": "_archive/R003_production-content-recovery",
+      "total_tasks": 21,
+      "phases": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5",
+        "P6"
+      ],
+      "completed_at": "2026-04-14",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R004",
+      "name": "Product Evolution Phase 1A",
+      "archive_dir": "_archive/R004_product-evolution-phase1a",
+      "total_tasks": 7,
+      "phases": [
+        "P1A"
+      ],
+      "completed_at": "2026-04-14",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R004",
+      "name": "Product Evolution Phase 1B",
+      "archive_dir": "_archive/R004_product-evolution-phase1b",
+      "total_tasks": 2,
+      "phases": [
+        "P1B"
+      ],
+      "completed_at": "2026-04-15",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R004",
+      "name": "Product Evolution Phase 2",
+      "archive_dir": "_archive/R004_product-evolution-phase2",
+      "total_tasks": 7,
+      "phases": [
+        "P2A",
+        "P2B",
+        "P2C"
+      ],
+      "completed_at": "2026-04-15",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R005",
+      "name": "Product Evolution Phase 3",
+      "archive_dir": "_archive/R005_product-evolution-phase3",
+      "total_tasks": 7,
+      "phases": [
+        "P3A",
+        "P3B"
+      ],
+      "completed_at": "2026-04-15",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R006",
+      "name": "Product Polish",
+      "archive_dir": "_archive/R006_product-polish",
+      "total_tasks": 8,
+      "phases": [
+        "P4A",
+        "P4B",
+        "P4C"
+      ],
+      "completed_at": "2026-04-15",
+      "snapshot": "feature_list.snapshot.json"
+    }
+  ],
+  "modules": [
+    {
+      "id": "auth",
+      "name": "认证模块",
+      "description": "用户注册、登录、登出、JWT Token 管理"
+    },
+    {
+      "id": "data-isolation",
+      "name": "数据隔离模块",
+      "description": "SQLite/Markdown/Neo4j/Qdrant 四层存储的用户隔离改造"
+    },
+    {
+      "id": "route-guard",
+      "name": "路由守卫模块",
+      "description": "后端全路由认证守卫和用户上下文注入"
+    },
+    {
+      "id": "frontend-auth",
+      "name": "前端认证模块",
+      "description": "登录注册页面、路由守卫、Token 管理、用户状态"
+    },
+    {
+      "id": "content-recovery",
+      "name": "历史内容恢复模块",
+      "description": "修复 `_default` 历史数据在生产环境中对真实账号不可见的问题"
+    },
+    {
+      "id": "review",
+      "name": "回顾模块",
+      "description": "成长回顾统计与趋势数据 API + 趋势图表 UI + AI 总结 + 知识热力图"
+    },
+    {
+      "id": "entry-management",
+      "name": "条目管理模块",
+      "description": "条目 CRUD 与 category 转化（灵感→任务/笔记）+ 转化操作 UI"
+    },
+    {
+      "id": "feedback-loop",
+      "name": "反馈闭环模块",
+      "description": "本地反馈存储 + 远端 log-service 双写 + 用户可追踪状态"
+    },
+    {
+      "id": "home",
+      "name": "首页模块",
+      "description": "首页改版为行动中心「今天」"
+    },
+    {
+      "id": "explore",
+      "name": "探索模块",
+      "description": "灵感/笔记/项目统一浏览 + 搜索主入口 + 类型 Tab 筛选"
+    },
+    {
+      "id": "export",
+      "name": "导出模块",
+      "description": "数据导出 API + 导出 UI，支持 Markdown zip 和 JSON 格式"
+    },
+    {
+      "id": "entry-relations",
+      "name": "条目关联模块",
+      "description": "条目关联 API + 详情页关联面板，基于标签和向量相似推荐"
+    },
+    {
+      "id": "onboarding",
+      "name": "Onboarding 模块",
+      "description": "新用户首次登录引导，对话式 Onboarding 流程"
+    },
+    {
+      "id": "knowledge-graph",
+      "name": "知识图谱模块",
+      "description": "图谱独立页 + 概念统计 + 掌握度可视化，基于 Neo4j"
+    },
+    {
+      "id": "ai-assistant",
+      "name": "AI 助手模块",
+      "description": "页面级上下文 AI — 日知角色内嵌到各页面"
+    },
+    {
+      "id": "mcp-terminal",
+      "name": "MCP 终端模块",
+      "description": "MCP Server 认证增强 + 用户隔离 + 新工具"
+    },
+    {
+      "id": "responsive",
+      "name": "响应式布局模块",
+      "description": "移动端适配 — Sidebar 抽屉化 + 卡片自适应 + 底部导航"
+    },
+    {
+      "id": "morning-digest",
+      "name": "AI 晨报模块",
+      "description": "AI 晨报生成 + 首页展示 — 主动引导用户行动"
+    },
+    {
+      "id": "theme",
+      "name": "主题模块",
+      "description": "深色/浅色模式切换 + 系统偏好检测 + 持久化"
+    },
+    {
+      "id": "pwa",
+      "name": "PWA 模块",
+      "description": "PWA manifest + Service Worker + 离线缓存 + 安装提示"
+    },
+    {
+      "id": "notification",
+      "name": "通知模块",
+      "description": "通知/提醒生成 API + 通知中心 UI + 提醒偏好"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "F24",
+      "phase": "P1A",
+      "module": "theme",
+      "name": "深色模式完善 — 全局 theme toggle + dark 样式补齐",
+      "description": "完善深色模式支持。实现：(1) 新建 ThemeProvider/useTheme hook — 支持 light/dark/system 三档切换，localStorage 持久化，监听 system preference 变化；(2) Header 右上角新增 theme toggle 按钮（Sun/Moon 图标切换）；(3) 全局审计所有页面和组件，补齐缺失的 dark: 变体（背景色、文字色、边框色、卡片色）；(4) Sidebar/MobileNavBar/Header 三个布局组件优先保证深色模式正确。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Header 有 theme toggle 按钮，点击切换 light/dark",
+        "支持 system 跟随模式（自动检测系统偏好）",
+        "所有页面在深色模式下可读、无白底黑字问题",
+        "Sidebar/MobileNavBar/Header 深色模式正确",
+        "选择持久化到 localStorage，刷新后保持",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：点击 toggle 切换主题",
+        "正常：刷新后保持选择",
+        "正常：跟随系统偏好自动切换",
+        "正常：所有页面深色模式可读",
+        "边界：首次访问默认跟随系统",
+        "边界：深色模式首屏不闪白（ThemeProvider 在 App 渲染前注入 class）",
+        "异常：localStorage 损坏时降级为 system 模式",
+        "回归：浅色模式不受影响"
+      ],
+      "contract_refs": [],
+      "files": [
+        "frontend/src/lib/theme.tsx",
+        "frontend/src/components/layout/Header.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/components/layout/MobileNavBar.tsx",
+        "frontend/src/App.tsx"
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F24.md"
+    },
+    {
+      "id": "B25",
+      "phase": "P1A",
+      "module": "pwa",
+      "name": "PWA 基础支持 — manifest + Service Worker + 离线缓存 + 安装提示",
+      "description": "添加 PWA 支持，使应用可安装到手机主屏幕。实现：(1) 使用 vite-plugin-pwa 插件；(2) 配置 manifest.json（name, icons, theme_color, display: standalone）；(3) Service Worker 策略：静态资源 precache，API 请求 network-first；(4) 首次访问时显示「添加到主屏幕」提示（beforeinstallprompt 事件）；(5) 生成 PWA 图标（192x192, 512x512）。",
+      "verification": "L3",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Chrome DevTools Lighthouse PWA 审计通过基本项",
+        "manifest.json 正确配置",
+        "Service Worker 注册成功",
+        "离线时静态页面可加载（API 数据不可用但页面不白屏）",
+        "移动端浏览器显示「添加到主屏幕」提示",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [
+        "config"
+      ],
+      "test_tasks": [
+        "正常：manifest.json 可访问",
+        "正常：SW 注册成功（DevTools Application tab 可见）",
+        "正常：离线时页面不白屏",
+        "正常：beforeinstallprompt 触发安装提示",
+        "边界：首次安装后图标显示正确",
+        "边界：SW 更新后自动激活",
+        "边界：/growth/ base path 下 manifest 路径正确（/growth/manifest.json），SW scope 覆盖 /growth/",
+        "边界：离线刷新非根路由（如 /growth/review）不白屏（SPA 回退正确）",
+        "异常：SW 注册失败时应用正常运行（降级为非 PWA）",
+        "回归：现有功能不受影响"
+      ],
+      "contract_refs": [],
+      "files": [
+        "frontend/vite.config.ts",
+        "frontend/package.json",
+        "frontend/src/App.tsx"
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/B25.md"
+    },
+    {
+      "id": "B26",
+      "phase": "P1B",
+      "module": "notification",
+      "name": "通知/提醒 API — 按需生成 + 已读状态 + 偏好设置",
+      "description": "为前端通知中心提供后端支持。实现：(1) `backend/app/routers/notifications.py` 新增三个端点：GET /notifications（按需生成通知列表）、POST /notifications/{id}/dismiss（标记已读）、GET/PUT /notification-preferences（偏好读写）；(2) 通知类型与规则：overdue_task（planned_date < 今天且 status != complete 的任务）、stale_inbox（created_at 距今 >3 天且 category 仍为 inbox 的灵感）、review_prompt（最近 2 天内无任何条目创建/更新时触发，按天去重）；(3) 通知 ID 格式：`{type}:{ref_id}:{date}`（当日日期），用于 dismiss 去重；(4) 按需生成：每次 GET 时从当前数据实时计算（复用晨报的拖延/灵感判定逻辑），已 dismiss 的记录到 SQLite notifications 表（notification_id, user_id, notification_type, ref_id, dismissed_at, created_at），同一天内不再重复生成；(5) dismiss 去重周期：当日有效，跨天后 dismiss 记录不影响新一天的通知生成；(6) 偏好：用户可按类型开关提醒（默认全开），存 SQLite notification_preferences 表（user_id, overdue_task_enabled, stale_inbox_enabled, review_prompt_enabled）。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "in_progress",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "GET /notifications 返回当前用户未读通知（拖延/灵感/回顾）",
+        "POST /notifications/{id}/dismiss 标记已读",
+        "已 dismiss 通知不再出现",
+        "GET/PUT /notification-preferences 读写偏好",
+        "数据按 user_id 隔离",
+        "单元测试覆盖生成 + 已读 + 偏好 + 隔离"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：返回拖延任务通知",
+        "正常：返回未转化灵感通知",
+        "正常：返回回顾提醒通知",
+        "正常：dismiss 后不再出现",
+        "正常：偏好设置可读写",
+        "边界：无待提醒数据时返回空列表",
+        "边界：同一天多次 dismiss 同一通知",
+        "隔离：只返回当前用户通知",
+        "回归：现有 API 不受影响"
+      ],
+      "contract_refs": [
+        "CONTRACT-NT01",
+        "CONTRACT-NT02",
+        "CONTRACT-NT03",
+        "CONTRACT-NT04"
+      ],
+      "files": [
+        "backend/app/routers/notifications.py",
+        "backend/app/services/notification_service.py"
+      ]
+    },
+    {
+      "id": "B27",
+      "phase": "P1B",
+      "module": "review",
+      "name": "活动热力图 API — 每日活动统计",
+      "description": "为回顾页热力图日历提供后端数据。实现：(1) `backend/app/routers/review.py` 新增 GET /review/activity-heatmap?year=2026；(2) 返回 { year, items: [{ date, count }] }，count 为当日 created_at 的条目数（统计口径：created_at，与现有 list_entries 查询能力一致，不新增 updated_at 查询）；(3) 按 user_id 隔离；(4) 复用现有 list_entries 查询。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "GET /review/activity-heatmap 返回年度每日活动数据",
+        "数据按 user_id 隔离",
+        "无数据日期返回 count=0",
+        "单元测试覆盖正常 + 空数据 + 隔离"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：返回年度每日活动数据",
+        "正常：有活动的日期 count>0",
+        "边界：无活动年份返回全 0",
+        "边界：跨年数据隔离",
+        "隔离：只返回当前用户数据",
+        "回归：现有 review API 不受影响"
+      ],
+      "contract_refs": [
+        "CONTRACT-HM01"
+      ],
+      "files": [
+        "backend/app/routers/review.py",
+        "backend/app/services/review_service.py"
+      ]
+    },
+    {
+      "id": "F25",
+      "phase": "P2A",
+      "module": "notification",
+      "name": "通知中心 UI — Header 铃铛 + 下拉面板 + 偏好设置",
+      "description": "前端通知中心。实现：(1) Header 右上角新增铃铛图标（带未读数角标）；(2) 点击展开下拉面板，列出通知（类型图标 + 文案 + 时间 + 可点击跳转）；(3) 单条已读/全部已读按钮；(4) 设置页或面板底部增加提醒偏好开关（拖延/灵感/回顾三档）；(5) api.ts 新增 getNotifications, dismissNotification, getNotificationPreferences, updateNotificationPreferences 函数。",
+      "verification": "F2",
+      "depends_on": [
+        "B26"
+      ],
+      "status": "completed",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Header 铃铛图标显示未读数角标",
+        "下拉面板展示通知列表",
+        "通知可点击跳转到对应页面",
+        "可标记单条/全部已读",
+        "提醒偏好可按类型开关",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：铃铛显示未读角标",
+        "正常：下拉面板展示通知",
+        "正常：点击通知跳转到对应条目",
+        "正常：标记已读后角标更新",
+        "正常：偏好开关可切换",
+        "边界：无通知时显示空状态",
+        "边界：大量通知时滚动",
+        "异常：通知接口失败时 Header 不阻塞，铃铛隐藏角标",
+        "回归：Header 其他功能不受影响"
+      ],
+      "contract_refs": [
+        "CONTRACT-NT01",
+        "CONTRACT-NT02",
+        "CONTRACT-NT03",
+        "CONTRACT-NT04"
+      ],
+      "files": [
+        "frontend/src/components/NotificationCenter.tsx",
+        "frontend/src/components/layout/Header.tsx",
+        "frontend/src/services/api.ts"
+      ]
+    },
+    {
+      "id": "F26",
+      "phase": "P2A",
+      "module": "review",
+      "name": "学习热力图日历 — GitHub 风格贡献日历",
+      "description": "回顾页新增 GitHub 风格活动热力图。",
+      "verification": "F2",
+      "depends_on": [
+        "B27"
+      ],
+      "status": "completed",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "回顾页显示 GitHub 风格热力图日历",
+        "颜色深浅反映活动量",
+        "hover 显示日期和条目数",
+        "点击日期跳转到探索页并筛选当日条目（start_date/end_date 参数）",
+        "可切换年份",
+        "npm run build 构建通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：热力图正确渲染",
+        "正常：颜色深浅对应活动量",
+        "正常：hover tooltip 显示正确",
+        "正常：点击日期跳转到探索页，URL 携带 start_date/end_date，页面筛选当日条目",
+        "正常：年份切换刷新数据",
+        "边界：全年无活动时全空",
+        "边界：每日大量活动时最深色",
+        "异常：API 失败时显示错误提示，不阻塞页面",
+        "回归：现有回顾页功能不受影响"
+      ],
+      "contract_refs": [
+        "CONTRACT-HM01"
+      ],
+      "files": [
+        "frontend/src/pages/Review.tsx",
+        "frontend/src/services/api.ts"
+      ]
+    }
+  ]
+}
