@@ -212,54 +212,53 @@
       "id": "B34",
       "phase": "P1",
       "module": "engineering",
-      "name": "Health check + trace_id + 统一错误响应",
-      "description": "为后端添加三项可观测性基础设施：(1) /health 端点返回服务状态和依赖连接检查；(2) 请求 trace_id 中间件，自动生成或透传 X-Request-ID；(3) 统一错误响应格式（{detail, request_id, status}）。",
+      "name": "Health check 增强 — 依赖连接检查",
+      "description": "现有 /health 端点只返回 {status: 'ok'}，RequestIDMiddleware 和 ErrorHandlerMiddleware 已就绪。本任务增强 /health 使其检查 SQLite/Neo4j/Qdrant 连接状态，返回详细服务状态。",
       "verification": "L2",
       "depends_on": [],
       "status": "pending",
       "priority": "high",
       "acceptance_criteria": [
-        "GET /health 返回 200 + {status: 'ok', services: {sqlite: 'ok', ...}}",
-        "每个 API 响应包含 X-Request-ID header",
-        "4xx/5xx 错误返回统一 JSON 格式（含 detail 和 request_id）",
+        "GET /health 返回 200 + {status: 'ok', services: {sqlite: 'ok', neo4j: 'ok'|'unavailable', qdrant: 'ok'|'unavailable'}}",
+        "SQLite 不可达时 /health 返回 503 + {status: 'degraded', services: {sqlite: 'error'}}",
+        "Neo4j/Qdrant 不可达不影响整体 200（降级标记）",
         "现有 601 单元测试不受影响"
       ],
       "risk_tags": ["startup"],
       "test_tasks": [
-        "正常：/health 返回 200 和服务状态",
-        "边界：依赖不可达时 /health 仍返回 503 + 部分状态",
-        "正常：API 请求自动生成 trace_id",
-        "正常：带 X-Request-ID 的请求透传原值",
-        "正常：422 错误返回统一格式"
+        "正常：/health 返回 200 和各服务状态",
+        "边界：SQLite 不可达时返回 503",
+        "边界：Neo4j 不可达时降级标记但仍 200"
       ],
       "contract_refs": ["GET /health"],
       "files": [
-        "backend/app/main.py",
-        "backend/app/middleware/request_id.py",
-        "backend/app/middleware/error_handler.py",
-        "backend/app/routers/health.py"
+        "backend/app/main.py"
       ],
-      "planning_notes": "Health check 是 E2E webServer 启动的健康信号，必须最先完成。"
+      "planning_notes": "RequestIDMiddleware、ErrorHandlerMiddleware、统一错误格式已在 middleware/__init__.py 实现，无需重建。只需增强 /health 端点。"
     },
     {
       "id": "B35",
       "phase": "P1",
       "module": "engineering",
-      "name": "E2E 基础设施 — webServer 配置 + 认证 fixture + 工具函数",
-      "description": "配置 Playwright webServer 自动启停后端服务，创建认证 fixture（注册+登录获取 JWT token），创建 API 辅助函数（CRUD 封装）。为后续 E2E 测试提供基础。",
+      "name": "E2E 基础设施 — 双服务启停 + 认证 fixture + API helper",
+      "description": "配置 Playwright webServer 自动启停前端 dev server（npm run dev，端口 5173）和后端（uvicorn，端口 18929），前端通过 vite proxy 转发 /api 到后端。创建认证 fixture（API 方式注册+登录获取 JWT token），创建 API 辅助函数（条目 CRUD 封装）。E2E 测试通过前端 URL 访问页面，API 调用走 /api 代理。",
       "verification": "L3",
       "depends_on": ["B34"],
       "status": "pending",
       "priority": "high",
       "acceptance_criteria": [
-        "playwright.config.ts 配置 webServer 自动启停后端",
-        "E2E 认证 fixture 可自动注册用户并获取 token",
-        "API 辅助函数封装条目 CRUD 操作",
-        "npx playwright test 可独立运行（不需要手动启服务）"
+        "playwright.config.ts 配置 webServer 启动后端（uvicorn :18929，健康检查 GET /health）",
+        "playwright.config.ts 配置 webServer 启动前端 dev server（npm run dev :5173）",
+        "baseURL 设为 http://localhost:5173",
+        "E2E 认证 fixture 通过 /api/auth/register + /api/auth/login 获取 token",
+        "API 辅助函数封装条目 CRUD（走 /api/* 代理）",
+        "后端使用临时 DATA_DIR 和固定 JWT_SECRET=test_e2e_secret",
+        "npx playwright test 可独立运行"
       ],
       "risk_tags": ["startup", "config"],
       "test_tasks": [
-        "正常：webServer 自动启动后端并等待 /health 200",
+        "正常：后端启动后 GET /health 返回 200",
+        "正常：前端 dev server 启动后页面可访问",
         "正常：认证 fixture 成功注册+登录",
         "正常：API helper 成功创建/删除条目",
         "边界：后端启动超时时报错而非 hang"
@@ -268,10 +267,9 @@
       "files": [
         "e2e/playwright.config.ts",
         "e2e/tests/helpers/auth.ts",
-        "e2e/tests/helpers/api.ts",
-        "e2e/tests/helpers/setup.ts"
+        "e2e/tests/helpers/api.ts"
       ],
-      "planning_notes": "E2E 测试依赖后端自动启动，需要先有 /health 端点（B34）。"
+      "planning_notes": "E2E 运行模型：前端 dev server（5173）+ 后端（18929），前端 vite.config.ts 已配置 /api 代理到后端。测试环境变量：DATA_DIR=/tmp/pga_e2e_data, JWT_SECRET=test_e2e_secret。"
     },
     {
       "id": "B36",
@@ -337,23 +335,23 @@
       "id": "B38",
       "phase": "P2",
       "module": "ai-assistant",
-      "name": "Chat 对话 E2E 测试",
-      "description": "覆盖 Chat AI 对话的核心路径：通过 Chat 创建条目 → 验证条目创建成功 → 通过 Chat 搜索 → 通过 Chat 更新 → 通过 Chat 删除。测试 SSE 流式响应和会话管理。",
+      "name": "Chat 对话 E2E 测试（skip_intent 路径）",
+      "description": "覆盖 Chat 对话的 skip_intent=create 路径（前端已确认创建意图，跳过 LLM 意图检测）：通过 Chat 创建条目 → 验证 created 事件 → 通过 Chat 搜索 → 验证 results 事件。跳过需要真实 LLM 的意图检测路径。会话列表展示和 SSE 超时处理。",
       "verification": "L3",
       "depends_on": ["B35"],
       "status": "pending",
       "priority": "medium",
       "acceptance_criteria": [
-        "Chat 输入文本后收到 SSE 响应",
-        "通过 Chat 创建条目成功（created 事件）",
-        "通过 Chat 搜索返回结果（results 事件）",
+        "Chat skip_intent=true 创建条目成功（created 事件）",
+        "Chat 搜索返回结果（results 事件）",
         "会话列表展示已创建的会话",
-        "SSE 超时有合理处理"
+        "SSE 超时有合理处理",
+        "不需要真实 LLM API key（skip_intent 绕过意图检测）"
       ],
       "risk_tags": ["network"],
       "test_tasks": [
-        "正常：Chat 创建条目 → 验证 created 事件",
-        "正常：Chat 搜索条目 → 验证 results 事件",
+        "正常：skip_intent=true Chat 创建条目 → 验证 created 事件",
+        "正常：Chat read 搜索条目 → 验证 results 事件",
         "边界：Chat 超时/无响应不崩溃",
         "边界：空输入不发送请求"
       ],
@@ -361,31 +359,34 @@
       "files": [
         "e2e/tests/chat.spec.ts"
       ],
-      "planning_notes": "Chat E2E 需要 LLM API 可用，测试中使用 mock 或配置真实 API key。"
+      "planning_notes": "使用 skip_intent=true 绕过 LLM 意图检测，Chat 创建仍需 LLM 解析任务（stream_parse）。如果 LLM 不可用，此测试标记为 skip。真实 LLM 路径作为额外 smoke 测试，不阻塞 CI。"
     },
     {
       "id": "B39",
       "phase": "P2",
       "module": "review",
       "name": "回顾页 E2E 测试",
-      "description": "覆盖回顾统计页面的核心路径：统计数据展示、趋势图渲染、热力图渲染。验证页面加载和数据展示正确性。",
+      "description": "覆盖回顾统计页面的核心路径：日/周/月统计、趋势图、知识热力图、活动热力图。先通过 API 创建 seed 数据（多个已完成的任务），然后验证回顾页数据展示。验证页面加载和数据展示正确性。",
       "verification": "L3",
       "depends_on": ["B35"],
       "status": "pending",
       "priority": "medium",
       "acceptance_criteria": [
-        "回顾页加载成功，统计数据区域可见",
-        "趋势图表渲染（图表元素存在）",
-        "热力图渲染（热力图元素存在）",
+        "回顾页加载成功，统计区域可见",
+        "有 seed 数据时日统计卡片显示正确数值",
+        "趋势图表渲染（图表容器元素存在）",
+        "知识热力图渲染（热力图元素存在）",
         "无数据时显示空状态"
       ],
       "risk_tags": [],
       "test_tasks": [
-        "正常：有数据时统计卡片显示正确数值",
-        "正常：趋势图表元素可见",
-        "边界：无数据时显示空状态提示"
+        "正常：先创建 seed 数据 → 日统计卡片显示非零数值",
+        "正常：趋势图表元素可见（GET /review/trend）",
+        "正常：知识热力图元素可见（GET /review/knowledge-heatmap）",
+        "正常：活动热力图元素可见（GET /review/activity-heatmap）",
+        "边界：无 seed 数据时显示空状态提示"
       ],
-      "contract_refs": ["GET /review/stats", "GET /review/trend"],
+      "contract_refs": ["GET /review/daily", "GET /review/weekly", "GET /review/trend", "GET /review/knowledge-heatmap", "GET /review/activity-heatmap"],
       "files": [
         "e2e/tests/review.spec.ts"
       ]
@@ -395,15 +396,15 @@
       "phase": "P3",
       "module": "engineering",
       "name": "GitHub Actions CI Pipeline",
-      "description": "创建 GitHub Actions CI 配置，覆盖 PR 和 main 分支的自动化检查：后端 lint + unit test、前端 lint + test + build、E2E 测试（main 分支）。",
+      "description": "更新 .github/workflows/ci.yml 配置，覆盖 PR 和 main 分支的自动化检查：后端 unit test（uv run pytest）、前端 test + build（npm run test:run + npm run build）、E2E 测试（main 分支，仅 B36/B37 认证+CRUD 路径）。",
       "verification": "L3",
-      "depends_on": ["B36", "B37"],
+      "depends_on": ["B36", "B37", "B38", "B39"],
       "status": "pending",
       "priority": "medium",
       "acceptance_criteria": [
-        "PR 触发：backend lint + pytest + frontend lint + vitest + tsc build",
-        "main 分支推送：上述 + E2E 测试",
-        "E2E 测试使用 Playwright，自动启动后端",
+        "PR 触发：backend pytest + frontend vitest + tsc build",
+        "main 分支推送：上述 + E2E 测试（认证+CRUD）",
+        "E2E 测试使用 Playwright，CI 中安装浏览器",
         "构建失败时 PR 检查标红"
       ],
       "risk_tags": ["config"],
@@ -416,7 +417,7 @@
       "files": [
         ".github/workflows/ci.yml"
       ],
-      "planning_notes": "CI 需要在 B36/B37 完成后才能验证 E2E 部分。可以先配置 unit test 部分，E2E 后补。"
+      "planning_notes": "当前已有 .github/workflows/ci.yml 骨架，需要更新。不包含 backend lint（项目未配置 ruff/pylint）。E2E 范围先收敛到 B36 认证 + B37 CRUD，B38/B39 作为可选 smoke。"
     },
     {
       "id": "B41",
