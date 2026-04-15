@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 8,
-    "pending": 8,
+    "pending": 3,
     "in_progress": 0,
-    "completed": 0,
+    "completed": 5,
     "blocked": 0,
     "cancelled": 0
   },
@@ -222,7 +222,7 @@
       "description": "当前 Sidebar 固定 w-64，移动端完全不可用。实现：(1) `Sidebar.tsx` 添加 md 以下自动隐藏，通过 hamburger 按钮触发抽屉式展开（overlay + 左滑入）；(2) `App.tsx` 主内容区 `ml-64` 改为 `md:ml-64`，移动端 `ml-0`；(3) 新增 `MobileNavBar.tsx` 组件：移动端底部固定导航栏（今天/探索/图谱/任务/回顾 5 个图标），仅 `md:hidden` 显示；(4) `Home.tsx` 快捷操作 grid 从 `grid-cols-3` 改为 `grid-cols-1 sm:grid-cols-3`；(5) 所有页面卡片和列表增加响应式间距和宽度适配。",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "acceptance_criteria": [
         "移动端（<768px）Sidebar 隐藏，通过 hamburger 按钮展开抽屉",
@@ -249,13 +249,19 @@
         "frontend/src/components/layout/Header.tsx",
         "frontend/src/App.tsx",
         "frontend/src/pages/Home.tsx"
-      ]
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F17.md",
+      "commit": "709fb41",
+      "execution_notes": "Sidebar 抽屉 + MobileNavBar + 响应式布局 + 浮动组件适配，build 通过"
     },
     {
       "id": "F18",
       "phase": "P4A",
       "module": "responsive",
       "name": "图谱页 + 回顾页 + 详情页移动端适配",
+      "status": "completed",
       "description": "补齐核心页面的移动端适配。实现：(1) `GraphPage.tsx` 图谱画布在小屏缩小到 100% 宽度，DetailPanel 改为底部抽屉（非右侧面板）；(2) `Review.tsx` 趋势图表和热力图在小屏纵向堆叠；(3) `EntryDetail.tsx` max-w-4xl 保持但 padding 缩减，编辑模式 textarea 全宽；(4) 浮动组件（FloatingChat/FeedbackButton/PageAIAssistant）在移动端 z-index 重新分层，避免遮挡底部导航。",
       "verification": "F2",
       "depends_on": ["F17"],
@@ -284,7 +290,12 @@
         "frontend/src/components/PageAIAssistant.tsx",
         "frontend/src/components/FloatingChat.tsx",
         "frontend/src/components/FeedbackButton.tsx"
-      ]
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F18.md",
+      "commit": "1864421",
+      "execution_notes": "GraphPage 底部抽屉 + Review/EntryDetail 响应式间距"
     },
     {
       "id": "F19",
@@ -332,7 +343,7 @@
       "description": "为「今天」页提供 AI 晨报数据。实现：(1) `backend/app/routers/review.py` 新增 `GET /review/morning-digest` 端点；(2) `backend/app/services/review_service.py` 新增 `get_morning_digest(user_id)` 方法，聚合：今日待办（优先级排序）+ 拖延任务（planned_date 已过）+ 未跟进灵感（>3天未转化）+ 本周学习摘要（概念新增）；(3) 可选调用 LLM 生成自然语言建议（降级为模板文本）；(4) 结果缓存到当日（同一天只生成一次）。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "acceptance_criteria": [
         "GET /review/morning-digest 返回待办/拖延/灵感/学习摘要",
@@ -357,13 +368,19 @@
       "files": [
         "backend/app/routers/review.py",
         "backend/app/services/review_service.py"
-      ]
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/B24.md",
+      "commit": "d486290",
+      "execution_notes": "晨报 API 完成含 10 个测试，LLM 降级和用户隔离验证通过"
     },
     {
       "id": "F20",
       "phase": "P4B",
       "module": "home",
       "name": "「今天」页 AI 晨报卡片 — 主动行动建议",
+      "status": "completed",
       "description": "在「今天」页顶部新增 AI 晨报卡片。实现：(1) `Home.tsx` 顶部新增晨报卡片（靛蓝渐变背景，日知头像 + 自然语言建议 + 待办/拖延/灵感/学习 4 个摘要数字）；(2) 调用 GET /review/morning-digest 获取数据；(3) 卡片可折叠（默认展开，用户关闭后当日不再自动展开）；(4) loading 态为骨架屏；(5) api.ts 新增 getMorningDigest 函数。",
       "verification": "F2",
       "depends_on": ["B24"],
@@ -391,7 +408,12 @@
       "files": [
         "frontend/src/pages/Home.tsx",
         "frontend/src/services/api.ts"
-      ]
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F20.md",
+      "commit": "1303f9a",
+      "execution_notes": "晨报卡片完成含骨架屏+折叠+降级+4统计数字"
     },
     {
       "id": "F21",
@@ -401,7 +423,7 @@
       "description": "增强探索页搜索体验。实现：(1) 搜索框聚焦时展开下拉面板：显示最近 5 条搜索历史（localStorage 存储）+ 热门标签（基于用户条目 tags 频率排序取 top 5）；(2) 搜索历史：每条可点击重新搜索，可逐条删除；(3) 搜索结果关键词高亮改为背景色高亮（当前为 text 标记），多关键词分别着色；(4) 搜索框空态显示「试试搜索：最近学习的主题」占位文案。",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
       "acceptance_criteria": [
         "搜索框聚焦显示搜索历史和热门标签",
@@ -425,7 +447,12 @@
       "files": [
         "frontend/src/pages/Explore.tsx",
         "frontend/src/services/api.ts"
-      ]
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F21.md",
+      "commit": "pending",
+      "execution_notes": "搜索建议面板 + 搜索历史 + 热门标签 + 结果高亮，build 通过"
     },
     {
       "id": "F22",
