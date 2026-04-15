@@ -114,14 +114,17 @@ class IntentService:
         """设置 LLM Caller"""
         self._llm_caller = caller
 
-    async def detect(self, text: str) -> IntentResult:
+    async def detect(self, text: str, extra_system_hint: str = "") -> IntentResult:
         """检测用户输入的意图"""
         if not self._llm_caller:
             return self._fallback_detection(text)
 
         try:
+            system_content = INTENT_SYSTEM_PROMPT
+            if extra_system_hint:
+                system_content = f"{system_content}\n\n{extra_system_hint}"
             messages = [
-                {"role": "system", "content": INTENT_SYSTEM_PROMPT},
+                {"role": "system", "content": system_content},
                 {"role": "user", "content": text}
             ]
             response = await self._llm_caller.call(messages, {"type": "json_object"})

@@ -1,6 +1,6 @@
 """聊天服务 - 处理意图识别和操作执行"""
 import json
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator, Optional, TYPE_CHECKING
 
 from app.api.schemas import EntryCreate, EntryUpdate
 from app.graphs.task_parser_graph import TaskParserGraph
@@ -8,6 +8,9 @@ from app.routers import intent as intent_module
 from app.routers.deps import get_entry_service
 from app.services.entry_service import EntryService
 from app.services.intent_service import IntentService
+
+if TYPE_CHECKING:
+    from app.routers.parse import PageContext
 
 
 def sse_event(event: str, data: dict) -> str:
@@ -47,9 +50,14 @@ class ChatService:
             self._entry_service = get_entry_service()
         return self._entry_service
 
-    async def detect_intent(self, text: str) -> dict:
+    async def detect_intent(
+        self,
+        text: str,
+        page_context: Optional["PageContext"] = None,
+    ) -> dict:
         """检测用户意图"""
-        resp = await self.intent_service.detect(text)
+        context_hint = self._build_page_context_hint(page_context)
+        resp = await self.intent_service.detect(text, extra_system_hint=context_hint)
         return {
             "intent": resp.intent,
             "confidence": resp.confidence,
@@ -65,6 +73,7 @@ class ChatService:
         text: str,
         session_id: str,
         confirm: Optional[dict] = None,
+        page_context: Optional["PageContext"] = None,
     ) -> AsyncGenerator[str, None]:
         """
         根据意图执行操作，返回 SSE 事件流
@@ -78,7 +87,7 @@ class ChatService:
             confirm: 确认操作（多选场景）
         """
         if intent == "create":
-            async for event in self._handle_create(text, session_id):
+            async for event in self._handle_create(text, session_id, page_context=page_context):
                 yield event
         elif intent == "update":
             async for event in self._handle_update(query, entities, confirm):
@@ -99,11 +108,14 @@ class ChatService:
             yield sse_event("done", {"intent": intent, "need_client_action": True})
 
     async def _handle_create(
-        self, text: str, session_id: str
+        self, text: str, session_id: str, page_context: Optional["PageContext"] = None
     ) -> AsyncGenerator[str, None]:
         """处理创建意图"""
         full_json = ""
-        async for chunk in self.graph.stream_parse(text, session_id):
+        # 构建带页面上下文的提示文本
+        context_hint = self._build_page_context_hint(page_context)
+        effective_text = f"{context_hint}\n{text}" if context_hint else text
+        async for chunk in self.graph.stream_parse(effective_text, session_id):
             if chunk.startswith("data: "):
                 yield f"event: content\n{chunk}\n"
                 try:
@@ -230,3 +242,29 @@ class ChatService:
 
         yield sse_event("results", {"items": items, "count": len(items)})
         yield sse_event("done", {"message": f"找到 {len(items)} 个结果"})
+
+    @staticmethod
+    def _build_page_context_hint(page_context: Optional["PageContext"]) -> str:
+        """根据页面上下文构建追加到 LLM prompt 的指令文本"""
+        if page_context is None:
+            return ""
+
+        PAGE_TYPE_LABELS: dict[str, str] = {
+            "home": "首页",
+            "explore": "探索页",
+            "entry": "条目详情页",
+            "review": "回顾页",
+            "graph": "知识图谱页",
+        }
+
+        page_label = PAGE_TYPE_LABELS.get(page_context.page_type, page_context.page_type)
+        parts = [f"[页面上下文] 用户当前在「{page_label}」"]
+
+        if page_context.entry_id:
+            parts.append(f"正在查看条目 ID: {page_context.entry_id}")
+
+        if page_context.extra:
+            for key, value in page_context.extra.items():
+                parts.append(f"{key}: {value}")
+
+        return "\n".join(parts)
