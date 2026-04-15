@@ -2,6 +2,7 @@
 import logging
 import os
 from contextlib import asynccontextmanager
+from typing import Optional
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -176,12 +177,67 @@ app.include_router(notifications_router)
 
 # === 健康检查 ===
 
+class ServiceStatus(BaseModel):
+    """单个服务状态"""
+    status: str
+
+
 class HealthResponse(BaseModel):
     """健康检查响应"""
     status: str
+    services: dict[str, str]
+
+
+def _check_services(storage) -> dict:
+    """检查各存储后端连接状态"""
+    services = {}
+
+    # SQLite — 核心依赖
+    try:
+        if storage and storage.sqlite is not None:
+            conn = storage.sqlite._get_conn()
+            conn.execute("SELECT 1")
+            services["sqlite"] = "ok"
+        else:
+            services["sqlite"] = "error"
+    except Exception:
+        services["sqlite"] = "error"
+
+    # Neo4j — 非核心，降级
+    try:
+        if storage and storage.neo4j is not None and storage.neo4j._driver is not None:
+            services["neo4j"] = "ok"
+        else:
+            services["neo4j"] = "unavailable"
+    except Exception:
+        services["neo4j"] = "unavailable"
+
+    # Qdrant — 非核心，降级
+    try:
+        if storage and storage.qdrant is not None and storage.qdrant._client is not None:
+            services["qdrant"] = "ok"
+        else:
+            services["qdrant"] = "unavailable"
+    except Exception:
+        services["qdrant"] = "unavailable"
+
+    return services
 
 
 @app.get("/health", response_model=HealthResponse)
 async def health():
-    """健康检查"""
-    return {"status": "ok"}
+    """健康检查 — 返回服务状态和依赖连接检查"""
+    storage = deps.storage
+    services = _check_services(storage)
+
+    # 核心依赖不可达 → 503
+    if services.get("sqlite") == "error":
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=503,
+            content={"status": "degraded", "services": services},
+        )
+
+    # 非核心降级 → 200 + degraded
+    overall = "ok" if all(v == "ok" for v in services.values()) else "degraded"
+    return {"status": overall, "services": services}

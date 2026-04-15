@@ -216,13 +216,13 @@
       "description": "现有 /health 端点只返回 {status: 'ok'}，RequestIDMiddleware 和 ErrorHandlerMiddleware 已就绪。本任务增强 /health 使其检查 SQLite/Neo4j/Qdrant 连接状态，返回详细服务状态。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "acceptance_criteria": [
         "GET /health 全部正常时返回 200 + {status: 'ok', services: {sqlite: 'ok', neo4j: 'ok', qdrant: 'ok'}}",
         "SQLite 不可达时返回 503 + {status: 'degraded', services: {sqlite: 'error', ...}}",
         "Neo4j/Qdrant 不可达时返回 200 + {status: 'degraded', services: {neo4j: 'unavailable', ...}}（非核心降级不阻断）",
-        "现有 601 单元测试不受影响"
+        "现有 615 单元测试通过（含新增 14 个 health 测试）"
       ],
       "risk_tags": ["startup"],
       "test_tasks": [
