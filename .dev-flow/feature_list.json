@@ -5,19 +5,24 @@
   "created_at": "2026-03-28",
   "updated_at": "2026-04-16",
   "status": "active",
-  "scope_notes": "",
-  "active_requirement_cycle": null,
+  "scope_notes": "R010 工程化提升 — E2E 测试覆盖 + API 可观测性 + CI/CD + 性能基线",
+  "active_requirement_cycle": {
+    "id": "R010",
+    "name": "engineering-foundation",
+    "status": "planning",
+    "branch": "feat/R010-engineering-foundation"
+  },
   "workflow": {
     "name": "XLFoundry",
-    "mode": "A",
+    "mode": "B",
     "runtime": "skill_orchestrated",
-    "review_provider": "local",
-    "audit_provider": "local",
-    "risk_provider": "local"
+    "review_provider": "codex_plugin",
+    "audit_provider": "codex_plugin",
+    "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 0,
-    "pending": 0,
+    "total_tasks": 8,
+    "pending": 8,
     "in_progress": 0,
     "completed": 0,
     "blocked": 0,
@@ -199,7 +204,249 @@
     {"id": "responsive", "name": "响应式布局模块", "description": "移动端/平板适配 + 导航统一 + 大屏优化"},
     {"id": "theme", "name": "主题模块", "description": "深色/浅色模式"},
     {"id": "pwa", "name": "PWA 模块", "description": "PWA + 离线缓存"},
-    {"id": "notification", "name": "通知模块", "description": "通知/提醒 + 偏好管理"}
+    {"id": "notification", "name": "通知模块", "description": "通知/提醒 + 偏好管理"},
+    {"id": "engineering", "name": "工程化模块", "description": "E2E 测试 + CI/CD + 性能基线 + 可观测性"}
   ],
-  "tasks": []
+  "tasks": [
+    {
+      "id": "B34",
+      "phase": "P1",
+      "module": "engineering",
+      "name": "Health check + trace_id + 统一错误响应",
+      "description": "为后端添加三项可观测性基础设施：(1) /health 端点返回服务状态和依赖连接检查；(2) 请求 trace_id 中间件，自动生成或透传 X-Request-ID；(3) 统一错误响应格式（{detail, request_id, status}）。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "GET /health 返回 200 + {status: 'ok', services: {sqlite: 'ok', ...}}",
+        "每个 API 响应包含 X-Request-ID header",
+        "4xx/5xx 错误返回统一 JSON 格式（含 detail 和 request_id）",
+        "现有 601 单元测试不受影响"
+      ],
+      "risk_tags": ["startup"],
+      "test_tasks": [
+        "正常：/health 返回 200 和服务状态",
+        "边界：依赖不可达时 /health 仍返回 503 + 部分状态",
+        "正常：API 请求自动生成 trace_id",
+        "正常：带 X-Request-ID 的请求透传原值",
+        "正常：422 错误返回统一格式"
+      ],
+      "contract_refs": ["GET /health"],
+      "files": [
+        "backend/app/main.py",
+        "backend/app/middleware/request_id.py",
+        "backend/app/middleware/error_handler.py",
+        "backend/app/routers/health.py"
+      ],
+      "planning_notes": "Health check 是 E2E webServer 启动的健康信号，必须最先完成。"
+    },
+    {
+      "id": "B35",
+      "phase": "P1",
+      "module": "engineering",
+      "name": "E2E 基础设施 — webServer 配置 + 认证 fixture + 工具函数",
+      "description": "配置 Playwright webServer 自动启停后端服务，创建认证 fixture（注册+登录获取 JWT token），创建 API 辅助函数（CRUD 封装）。为后续 E2E 测试提供基础。",
+      "verification": "L3",
+      "depends_on": ["B34"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "playwright.config.ts 配置 webServer 自动启停后端",
+        "E2E 认证 fixture 可自动注册用户并获取 token",
+        "API 辅助函数封装条目 CRUD 操作",
+        "npx playwright test 可独立运行（不需要手动启服务）"
+      ],
+      "risk_tags": ["startup", "config"],
+      "test_tasks": [
+        "正常：webServer 自动启动后端并等待 /health 200",
+        "正常：认证 fixture 成功注册+登录",
+        "正常：API helper 成功创建/删除条目",
+        "边界：后端启动超时时报错而非 hang"
+      ],
+      "contract_refs": [],
+      "files": [
+        "e2e/playwright.config.ts",
+        "e2e/tests/helpers/auth.ts",
+        "e2e/tests/helpers/api.ts",
+        "e2e/tests/helpers/setup.ts"
+      ],
+      "planning_notes": "E2E 测试依赖后端自动启动，需要先有 /health 端点（B34）。"
+    },
+    {
+      "id": "B36",
+      "phase": "P2",
+      "module": "auth",
+      "name": "认证流程 E2E 测试",
+      "description": "覆盖完整认证用户路径：注册 → 登录 → 访问受保护页面 → 登出 → 重定向到登录页。包括 Token 过期、未认证访问拦截等边界场景。",
+      "verification": "L3",
+      "depends_on": ["B35"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "注册流程：填写表单 → 提交 → 跳转到首页",
+        "登录流程：填写表单 → 提交 → 跳转到首页",
+        "登出流程：点击登出 → 跳转到登录页",
+        "未认证访问受保护页面 → 重定向到登录页",
+        "测试数据清理（注册的测试用户删除）"
+      ],
+      "risk_tags": ["auth"],
+      "test_tasks": [
+        "正常：注册 → 登录 → 访问首页 → 登出",
+        "异常：重复用户名注册失败",
+        "异常：错误密码登录失败",
+        "边界：未认证访问 /tasks 重定向到 /login"
+      ],
+      "contract_refs": ["POST /auth/register", "POST /auth/login", "POST /auth/logout"],
+      "files": [
+        "e2e/tests/auth.spec.ts"
+      ]
+    },
+    {
+      "id": "B37",
+      "phase": "P2",
+      "module": "entry-management",
+      "name": "条目 CRUD E2E 测试",
+      "description": "覆盖条目管理的完整用户路径：创建任务/笔记/灵感 → 列表查看 → 搜索 → 详情页 → 更新状态 → 删除。验证 UI 展示与数据一致性。",
+      "verification": "L3",
+      "depends_on": ["B35"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "创建任务后任务列表可见",
+        "创建灵感后灵感列表可见",
+        "搜索功能返回匹配结果",
+        "更新状态后 UI 刷新",
+        "删除后列表不再显示",
+        "每个测试清理创建的测试数据"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：创建任务 → 列表可见 → 更新完成 → 删除",
+        "正常：创建灵感 → 灵感列表可见",
+        "正常：搜索关键词返回匹配条目",
+        "边界：空列表显示空状态提示",
+        "边界：搜索无结果显示无结果提示"
+      ],
+      "contract_refs": ["POST /entries", "GET /entries", "PUT /entries/:id", "DELETE /entries/:id", "POST /search"],
+      "files": [
+        "e2e/tests/entries.spec.ts"
+      ]
+    },
+    {
+      "id": "B38",
+      "phase": "P2",
+      "module": "ai-assistant",
+      "name": "Chat 对话 E2E 测试",
+      "description": "覆盖 Chat AI 对话的核心路径：通过 Chat 创建条目 → 验证条目创建成功 → 通过 Chat 搜索 → 通过 Chat 更新 → 通过 Chat 删除。测试 SSE 流式响应和会话管理。",
+      "verification": "L3",
+      "depends_on": ["B35"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Chat 输入文本后收到 SSE 响应",
+        "通过 Chat 创建条目成功（created 事件）",
+        "通过 Chat 搜索返回结果（results 事件）",
+        "会话列表展示已创建的会话",
+        "SSE 超时有合理处理"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        "正常：Chat 创建条目 → 验证 created 事件",
+        "正常：Chat 搜索条目 → 验证 results 事件",
+        "边界：Chat 超时/无响应不崩溃",
+        "边界：空输入不发送请求"
+      ],
+      "contract_refs": ["POST /chat"],
+      "files": [
+        "e2e/tests/chat.spec.ts"
+      ],
+      "planning_notes": "Chat E2E 需要 LLM API 可用，测试中使用 mock 或配置真实 API key。"
+    },
+    {
+      "id": "B39",
+      "phase": "P2",
+      "module": "review",
+      "name": "回顾页 E2E 测试",
+      "description": "覆盖回顾统计页面的核心路径：统计数据展示、趋势图渲染、热力图渲染。验证页面加载和数据展示正确性。",
+      "verification": "L3",
+      "depends_on": ["B35"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "回顾页加载成功，统计数据区域可见",
+        "趋势图表渲染（图表元素存在）",
+        "热力图渲染（热力图元素存在）",
+        "无数据时显示空状态"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：有数据时统计卡片显示正确数值",
+        "正常：趋势图表元素可见",
+        "边界：无数据时显示空状态提示"
+      ],
+      "contract_refs": ["GET /review/stats", "GET /review/trend"],
+      "files": [
+        "e2e/tests/review.spec.ts"
+      ]
+    },
+    {
+      "id": "B40",
+      "phase": "P3",
+      "module": "engineering",
+      "name": "GitHub Actions CI Pipeline",
+      "description": "创建 GitHub Actions CI 配置，覆盖 PR 和 main 分支的自动化检查：后端 lint + unit test、前端 lint + test + build、E2E 测试（main 分支）。",
+      "verification": "L3",
+      "depends_on": ["B36", "B37"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "PR 触发：backend lint + pytest + frontend lint + vitest + tsc build",
+        "main 分支推送：上述 + E2E 测试",
+        "E2E 测试使用 Playwright，自动启动后端",
+        "构建失败时 PR 检查标红"
+      ],
+      "risk_tags": ["config"],
+      "test_tasks": [
+        "正常：PR 创建触发 CI 并通过",
+        "正常：测试失败时 CI 标红",
+        "边界：首次配置需手动批准 workflow"
+      ],
+      "contract_refs": [],
+      "files": [
+        ".github/workflows/ci.yml"
+      ],
+      "planning_notes": "CI 需要在 B36/B37 完成后才能验证 E2E 部分。可以先配置 unit test 部分，E2E 后补。"
+    },
+    {
+      "id": "B41",
+      "phase": "P3",
+      "module": "engineering",
+      "name": "性能基线建立",
+      "description": "建立前后端性能基线：(1) 前端 bundle 分析，记录初始大小；(2) 后端 API 响应时间基线（/health、/entries、/search）；(3) SSE 首字节延迟基线。将基线数据写入文档。",
+      "verification": "L2",
+      "depends_on": ["B34"],
+      "status": "pending",
+      "priority": "low",
+      "acceptance_criteria": [
+        "前端 bundle 总大小有记录（JS + CSS gzip）",
+        "后端 /health 响应时间 < 50ms 基线",
+        "后端 /entries 响应时间基线有记录",
+        "SSE /chat 首字节延迟基线有记录",
+        "基线数据写入 docs/performance-baseline.md"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：bundle 大小在合理范围（< 500KB gzip）",
+        "正常：/health 响应 < 50ms",
+        "正常：/entries 响应 < 200ms"
+      ],
+      "contract_refs": [],
+      "files": [
+        "docs/performance-baseline.md",
+        "backend/tests/performance/test_api_bench.py"
+      ],
+      "planning_notes": "性能基线是快照文档，不做自动化门禁，仅记录供后续对比。"
+    }
+  ]
 }
