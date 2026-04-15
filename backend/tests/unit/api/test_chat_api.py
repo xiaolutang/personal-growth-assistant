@@ -31,8 +31,8 @@ class TestChatAPIUserIdThreading:
     """POST /chat 路由级测试 — 验证 user.id 从 JWT 正确透传"""
 
     @pytest.mark.asyncio
-    async def test_chat_passes_user_id_to_process_intent(self, client):
-        """/chat 路由将认证用户的 user.id 传递给 process_intent"""
+    async def test_chat_passes_user_id_to_process_intent(self, client, test_user):
+        """/chat 路由将认证用户的 user.id 精确传递给 process_intent"""
         mock_process = _make_process_intent_mock()
         mock_svc = _make_chat_service_mock()
         mock_svc.process_intent = mock_process
@@ -46,11 +46,10 @@ class TestChatAPIUserIdThreading:
         assert response.status_code == 200
         assert mock_process.called
         call_kwargs = mock_process.call_args.kwargs
-        assert call_kwargs["user_id"] is not None
-        assert call_kwargs["user_id"] != "_default"
+        assert call_kwargs["user_id"] == test_user.id
 
     @pytest.mark.asyncio
-    async def test_chat_namespaces_session_id(self, client):
+    async def test_chat_namespaces_session_id(self, client, test_user):
         """/chat 路由将 session_id 命名空间化为 {user_id}:{session_id}"""
         mock_process = _make_process_intent_mock()
         mock_svc = _make_chat_service_mock()
@@ -65,14 +64,11 @@ class TestChatAPIUserIdThreading:
         assert response.status_code == 200
         call_kwargs = mock_process.call_args.kwargs
         session_id = call_kwargs["session_id"]
-        assert ":" in session_id
-        assert session_id.endswith(":my-sess")
-        user_id_part = session_id.rsplit(":", 1)[0]
-        assert user_id_part != "_default"
+        assert session_id == f"{test_user.id}:my-sess"
 
     @pytest.mark.asyncio
-    async def test_chat_with_confirm_passes_user_id(self, client):
-        """带 confirm 的 /chat 调用也传递 user_id"""
+    async def test_chat_with_confirm_passes_user_id(self, client, test_user):
+        """带 confirm 的 /chat 调用也传递精确 user_id"""
         mock_process = _make_process_intent_mock()
         mock_svc = _make_chat_service_mock()
         mock_svc.detect_intent = AsyncMock(return_value={
@@ -95,13 +91,12 @@ class TestChatAPIUserIdThreading:
 
         assert response.status_code == 200
         call_kwargs = mock_process.call_args.kwargs
-        assert call_kwargs["user_id"] is not None
-        assert call_kwargs["user_id"] != "_default"
+        assert call_kwargs["user_id"] == test_user.id
         assert call_kwargs["confirm"]["item_id"] == "e1"
 
     @pytest.mark.asyncio
-    async def test_chat_skip_intent_still_passes_user_id(self, client):
-        """skip_intent=true 时仍传递 user_id"""
+    async def test_chat_skip_intent_still_passes_user_id(self, client, test_user):
+        """skip_intent=true 时仍传递精确 user_id"""
         mock_process = _make_process_intent_mock()
         mock_svc = _make_chat_service_mock()
         mock_svc.process_intent = mock_process
@@ -114,5 +109,4 @@ class TestChatAPIUserIdThreading:
 
         assert response.status_code == 200
         call_kwargs = mock_process.call_args.kwargs
-        assert call_kwargs["user_id"] is not None
-        assert call_kwargs["user_id"] != "_default"
+        assert call_kwargs["user_id"] == test_user.id

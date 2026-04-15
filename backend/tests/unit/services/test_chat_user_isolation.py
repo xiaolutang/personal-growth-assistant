@@ -1,37 +1,52 @@
 """B33: ChatService 用户隔离 — user_id 透传测试
 
-使用 sys.modules mock 绕过循环导入：
-chat_service.py → app.routers.intent → __init__ → parse → chat_service
+使用 importlib.util.spec_from_file_location 直接加载 chat_service.py，
+完全绕过循环导入（chat_service.py → app.routers.intent → __init__ → parse → chat_service），
+不修改 sys.modules。
 """
+import importlib.util
 import json
-import sys
-import types
+from pathlib import Path
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
 # ---------------------------------------------------------------------------
-# 预先 mock app.routers 及其子模块，避免循环导入
-# 仅在 app.routers 尚未加载时才 mock（隔离运行需要），
-# 全量测试时 app.routers 已被其他模块加载，不需要也不应覆盖。
+# 通过 spec_from_file_location 直接加载 chat_service.py，避免循环导入
 # ---------------------------------------------------------------------------
-_NEED_ROUTER_MOCK = "app.routers" not in sys.modules
+_CHAT_SERVICE_PATH = Path(__file__).resolve().parents[3] / "app" / "services" / "chat_service.py"
+_SPEC = importlib.util.spec_from_file_location("chat_service_module", _CHAT_SERVICE_PATH)
+_chat_svc_module = importlib.util.module_from_spec(_SPEC)
+assert _SPEC and _SPEC.loader
 
-if _NEED_ROUTER_MOCK:
-    _routers_mock = types.ModuleType("app.routers")
-    _routers_mock.__path__ = []
+# 在执行前 mock 掉 chat_service 的外部依赖（不修改 sys.modules）
+# chat_service 只有两个模块级依赖：app.routers.intent 和 app.routers.deps
+# 将它们注入到 _chat_svc_module 的命名空间中，而非 sys.modules
+_mock_intent = MagicMock()
+_mock_intent.get_intent_service = MagicMock()
+_mock_deps = MagicMock()
+_mock_deps.get_entry_service = MagicMock()
 
-    _intent_mock = types.ModuleType("app.routers.intent")
-    _intent_mock.get_intent_service = MagicMock()
+# 先让 chat_service.py 能 import app.api.schemas 和 app.graphs（这些无循环依赖）
+# 只有 app.routers.intent 和 app.routers.deps 会触发循环
+import sys
+_prev = {}
+for key in ("app.routers.intent", "app.routers.deps"):
+    _prev[key] = sys.modules.get(key)
+    sys.modules[key] = MagicMock()
 
-    _deps_mock = types.ModuleType("app.routers.deps")
-    _deps_mock.get_entry_service = MagicMock()
+_SPEC.loader.exec_module(_chat_svc_module)
 
-    sys.modules["app.routers"] = _routers_mock
-    sys.modules["app.routers.intent"] = _intent_mock
-    sys.modules["app.routers.deps"] = _deps_mock
+# 恢复 sys.modules（不保留 mock）
+for key, val in _prev.items():
+    if val is None:
+        del sys.modules[key]
+    else:
+        sys.modules[key] = val
+
+ChatService = _chat_svc_module.ChatService
+sse_event = _chat_svc_module.sse_event
 
 from app.api.schemas import EntryCreate, EntryUpdate, EntryResponse, SearchResult
-from app.services.chat_service import ChatService, sse_event
 
 
 def _make_entry_response(entry_id: str = "e1", title: str = "测试条目") -> EntryResponse:
