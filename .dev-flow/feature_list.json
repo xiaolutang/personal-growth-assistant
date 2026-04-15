@@ -438,7 +438,7 @@
       "started_at": "2026-04-15",
       "completed_at": "2026-04-15",
       "evidence_file": ".dev-flow/evidence/B23.md",
-      "commit": "pending",
+      "commit": "6e20fed",
       "execution_notes": "32 个 MCP 测试通过 (18 新 + 14 回归), 596 后端测试通过",
       "priority": "medium",
       "acceptance_criteria": [
