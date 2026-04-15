@@ -531,7 +531,7 @@
       "started_at": "2026-04-15",
       "completed_at": "2026-04-15",
       "evidence_file": ".dev-flow/evidence/F23.md",
-      "commit": "pending",
+      "commit": "a85d7e0",
       "execution_notes": "节点阈值懒加载 + 聚合模式 + 边标签优化，build 通过"
     }
   ]
