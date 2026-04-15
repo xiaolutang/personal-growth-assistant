@@ -214,6 +214,8 @@ async def generate_ai_summary(entry_id: str, user: User = Depends(get_current_us
     service = get_entry_service()
     try:
         result = await service.generate_summary(entry_id, user_id=user.id)
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
     if result is None:

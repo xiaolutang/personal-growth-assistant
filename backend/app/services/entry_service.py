@@ -533,15 +533,17 @@ class EntryService:
         Returns:
             {"summary": str, "generated_at": str, "cached": bool}
             条目不存在返回 None
+            条目不属于当前用户抛出 PermissionError
             无内容时返回 {"summary": null, "generated_at": null, "cached": False}
         """
-        # 验证条目属于当前用户
-        if not self._verify_entry_owner(entry_id, user_id):
-            return None
-
         # 读取条目
         entry = self._get_markdown_storage(user_id).read_entry(entry_id)
         if not entry:
+            # 检查是否属于其他用户
+            if self.storage.sqlite:
+                db_entry = self.storage.sqlite.get_entry(entry_id)
+                if db_entry and db_entry.get("user_id") and db_entry["user_id"] != user_id:
+                    raise PermissionError(f"无权访问条目: {entry_id}")
             return None
 
         # 空内容返回 null

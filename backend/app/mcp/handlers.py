@@ -472,6 +472,9 @@ async def handle_batch_create_entries(storage: SyncService, args: dict, user_id:
     """处理 batch_create_entries — 批量创建条目，最多 10 条"""
     entries_data = args["entries"]
 
+    if not entries_data:
+        return [TextContent(type="text", text="错误: 批量创建列表不能为空")]
+
     if len(entries_data) > MAX_BATCH_SIZE:
         return [TextContent(
             type="text",
@@ -539,6 +542,9 @@ async def handle_batch_update_status(storage: SyncService, args: dict, user_id: 
     """处理 batch_update_status — 批量更新条目状态，最多 10 条"""
     ids = args["ids"]
     new_status = TaskStatus(args["status"])
+
+    if not ids:
+        return [TextContent(type="text", text="错误: 批量更新 ID 列表不能为空")]
 
     if len(ids) > MAX_BATCH_SIZE:
         return [TextContent(
