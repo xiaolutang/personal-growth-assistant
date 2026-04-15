@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Sparkles, X, Send, Loader2 } from "lucide-react";
 import { sendAIChat, type AIChatContext } from "@/services/api";
 import { useChatStore } from "@/stores/chatStore";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -13,9 +14,11 @@ interface PageAIAssistantProps {
 }
 
 const FLOATING_GAP = 16;
+const MOBILE_NAV_HEIGHT = 56;
 
 export function PageAIAssistant({ pageContext }: PageAIAssistantProps) {
   const panelHeight = useChatStore((state) => state.panelHeight);
+  const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -24,7 +27,7 @@ export function PageAIAssistant({ pageContext }: PageAIAssistantProps) {
   const abortRef = useRef<AbortController | null>(null);
 
   // 计算 bottom 偏移：FloatingChat panelHeight + FeedbackButton 区域(~80px) + gap
-  const bottomOffset = panelHeight + 80 + FLOATING_GAP;
+  const bottomOffset = panelHeight + 80 + FLOATING_GAP + (isMobile ? MOBILE_NAV_HEIGHT : 0);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

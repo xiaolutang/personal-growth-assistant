@@ -225,7 +225,7 @@ export function FloatingChat() {
 
   return (
     <div
-      className={`fixed bottom-0 left-64 right-0 bg-background border-t z-50 flex flex-col ${
+      className={`fixed bottom-0 left-0 right-0 md:left-64 bg-background border-t z-50 flex flex-col ${
         isDragging ? "select-none" : ""
       }`}
       style={{ height: panelHeight }}

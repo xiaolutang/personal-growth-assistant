@@ -12,8 +12,10 @@ import { useChatStore } from "@/stores/chatStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 const FLOATING_GAP = 16;
+const MOBILE_NAV_HEIGHT = 56; // h-14 = 56px
 
 type ActiveTab = "submit" | "list";
 
@@ -50,6 +52,7 @@ function formatTime(iso: string): string {
 
 export function FeedbackButton() {
   const panelHeight = useChatStore((state) => state.panelHeight);
+  const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>("submit");
 
@@ -65,8 +68,10 @@ export function FeedbackButton() {
   const [listError, setListError] = useState(false);
 
   const containerStyle = useMemo(
-    () => ({ bottom: `${panelHeight + FLOATING_GAP}px` }),
-    [panelHeight],
+    () => ({
+      bottom: `${panelHeight + FLOATING_GAP + (isMobile ? MOBILE_NAV_HEIGHT : 0)}px`,
+    }),
+    [panelHeight, isMobile],
   );
 
   useEffect(() => {

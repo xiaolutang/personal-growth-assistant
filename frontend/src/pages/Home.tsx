@@ -250,7 +250,7 @@ export function Home() {
             {/* ====== 快捷操作 ====== */}
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-3">快捷操作</h3>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <QuickActionButton
                   icon={<Lightbulb className="h-5 w-5" />}
                   label="记灵感"
