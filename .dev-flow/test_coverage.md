@@ -72,5 +72,5 @@
 | 条目 CRUD E2E | B37 | e2e | 创建/列表/搜索/更新/删除/空状态 | pending | - |
 | Chat E2E (read/delete) | B38 | e2e | Chat read 搜索/Chat delete 删除/不依赖 LLM | pending | risk: network |
 | 回顾页 E2E | B39 | e2e | daily/weekly/monthly/trend/knowledge-heatmap/growth-curve/activity-heatmap | pending | - |
-| CI Pipeline | B40 | integration | PR 触发/backend+frontend+E2E/docker-build-test 保留 | pending | risk: config |
+| CI Pipeline | B40 | integration | PR=backend+frontend+build; main=+E2E(B36/B37); docker-build-test 独立保留 | pending | risk: config |
 | 性能基线 | B41 | manual | bundle 大小/API 响应时间/SSE 首字节延迟 | pending | - |

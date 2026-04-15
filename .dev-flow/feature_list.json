@@ -228,7 +228,9 @@
       "test_tasks": [
         "正常：/health 返回 200 和各服务状态",
         "边界：SQLite 不可达时返回 503",
-        "边界：Neo4j 不可达时降级标记但仍 200"
+        "边界：Neo4j 不可达时降级标记但仍 200",
+        "边界：Qdrant 不可达时降级标记但仍 200",
+        "边界：Neo4j+Qdrant 同时不可达时 200 + status: degraded"
       ],
       "contract_refs": ["GET /health"],
       "files": [
@@ -276,7 +278,7 @@
       "phase": "P2",
       "module": "auth",
       "name": "认证流程 E2E 测试",
-      "description": "覆盖完整认证用户路径：注册 → 登录 → 访问受保护页面 → 登出 → 重定向到登录页。包括 Token 过期、未认证访问拦截等边界场景。",
+      "description": "覆盖完整认证用户路径：注册 → 登录 → 访问受保护页面 → 登出 → 重定向到登录页。包括未认证访问拦截等边界场景。",
       "verification": "L3",
       "depends_on": ["B35"],
       "status": "pending",
@@ -448,7 +450,9 @@
       "test_tasks": [
         "正常：bundle 大小在合理范围（< 500KB gzip）",
         "正常：/health 响应 < 50ms",
-        "正常：/entries 响应 < 200ms"
+        "正常：/entries 响应 < 200ms",
+        "正常：/search 响应 < 300ms",
+        "正常：/chat SSE 首字节延迟有记录"
       ],
       "contract_refs": [],
       "files": [
