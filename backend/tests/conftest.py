@@ -51,9 +51,14 @@ async def test_user(storage):
     from app.infrastructure.storage.user_storage import UserStorage
     import tempfile
 
-    # 保存之前的全局状态，确保 teardown 后恢复
-    _prev_storage = getattr(deps, 'storage', None)
-    _prev_user_storage = getattr(deps, '_user_storage', None)
+    # 保存之前的全局状态，确保 teardown 后完整恢复
+    _DEPS_GLOBALS = [
+        'storage', '_user_storage',
+        '_entry_service', '_intent_service',
+        '_review_service', '_knowledge_service',
+        '_notification_service',
+    ]
+    _prev = {k: getattr(deps, k, None) for k in _DEPS_GLOBALS}
 
     deps.storage = storage
     deps.reset_all_services()
@@ -69,9 +74,9 @@ async def test_user(storage):
     ))
     yield user
 
-    # 恢复全局状态
-    deps.storage = _prev_storage
-    deps._user_storage = _prev_user_storage
+    # 恢复全局状态（包括 reset_all_services 清空的缓存）
+    for k, v in _prev.items():
+        setattr(deps, k, v)
 
     import os
     try:
