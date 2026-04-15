@@ -177,7 +177,7 @@ async def handle_create_entry(storage: SyncService, args: dict, user_id: str) ->
     # 同步到 SQLite + Neo4j + Qdrant（传递 user_id 进行隔离）
     if storage.sqlite:
         storage.sqlite.upsert_entry(entry, user_id=user_id)
-    await storage.sync_entry(entry)
+    await storage.sync_entry(entry, user_id=user_id)
 
     return [TextContent(
         type="text",
@@ -228,7 +228,7 @@ async def handle_update_entry(storage: SyncService, args: dict, user_id: str) ->
     # 同步到 SQLite + Neo4j + Qdrant
     if storage.sqlite:
         storage.sqlite.upsert_entry(entry, user_id=user_id)
-    await storage.sync_entry(entry)
+    await storage.sync_entry(entry, user_id=user_id)
 
     return [TextContent(type="text", text=f"已更新条目: {entry_id}")]
 
@@ -514,7 +514,7 @@ async def handle_batch_create_entries(storage: SyncService, args: dict, user_id:
             storage.markdown.write_entry(entry)
             if storage.sqlite:
                 storage.sqlite.upsert_entry(entry, user_id=user_id)
-            await storage.sync_entry(entry)
+            await storage.sync_entry(entry, user_id=user_id)
 
             created_ids.append(entry_id)
         except Exception as e:
@@ -569,7 +569,7 @@ async def handle_batch_update_status(storage: SyncService, args: dict, user_id: 
             storage.markdown.write_entry(entry)
             if storage.sqlite:
                 storage.sqlite.upsert_entry(entry, user_id=user_id)
-            await storage.sync_entry(entry)
+            await storage.sync_entry(entry, user_id=user_id)
 
             updated.append(entry_id)
         except Exception as e:

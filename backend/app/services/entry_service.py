@@ -550,7 +550,7 @@ class EntryService:
         if self.storage.sqlite:
             cached = self.storage.sqlite.get_ai_summary(entry_id, user_id=user_id)
             if cached:
-                return {"summary": cached, "generated_at": datetime.now().isoformat(), "cached": True}
+                return {"summary": cached["summary"], "generated_at": cached["generated_at"], "cached": True}
 
         # 检查 LLM 是否可用
         llm_caller = self.storage.llm_caller
@@ -583,6 +583,6 @@ class EntryService:
         # 缓存到 SQLite
         generated_at = datetime.now().isoformat()
         if self.storage.sqlite:
-            self.storage.sqlite.save_ai_summary(entry_id, summary, user_id=user_id)
+            self.storage.sqlite.save_ai_summary(entry_id, summary, user_id=user_id, generated_at=generated_at)
 
         return {"summary": summary, "generated_at": generated_at, "cached": False}

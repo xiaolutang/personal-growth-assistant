@@ -771,12 +771,12 @@ export function GraphPage() {
                       <div className="flex items-center gap-2">
                         <span
                           className="inline-block w-2 h-2 rounded-full shrink-0"
-                          style={{ backgroundColor: masteryColors[item.mastery] }}
+                          style={{ backgroundColor: item.mastery ? masteryColors[item.mastery] : "#9ca3af" }}
                         />
                         <span className="text-xs font-medium truncate">{item.name}</span>
                       </div>
                       <span className="text-[10px] text-muted-foreground ml-4">
-                        {item.entry_count} 条记录 · {masteryLabels[item.mastery]}
+                        {item.entry_count} 条记录 · {item.mastery ? masteryLabels[item.mastery] : "未知"}
                       </span>
                     </button>
                   ))}

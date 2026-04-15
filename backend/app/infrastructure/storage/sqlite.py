@@ -33,6 +33,7 @@ class SQLiteStorage:
             'time_spent': 'INTEGER',
             'user_id': 'TEXT NOT NULL DEFAULT "_default"',
             'ai_summary': 'TEXT',
+            'ai_summary_generated_at': 'TEXT',
         }
 
         # 添加缺失的列
@@ -598,25 +599,32 @@ class SQLiteStorage:
 
     # === AI 摘要操作 ===
 
-    def get_ai_summary(self, entry_id: str, user_id: str = "_default") -> Optional[str]:
-        """获取条目的 AI 摘要缓存"""
+    def get_ai_summary(self, entry_id: str, user_id: str = "_default") -> Optional[dict]:
+        """获取条目的 AI 摘要缓存，返回 {summary, generated_at} 或 None"""
         conn = self._get_conn()
         try:
             row = conn.execute(
-                "SELECT ai_summary FROM entries WHERE id = ? AND user_id = ?",
+                "SELECT ai_summary, ai_summary_generated_at FROM entries WHERE id = ? AND user_id = ?",
                 (entry_id, user_id),
             ).fetchone()
-            return row["ai_summary"] if row else None
+            if row and row["ai_summary"]:
+                return {
+                    "summary": row["ai_summary"],
+                    "generated_at": row["ai_summary_generated_at"],
+                }
+            return None
         finally:
             conn.close()
 
-    def save_ai_summary(self, entry_id: str, summary: str, user_id: str = "_default") -> bool:
+    def save_ai_summary(self, entry_id: str, summary: str, user_id: str = "_default", generated_at: Optional[str] = None) -> bool:
         """保存 AI 摘要到条目"""
+        if generated_at is None:
+            generated_at = datetime.now().isoformat()
         conn = self._get_conn()
         try:
             conn.execute(
-                "UPDATE entries SET ai_summary = ? WHERE id = ? AND user_id = ?",
-                (summary, entry_id, user_id),
+                "UPDATE entries SET ai_summary = ?, ai_summary_generated_at = ? WHERE id = ? AND user_id = ?",
+                (summary, generated_at, entry_id, user_id),
             )
             conn.commit()
             return conn.total_changes > 0

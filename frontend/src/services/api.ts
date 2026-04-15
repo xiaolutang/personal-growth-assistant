@@ -695,8 +695,8 @@ export async function getRelatedEntries(entryId: string): Promise<RelatedEntry[]
 // === AI 条目摘要 API ===
 
 export interface EntrySummaryResponse {
-  summary: string;
-  generated_at: string;
+  summary: string | null;
+  generated_at: string | null;
   cached: boolean;
 }
 
@@ -773,7 +773,7 @@ export async function updateNotificationPreferences(prefs: NotificationPreferenc
 export interface KnowledgeSearchItem {
   name: string;
   entry_count: number;
-  mastery: "new" | "beginner" | "intermediate" | "advanced";
+  mastery: "new" | "beginner" | "intermediate" | "advanced" | null;
 }
 
 export interface KnowledgeSearchResponse {

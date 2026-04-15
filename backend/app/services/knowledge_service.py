@@ -794,8 +794,11 @@ class KnowledgeService:
     ) -> ConceptSearchResponse:
         """搜索概念（Neo4j 优先，SQLite tags 降级）"""
         if self.is_neo4j_available():
-            return await self._search_from_neo4j(query, limit, user_id)
-        elif self._sqlite:
+            try:
+                return await self._search_from_neo4j(query, limit, user_id)
+            except Exception as e:
+                logger.warning(f"Neo4j search failed, falling back to SQLite: {e}")
+        if self._sqlite:
             return self._search_from_sqlite(query, limit, user_id)
         return ConceptSearchResponse()
 
@@ -843,8 +846,11 @@ class KnowledgeService:
     ) -> ConceptTimelineResponse:
         """获取概念学习时间线"""
         if self.is_neo4j_available():
-            return await self._timeline_from_neo4j(concept, days, user_id)
-        elif self._sqlite:
+            try:
+                return await self._timeline_from_neo4j(concept, days, user_id)
+            except Exception as e:
+                logger.warning(f"Neo4j timeline failed, falling back to SQLite: {e}")
+        if self._sqlite:
             return self._timeline_from_sqlite(concept, days, user_id)
         return ConceptTimelineResponse(concept=concept)
 
@@ -909,12 +915,20 @@ class KnowledgeService:
         dist = {"new": 0, "beginner": 0, "intermediate": 0, "advanced": 0}
 
         if self.is_neo4j_available():
-            concepts = await self._neo4j.get_all_concepts_with_stats(user_id=user_id)
-            for c in concepts:
-                name = c.get("name", "")
-                entry_count = c.get("entry_count", 0)
-                mastery = await self._calculate_mastery_with_neo4j(name, entry_count, user_id)
-                dist[mastery] = dist.get(mastery, 0) + 1
+            try:
+                concepts = await self._neo4j.get_all_concepts_with_stats(user_id=user_id)
+                for c in concepts:
+                    name = c.get("name", "")
+                    entry_count = c.get("entry_count", 0)
+                    mastery = await self._calculate_mastery_with_neo4j(name, entry_count, user_id)
+                    dist[mastery] = dist.get(mastery, 0) + 1
+            except Exception as e:
+                logger.warning(f"Neo4j mastery distribution failed, falling back to SQLite: {e}")
+                dist = {"new": 0, "beginner": 0, "intermediate": 0, "advanced": 0}
+                if self._sqlite:
+                    nodes, _ = self._build_map_from_sqlite(user_id)
+                    for node in nodes:
+                        dist[node.mastery] = dist.get(node.mastery, 0) + 1
         elif self._sqlite:
             nodes, _ = self._build_map_from_sqlite(user_id)
             for node in nodes:
