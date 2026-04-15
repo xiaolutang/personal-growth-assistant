@@ -81,6 +81,7 @@ class SQLiteStorage:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_status ON entries(status)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_updated ON entries(updated_at DESC)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_user_id ON entries(user_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_user_created ON entries(user_id, created_at)")
 
             # 标签表
             conn.execute("""
@@ -152,6 +153,29 @@ class SQLiteStorage:
                 )
             """)
             conn.execute("CREATE INDEX IF NOT EXISTS idx_feedback_user_id ON feedback(user_id)")
+
+            # 通知已读记录表（复合主键保证用户隔离）
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS notifications (
+                    notification_id TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    notification_type TEXT NOT NULL,
+                    ref_id TEXT,
+                    dismissed_at TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    PRIMARY KEY (user_id, notification_id)
+                )
+            """)
+
+            # 通知偏好表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS notification_preferences (
+                    user_id TEXT PRIMARY KEY,
+                    overdue_task_enabled INTEGER DEFAULT 1,
+                    stale_inbox_enabled INTEGER DEFAULT 1,
+                    review_prompt_enabled INTEGER DEFAULT 1
+                )
+            """)
 
             conn.commit()
         finally:

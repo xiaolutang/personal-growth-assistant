@@ -106,13 +106,13 @@ export function TaskCard({ task, showParent = true, highlightKeyword }: TaskCard
   const renderStatusIcon = () => {
     switch (task.status) {
       case "complete":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />;
       case "doing":
-        return <Clock className="h-4 w-4 text-yellow-500" />;
+        return <Clock className="h-4 w-4 text-yellow-500 dark:text-yellow-400" />;
       case "paused":
-        return <Pause className="h-4 w-4 text-orange-500" />;
+        return <Pause className="h-4 w-4 text-orange-500 dark:text-orange-400" />;
       case "cancelled":
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <XCircle className="h-4 w-4 text-red-500 dark:text-red-400" />;
       default:
         return <Circle className="h-4 w-4" />;
     }
@@ -166,7 +166,7 @@ export function TaskCard({ task, showParent = true, highlightKeyword }: TaskCard
         {/* Meta Info: parent, date, tags */}
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
           {parentProject && (
-            <span className="flex items-center gap-0.5 text-purple-500">
+            <span className="flex items-center gap-0.5 text-purple-500 dark:text-purple-400">
               <Folder className="h-3 w-3" />
               <span className="truncate max-w-[80px]">{parentProject.title}</span>
             </span>
@@ -212,14 +212,14 @@ export function TaskCard({ task, showParent = true, highlightKeyword }: TaskCard
                   className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent transition-colors"
                   onClick={(e) => handleConvert(e, "task")}
                 >
-                  <ArrowRightCircle className="h-3.5 w-3.5 text-blue-500" />
+                  <ArrowRightCircle className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
                   <span>转为任务</span>
                 </button>
                 <button
                   className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent transition-colors"
                   onClick={(e) => handleConvert(e, "note")}
                 >
-                  <FileText className="h-3.5 w-3.5 text-green-500" />
+                  <FileText className="h-3.5 w-3.5 text-green-500 dark:text-green-400" />
                   <span>转为笔记</span>
                 </button>
               </div>

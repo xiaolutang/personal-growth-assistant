@@ -8,8 +8,8 @@ interface ServiceUnavailableProps {
 export function ServiceUnavailable({ onRetry }: ServiceUnavailableProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4">
-      <div className="flex items-center justify-center w-16 h-16 rounded-full bg-amber-100 mb-6">
-        <AlertCircle className="w-8 h-8 text-amber-600" />
+      <div className="flex items-center justify-center w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 mb-6">
+        <AlertCircle className="w-8 h-8 text-amber-600 dark:text-amber-400" />
       </div>
       <h2 className="text-xl font-semibold text-foreground mb-2">
         服务暂时不可用

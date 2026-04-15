@@ -151,6 +151,16 @@ class MonthlyReport(BaseModel):
     ai_summary: Optional[str] = None
 
 
+class ActivityHeatmapItem(BaseModel):
+    date: str
+    count: int = 0
+
+
+class ActivityHeatmapResponse(BaseModel):
+    year: int
+    items: List[ActivityHeatmapItem] = []
+
+
 class ReviewService:
     """成长回顾统计服务"""
 
@@ -936,3 +946,36 @@ class ReviewService:
         elif entry_count >= 1:
             return "beginner"
         return "new"
+
+    def get_activity_heatmap(self, year: int, user_id: str) -> ActivityHeatmapResponse:
+        """获取年度每日活动热力图数据（基于 created_at）"""
+        from datetime import date as date_type
+
+        start = date_type(year, 1, 1)
+        end = date_type(year, 12, 31)
+        start_str = start.isoformat()
+        end_str = end.isoformat() + "T23:59:59"
+
+        conn = self._sqlite._get_conn()
+        try:
+            rows = conn.execute(
+                """SELECT DATE(created_at) as d, COUNT(*) as cnt
+                   FROM entries
+                   WHERE user_id = ? AND created_at >= ? AND created_at <= ?
+                   GROUP BY DATE(created_at)""",
+                (user_id, start_str, end_str),
+            ).fetchall()
+            counts = {row["d"]: row["cnt"] for row in rows}
+        finally:
+            conn.close()
+
+        items = []
+        current = start
+        while current <= end:
+            items.append(ActivityHeatmapItem(
+                date=current.isoformat(),
+                count=counts.get(current.isoformat(), 0),
+            ))
+            current += timedelta(days=1)
+
+        return ActivityHeatmapResponse(year=year, items=items)

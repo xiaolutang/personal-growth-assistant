@@ -43,8 +43,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         {step === "welcome" && (
           <>
             <div className="flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100">
-                <Sparkles className="h-8 w-8 text-indigo-600" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/30">
+                <Sparkles className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
               </div>
             </div>
             <div>
@@ -85,8 +85,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         {step === "guide" && (
           <>
             <div className="flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100">
-                <Sparkles className="h-8 w-8 text-indigo-600" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/30">
+                <Sparkles className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
               </div>
             </div>
             <div>
@@ -130,8 +130,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         {step === "error" && (
           <>
             <div className="flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-                <RefreshCw className="h-8 w-8 text-red-600" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                <RefreshCw className="h-8 w-8 text-red-600 dark:text-red-400" />
               </div>
             </div>
             <div>

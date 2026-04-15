@@ -9,6 +9,7 @@ import { FeedbackButton } from "@/components/FeedbackButton";
 import { PageAIAssistant } from "@/components/PageAIAssistant";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ThemeProvider } from "@/lib/theme";
 import { Home } from "@/pages/Home";
 import { Tasks } from "@/pages/Tasks";
 import { EntryDetail } from "@/pages/EntryDetail";
@@ -103,6 +104,7 @@ function App() {
           path="/*"
           element={
             <ProtectedRoute>
+              <ThemeProvider>
               <SidebarProvider>
                 {showOnboarding && (
                   <OnboardingFlow onComplete={handleOnboardingComplete} />
@@ -110,6 +112,7 @@ function App() {
                 <Toaster position="top-center" richColors />
                 <AppLayout />
               </SidebarProvider>
+              </ThemeProvider>
             </ProtectedRoute>
           }
         />

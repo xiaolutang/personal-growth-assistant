@@ -47,9 +47,9 @@ export function getActionColor(type: ActionType, name: string): string {
   }
   switch (type) {
     case "tool":
-      return "text-blue-500";
+      return "text-blue-500 dark:text-blue-400";
     case "skill":
-      return "text-purple-500";
+      return "text-purple-500 dark:text-purple-400";
     default:
       return "text-muted-foreground";
   }

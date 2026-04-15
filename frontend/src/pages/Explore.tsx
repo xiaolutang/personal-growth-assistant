@@ -260,7 +260,7 @@ export function Explore() {
       {/* 搜索栏 */}
       <div className="mb-4 relative">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
           <input
             ref={searchInputRef}
             type="text"
@@ -361,11 +361,11 @@ export function Explore() {
           </CardTitle>
         </CardHeader>
         {isLoading ? (
-          <div className="p-4 text-center text-gray-500">加载中...</div>
+          <div className="p-4 text-center text-gray-500 dark:text-gray-400">加载中...</div>
         ) : isSearching ? (
-          <div className="p-4 text-center text-gray-500">搜索中...</div>
+          <div className="p-4 text-center text-gray-500 dark:text-gray-400">搜索中...</div>
         ) : searchError ? (
-          <div className="p-4 text-center text-red-500">{searchError}</div>
+          <div className="p-4 text-center text-red-500 dark:text-red-400">{searchError}</div>
         ) : (
           <TaskList tasks={filteredTasks} emptyMessage={emptyMessage} highlightKeyword={searchQuery.trim()} />
         )}

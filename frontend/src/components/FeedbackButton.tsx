@@ -33,8 +33,8 @@ const initialForm = {
 };
 
 const statusColors: Record<string, string> = {
-  pending: "text-amber-500",
-  reported: "text-emerald-600",
+  pending: "text-amber-500 dark:text-amber-400",
+  reported: "text-emerald-600 dark:text-emerald-400",
 };
 
 function formatTime(iso: string): string {
@@ -143,7 +143,7 @@ export function FeedbackButton() {
   const tabClass = (tab: ActiveTab) =>
     `flex-1 py-2 text-xs font-medium border-b-2 transition-colors ${
       activeTab === tab
-        ? "border-indigo-500 text-indigo-600"
+        ? "border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400"
         : "border-transparent text-muted-foreground hover:text-foreground"
     }`;
 
@@ -229,7 +229,7 @@ export function FeedbackButton() {
               <div className="mt-4 flex items-center justify-between gap-3">
                 <div className="min-h-5 text-xs">
                   {errorMessage && <p className="text-destructive">{errorMessage}</p>}
-                  {isSuccess && <p className="text-emerald-600">反馈已提交，我们会尽快处理。</p>}
+                  {isSuccess && <p className="text-emerald-600 dark:text-emerald-400">反馈已提交，我们会尽快处理。</p>}
                 </div>
                 <Button type="submit" disabled={isTitleEmpty || isSubmitting} className="gap-2">
                   {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
