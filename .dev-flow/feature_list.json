@@ -219,9 +219,9 @@
       "status": "pending",
       "priority": "high",
       "acceptance_criteria": [
-        "GET /health 返回 200 + {status: 'ok', services: {sqlite: 'ok', neo4j: 'ok'|'unavailable', qdrant: 'ok'|'unavailable'}}",
-        "SQLite 不可达时 /health 返回 503 + {status: 'degraded', services: {sqlite: 'error'}}",
-        "Neo4j/Qdrant 不可达不影响整体 200（降级标记）",
+        "GET /health 全部正常时返回 200 + {status: 'ok', services: {sqlite: 'ok', neo4j: 'ok', qdrant: 'ok'}}",
+        "SQLite 不可达时返回 503 + {status: 'degraded', services: {sqlite: 'error', ...}}",
+        "Neo4j/Qdrant 不可达时返回 200 + {status: 'degraded', services: {neo4j: 'unavailable', ...}}（非核心降级不阻断）",
         "现有 601 单元测试不受影响"
       ],
       "risk_tags": ["startup"],
@@ -269,7 +269,7 @@
         "e2e/tests/helpers/auth.ts",
         "e2e/tests/helpers/api.ts"
       ],
-      "planning_notes": "E2E 运行模型：前端 dev server（5173）+ 后端（18929），前端 vite.config.ts 已配置 /api 代理到后端。测试环境变量：DATA_DIR=/tmp/pga_e2e_data, JWT_SECRET=test_e2e_secret。"
+      "planning_notes": "E2E 运行模型：前端 dev server（5173）+ 后端（18929），前端 vite.config.ts 已配置 /api 代理到后端。测试环境变量：DATA_DIR=/tmp/pga_e2e_data, JWT_SECRET=test_e2e_secret, LLM_API_KEY=fake_e2e_key, LLM_BASE_URL=http://localhost:19999, LLM_MODEL=fake-model。使用固定假 LLM 配置，APICaller 在启动时不做连接验证，仅在调用时才报错；B38 read/delete 路径不触发 LLM 调用，因此假配置不会影响测试。"
     },
     {
       "id": "B36",
@@ -286,7 +286,7 @@
         "登录流程：填写表单 → 提交 → 跳转到首页",
         "登出流程：点击登出 → 跳转到登录页",
         "未认证访问受保护页面 → 重定向到登录页",
-        "测试数据清理（注册的测试用户删除）"
+        "测试数据通过临时 DATA_DIR 整体回收（suite 结束后自动清理）"
       ],
       "risk_tags": ["auth"],
       "test_tasks": [

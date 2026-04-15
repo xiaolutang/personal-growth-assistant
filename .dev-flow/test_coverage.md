@@ -66,3 +66,11 @@
 | 搜索增强 | F11 | manual+unit | debounce 300ms/Cmd+K 聚焦/关键词高亮/无结果引导/构建通过 | completed | 6 HighlightText tests + 231 frontend + build pass |
 | Export 导出 UI | F12 | manual+unit | Sidebar 导出入口/格式选择/下载文件/loading 态/构建通过 | completed | 493 backend + 231 frontend + build pass |
 | 条目关联面板 | F13 | manual+unit | 关联条目列表/点击跳转/无关联引导/API 失败不影响详情页/构建通过 | completed | 231 frontend + build pass |
+| Health check 增强 | B34 | unit+integration | /health 返回服务状态/SQLite 不可达 503/Neo4j 降级 200 | pending | risk: startup |
+| E2E 基础设施 | B35 | integration | 双服务启停/认证 fixture/API helper/假 LLM 配置 | pending | risk: startup, config |
+| 认证流程 E2E | B36 | e2e | 注册→登录→访问→登出/未认证重定向/临时 DATA_DIR 回收 | pending | risk: auth |
+| 条目 CRUD E2E | B37 | e2e | 创建/列表/搜索/更新/删除/空状态 | pending | - |
+| Chat E2E (read/delete) | B38 | e2e | Chat read 搜索/Chat delete 删除/不依赖 LLM | pending | risk: network |
+| 回顾页 E2E | B39 | e2e | daily/weekly/monthly/trend/knowledge-heatmap/growth-curve/activity-heatmap | pending | - |
+| CI Pipeline | B40 | integration | PR 触发/backend+frontend+E2E/docker-build-test 保留 | pending | risk: config |
+| 性能基线 | B41 | manual | bundle 大小/API 响应时间/SSE 首字节延迟 | pending | - |

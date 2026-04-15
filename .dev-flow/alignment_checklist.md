@@ -1,5 +1,44 @@
 # 对齐清单
 
+## R010: 工程化提升
+
+### 契约对齐
+
+- [ ] B34: CONTRACT-ENG01 (GET /health 增强) 已定义 → 状态值域明确 (ok/error/unavailable)
+- [ ] B35: 无新契约（使用现有 auth + entries API）
+- [ ] B36-B39: 使用现有 auth/entries/chat/review API
+- [ ] B40-B41: 无 API 契约
+
+### 依赖对齐
+
+- [ ] B34 无外部依赖 ✓（增强现有 /health 端点）
+- [ ] B35 depends_on B34 ✓（E2E 健康检查依赖 /health 增强后可用）
+- [ ] B36 depends_on B35 ✓（认证 E2E 依赖基础设施）
+- [ ] B37 depends_on B35 ✓（CRUD E2E 依赖基础设施）
+- [ ] B38 depends_on B35 ✓（Chat E2E 依赖基础设施）
+- [ ] B39 depends_on B35 ✓（回顾 E2E 依赖基础设施）
+- [ ] B40 depends_on B36, B37 ✓（CI 跑认证+CRUD E2E）
+- [ ] B41 depends_on B34 ✓（性能基线用 /health 响应时间）
+
+### 架构对齐
+
+- [ ] B34 增强现有端点，不新建 ✓
+- [ ] B35 双服务器拓扑与 vite proxy 一致 ✓
+- [ ] B35 使用假 LLM 配置（LLM_API_KEY=fake, LLM_BASE_URL=localhost:19999），避免真实外部调用 ✓
+- [ ] B38 read/delete 路径不触发 stream_parse，不依赖真实 LLM ✓
+- [ ] B39 覆盖全部 7 个 review API 端点（daily/weekly/monthly/trend/knowledge-heatmap/growth-curve/activity-heatmap）✓
+- [ ] B40 保留现有 docker-build-test job ✓
+- [ ] 所有 E2E 测试通过临时 DATA_DIR 做数据隔离和回收 ✓
+
+### 验收对齐
+
+- [ ] B34 acceptance_criteria 与 CONTRACT-ENG01 一致（非核心降级 → 200 + status: "degraded"）✓
+- [ ] B36 清理策略为临时 DATA_DIR 回收，不依赖删除用户 API ✓
+- [ ] B38 可选 smoke（需 LLM）标记为 skip ✓
+- [ ] B40 depends_on 只包含实际 CI 范围（B36/B37），不被 B38/B39 阻塞 ✓
+
+---
+
 ## R008: 智能化 & 全端适配
 
 ### 契约对齐
