@@ -81,6 +81,46 @@ class ConceptStatsResponse(BaseModel):
     top_concepts: List[Dict[str, Any]] = []
 
 
+class ConceptSearchItem(BaseModel):
+    """概念搜索结果项"""
+    name: str
+    entry_count: int = 0
+    mastery: Optional[str] = None
+
+
+class ConceptSearchResponse(BaseModel):
+    """概念搜索响应"""
+    items: List[ConceptSearchItem] = []
+
+
+class TimelineEntry(BaseModel):
+    """时间线条目"""
+    id: str
+    title: str
+    type: str = "note"
+
+
+class TimelineDay(BaseModel):
+    """时间线日期组"""
+    date: str
+    entries: List[TimelineEntry] = []
+
+
+class ConceptTimelineResponse(BaseModel):
+    """概念学习时间线响应"""
+    concept: str
+    items: List[TimelineDay] = []
+
+
+class MasteryDistributionResponse(BaseModel):
+    """掌握度分布响应"""
+    new: int = 0
+    beginner: int = 0
+    intermediate: int = 0
+    advanced: int = 0
+    total: int = 0
+
+
 class KnowledgeService:
     """知识图谱服务"""
 
@@ -745,4 +785,145 @@ class KnowledgeService:
             relation_count=edge_count,
             category_distribution=category_dist,
             top_concepts=top_concepts,
+        )
+
+    # ==================== B28: 搜索 + 时间线 + 掌握度分布 ====================
+
+    async def search_concepts(
+        self, query: str, limit: int = 20, user_id: str = "_default"
+    ) -> ConceptSearchResponse:
+        """搜索概念（Neo4j 优先，SQLite tags 降级）"""
+        if self.is_neo4j_available():
+            return await self._search_from_neo4j(query, limit, user_id)
+        elif self._sqlite:
+            return self._search_from_sqlite(query, limit, user_id)
+        return ConceptSearchResponse()
+
+    async def _search_from_neo4j(
+        self, query: str, limit: int, user_id: str
+    ) -> ConceptSearchResponse:
+        """从 Neo4j 搜索概念"""
+        concepts = await self._neo4j.get_all_concepts_with_stats(user_id=user_id)
+        q_lower = query.lower()
+        matched = [c for c in concepts if q_lower in c.get("name", "").lower()]
+        matched.sort(key=lambda x: x.get("entry_count", 0), reverse=True)
+        matched = matched[:limit]
+
+        items = []
+        for c in matched:
+            name = c.get("name", "")
+            entry_count = c.get("entry_count", 0)
+            mastery = await self._calculate_mastery_with_neo4j(name, entry_count, user_id)
+            items.append(ConceptSearchItem(name=name, entry_count=entry_count, mastery=mastery))
+
+        return ConceptSearchResponse(items=items)
+
+    def _search_from_sqlite(
+        self, query: str, limit: int, user_id: str
+    ) -> ConceptSearchResponse:
+        """从 SQLite tags 搜索概念（降级，mastery=null）"""
+        all_entries = self._sqlite.list_entries(limit=200, user_id=user_id)
+        q_lower = query.lower()
+        concept_map: Dict[str, int] = {}
+
+        for entry in all_entries:
+            for tag in entry.get("tags", []):
+                if q_lower in tag.lower():
+                    concept_map[tag] = concept_map.get(tag, 0) + 1
+
+        sorted_items = sorted(concept_map.items(), key=lambda x: x[1], reverse=True)[:limit]
+        items = [
+            ConceptSearchItem(name=name, entry_count=count, mastery=None)
+            for name, count in sorted_items
+        ]
+        return ConceptSearchResponse(items=items)
+
+    async def get_concept_timeline(
+        self, concept: str, days: int = 90, user_id: str = "_default"
+    ) -> ConceptTimelineResponse:
+        """获取概念学习时间线"""
+        if self.is_neo4j_available():
+            return await self._timeline_from_neo4j(concept, days, user_id)
+        elif self._sqlite:
+            return self._timeline_from_sqlite(concept, days, user_id)
+        return ConceptTimelineResponse(concept=concept)
+
+    async def _timeline_from_neo4j(
+        self, concept: str, days: int, user_id: str
+    ) -> ConceptTimelineResponse:
+        """从 Neo4j 获取时间线"""
+        try:
+            entries = await self._neo4j.get_entries_by_concept(concept, user_id=user_id)
+        except Exception:
+            entries = []
+
+        return self._build_timeline(concept, entries, days)
+
+    def _timeline_from_sqlite(
+        self, concept: str, days: int, user_id: str
+    ) -> ConceptTimelineResponse:
+        """从 SQLite 获取时间线"""
+        results = self._sqlite.search(concept, limit=50, user_id=user_id)
+        return self._build_timeline(concept, results, days)
+
+    def _build_timeline(
+        self, concept: str, entries: list, days: int
+    ) -> ConceptTimelineResponse:
+        """构建时间线（按日期聚合）"""
+        cutoff = datetime.now() - timedelta(days=days)
+        day_map: Dict[str, List[TimelineEntry]] = {}
+
+        for e in entries:
+            created_str = e.get("created_at", "") or e.get("updated_at", "")
+            if not created_str:
+                continue
+            try:
+                if isinstance(created_str, str):
+                    created_at = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
+                else:
+                    created_at = created_str
+            except (ValueError, TypeError):
+                continue
+
+            if created_at < cutoff:
+                continue
+
+            date_key = created_at.strftime("%Y-%m-%d")
+            if date_key not in day_map:
+                day_map[date_key] = []
+
+            day_map[date_key].append(TimelineEntry(
+                id=e.get("id", ""),
+                title=e.get("title", ""),
+                type=e.get("type", "note"),
+            ))
+
+        items = [
+            TimelineDay(date=date, entries=ents)
+            for date, ents in sorted(day_map.items(), reverse=True)
+        ]
+        return ConceptTimelineResponse(concept=concept, items=items)
+
+    async def get_mastery_distribution(self, user_id: str = "_default") -> MasteryDistributionResponse:
+        """获取掌握度分布统计"""
+        dist = {"new": 0, "beginner": 0, "intermediate": 0, "advanced": 0}
+
+        if self.is_neo4j_available():
+            concepts = await self._neo4j.get_all_concepts_with_stats(user_id=user_id)
+            for c in concepts:
+                name = c.get("name", "")
+                entry_count = c.get("entry_count", 0)
+                mastery = await self._calculate_mastery_with_neo4j(name, entry_count, user_id)
+                dist[mastery] = dist.get(mastery, 0) + 1
+        elif self._sqlite:
+            nodes, _ = self._build_map_from_sqlite(user_id)
+            for node in nodes:
+                dist[node.mastery] = dist.get(node.mastery, 0) + 1
+
+        return MasteryDistributionResponse(
+            new=dist["new"],
+            beginner=dist["beginner"],
+            intermediate=dist["intermediate"],
+            advanced=dist["advanced"],
+            total=sum(dist.values()),
         )
