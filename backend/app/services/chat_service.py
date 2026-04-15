@@ -72,6 +72,7 @@ class ChatService:
         entities: dict,
         text: str,
         session_id: str,
+        user_id: str,
         confirm: Optional[dict] = None,
         page_context: Optional["PageContext"] = None,
     ) -> AsyncGenerator[str, None]:
@@ -84,19 +85,20 @@ class ChatService:
             entities: 提取的实体
             text: 原始用户输入
             session_id: 会话 ID
+            user_id: 认证用户 ID
             confirm: 确认操作（多选场景）
         """
         if intent == "create":
-            async for event in self._handle_create(text, session_id, page_context=page_context):
+            async for event in self._handle_create(text, session_id, user_id, page_context=page_context):
                 yield event
         elif intent == "update":
-            async for event in self._handle_update(query, entities, confirm):
+            async for event in self._handle_update(query, entities, confirm, user_id):
                 yield event
         elif intent == "delete":
-            async for event in self._handle_delete(query, confirm):
+            async for event in self._handle_delete(query, confirm, user_id):
                 yield event
         elif intent == "read":
-            async for event in self._handle_read(query):
+            async for event in self._handle_read(query, user_id):
                 yield event
         elif intent == "review":
             yield sse_event("done", {"intent": "review", "need_client_action": True, "entities": entities})
@@ -108,7 +110,7 @@ class ChatService:
             yield sse_event("done", {"intent": intent, "need_client_action": True})
 
     async def _handle_create(
-        self, text: str, session_id: str, page_context: Optional["PageContext"] = None
+        self, text: str, session_id: str, user_id: str, page_context: Optional["PageContext"] = None
     ) -> AsyncGenerator[str, None]:
         """处理创建意图"""
         full_json = ""
@@ -152,7 +154,8 @@ class ChatService:
                             status=task.get("status"),
                             tags=task.get("tags"),
                             planned_date=task.get("planned_date"),
-                        )
+                        ),
+                        user_id=user_id,
                     )
                     created_ids.append(entry.id)
 
@@ -168,7 +171,7 @@ class ChatService:
                 yield sse_event("error", {"message": f"解析失败: {str(e)}"})
 
     async def _handle_update(
-        self, query: str, entities: dict, confirm: Optional[dict]
+        self, query: str, entities: dict, confirm: Optional[dict], user_id: str
     ) -> AsyncGenerator[str, None]:
         """处理更新意图"""
         if confirm:
@@ -178,7 +181,7 @@ class ChatService:
 
             if field and value:
                 update_data = {field: value}
-                success, msg = await self.entry_service.update_entry(entry_id, EntryUpdate(**update_data))
+                success, msg = await self.entry_service.update_entry(entry_id, EntryUpdate(**update_data), user_id=user_id)
                 if success:
                     yield sse_event("updated", {"id": entry_id, "changes": update_data})
                     yield sse_event("done", {"message": "已更新"})
@@ -187,7 +190,7 @@ class ChatService:
             return
 
         # 搜索条目
-        results = await self.entry_service.search_entries(query, limit=10)
+        results = await self.entry_service.search_entries(query, limit=10, user_id=user_id)
         items = [{"id": r.id, "title": r.title} for r in results.entries]
 
         if len(items) == 0:
@@ -199,7 +202,7 @@ class ChatService:
 
             if field and value:
                 update_data = {field: value}
-                success, msg = await self.entry_service.update_entry(entry_id, EntryUpdate(**update_data))
+                success, msg = await self.entry_service.update_entry(entry_id, EntryUpdate(**update_data), user_id=user_id)
                 if success:
                     item_title = items[0]["title"]
                     yield sse_event("updated", {"id": entry_id, "title": item_title, "changes": update_data})
@@ -210,12 +213,12 @@ class ChatService:
             yield sse_event("confirm", {"action": "update", "items": items, "entities": entities})
 
     async def _handle_delete(
-        self, query: str, confirm: Optional[dict]
+        self, query: str, confirm: Optional[dict], user_id: str
     ) -> AsyncGenerator[str, None]:
         """处理删除意图"""
         if confirm:
             entry_id = confirm.get("item_id")
-            success = await self.entry_service.delete_entry(entry_id)
+            success, _ = await self.entry_service.delete_entry(entry_id, user_id=user_id)
             if success:
                 yield sse_event("deleted", {"id": entry_id})
                 yield sse_event("done", {"message": "已删除"})
@@ -224,7 +227,7 @@ class ChatService:
             return
 
         # 搜索条目
-        results = await self.entry_service.search_entries(query, limit=10)
+        results = await self.entry_service.search_entries(query, limit=10, user_id=user_id)
         items = [{"id": r.id, "title": r.title} for r in results.entries]
 
         if len(items) == 0:
@@ -232,9 +235,9 @@ class ChatService:
         else:
             yield sse_event("confirm", {"action": "delete", "items": items})
 
-    async def _handle_read(self, query: str) -> AsyncGenerator[str, None]:
+    async def _handle_read(self, query: str, user_id: str) -> AsyncGenerator[str, None]:
         """处理读取意图"""
-        results = await self.entry_service.search_entries(query, limit=10)
+        results = await self.entry_service.search_entries(query, limit=10, user_id=user_id)
         items = [
             {"id": r.id, "title": r.title, "status": r.status, "category": r.category}
             for r in results.entries
