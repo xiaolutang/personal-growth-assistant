@@ -271,9 +271,11 @@ class EntryService:
                 except OSError:
                     pass  # 旧文件删除失败不阻塞
 
-        # SQLite 同步
+        # SQLite 同步 + 清除 AI 摘要缓存（内容变更后旧摘要失效）
         if self.storage.sqlite:
             self.storage.sqlite.upsert_entry(entry, user_id=user_id)
+            if request.title is not None or request.content is not None:
+                self.storage.sqlite.save_ai_summary(entry_id, "", user_id=user_id)
 
         # Neo4j + Qdrant 后台同步
         asyncio.create_task(self.storage.sync_to_graph_and_vector(entry, user_id=user_id))

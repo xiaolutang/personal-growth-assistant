@@ -280,8 +280,8 @@ class TestUserIsolation:
         assert "删除失败" in result[0].text
 
     @pytest.mark.asyncio
-    async def test_create_entry_passes_user_id_to_sqlite(self):
-        """create_entry 将 user_id 传递给 SQLite upsert_entry"""
+    async def test_create_entry_passes_user_id_to_sync_entry(self):
+        """create_entry 将 user_id 传递给 sync_entry"""
         from app.mcp.handlers import handle_create_entry
 
         mock_storage = MagicMock()
@@ -296,9 +296,9 @@ class TestUserIsolation:
             "user-C",
         )
         assert "已创建" in result[0].text
-        # 验证 upsert_entry 传入了 user_id
-        mock_sqlite.upsert_entry.assert_called_once()
-        call_kwargs = mock_sqlite.upsert_entry.call_args
+        # 验证 sync_entry 传入了 user_id（不再直接调用 sqlite.upsert_entry）
+        mock_storage.sync_entry.assert_called_once()
+        call_kwargs = mock_storage.sync_entry.call_args
         assert call_kwargs.kwargs.get("user_id") == "user-C"
 
 
@@ -329,6 +329,11 @@ class TestExistingToolsRegression:
         mock_storage.sqlite = None
         mock_storage.markdown.list_entries.return_value = []
         mock_storage.markdown.read_entry.return_value = None
+        # get_markdown_storage 返回的 mock 也需要配置
+        mock_user_md = MagicMock()
+        mock_user_md.list_entries.return_value = []
+        mock_user_md.read_entry.return_value = None
+        mock_storage.get_markdown_storage.return_value = mock_user_md
         mock_storage.qdrant = AsyncMock()
         mock_storage.qdrant.search = AsyncMock(return_value=[])
         mock_storage.neo4j = AsyncMock()

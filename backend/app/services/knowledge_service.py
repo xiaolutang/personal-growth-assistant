@@ -868,8 +868,15 @@ class KnowledgeService:
     def _timeline_from_sqlite(
         self, concept: str, days: int, user_id: str
     ) -> ConceptTimelineResponse:
-        """从 SQLite 获取时间线"""
-        results = self._sqlite.search(concept, limit=50, user_id=user_id)
+        """从 SQLite 获取时间线（基于 tags + title/content 搜索）"""
+        # 同时搜索 tags 和全文，避免标签概念被遗漏
+        tag_results = self._sqlite.list_entries(limit=200, user_id=user_id)
+        results = [
+            e for e in tag_results
+            if concept.lower() in [t.lower() for t in e.get("tags", [])]
+            or concept.lower() in (e.get("title", "") or "").lower()
+            or concept.lower() in (e.get("content", "") or "").lower()
+        ]
         return self._build_timeline(concept, results, days)
 
     def _build_timeline(

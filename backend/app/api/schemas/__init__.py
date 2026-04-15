@@ -7,6 +7,7 @@ from app.api.schemas.entry import (
     SearchResult,
     RelatedEntry,
     RelatedEntriesResponse,
+    EntrySummaryResponse,
 )
 from app.api.schemas.common import (
     SuccessResponse,
@@ -23,4 +24,5 @@ __all__ = [
     "ProjectProgressResponse",
     "RelatedEntry",
     "RelatedEntriesResponse",
+    "EntrySummaryResponse",
 ]

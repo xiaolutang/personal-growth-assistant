@@ -78,8 +78,8 @@ async def handle_list_entries(storage: SyncService, args: dict, user_id: str) ->
 
         return [TextContent(type="text", text="".join(lines))]
 
-    # 回退到 Markdown 直接读取
-    entries = storage.markdown.list_entries(
+    # 回退到 Markdown 直接读取（按 user_id 路由）
+    entries = storage.get_markdown_storage(user_id).list_entries(
         category=category,
         status=status,
         limit=limit,
@@ -103,7 +103,7 @@ async def handle_list_entries(storage: SyncService, args: dict, user_id: str) ->
 async def handle_get_entry(storage: SyncService, args: dict, user_id: str) -> list[TextContent]:
     """处理 get_entry"""
     entry_id = args["id"]
-    entry = storage.markdown.read_entry(entry_id)
+    entry = storage.get_markdown_storage(user_id).read_entry(entry_id)
 
     if not entry:
         return [TextContent(type="text", text=f"找不到条目: {entry_id}")]
@@ -171,12 +171,7 @@ async def handle_create_entry(storage: SyncService, args: dict, user_id: str) ->
         time_spent=time_spent,
     )
 
-    # 写入 Markdown
-    storage.markdown.write_entry(entry)
-
-    # 同步到 SQLite + Neo4j + Qdrant（传递 user_id 进行隔离）
-    if storage.sqlite:
-        storage.sqlite.upsert_entry(entry, user_id=user_id)
+    # 统一走 sync_entry（内部自动按 user_id 路由到正确 Markdown 目录）
     await storage.sync_entry(entry, user_id=user_id)
 
     return [TextContent(
@@ -189,13 +184,14 @@ async def handle_update_entry(storage: SyncService, args: dict, user_id: str) ->
     """处理 update_entry"""
     entry_id = args["id"]
 
-    # 用户隔离检查
+    # 用户隔离检查 + 按 user_id 读取 Markdown
     if storage.sqlite:
         db_entry = storage.sqlite.get_entry(entry_id)
         if db_entry and db_entry.get("user_id") and db_entry["user_id"] != user_id:
             return [TextContent(type="text", text=f"找不到条目: {entry_id}")]
 
-    entry = storage.markdown.read_entry(entry_id)
+    markdown = storage.get_markdown_storage(user_id)
+    entry = markdown.read_entry(entry_id)
 
     if not entry:
         return [TextContent(type="text", text=f"找不到条目: {entry_id}")]
@@ -222,12 +218,7 @@ async def handle_update_entry(storage: SyncService, args: dict, user_id: str) ->
 
     entry.updated_at = datetime.now()
 
-    # 写入 Markdown
-    storage.markdown.write_entry(entry)
-
-    # 同步到 SQLite + Neo4j + Qdrant
-    if storage.sqlite:
-        storage.sqlite.upsert_entry(entry, user_id=user_id)
+    # 统一走 sync_entry（内部自动按 user_id 路由到正确 Markdown 目录）
     await storage.sync_entry(entry, user_id=user_id)
 
     return [TextContent(type="text", text=f"已更新条目: {entry_id}")]
@@ -243,8 +234,8 @@ async def handle_delete_entry(storage: SyncService, args: dict, user_id: str) ->
         if db_entry and db_entry.get("user_id") and db_entry["user_id"] != user_id:
             return [TextContent(type="text", text=f"删除失败: {entry_id}")]
 
-    # 删除
-    success = await storage.delete_entry(entry_id)
+    # 删除（传递 user_id 确保从正确目录删除）
+    success = await storage.delete_entry(entry_id, user_id=user_id)
 
     if success:
         return [TextContent(type="text", text=f"已删除条目: {entry_id}")]
@@ -334,8 +325,8 @@ async def handle_get_project_progress(storage: SyncService, args: dict, user_id:
     """处理 get_project_progress - 获取项目进度"""
     project_id = args["project_id"]
 
-    # 检查项目是否存在
-    entry = storage.markdown.read_entry(project_id)
+    # 检查项目是否存在（按 user_id 路由）
+    entry = storage.get_markdown_storage(user_id).read_entry(project_id)
     if not entry:
         return [TextContent(type="text", text=f"找不到条目: {project_id}")]
 
@@ -511,9 +502,7 @@ async def handle_batch_create_entries(storage: SyncService, args: dict, user_id:
                 time_spent=time_spent,
             )
 
-            storage.markdown.write_entry(entry)
-            if storage.sqlite:
-                storage.sqlite.upsert_entry(entry, user_id=user_id)
+            # 统一走 sync_entry（内部自动按 user_id 路由到正确 Markdown 目录）
             await storage.sync_entry(entry, user_id=user_id)
 
             created_ids.append(entry_id)
@@ -558,7 +547,8 @@ async def handle_batch_update_status(storage: SyncService, args: dict, user_id: 
                     not_found.append(entry_id)
                     continue
 
-            entry = storage.markdown.read_entry(entry_id)
+            markdown = storage.get_markdown_storage(user_id)
+            entry = markdown.read_entry(entry_id)
             if not entry:
                 not_found.append(entry_id)
                 continue
@@ -566,9 +556,7 @@ async def handle_batch_update_status(storage: SyncService, args: dict, user_id: 
             entry.status = new_status
             entry.updated_at = datetime.now()
 
-            storage.markdown.write_entry(entry)
-            if storage.sqlite:
-                storage.sqlite.upsert_entry(entry, user_id=user_id)
+            # 统一走 sync_entry
             await storage.sync_entry(entry, user_id=user_id)
 
             updated.append(entry_id)

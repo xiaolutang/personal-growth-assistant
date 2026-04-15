@@ -15,6 +15,7 @@ from app.api.schemas import (
     SuccessResponse,
     ProjectProgressResponse,
     RelatedEntriesResponse,
+    EntrySummaryResponse,
 )
 from app.routers.deps import get_entry_service, get_storage, get_current_user
 from app.models.user import User
@@ -207,7 +208,7 @@ async def sync_vectors(user: User = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=f"同步失败: {str(e)}")
 
 
-@router.post("/{entry_id}/ai-summary")
+@router.post("/{entry_id}/ai-summary", response_model=EntrySummaryResponse)
 async def generate_ai_summary(entry_id: str, user: User = Depends(get_current_user)):
     """为条目生成 AI 摘要（200字以内），结果缓存到 SQLite"""
     service = get_entry_service()
