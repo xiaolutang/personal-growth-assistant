@@ -237,13 +237,16 @@
         "正常：桌面端布局与当前一致",
         "正常：移动端 Sidebar 变为抽屉",
         "正常：移动端底部导航显示正确",
+        "正常：点击遮罩层关闭 Sidebar 抽屉",
         "边界：768px 断点处无布局跳动",
+        "边界：底部导航不超出 safe-area",
         "回归：所有页面在两种模式下可正常操作"
       ],
       "contract_refs": [],
       "files": [
         "frontend/src/components/layout/Sidebar.tsx",
         "frontend/src/components/layout/MobileNavBar.tsx",
+        "frontend/src/components/layout/Header.tsx",
         "frontend/src/App.tsx",
         "frontend/src/pages/Home.tsx"
       ]
@@ -278,7 +281,9 @@
         "frontend/src/pages/GraphPage.tsx",
         "frontend/src/pages/Review.tsx",
         "frontend/src/pages/EntryDetail.tsx",
-        "frontend/src/components/PageAIAssistant.tsx"
+        "frontend/src/components/PageAIAssistant.tsx",
+        "frontend/src/components/FloatingChat.tsx",
+        "frontend/src/components/FeedbackButton.tsx"
       ]
     },
     {
@@ -296,6 +301,8 @@
         "标签可添加和删除",
         "状态/优先级/计划日期有下拉编辑器",
         "内容区支持预览/编辑 Tab 切换",
+        "内容修改后 debounce 1s 自动保存，保存失败时显示错误提示",
+        "有未保存变更时离开页面弹出确认提示",
         "npm run build 构建通过"
       ],
       "risk_tags": [],
@@ -304,7 +311,11 @@
         "正常：添加和删除标签",
         "正常：切换状态和优先级",
         "正常：预览/编辑 Tab 切换",
-        "边界：空标题保存时提示",
+        "正常：内容修改后自动保存",
+        "异常：保存失败时显示错误提示",
+        "异常：空标题保存时提示",
+        "边界：快速连续修改不重复保存（debounce）",
+        "边界：离开页面有未保存变更时弹出确认",
         "回归：现有查看模式不受影响"
       ],
       "contract_refs": [],
@@ -334,12 +345,15 @@
       "test_tasks": [
         "正常：返回包含今日待办和拖延任务",
         "正常：LLM 生成自然语言建议",
-        "边界：无任务时返回空列表",
-        "边界：LLM 超时降级为模板",
+        "边界：无任务时返回空列表和引导文案",
+        "边界：LLM 超时降级为模板文本",
+        "边界：LLM 返回异常内容时不崩溃",
+        "边界：同一天多次请求返回缓存（不重复调用 LLM）",
+        "边界：跨天后缓存失效，重新生成",
         "隔离：只返回当前用户数据",
         "回归：现有 review API 不受影响"
       ],
-      "contract_refs": ["CONTRACT-M01"],
+      "contract_refs": ["CONTRACT-MD01"],
       "files": [
         "backend/app/routers/review.py",
         "backend/app/services/review_service.py"
@@ -366,8 +380,11 @@
       "test_tasks": [
         "正常：晨报卡片显示建议和摘要",
         "正常：折叠后隐藏",
+        "正常：用户关闭后当日不再自动展开（localStorage 持久化）",
+        "正常：次日重新自动展开",
         "边界：无数据时显示空状态引导",
         "边界：loading 骨架屏",
+        "边界：API 失败时显示错误提示",
         "回归：现有今日任务和灵感卡片不受影响"
       ],
       "contract_refs": [],
@@ -397,8 +414,11 @@
         "正常：聚焦显示搜索建议面板",
         "正常：点击历史项触发搜索",
         "正常：删除历史项",
+        "正常：多关键词分别着色高亮",
         "边界：无历史时只显示热门标签",
         "边界：无标签时显示占位文案",
+        "边界：重复搜索词去重（最新排最前）",
+        "异常：localStorage 损坏时降级为空历史",
         "回归：现有搜索功能不受影响"
       ],
       "contract_refs": [],
@@ -412,7 +432,7 @@
       "phase": "P4C",
       "module": "ai-assistant",
       "name": "日知角色打磨 — 上下文质量 + 多轮记忆 + 人设强化",
-      "description": "打磨 PageAIAssistant 对话质量。实现：(1) `ai_chat_service.py` 系统提示词强化：加入日知角色设定（博学但不卖弄的朋友，平实准确偶尔温厚）+ 3 种交互模式（教练/助手/镜子）；(2) 页面上下文注入增强：不只传 page 名，还传页面关键数据摘要（如今天页传今日任务列表、探索页传最近条目标题）；(3) 多轮对话记忆：使用 conversation_id + 最近 5 轮历史注入 system prompt；(4) 前端对话面板增加清空对话按钮。",
+      "description": "打磨 PageAIAssistant 对话质量。实现：(1) `ai_chat_service.py` 系统提示词强化：加入日知角色设定（博学但不卖弄的朋友，平实准确偶尔温厚）+ 3 种交互模式（教练/助手/镜子）；(2) 页面上下文注入增强：扩展 context.page_data 字段，前端注入当前页面关键数据摘要（如今天页传 todo_count/overdue_count，探索页传 recent_titles）；(3) 多轮对话记忆：前端通过 conversation_id 管理，每次请求携带最近 5 轮历史（messages 数组传给后端），后端注入 system prompt，不新增后端存储层；(4) 前端对话面板增加清空对话按钮（清除 conversation_id 和本地消息列表）。",
       "verification": "F2",
       "depends_on": [],
       "status": "pending",
@@ -427,13 +447,15 @@
       "risk_tags": [],
       "test_tasks": [
         "正常：日知回复语气符合设定",
-        "正常：上下文包含页面数据",
-        "正常：多轮对话引用前文",
-        "正常：清空对话后重新开始",
+        "正常：上下文包含页面数据（page_data 字段）",
+        "正常：多轮对话引用前文（messages 数组传递）",
+        "正常：清空对话后重新开始（新 conversation_id）",
         "边界：无上下文时降级为通用回复",
+        "边界：无页面数据时仅用 page 名",
+        "异常：不同 conversation_id 对话不互通",
         "回归：现有 AI 对话功能不受影响"
       ],
-      "contract_refs": ["CONTRACT-A01"],
+      "contract_refs": ["CONTRACT-AI01"],
       "files": [
         "backend/app/services/ai_chat_service.py",
         "frontend/src/components/PageAIAssistant.tsx"
@@ -446,7 +468,7 @@
       "name": "图谱页性能优化 — 大数据量懒加载 + 节点折叠",
       "description": "优化图谱页在大数据量下的渲染性能。实现：(1) `GraphPage.tsx` 添加节点数量阈值（>50 节点时默认只渲染 top-50 + 直接关联节点）；(2) 「加载更多」按钮逐步展开剩余节点；(3) 节点聚合：同 category 节点可选择聚合为单个大节点（显示数量角标）；(4) 边渲染优化：>100 条边时隐藏边的标签，hover 才显示。",
       "verification": "F2",
-      "depends_on": [],
+      "depends_on": ["F18"],
       "status": "pending",
       "priority": "low",
       "acceptance_criteria": [
@@ -460,8 +482,10 @@
         "正常：大数据量时默认渲染 top 节点",
         "正常：加载更多按钮可用",
         "正常：聚合模式显示角标",
-        "边界：少量节点时显示全部",
-        "回归：现有图谱交互不受影响"
+        "边界：少量节点（<50）时显示全部，不显示加载更多",
+        "边界：50-100 节点时阈值切换平滑",
+        "边界：>100 条边时标签隐藏，hover 显示",
+        "回归：现有图谱交互（拖拽、点击、Tab 切换）不受影响"
       ],
       "contract_refs": [],
       "files": [
