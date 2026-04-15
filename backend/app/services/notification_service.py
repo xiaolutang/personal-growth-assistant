@@ -147,8 +147,9 @@ class NotificationService:
                         ref_id=None, created_at=now, dismissed=nid in dismissed,
                     ))
 
-            unread = [i for i in items if not i.dismissed]
-            return NotificationResponse(items=items, unread_count=len(unread))
+            # 过滤已 dismiss 的通知，不返回给前端
+            visible = [i for i in items if not i.dismissed]
+            return NotificationResponse(items=visible, unread_count=len(visible))
         finally:
             conn.close()
 
@@ -187,7 +188,7 @@ class NotificationService:
     def _check_no_recent_activity(self, conn, user_id: str) -> bool:
         two_days_ago = (datetime.now() - timedelta(days=2)).isoformat()
         row = conn.execute(
-            "SELECT COUNT(*) as cnt FROM entries WHERE user_id = ? AND created_at >= ?",
-            (user_id, two_days_ago),
+            "SELECT COUNT(*) as cnt FROM entries WHERE user_id = ? AND (created_at >= ? OR updated_at >= ?)",
+            (user_id, two_days_ago, two_days_ago),
         ).fetchone()
         return row["cnt"] == 0

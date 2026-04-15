@@ -79,7 +79,7 @@ export function ActivityHeatmap() {
     weeks.forEach((week, i) => {
       const firstDay = week.find((d) => d.inYear);
       if (firstDay) {
-        const m = new Date(firstDay.date).getMonth();
+        const m = parseInt(firstDay.date.slice(5, 7), 10) - 1;
         if (m !== lastMonth) {
           positions.push({ label: MONTH_LABELS[m], col: i });
           lastMonth = m;

@@ -104,15 +104,14 @@ class TestNotificationGeneration:
 
 
 class TestNotificationDismiss:
-    def test_dismiss_marks_as_read(self, notification_service, user_with_entries):
+    def test_dismiss_removes_from_list(self, notification_service, user_with_entries):
         result = notification_service.get_notifications(user_with_entries)
         nid = [n for n in result.items if n.type == "overdue_task"][0].id
         notification_service.dismiss_notification(nid, user_with_entries)
 
         result2 = notification_service.get_notifications(user_with_entries)
-        dismissed = [n for n in result2.items if n.id == nid]
-        assert len(dismissed) == 1
-        assert dismissed[0].dismissed is True
+        # dismiss 后通知不再出现在列表中
+        assert nid not in [n.id for n in result2.items]
 
     def test_unread_count_decreases_after_dismiss(self, notification_service, user_with_entries):
         result1 = notification_service.get_notifications(user_with_entries)
@@ -172,3 +171,27 @@ class TestUserIsolation:
         overdue_b = [n for n in result_b.items if n.type == "overdue_task"]
         assert len(overdue_a) == 1
         assert len(overdue_b) == 0
+
+    def test_dismiss_isolation_between_users(self, notification_service):
+        """P1 验证：不同用户 dismiss 同类型通知不会互相冲突"""
+        # 两个用户都触发 review_prompt（无数据用户）
+        result_a = notification_service.get_notifications("user_a_no_data")
+        result_b = notification_service.get_notifications("user_b_no_data")
+        prompt_a = [n for n in result_a.items if n.type == "review_prompt"]
+        prompt_b = [n for n in result_b.items if n.type == "review_prompt"]
+        assert len(prompt_a) == 1
+        assert len(prompt_b) == 1
+
+        # 用户 A dismiss
+        notification_service.dismiss_notification(prompt_a[0].id, "user_a_no_data")
+
+        # 用户 B 仍然能看到自己的通知
+        result_b2 = notification_service.get_notifications("user_b_no_data")
+        prompt_b2 = [n for n in result_b2.items if n.type == "review_prompt"]
+        assert len(prompt_b2) == 1, "用户 B 的通知不应被用户 A 的 dismiss 影响"
+
+        # 用户 B 也能 dismiss
+        notification_service.dismiss_notification(prompt_b[0].id, "user_b_no_data")
+        result_b3 = notification_service.get_notifications("user_b_no_data")
+        prompt_b3 = [n for n in result_b3.items if n.type == "review_prompt"]
+        assert len(prompt_b3) == 0, "用户 B dismiss 后应不再看到通知"
