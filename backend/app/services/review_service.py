@@ -1,8 +1,31 @@
 """成长回顾统计服务"""
+import asyncio
+import logging
 from datetime import date, datetime, timedelta
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, TYPE_CHECKING
 
 from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from app.callers import APICaller
+
+logger = logging.getLogger(__name__)
+
+
+def _run_async(coro):
+    """安全地在同步方法中运行异步协程"""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        # 已经在事件循环中（FastAPI async 路由），使用 nest_asyncio 或创建新线程
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            return pool.submit(asyncio.run, coro).result()
+    else:
+        return asyncio.run(coro)
 
 
 class TrendPeriod(BaseModel):
@@ -17,6 +40,33 @@ class TrendPeriod(BaseModel):
 class TrendResponse(BaseModel):
     """趋势数据响应"""
     periods: List[TrendPeriod] = Field(default_factory=list, description="统计周期数组")
+
+
+class HeatmapItem(BaseModel):
+    """热力图项"""
+    concept: str
+    mastery: str = "new"
+    entry_count: int = 0
+    category: Optional[str] = None
+
+
+class HeatmapResponse(BaseModel):
+    """知识热力图响应"""
+    items: List[HeatmapItem] = []
+
+
+class GrowthCurvePoint(BaseModel):
+    """成长曲线点"""
+    week: str  # e.g. "2026-W15"
+    total_concepts: int = 0
+    advanced_count: int = 0
+    intermediate_count: int = 0
+    beginner_count: int = 0
+
+
+class GrowthCurveResponse(BaseModel):
+    """成长曲线响应"""
+    points: List[GrowthCurvePoint] = []
 
 
 class TaskStats(BaseModel):
@@ -73,10 +123,15 @@ class ReviewService:
             sqlite_storage: SQLite 存储实例
         """
         self._sqlite = sqlite_storage
+        self._llm_caller: Optional["APICaller"] = None
 
     def set_sqlite_storage(self, storage):
         """设置 SQLite 存储"""
         self._sqlite = storage
+
+    def set_llm_caller(self, caller: "APICaller"):
+        """设置 LLM 调用器"""
+        self._llm_caller = caller
 
     @staticmethod
     def calculate_task_stats(tasks: List[dict]) -> TaskStats:
@@ -135,11 +190,28 @@ class ReviewService:
         note_stats = self.calculate_note_stats(notes)
         completed_tasks = [t for t in tasks if t.get("status") == "complete"]
 
+        # 生成 AI 总结
+        ai_summary = None
+        if self._llm_caller:
+            stats_data = {
+                "task_stats": task_stats.model_dump(),
+                "note_stats": note_stats.model_dump(),
+                "completed_tasks": [
+                    {"id": t.get("id"), "title": t.get("title")}
+                    for t in completed_tasks
+                ],
+                "recent_note_titles": note_stats.recent_titles,
+            }
+            ai_summary = _run_async(
+                self._generate_ai_summary("daily", stats_data, user_id=user_id or "_default")
+            )
+
         return DailyReport(
             date=date_str,
             task_stats=task_stats,
             note_stats=note_stats,
             completed_tasks=completed_tasks,
+            ai_summary=ai_summary,
         )
 
     def get_weekly_report(self, week_start: Optional[date] = None, user_id: Optional[str] = None) -> WeeklyReport:
@@ -196,12 +268,26 @@ class ReviewService:
                 "completed": completed,
             })
 
+        # 生成 AI 总结
+        ai_summary = None
+        if self._llm_caller:
+            stats_data = {
+                "task_stats": task_stats.model_dump(),
+                "note_stats": note_stats.model_dump(),
+                "daily_breakdown": daily_breakdown,
+                "recent_note_titles": note_stats.recent_titles,
+            }
+            ai_summary = _run_async(
+                self._generate_ai_summary("weekly", stats_data, user_id=user_id or "_default")
+            )
+
         return WeeklyReport(
             start_date=start_str,
             end_date=week_end.isoformat(),
             task_stats=task_stats,
             note_stats=note_stats,
             daily_breakdown=daily_breakdown,
+            ai_summary=ai_summary,
         )
 
     def get_monthly_report(self, month_start: Optional[date] = None, user_id: Optional[str] = None) -> MonthlyReport:
@@ -382,3 +468,242 @@ class ReviewService:
                 raise ValueError("月份格式错误，应为 YYYY-MM")
         today = date.today()
         return date(today.year, today.month, 1)
+
+    async def _generate_ai_summary(
+        self, report_type: str, stats_data: dict, user_id: str = "_default"
+    ) -> str:
+        """
+        使用 LLM 生成 AI 总结
+
+        Args:
+            report_type: 报告类型 (daily/weekly/monthly)
+            stats_data: 统计数据
+            user_id: 用户 ID
+
+        Returns:
+            AI 总结文本，失败时返回空字符串
+        """
+        if not self._llm_caller:
+            return ""
+
+        import json
+
+        system_prompt = (
+            "你是个人成长助手「日知」，请根据以下数据生成一段简短的中文总结（2-3句话），"
+            "包含关键成就和建议。"
+        )
+
+        user_message = (
+            f"报告类型：{report_type}\n"
+            f"统计数据：\n{json.dumps(stats_data, ensure_ascii=False, indent=2)}"
+        )
+
+        try:
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message},
+            ]
+            result = await asyncio.wait_for(
+                self._llm_caller.call(messages),
+                timeout=10.0,
+            )
+            return result.strip() if result else ""
+        except asyncio.TimeoutError:
+            logger.warning("AI 总结生成超时")
+            return ""
+        except Exception as e:
+            logger.warning(f"AI 总结生成失败: {e}")
+            return ""
+
+    def get_knowledge_heatmap(self, user_id: str = "_default") -> HeatmapResponse:
+        """
+        获取知识热力图
+
+        Args:
+            user_id: 用户 ID
+
+        Returns:
+            HeatmapResponse: 知识热力图数据
+        """
+        if not self._sqlite:
+            raise ValueError("SQLite 存储未初始化")
+
+        all_entries = self._sqlite.list_entries(limit=1000, user_id=user_id)
+
+        # 从所有条目的 tags 中提取概念并统计
+        concept_map: Dict[str, Dict] = {}
+        for entry in all_entries:
+            tags = entry.get("tags", [])
+            entry_type = entry.get("type", "task")
+            updated_str = entry.get("updated_at", "")
+
+            for tag in tags:
+                if tag not in concept_map:
+                    concept_map[tag] = {
+                        "entry_count": 0,
+                        "recent_count": 0,
+                        "note_count": 0,
+                    }
+                concept_map[tag]["entry_count"] += 1
+
+                if entry_type == "note":
+                    concept_map[tag]["note_count"] += 1
+
+                # 检查是否在最近 30 天内更新
+                try:
+                    if updated_str:
+                        if isinstance(updated_str, str):
+                            updated_at = datetime.fromisoformat(
+                                updated_str.replace("Z", "+00:00")
+                            )
+                        else:
+                            updated_at = updated_str
+                        if updated_at >= datetime.now() - timedelta(days=30):
+                            concept_map[tag]["recent_count"] += 1
+                except (ValueError, TypeError):
+                    pass
+
+        # 构建热力图项
+        items: List[HeatmapItem] = []
+        for concept, info in concept_map.items():
+            mastery = self._calculate_mastery_from_stats(
+                entry_count=info["entry_count"],
+                recent_count=info["recent_count"],
+                note_count=info["note_count"],
+            )
+            items.append(HeatmapItem(
+                concept=concept,
+                mastery=mastery,
+                entry_count=info["entry_count"],
+                category="tag",
+            ))
+
+        # 按 entry_count 降序排序
+        items.sort(key=lambda x: x.entry_count, reverse=True)
+
+        return HeatmapResponse(items=items)
+
+    def get_growth_curve(
+        self, weeks: int = 8, user_id: str = "_default"
+    ) -> GrowthCurveResponse:
+        """
+        获取成长曲线数据
+
+        Args:
+            weeks: 回溯周数 (1-52)
+            user_id: 用户 ID
+
+        Returns:
+            GrowthCurveResponse: 成长曲线数据
+        """
+        if not self._sqlite:
+            raise ValueError("SQLite 存储未初始化")
+
+        count = max(1, min(weeks, 52))
+        today = date.today()
+        current_week_start = today - timedelta(days=today.weekday())
+
+        points: List[GrowthCurvePoint] = []
+
+        for i in range(count):
+            week_start = current_week_start - timedelta(weeks=i)
+            week_end = week_start + timedelta(days=6)
+            next_day_after_week = week_end + timedelta(days=1)
+
+            # 获取该周的条目
+            week_entries = self._sqlite.list_entries(
+                start_date=week_start.isoformat(),
+                end_date=next_day_after_week.isoformat(),
+                limit=1000,
+                user_id=user_id,
+            )
+
+            # 提取概念并计算掌握度分布
+            concept_map: Dict[str, Dict] = {}
+            for entry in week_entries:
+                tags = entry.get("tags", [])
+                entry_type = entry.get("type", "task")
+                updated_str = entry.get("updated_at", "")
+
+                for tag in tags:
+                    if tag not in concept_map:
+                        concept_map[tag] = {
+                            "entry_count": 0,
+                            "recent_count": 0,
+                            "note_count": 0,
+                        }
+                    concept_map[tag]["entry_count"] += 1
+
+                    if entry_type == "note":
+                        concept_map[tag]["note_count"] += 1
+
+                    try:
+                        if updated_str:
+                            if isinstance(updated_str, str):
+                                updated_at = datetime.fromisoformat(
+                                    updated_str.replace("Z", "+00:00")
+                                )
+                            else:
+                                updated_at = updated_str
+                            if updated_at >= datetime.now() - timedelta(days=30):
+                                concept_map[tag]["recent_count"] += 1
+                    except (ValueError, TypeError):
+                        pass
+
+            # 统计掌握度分布
+            advanced_count = 0
+            intermediate_count = 0
+            beginner_count = 0
+
+            for concept, info in concept_map.items():
+                mastery = self._calculate_mastery_from_stats(
+                    entry_count=info["entry_count"],
+                    recent_count=info["recent_count"],
+                    note_count=info["note_count"],
+                )
+                if mastery == "advanced":
+                    advanced_count += 1
+                elif mastery == "intermediate":
+                    intermediate_count += 1
+                elif mastery == "beginner":
+                    beginner_count += 1
+
+            # 计算周编号 (ISO week)
+            iso_calendar = week_start.isocalendar()
+            week_label = f"{iso_calendar[0]}-W{iso_calendar[1]:02d}"
+
+            points.append(GrowthCurvePoint(
+                week=week_label,
+                total_concepts=len(concept_map),
+                advanced_count=advanced_count,
+                intermediate_count=intermediate_count,
+                beginner_count=beginner_count,
+            ))
+
+        return GrowthCurveResponse(points=points)
+
+    @staticmethod
+    def _calculate_mastery_from_stats(
+        entry_count: int, recent_count: int, note_count: int
+    ) -> str:
+        """
+        根据统计数据计算掌握度
+
+        规则：
+        - 0 条目 → new
+        - 1-2 条目 → beginner
+        - 3+ 条目且有近期活动 → intermediate
+        - 6+ 条目且笔记占比 > 30% → advanced
+        """
+        if entry_count == 0:
+            return "new"
+
+        note_ratio = note_count / entry_count if entry_count > 0 else 0
+
+        if entry_count >= 6 and note_ratio > 0.3:
+            return "advanced"
+        elif entry_count >= 3 and recent_count > 0:
+            return "intermediate"
+        elif entry_count >= 1:
+            return "beginner"
+        return "new"

@@ -17,13 +17,15 @@ from app.mcp.handlers import (
     handle_get_knowledge_graph,
     handle_get_related_concepts,
     handle_get_project_progress,
+    handle_get_review_summary,
+    handle_get_knowledge_stats,
 )
 
 
 class TestToolsModule:
     def test_tools_count(self):
-        """TOOL 列表包含 9 个工具"""
-        assert len(TOOLS) == 9
+        """TOOL 列表包含 11 个工具"""
+        assert len(TOOLS) == 11
         assert isinstance(TOOLS, tuple)
 
     def test_tool_names(self):
@@ -33,6 +35,7 @@ class TestToolsModule:
             "list_entries", "get_entry", "create_entry", "update_entry",
             "delete_entry", "search_entries", "get_knowledge_graph",
             "get_related_concepts", "get_project_progress",
+            "get_review_summary", "get_knowledge_stats",
         }
         assert names == expected
 
@@ -45,6 +48,7 @@ class TestHandlersModule:
             handle_update_entry, handle_delete_entry, handle_search_entries,
             handle_get_knowledge_graph, handle_get_related_concepts,
             handle_get_project_progress,
+            handle_get_review_summary, handle_get_knowledge_stats,
         ]
         for h in handlers:
             assert callable(h)
@@ -54,7 +58,7 @@ class TestServerRouting:
     def test_tool_handlers_map_completeness(self):
         """TOOL_HANDLERS 映射覆盖所有 tool name"""
         from app.mcp.server import TOOL_HANDLERS
-        assert len(TOOL_HANDLERS) == 9
+        assert len(TOOL_HANDLERS) == 11
         for tool in TOOLS:
             assert tool.name in TOOL_HANDLERS, f"Missing handler for: {tool.name}"
             assert callable(TOOL_HANDLERS[tool.name])
@@ -68,6 +72,7 @@ class TestServerRouting:
             id(handle_update_entry), id(handle_delete_entry), id(handle_search_entries),
             id(handle_get_knowledge_graph), id(handle_get_related_concepts),
             id(handle_get_project_progress),
+            id(handle_get_review_summary), id(handle_get_knowledge_stats),
         }
         assert handler_ids == expected_ids
 
@@ -102,16 +107,18 @@ class TestCallToolDispatch:
         mock_handler = AsyncMock(return_value=[])
 
         with patch("app.mcp.server.storage", mock_storage), \
+             patch("app.mcp.server.authenticated_user_id", "user-123"), \
              patch("app.mcp.server.TOOL_HANDLERS", {"list_entries": mock_handler}):
             result = await call_tool("list_entries", {"limit": 10})
-            mock_handler.assert_called_once_with(mock_storage, {"limit": 10})
+            mock_handler.assert_called_once_with(mock_storage, {"limit": 10}, "user-123")
 
     @pytest.mark.asyncio
     async def test_call_tool_unknown_tool(self):
         """未知工具名返回错误消息"""
         from app.mcp.server import call_tool
 
-        with patch("app.mcp.server.storage", MagicMock()):
+        with patch("app.mcp.server.storage", MagicMock()), \
+             patch("app.mcp.server.authenticated_user_id", "user-123"):
             result = await call_tool("nonexistent_tool", {})
             assert len(result) == 1
             assert "未知工具" in result[0].text
@@ -123,6 +130,7 @@ class TestCallToolDispatch:
 
         mock_handler = AsyncMock(side_effect=ValueError("test error"))
         with patch("app.mcp.server.storage", MagicMock()), \
+             patch("app.mcp.server.authenticated_user_id", "user-123"), \
              patch("app.mcp.server.TOOL_HANDLERS", {"list_entries": mock_handler}):
             result = await call_tool("list_entries", {})
             assert len(result) == 1
@@ -136,14 +144,15 @@ class TestCallToolDispatch:
         mock_handler = AsyncMock(return_value=[])
 
         with patch("app.mcp.server.storage", None), \
+             patch("app.mcp.server.authenticated_user_id", "user-123"), \
              patch("app.mcp.server.init", new_callable=AsyncMock) as mock_init, \
              patch("app.mcp.server.TOOL_HANDLERS", {"list_entries": mock_handler}):
             result = await call_tool("list_entries", {})
             mock_init.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_call_tool_all_9_tools_routable(self):
-        """所有 9 个 tool name 都能找到对应 handler"""
+    async def test_call_tool_all_11_tools_routable(self):
+        """所有 11 个 tool name 都能找到对应 handler"""
         from app.mcp.server import TOOL_HANDLERS
 
         for tool in TOOLS:

@@ -5,6 +5,7 @@ import {
   CheckCircle,
   BarChart3,
   Compass,
+  Brain,
   MessageSquare,
   ChevronDown,
   ChevronRight,
@@ -20,6 +21,7 @@ import { ExportDialog } from "@/components/ExportDialog";
 const navItems = [
   { to: "/", icon: Home, label: "今天" },
   { to: "/explore", icon: Compass, label: "探索" },
+  { to: "/graph", icon: Brain, label: "图谱" },
   { to: "/tasks", icon: CheckCircle, label: "任务" },
   { to: "/review", icon: BarChart3, label: "回顾" },
 ];

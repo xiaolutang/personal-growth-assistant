@@ -11,6 +11,8 @@ from app.services.knowledge_service import (
     KnowledgeGraphResponse,
     RelatedConceptsResponse,
     LearningPathResponse,
+    KnowledgeMapResponse,
+    ConceptStatsResponse,
 )
 
 router = APIRouter(tags=["knowledge"])
@@ -61,5 +63,37 @@ async def get_learning_path(concept: str, user: User = Depends(get_current_user)
 
     try:
         return await knowledge_service.get_learning_path(concept, user_id=user.id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+
+
+@router.get("/knowledge-map", response_model=KnowledgeMapResponse)
+async def get_knowledge_map(
+    depth: int = Query(2, ge=1, le=3, description="关系深度"),
+    view: str = Query("domain", regex="^(domain|mastery|project)$", description="视图模式"),
+    user: User = Depends(get_current_user),
+):
+    """获取全局知识图谱
+
+    返回所有概念节点及其关系，支持按掌握度/领域/项目分组查看。
+    """
+    knowledge_service = get_knowledge_service()
+
+    try:
+        return await knowledge_service.get_knowledge_map(depth=depth, view=view, user_id=user.id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+
+
+@router.get("/knowledge/stats", response_model=ConceptStatsResponse)
+async def get_knowledge_stats(user: User = Depends(get_current_user)):
+    """获取知识概念统计
+
+    返回概念总数、关系总数、类别分布和热门概念。
+    """
+    knowledge_service = get_knowledge_service()
+
+    try:
+        return await knowledge_service.get_knowledge_stats(user_id=user.id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")

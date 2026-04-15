@@ -21,6 +21,8 @@ from app.mcp.handlers import (
     handle_get_knowledge_graph,
     handle_get_related_concepts,
     handle_get_project_progress,
+    handle_get_review_summary,
+    handle_get_knowledge_stats,
 )
 
 
@@ -35,6 +37,39 @@ logger = logging.getLogger(__name__)
 # 全局存储服务
 storage: SyncService = None
 
+# 认证后的用户 ID
+authenticated_user_id: str | None = None
+
+
+def _verify_token() -> str:
+    """
+    从环境变量 MCP_AUTH_TOKEN 读取 JWT token 并验证。
+
+    Returns:
+        验证通过时返回 user_id (str)
+
+    Raises:
+        SystemExit: token 缺失或无效时终止进程
+    """
+    from app.services.auth_service import decode_access_token
+    import jwt as pyjwt
+
+    token = os.getenv("MCP_AUTH_TOKEN", "").strip()
+    if not token:
+        logger.error("MCP_AUTH_TOKEN 环境变量未设置")
+        raise SystemExit(1)
+
+    try:
+        token_data = decode_access_token(token)
+        logger.info(f"MCP 认证成功, user_id={token_data.sub}")
+        return token_data.sub
+    except pyjwt.ExpiredSignatureError:
+        logger.error("MCP_AUTH_TOKEN 已过期")
+        raise SystemExit(1)
+    except pyjwt.InvalidTokenError as e:
+        logger.error(f"MCP_AUTH_TOKEN 无效: {e}")
+        raise SystemExit(1)
+
 
 # Tool name → handler 映射
 TOOL_HANDLERS = {
@@ -47,12 +82,14 @@ TOOL_HANDLERS = {
     "get_knowledge_graph": handle_get_knowledge_graph,
     "get_related_concepts": handle_get_related_concepts,
     "get_project_progress": handle_get_project_progress,
+    "get_review_summary": handle_get_review_summary,
+    "get_knowledge_stats": handle_get_knowledge_stats,
 }
 
 
 async def init():
     """初始化存储服务"""
-    global storage
+    global storage, authenticated_user_id
     storage = await init_storage(
         data_dir=os.getenv("DATA_DIR", "./data"),
         neo4j_uri=os.getenv("NEO4J_URI"),
@@ -61,6 +98,8 @@ async def init():
         qdrant_url=os.getenv("QDRANT_URL"),
         qdrant_api_key=os.getenv("QDRANT_API_KEY"),
     )
+    # 验证 JWT token
+    authenticated_user_id = _verify_token()
     logger.info("Storage initialized")
 
 
@@ -77,7 +116,7 @@ async def list_tools() -> tuple:
 @server.call_tool()
 async def call_tool(name: str, arguments: Any) -> list[TextContent]:
     """调用工具"""
-    global storage
+    global storage, authenticated_user_id
 
     if not storage:
         await init()
@@ -87,7 +126,7 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
         return [TextContent(type="text", text=f"未知工具: {name}")]
 
     try:
-        return await handler(storage, arguments)
+        return await handler(storage, arguments, authenticated_user_id)
     except Exception as e:
         logger.error(f"工具调用失败: {e}")
         return [TextContent(type="text", text=f"错误: {str(e)}")]

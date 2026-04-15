@@ -357,3 +357,237 @@ class TestTrendAPI:
         response = await client.get("/review/trend?period=weekly&weeks=1")
         assert response.status_code == 200
         assert len(response.json()["periods"]) == 1
+
+
+class TestReviewKnowledgeAPI:
+    """知识热力图 + 成长曲线 API 测试"""
+
+    @pytest.fixture(autouse=True)
+    async def setup_data(self, storage, client):
+        """每个测试前准备数据"""
+        if storage.sqlite:
+            storage.sqlite.clear_all()
+
+        user_id = _make_test_user_id(client)
+        today = datetime.now()
+
+        # 创建带标签的任务（多个概念）
+        for i in range(3):
+            entry = Task(
+                id=f"heatmap-task-{i}",
+                title=f"热力图任务-{i}",
+                content="",
+                category=Category.TASK,
+                status=TaskStatus.COMPLETE if i == 0 else TaskStatus.DOING,
+                priority=Priority.MEDIUM,
+                tags=["python", "fastapi"] if i < 2 else ["python"],
+                created_at=today,
+                updated_at=today,
+                file_path=f"tasks/heatmap-task-{i}.md",
+            )
+            storage.sqlite.upsert_entry(entry, user_id=user_id)
+
+        # 创建带标签的笔记
+        note = Task(
+            id="heatmap-note-1",
+            title="热力图笔记",
+            content="学习 python 和 fastapi",
+            category=Category.NOTE,
+            status=TaskStatus.DOING,
+            priority=Priority.MEDIUM,
+            tags=["python", "fastapi", "学习笔记"],
+            created_at=today,
+            updated_at=today,
+            file_path="notes/heatmap-note-1.md",
+        )
+        storage.sqlite.upsert_entry(note, user_id=user_id)
+
+    async def test_knowledge_heatmap_with_data(self, client: AsyncClient):
+        """测试知识热力图正常返回"""
+        response = await client.get("/review/knowledge-heatmap")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "items" in data
+        items = data["items"]
+        assert len(items) > 0
+
+        # 验证 item 结构
+        for item in items:
+            assert "concept" in item
+            assert "mastery" in item
+            assert "entry_count" in item
+            assert item["mastery"] in ("new", "beginner", "intermediate", "advanced")
+
+        # python 标签应该最多条目
+        python_items = [i for i in items if i["concept"] == "python"]
+        assert len(python_items) == 1
+        assert python_items[0]["entry_count"] >= 3
+
+    async def test_knowledge_heatmap_empty(self, storage, client: AsyncClient):
+        """测试空数据返回空列表"""
+        storage.sqlite.clear_all()
+
+        response = await client.get("/review/knowledge-heatmap")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["items"] == []
+
+    async def test_growth_curve_with_data(self, client: AsyncClient):
+        """测试成长曲线正常返回"""
+        response = await client.get("/review/growth-curve?weeks=4")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "points" in data
+        points = data["points"]
+        assert len(points) == 4
+
+        for point in points:
+            assert "week" in point
+            assert "total_concepts" in point
+            assert "advanced_count" in point
+            assert "intermediate_count" in point
+            assert "beginner_count" in point
+            # week 格式应为 YYYY-WXX
+            assert "W" in point["week"]
+
+    async def test_growth_curve_default_weeks(self, client: AsyncClient):
+        """测试成长曲线默认 8 周"""
+        response = await client.get("/review/growth-curve")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert len(data["points"]) == 8
+
+    async def test_growth_curve_user_isolation(self, storage, client: AsyncClient):
+        """测试成长曲线用户隔离"""
+        other_user_id = "other-growth-user"
+        entry = Task(
+            id="growth-other-1",
+            title="其他用户任务",
+            content="",
+            category=Category.TASK,
+            status=TaskStatus.COMPLETE,
+            priority=Priority.MEDIUM,
+            tags=["unique-other-tag"],
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+            file_path="tasks/growth-other-1.md",
+        )
+        storage.sqlite.upsert_entry(entry, user_id=other_user_id)
+
+        response = await client.get("/review/growth-curve?weeks=1")
+        assert response.status_code == 200
+
+        # 本周数据不应包含 other_user 的 tag
+        for point in response.json()["points"]:
+            # 当前用户的 total_concepts 不应因 other_user 而改变
+            assert "unique-other-tag" not in str(point)
+
+
+class TestReviewAISummary:
+    """AI 总结测试"""
+
+    @pytest.fixture(autouse=True)
+    async def setup_data(self, storage, client):
+        """每个测试前准备数据"""
+        if storage.sqlite:
+            storage.sqlite.clear_all()
+
+        user_id = _make_test_user_id(client)
+        today = datetime.now()
+
+        for i in range(2):
+            entry = Task(
+                id=f"ai-summary-task-{i}",
+                title=f"AI总结任务-{i}",
+                content="",
+                category=Category.TASK,
+                status=TaskStatus.COMPLETE if i == 0 else TaskStatus.DOING,
+                priority=Priority.MEDIUM,
+                tags=["ai-test"],
+                created_at=today,
+                updated_at=today,
+                file_path=f"tasks/ai-summary-task-{i}.md",
+            )
+            storage.sqlite.upsert_entry(entry, user_id=user_id)
+
+    async def test_daily_report_with_ai_summary(self, storage, client: AsyncClient):
+        """测试 LLM 可用时日报包含 AI 总结"""
+        from app.routers import deps
+        from app.infrastructure.llm.mock_caller import MockCaller
+
+        # 设置 Mock LLM caller
+        mock_llm = MockCaller(response="今天完成了1个任务，继续加油！建议保持当前节奏。")
+        deps._review_service = None  # 重置以触发重新创建
+        # 直接给 review_service 设置 llm_caller
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(mock_llm)
+
+        response = await client.get("/review/daily")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "ai_summary" in data
+        assert data["ai_summary"] is not None
+        assert len(data["ai_summary"]) > 0
+
+        # 清理
+        review_svc.set_llm_caller(None)
+
+    async def test_daily_report_without_llm(self, storage, client: AsyncClient):
+        """测试 LLM 不可用时 ai_summary 为 None"""
+        from app.routers import deps
+
+        # 确保 review_service 没有 llm_caller
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(None)
+
+        response = await client.get("/review/daily")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["ai_summary"] is None
+
+    async def test_weekly_report_with_ai_summary(self, storage, client: AsyncClient):
+        """测试周报包含 AI 总结"""
+        from app.routers import deps
+        from app.infrastructure.llm.mock_caller import MockCaller
+
+        mock_llm = MockCaller(response="本周完成率50%，表现不错。可以适当增加任务量。")
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(mock_llm)
+
+        response = await client.get("/review/weekly")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["ai_summary"] is not None
+        assert len(data["ai_summary"]) > 0
+
+        # 清理
+        review_svc.set_llm_caller(None)
+
+    async def test_ai_summary_llm_failure_graceful(self, storage, client: AsyncClient):
+        """测试 LLM 失败时降级"""
+        from app.routers import deps
+        from unittest.mock import AsyncMock
+
+        # 创建会抛出异常的 mock caller
+        mock_llm = AsyncMock()
+        mock_llm.call = AsyncMock(side_effect=Exception("LLM 服务不可用"))
+
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(mock_llm)
+
+        response = await client.get("/review/daily")
+        assert response.status_code == 200
+
+        data = response.json()
+        # LLM 失败时 ai_summary 应为空字符串 ""
+        assert data["ai_summary"] == ""
+
+        # 清理
+        review_svc.set_llm_caller(None)

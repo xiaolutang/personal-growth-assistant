@@ -328,6 +328,51 @@ export async function getRelatedConcepts(concept: string): Promise<RelatedConcep
   return handleApiResponse<RelatedConceptsResponse>(response);
 }
 
+// === 全局图谱 API ===
+
+export interface MapNode {
+  id: string;
+  name: string;
+  category: string | null;
+  mastery: "new" | "beginner" | "intermediate" | "advanced";
+  entry_count: number;
+}
+
+export interface MapEdge {
+  source: string;
+  target: string;
+  relationship: string;
+}
+
+export interface KnowledgeMapResponse {
+  nodes: MapNode[];
+  edges: MapEdge[];
+}
+
+export interface ConceptStatsResponse {
+  concept_count: number;
+  relation_count: number;
+  category_distribution: Record<string, number>;
+  top_concepts: Array<{ name: string; entry_count: number; category: string | null }>;
+}
+
+export async function getKnowledgeMap(
+  depth: number = 2,
+  view: string = "domain"
+): Promise<KnowledgeMapResponse> {
+  const response = await fetch(`${API_BASE}/knowledge-map?depth=${depth}&view=${view}`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<KnowledgeMapResponse>(response);
+}
+
+export async function getKnowledgeStats(): Promise<ConceptStatsResponse> {
+  const response = await fetch(`${API_BASE}/knowledge/stats`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<ConceptStatsResponse>(response);
+}
+
 // === 解析 API (旧接口) ===
 
 /**
@@ -408,6 +453,38 @@ export async function getFeedbackDetail(id: number): Promise<FeedbackItem> {
   return handleApiResponse<FeedbackItem>(response);
 }
 
+// === AI 对话 API ===
+
+/**
+ * AI 对话页面上下文
+ */
+export interface AIChatContext {
+  page?: string;
+  selected_items?: string[];
+  filters?: Record<string, string>;
+}
+
+/**
+ * 发送 AI 对话消息（SSE 流式响应）
+ * 返回原始 Response 对象，调用方自行读取 ReadableStream
+ */
+export async function sendAIChat(
+  message: string,
+  context?: AIChatContext,
+): Promise<Response> {
+  const response = await fetch(`${API_BASE}/ai/chat`, {
+    method: "POST",
+    headers: buildAuthHeaders({
+      headers: { "Content-Type": "application/json" },
+    }),
+    body: JSON.stringify({ message, context }),
+  });
+  if (!response.ok) {
+    throw new ApiError(response.status, `AI Chat error: ${response.status}`);
+  }
+  return response;
+}
+
 // === 意图识别 API ===
 
 import { detectIntent as detectIntentLocal, type Intent } from "@/lib/intentDetection";
@@ -479,6 +556,45 @@ export async function getReviewTrend(
     headers: buildAuthHeaders(),
   });
   return handleApiResponse<ReviewTrendResponse>(response);
+}
+
+// === 知识热力图 API ===
+
+export interface HeatmapItem {
+  concept: string;
+  mastery: "new" | "beginner" | "intermediate" | "advanced";
+  entry_count: number;
+  category: string | null;
+}
+
+export interface HeatmapResponse {
+  items: HeatmapItem[];
+}
+
+export interface GrowthCurvePoint {
+  week: string;
+  total_concepts: number;
+  advanced_count: number;
+  intermediate_count: number;
+  beginner_count: number;
+}
+
+export interface GrowthCurveResponse {
+  points: GrowthCurvePoint[];
+}
+
+export async function getKnowledgeHeatmap(): Promise<HeatmapResponse> {
+  const response = await fetch(`${API_BASE}/review/knowledge-heatmap`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<HeatmapResponse>(response);
+}
+
+export async function getGrowthCurve(weeks: number = 8): Promise<GrowthCurveResponse> {
+  const response = await fetch(`${API_BASE}/review/growth-curve?weeks=${weeks}`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<GrowthCurveResponse>(response);
 }
 
 // 导出错误类供外部使用

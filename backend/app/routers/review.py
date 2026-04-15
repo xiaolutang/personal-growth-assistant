@@ -13,6 +13,8 @@ from app.services.review_service import (
     WeeklyReport,
     MonthlyReport,
     TrendResponse,
+    HeatmapResponse,
+    GrowthCurveResponse,
 )
 
 router = APIRouter(prefix="/review", tags=["review"])
@@ -100,3 +102,30 @@ async def get_trend_data(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/knowledge-heatmap", response_model=HeatmapResponse)
+async def get_knowledge_heatmap(
+    user: User = Depends(get_current_user),
+):
+    """获取知识热力图"""
+    review_service = get_review_service()
+
+    try:
+        return review_service.get_knowledge_heatmap(user_id=user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+@router.get("/growth-curve", response_model=GrowthCurveResponse)
+async def get_growth_curve(
+    weeks: int = Query(8, description="回溯周数", ge=1, le=52),
+    user: User = Depends(get_current_user),
+):
+    """获取成长曲线数据"""
+    review_service = get_review_service()
+
+    try:
+        return review_service.get_growth_curve(weeks=weeks, user_id=user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))

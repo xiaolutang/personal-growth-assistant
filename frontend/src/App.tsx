@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { FloatingChat } from "@/components/FloatingChat";
 import { FeedbackButton } from "@/components/FeedbackButton";
+import { PageAIAssistant } from "@/components/PageAIAssistant";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Home } from "@/pages/Home";
@@ -11,6 +12,7 @@ import { Tasks } from "@/pages/Tasks";
 import { EntryDetail } from "@/pages/EntryDetail";
 import { Review } from "@/pages/Review";
 import { Explore } from "@/pages/Explore";
+import { GraphPage } from "@/pages/GraphPage";
 import { Login } from "@/pages/Login";
 import { Register } from "@/pages/Register";
 import { useChatStore } from "@/stores/chatStore";
@@ -82,6 +84,7 @@ function App() {
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/explore" element={<Explore />} />
+                    <Route path="/graph" element={<GraphPage />} />
                     <Route path="/tasks" element={<Tasks />} />
                     <Route path="/inbox" element={<Navigate to="/explore?type=inbox" replace />} />
                     <Route path="/notes" element={<Navigate to="/explore?type=note" replace />} />
@@ -92,6 +95,7 @@ function App() {
                 </div>
                 <FeedbackButton />
                 <FloatingChat />
+                <PageAIAssistant pageContext={{ page: "global" }} />
               </div>
             </ProtectedRoute>
           }

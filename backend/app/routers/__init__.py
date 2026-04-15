@@ -8,6 +8,7 @@ from .parse import router as parse_router
 from .playground import router as playground_router
 from .feedback import router as feedback_router
 from .auth import router as auth_router
+from .ai_chat import router as ai_chat_router
 
 __all__ = [
     "entries_router",
@@ -19,4 +20,5 @@ __all__ = [
     "playground_router",
     "feedback_router",
     "auth_router",
+    "ai_chat_router",
 ]
