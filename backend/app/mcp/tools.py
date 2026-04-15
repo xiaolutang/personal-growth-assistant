@@ -234,4 +234,31 @@ TOOLS: tuple[Tool, ...] = (
             "required": ["project_id"],
         },
     ),
+    Tool(
+        name="get_review_summary",
+        description="获取成长回顾统计（日报或周报）",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "period": {
+                    "type": "string",
+                    "enum": ["daily", "weekly"],
+                    "default": "daily",
+                    "description": "报告周期：daily（日报）或 weekly（周报）",
+                },
+                "target_date": {
+                    "type": "string",
+                    "description": "目标日期（YYYY-MM-DD 格式），不填则使用当天/本周",
+                },
+            },
+        },
+    ),
+    Tool(
+        name="get_knowledge_stats",
+        description="获取知识概念统计数据，包括概念数量、关系数量、分类分布等",
+        inputSchema={
+            "type": "object",
+            "properties": {},
+        },
+    ),
 )

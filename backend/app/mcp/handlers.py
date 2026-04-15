@@ -1,6 +1,6 @@
 """MCP Tool Handler 实现"""
 import uuid
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional
 
 from mcp.types import TextContent
@@ -26,7 +26,19 @@ def parse_iso_date(date_str: Optional[str]) -> Optional[datetime]:
         return None
 
 
-async def handle_list_entries(storage: SyncService, args: dict) -> list[TextContent]:
+def _entry_belongs_to_user(entry, user_id: str) -> bool:
+    """检查条目是否属于指定用户（SQLite dict 或 Task 对象）"""
+    # Task 对象
+    if hasattr(entry, "user_id"):
+        return entry.user_id == user_id
+    # SQLite dict
+    if isinstance(entry, dict) and "user_id" in entry:
+        return entry["user_id"] == user_id
+    # 无法判断归属时允许访问（Markdown 回退场景）
+    return True
+
+
+async def handle_list_entries(storage: SyncService, args: dict, user_id: str) -> list[TextContent]:
     """处理 list_entries"""
     category = Category(args["type"]) if args.get("type") else None
     status = TaskStatus(args["status"]) if args.get("status") else None
@@ -42,6 +54,7 @@ async def handle_list_entries(storage: SyncService, args: dict) -> list[TextCont
             tags=tags,
             parent_id=parent_id,
             limit=limit,
+            user_id=user_id,
         )
 
         if not entries:
@@ -83,13 +96,19 @@ async def handle_list_entries(storage: SyncService, args: dict) -> list[TextCont
     return [TextContent(type="text", text="".join(lines))]
 
 
-async def handle_get_entry(storage: SyncService, args: dict) -> list[TextContent]:
+async def handle_get_entry(storage: SyncService, args: dict, user_id: str) -> list[TextContent]:
     """处理 get_entry"""
     entry_id = args["id"]
     entry = storage.markdown.read_entry(entry_id)
 
     if not entry:
         return [TextContent(type="text", text=f"找不到条目: {entry_id}")]
+
+    # 用户隔离检查：SQLite 中验证归属
+    if storage.sqlite:
+        db_entry = storage.sqlite.get_entry(entry_id)
+        if db_entry and db_entry.get("user_id") and db_entry["user_id"] != user_id:
+            return [TextContent(type="text", text=f"找不到条目: {entry_id}")]
 
     lines = [
         f"# {entry.title}\n\n",
@@ -110,7 +129,7 @@ async def handle_get_entry(storage: SyncService, args: dict) -> list[TextContent
     return [TextContent(type="text", text="".join(lines))]
 
 
-async def handle_create_entry(storage: SyncService, args: dict) -> list[TextContent]:
+async def handle_create_entry(storage: SyncService, args: dict, user_id: str) -> list[TextContent]:
     """处理 create_entry"""
     entry_type = Category(args["type"])
     title = args["title"]
@@ -151,9 +170,9 @@ async def handle_create_entry(storage: SyncService, args: dict) -> list[TextCont
     # 写入 Markdown
     storage.markdown.write_entry(entry)
 
-    # 同步到 SQLite + Neo4j + Qdrant
+    # 同步到 SQLite + Neo4j + Qdrant（传递 user_id 进行隔离）
     if storage.sqlite:
-        storage.sqlite.upsert_entry(entry)
+        storage.sqlite.upsert_entry(entry, user_id=user_id)
     await storage.sync_entry(entry)
 
     return [TextContent(
@@ -162,9 +181,16 @@ async def handle_create_entry(storage: SyncService, args: dict) -> list[TextCont
     )]
 
 
-async def handle_update_entry(storage: SyncService, args: dict) -> list[TextContent]:
+async def handle_update_entry(storage: SyncService, args: dict, user_id: str) -> list[TextContent]:
     """处理 update_entry"""
     entry_id = args["id"]
+
+    # 用户隔离检查
+    if storage.sqlite:
+        db_entry = storage.sqlite.get_entry(entry_id)
+        if db_entry and db_entry.get("user_id") and db_entry["user_id"] != user_id:
+            return [TextContent(type="text", text=f"找不到条目: {entry_id}")]
+
     entry = storage.markdown.read_entry(entry_id)
 
     if not entry:
@@ -197,15 +223,21 @@ async def handle_update_entry(storage: SyncService, args: dict) -> list[TextCont
 
     # 同步到 SQLite + Neo4j + Qdrant
     if storage.sqlite:
-        storage.sqlite.upsert_entry(entry)
+        storage.sqlite.upsert_entry(entry, user_id=user_id)
     await storage.sync_entry(entry)
 
     return [TextContent(type="text", text=f"已更新条目: {entry_id}")]
 
 
-async def handle_delete_entry(storage: SyncService, args: dict) -> list[TextContent]:
+async def handle_delete_entry(storage: SyncService, args: dict, user_id: str) -> list[TextContent]:
     """处理 delete_entry"""
     entry_id = args["id"]
+
+    # 用户隔离检查
+    if storage.sqlite:
+        db_entry = storage.sqlite.get_entry(entry_id)
+        if db_entry and db_entry.get("user_id") and db_entry["user_id"] != user_id:
+            return [TextContent(type="text", text=f"删除失败: {entry_id}")]
 
     # 删除
     success = await storage.delete_entry(entry_id)
@@ -216,7 +248,7 @@ async def handle_delete_entry(storage: SyncService, args: dict) -> list[TextCont
         return [TextContent(type="text", text=f"删除失败: {entry_id}")]
 
 
-async def handle_search_entries(storage: SyncService, args: dict) -> list[TextContent]:
+async def handle_search_entries(storage: SyncService, args: dict, user_id: str) -> list[TextContent]:
     """处理 search_entries"""
     query = args["query"]
     limit = args.get("limit", 5)
@@ -239,12 +271,12 @@ async def handle_search_entries(storage: SyncService, args: dict) -> list[TextCo
     return [TextContent(type="text", text=result)]
 
 
-async def handle_get_knowledge_graph(storage: SyncService, args: dict) -> list[TextContent]:
+async def handle_get_knowledge_graph(storage: SyncService, args: dict, user_id: str) -> list[TextContent]:
     """处理 get_knowledge_graph"""
     concept = args["concept"]
     depth = args.get("depth", 2)
 
-    graph = await storage.neo4j.get_knowledge_graph(concept, depth)
+    graph = await storage.neo4j.get_knowledge_graph(concept, depth, user_id=user_id)
 
     if not graph["center"]:
         return [TextContent(type="text", text=f"找不到概念: {concept}")]
@@ -260,11 +292,11 @@ async def handle_get_knowledge_graph(storage: SyncService, args: dict) -> list[T
     return [TextContent(type="text", text=result)]
 
 
-async def handle_get_related_concepts(storage: SyncService, args: dict) -> list[TextContent]:
+async def handle_get_related_concepts(storage: SyncService, args: dict, user_id: str) -> list[TextContent]:
     """处理 get_related_concepts"""
     concept = args["concept"]
 
-    related = await storage.neo4j.get_related_concepts(concept)
+    related = await storage.neo4j.get_related_concepts(concept, user_id=user_id)
 
     if not related:
         return [TextContent(type="text", text=f"没有找到相关概念: {concept}")]
@@ -276,7 +308,7 @@ async def handle_get_related_concepts(storage: SyncService, args: dict) -> list[
     return [TextContent(type="text", text=result)]
 
 
-async def handle_get_project_progress(storage: SyncService, args: dict) -> list[TextContent]:
+async def handle_get_project_progress(storage: SyncService, args: dict, user_id: str) -> list[TextContent]:
     """处理 get_project_progress - 获取项目进度"""
     project_id = args["project_id"]
 
@@ -285,11 +317,17 @@ async def handle_get_project_progress(storage: SyncService, args: dict) -> list[
     if not entry:
         return [TextContent(type="text", text=f"找不到条目: {project_id}")]
 
+    # 用户隔离检查
+    if storage.sqlite:
+        db_entry = storage.sqlite.get_entry(project_id)
+        if db_entry and db_entry.get("user_id") and db_entry["user_id"] != user_id:
+            return [TextContent(type="text", text=f"找不到条目: {project_id}")]
+
     # 使用 SQLite 获取子任务
     if not storage.sqlite:
         return [TextContent(type="text", text="SQLite 索引不可用，无法计算进度")]
 
-    child_entries = storage.sqlite.list_entries(parent_id=project_id, limit=MAX_CHILD_TASKS)
+    child_entries = storage.sqlite.list_entries(parent_id=project_id, limit=MAX_CHILD_TASKS, user_id=user_id)
 
     total = len(child_entries)
     if total == 0:
@@ -302,9 +340,9 @@ async def handle_get_project_progress(storage: SyncService, args: dict) -> list[
     status_counts: dict[str, int] = {}
     completed = 0
     for child in child_entries:
-        status = child.get("status", "doing")
-        status_counts[status] = status_counts.get(status, 0) + 1
-        if status == TaskStatus.COMPLETE.value:
+        child_status = child.get("status", "doing")
+        status_counts[child_status] = status_counts.get(child_status, 0) + 1
+        if child_status == TaskStatus.COMPLETE.value:
             completed += 1
 
     progress = (completed / total) * 100 if total > 0 else 0
@@ -317,13 +355,89 @@ async def handle_get_project_progress(storage: SyncService, args: dict) -> list[
         f"- 完成率: {round(progress, 1)}%\n\n",
         "## 状态分布\n\n",
     ]
-    for status, count in sorted(status_counts.items()):
-        lines.append(f"- {status}: {count}\n")
+    for s, count in sorted(status_counts.items()):
+        lines.append(f"- {s}: {count}\n")
     lines.append("\n## 子任务列表\n\n")
     for child in child_entries[:MAX_DISPLAY_TASKS]:
-        status_icon = "✅" if child.get("status") == TaskStatus.COMPLETE.value else "⏳"
-        lines.append(f"- {status_icon} {child.get('title', 'N/A')} ({child.get('status', 'doing')})\n")
+        status_icon = "done" if child.get("status") == TaskStatus.COMPLETE.value else "doing"
+        lines.append(f"- [{status_icon}] {child.get('title', 'N/A')} ({child.get('status', 'doing')})\n")
     if total > MAX_DISPLAY_TASKS:
         lines.append(f"\n... 还有 {total - MAX_DISPLAY_TASKS} 个任务")
+
+    return [TextContent(type="text", text="".join(lines))]
+
+
+async def handle_get_review_summary(storage: SyncService, args: dict, user_id: str) -> list[TextContent]:
+    """处理 get_review_summary — 获取回顾统计（日报或周报）"""
+    from app.services.review_service import ReviewService
+
+    period = args.get("period", "daily")
+    target_date_str = args.get("target_date")
+
+    if not storage.sqlite:
+        return [TextContent(type="text", text="SQLite 索引不可用，无法生成回顾")]
+
+    review_svc = ReviewService(sqlite_storage=storage.sqlite)
+
+    if period == "weekly":
+        target = ReviewService.parse_date(target_date_str) if target_date_str else None
+        report = review_svc.get_weekly_report(week_start=target, user_id=user_id)
+        lines = [
+            f"# 周报: {report.start_date} ~ {report.end_date}\n\n",
+            f"## 任务统计\n",
+            f"- 总任务数: {report.task_stats.total}\n",
+            f"- 已完成: {report.task_stats.completed}\n",
+            f"- 进行中: {report.task_stats.doing}\n",
+            f"- 待开始: {report.task_stats.wait_start}\n",
+            f"- 完成率: {report.task_stats.completion_rate}%\n\n",
+            f"## 笔记统计\n",
+            f"- 笔记总数: {report.note_stats.total}\n",
+        ]
+        if report.ai_summary:
+            lines.append(f"\n## AI 总结\n\n{report.ai_summary}\n")
+        return [TextContent(type="text", text="".join(lines))]
+    else:
+        target = ReviewService.parse_date(target_date_str) if target_date_str else None
+        report = review_svc.get_daily_report(target_date=target, user_id=user_id)
+        lines = [
+            f"# 日报: {report.date}\n\n",
+            f"## 任务统计\n",
+            f"- 总任务数: {report.task_stats.total}\n",
+            f"- 已完成: {report.task_stats.completed}\n",
+            f"- 进行中: {report.task_stats.doing}\n",
+            f"- 待开始: {report.task_stats.wait_start}\n",
+            f"- 完成率: {report.task_stats.completion_rate}%\n\n",
+            f"## 笔记统计\n",
+            f"- 笔记总数: {report.note_stats.total}\n",
+        ]
+        if report.ai_summary:
+            lines.append(f"\n## AI 总结\n\n{report.ai_summary}\n")
+        return [TextContent(type="text", text="".join(lines))]
+
+
+async def handle_get_knowledge_stats(storage: SyncService, args: dict, user_id: str) -> list[TextContent]:
+    """处理 get_knowledge_stats — 获取知识概念统计"""
+    from app.services.knowledge_service import KnowledgeService
+
+    svc = KnowledgeService(
+        neo4j_client=storage.neo4j if storage.neo4j else None,
+        sqlite_storage=storage.sqlite if storage.sqlite else None,
+    )
+
+    stats = await svc.get_knowledge_stats(user_id=user_id)
+
+    lines = [
+        "# 知识概念统计\n\n",
+        f"- 概念总数: {stats.concept_count}\n",
+        f"- 关系总数: {stats.relation_count}\n\n",
+    ]
+    if stats.category_distribution:
+        lines.append("## 分类分布\n\n")
+        for cat, count in sorted(stats.category_distribution.items()):
+            lines.append(f"- {cat}: {count}\n")
+    if stats.top_concepts:
+        lines.append("\n## 热门概念\n\n")
+        for c in stats.top_concepts[:10]:
+            lines.append(f"- {c.get('name', '')} ({c.get('entry_count', 0)} 条目)\n")
 
     return [TextContent(type="text", text="".join(lines))]
