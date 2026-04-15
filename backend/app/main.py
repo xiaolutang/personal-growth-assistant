@@ -21,6 +21,7 @@ from app.routers import (
     feedback_router,
     auth_router,
     ai_chat_router,
+    notifications_router,
 )
 from app.routers import deps
 from app.services import init_storage
@@ -170,6 +171,7 @@ app.include_router(playground_router)
 app.include_router(feedback_router)
 app.include_router(auth_router)
 app.include_router(ai_chat_router)
+app.include_router(notifications_router)
 
 
 # === 健康检查 ===
