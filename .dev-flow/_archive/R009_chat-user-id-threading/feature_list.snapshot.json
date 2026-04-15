@@ -5,8 +5,13 @@
   "created_at": "2026-03-28",
   "updated_at": "2026-04-16",
   "status": "active",
-  "scope_notes": "",
-  "active_requirement_cycle": null,
+  "scope_notes": "R009 Chat 用户 ID 透传 — 修复 chat_service 所有 entry 操作未传递 user_id 的架构债务",
+  "active_requirement_cycle": {
+    "id": "R009",
+    "name": "chat-user-id-threading",
+    "status": "planning",
+    "branch": "feat/R009-chat-user-id-threading"
+  },
   "workflow": {
     "name": "XLFoundry",
     "mode": "A",
@@ -16,8 +21,8 @@
     "risk_provider": "local"
   },
   "summary": {
-    "total_tasks": 0,
-    "pending": 0,
+    "total_tasks": 2,
+    "pending": 2,
     "in_progress": 0,
     "completed": 0,
     "blocked": 0,
@@ -79,13 +84,6 @@
       "status": "completed",
       "archive_dir": "_archive/R008_intelligence-omni",
       "branch": "feat/R008-intelligence-omni"
-    },
-    {
-      "id": "R009",
-      "name": "chat-user-id-threading",
-      "status": "completed",
-      "archive_dir": "_archive/R009_chat-user-id-threading",
-      "branch": "feat/R009-chat-user-id-threading"
     }
   ],
   "archived_cycles": [
@@ -169,15 +167,6 @@
       "phases": ["P1","P2"],
       "completed_at": "2026-04-16",
       "snapshot": "feature_list.snapshot.json"
-    },
-    {
-      "cycle_id": "R009",
-      "name": "Chat User ID Threading",
-      "archive_dir": "_archive/R009_chat-user-id-threading",
-      "total_tasks": 2,
-      "phases": ["P1"],
-      "completed_at": "2026-04-16",
-      "snapshot": "feature_list.snapshot.json"
     }
   ],
   "modules": [
@@ -201,5 +190,79 @@
     {"id": "pwa", "name": "PWA 模块", "description": "PWA + 离线缓存"},
     {"id": "notification", "name": "通知模块", "description": "通知/提醒 + 偏好管理"}
   ],
-  "tasks": []
+  "tasks": [
+    {
+      "id": "B32",
+      "phase": "P1",
+      "module": "ai-assistant",
+      "name": "ChatService user_id 透传 — 签名扩展 + 调用链改造",
+      "description": "修复 chat_service.py 中所有 entry_service 调用未传递 user_id 的架构债务。(1) process_intent() 新增 user_id 参数；(2) _handle_create() 新增 user_id，传递给 self.entry_service.create_entry(..., user_id=user_id)；(3) _handle_update() 新增 user_id，传递给 search_entries 和 update_entry；(4) _handle_delete() 新增 user_id，传递给 search_entries 和 delete_entry；(5) _handle_read() 新增 user_id，传递给 search_entries；(6) parse.py /chat 端点将 user.id 传递给 process_intent()。当前所有操作默认走 user_id='_default'，修复后走认证用户的真实 ID。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "chat_service.process_intent() 接受 user_id 参数",
+        "_handle_create 中 entry_service.create_entry 传入 user_id",
+        "_handle_update 中 search_entries 和 update_entry 传入 user_id",
+        "_handle_delete 中 search_entries 和 delete_entry 传入 user_id",
+        "_handle_read 中 search_entries 传入 user_id",
+        "parse.py /chat 端点透传 user.id 到 process_intent",
+        "uv run pytest backend/tests/ 全部通过"
+      ],
+      "risk_tags": ["auth"],
+      "test_tasks": [
+        "正常：通过 chat 创建条目 → 条目属于当前用户",
+        "正常：通过 chat 更新条目 → 只能更新自己的条目",
+        "正常：通过 chat 删除条目 → 只能删除自己的条目",
+        "正常：通过 chat 搜索条目 → 只返回当前用户的条目",
+        "正常：confirm 操作（多选确认）传递 user_id",
+        "隔离：用户 A 通过 chat 看不到用户 B 的条目",
+        "隔离：用户 A 通过 chat 无法修改/删除用户 B 的条目",
+        "边界：search_entries 无结果时不崩溃",
+        "回归：detect_intent 不受影响（不需要 user_id）",
+        "回归：review/knowledge/help 意图不受影响（不走 entry_service）"
+      ],
+      "contract_refs": [],
+      "files": [
+        "backend/app/services/chat_service.py",
+        "backend/app/routers/parse.py"
+      ],
+      "planning_notes": "R008 Codex 审核第 4 轮发现此架构债务（F1），当时标记为非 R008 范围。本任务专门修复。"
+    },
+    {
+      "id": "B33",
+      "phase": "P1",
+      "module": "ai-assistant",
+      "name": "Chat 用户隔离单元测试",
+      "description": "为 B32 的 user_id 透传补充独立测试文件。覆盖所有意图路径（create/update/delete/read/confirm）的用户隔离验证。使用 mock 验证 entry_service 调用时传入了正确的 user_id。",
+      "verification": "L2",
+      "depends_on": ["B32"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "新建 test_chat_user_isolation.py 测试文件",
+        "覆盖 create/update/delete/read 四个意图的 user_id 传递",
+        "覆盖 confirm 场景的 user_id 传递",
+        "覆盖用户隔离（A 看不到 B 的数据）",
+        "uv run pytest tests/unit/test_chat_user_isolation.py 全部通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：_handle_create 传入正确 user_id",
+        "正常：_handle_update 搜索和更新都传入 user_id",
+        "正常：_handle_delete 搜索和删除都传入 user_id",
+        "正常：_handle_read 搜索传入 user_id",
+        "正常：confirm 更新操作传入 user_id",
+        "正常：confirm 删除操作传入 user_id",
+        "隔离：用户 A 搜索不到用户 B 的条目",
+        "回归：review/knowledge/help 意图不调用 entry_service",
+        "集成：/chat API 端到端传递 user_id 到 entry_service"
+      ],
+      "contract_refs": [],
+      "files": [
+        "backend/tests/unit/test_chat_user_isolation.py"
+      ]
+    }
+  ]
 }
