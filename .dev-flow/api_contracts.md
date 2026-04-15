@@ -498,7 +498,11 @@ weeks=8           # period=weekly 时有效，默认 8
     "selected_items": [],
     "filters": {}
   },
-  "conversation_id": "conv-abc123"
+  "conversation_id": "conv-abc123",
+  "messages": [
+    {"role": "user", "content": "今天有什么任务？"},
+    {"role": "assistant", "content": "你有3个任务待完成..."}
+  ]
 }
 ```
 
@@ -514,7 +518,8 @@ data: {"token": "有3个任务"}
 
 #### Notes
 
-- conversation_id 隔离对话历史，后端按 user_id + conversation_id 存储最近 5 轮
+- conversation_id 由前端生成，用于隔离不同对话面板的上下文
+- messages 数组由前端携带最近 5 轮历史（role + content），不新增后端存储层
 - page_data 由前端注入当前页面关键数据摘要
 - LLM 不可用时返回 503
 
