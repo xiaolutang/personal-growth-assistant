@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 6,
-    "in_progress": 0,
-    "completed": 0,
+    "pending": 4,
+    "in_progress": 1,
+    "completed": 1,
     "blocked": 0,
     "cancelled": 0
   },
@@ -287,7 +287,7 @@
       "description": "完善深色模式支持。实现：(1) 新建 ThemeProvider/useTheme hook — 支持 light/dark/system 三档切换，localStorage 持久化，监听 system preference 变化；(2) Header 右上角新增 theme toggle 按钮（Sun/Moon 图标切换）；(3) 全局审计所有页面和组件，补齐缺失的 dark: 变体（背景色、文字色、边框色、卡片色）；(4) Sidebar/MobileNavBar/Header 三个布局组件优先保证深色模式正确。",
       "verification": "F2",
       "depends_on": [],
-      "status": "in_progress",
+      "status": "completed",
       "priority": "high",
       "acceptance_criteria": [
         "Header 有 theme toggle 按钮，点击切换 light/dark",
@@ -317,6 +317,7 @@
         "frontend/src/App.tsx"
       ],
       "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
       "evidence_file": ".dev-flow/evidence/F24.md"
     },
     {
@@ -327,7 +328,7 @@
       "description": "添加 PWA 支持，使应用可安装到手机主屏幕。实现：(1) 使用 vite-plugin-pwa 插件；(2) 配置 manifest.json（name, icons, theme_color, display: standalone）；(3) Service Worker 策略：静态资源 precache，API 请求 network-first；(4) 首次访问时显示「添加到主屏幕」提示（beforeinstallprompt 事件）；(5) 生成 PWA 图标（192x192, 512x512）。",
       "verification": "L3",
       "depends_on": [],
-      "status": "pending",
+      "status": "in_progress",
       "priority": "high",
       "acceptance_criteria": [
         "Chrome DevTools Lighthouse PWA 审计通过基本项",

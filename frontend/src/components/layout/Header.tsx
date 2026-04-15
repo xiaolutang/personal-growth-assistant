@@ -1,7 +1,8 @@
-import { Menu, Sun, Moon } from "lucide-react";
+import { Menu, Sun, Moon, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/layout/SidebarContext";
 import { useTheme } from "@/lib/theme";
+import { usePWAInstall } from "@/lib/usePWAInstall";
 
 interface HeaderProps {
   title: string;
@@ -11,6 +12,7 @@ interface HeaderProps {
 export function Header({ title, onToggleSidebar }: HeaderProps) {
   const { toggle } = useSidebar();
   const { resolvedTheme, setTheme } = useTheme();
+  const { canInstall, promptInstall } = usePWAInstall();
 
   function handleToggle() {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
@@ -19,7 +21,6 @@ export function Header({ title, onToggleSidebar }: HeaderProps) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 px-4 md:px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex items-center gap-3">
-        {/* 移动端 hamburger 按钮 */}
         <Button
           variant="ghost"
           size="icon"
@@ -31,13 +32,20 @@ export function Header({ title, onToggleSidebar }: HeaderProps) {
         </Button>
         <h1 className="text-lg font-semibold">{title}</h1>
       </div>
-      <Button variant="ghost" size="icon" onClick={handleToggle} aria-label="切换主题">
-        {resolvedTheme === "dark" ? (
-          <Sun className="h-5 w-5" />
-        ) : (
-          <Moon className="h-5 w-5" />
+      <div className="flex items-center gap-1">
+        {canInstall && (
+          <Button variant="ghost" size="icon" onClick={promptInstall} aria-label="安装应用">
+            <Download className="h-5 w-5" />
+          </Button>
         )}
-      </Button>
+        <Button variant="ghost" size="icon" onClick={handleToggle} aria-label="切换主题">
+          {resolvedTheme === "dark" ? (
+            <Sun className="h-5 w-5" />
+          ) : (
+            <Moon className="h-5 w-5" />
+          )}
+        </Button>
+      </div>
     </header>
   );
 }
