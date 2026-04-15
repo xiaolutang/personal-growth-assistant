@@ -261,4 +261,100 @@ TOOLS: tuple[Tool, ...] = (
             "properties": {},
         },
     ),
+    Tool(
+        name="batch_create_entries",
+        description="批量创建条目，一次最多创建 10 条",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "entries": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": ["project", "task", "note", "inbox"],
+                                "description": "条目类型",
+                            },
+                            "title": {
+                                "type": "string",
+                                "description": "标题",
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "内容",
+                            },
+                            "tags": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "标签",
+                            },
+                            "parent_id": {
+                                "type": "string",
+                                "description": "父条目ID",
+                            },
+                            "status": {
+                                "type": "string",
+                                "enum": ["waitStart", "doing", "complete", "paused", "cancelled"],
+                                "default": "waitStart",
+                                "description": "状态",
+                            },
+                            "priority": {
+                                "type": "string",
+                                "enum": ["high", "medium", "low"],
+                                "default": "medium",
+                                "description": "优先级",
+                            },
+                            "planned_date": {
+                                "type": "string",
+                                "description": "计划日期 (YYYY-MM-DD 格式)",
+                            },
+                            "time_spent": {
+                                "type": "number",
+                                "description": "耗时（分钟）",
+                            },
+                        },
+                        "required": ["type", "title", "content"],
+                    },
+                    "description": "条目数组，最多 10 条",
+                },
+            },
+            "required": ["entries"],
+        },
+    ),
+    Tool(
+        name="batch_update_status",
+        description="批量更新条目状态，一次最多更新 10 条",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "条目ID数组，最多 10 个",
+                },
+                "status": {
+                    "type": "string",
+                    "enum": ["waitStart", "doing", "complete", "paused", "cancelled"],
+                    "description": "目标状态",
+                },
+            },
+            "required": ["ids", "status"],
+        },
+    ),
+    Tool(
+        name="get_learning_path",
+        description="获取概念的学习路径，包括前置知识、当前掌握程度、下一步建议、相关项目和笔记",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "concept": {
+                    "type": "string",
+                    "description": "概念名称",
+                },
+            },
+            "required": ["concept"],
+        },
+    ),
 )

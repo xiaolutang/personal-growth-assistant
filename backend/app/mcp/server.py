@@ -23,6 +23,9 @@ from app.mcp.handlers import (
     handle_get_project_progress,
     handle_get_review_summary,
     handle_get_knowledge_stats,
+    handle_batch_create_entries,
+    handle_batch_update_status,
+    handle_get_learning_path,
 )
 
 
@@ -84,6 +87,9 @@ TOOL_HANDLERS = {
     "get_project_progress": handle_get_project_progress,
     "get_review_summary": handle_get_review_summary,
     "get_knowledge_stats": handle_get_knowledge_stats,
+    "batch_create_entries": handle_batch_create_entries,
+    "batch_update_status": handle_batch_update_status,
+    "get_learning_path": handle_get_learning_path,
 }
 
 
