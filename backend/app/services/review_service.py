@@ -69,6 +69,45 @@ class GrowthCurveResponse(BaseModel):
     points: List[GrowthCurvePoint] = []
 
 
+class MorningDigestTodo(BaseModel):
+    """晨报待办项"""
+    id: str
+    title: str
+    priority: str = "medium"
+    planned_date: Optional[str] = None
+
+
+class MorningDigestOverdue(BaseModel):
+    """晨报拖延项"""
+    id: str
+    title: str
+    priority: str = "medium"
+    planned_date: Optional[str] = None
+
+
+class MorningDigestStaleInbox(BaseModel):
+    """晨报未跟进灵感"""
+    id: str
+    title: str
+    created_at: str
+
+
+class MorningDigestWeeklySummary(BaseModel):
+    """晨报本周学习摘要"""
+    new_concepts: List[str] = []
+    entries_count: int = 0
+
+
+class MorningDigestResponse(BaseModel):
+    """AI 晨报响应"""
+    date: str
+    ai_suggestion: str
+    todos: List[MorningDigestTodo] = []
+    overdue: List[MorningDigestOverdue] = []
+    stale_inbox: List[MorningDigestStaleInbox] = []
+    weekly_summary: MorningDigestWeeklySummary = Field(default_factory=MorningDigestWeeklySummary)
+
+
 class TaskStats(BaseModel):
     """任务统计"""
     total: int = Field(..., description="总任务数")
@@ -681,6 +720,196 @@ class ReviewService:
             ))
 
         return GrowthCurveResponse(points=points)
+
+    def get_morning_digest(self, user_id: str) -> MorningDigestResponse:
+        """
+        获取 AI 晨报数据
+
+        聚合：今日待办 + 拖延任务 + 未跟进灵感 + 本周学习摘要
+
+        Args:
+            user_id: 用户 ID
+
+        Returns:
+            MorningDigestResponse
+        """
+        if not self._sqlite:
+            raise ValueError("SQLite 存储未初始化")
+
+        today = date.today()
+        today_str = today.isoformat()
+        tomorrow_str = (today + timedelta(days=1)).isoformat()
+
+        # 1. 今日待办（状态非 complete，优先级排序）
+        all_tasks = self._sqlite.list_entries(
+            type="task",
+            limit=1000,
+            user_id=user_id,
+        )
+
+        def _parse_date_str(val):
+            """解析 planned_date 字段为 date 对象"""
+            if not val:
+                return None
+            if isinstance(val, date):
+                return val
+            try:
+                return datetime.fromisoformat(str(val).replace("Z", "+00:00")).date()
+            except (ValueError, TypeError):
+                try:
+                    return datetime.strptime(str(val)[:10], "%Y-%m-%d").date()
+                except (ValueError, TypeError):
+                    return None
+
+        today_todos = [
+            t for t in all_tasks
+            if t.get("status") in ("waitStart", "doing")
+            and _parse_date_str(t.get("planned_date")) == today
+        ]
+        priority_order = {"high": 0, "medium": 1, "low": 2}
+        today_todos.sort(key=lambda t: priority_order.get(t.get("priority", "medium"), 1))
+
+        # 2. 拖延任务（planned_date 已过，状态非 complete）
+        overdue = [
+            t for t in all_tasks
+            if t.get("status") in ("waitStart", "doing")
+            and t.get("planned_date")
+            and _parse_date_str(t.get("planned_date")) is not None
+            and _parse_date_str(t.get("planned_date")) < today
+        ]
+        overdue.sort(key=lambda t: priority_order.get(t.get("priority", "medium"), 1))
+
+        # 3. 未跟进灵感（>3天未转化的 inbox 条目）
+        three_days_ago = today - timedelta(days=3)
+        all_inbox = self._sqlite.list_entries(
+            type="inbox",
+            limit=1000,
+            user_id=user_id,
+        )
+        stale_inbox = [
+            i for i in all_inbox
+            if _parse_date_str(i.get("created_at")) is not None
+            and _parse_date_str(i.get("created_at")) <= three_days_ago
+            and i.get("status") in ("waitStart", "pending")
+        ]
+
+        # 4. 本周学习摘要
+        week_start = today - timedelta(days=today.weekday())
+        week_end_str = (week_start + timedelta(days=7)).isoformat()
+        week_start_str = week_start.isoformat()
+
+        week_entries = self._sqlite.list_entries(
+            start_date=week_start_str,
+            end_date=week_end_str,
+            limit=1000,
+            user_id=user_id,
+        )
+
+        # 提取本周新增概念（tags）
+        new_concepts_set: set = set()
+        for entry in week_entries:
+            for tag in entry.get("tags", []):
+                new_concepts_set.add(tag)
+
+        weekly_summary = MorningDigestWeeklySummary(
+            new_concepts=sorted(new_concepts_set)[:10],
+            entries_count=len(week_entries),
+        )
+
+        # 5. 构建 AI 建议
+        ai_suggestion = self._generate_morning_suggestion(
+            today_todos=today_todos,
+            overdue=overdue,
+            stale_inbox=stale_inbox,
+            weekly_summary=weekly_summary,
+            user_id=user_id,
+        )
+
+        return MorningDigestResponse(
+            date=today_str,
+            ai_suggestion=ai_suggestion,
+            todos=[
+                MorningDigestTodo(
+                    id=t.get("id", ""),
+                    title=t.get("title", ""),
+                    priority=t.get("priority", "medium"),
+                    planned_date=t.get("planned_date"),
+                )
+                for t in today_todos[:5]
+            ],
+            overdue=[
+                MorningDigestOverdue(
+                    id=t.get("id", ""),
+                    title=t.get("title", ""),
+                    priority=t.get("priority", "medium"),
+                    planned_date=t.get("planned_date"),
+                )
+                for t in overdue[:5]
+            ],
+            stale_inbox=[
+                MorningDigestStaleInbox(
+                    id=i.get("id", ""),
+                    title=i.get("title", ""),
+                    created_at=i.get("created_at", ""),
+                )
+                for i in stale_inbox[:5]
+            ],
+            weekly_summary=weekly_summary,
+        )
+
+    def _generate_morning_suggestion(
+        self,
+        today_todos: list,
+        overdue: list,
+        stale_inbox: list,
+        weekly_summary: MorningDigestWeeklySummary,
+        user_id: str,
+    ) -> str:
+        """生成晨报建议文本，LLM 不可用时降级为模板"""
+        todo_count = len(today_todos)
+        overdue_count = len(overdue)
+        stale_count = len(stale_inbox)
+        concepts_count = len(weekly_summary.new_concepts)
+        entries_count = weekly_summary.entries_count
+
+        # 先尝试 LLM
+        if self._llm_caller:
+            try:
+                stats_data = {
+                    "todo_count": todo_count,
+                    "overdue_count": overdue_count,
+                    "stale_inbox_count": stale_count,
+                    "week_new_concepts": weekly_summary.new_concepts[:5],
+                    "week_entries_count": entries_count,
+                    "todos": [t.get("title", "") for t in today_todos[:3]],
+                    "overdue_titles": [t.get("title", "") for t in overdue[:3]],
+                }
+                suggestion = _run_async(
+                    self._generate_ai_summary("morning_digest", stats_data, user_id=user_id)
+                )
+                if suggestion:
+                    return suggestion
+            except Exception:
+                pass
+
+        # 降级为模板文本
+        parts = []
+        if todo_count > 0:
+            parts.append(f"你有{todo_count}个任务待完成")
+            if overdue_count > 0:
+                parts[0] += f"，其中{overdue_count}个已逾期"
+        elif overdue_count > 0:
+            parts.append(f"你有{overdue_count}个逾期任务需要处理")
+        else:
+            parts.append("今天没有待办任务，适合学习新知识")
+
+        if stale_count > 0:
+            parts.append(f"有{stale_count}个灵感超过3天未跟进")
+
+        if concepts_count > 0:
+            parts.append(f"本周学习了{concepts_count}个新概念")
+
+        return "，".join(parts) + "。"
 
     @staticmethod
     def _calculate_mastery_from_stats(

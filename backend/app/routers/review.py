@@ -15,6 +15,7 @@ from app.services.review_service import (
     TrendResponse,
     HeatmapResponse,
     GrowthCurveResponse,
+    MorningDigestResponse,
 )
 
 router = APIRouter(prefix="/review", tags=["review"])
@@ -127,5 +128,18 @@ async def get_growth_curve(
 
     try:
         return review_service.get_growth_curve(weeks=weeks, user_id=user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+@router.get("/morning-digest", response_model=MorningDigestResponse)
+async def get_morning_digest(
+    user: User = Depends(get_current_user),
+):
+    """获取 AI 晨报 — 每日主动建议"""
+    review_service = get_review_service()
+
+    try:
+        return review_service.get_morning_digest(user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
