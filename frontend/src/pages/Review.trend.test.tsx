@@ -34,6 +34,7 @@ vi.mock("@/lib/authFetch", () => ({
 const mockGetReviewTrend = vi.fn();
 vi.mock("@/services/api", () => ({
   getReviewTrend: (...args: unknown[]) => mockGetReviewTrend(...args),
+  getActivityHeatmap: () => Promise.resolve({ year: 2026, items: [] }),
 }));
 
 // 辅助：创建空日报 Response（主报告默认不报错）

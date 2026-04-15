@@ -4,7 +4,7 @@
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
   "updated_at": "2026-04-15",
-  "status": "in_progress",
+  "status": "completed",
   "scope_notes": "R007 用户粘性 & 体验深度 — 深色模式 + PWA + 通知提醒 + 热力图日历",
   "active_requirement_cycle": {
     "id": "R007",
@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 1,
-    "in_progress": 1,
-    "completed": 4,
+    "pending": 0,
+    "in_progress": 0,
+    "completed": 6,
     "blocked": 0,
     "cancelled": 0
   },
@@ -447,7 +447,7 @@
       "depends_on": [
         "B26"
       ],
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
       "acceptance_criteria": [
         "Header 铃铛图标显示未读数角标",
@@ -486,12 +486,12 @@
       "phase": "P2A",
       "module": "review",
       "name": "学习热力图日历 — GitHub 风格贡献日历",
-      "description": "回顾页新增 GitHub 风格活动热力图。实现：(1) `Review.tsx` 新增热力图日历卡片；(2) 调用 GET /review/activity-heatmap 获取数据；(3) 按周排列的方格矩阵，颜色深浅表示活动量（0=空, 1-2=浅, 3-5=中, 6+=深）；(4) hover 显示日期 + 条目数 tooltip；(5) 点击日期跳转到探索页，携带 start_date 和 end_date 参数筛选该日条目（复用 Explore 已有的 start_date/end_date 查询能力）；(6) 年份切换按钮。",
+      "description": "回顾页新增 GitHub 风格活动热力图。",
       "verification": "F2",
       "depends_on": [
         "B27"
       ],
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
       "acceptance_criteria": [
         "回顾页显示 GitHub 风格热力图日历",

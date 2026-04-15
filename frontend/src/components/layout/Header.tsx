@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/layout/SidebarContext";
 import { useTheme } from "@/lib/theme";
 import { usePWAInstall } from "@/lib/usePWAInstall";
+import { NotificationCenter } from "@/components/NotificationCenter";
 
 interface HeaderProps {
   title: string;
@@ -38,6 +39,7 @@ export function Header({ title, onToggleSidebar }: HeaderProps) {
             <Download className="h-5 w-5" />
           </Button>
         )}
+        <NotificationCenter />
         <Button variant="ghost" size="icon" onClick={handleToggle} aria-label="切换主题">
           {resolvedTheme === "dark" ? (
             <Sun className="h-5 w-5" />

@@ -691,3 +691,75 @@ export async function getRelatedEntries(entryId: string): Promise<RelatedEntry[]
   const data = await response.json();
   return data.related ?? [];
 }
+
+// === 通知 API ===
+
+export interface NotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  ref_id: string | null;
+  created_at: string;
+  dismissed: boolean;
+}
+
+export interface NotificationResponse {
+  items: NotificationItem[];
+  unread_count: number;
+}
+
+export interface NotificationPreferences {
+  overdue_task_enabled: boolean;
+  stale_inbox_enabled: boolean;
+  review_prompt_enabled: boolean;
+}
+
+export async function getNotifications(): Promise<NotificationResponse> {
+  const response = await fetch(`${API_BASE}/notifications`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<NotificationResponse>(response);
+}
+
+export async function dismissNotification(id: string): Promise<void> {
+  await fetch(`${API_BASE}/notifications/${encodeURIComponent(id)}/dismiss`, {
+    method: "POST",
+    headers: buildAuthHeaders(),
+  });
+}
+
+export async function getNotificationPreferences(): Promise<NotificationPreferences> {
+  const response = await fetch(`${API_BASE}/notification-preferences`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<NotificationPreferences>(response);
+}
+
+export async function updateNotificationPreferences(prefs: NotificationPreferences): Promise<NotificationPreferences> {
+  const response = await fetch(`${API_BASE}/notification-preferences`, {
+    method: "PUT",
+    headers: { ...buildAuthHeaders(), "Content-Type": "application/json" },
+    body: JSON.stringify(prefs),
+  });
+  return handleApiResponse<NotificationPreferences>(response);
+}
+
+// === 活动热力图 API ===
+
+export interface ActivityHeatmapItem {
+  date: string;
+  count: number;
+}
+
+export interface ActivityHeatmapResponse {
+  year: number;
+  items: ActivityHeatmapItem[];
+}
+
+export async function getActivityHeatmap(year: number): Promise<ActivityHeatmapResponse> {
+  const response = await fetch(`${API_BASE}/review/activity-heatmap?year=${year}`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<ActivityHeatmapResponse>(response);
+}

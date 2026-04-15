@@ -27,6 +27,7 @@ import {
 } from "recharts";
 import { API_BASE } from "@/config/api";
 import { authFetch } from "@/lib/authFetch";
+import { ActivityHeatmap } from "@/components/ActivityHeatmap";
 import {
   getReviewTrend,
   getKnowledgeHeatmap,
@@ -430,6 +431,11 @@ export function Review() {
               {type === "daily" ? "日报" : type === "weekly" ? "周报" : type === "monthly" ? "月报" : "趋势"}
             </Badge>
           ))}
+        </div>
+
+        {/* 活动热力图 */}
+        <div className="mb-6">
+          <ActivityHeatmap />
         </div>
 
         {/* 趋势标签页内容 */}
