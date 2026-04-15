@@ -217,7 +217,7 @@ export function EntryDetail() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-4 md:p-6">
         {/* Header */}
         <div className="mb-6">
           <Button
@@ -374,7 +374,7 @@ export function EntryDetail() {
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               placeholder="输入 Markdown 格式的内容..."
-              className="min-h-[400px] font-mono text-sm"
+              className="min-h-[300px] md:min-h-[400px] font-mono text-sm w-full"
               disabled={isSaving}
             />
             <div className="flex gap-2">

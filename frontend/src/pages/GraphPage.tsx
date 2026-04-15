@@ -122,44 +122,70 @@ function DetailPanel({
   onClose: () => void;
 }) {
   return (
-    <div className="w-72 border-l bg-card p-4 flex flex-col gap-4 overflow-y-auto">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-base truncate">{node.name}</h3>
-        <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-          <X className="h-4 w-4" />
-        </button>
+    <>
+      {/* 移动端：底部抽屉 */}
+      <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={onClose} />
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t rounded-t-xl p-4 z-50 md:hidden max-h-[50vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-base truncate">{node.name}</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <DetailPanelContent node={node} stats={stats} />
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <span
-            className="inline-block w-3 h-3 rounded-full"
-            style={{ backgroundColor: masteryColors[node.mastery] }}
-          />
-          <span className="text-sm">{masteryLabels[node.mastery] || node.mastery}</span>
+      {/* 桌面端：右侧面板 */}
+      <div className="hidden md:flex w-72 border-l bg-card p-4 flex-col gap-4 overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-base truncate">{node.name}</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
         </div>
+        <DetailPanelContent node={node} stats={stats} />
+      </div>
+    </>
+  );
+}
 
-        {node.category && (
-          <div>
-            <span className="text-xs text-muted-foreground">分类：</span>
-            <span className="text-sm ml-1">{node.category}</span>
-          </div>
-        )}
+function DetailPanelContent({
+  node,
+  stats,
+}: {
+  node: MapNode;
+  stats: ConceptStatsResponse | null;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <span
+          className="inline-block w-3 h-3 rounded-full"
+          style={{ backgroundColor: masteryColors[node.mastery] }}
+        />
+        <span className="text-sm">{masteryLabels[node.mastery] || node.mastery}</span>
+      </div>
 
+      {node.category && (
         <div>
-          <span className="text-xs text-muted-foreground">关联条目：</span>
-          <span className="text-sm ml-1">{node.entry_count} 条</span>
+          <span className="text-xs text-muted-foreground">分类：</span>
+          <span className="text-sm ml-1">{node.category}</span>
         </div>
+      )}
 
-        <div className="pt-2 border-t">
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {masterySuggestions[node.mastery] || "继续学习这个概念。"}
-          </p>
-        </div>
+      <div>
+        <span className="text-xs text-muted-foreground">关联条目：</span>
+        <span className="text-sm ml-1">{node.entry_count} 条</span>
+      </div>
+
+      <div className="pt-2 border-t">
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          {masterySuggestions[node.mastery] || "继续学习这个概念。"}
+        </p>
       </div>
 
       {stats && (
-        <div className="mt-auto pt-4 border-t space-y-2">
+        <div className="pt-4 border-t space-y-2">
           <p className="text-xs font-medium text-muted-foreground">图谱统计</p>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div>
@@ -241,7 +267,7 @@ export function GraphPage() {
       <Header title="知识图谱" />
 
       {/* Tab 栏 */}
-      <div className="flex items-center border-b px-6 gap-1 bg-card">
+      <div className="flex items-center border-b px-4 md:px-6 gap-1 bg-card">
         {viewTabs.map((tab) => (
           <button
             key={tab.key}
