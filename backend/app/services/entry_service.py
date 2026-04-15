@@ -7,7 +7,7 @@ import tempfile
 import uuid
 import zipfile
 from datetime import datetime
-from typing import AsyncGenerator, Optional, Tuple
+from typing import AsyncGenerator, Optional, Tuple, Any
 
 logger = logging.getLogger(__name__)
 
@@ -520,3 +520,69 @@ class EntryService:
                 _EXPORT_LIMIT, user_id,
             )
         return [EntryMapper.task_to_response(t) for t in tasks]
+
+    # === AI 摘要 ===
+
+    async def generate_summary(
+        self, entry_id: str, user_id: str = "_default"
+    ) -> Optional[dict[str, Any]]:
+        """为条目生成 AI 摘要
+
+        Returns:
+            {"summary": str, "generated_at": str, "cached": bool}
+            条目不存在返回 None
+            无内容时返回 {"summary": null, "generated_at": null, "cached": False}
+        """
+        # 验证条目属于当前用户
+        if not self._verify_entry_owner(entry_id, user_id):
+            return None
+
+        # 读取条目
+        entry = self._get_markdown_storage(user_id).read_entry(entry_id)
+        if not entry:
+            return None
+
+        # 空内容返回 null
+        if not entry.content or not entry.content.strip():
+            return {"summary": None, "generated_at": None, "cached": False}
+
+        # 检查缓存
+        if self.storage.sqlite:
+            cached = self.storage.sqlite.get_ai_summary(entry_id, user_id=user_id)
+            if cached:
+                return {"summary": cached, "generated_at": datetime.now().isoformat(), "cached": True}
+
+        # 检查 LLM 是否可用
+        llm_caller = self.storage.llm_caller
+        if not llm_caller:
+            raise RuntimeError("LLM 服务不可用")
+
+        # 调用 LLM 生成摘要
+        prompt = (
+            "请用中文对以下条目内容进行总结，要求：\n"
+            "1. 总结条目的核心内容（不超过200字）\n"
+            "2. 提炼关键知识点\n"
+            "3. 如果有行动项或待办事项，请一并列出\n\n"
+            f"条目标题：{entry.title or '无标题'}\n\n"
+            f"条目内容：\n{entry.content}"
+        )
+        messages = [
+            {"role": "system", "content": "你是一个专业的内容总结助手。请简洁、准确地总结内容。"},
+            {"role": "user", "content": prompt},
+        ]
+        try:
+            summary = await llm_caller.call(messages)
+        except Exception as e:
+            logger.error("LLM 生成摘要失败: %s", e)
+            raise RuntimeError(f"LLM 服务不可用: {e}") from e
+
+        # 截断到 200 字
+        if len(summary) > 200:
+            summary = summary[:200]
+
+        # 缓存到 SQLite
+        generated_at = datetime.now().isoformat()
+        if self.storage.sqlite:
+            self.storage.sqlite.save_ai_summary(entry_id, summary, user_id=user_id)
+
+        return {"summary": summary, "generated_at": generated_at, "cached": False}

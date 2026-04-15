@@ -32,6 +32,7 @@ class SQLiteStorage:
             'planned_date': 'DATE',
             'time_spent': 'INTEGER',
             'user_id': 'TEXT NOT NULL DEFAULT "_default"',
+            'ai_summary': 'TEXT',
         }
 
         # 添加缺失的列
@@ -591,6 +592,36 @@ class SQLiteStorage:
             return True
         except Exception as e:
             print(f"清空失败: {e}")
+            return False
+        finally:
+            conn.close()
+
+    # === AI 摘要操作 ===
+
+    def get_ai_summary(self, entry_id: str, user_id: str = "_default") -> Optional[str]:
+        """获取条目的 AI 摘要缓存"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT ai_summary FROM entries WHERE id = ? AND user_id = ?",
+                (entry_id, user_id),
+            ).fetchone()
+            return row["ai_summary"] if row else None
+        finally:
+            conn.close()
+
+    def save_ai_summary(self, entry_id: str, summary: str, user_id: str = "_default") -> bool:
+        """保存 AI 摘要到条目"""
+        conn = self._get_conn()
+        try:
+            conn.execute(
+                "UPDATE entries SET ai_summary = ? WHERE id = ? AND user_id = ?",
+                (summary, entry_id, user_id),
+            )
+            conn.commit()
+            return conn.total_changes > 0
+        except Exception as e:
+            print(f"保存 AI 摘要失败: {e}")
             return False
         finally:
             conn.close()
