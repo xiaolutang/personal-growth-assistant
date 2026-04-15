@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 2,
+    "pending": 1,
     "in_progress": 1,
-    "completed": 2,
+    "completed": 4,
     "blocked": 0,
     "cancelled": 0
   },
@@ -412,7 +412,7 @@
       "description": "为回顾页热力图日历提供后端数据。实现：(1) `backend/app/routers/review.py` 新增 GET /review/activity-heatmap?year=2026；(2) 返回 { year, items: [{ date, count }] }，count 为当日 created_at 的条目数（统计口径：created_at，与现有 list_entries 查询能力一致，不新增 updated_at 查询）；(3) 按 user_id 隔离；(4) 复用现有 list_entries 查询。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
       "acceptance_criteria": [
         "GET /review/activity-heatmap 返回年度每日活动数据",

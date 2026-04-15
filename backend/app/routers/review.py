@@ -16,6 +16,7 @@ from app.services.review_service import (
     HeatmapResponse,
     GrowthCurveResponse,
     MorningDigestResponse,
+    ActivityHeatmapResponse,
 )
 
 router = APIRouter(prefix="/review", tags=["review"])
@@ -143,3 +144,13 @@ async def get_morning_digest(
         return review_service.get_morning_digest(user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
+
+
+@router.get("/activity-heatmap", response_model=ActivityHeatmapResponse)
+async def get_activity_heatmap(
+    year: int = Query(default=date.today().year, description="年份"),
+    user: User = Depends(get_current_user),
+):
+    """获取年度每日活动热力图"""
+    review_service = get_review_service()
+    return review_service.get_activity_heatmap(year=year, user_id=user.id)
