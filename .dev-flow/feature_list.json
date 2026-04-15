@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 8,
-    "pending": 1,
+    "pending": 0,
     "in_progress": 0,
-    "completed": 7,
+    "completed": 8,
     "blocked": 0,
     "cancelled": 0
   },
@@ -495,7 +495,7 @@
       "started_at": "2026-04-15",
       "completed_at": "2026-04-15",
       "evidence_file": ".dev-flow/evidence/F22.md",
-      "commit": "pending",
+      "commit": "6a6a4d7",
       "execution_notes": "日知角色强化 + page_data 上下文 + 多轮记忆 + 清空对话，build + 6 个测试通过"
     },
     {
@@ -506,7 +506,7 @@
       "description": "优化图谱页在大数据量下的渲染性能。实现：(1) `GraphPage.tsx` 添加节点数量阈值（>50 节点时默认只渲染 top-50 + 直接关联节点）；(2) 「加载更多」按钮逐步展开剩余节点；(3) 节点聚合：同 category 节点可选择聚合为单个大节点（显示数量角标）；(4) 边渲染优化：>100 条边时隐藏边的标签，hover 才显示。",
       "verification": "F2",
       "depends_on": ["F18"],
-      "status": "pending",
+      "status": "completed",
       "priority": "low",
       "acceptance_criteria": [
         "大数据量（>50 节点）时默认只渲染部分",
@@ -527,7 +527,12 @@
       "contract_refs": [],
       "files": [
         "frontend/src/pages/GraphPage.tsx"
-      ]
+      ],
+      "started_at": "2026-04-15",
+      "completed_at": "2026-04-15",
+      "evidence_file": ".dev-flow/evidence/F23.md",
+      "commit": "pending",
+      "execution_notes": "节点阈值懒加载 + 聚合模式 + 边标签优化，build 通过"
     }
   ]
 }
