@@ -16,6 +16,8 @@ import { EntryDetail } from "@/pages/EntryDetail";
 import { Review } from "@/pages/Review";
 import { Explore } from "@/pages/Explore";
 import { GraphPage } from "@/pages/GraphPage";
+import { GoalsPage } from "@/pages/GoalsPage";
+import { GoalDetail } from "@/pages/GoalDetail";
 import { Login } from "@/pages/Login";
 import { Register } from "@/pages/Register";
 import { useChatStore } from "@/stores/chatStore";
@@ -64,6 +66,8 @@ function AppLayout() {
             <Route path="/explore" element={<Explore />} />
             <Route path="/graph" element={<GraphPage />} />
             <Route path="/tasks" element={<Tasks />} />
+            <Route path="/goals" element={<GoalsPage />} />
+            <Route path="/goals/:id" element={<GoalDetail />} />
             <Route path="/inbox" element={<Navigate to="/explore?type=inbox" replace />} />
             <Route path="/notes" element={<Navigate to="/explore?type=note" replace />} />
             <Route path="/projects" element={<Navigate to="/explore?type=project" replace />} />
