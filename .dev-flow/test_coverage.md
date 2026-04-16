@@ -81,3 +81,9 @@
 | 回顾页 E2E | B39 | e2e | daily/weekly/monthly/trend/knowledge-heatmap/growth-curve/activity-heatmap | pending | - |
 | CI Pipeline | B40 | integration | PR=backend+frontend+build; main=+E2E(B36/B37); docker-build-test 独立保留 | pending | risk: config |
 | 性能基线 | B41 | manual | bundle 大小/API 响应时间/SSE 首字节延迟 | pending | - |
+| Goals CRUD API | B45 | unit | 创建三种类型/列出过滤/更新状态/completed→active 重新激活/删除保护/401/403/metric_type 422/auto_tags 必填/checklist_items 必填 | covered | risk: auth |
+| Goal 条目关联 + 进度 | B46 | unit | count 关联进度（关联即计数）/checklist 勾选进度/tag_auto SQL 进度/100% 自动完成/进度下降不自动回退/progress-summary 概览/关联到非 count 返回 400/重复关联 409/401/403/时间范围外不计 | covered | — |
+| Goal 自动追踪触发 | B47 | unit | create 触发重算/update tags 触发重算（含原来匹配现在不匹配的回退）/不匹配不触发/时间范围外不计/重算失败不影响条目/10 目标 <100ms | covered | — |
+| Goals 页面 + 详情 | F34 | manual | 目标列表进度条/创建弹窗（含 checklist 项输入）/tag 选择/详情页环形图/检查项勾选/count 关联条目搜索+关联+取消关联/completed→active 重新激活/无目标引导/API 失败降级/移动端适配/npm run build 通过 | covered | — |
+| 首页目标进度卡片 | F35 | manual | 活跃目标卡片/点击跳转/无目标引导/3 个不截断/API 失败不阻塞/npm run build 通过 | covered | — |
+| 回顾页目标概览 | F36 | manual | 目标进展卡片/进度变化/无目标隐藏/API 失败不阻塞/npm run build 通过 | covered | — |

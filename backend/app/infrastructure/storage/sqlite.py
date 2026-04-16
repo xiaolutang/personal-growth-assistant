@@ -195,6 +195,44 @@ class SQLiteStorage:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_entry_links_target ON entry_links(target_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_entry_links_user_id ON entry_links(user_id)")
 
+            # 目标表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS goals (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    metric_type TEXT NOT NULL,
+                    target_value INTEGER NOT NULL,
+                    current_value INTEGER NOT NULL DEFAULT 0,
+                    status TEXT NOT NULL DEFAULT 'active',
+                    start_date TEXT,
+                    end_date TEXT,
+                    auto_tags TEXT,
+                    checklist_items TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_goals_user_id ON goals(user_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_goals_status ON goals(status)")
+
+            # 目标-条目关联表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS goal_entries (
+                    id TEXT PRIMARY KEY,
+                    goal_id TEXT NOT NULL,
+                    entry_id TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    UNIQUE(goal_id, entry_id),
+                    FOREIGN KEY (goal_id) REFERENCES goals(id) ON DELETE CASCADE
+                )
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_goal_entries_goal_id ON goal_entries(goal_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_goal_entries_entry_id ON goal_entries(entry_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_goal_entries_user_id ON goal_entries(user_id)")
+
             conn.commit()
         finally:
             conn.close()
@@ -875,5 +913,316 @@ class SQLiteStorage:
         except Exception as e:
             print(f"更新反馈状态失败: {e}")
             return False
+        finally:
+            conn.close()
+
+    # === 目标操作 ===
+
+    def create_goal(
+        self,
+        goal_id: str,
+        user_id: str,
+        title: str,
+        metric_type: str,
+        target_value: int,
+        description: str | None = None,
+        status: str = "active",
+        start_date: str | None = None,
+        end_date: str | None = None,
+        auto_tags: str | None = None,
+        checklist_items: str | None = None,
+    ) -> dict[str, Any]:
+        """创建目标，返回新记录"""
+        now = datetime.utcnow().isoformat()
+        conn = self._get_conn()
+        try:
+            conn.execute(
+                """INSERT INTO goals (id, user_id, title, description, metric_type, target_value,
+                   current_value, status, start_date, end_date, auto_tags, checklist_items, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)""",
+                (goal_id, user_id, title, description, metric_type, target_value,
+                 status, start_date, end_date, auto_tags, checklist_items, now, now),
+            )
+            conn.commit()
+            row = conn.execute("SELECT * FROM goals WHERE id = ?", (goal_id,)).fetchone()
+            return dict(row)
+        finally:
+            conn.close()
+
+    def get_goal(self, goal_id: str, user_id: str) -> Optional[dict[str, Any]]:
+        """获取单个目标（含用户隔离）"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT * FROM goals WHERE id = ? AND user_id = ?",
+                (goal_id, user_id),
+            ).fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def list_goals(
+        self, user_id: str, status: str | None = None, limit: int = 20
+    ) -> list[dict[str, Any]]:
+        """列出用户的目标"""
+        conn = self._get_conn()
+        try:
+            if status:
+                cursor = conn.execute(
+                    "SELECT * FROM goals WHERE user_id = ? AND status = ? ORDER BY created_at DESC LIMIT ?",
+                    (user_id, status, limit),
+                )
+            else:
+                cursor = conn.execute(
+                    "SELECT * FROM goals WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
+                    (user_id, limit),
+                )
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    def update_goal(
+        self,
+        goal_id: str,
+        user_id: str,
+        **fields,
+    ) -> Optional[dict[str, Any]]:
+        """更新目标（仅更新传入的非 None 字段），返回更新后的记录"""
+        # 过滤掉 None 值
+        updates = {k: v for k, v in fields.items() if v is not None}
+        if not updates:
+            return self.get_goal(goal_id, user_id)
+
+        updates["updated_at"] = datetime.utcnow().isoformat()
+
+        set_clause = ", ".join(f"{k} = ?" for k in updates)
+        values = list(updates.values()) + [goal_id, user_id]
+
+        conn = self._get_conn()
+        try:
+            conn.execute(
+                f"UPDATE goals SET {set_clause} WHERE id = ? AND user_id = ?",
+                values,
+            )
+            conn.commit()
+            row = conn.execute(
+                "SELECT * FROM goals WHERE id = ? AND user_id = ?",
+                (goal_id, user_id),
+            ).fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def delete_goal(self, goal_id: str, user_id: str) -> bool:
+        """删除目标（含级联删除 goal_entries）"""
+        conn = self._get_conn()
+        try:
+            # 先删除 goal_entries
+            conn.execute(
+                "DELETE FROM goal_entries WHERE goal_id = ? AND user_id = ?",
+                (goal_id, user_id),
+            )
+            cursor = conn.execute(
+                "DELETE FROM goals WHERE id = ? AND user_id = ?",
+                (goal_id, user_id),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def count_goal_entries(self, goal_id: str, user_id: str) -> int:
+        """统计目标关联的条目数量"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT COUNT(*) as cnt FROM goal_entries WHERE goal_id = ? AND user_id = ?",
+                (goal_id, user_id),
+            ).fetchone()
+            return row["cnt"]
+        finally:
+            conn.close()
+
+    def count_entries_by_tags(self, tags: list[str], user_id: str) -> int:
+        """统计匹配指定标签的条目数量"""
+        if not tags:
+            return 0
+        conn = self._get_conn()
+        try:
+            placeholders = ",".join("?" * len(tags))
+            row = conn.execute(f"""
+                SELECT COUNT(DISTINCT e.id) as cnt
+                FROM entries e
+                JOIN entry_tags et ON e.id = et.entry_id
+                JOIN tags t ON et.tag_id = t.id
+                WHERE t.name IN ({placeholders}) AND e.user_id = ?
+            """, (*tags, user_id)).fetchone()
+            return row["cnt"]
+        finally:
+            conn.close()
+
+    def count_entries_by_tags_in_range(
+        self, tags: list[str], user_id: str, start_date: str, end_date: str
+    ) -> int:
+        """统计指定时间范围内匹配标签的条目数量"""
+        if not tags:
+            return 0
+        conn = self._get_conn()
+        try:
+            placeholders = ",".join("?" * len(tags))
+            row = conn.execute(f"""
+                SELECT COUNT(DISTINCT e.id) as cnt
+                FROM entries e
+                JOIN entry_tags et ON e.id = et.entry_id
+                JOIN tags t ON et.tag_id = t.id
+                WHERE t.name IN ({placeholders})
+                  AND e.user_id = ?
+                  AND e.created_at >= ?
+                  AND e.created_at < ?
+            """, (*tags, user_id, start_date, end_date)).fetchone()
+            return row["cnt"]
+        finally:
+            conn.close()
+
+    def list_entries_by_tags(
+        self, tags: list[str], user_id: str, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        """获取匹配指定标签的条目列表（用于 tag_auto 目标展示）"""
+        if not tags:
+            return []
+        conn = self._get_conn()
+        try:
+            placeholders = ",".join("?" * len(tags))
+            rows = conn.execute(f"""
+                SELECT DISTINCT e.id, e.title, e.status, e.type as category, e.created_at
+                FROM entries e
+                JOIN entry_tags et ON e.id = et.entry_id
+                JOIN tags t ON et.tag_id = t.id
+                WHERE t.name IN ({placeholders}) AND e.user_id = ?
+                ORDER BY e.created_at DESC
+                LIMIT ?
+            """, (*tags, user_id, limit)).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def list_entries_by_tags_in_range(
+        self, tags: list[str], user_id: str, start_date: str, end_date: str, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        """获取指定时间范围内匹配标签的条目列表"""
+        if not tags:
+            return []
+        conn = self._get_conn()
+        try:
+            placeholders = ",".join("?" * len(tags))
+            rows = conn.execute(f"""
+                SELECT DISTINCT e.id, e.title, e.status, e.type as category, e.created_at
+                FROM entries e
+                JOIN entry_tags et ON e.id = et.entry_id
+                JOIN tags t ON et.tag_id = t.id
+                WHERE t.name IN ({placeholders})
+                  AND e.user_id = ?
+                  AND e.created_at >= ?
+                  AND e.created_at < ?
+                ORDER BY e.created_at DESC
+                LIMIT ?
+            """, (*tags, user_id, start_date, end_date, limit)).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def create_goal_entry(
+        self, goal_id: str, entry_id: str, user_id: str
+    ) -> dict[str, Any]:
+        """创建目标-条目关联，返回新记录"""
+        import uuid as _uuid
+        now = datetime.utcnow().isoformat()
+        link_id = _uuid.uuid4().hex
+        conn = self._get_conn()
+        try:
+            conn.execute(
+                """INSERT INTO goal_entries (id, goal_id, entry_id, user_id, created_at)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (link_id, goal_id, entry_id, user_id, now),
+            )
+            conn.commit()
+            row = conn.execute(
+                "SELECT * FROM goal_entries WHERE id = ?", (link_id,)
+            ).fetchone()
+            return dict(row)
+        finally:
+            conn.close()
+
+    def delete_goal_entry(
+        self, goal_id: str, entry_id: str, user_id: str
+    ) -> bool:
+        """删除目标-条目关联"""
+        conn = self._get_conn()
+        try:
+            cursor = conn.execute(
+                "DELETE FROM goal_entries WHERE goal_id = ? AND entry_id = ? AND user_id = ?",
+                (goal_id, entry_id, user_id),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def list_goal_entries(
+        self, goal_id: str, user_id: str
+    ) -> list[dict[str, Any]]:
+        """列出目标关联的条目（JOIN entries 获取条目详情）"""
+        conn = self._get_conn()
+        try:
+            rows = conn.execute(
+                """SELECT ge.id, ge.goal_id, ge.entry_id, ge.created_at as linked_at,
+                          e.id as entry_id, e.title as entry_title, e.status as entry_status,
+                          e.type as entry_category, e.created_at as entry_created_at
+                   FROM goal_entries ge
+                   JOIN entries e ON ge.entry_id = e.id
+                   WHERE ge.goal_id = ? AND ge.user_id = ?
+                   ORDER BY ge.created_at DESC""",
+                (goal_id, user_id),
+            ).fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    def update_goal_status(
+        self, goal_id: str, user_id: str, status: str
+    ) -> Optional[dict[str, Any]]:
+        """更新目标状态，返回更新后的记录"""
+        return self.update_goal(goal_id, user_id, status=status)
+
+    def check_goal_entry_exists(
+        self, goal_id: str, entry_id: str, user_id: str
+    ) -> bool:
+        """检查目标-条目关联是否已存在"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT 1 FROM goal_entries WHERE goal_id = ? AND entry_id = ? AND user_id = ? LIMIT 1",
+                (goal_id, entry_id, user_id),
+            ).fetchone()
+            return row is not None
+        finally:
+            conn.close()
+
+    def list_goals_by_status(
+        self, user_id: str, statuses: list[str]
+    ) -> list[dict[str, Any]]:
+        """按多个状态列出目标"""
+        if not statuses:
+            return []
+        conn = self._get_conn()
+        try:
+            placeholders = ",".join("?" * len(statuses))
+            cursor = conn.execute(
+                f"""SELECT * FROM goals
+                    WHERE user_id = ? AND status IN ({placeholders})
+                    ORDER BY created_at DESC""",
+                (user_id, *statuses),
+            )
+            return [dict(row) for row in cursor.fetchall()]
         finally:
             conn.close()

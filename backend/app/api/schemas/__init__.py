@@ -21,6 +21,14 @@ from app.api.schemas.common import (
     SuccessResponse,
     ProjectProgressResponse,
 )
+from app.api.schemas.goal import (
+    GoalCreate,
+    GoalUpdate,
+    GoalResponse,
+    GoalListResponse,
+    GoalDetailResponse,
+    ChecklistItem,
+)
 
 __all__ = [
     "EntryCreate",
@@ -41,4 +49,10 @@ __all__ = [
     "KnowledgeContextNode",
     "KnowledgeContextEdge",
     "KnowledgeContextResponse",
+    "GoalCreate",
+    "GoalUpdate",
+    "GoalResponse",
+    "GoalListResponse",
+    "GoalDetailResponse",
+    "ChecklistItem",
 ]

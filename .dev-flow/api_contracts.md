@@ -15,6 +15,16 @@
 | CONTRACT-LINK03 | DELETE | /entries/{id}/links/{link_id} | B42, F32 | planned |
 | CONTRACT-KG04 | GET | /entries/{id}/knowledge-context | B43, F31 | planned |
 | CONTRACT-REVIEW02 | GET | /review/morning-digest | B44, F33 | planned |
+| CONTRACT-GOAL01 | POST | /goals | B45 | planned |
+| CONTRACT-GOAL02 | GET | /goals | B45 | planned |
+| CONTRACT-GOAL03 | GET | /goals/{id} | B45 | planned |
+| CONTRACT-GOAL04 | PUT | /goals/{id} | B45 | planned |
+| CONTRACT-GOAL05 | DELETE | /goals/{id} | B45 | planned |
+| CONTRACT-GOAL06 | POST | /goals/{id}/entries | B46 | planned |
+| CONTRACT-GOAL07 | DELETE | /goals/{id}/entries/{entry_id} | B46 | planned |
+| CONTRACT-GOAL08 | GET | /goals/{id}/entries | B46 | planned |
+| CONTRACT-GOAL09 | PATCH | /goals/{id}/checklist/{item_id} | B46 | planned |
+| CONTRACT-GOAL10 | GET | /goals/progress-summary | B46, F36 | planned |
 
 ---
 
@@ -471,3 +481,306 @@ DailyFocus 结构：
 - daily_focus: LLM 不可用时基于 overdue 中最紧急任务生成模板文本
 - pattern_insights: 数据不足时返回空数组
 - 所有新字段 Optional + 默认值，旧客户端忽略不报错
+
+---
+
+## R012 新增契约
+
+| 契约 ID | 方法 | 端点 | 任务 | 状态 |
+|---------|------|------|------|------|
+| CONTRACT-GOAL01 | POST | /goals | B45 | planned |
+| CONTRACT-GOAL02 | GET | /goals | B45 | planned |
+| CONTRACT-GOAL03 | GET | /goals/{id} | B45 | planned |
+| CONTRACT-GOAL04 | PUT | /goals/{id} | B45 | planned |
+| CONTRACT-GOAL05 | DELETE | /goals/{id} | B45 | planned |
+| CONTRACT-GOAL06 | POST | /goals/{id}/entries | B46 | planned |
+| CONTRACT-GOAL07 | DELETE | /goals/{id}/entries/{entry_id} | B46 | planned |
+| CONTRACT-GOAL08 | GET | /goals/{id}/entries | B46 | planned |
+| CONTRACT-GOAL09 | PATCH | /goals/{id}/checklist/{item_id} | B46 | planned |
+| CONTRACT-GOAL10 | GET | /goals/progress-summary | B46, F36 | planned |
+
+---
+
+## CONTRACT-GOAL01: POST /goals
+
+创建目标。
+
+### 请求
+
+| 参数 | 位置 | 类型 | 必填 | 说明 |
+|------|------|------|------|------|
+| title | body | string | 是 | 目标标题 |
+| description | body | string | 否 | 目标描述 |
+| metric_type | body | string | 是 | 衡量方式：count / checklist / tag_auto |
+| target_value | body | int | 是 | 目标值（≥1） |
+| start_date | body | string | 否 | 开始日期 ISO 格式 |
+| end_date | body | string | 否 | 截止日期 ISO 格式 |
+| auto_tags | body | string[] | 条件 | metric_type=tag_auto 时必填，自动追踪的标签列表 |
+| checklist_items | body | string[] | 条件 | metric_type=checklist 时必填，检查项标题列表 |
+
+### 响应 201
+
+```json
+{
+  "id": "goal-abc",
+  "title": "学习 React",
+  "description": "掌握 React 核心概念",
+  "metric_type": "tag_auto",
+  "target_value": 10,
+  "current_value": 0,
+  "progress_percentage": 0,
+  "status": "active",
+  "start_date": "2026-04-16",
+  "end_date": "2026-06-30",
+  "auto_tags": ["react", "hooks"],
+  "checklist_items": null,
+  "created_at": "2026-04-16T10:00:00",
+  "updated_at": "2026-04-16T10:00:00"
+}
+```
+
+### 错误响应
+
+| 状态码 | 场景 |
+|--------|------|
+| 422 | metric_type 非法 / tag_auto 缺少 auto_tags / checklist 缺少 checklist_items / target_value < 1 |
+| 401 | 未认证 |
+
+---
+
+## CONTRACT-GOAL02: GET /goals
+
+列出目标。
+
+### 请求
+
+| 参数 | 位置 | 类型 | 必填 | 说明 |
+|------|------|------|------|------|
+| status | query | string | 否 | 过滤：active / completed / abandoned |
+| limit | query | int | 否 | 最大返回数，默认 20 |
+
+### 响应 200
+
+```json
+{
+  "goals": [
+    {
+      "id": "goal-abc",
+      "title": "学习 React",
+      "metric_type": "tag_auto",
+      "target_value": 10,
+      "current_value": 3,
+      "progress_percentage": 30,
+      "status": "active",
+      "end_date": "2026-06-30"
+    }
+  ]
+}
+```
+
+---
+
+## CONTRACT-GOAL03: GET /goals/{id}
+
+获取目标详情（含完整进度信息）。
+
+### 响应 200
+
+```json
+{
+  "id": "goal-abc",
+  "title": "学习 React",
+  "description": "掌握 React 核心概念",
+  "metric_type": "tag_auto",
+  "target_value": 10,
+  "current_value": 3,
+  "progress_percentage": 30,
+  "status": "active",
+  "start_date": "2026-04-16",
+  "end_date": "2026-06-30",
+  "auto_tags": ["react", "hooks"],
+  "checklist_items": null,
+  "linked_entries_count": 0,
+  "created_at": "2026-04-16T10:00:00",
+  "updated_at": "2026-04-16T10:00:00"
+}
+```
+
+### 进度计算规则
+
+| metric_type | current_value 来源 | progress_percentage |
+|-------------|-------------------|-------------------|
+| count | 手动关联条目数（关联即计数，不依赖条目 complete 状态） | min(100, current_value / target_value * 100) |
+| checklist | checklist_items 中 checked=true 的数量 | min(100, current_value / target_value * 100) |
+| tag_auto | 条目 tags 与 auto_tags 有交集且在时间范围内的数量 | min(100, current_value / target_value * 100) |
+
+### 自动完成
+
+progress_percentage 达到 100% 时，status 自动更新为 completed。进度下降时不自动回退，用户可手动将 completed 改回 active。
+
+---
+
+## CONTRACT-GOAL04: PUT /goals/{id}
+
+更新目标。
+
+### 请求
+
+| 参数 | 位置 | 类型 | 必填 | 说明 |
+|------|------|------|------|------|
+| title | body | string | 否 | 标题 |
+| description | body | string | 否 | 描述 |
+| target_value | body | int | 否 | 目标值 |
+| status | body | string | 否 | 状态：active / completed / abandoned |
+| start_date | body | string | 否 | 开始日期 |
+| end_date | body | string | 否 | 截止日期 |
+
+### 响应 200
+
+同 CONTRACT-GOAL03。
+
+### 约束
+
+- metric_type 不可修改
+
+---
+
+## CONTRACT-GOAL05: DELETE /goals/{id}
+
+删除目标。
+
+### 约束
+
+- 仅 status=abandoned 的目标可删除
+- 删除时级联清理 goal_entries 中的关联记录
+
+### 错误响应
+
+| 状态码 | 场景 |
+|--------|------|
+| 400 | 目标状态非 abandoned |
+| 404 | 目标不存在 |
+| 401 | 未认证 |
+
+---
+
+## CONTRACT-GOAL06: POST /goals/{id}/entries
+
+关联条目到目标（仅 count 类型）。
+
+### 请求
+
+| 参数 | 位置 | 类型 | 必填 | 说明 |
+|------|------|------|------|------|
+| entry_id | body | string | 是 | 条目 ID |
+
+### 响应 201
+
+```json
+{
+  "id": "ge-abc",
+  "goal_id": "goal-abc",
+  "entry_id": "entry-123",
+  "created_at": "2026-04-16T10:00:00"
+}
+```
+
+### 错误响应
+
+| 状态码 | 场景 |
+|--------|------|
+| 400 | 目标 metric_type 非 count |
+| 404 | 条目不存在 |
+| 409 | 重复关联 |
+| 401 | 未认证 |
+
+---
+
+## CONTRACT-GOAL07: DELETE /goals/{id}/entries/{entry_id}
+
+取消条目关联。
+
+### 响应 204
+
+### 错误响应
+
+| 状态码 | 场景 |
+|--------|------|
+| 404 | 关联不存在 |
+| 401 | 未认证 |
+
+---
+
+## CONTRACT-GOAL08: GET /goals/{id}/entries
+
+获取目标关联的条目列表。
+
+### 响应 200
+
+```json
+{
+  "entries": [
+    {
+      "id": "entry-123",
+      "title": "React Hooks 学习",
+      "status": "complete",
+      "category": "note",
+      "created_at": "2026-04-16T10:00:00"
+    }
+  ]
+}
+```
+
+---
+
+## CONTRACT-GOAL09: PATCH /goals/{id}/checklist/{item_id}
+
+切换检查项状态（仅 checklist 类型）。
+
+### 响应 200
+
+```json
+{
+  "id": "item-1",
+  "title": "学习 Hooks",
+  "checked": true
+}
+```
+
+### 错误响应
+
+| 状态码 | 场景 |
+|--------|------|
+| 400 | 目标 metric_type 非 checklist |
+| 404 | item_id 不存在 |
+
+---
+
+## CONTRACT-GOAL10: GET /goals/progress-summary
+
+目标进度概览（用于回顾页）。
+
+### 请求
+
+| 参数 | 位置 | 类型 | 必填 | 说明 |
+|------|------|------|------|------|
+| period | query | string | 否 | 周期：weekly / monthly，默认 weekly |
+
+### 响应 200
+
+```json
+{
+  "active_count": 3,
+  "completed_count": 1,
+  "goals": [
+    {
+      "id": "goal-abc",
+      "title": "学习 React",
+      "progress_percentage": 30,
+      "progress_delta": 10
+    }
+  ]
+}
+```
+
+progress_delta = 本周期进度 - 上周期末进度（正数表示进步）。

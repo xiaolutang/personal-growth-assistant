@@ -56,7 +56,7 @@ async def test_user(storage):
         'storage', '_user_storage',
         '_entry_service', '_intent_service',
         '_review_service', '_knowledge_service',
-        '_notification_service',
+        '_notification_service', '_goal_service',
     ]
     _prev = {k: getattr(deps, k, None) for k in _DEPS_GLOBALS}
 

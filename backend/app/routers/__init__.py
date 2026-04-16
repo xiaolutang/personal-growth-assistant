@@ -10,6 +10,7 @@ from .feedback import router as feedback_router
 from .auth import router as auth_router
 from .ai_chat import router as ai_chat_router
 from .notifications import router as notifications_router
+from .goals import router as goals_router
 
 __all__ = [
     "entries_router",
@@ -23,4 +24,5 @@ __all__ = [
     "auth_router",
     "ai_chat_router",
     "notifications_router",
+    "goals_router",
 ]

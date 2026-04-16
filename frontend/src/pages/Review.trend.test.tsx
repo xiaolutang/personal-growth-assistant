@@ -35,6 +35,10 @@ const mockGetReviewTrend = vi.fn();
 vi.mock("@/services/api", () => ({
   getReviewTrend: (...args: unknown[]) => mockGetReviewTrend(...args),
   getActivityHeatmap: () => Promise.resolve({ year: 2026, items: [] }),
+  getKnowledgeHeatmap: () => Promise.resolve({ year: 2026, items: [] }),
+  getGrowthCurve: () => Promise.resolve([]),
+  getProgressSummary: () =>
+    Promise.resolve({ active_count: 0, completed_count: 0, goals: [] }),
 }));
 
 // 辅助：创建空日报 Response（主报告默认不报错）

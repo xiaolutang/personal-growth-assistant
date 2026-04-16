@@ -958,3 +958,178 @@ export async function getActivityHeatmap(year: number): Promise<ActivityHeatmapR
   });
   return handleApiResponse<ActivityHeatmapResponse>(response);
 }
+
+// === Goals API ===
+
+export type MetricType = "count" | "checklist" | "tag_auto";
+export type GoalStatus = "active" | "completed" | "abandoned";
+
+export interface ChecklistItem {
+  id: string;
+  title: string;
+  checked: boolean;
+}
+
+export interface Goal {
+  id: string;
+  title: string;
+  description: string | null;
+  metric_type: MetricType;
+  target_value: number;
+  current_value: number;
+  progress_percentage: number;
+  status: GoalStatus;
+  start_date: string | null;
+  end_date: string | null;
+  auto_tags: string[] | null;
+  checklist_items: ChecklistItem[] | null;
+  linked_entries_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GoalListResponse {
+  goals: Goal[];
+}
+
+export interface GoalDetailResponse extends Goal {
+  entries?: GoalEntry[];
+}
+
+export interface GoalEntry {
+  id: string;
+  goal_id: string;
+  entry_id: string;
+  created_at: string;
+  entry: {
+    id: string;
+    title: string | null;
+    status: string | null;
+    category: string | null;
+    created_at: string | null;
+  };
+}
+
+export interface GoalEntryListResponse {
+  entries: GoalEntry[];
+}
+
+export interface ProgressItem {
+  id: string;
+  title: string;
+  progress_percentage: number;
+  progress_delta: number | null;
+}
+
+export interface ProgressSummaryResponse {
+  active_count: number;
+  completed_count: number;
+  goals: ProgressItem[];
+}
+
+export async function getGoals(status?: string): Promise<GoalListResponse> {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  const qs = params.toString();
+  const response = await fetch(`${API_BASE}/goals${qs ? `?${qs}` : ""}`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<GoalListResponse>(response);
+}
+
+export async function getGoal(goalId: string): Promise<GoalDetailResponse> {
+  const response = await fetch(`${API_BASE}/goals/${encodeURIComponent(goalId)}`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<GoalDetailResponse>(response);
+}
+
+export async function createGoal(data: {
+  title: string;
+  description?: string;
+  metric_type: MetricType;
+  target_value: number;
+  start_date?: string;
+  end_date?: string;
+  auto_tags?: string[];
+  checklist_items?: string[];
+}): Promise<Goal> {
+  const response = await fetch(`${API_BASE}/goals`, {
+    method: "POST",
+    headers: buildAuthHeaders({ headers: { "Content-Type": "application/json" } }),
+    body: JSON.stringify(data),
+  });
+  return handleApiResponse<Goal>(response);
+}
+
+export async function updateGoal(goalId: string, data: {
+  title?: string;
+  description?: string;
+  target_value?: number;
+  status?: string;
+  start_date?: string;
+  end_date?: string;
+}): Promise<Goal> {
+  const response = await fetch(`${API_BASE}/goals/${encodeURIComponent(goalId)}`, {
+    method: "PUT",
+    headers: buildAuthHeaders({ headers: { "Content-Type": "application/json" } }),
+    body: JSON.stringify(data),
+  });
+  return handleApiResponse<Goal>(response);
+}
+
+export async function deleteGoal(goalId: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/goals/${encodeURIComponent(goalId)}`, {
+    method: "DELETE",
+    headers: buildAuthHeaders(),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new ApiError(response.status, data.detail || `删除失败: ${response.status}`);
+  }
+}
+
+export async function linkGoalEntry(goalId: string, entryId: string): Promise<any> {
+  const response = await fetch(`${API_BASE}/goals/${encodeURIComponent(goalId)}/entries`, {
+    method: "POST",
+    headers: buildAuthHeaders({ headers: { "Content-Type": "application/json" } }),
+    body: JSON.stringify({ entry_id: entryId }),
+  });
+  return handleApiResponse<any>(response);
+}
+
+export async function unlinkGoalEntry(goalId: string, entryId: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/goals/${encodeURIComponent(goalId)}/entries/${encodeURIComponent(entryId)}`, {
+    method: "DELETE",
+    headers: buildAuthHeaders(),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new ApiError(response.status, data.detail || `取消关联失败: ${response.status}`);
+  }
+}
+
+export async function getGoalEntries(goalId: string): Promise<GoalEntryListResponse> {
+  const response = await fetch(`${API_BASE}/goals/${encodeURIComponent(goalId)}/entries`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<GoalEntryListResponse>(response);
+}
+
+export async function toggleChecklistItem(goalId: string, itemId: string): Promise<Goal> {
+  const response = await fetch(`${API_BASE}/goals/${encodeURIComponent(goalId)}/checklist/${encodeURIComponent(itemId)}`, {
+    method: "PATCH",
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<Goal>(response);
+}
+
+export async function getProgressSummary(period?: string): Promise<ProgressSummaryResponse> {
+  const params = new URLSearchParams();
+  if (period) params.set("period", period);
+  const qs = params.toString();
+  const response = await fetch(`${API_BASE}/goals/progress-summary${qs ? `?${qs}` : ""}`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<ProgressSummaryResponse>(response);
+}

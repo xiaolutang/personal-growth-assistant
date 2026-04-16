@@ -40,6 +40,17 @@ class EntryService:
     def __init__(self, storage: SyncService):
         self.storage = storage
 
+    async def _trigger_tag_auto_recalc(self, user_id: str, tags: list[str]):
+        """异步触发 tag_auto 目标进度重算（fire-and-forget）"""
+        if not tags:
+            return
+        try:
+            from app.routers import deps
+            goal_service = deps.get_goal_service()
+            await goal_service.recalculate_tag_auto_goals(user_id, tags)
+        except Exception as e:
+            logger.warning("tag_auto 目标进度重算失败: %s", e)
+
     def _get_markdown_storage(self, user_id: str) -> MarkdownStorage:
         return self.storage.get_markdown_storage(user_id)
 
@@ -114,6 +125,10 @@ class EntryService:
 
         # Neo4j + Qdrant 后台同步
         asyncio.create_task(self.storage.sync_to_graph_and_vector(entry, user_id=user_id))
+
+        # tag_auto 目标进度重算
+        if entry.tags:
+            asyncio.create_task(self._trigger_tag_auto_recalc(user_id, entry.tags))
 
         return EntryResponse(**EntryMapper.task_to_response(entry))
 
@@ -205,6 +220,7 @@ class EntryService:
 
         # 更新字段
         updated = False
+        old_tags = list(entry.tags) if entry.tags else []
 
         if request.title is not None:
             entry.title = request.title
@@ -284,6 +300,12 @@ class EntryService:
 
         # Neo4j + Qdrant 后台同步
         asyncio.create_task(self.storage.sync_to_graph_and_vector(entry, user_id=user_id))
+
+        # tag_auto 目标进度重算（使用 old_tags ∪ new_tags 覆盖"原来匹配现在不匹配"的场景）
+        if request.tags is not None:
+            all_tags = list(set(old_tags) | set(request.tags))
+            if all_tags:
+                asyncio.create_task(self._trigger_tag_auto_recalc(user_id, all_tags))
 
         return True, f"已更新条目: {entry_id}"
 
