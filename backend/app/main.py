@@ -188,7 +188,7 @@ class HealthResponse(BaseModel):
     services: dict[str, str]
 
 
-def _check_services(storage) -> dict:
+async def _check_services(storage) -> dict:
     """检查各存储后端连接状态"""
     services = {}
 
@@ -203,23 +203,25 @@ def _check_services(storage) -> dict:
     except Exception:
         services["sqlite"] = "error"
 
-    # Neo4j — 非核心，降级
+    # Neo4j — 非核心，降级（真实连接探测）
     try:
         if storage and storage.neo4j is not None and storage.neo4j._driver is not None:
+            await storage.neo4j._driver.verify_connectivity()
             services["neo4j"] = "ok"
         else:
             services["neo4j"] = "unavailable"
     except Exception:
-        services["neo4j"] = "unavailable"
+        services["neo4j"] = "error"
 
-    # Qdrant — 非核心，降级
+    # Qdrant — 非核心，降级（真实连接探测）
     try:
         if storage and storage.qdrant is not None and storage.qdrant._client is not None:
+            await storage.qdrant._client.get_collections()
             services["qdrant"] = "ok"
         else:
             services["qdrant"] = "unavailable"
     except Exception:
-        services["qdrant"] = "unavailable"
+        services["qdrant"] = "error"
 
     return services
 
@@ -228,7 +230,7 @@ def _check_services(storage) -> dict:
 async def health():
     """健康检查 — 返回服务状态和依赖连接检查"""
     storage = deps.storage
-    services = _check_services(storage)
+    services = await _check_services(storage)
 
     # 核心依赖不可达 → 503
     if services.get("sqlite") == "error":

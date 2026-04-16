@@ -183,9 +183,14 @@ async def chat(request: ChatRequest, user: User = Depends(get_current_user)):
 
     async def generate():
         # Step 1: 意图识别
+        from app.services.chat_service import sse_event
+        from app.core.config import get_settings
         page_ctx = request.page_context
         if request.force_intent:
-            # 测试用：直接使用指定的意图，跳过 LLM 意图检测
+            # 测试用：仅 DEBUG 模式允许，生产环境拒绝
+            if not get_settings().DEBUG:
+                yield sse_event("error", {"message": "force_intent 仅在 DEBUG 模式下可用"})
+                return
             intent_result = {
                 "intent": request.force_intent,
                 "confidence": 1.0,
@@ -209,7 +214,6 @@ async def chat(request: ChatRequest, user: User = Depends(get_current_user)):
         entities = intent_result["entities"]
 
         # 发送意图事件
-        from app.services.chat_service import sse_event
         yield sse_event("intent", intent_result)
 
         # Step 2: 执行操作

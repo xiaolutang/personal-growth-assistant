@@ -159,6 +159,8 @@ export function ActivityHeatmap() {
                   {week.map((day, di) => (
                     <div
                       key={di}
+                      data-date={day.inYear ? day.date : undefined}
+                      data-count={day.inYear ? day.count : undefined}
                       className={`w-[11px] h-[11px] rounded-[2px] cursor-pointer transition-colors ${day.inYear ? LEVELS[getCountLevel(day.count)] : "bg-transparent"}`}
                       onMouseEnter={() => day.inYear && setHovered({ date: day.date, count: day.count })}
                       onMouseLeave={() => setHovered(null)}

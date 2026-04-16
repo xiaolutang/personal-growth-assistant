@@ -110,3 +110,53 @@ class TestChatAPIUserIdThreading:
         assert response.status_code == 200
         call_kwargs = mock_process.call_args.kwargs
         assert call_kwargs["user_id"] == test_user.id
+
+
+class TestForceIntentSecurityGate:
+    """force_intent 仅在 DEBUG 模式允许"""
+
+    @pytest.mark.asyncio
+    async def test_force_intent_allowed_in_debug(self, client, test_user):
+        """DEBUG=true 时 force_intent 正常工作，process_intent 被调用"""
+        mock_process = _make_process_intent_mock()
+        mock_svc = _make_chat_service_mock()
+        mock_svc.process_intent = mock_process
+
+        with patch("app.routers.parse._chat_service", mock_svc), \
+             patch("app.core.config.get_settings") as mock_settings:
+            mock_settings.return_value.DEBUG = True
+            response = await client.post(
+                "/chat",
+                json={"text": "搜索", "session_id": "s1", "force_intent": "read"},
+            )
+
+        assert response.status_code == 200
+        assert "error" not in response.text
+        # process_intent 必须被调用（证明 force_intent 路径走通了）
+        assert mock_process.called
+        # detect_intent 不应该被调用（force_intent 跳过意图检测）
+        assert not mock_svc.detect_intent.called
+
+    @pytest.mark.asyncio
+    async def test_force_intent_blocked_in_production(self, client, test_user):
+        """DEBUG=false 时 force_intent 返回 error 事件，process_intent 不被调用"""
+        mock_process = _make_process_intent_mock()
+        mock_svc = _make_chat_service_mock()
+        mock_svc.process_intent = mock_process
+
+        with patch("app.routers.parse._chat_service", mock_svc), \
+             patch("app.core.config.get_settings") as mock_settings:
+            mock_settings.return_value.DEBUG = False
+            response = await client.post(
+                "/chat",
+                json={"text": "搜索", "session_id": "s1", "force_intent": "read"},
+            )
+
+        assert response.status_code == 200
+        body = response.text
+        assert "error" in body
+        assert "force_intent 仅在 DEBUG 模式下可用" in body
+        # process_intent 不应该被调用（门控拦截了）
+        assert not mock_process.called
+        # detect_intent 也不应该被调用（门控在意图检测之前）
+        assert not mock_svc.detect_intent.called
