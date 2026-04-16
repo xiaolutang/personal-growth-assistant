@@ -98,6 +98,13 @@ class MorningDigestWeeklySummary(BaseModel):
     entries_count: int = 0
 
 
+class DailyFocus(BaseModel):
+    """每日聚焦"""
+    title: str
+    description: str
+    target_entry_id: Optional[str] = None
+
+
 class MorningDigestResponse(BaseModel):
     """AI 晨报响应"""
     date: str
@@ -106,6 +113,9 @@ class MorningDigestResponse(BaseModel):
     overdue: List[MorningDigestOverdue] = []
     stale_inbox: List[MorningDigestStaleInbox] = []
     weekly_summary: MorningDigestWeeklySummary = Field(default_factory=MorningDigestWeeklySummary)
+    learning_streak: int = 0
+    daily_focus: Optional[DailyFocus] = None
+    pattern_insights: List[str] = []
 
 
 class TaskStats(BaseModel):
@@ -731,6 +741,261 @@ class ReviewService:
 
         return GrowthCurveResponse(points=points)
 
+    def _calculate_learning_streak(self, user_id: str) -> int:
+        """
+        计算学习连续天数（从今天开始往前数连续有记录的天数）
+
+        使用聚合 SQL 获取最近 90 天内有条目的日期列表，
+        然后在内存中从今天开始往前计算连续天数。
+
+        Args:
+            user_id: 用户 ID
+
+        Returns:
+            连续天数，无条目时返回 0
+        """
+        if not self._sqlite:
+            return 0
+
+        conn = self._sqlite._get_conn()
+        try:
+            rows = conn.execute(
+                """SELECT DISTINCT DATE(created_at) AS d
+                   FROM entries
+                   WHERE user_id = ? AND created_at >= date('now', '-90 days')
+                   ORDER BY d DESC""",
+                (user_id,),
+            ).fetchall()
+        finally:
+            conn.close()
+
+        if not rows:
+            return 0
+
+        # 从今天开始往前数连续天数
+        date_set = {row["d"] for row in rows}
+        today = date.today()
+        streak = 0
+        current = today
+        while current.isoformat() in date_set:
+            streak += 1
+            current -= timedelta(days=1)
+
+        return streak
+
+    def _generate_pattern_insights(self, user_id: str) -> List[str]:
+        """
+        分析最近 30 天的行为模式，生成洞察
+
+        分析内容：
+        - 分类分布（任务 vs 笔记 vs 灵感）
+        - 任务完成率趋势
+
+        Args:
+            user_id: 用户 ID
+
+        Returns:
+            最多 3 条洞察字符串
+        """
+        if not self._sqlite:
+            return []
+
+        today = date.today()
+        thirty_days_ago = today - timedelta(days=30)
+        seven_days_ago = today - timedelta(days=7)
+
+        # 最近 30 天条目
+        recent_entries = self._sqlite.list_entries(
+            start_date=thirty_days_ago.isoformat(),
+            end_date=(today + timedelta(days=1)).isoformat(),
+            limit=1000,
+            user_id=user_id,
+        )
+
+        if not recent_entries:
+            return []
+
+        insights: List[str] = []
+
+        # 1. 分类分布分析
+        category_counts: Dict[str, int] = {}
+        for entry in recent_entries:
+            entry_type = entry.get("type", "task")
+            category_counts[entry_type] = category_counts.get(entry_type, 0) + 1
+
+        total_count = len(recent_entries)
+        if total_count > 0:
+            # 找到最多的类别
+            top_category = max(category_counts, key=category_counts.get)
+            top_ratio = category_counts[top_category] / total_count
+
+            category_labels = {
+                "task": "任务",
+                "note": "笔记",
+                "inbox": "灵感",
+                "project": "项目",
+            }
+            top_label = category_labels.get(top_category, top_category)
+
+            if top_ratio > 0.6 and total_count >= 5:
+                insights.append(
+                    f"你最近 30 天更倾向于创建{top_label}，"
+                    f"占比 {int(top_ratio * 100)}%"
+                )
+
+        # 2. 最近 7 天 vs 之前的完成率对比
+        recent_7_entries = [
+            e for e in recent_entries
+            if e.get("type") == "task"
+            and self._parse_entry_date(e.get("created_at")) is not None
+            and self._parse_entry_date(e.get("created_at")) >= seven_days_ago
+        ]
+        older_entries = [
+            e for e in recent_entries
+            if e.get("type") == "task"
+            and self._parse_entry_date(e.get("created_at")) is not None
+            and self._parse_entry_date(e.get("created_at")) < seven_days_ago
+        ]
+
+        if recent_7_entries and older_entries:
+            recent_completed = sum(1 for e in recent_7_entries if e.get("status") == "complete")
+            recent_rate = recent_completed / len(recent_7_entries) * 100
+
+            older_completed = sum(1 for e in older_entries if e.get("status") == "complete")
+            older_rate = older_completed / len(older_entries) * 100
+
+            diff = recent_rate - older_rate
+            if abs(diff) >= 15:
+                direction = "提升" if diff > 0 else "下降"
+                insights.append(
+                    f"你的任务完成率比上周{direction}了 {int(abs(diff))}%"
+                )
+
+        # 3. 灵感转化提醒
+        inbox_count = category_counts.get("inbox", 0)
+        if inbox_count >= 3:
+            insights.append(
+                f"你有 {inbox_count} 个灵感尚未转化为行动"
+            )
+
+        return insights[:3]
+
+    @staticmethod
+    def _parse_entry_date(val) -> Optional[date]:
+        """解析条目的日期字段"""
+        if not val:
+            return None
+        if isinstance(val, date):
+            return val
+        try:
+            return datetime.fromisoformat(str(val).replace("Z", "+00:00")).date()
+        except (ValueError, TypeError):
+            try:
+                return datetime.strptime(str(val)[:10], "%Y-%m-%d").date()
+            except (ValueError, TypeError):
+                return None
+
+    def _generate_daily_focus(
+        self,
+        user_id: str,
+        overdue: list,
+        learning_streak: int,
+        recent_activity: list,
+    ) -> Optional[DailyFocus]:
+        """
+        生成每日聚焦建议
+
+        优先使用 LLM 生成个性化建议，LLM 不可用时降级为模板：
+        - 有逾期任务：使用最紧急的逾期任务
+        - 有近期活动：使用最近的活动
+        - 无数据：返回 None
+
+        Args:
+            user_id: 用户 ID
+            overdue: 逾期任务列表
+            learning_streak: 学习连续天数
+            recent_activity: 近期活动列表
+
+        Returns:
+            DailyFocus 或 None
+        """
+        # 先尝试 LLM 生成
+        if self._llm_caller:
+            try:
+                import json
+                system_prompt = (
+                    "你是个人成长助手「日知」，请为用户推荐今天最值得关注的一件事。"
+                    "返回 JSON 格式：{\"title\": \"标题\", \"description\": \"描述\", \"target_entry_id\": \"id或null\"}"
+                )
+                context_data = {
+                    "overdue_tasks": [
+                        {"id": t.get("id"), "title": t.get("title"), "priority": t.get("priority")}
+                        for t in overdue[:3]
+                    ],
+                    "learning_streak": learning_streak,
+                    "recent_titles": [e.get("title", "") for e in recent_activity[:5]],
+                }
+                user_message = (
+                    f"用户学习连续天数：{learning_streak}\n"
+                    f"逾期任务：{json.dumps(context_data['overdue_tasks'], ensure_ascii=False)}\n"
+                    f"近期活动：{json.dumps(context_data['recent_titles'], ensure_ascii=False)}\n\n"
+                    f"请推荐今天最应该聚焦的一件事。"
+                )
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message},
+                ]
+                result = _run_async(
+                    asyncio.wait_for(self._llm_caller.call(messages), timeout=10.0)
+                )
+                if result:
+                    # 尝试解析 JSON
+                    try:
+                        # 提取 JSON 部分（可能包含在 markdown 代码块中）
+                        text = result.strip()
+                        if "```json" in text:
+                            text = text.split("```json")[1].split("```")[0].strip()
+                        elif "```" in text:
+                            text = text.split("```")[1].split("```")[0].strip()
+                        parsed = json.loads(text)
+                        if isinstance(parsed, dict) and "title" in parsed:
+                            return DailyFocus(
+                                title=str(parsed["title"]),
+                                description=str(parsed.get("description", "")),
+                                target_entry_id=parsed.get("target_entry_id"),
+                            )
+                    except (json.JSONDecodeError, KeyError, TypeError):
+                        logger.debug("LLM daily_focus JSON 解析失败，降级为模板")
+                        # 使用 LLM 返回的文本作为 title
+                        return DailyFocus(
+                            title=result[:50].strip(),
+                            description=result.strip(),
+                        )
+            except (asyncio.TimeoutError, Exception) as e:
+                logger.debug(f"LLM daily_focus 生成失败: {e}")
+
+        # 降级为模板
+        # 优先：最紧急的逾期任务
+        if overdue:
+            t = overdue[0]
+            return DailyFocus(
+                title=f"处理逾期任务：{t.get('title', '未命名')}",
+                description=f"该任务已逾期，优先级为 {t.get('priority', 'medium')}，建议今天优先完成。",
+                target_entry_id=t.get("id"),
+            )
+
+        # 次选：最近的未完成任务
+        if recent_activity:
+            entry = recent_activity[0]
+            if entry.get("status") != "complete":
+                return DailyFocus(
+                    title=f"继续推进：{entry.get('title', '未命名')}",
+                    description="这是你最近在做的任务，保持节奏继续前进。",
+                    target_entry_id=entry.get("id"),
+                )
+
+        return None
+
     def get_morning_digest(self, user_id: str) -> MorningDigestResponse:
         """
         获取 AI 晨报数据
@@ -835,6 +1100,16 @@ class ReviewService:
             user_id=user_id,
         )
 
+        # 6. 新增增强字段
+        learning_streak = self._calculate_learning_streak(user_id)
+        pattern_insights = self._generate_pattern_insights(user_id)
+        daily_focus = self._generate_daily_focus(
+            user_id=user_id,
+            overdue=overdue,
+            learning_streak=learning_streak,
+            recent_activity=today_todos[:5] + overdue[:5],
+        )
+
         return MorningDigestResponse(
             date=today_str,
             ai_suggestion=ai_suggestion,
@@ -865,6 +1140,9 @@ class ReviewService:
                 for i in stale_inbox[:5]
             ],
             weekly_summary=weekly_summary,
+            learning_streak=learning_streak,
+            daily_focus=daily_focus,
+            pattern_insights=pattern_insights,
         )
 
     def _generate_morning_suggestion(
