@@ -71,11 +71,14 @@ class PageContext(BaseModel):
 
 class ChatRequest(BaseModel):
     """统一聊天请求"""
+    model_config = {"populate_by_name": True}
+
     text: str = Field(..., min_length=1, description="用户输入文本")
     session_id: str = Field(default="default", description="会话 ID")
     skip_intent: bool = Field(default=False, description="跳过意图检测（前端已确认为 create）")
     confirm: Optional[ConfirmAction] = Field(default=None, description="确认操作（多选场景）")
     page_context: Optional[PageContext] = Field(default=None, description="页面级上下文")
+    force_intent: Optional[str] = Field(default=None, description="测试用：强制指定意图（跳过意图检测）")
 
 
 class SessionResponse(BaseModel):
@@ -181,7 +184,15 @@ async def chat(request: ChatRequest, user: User = Depends(get_current_user)):
     async def generate():
         # Step 1: 意图识别
         page_ctx = request.page_context
-        if request.skip_intent:
+        if request.force_intent:
+            # 测试用：直接使用指定的意图，跳过 LLM 意图检测
+            intent_result = {
+                "intent": request.force_intent,
+                "confidence": 1.0,
+                "query": request.text,
+                "entities": {},
+            }
+        elif request.skip_intent:
             intent_result = {
                 "intent": "create",
                 "confidence": 1.0,
