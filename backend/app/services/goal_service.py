@@ -47,7 +47,14 @@ class GoalService:
             current_value = sum(1 for item in items if item.get("checked", False))
         elif metric_type == "tag_auto":
             tags = result.get("auto_tags") or []
-            current_value = self._sqlite.count_entries_by_tags(tags, row["user_id"])
+            start_date = result.get("start_date")
+            end_date = result.get("end_date")
+            if start_date and end_date and tags:
+                current_value = self._sqlite.count_entries_by_tags_in_range(
+                    tags, row["user_id"], start_date, end_date
+                )
+            else:
+                current_value = self._sqlite.count_entries_by_tags(tags, row["user_id"])
         else:
             # count 类型：使用关联条目数
             current_value = linked_entries_count
@@ -252,6 +259,10 @@ class GoalService:
         if not goal:
             return None, 404, "目标不存在"
 
+        # tag_auto 类型：返回自动匹配的条目
+        if goal["metric_type"] == "tag_auto":
+            return await self._list_tag_auto_entries(goal, user_id)
+
         rows = self._sqlite.list_goal_entries(goal_id, user_id)
         entries = []
         for row in rows:
@@ -266,6 +277,42 @@ class GoalService:
                     "status": row["entry_status"],
                     "category": row["entry_category"],
                     "created_at": row["entry_created_at"],
+                },
+            })
+        return entries, 200, "获取成功"
+
+    async def _list_tag_auto_entries(
+        self, goal: dict, user_id: str
+    ) -> tuple[list, int, str]:
+        """获取 tag_auto 目标自动匹配的条目列表"""
+        auto_tags = goal.get("auto_tags") or []
+        if isinstance(auto_tags, str):
+            auto_tags = json.loads(auto_tags)
+        if not auto_tags:
+            return [], 200, "获取成功"
+
+        start_date = goal.get("start_date")
+        end_date = goal.get("end_date")
+        if start_date and end_date:
+            rows = self._sqlite.list_entries_by_tags_in_range(
+                auto_tags, user_id, start_date, end_date
+            )
+        else:
+            rows = self._sqlite.list_entries_by_tags(auto_tags, user_id)
+
+        entries = []
+        for row in rows:
+            entries.append({
+                "id": f"auto-{row['id']}",
+                "goal_id": goal["id"],
+                "entry_id": row["id"],
+                "created_at": row["created_at"],
+                "entry": {
+                    "id": row["id"],
+                    "title": row.get("title"),
+                    "status": row.get("status"),
+                    "category": row.get("category"),
+                    "created_at": row.get("created_at"),
                 },
             })
         return entries, 200, "获取成功"
@@ -372,10 +419,39 @@ class GoalService:
 
     # === 进度汇总 ===
 
+    def _calc_goal_progress(self, goal: dict[str, Any], linked_entries_count: int = 0) -> float:
+        """计算单个目标的当前进度百分比（不依赖 _row_to_response 的完整转换）"""
+        metric_type = goal.get("metric_type", "count")
+        target_value = goal.get("target_value", 1)
+        if target_value <= 0:
+            return 0.0
+
+        if metric_type == "checklist":
+            items = goal.get("checklist_items") or []
+            if isinstance(items, str):
+                items = json.loads(items)
+            current = sum(1 for item in items if item.get("checked", False))
+        elif metric_type == "tag_auto":
+            tags = goal.get("auto_tags") or []
+            if isinstance(tags, str):
+                tags = json.loads(tags)
+            start_date = goal.get("start_date")
+            end_date = goal.get("end_date")
+            if start_date and end_date and tags:
+                current = self._sqlite.count_entries_by_tags_in_range(
+                    tags, goal["user_id"], start_date, end_date
+                )
+            else:
+                current = self._sqlite.count_entries_by_tags(tags, goal["user_id"])
+        else:
+            current = linked_entries_count
+
+        return min(100.0, round(current / target_value * 100, 1))
+
     async def get_progress_summary(
         self, user_id: str, period: Optional[str] = None
     ) -> tuple[dict, int, str]:
-        """获取进度汇总"""
+        """获取进度汇总，包含 progress_delta（相比上一周期的进度变化）"""
         active_goals = self._sqlite.list_goals_by_status(user_id, ["active"])
         completed_goals = self._sqlite.list_goals_by_status(user_id, ["completed"])
 
@@ -383,12 +459,24 @@ class GoalService:
         items = []
         for goal in all_goals:
             linked_count = self._sqlite.count_goal_entries(goal["id"], user_id)
-            response = self._row_to_response(goal, linked_entries_count=linked_count)
+            current_progress = self._calc_goal_progress(goal, linked_entries_count=linked_count)
+
+            # 计算 progress_delta：当前进度 - 上一周期末进度
+            progress_delta = None
+            if period in ("weekly", "monthly"):
+                try:
+                    prev_end = self._get_prev_period_end(period)
+                    prev_goal = self._snapshot_goal_at(goal, prev_end)
+                    prev_progress = self._calc_goal_progress(prev_goal, linked_entries_count=0)
+                    progress_delta = round(current_progress - prev_progress, 1)
+                except Exception:
+                    progress_delta = None
+
             items.append({
-                "id": response["id"],
-                "title": response["title"],
-                "progress_percentage": response["progress_percentage"],
-                "progress_delta": None,
+                "id": goal["id"],
+                "title": goal["title"],
+                "progress_percentage": current_progress,
+                "progress_delta": progress_delta,
             })
 
         return {
@@ -396,3 +484,33 @@ class GoalService:
             "completed_count": len(completed_goals),
             "goals": items,
         }, 200, "获取成功"
+
+    def _get_prev_period_end(self, period: str) -> str:
+        """获取上一周期的结束时间 ISO 字符串"""
+        from datetime import timedelta
+        now = datetime.utcnow()
+        if period == "weekly":
+            prev_end = now - timedelta(weeks=1)
+        else:
+            prev_end = now - timedelta(days=30)
+        return prev_end.strftime("%Y-%m-%dT%H:%M:%S")
+
+    def _snapshot_goal_at(self, goal: dict[str, Any], cutoff: str) -> dict[str, Any]:
+        """生成目标在 cutoff 时刻的快照（用于计算历史进度）
+
+        对于 tag_auto：用时间范围限制的计数
+        对于 checklist：使用当前快照（checklist 变更不可追溯）
+        对于 count：使用当前快照（关联记录不可追溯）
+        """
+        snap = dict(goal)
+        metric_type = goal.get("metric_type", "count")
+        if metric_type == "tag_auto":
+            tags = goal.get("auto_tags") or []
+            if isinstance(tags, str):
+                tags = json.loads(tags)
+            start_date = goal.get("start_date")
+            if start_date and tags:
+                snap["_prev_count"] = self._sqlite.count_entries_by_tags_in_range(
+                    tags, goal["user_id"], start_date, cutoff
+                )
+        return snap

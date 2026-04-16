@@ -1084,6 +1084,53 @@ class SQLiteStorage:
         finally:
             conn.close()
 
+    def list_entries_by_tags(
+        self, tags: list[str], user_id: str, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        """获取匹配指定标签的条目列表（用于 tag_auto 目标展示）"""
+        if not tags:
+            return []
+        conn = self._get_conn()
+        try:
+            placeholders = ",".join("?" * len(tags))
+            rows = conn.execute(f"""
+                SELECT DISTINCT e.id, e.title, e.status, e.type as category, e.created_at
+                FROM entries e
+                JOIN entry_tags et ON e.id = et.entry_id
+                JOIN tags t ON et.tag_id = t.id
+                WHERE t.name IN ({placeholders}) AND e.user_id = ?
+                ORDER BY e.created_at DESC
+                LIMIT ?
+            """, (*tags, user_id, limit)).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def list_entries_by_tags_in_range(
+        self, tags: list[str], user_id: str, start_date: str, end_date: str, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        """获取指定时间范围内匹配标签的条目列表"""
+        if not tags:
+            return []
+        conn = self._get_conn()
+        try:
+            placeholders = ",".join("?" * len(tags))
+            rows = conn.execute(f"""
+                SELECT DISTINCT e.id, e.title, e.status, e.type as category, e.created_at
+                FROM entries e
+                JOIN entry_tags et ON e.id = et.entry_id
+                JOIN tags t ON et.tag_id = t.id
+                WHERE t.name IN ({placeholders})
+                  AND e.user_id = ?
+                  AND e.created_at >= ?
+                  AND e.created_at < ?
+                ORDER BY e.created_at DESC
+                LIMIT ?
+            """, (*tags, user_id, start_date, end_date, limit)).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
     def create_goal_entry(
         self, goal_id: str, entry_id: str, user_id: str
     ) -> dict[str, Any]:

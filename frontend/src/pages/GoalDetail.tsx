@@ -295,6 +295,34 @@ export function GoalDetail() {
           </Card>
         )}
 
+        {/* tag_auto 类型：匹配条目列表 */}
+        {goal.metric_type === "tag_auto" && (
+          <Card className="mt-4">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">匹配条目 ({entries.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {entries.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  暂无匹配条目，创建带有对应标签的条目后会自动计入
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {entries.map(entry => (
+                    <div key={entry.id} className="flex items-center justify-between p-3 rounded-lg border">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{entry.entry?.title || entry.entry_id}</p>
+                        <p className="text-xs text-muted-foreground">{entry.entry?.category} · {entry.entry?.status}</p>
+                      </div>
+                      <Badge variant="secondary" className="shrink-0 ml-2 text-xs">自动匹配</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         <EntrySearchDialog open={showSearch} onClose={() => setShowSearch(false)} onSelect={handleLink} />
       </main>
     </>
