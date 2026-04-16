@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 4,
-    "in_progress": 1,
-    "completed": 1,
+    "pending": 3,
+    "in_progress": 0,
+    "completed": 3,
     "blocked": 0,
     "cancelled": 0
   },
@@ -198,7 +198,7 @@
       "depends_on": [
         "B45"
       ],
-      "status": "in_progress",
+      "status": "completed",
       "priority": "high",
       "acceptance_criteria": [
         "goal_entries 表：id, goal_id, entry_id, user_id, created_at",
@@ -244,7 +244,10 @@
       ],
       "planning_notes": "tag_auto 进度计算使用归一化 entry_tags 表：SELECT COUNT(DISTINCT e.id) FROM entries e JOIN entry_tags et ON e.id = et.entry_id WHERE e.user_id=? AND et.tag IN (auto_tags) AND e.created_at BETWEEN start_date AND end_date。每个 tag 用 IN 子句匹配。count 类型的 current_value 在关联/取消关联时更新（+1/-1），不每次全量计算。checklist 勾选直接更新 checklist_items JSON 中的 checked 字段。",
       "started_at": "2026-04-16T12:40:40.960Z",
-      "evidence_file": "evidence/B46.md"
+      "evidence_file": "evidence/B46.md",
+      "completed_at": "2026-04-16T14:30:00.000Z",
+      "commit": "09716d6",
+      "execution_notes": "24 tests pass (44 total goals tests), all backend tests pass"
     },
     {
       "id": "B47",
@@ -256,7 +259,7 @@
       "depends_on": [
         "B45"
       ],
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
       "acceptance_criteria": [
         "entry_service.create_entry 完成后，触发 tag_auto 目标进度重算",
@@ -280,7 +283,12 @@
         "backend/app/services/goal_service.py",
         "backend/app/services/entry_service.py"
       ],
-      "planning_notes": "在 entry_service 的 create_entry 末尾加 goal_service.recalculate_tag_auto_goals(user_id, new_tags) 调用。update_entry 末尾传 goal_service.recalculate_tag_auto_goals(user_id, old_tags ∪ new_tags)，确保覆盖「原来匹配、现在不匹配」的目标也参与重算。该方法在 goal_service 中查询 auto_tags 与传入 tags 有交集的目标并逐个重算进度。使用 asyncio.create_task 异步执行，不 await。重算时用 try/except 包裹，异常时 log.warning 不传播。"
+      "planning_notes": "在 entry_service 的 create_entry 末尾加 goal_service.recalculate_tag_auto_goals(user_id, new_tags) 调用。update_entry 末尾传 goal_service.recalculate_tag_auto_goals(user_id, old_tags ∪ new_tags)，确保覆盖「原来匹配、现在不匹配」的目标也参与重算。该方法在 goal_service 中查询 auto_tags 与传入 tags 有交集的目标并逐个重算进度。使用 asyncio.create_task 异步执行，不 await。重算时用 try/except 包裹，异常时 log.warning 不传播。",
+      "started_at": "2026-04-16T15:00:00.000Z",
+      "evidence_file": "evidence/B47.md",
+      "completed_at": "2026-04-16T15:20:00.000Z",
+      "commit": "pending",
+      "execution_notes": "14 tests pass, 775 total backend pass, no regressions"
     },
     {
       "id": "F34",

@@ -317,6 +317,59 @@ class GoalService:
         result = self._row_to_response(updated_goal, linked_entries_count=linked_count)
         return result, 200, "检查项已更新"
 
+    # === 自动追踪触发 ===
+
+    async def recalculate_tag_auto_goals(self, user_id: str, tags: list[str]):
+        """重算与给定 tags 有交集的 tag_auto 目标进度
+
+        由 entry_service 在条目创建/更新 tags 后异步调用。
+        查找所有 metric_type='tag_auto' 且 status in ('active','completed') 且
+        auto_tags 与传入 tags 有交集的目标，逐个重算进度。
+        整个方法失败不影响调用方（catch + log warning）。
+        """
+        if not tags:
+            return
+
+        try:
+            # 查找所有活跃/已完成的 tag_auto 目标
+            goals = self._sqlite.list_goals_by_status(user_id, ["active", "completed"])
+        except Exception as e:
+            logger.warning("查询 tag_auto 目标失败: %s", e)
+            return
+
+        tag_set = set(tags)
+
+        for goal in goals:
+            if goal["metric_type"] != "tag_auto":
+                continue
+
+            # 解析 auto_tags
+            auto_tags = goal.get("auto_tags")
+            if isinstance(auto_tags, str):
+                auto_tags = json.loads(auto_tags)
+            if not auto_tags:
+                continue
+
+            # 检查交集
+            if not tag_set.intersection(set(auto_tags)):
+                continue
+
+            # 重算进度
+            try:
+                linked_count = self._sqlite.count_goal_entries(goal["id"], user_id)
+                response = self._row_to_response(goal, linked_entries_count=linked_count)
+                progress = response["progress_percentage"]
+
+                # 自动完成
+                if progress >= 100.0 and goal["status"] == "active":
+                    self._sqlite.update_goal_status(goal["id"], user_id, "completed")
+
+                logger.debug(
+                    "tag_auto 目标 %s 进度已重算: %.1f%%", goal["id"], progress
+                )
+            except Exception as e:
+                logger.warning("tag_auto 目标 %s 重算失败: %s", goal["id"], e)
+
     # === 进度汇总 ===
 
     async def get_progress_summary(
