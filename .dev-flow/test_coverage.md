@@ -2,7 +2,7 @@
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
 |--------|----------|-----------|--------------------|--------|------|
-| 月报AI总结 | B48 | unit | 正常生成/超时返回null/LLM失败其他字段正常/无数据月份 | completed | 5 tests in test_review_api.py, 733 backend tests |
+| 月报AI总结 | B48 | unit | 正常生成/超时返回空字符串/LLM未配置返回None/LLM失败其他字段正常/无数据月份 | completed | 5 tests in test_review_api.py, 733 backend tests |
 | 新类型后端 | B49 | unit | 创建decision/reflection/question+模板/GET过滤/搜索/意图识别/已有类型不受影响/401/空模板 | completed | 11 tests (4 intent + 7 API), 733 backend tests |
 | 新类型后端 smoke | B49 | smoke | 新用户首次创建决策→列表筛选→搜索命中→详情返回正确类型 | completed | covered by API tests |
 | 类型同步链路 | B49 | unit | Category枚举扩展/schema校验/构建通过/gen:types无报错 | completed | npm run build 通过 |
