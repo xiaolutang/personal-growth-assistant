@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 2,
+    "pending": 0,
     "in_progress": 0,
-    "completed": 4,
+    "completed": 6,
     "blocked": 0,
     "cancelled": 0
   },
@@ -356,8 +356,8 @@
       "started_at": "2026-04-16T15:25:00.000Z",
       "evidence_file": "evidence/F34.md",
       "completed_at": "2026-04-16T15:50:00.000Z",
-      "commit": "pending",
-      "execution_notes": "Goals list+detail pages, create dialog, 231 frontend tests pass, build pass"
+      "commit": "2cad997",
+      "execution_notes": "Goals list+detail pages, create dialog, 715+231 tests pass, build pass"
     },
     {
       "id": "F35",
@@ -369,7 +369,7 @@
       "depends_on": [
         "B45"
       ],
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
       "acceptance_criteria": [
         "首页新增「我的目标」卡片，显示最近 3 个活跃目标",
@@ -394,7 +394,12 @@
         "frontend/src/pages/Home.tsx",
         "frontend/src/services/api.ts"
       ],
-      "planning_notes": "Home.tsx 新增 useEffect 加载活跃目标。API 调用 GET /goals?status=active&limit=3。卡片样式参考现有「今日任务」卡片。"
+      "planning_notes": "Home.tsx 新增 useEffect 加载活跃目标。API 调用 GET /goals?status=active&limit=3。卡片样式参考现有「今日任务」卡片。",
+      "started_at": "2026-04-16T15:55:00.000Z",
+      "evidence_file": "evidence/F35.md",
+      "completed_at": "2026-04-16T16:00:00.000Z",
+      "commit": "pending",
+      "execution_notes": "Home.tsx 新增目标卡片, build pass"
     },
     {
       "id": "F36",
@@ -408,7 +413,7 @@
         "B46",
         "B47"
       ],
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
       "acceptance_criteria": [
         "回顾页新增「目标进展」卡片（仅在 weekly/monthly Tab 下显示，daily/trend Tab 下隐藏）",
@@ -432,7 +437,12 @@
         "frontend/src/pages/Review.tsx",
         "frontend/src/services/api.ts"
       ],
-      "planning_notes": "Review.tsx 已有日报/周报/月报/趋势四个 Tab，目标概览仅在 weekly/monthly Tab 下显示（daily 粒度太细无意义，trend 无周期概念）。前端调用 GET /goals/progress-summary?period=weekly|monthly，返回 { active_count, completed_count, goals: [{id, title, progress_percentage, progress_delta}] }。progress_delta 为当前进度减去上一周期末进度。"
+      "planning_notes": "Review.tsx 已有日报/周报/月报/趋势四个 Tab，目标概览仅在 weekly/monthly Tab 下显示（daily 粒度太细无意义，trend 无周期概念）。前端调用 GET /goals/progress-summary?period=weekly|monthly，返回 { active_count, completed_count, goals: [{id, title, progress_percentage, progress_delta}] }。progress_delta 为当前进度减去上一周期末进度。",
+      "started_at": "2026-04-16T16:00:00.000Z",
+      "evidence_file": "evidence/F36.md",
+      "completed_at": "2026-04-16T16:10:00.000Z",
+      "commit": "pending",
+      "execution_notes": "Home goal card + Review goal summary, build pass"
     }
   ]
 }

@@ -13,6 +13,7 @@ import {
   Brain,
   ChevronDown,
   ChevronUp,
+  Target,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -32,9 +33,11 @@ import {
   getReviewTrend,
   getKnowledgeHeatmap,
   getGrowthCurve,
+  getProgressSummary,
   type TrendPeriod,
   type HeatmapItem,
   type GrowthCurvePoint,
+  type ProgressSummaryResponse,
 } from "@/services/api";
 
 // 响应类型
@@ -122,6 +125,9 @@ export function Review() {
 
   // 成长曲线状态
   const [growthCurveData, setGrowthCurveData] = useState<GrowthCurvePoint[]>([]);
+
+  // 目标进展概览状态
+  const [goalSummary, setGoalSummary] = useState<ProgressSummaryResponse | null>(null);
   const [growthCurveLoading, setGrowthCurveLoading] = useState(true);
 
   useEffect(() => {
@@ -173,6 +179,13 @@ export function Review() {
 
     fetchTrend();
   }, [trendPeriod]);
+
+  // 目标进展概览
+  useEffect(() => {
+    getProgressSummary(reportType === "monthly" ? "monthly" : "weekly")
+      .then(setGoalSummary)
+      .catch(() => setGoalSummary(null));
+  }, [reportType]);
 
   // 知识热力图数据获取
   useEffect(() => {
@@ -651,6 +664,43 @@ export function Review() {
 
             {/* AI 总结卡片 */}
             {renderAiSummaryCard()}
+
+            {/* 目标进展概览（仅周报/月报） */}
+            {reportType !== "daily" && goalSummary && goalSummary.goals.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    目标进展
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-3 mb-4">
+                    <div className="text-center flex-1">
+                      <p className="text-2xl font-bold text-primary">{goalSummary.active_count}</p>
+                      <p className="text-xs text-muted-foreground">进行中</p>
+                    </div>
+                    <div className="text-center flex-1">
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">{goalSummary.completed_count}</p>
+                      <p className="text-xs text-muted-foreground">已完成</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {goalSummary.goals.map(g => (
+                      <div key={g.id} className="flex items-center gap-3">
+                        <span className="text-sm truncate flex-1">{g.title}</span>
+                        <div className="w-20 shrink-0">
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div className="h-full bg-primary transition-all" style={{ width: `${g.progress_percentage}%` }} />
+                          </div>
+                        </div>
+                        <span className="text-xs text-muted-foreground w-10 text-right">{Math.round(g.progress_percentage)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {isLoading ? (
               <div className="flex items-center justify-center h-64">
