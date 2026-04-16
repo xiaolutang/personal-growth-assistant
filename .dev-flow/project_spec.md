@@ -1,44 +1,48 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.8.0
+> 版本：v0.9.0
 
 ## 目标
 
-- R010 工程化提升 — E2E 测试覆盖 + API 可观测性 + CI/CD Pipeline + 性能基线
+- R012 目标追踪闭环 — 目标 CRUD + 三种衡量方式（手动计数/检查清单/Tag自动追踪）+ 进度计算 + 首页/回顾页集成
 
-## 前置依赖（R001-R009 已完成）
+## 前置依赖（R001-R011 已完成）
 
 - 用户认证 + 数据隔离 + 路由守卫
-- Chat 用户 ID 透传（R009）
+- 条目关联（entry_links）和知识上下文（R011）
+- AI 晨报增强（R011）
 - 所有核心功能模块已就绪
 
 ## 范围
 
 ### 包含
-- B34: Health check + trace_id + 统一错误响应
-- B35: E2E 基础设施（webServer 配置 + 认证 fixture + 工具函数）
-- B36: 认证流程 E2E 测试
-- B37: 条目 CRUD E2E 测试
-- B38: Chat 对话 E2E 测试
-- B39: 回顾页 E2E 测试
-- B40: GitHub Actions CI Pipeline
-- B41: 性能基线建立
+- B45: Goals CRUD API（goals 表 + 5 个端点 + 三种 metric_type）
+- B46: Goal 条目关联 + 进度计算（goal_entries 表 + count/checklist/tag_auto 三种进度）
+- B47: Goal 自动追踪触发（entry_service 异步触发 tag_auto 重算）
+- F34: Goals 页面 + 详情（/goals 路由 + 创建弹窗 + 详情页 + Sidebar 6 项）
+- F35: 首页目标进度卡片（活跃目标 Top 3）
+- F36: 回顾页目标完成概览（progress-summary API + 进度变化）
 
 ### 不包含
-- 负载测试 / 压力测试
-- CD（持续部署）— 仅 CI
-- 前端组件测试补充（已有 231 个）
+- 目标模板 / 预设目标
+- 目标分享 / 协作
+- 目标提醒 / 推送通知
+- 进度历史趋势图（仅当前值）
 
-## 用户路径（E2E 覆盖）
+## 用户路径
 
-1. 注册 → 登录 → 访问首页 → 登出 → 重定向到登录页
-2. 登录 → 创建任务 → 任务列表可见 → 更新状态 → 删除 → 列表不可见
-3. 登录 → Chat 对话创建条目 → 搜索条目 → 更新条目 → 删除条目
-4. 登录 → 查看回顾页 → 统计数据展示 → 趋势图可见
+1. 创建目标 → 选择衡量方式 → 设定目标值 → 查看目标列表
+2. count 目标 → 关联条目 → 进度自动更新 → 达标自动完成
+3. checklist 目标 → 勾选检查项 → 进度更新 → 达标自动完成
+4. tag_auto 目标 → 创建带 tag 条目 → 后台自动追踪 → 进度实时计算
+5. 首页 → 查看活跃目标进度 → 点击跳转详情
+6. 回顾页 → 查看目标进展概览 → 本周期完成情况
 
 ## 技术约束
 
-- E2E 测试使用 Playwright（已安装），webServer 自动启停后端
-- CI 使用 GitHub Actions
-- 性能基线不引入新依赖，使用现有工具（vitest、pytest-bench）
+- goals 属于 SQLite 元数据层（与 entry_links 同级），不写入 Markdown
+- 进度为查询时计算，不依赖物化字段
+- tag_auto 触发为异步 fire-and-forget，不阻塞条目操作
+- 前端遵循现有 api.ts + 类型定义模式
+- 进度环形图使用纯 SVG，不引入新图表库

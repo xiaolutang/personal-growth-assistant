@@ -1,5 +1,52 @@
 # 对齐清单
 
+## R012: 目标追踪闭环
+
+### 契约对齐
+
+- [ ] B45: CONTRACT-GOAL01-05 (Goals CRUD) 已定义 → POST/GET/PUT/DELETE
+- [ ] B46: CONTRACT-GOAL06-10 (Goal 条目关联 + 检查项 + 进度概览) 已定义 → POST/DELETE/GET + PATCH + progress-summary
+- [ ] B47: 无新契约（集成到 entry_service 内部触发）
+- [ ] F34 依赖 CONTRACT-GOAL01-09 ✓
+- [ ] F35 依赖 CONTRACT-GOAL02 (GET /goals?status=active) ✓
+- [ ] F36 依赖 CONTRACT-GOAL10 (GET /goals/progress-summary) ✓
+
+### 依赖对齐
+
+- [ ] B45 无外部依赖 ✓（新表 + 新路由）
+- [ ] B46 depends_on B45 ✓（需要 goals 表和 CRUD）
+- [ ] B47 depends_on B45 ✓（需要 goals 表查询 tag_auto 目标）
+- [ ] F34 depends_on B45, B46 ✓（需要 CRUD + 条目关联）
+- [ ] F35 depends_on B45 ✓（只需目标列表）
+- [ ] F36 depends_on B45, B46, B47 ✓（需要进度概览 API + tag_auto 数据）
+
+### 架构对齐
+
+- [ ] 所有新 API 通过 Depends(get_current_user) 认证 ✓
+- [ ] 所有数据按 user_id 隔离 ✓
+- [ ] goals 属于 SQLite 元数据层（与 entry_links 同级），不写入 Markdown ✓
+- [ ] B47 异步触发不阻塞条目操作 ✓
+- [ ] 前端遵循现有 api.ts + 类型定义模式 ✓
+- [ ] F34 Sidebar 导航从 5 项增为 6 项 ✓
+- [ ] 进度计算为查询时计算，不依赖物化字段 ✓
+- [ ] B45 删除语义统一：仅 status=abandoned 可删除 ✓
+- [ ] B46 tag_auto 使用 entry_tags 归一化表查询，不走 LIKE ✓
+- [ ] F36 仅在 weekly/monthly Tab 下显示，daily/trend 隐藏 ✓
+
+### 验收对齐
+
+- [ ] 每个任务有 acceptance_criteria ✓
+- [ ] 每个任务有 test_tasks ✓
+- [ ] B45 risk_tags: auth ✓
+- [ ] B45 test_tasks 包含 metric_type 校验 + 422 场景 ✓
+- [ ] B46 test_tasks 包含三种类型的进度计算 + 401/403/progress-summary + 状态不回退 ✓
+- [ ] B47 test_tasks 包含异步触发失败不影响主流程 + tag 更新前后集合重算 ✓
+- [ ] F34 test_tasks 包含无目标引导 + checklist 创建 + count 关联/取消关联 + API 失败降级 + 构建通过 ✓
+- [ ] F35 test_tasks 包含 API 失败不阻塞首页 + 构建通过 ✓
+- [ ] 前端任务都要求 npm run build 通过 ✓
+
+---
+
 ## R011: 条目关联增强 + AI 晨报升级
 
 ### 契约对齐
