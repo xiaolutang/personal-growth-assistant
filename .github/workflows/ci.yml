@@ -91,3 +91,45 @@ jobs:
           echo "$HEALTH_CT" | grep -q "application/json" || (echo "/health not JSON: $HEALTH_CT" && exit 1)
           docker stop pga-test
           docker rm pga-test
+
+  # E2E 测试（仅 main 分支推送）
+  e2e-test:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install backend dependencies
+        run: cd ../backend && uv sync
+
+      - name: Install frontend dependencies
+        run: cd ../frontend && npm ci
+
+      - name: Install E2E dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: npx playwright test --workers=1
+        env:
+          CI: true

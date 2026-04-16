@@ -2,6 +2,17 @@
 
 ## 已完成需求包
 
+### R010: Engineering Foundation
+
+- 状态: 已完成
+- 分支: `feat/R010-engineering-foundation`
+- 主题: 工程化提升 — E2E 测试覆盖 + API 可观测性 + CI/CD + 性能基线
+- 目录: `R010_engineering-foundation/`
+- 完成时间: 2026-04-16
+- 任务数: 8 (B34-B41)
+- Codex 代码审核轮次: 6 轮（4 项 finding 全部修复并通过）
+- 关键修复: force_intent DEBUG 门控、Neo4j/Qdrant 真实连接探测、E2E DATA_DIR 隔离、浏览器级 UI 测试
+
 ### R008: Intelligence Omni
 
 - 状态: 已完成
