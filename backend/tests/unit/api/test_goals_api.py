@@ -1,4 +1,5 @@
-"""Goals CRUD API 测试"""
+"""Goals CRUD + 条目关联 + 进度计算 + progress-summary API 测试"""
+import uuid as _uuid
 import pytest
 from httpx import AsyncClient, ASGITransport
 
@@ -38,6 +39,27 @@ async def _create_goal(client: AsyncClient, **overrides) -> dict:
     resp = await client.post("/goals", json=payload)
     assert resp.status_code == 201, f"创建目标失败: {resp.text}"
     return resp.json()
+
+
+def _create_test_entry(storage, user_id: str, entry_id: str = None, **kwargs) -> str:
+    """在 SQLite 中创建测试条目，返回 entry_id"""
+    eid = entry_id or _uuid.uuid4().hex
+    from app.models import Task, Category, TaskStatus, Priority
+    from datetime import datetime
+    entry = Task(
+        id=eid,
+        title=kwargs.get("title", f"测试条目-{eid[:6]}"),
+        content=kwargs.get("content", ""),
+        category=kwargs.get("category", Category.TASK),
+        status=kwargs.get("status", TaskStatus.DOING),
+        priority=Priority.MEDIUM,
+        tags=kwargs.get("tags", []),
+        created_at=datetime.now(),
+        updated_at=datetime.now(),
+        file_path=f"tasks/{eid}.md",
+    )
+    storage.sqlite.upsert_entry(entry, user_id=user_id)
+    return eid
 
 
 # === 创建测试 ===
@@ -248,3 +270,293 @@ class TestAuthAndIsolation:
             # B 无法删除 A 的目标
             resp_delete = await client_b.delete(f"/goals/{goal['id']}")
             assert resp_delete.status_code == 404
+
+
+# === 条目关联测试 ===
+
+@pytest.mark.asyncio
+class TestLinkEntry:
+    async def test_link_entry_success(self, client, storage, test_user):
+        """成功关联条目到 count 目标"""
+        goal = await _create_goal(client, target_value=3)
+        entry_id = _create_test_entry(storage, test_user.id)
+
+        resp = await client.post(f"/goals/{goal['id']}/entries", json={"entry_id": entry_id})
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["entry_id"] == entry_id
+        assert data["entry"]["id"] == entry_id
+        assert data["goal"]["progress_percentage"] > 0
+
+    async def test_link_entry_updates_progress(self, client, storage, test_user):
+        """关联条目后进度正确更新"""
+        goal = await _create_goal(client, target_value=2)
+        entry_id = _create_test_entry(storage, test_user.id)
+
+        resp = await client.post(f"/goals/{goal['id']}/entries", json={"entry_id": entry_id})
+        assert resp.status_code == 201
+        assert resp.json()["goal"]["current_value"] == 1
+        assert resp.json()["goal"]["progress_percentage"] == 50.0
+
+    async def test_link_entry_auto_complete(self, client, storage, test_user):
+        """进度达到 100% 时自动完成"""
+        goal = await _create_goal(client, target_value=1)
+        entry_id = _create_test_entry(storage, test_user.id)
+
+        resp = await client.post(f"/goals/{goal['id']}/entries", json={"entry_id": entry_id})
+        assert resp.status_code == 201
+        assert resp.json()["goal"]["status"] == "completed"
+        assert resp.json()["goal"]["progress_percentage"] == 100.0
+
+    async def test_link_entry_400_for_non_count(self, client, storage, test_user):
+        """非 count 类型目标返回 400"""
+        goal = await _create_goal(client, metric_type="checklist", checklist_items=["项1"])
+        entry_id = _create_test_entry(storage, test_user.id)
+
+        resp = await client.post(f"/goals/{goal['id']}/entries", json={"entry_id": entry_id})
+        assert resp.status_code == 400
+
+    async def test_link_entry_404_for_missing_entry(self, client, test_user):
+        """不存在的条目返回 404"""
+        goal = await _create_goal(client)
+        fake_id = _uuid.uuid4().hex
+
+        resp = await client.post(f"/goals/{goal['id']}/entries", json={"entry_id": fake_id})
+        assert resp.status_code == 404
+
+    async def test_link_entry_409_duplicate(self, client, storage, test_user):
+        """重复关联返回 409"""
+        goal = await _create_goal(client, target_value=5)
+        entry_id = _create_test_entry(storage, test_user.id)
+
+        resp1 = await client.post(f"/goals/{goal['id']}/entries", json={"entry_id": entry_id})
+        assert resp1.status_code == 201
+
+        resp2 = await client.post(f"/goals/{goal['id']}/entries", json={"entry_id": entry_id})
+        assert resp2.status_code == 409
+
+    async def test_link_entry_404_for_missing_goal(self, client, storage, test_user):
+        """不存在的目标返回 404"""
+        entry_id = _create_test_entry(storage, test_user.id)
+
+        resp = await client.post(f"/goals/nonexistent/entries", json={"entry_id": entry_id})
+        assert resp.status_code == 404
+
+
+# === 取消关联测试 ===
+
+@pytest.mark.asyncio
+class TestUnlinkEntry:
+    async def test_unlink_entry_success(self, client, storage, test_user):
+        """成功取消关联"""
+        goal = await _create_goal(client, target_value=5)
+        entry_id = _create_test_entry(storage, test_user.id)
+
+        await client.post(f"/goals/{goal['id']}/entries", json={"entry_id": entry_id})
+        resp = await client.delete(f"/goals/{goal['id']}/entries/{entry_id}")
+        assert resp.status_code == 204
+
+    async def test_unlink_progress_drops(self, client, storage, test_user):
+        """取消关联后进度下降"""
+        goal = await _create_goal(client, target_value=2)
+        e1 = _create_test_entry(storage, test_user.id)
+        e2 = _create_test_entry(storage, test_user.id)
+
+        await client.post(f"/goals/{goal['id']}/entries", json={"entry_id": e1})
+        await client.post(f"/goals/{goal['id']}/entries", json={"entry_id": e2})
+
+        # 取消一个
+        resp = await client.delete(f"/goals/{goal['id']}/entries/{e1}")
+        assert resp.status_code == 204
+
+        # 验证进度
+        detail = await client.get(f"/goals/{goal['id']}")
+        assert detail.json()["current_value"] == 1
+        assert detail.json()["progress_percentage"] == 50.0
+
+    async def test_unlink_completed_status_stays(self, client, storage, test_user):
+        """取消关联后 completed 状态不会自动回退"""
+        goal = await _create_goal(client, target_value=1)
+        entry_id = _create_test_entry(storage, test_user.id)
+
+        # 关联 → 自动完成
+        await client.post(f"/goals/{goal['id']}/entries", json={"entry_id": entry_id})
+        detail = await client.get(f"/goals/{goal['id']}")
+        assert detail.json()["status"] == "completed"
+
+        # 取消关联
+        resp = await client.delete(f"/goals/{goal['id']}/entries/{entry_id}")
+        assert resp.status_code == 204
+
+        # 状态仍然是 completed（不自动回退）
+        detail = await client.get(f"/goals/{goal['id']}")
+        assert detail.json()["status"] == "completed"
+
+    async def test_unlink_nonexistent_returns_404(self, client, test_user):
+        """取消不存在的关联返回 404"""
+        goal = await _create_goal(client)
+        resp = await client.delete(f"/goals/{goal['id']}/entries/nonexistent")
+        assert resp.status_code == 404
+
+
+# === 列出关联条目测试 ===
+
+@pytest.mark.asyncio
+class TestListGoalEntries:
+    async def test_list_entries_empty(self, client, test_user):
+        """目标无关联条目时返回空列表"""
+        goal = await _create_goal(client)
+        resp = await client.get(f"/goals/{goal['id']}/entries")
+        assert resp.status_code == 200
+        assert resp.json()["entries"] == []
+
+    async def test_list_entries_with_data(self, client, storage, test_user):
+        """列出关联条目"""
+        goal = await _create_goal(client, target_value=5)
+        e1 = _create_test_entry(storage, test_user.id)
+        e2 = _create_test_entry(storage, test_user.id)
+
+        await client.post(f"/goals/{goal['id']}/entries", json={"entry_id": e1})
+        await client.post(f"/goals/{goal['id']}/entries", json={"entry_id": e2})
+
+        resp = await client.get(f"/goals/{goal['id']}/entries")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["entries"]) == 2
+        for entry in data["entries"]:
+            assert "entry" in entry
+            assert "id" in entry["entry"]
+            assert "title" in entry["entry"]
+
+    async def test_list_entries_404_for_missing_goal(self, client, test_user):
+        """不存在的目标返回 404"""
+        resp = await client.get("/goals/nonexistent/entries")
+        assert resp.status_code == 404
+
+
+# === Checklist 切换测试 ===
+
+@pytest.mark.asyncio
+class TestChecklistToggle:
+    async def test_toggle_item(self, client, test_user):
+        """切换 checklist 项"""
+        goal = await _create_goal(
+            client,
+            metric_type="checklist",
+            checklist_items=["项1", "项2", "项3"],
+        )
+        item_id = goal["checklist_items"][0]["id"]
+
+        resp = await client.patch(f"/goals/{goal['id']}/checklist/{item_id}")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["current_value"] == 1
+        assert data["progress_percentage"] > 0
+
+        # 找到切换的 item
+        toggled_item = next(i for i in data["checklist_items"] if i["id"] == item_id)
+        assert toggled_item["checked"] is True
+
+    async def test_toggle_item_twice(self, client, test_user):
+        """切换两次回到原始状态"""
+        goal = await _create_goal(
+            client,
+            metric_type="checklist",
+            checklist_items=["项1"],
+        )
+        item_id = goal["checklist_items"][0]["id"]
+
+        await client.patch(f"/goals/{goal['id']}/checklist/{item_id}")
+        resp = await client.patch(f"/goals/{goal['id']}/checklist/{item_id}")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["current_value"] == 0
+
+    async def test_toggle_auto_complete_at_100(self, client, test_user):
+        """所有项勾选后自动完成"""
+        goal = await _create_goal(
+            client,
+            metric_type="checklist",
+            checklist_items=["项1", "项2"],
+            target_value=2,
+        )
+        for item in goal["checklist_items"]:
+            resp = await client.patch(f"/goals/{goal['id']}/checklist/{item['id']}")
+            assert resp.status_code == 200
+
+        data = resp.json()
+        assert data["status"] == "completed"
+        assert data["progress_percentage"] == 100.0
+
+    async def test_toggle_400_for_non_checklist(self, client, test_user):
+        """非 checklist 类型返回 400"""
+        goal = await _create_goal(client)
+        resp = await client.patch(f"/goals/{goal['id']}/checklist/fakeid")
+        assert resp.status_code == 400
+
+    async def test_toggle_404_for_missing_item(self, client, test_user):
+        """不存在的检查项返回 404"""
+        goal = await _create_goal(
+            client,
+            metric_type="checklist",
+            checklist_items=["项1"],
+        )
+        resp = await client.patch(f"/goals/{goal['id']}/checklist/nonexistent")
+        assert resp.status_code == 404
+
+    async def test_toggle_404_for_missing_goal(self, client, test_user):
+        """不存在的目标返回 404"""
+        resp = await client.patch("/goals/nonexistent/checklist/fakeid")
+        assert resp.status_code == 404
+
+
+# === 进度汇总测试 ===
+
+@pytest.mark.asyncio
+class TestProgressSummary:
+    async def test_summary_empty(self, client, test_user):
+        """无目标时返回空汇总"""
+        resp = await client.get("/goals/progress-summary")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["active_count"] == 0
+        assert data["completed_count"] == 0
+        assert data["goals"] == []
+
+    async def test_summary_with_active_goals(self, client, test_user):
+        """包含活跃目标的汇总"""
+        await _create_goal(client, title="目标1", target_value=5)
+        await _create_goal(client, title="目标2", target_value=3)
+
+        resp = await client.get("/goals/progress-summary")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["active_count"] == 2
+        assert data["completed_count"] == 0
+        assert len(data["goals"]) == 2
+
+    async def test_summary_with_completed_goals(self, client, storage, test_user):
+        """包含已完成目标的汇总"""
+        goal = await _create_goal(client, title="已完成", target_value=1)
+        entry_id = _create_test_entry(storage, test_user.id)
+        # 关联条目触发自动完成
+        await client.post(f"/goals/{goal['id']}/entries", json={"entry_id": entry_id})
+
+        resp = await client.get("/goals/progress-summary")
+        data = resp.json()
+        assert data["active_count"] == 0
+        assert data["completed_count"] == 1
+        assert len(data["goals"]) == 1
+
+    async def test_summary_mixed_goals(self, client, storage, test_user):
+        """混合活跃和已完成目标"""
+        await _create_goal(client, title="活跃1")
+        goal = await _create_goal(client, title="将完成", target_value=1)
+        entry_id = _create_test_entry(storage, test_user.id)
+        await client.post(f"/goals/{goal['id']}/entries", json={"entry_id": entry_id})
+
+        resp = await client.get("/goals/progress-summary")
+        data = resp.json()
+        assert data["active_count"] == 1
+        assert data["completed_count"] == 1
+        assert len(data["goals"]) == 2

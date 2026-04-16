@@ -1060,3 +1060,122 @@ class SQLiteStorage:
             return row["cnt"]
         finally:
             conn.close()
+
+    def count_entries_by_tags_in_range(
+        self, tags: list[str], user_id: str, start_date: str, end_date: str
+    ) -> int:
+        """统计指定时间范围内匹配标签的条目数量"""
+        if not tags:
+            return 0
+        conn = self._get_conn()
+        try:
+            placeholders = ",".join("?" * len(tags))
+            row = conn.execute(f"""
+                SELECT COUNT(DISTINCT e.id) as cnt
+                FROM entries e
+                JOIN entry_tags et ON e.id = et.entry_id
+                JOIN tags t ON et.tag_id = t.id
+                WHERE t.name IN ({placeholders})
+                  AND e.user_id = ?
+                  AND e.created_at >= ?
+                  AND e.created_at < ?
+            """, (*tags, user_id, start_date, end_date)).fetchone()
+            return row["cnt"]
+        finally:
+            conn.close()
+
+    def create_goal_entry(
+        self, goal_id: str, entry_id: str, user_id: str
+    ) -> dict[str, Any]:
+        """创建目标-条目关联，返回新记录"""
+        import uuid as _uuid
+        now = datetime.utcnow().isoformat()
+        link_id = _uuid.uuid4().hex
+        conn = self._get_conn()
+        try:
+            conn.execute(
+                """INSERT INTO goal_entries (id, goal_id, entry_id, user_id, created_at)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (link_id, goal_id, entry_id, user_id, now),
+            )
+            conn.commit()
+            row = conn.execute(
+                "SELECT * FROM goal_entries WHERE id = ?", (link_id,)
+            ).fetchone()
+            return dict(row)
+        finally:
+            conn.close()
+
+    def delete_goal_entry(
+        self, goal_id: str, entry_id: str, user_id: str
+    ) -> bool:
+        """删除目标-条目关联"""
+        conn = self._get_conn()
+        try:
+            cursor = conn.execute(
+                "DELETE FROM goal_entries WHERE goal_id = ? AND entry_id = ? AND user_id = ?",
+                (goal_id, entry_id, user_id),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def list_goal_entries(
+        self, goal_id: str, user_id: str
+    ) -> list[dict[str, Any]]:
+        """列出目标关联的条目（JOIN entries 获取条目详情）"""
+        conn = self._get_conn()
+        try:
+            rows = conn.execute(
+                """SELECT ge.id, ge.goal_id, ge.entry_id, ge.created_at as linked_at,
+                          e.id as entry_id, e.title as entry_title, e.status as entry_status,
+                          e.type as entry_category, e.created_at as entry_created_at
+                   FROM goal_entries ge
+                   JOIN entries e ON ge.entry_id = e.id
+                   WHERE ge.goal_id = ? AND ge.user_id = ?
+                   ORDER BY ge.created_at DESC""",
+                (goal_id, user_id),
+            ).fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    def update_goal_status(
+        self, goal_id: str, user_id: str, status: str
+    ) -> Optional[dict[str, Any]]:
+        """更新目标状态，返回更新后的记录"""
+        return self.update_goal(goal_id, user_id, status=status)
+
+    def check_goal_entry_exists(
+        self, goal_id: str, entry_id: str, user_id: str
+    ) -> bool:
+        """检查目标-条目关联是否已存在"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT 1 FROM goal_entries WHERE goal_id = ? AND entry_id = ? AND user_id = ? LIMIT 1",
+                (goal_id, entry_id, user_id),
+            ).fetchone()
+            return row is not None
+        finally:
+            conn.close()
+
+    def list_goals_by_status(
+        self, user_id: str, statuses: list[str]
+    ) -> list[dict[str, Any]]:
+        """按多个状态列出目标"""
+        if not statuses:
+            return []
+        conn = self._get_conn()
+        try:
+            placeholders = ",".join("?" * len(statuses))
+            cursor = conn.execute(
+                f"""SELECT * FROM goals
+                    WHERE user_id = ? AND status IN ({placeholders})
+                    ORDER BY created_at DESC""",
+                (user_id, *statuses),
+            )
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()

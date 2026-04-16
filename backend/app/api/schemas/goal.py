@@ -76,3 +76,57 @@ class GoalListResponse(BaseModel):
 class GoalDetailResponse(GoalResponse):
     """目标详情响应（含关联条目数）"""
     linked_entries_count: int = 0
+
+
+# === 条目关联 ===
+
+class GoalEntryCreate(BaseModel):
+    """创建目标-条目关联请求"""
+    entry_id: str = Field(..., min_length=1, description="条目 ID")
+
+
+class EntryInfo(BaseModel):
+    """关联条目简要信息"""
+    id: str
+    title: Optional[str] = None
+    status: Optional[str] = None
+    category: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class GoalEntryResponse(BaseModel):
+    """目标-条目关联响应"""
+    id: str
+    goal_id: str
+    entry_id: str
+    created_at: str
+    entry: EntryInfo
+
+
+class GoalEntryListResponse(BaseModel):
+    """目标-条目关联列表响应"""
+    entries: List[GoalEntryResponse]
+
+
+# === Checklist 切换 ===
+
+class ChecklistItemToggle(BaseModel):
+    """检查清单项切换请求"""
+    checked: bool = Field(..., description="是否勾选")
+
+
+# === 进度汇总 ===
+
+class ProgressItem(BaseModel):
+    """进度单项"""
+    id: str
+    title: str
+    progress_percentage: float
+    progress_delta: Optional[float] = None
+
+
+class ProgressSummaryResponse(BaseModel):
+    """进度汇总响应"""
+    active_count: int
+    completed_count: int
+    goals: List[ProgressItem]

@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 6,
-    "in_progress": 0,
-    "completed": 0,
+    "pending": 4,
+    "in_progress": 1,
+    "completed": 1,
     "blocked": 0,
     "cancelled": 0
   },
@@ -138,7 +138,7 @@
       "description": "新增 goals SQLite 表和 CRUD API。支持三种衡量方式：count（手动计数）、checklist（检查清单）、tag_auto（基于 tag 自动追踪）。目标有状态（active/completed/abandoned）和可选时间范围。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "acceptance_criteria": [
         "goals 表包含 id, user_id, title, description, metric_type, target_value, current_value, status, start_date, end_date, auto_tags, checklist_items, created_at, updated_at",
@@ -152,7 +152,9 @@
         "checklist 类型创建时 checklist_items 为必填（JSON 数组 [{title}]），自动生成 id 并设置 checked=false",
         "单元测试覆盖正常/边界/异常场景"
       ],
-      "risk_tags": ["auth"],
+      "risk_tags": [
+        "auth"
+      ],
       "test_tasks": [
         "正常：创建 count 类型目标",
         "正常：创建 tag_auto 类型目标，含 auto_tags",
@@ -179,7 +181,12 @@
         "backend/app/infrastructure/storage/sqlite.py",
         "backend/app/api/schemas/goal.py"
       ],
-      "planning_notes": "goals 表与 entry_links 同级，属于 SQLite 元数据层，不写 Markdown。progress_percentage 由 GoalService.calculate_progress() 计算返回，不持久化。checklist_items 存为 JSON TEXT 列，每个 item 含 id(uuid)、title、checked(boolean)。auto_tags 存为 JSON TEXT 列（字符串数组）。current_value 仅用于 count 类型（手动关联条目数），tag_auto 和 checklist 类型每次查询时实时计算。"
+      "planning_notes": "goals 表与 entry_links 同级，属于 SQLite 元数据层，不写 Markdown。progress_percentage 由 GoalService.calculate_progress() 计算返回，不持久化。checklist_items 存为 JSON TEXT 列，每个 item 含 id(uuid)、title、checked(boolean)。auto_tags 存为 JSON TEXT 列（字符串数组）。current_value 仅用于 count 类型（手动关联条目数），tag_auto 和 checklist 类型每次查询时实时计算。",
+      "started_at": "2026-04-16T12:06:27.569Z",
+      "evidence_file": "evidence/B45.md",
+      "completed_at": "2026-04-16T12:40:40.959Z",
+      "commit": "f335e5d",
+      "execution_notes": "20 tests pass, 677+231 total, no regressions"
     },
     {
       "id": "B46",
@@ -188,8 +195,10 @@
       "name": "Goal 条目关联 + 进度计算",
       "description": "条目可手动关联到 count 类型目标，进度 = 已关联条目数 / target_value（关联即计数，不依赖条目 complete 状态）。checklist 类型支持勾选检查项。tag_auto 类型基于 auto_tags 实时计算进度。",
       "verification": "L2",
-      "depends_on": ["B45"],
-      "status": "pending",
+      "depends_on": [
+        "B45"
+      ],
+      "status": "in_progress",
       "priority": "high",
       "acceptance_criteria": [
         "goal_entries 表：id, goal_id, entry_id, user_id, created_at",
@@ -233,7 +242,9 @@
         "backend/app/services/goal_service.py",
         "backend/app/infrastructure/storage/sqlite.py"
       ],
-      "planning_notes": "tag_auto 进度计算使用归一化 entry_tags 表：SELECT COUNT(DISTINCT e.id) FROM entries e JOIN entry_tags et ON e.id = et.entry_id WHERE e.user_id=? AND et.tag IN (auto_tags) AND e.created_at BETWEEN start_date AND end_date。每个 tag 用 IN 子句匹配。count 类型的 current_value 在关联/取消关联时更新（+1/-1），不每次全量计算。checklist 勾选直接更新 checklist_items JSON 中的 checked 字段。"
+      "planning_notes": "tag_auto 进度计算使用归一化 entry_tags 表：SELECT COUNT(DISTINCT e.id) FROM entries e JOIN entry_tags et ON e.id = et.entry_id WHERE e.user_id=? AND et.tag IN (auto_tags) AND e.created_at BETWEEN start_date AND end_date。每个 tag 用 IN 子句匹配。count 类型的 current_value 在关联/取消关联时更新（+1/-1），不每次全量计算。checklist 勾选直接更新 checklist_items JSON 中的 checked 字段。",
+      "started_at": "2026-04-16T12:40:40.960Z",
+      "evidence_file": "evidence/B46.md"
     },
     {
       "id": "B47",
@@ -242,7 +253,9 @@
       "name": "Goal 自动追踪触发",
       "description": "当条目创建或更新 tags 时，自动触发 tag_auto 类型目标的进度重算。集成到 entry_service 的创建/更新流程中。",
       "verification": "L2",
-      "depends_on": ["B45"],
+      "depends_on": [
+        "B45"
+      ],
       "status": "pending",
       "priority": "medium",
       "acceptance_criteria": [
@@ -276,7 +289,10 @@
       "name": "Goals 页面 + 详情",
       "description": "新增 /goals 路由和 GoalsPage 组件。展示目标列表（按状态分组）、创建/编辑弹窗、目标详情页（进度 + 关联条目 + 检查项）。",
       "verification": "F2",
-      "depends_on": ["B45", "B46"],
+      "depends_on": [
+        "B45",
+        "B46"
+      ],
       "status": "pending",
       "priority": "high",
       "acceptance_criteria": [
@@ -337,7 +353,9 @@
       "name": "首页目标进度卡片",
       "description": "在首页「今日任务」和「最近灵感」之间新增活跃目标卡片，展示最近 3 个活跃目标的进度。",
       "verification": "F2",
-      "depends_on": ["B45"],
+      "depends_on": [
+        "B45"
+      ],
       "status": "pending",
       "priority": "medium",
       "acceptance_criteria": [
@@ -372,7 +390,11 @@
       "name": "回顾页目标完成概览",
       "description": "在回顾页新增目标概览区域，展示当前周期内目标完成情况。",
       "verification": "F2",
-      "depends_on": ["B45", "B46", "B47"],
+      "depends_on": [
+        "B45",
+        "B46",
+        "B47"
+      ],
       "status": "pending",
       "priority": "medium",
       "acceptance_criteria": [
