@@ -139,22 +139,24 @@
       "started_at": "2026-04-17",
       "completed_at": "2026-04-17",
       "actual_minutes": 20,
-      "execution_notes": "在 get_monthly_report 添加 AI summary 调用，与日报/周报模式一致。722+231 测试通过。",
+      "execution_notes": "在 get_monthly_report 添加 AI summary 调用，与日报/周报模式一致。733+231 测试通过。",
       "commit": "de99de0",
       "priority": "high",
       "acceptance_criteria": [
         "get_monthly_report 调用 _generate_ai_summary('monthly', ...) 生成月报AI总结",
         "传入月报统计数据（任务完成数/率、笔记数量、学习主题分布等）",
-        "超时10秒，失败时 ai_summary 为 None",
+        "超时10秒，失败时 ai_summary 为空字符串（与 daily/weekly 一致）",
+        "LLM 未配置时 ai_summary 为 None",
         "现有月报测试通过，新增月报AI总结测试",
-        "717+ 后端测试不被破坏"
+        "733+ 后端测试不被破坏"
       ],
       "risk_tags": [],
       "test_tasks": [
         "正常：月报返回 ai_summary 非空字符串",
         "正常：月报统计数据正确传入 LLM",
-        "异常：LLM 超时时 ai_summary 为 None",
-        "异常：LLM 失败时月报其他字段正常返回",
+        "异常：LLM 未配置时 ai_summary 为 None",
+        "异常：LLM 超时时 ai_summary 为空字符串",
+        "异常：LLM 失败时月报其他字段正常返回、ai_summary 为空字符串",
         "边界：无数据月份的 AI 总结"
       ],
       "contract_refs": [

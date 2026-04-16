@@ -20,7 +20,7 @@
 
 | 变更字段 | 类型 | 说明 |
 |---------|------|------|
-| ai_summary | string \| null | LLM 生成的月度总结，10 秒超时，失败时为 null |
+| ai_summary | string \| null | LLM 生成的月度总结，10 秒超时，失败时为空字符串，LLM 未配置时为 null |
 
 #### CONTRACT-ENTRY-TYPE01: POST /entries (category 扩展)
 
