@@ -15,6 +15,9 @@ import {
   AlertTriangle,
   Inbox,
   BookOpen,
+  Flame,
+  Target,
+  Eye,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import type { TaskStatus } from "@/types/task";
@@ -218,6 +221,61 @@ export function Home() {
                           color="text-green-500 dark:text-green-400"
                         />
                       </div>
+
+                      {/* 学习连续天数 */}
+                      {(digest.learning_streak ?? 0) > 0 && (
+                        <div className="flex items-center gap-2 pt-1">
+                          <Flame className={`${
+                            (digest.learning_streak ?? 0) >= 7
+                              ? "h-5 w-5 text-orange-500"
+                              : "h-4 w-4 text-orange-400"
+                          }`} />
+                          <span className={`text-sm font-medium ${
+                            (digest.learning_streak ?? 0) >= 7
+                              ? "text-orange-600 dark:text-orange-400"
+                              : "text-muted-foreground"
+                          }`}>
+                            连续学习 {(digest.learning_streak ?? 0)} 天
+                          </span>
+                          {(digest.learning_streak ?? 0) >= 7 && (
+                            <span className="text-xs text-orange-500">太棒了！</span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* 今日聚焦 */}
+                      {digest.daily_focus && (
+                        <div
+                          className="flex items-start gap-2 p-2 rounded-lg bg-background/60 cursor-pointer hover:bg-background/80 transition-colors"
+                          onClick={() => {
+                            if (digest.daily_focus?.target_entry_id) {
+                              navigate(`/entry/${digest.daily_focus.target_entry_id}`);
+                            }
+                          }}
+                        >
+                          <Target className="h-4 w-4 text-indigo-500 mt-0.5 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{digest.daily_focus.title}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-2">{digest.daily_focus.description}</p>
+                          </div>
+                          {digest.daily_focus.target_entry_id && (
+                            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />
+                          )}
+                        </div>
+                      )}
+
+                      {/* 模式洞察 */}
+                      {digest.pattern_insights && digest.pattern_insights.length > 0 && (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-xs font-medium text-muted-foreground">洞察</span>
+                          </div>
+                          {digest.pattern_insights.map((insight, i) => (
+                            <p key={i} className="text-xs text-muted-foreground pl-5">• {insight}</p>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>

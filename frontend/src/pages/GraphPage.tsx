@@ -13,7 +13,7 @@ import {
   Position,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Loader2, X, AlertCircle, Compass, Plus, Layers, Search, BarChart3, Clock, FileText } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import {
@@ -349,6 +349,8 @@ function DetailPanelContent({
 
 // === 主页面 ===
 export function GraphPage() {
+  const [searchParams] = useSearchParams();
+  const focusConcept = searchParams.get("focus");
   const [activeView, setActiveView] = useState<ViewKey>("domain");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -416,6 +418,27 @@ export function GraphPage() {
   useEffect(() => {
     loadMap(activeView);
   }, [activeView, loadMap]);
+
+  // F31: URL ?focus= 参数 — 自动选中并高亮对应节点
+  useEffect(() => {
+    if (!focusConcept || !mapData || loading) return;
+    const matchNode = mapData.nodes.find(
+      (n) => n.name.toLowerCase() === focusConcept.toLowerCase() || n.id.toLowerCase() === focusConcept.toLowerCase()
+    );
+    if (matchNode) {
+      setSelectedNode(matchNode);
+      // 高亮匹配节点
+      setNodes((prev) =>
+        prev.map((n) => ({
+          ...n,
+          data: {
+            ...n.data,
+            highlighted: n.id === matchNode.id,
+          } as Record<string, unknown>,
+        }))
+      );
+    }
+  }, [focusConcept, mapData, loading, setNodes]);
 
   // F27: 加载掌握度分布
   useEffect(() => {

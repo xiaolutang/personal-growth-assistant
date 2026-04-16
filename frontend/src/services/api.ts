@@ -626,6 +626,12 @@ export interface MorningDigestWeeklySummary {
   entries_count: number;
 }
 
+export interface DailyFocus {
+  title: string;
+  description: string;
+  target_entry_id: string | null;
+}
+
 export interface MorningDigestResponse {
   date: string;
   ai_suggestion: string;
@@ -633,6 +639,9 @@ export interface MorningDigestResponse {
   overdue: MorningDigestOverdue[];
   stale_inbox: MorningDigestStaleInbox[];
   weekly_summary: MorningDigestWeeklySummary;
+  learning_streak?: number;
+  daily_focus?: DailyFocus | null;
+  pattern_insights?: string[];
 }
 
 export async function getMorningDigest(): Promise<MorningDigestResponse> {
@@ -838,6 +847,97 @@ export async function getMasteryDistribution(): Promise<MasteryDistributionRespo
     headers: buildAuthHeaders(),
   });
   return handleApiResponse<MasteryDistributionResponse>(response);
+}
+
+// === 条目手动关联 API (F32) ===
+
+export type RelationType = "related" | "depends_on" | "derived_from" | "references";
+
+export interface EntryLinkTarget {
+  id: string;
+  title: string;
+  category: string;
+}
+
+export interface EntryLinkItem {
+  id: string;
+  target_id: string;
+  target_entry: EntryLinkTarget;
+  relation_type: RelationType;
+  direction: "out" | "in";
+  created_at: string;
+}
+
+export interface EntryLinkListResponse {
+  links: EntryLinkItem[];
+}
+
+export interface EntryLinkCreateResponse {
+  id: string;
+  source_id: string;
+  target_id: string;
+  relation_type: RelationType;
+  created_at: string;
+  target_entry: EntryLinkTarget;
+}
+
+export async function getEntryLinks(entryId: string, direction?: "out" | "in" | "both"): Promise<EntryLinkListResponse> {
+  const params = new URLSearchParams();
+  if (direction) params.set("direction", direction);
+  const qs = params.toString();
+  const url = `${API_BASE}/entries/${encodeURIComponent(entryId)}/links${qs ? `?${qs}` : ""}`;
+  const response = await fetch(url, { headers: buildAuthHeaders() });
+  return handleApiResponse<EntryLinkListResponse>(response);
+}
+
+export async function createEntryLink(
+  entryId: string,
+  targetId: string,
+  relationType: RelationType
+): Promise<EntryLinkCreateResponse> {
+  const response = await fetch(`${API_BASE}/entries/${encodeURIComponent(entryId)}/links`, {
+    method: "POST",
+    headers: buildAuthHeaders({ headers: { "Content-Type": "application/json" } }),
+    body: JSON.stringify({ target_id: targetId, relation_type: relationType }),
+  });
+  return handleApiResponse<EntryLinkCreateResponse>(response);
+}
+
+export async function deleteEntryLink(entryId: string, linkId: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/entries/${encodeURIComponent(entryId)}/links/${encodeURIComponent(linkId)}`, {
+    method: "DELETE",
+    headers: buildAuthHeaders(),
+  });
+  if (!response.ok) throw new ApiError(response.status, `删除关联失败: ${response.status}`);
+}
+
+// === 条目知识上下文 API (F31) ===
+
+export interface KnowledgeContextNode {
+  id: string;
+  name: string;
+  category: string | null;
+  mastery: "new" | "beginner" | "intermediate" | "advanced";
+  entry_count: number;
+}
+
+export interface KnowledgeContextEdge {
+  source: string;
+  target: string;
+  relationship: string;
+}
+
+export interface KnowledgeContextResponse {
+  nodes: KnowledgeContextNode[];
+  edges: KnowledgeContextEdge[];
+  center_concepts: string[];
+}
+
+export async function getKnowledgeContext(entryId: string): Promise<KnowledgeContextResponse> {
+  const response = await fetch(`${API_BASE}/entries/${encodeURIComponent(entryId)}/knowledge-context`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<KnowledgeContextResponse>(response);
 }
 
 // === 活动热力图 API ===
