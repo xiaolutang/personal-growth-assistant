@@ -48,6 +48,25 @@ import { LinkEntryDialog } from "@/components/LinkEntryDialog";
 
 type ContentTab = "preview" | "edit";
 
+/** 共享的 Markdown 链接渲染器：/entry/ 走 SPA 导航，其他走原生跳转 */
+function getMarkdownComponents(navigate: (path: string) => void) {
+  return {
+    a: ({ href, children }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { children?: React.ReactNode }) => {
+      if (href?.startsWith("/entry/")) {
+        return (
+          <span
+            className="text-primary hover:underline cursor-pointer"
+            onClick={() => navigate(href)}
+          >
+            {children}
+          </span>
+        );
+      }
+      return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
+    },
+  };
+}
+
 /** 将 Markdown 按 ## 分割成结构化 sections 并以卡片形式渲染 */
 function StructuredContent({ content, category, navigate }: { content: string; category: string; navigate: (path: string) => void }) {
   const sections = content.split(/\n(?=## )/).filter(Boolean);
@@ -92,21 +111,7 @@ function StructuredContent({ content, category, navigate }: { content: string; c
             <div className="prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
-                components={{
-                  a: ({ href, children }) => {
-                    if (href?.startsWith("/entry/")) {
-                      return (
-                        <span
-                          className="text-primary hover:underline cursor-pointer"
-                          onClick={() => navigate(href)}
-                        >
-                          {children}
-                        </span>
-                      );
-                    }
-                    return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
-                  },
-                }}
+                components={getMarkdownComponents(navigate)}
               >
                 {body || "（待补充）"}
               </ReactMarkdown>
@@ -872,21 +877,7 @@ export function EntryDetail() {
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
-                  components={{
-                    a: ({ href, children }) => {
-                      if (href?.startsWith("/entry/")) {
-                        return (
-                          <span
-                            className="text-primary hover:underline cursor-pointer"
-                            onClick={() => navigate(href)}
-                          >
-                            {children}
-                          </span>
-                        );
-                      }
-                      return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
-                    },
-                  }}
+                  components={getMarkdownComponents(navigate)}
                 >
                   {(isEditing ? editContent : parsedContent) || "暂无内容"}
                 </ReactMarkdown>
