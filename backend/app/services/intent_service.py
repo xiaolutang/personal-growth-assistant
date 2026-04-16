@@ -11,6 +11,13 @@ from app.callers import APICaller
 # 意图类型
 INTENT_TYPES = ["create", "read", "update", "delete", "knowledge", "review", "help"]
 
+# 条目类型关键词映射
+CATEGORY_KEYWORDS = {
+    "decision": ["决策", "决定", "抉择", "选择方案"],
+    "reflection": ["复盘", "反思", "回顾总结", "经验总结", "教训"],
+    "question": ["疑问", "待解问题", "困惑", "想不通"],
+}
+
 
 class IntentResult(BaseModel):
     """意图识别结果"""
@@ -26,8 +33,12 @@ INTENT_SYSTEM_PROMPT = """你是一个意图识别助手。分析用户输入，
 ## 意图类型
 
 1. **create** - 创建新条目
-   关键词：新建、创建、添加、记录、记一下
+   关键词：新建、创建、添加、记录、记一下、记个决策、写个复盘、记个疑问
+   条目类型关键词：决策/决定 → category: decision；复盘/反思 → category: reflection；疑问/问题 → category: question
    例："明天开会" → intent: create, query: "明天开会"
+   例："记个决策：选了 Rust 而不是 Go" → intent: create, query: "选了 Rust 而不是 Go", entities: {"category": "decision"}
+   例："写个复盘：项目延期原因" → intent: create, query: "项目延期原因", entities: {"category": "reflection"}
+   例："记个疑问：为什么用 WebSocket" → intent: create, query: "为什么用 WebSocket", entities: {"category": "question"}
 
 2. **read** - 查询/搜索
    关键词：帮我找、搜索、有没有、查找、寻找、查看、显示
@@ -199,4 +210,10 @@ class IntentService:
                 query = re.sub(pattern, "", text).strip()
                 return IntentResult(intent="read", confidence=0.8, query=query or text)
         # 默认创建
-        return IntentResult(intent="create", confidence=0.6, query=text)
+        # 检测条目类型关键词
+        entities = {}
+        for cat, keywords in CATEGORY_KEYWORDS.items():
+            if any(k in text for k in keywords):
+                entities["category"] = cat
+                break
+        return IntentResult(intent="create", confidence=0.6, query=text, entities=entities)

@@ -529,3 +529,116 @@ async def test_progress_nonexistent_project(client: AsyncClient):
     """测试不存在项目的进度返回 404"""
     response = await client.get("/entries/nonexistent-project/progress")
     assert response.status_code == 404
+
+
+# === B49: 新条目类型测试 ===
+
+
+@pytest.mark.asyncio
+async def test_create_decision(client: AsyncClient):
+    """测试创建决策记录"""
+    response = await client.post(
+        "/entries",
+        json={
+            "category": "decision",
+            "title": "选了 Rust 而不是 Go",
+            "content": "",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["category"] == "decision"
+    assert data["id"].startswith("decision-")
+    # 空 content 应使用模板
+    assert "决策背景" in data["content"]
+
+
+@pytest.mark.asyncio
+async def test_create_reflection(client: AsyncClient):
+    """测试创建复盘笔记"""
+    response = await client.post(
+        "/entries",
+        json={
+            "category": "reflection",
+            "title": "项目延期复盘",
+            "content": "",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["category"] == "reflection"
+    assert data["id"].startswith("reflection-")
+    assert "回顾目标" in data["content"]
+
+
+@pytest.mark.asyncio
+async def test_create_question(client: AsyncClient):
+    """测试创建待解疑问"""
+    response = await client.post(
+        "/entries",
+        json={
+            "category": "question",
+            "title": "为什么用 WebSocket",
+            "content": "",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["category"] == "question"
+    assert data["id"].startswith("question-")
+    assert "问题描述" in data["content"]
+
+
+@pytest.mark.asyncio
+async def test_create_decision_with_content_skips_template(client: AsyncClient):
+    """测试有内容时不使用模板"""
+    response = await client.post(
+        "/entries",
+        json={
+            "category": "decision",
+            "title": "技术选型",
+            "content": "我们选了 Python",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["content"] == "我们选了 Python"
+
+
+@pytest.mark.asyncio
+async def test_filter_by_decision_type(client: AsyncClient):
+    """测试按决策类型筛选"""
+    await client.post("/entries", json={"category": "decision", "title": "决策1", "content": ""})
+    await client.post("/entries", json={"category": "task", "title": "任务1", "content": ""})
+
+    response = await client.get("/entries?type=decision")
+    assert response.status_code == 200
+    data = response.json()
+    for entry in data["entries"]:
+        assert entry["category"] == "decision"
+
+
+@pytest.mark.asyncio
+async def test_filter_by_reflection_type(client: AsyncClient):
+    """测试按复盘类型筛选"""
+    await client.post("/entries", json={"category": "reflection", "title": "复盘1", "content": ""})
+
+    response = await client.get("/entries?type=reflection")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["entries"]) >= 1
+    for entry in data["entries"]:
+        assert entry["category"] == "reflection"
+
+
+@pytest.mark.asyncio
+async def test_filter_by_question_type(client: AsyncClient):
+    """测试按疑问类型筛选"""
+    await client.post("/entries", json={"category": "question", "title": "问题1", "content": ""})
+
+    response = await client.get("/entries?type=question")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["entries"]) >= 1
+    for entry in data["entries"]:
+        assert entry["category"] == "question"

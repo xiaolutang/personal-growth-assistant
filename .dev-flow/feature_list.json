@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 4,
-    "pending": 4,
+    "pending": 3,
     "in_progress": 0,
-    "completed": 0,
+    "completed": 1,
     "blocked": 0,
     "cancelled": 0
   },
@@ -135,7 +135,12 @@
       "description": "review_service.get_monthly_report 已有 MonthlyReport.ai_summary 字段但未调用 _generate_ai_summary。需要在月报生成时调用 LLM 生成总结文本，与日报/周报保持一致。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-17",
+      "completed_at": "2026-04-17",
+      "actual_minutes": 20,
+      "execution_notes": "在 get_monthly_report 添加 AI summary 调用，与日报/周报模式一致。722+231 测试通过。",
+      "commit": "de99de0",
       "priority": "high",
       "acceptance_criteria": [
         "get_monthly_report 调用 _generate_ai_summary('monthly', ...) 生成月报AI总结",

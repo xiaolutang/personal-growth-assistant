@@ -21,6 +21,9 @@ class MarkdownStorage:
         Category.TASK: "tasks",
         Category.NOTE: "notes",
         Category.INBOX: "",  # inbox.md 在根目录
+        Category.DECISION: "decisions",
+        Category.REFLECTION: "reflections",
+        Category.QUESTION: "questions",
     }
 
     def __init__(self, data_dir: str = "./data"):
@@ -29,7 +32,7 @@ class MarkdownStorage:
 
     def _ensure_dirs(self):
         """确保目录存在"""
-        for category_dir in ["projects", "tasks", "notes"]:
+        for category_dir in ["projects", "tasks", "notes", "decisions", "reflections", "questions"]:
             (self.data_dir / category_dir).mkdir(parents=True, exist_ok=True)
 
     def _safe_relative_path(self, file_path: Path) -> str:
@@ -97,6 +100,12 @@ class MarkdownStorage:
                 return Category.TASK
             elif dir_name == "notes":
                 return Category.NOTE
+            elif dir_name == "decisions":
+                return Category.DECISION
+            elif dir_name == "reflections":
+                return Category.REFLECTION
+            elif dir_name == "questions":
+                return Category.QUESTION
 
         if _INBOX_FILE_RE.match(file_path.name):
             return Category.INBOX
@@ -309,7 +318,7 @@ class MarkdownStorage:
         if category:
             dirs = [self.CATEGORY_DIRS.get(category, "notes")]
         else:
-            dirs = ["projects", "tasks", "notes"]
+            dirs = ["projects", "tasks", "notes", "decisions", "reflections", "questions"]
 
         for dir_name in dirs:
             if not dir_name:

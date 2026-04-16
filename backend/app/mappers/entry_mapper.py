@@ -15,6 +15,9 @@ class EntryMapper:
         "task": Category.TASK,
         "note": Category.NOTE,
         "inbox": Category.INBOX,
+        "decision": Category.DECISION,
+        "reflection": Category.REFLECTION,
+        "question": Category.QUESTION,
     }
 
     STATUS_MAP = {

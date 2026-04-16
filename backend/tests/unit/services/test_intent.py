@@ -224,3 +224,37 @@ class TestIntentAPI:
         )
 
         assert response.status_code == 200
+
+
+class TestCategoryKeywordDetection:
+    """B49: 条目类型关键词检测"""
+
+    @pytest.fixture
+    def service(self):
+        return IntentService(llm_caller=None)
+
+    def test_detect_decision_keyword(self, service):
+        texts = ["记个决策：选了 Rust 而不是 Go", "做一个决定，选择方案A", "技术抉择记录"]
+        for text in texts:
+            result = service._fallback_detection(text)
+            assert result.intent == "create"
+            assert result.entities.get("category") == "decision", f"Failed for: {text}"
+
+    def test_detect_reflection_keyword(self, service):
+        texts = ["写个复盘：项目延期原因", "反思一下最近的学习方法"]
+        for text in texts:
+            result = service._fallback_detection(text)
+            assert result.intent == "create"
+            assert result.entities.get("category") == "reflection", f"Failed for: {text}"
+
+    def test_detect_question_keyword(self, service):
+        texts = ["记个疑问：为什么用 WebSocket", "一个待解问题：如何优化性能"]
+        for text in texts:
+            result = service._fallback_detection(text)
+            assert result.intent == "create"
+            assert result.entities.get("category") == "question", f"Failed for: {text}"
+
+    def test_no_category_for_normal_create(self, service):
+        result = service._fallback_detection("明天开会")
+        assert result.intent == "create"
+        assert result.entities.get("category") is None

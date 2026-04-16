@@ -231,7 +231,7 @@ class UserStorage:
 
 
 # 白名单子目录：与 MarkdownStorage.CATEGORY_DIRS 中非 INBOX 的目录一致
-_WHITELIST_SUBDIRS = ("tasks", "notes", "projects")
+_WHITELIST_SUBDIRS = ("tasks", "notes", "projects", "decisions", "reflections", "questions")
 
 # _INBOX_FILE_RE 从 markdown.py 导入，确保与 MarkdownStorage 一致
 
