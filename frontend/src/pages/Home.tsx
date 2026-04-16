@@ -18,6 +18,9 @@ import {
   Flame,
   Target,
   Eye,
+  Scale,
+  RotateCcw,
+  HelpCircle,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import type { TaskStatus } from "@/types/task";
@@ -491,6 +494,21 @@ export function Home() {
                   icon={<FileText className="h-5 w-5" />}
                   label="写笔记"
                   onClick={() => navigate("/explore?type=note")}
+                />
+                <QuickActionButton
+                  icon={<Scale className="h-5 w-5" />}
+                  label="记决策"
+                  onClick={() => navigate("/explore?type=decision")}
+                />
+                <QuickActionButton
+                  icon={<RotateCcw className="h-5 w-5" />}
+                  label="写复盘"
+                  onClick={() => navigate("/explore?type=reflection")}
+                />
+                <QuickActionButton
+                  icon={<HelpCircle className="h-5 w-5" />}
+                  label="记疑问"
+                  onClick={() => navigate("/explore?type=question")}
                 />
               </div>
             </div>

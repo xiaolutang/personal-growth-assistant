@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 4,
-    "pending": 3,
+    "pending": 1,
     "in_progress": 0,
-    "completed": 1,
+    "completed": 3,
     "blocked": 0,
     "cancelled": 0
   },
@@ -172,7 +172,11 @@
       "description": "新增三种条目类型：decision（决策日志）、reflection（复盘笔记）、question（待解疑问）。每种类型有专属 Markdown 模板和目录。扩展现有条目分类体系，不改数据模型结构。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-17",
+      "completed_at": "2026-04-17",
+      "actual_minutes": 45,
+      "commit": "5c5bedc",
       "priority": "high",
       "acceptance_criteria": [
         "Category 枚举新增 decision | reflection | question (backend/app/models/enums.py)",
@@ -227,7 +231,11 @@
       "description": "Review.tsx 月报 Tab 当前排除了 AI 总结卡片展示。需要让月报也能展示 AI 总结，与日报/周报一致。",
       "verification": "F2",
       "depends_on": ["B48"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-17",
+      "completed_at": "2026-04-17",
+      "actual_minutes": 10,
+      "commit": "b29edde",
       "priority": "medium",
       "acceptance_criteria": [
         "月报 Tab 展示 AI 总结卡片（与日报/周报样式一致）",

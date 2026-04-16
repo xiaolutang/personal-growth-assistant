@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, Lightbulb, FileText, Folder, Layers, Clock, X, TrendingUp } from "lucide-react";
+import { Search, Lightbulb, FileText, Folder, Layers, Clock, X, TrendingUp, Scale, RotateCcw, HelpCircle } from "lucide-react";
 import { getEntries, searchEntries } from "../services/api";
 import { TaskList } from "../components/TaskList";
 import type { Task } from "../types/task";
@@ -12,10 +12,13 @@ const TABS = [
   { key: "inbox", label: "灵感", icon: Lightbulb },
   { key: "note", label: "笔记", icon: FileText },
   { key: "project", label: "项目", icon: Folder },
+  { key: "decision", label: "决策", icon: Scale },
+  { key: "reflection", label: "复盘", icon: RotateCcw },
+  { key: "question", label: "疑问", icon: HelpCircle },
 ] as const;
 
-// 探索页只展示 inbox/note/project，不含 task
-const EXPLORE_CATEGORIES = new Set(["inbox", "note", "project"]);
+// 探索页只展示 inbox/note/project/decision/reflection/question，不含 task
+const EXPLORE_CATEGORIES = new Set(["inbox", "note", "project", "decision", "reflection", "question"]);
 
 // === 搜索历史管理 ===
 const SEARCH_HISTORY_KEY = "search_history";
