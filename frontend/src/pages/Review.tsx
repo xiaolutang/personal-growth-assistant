@@ -689,6 +689,11 @@ export function Review() {
                     {goalSummary.goals.map(g => (
                       <div key={g.id} className="flex items-center gap-3">
                         <span className="text-sm truncate flex-1">{g.title}</span>
+                        {g.progress_delta != null && (
+                          <span className={`text-xs font-medium shrink-0 ${g.progress_delta > 0 ? "text-green-600 dark:text-green-400" : g.progress_delta < 0 ? "text-red-500" : "text-muted-foreground"}`}>
+                            {g.progress_delta > 0 ? "+" : ""}{g.progress_delta}%
+                          </span>
+                        )}
                         <div className="w-20 shrink-0">
                           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                             <div className="h-full bg-primary transition-all" style={{ width: `${g.progress_percentage}%` }} />

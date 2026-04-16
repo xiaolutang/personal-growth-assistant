@@ -9,7 +9,7 @@
   "active_requirement_cycle": {
     "id": "R012",
     "name": "goal-tracking",
-    "status": "planning",
+    "status": "completed",
     "branch": "feat/R012-goal-tracking"
   },
   "workflow": {

@@ -536,7 +536,7 @@ class TestProgressSummary:
         assert len(data["goals"]) == 2
 
     async def test_summary_with_completed_goals(self, client, storage, test_user):
-        """包含已完成目标的汇总"""
+        """已完成目标不计入 goals 列表，但计入 completed_count"""
         goal = await _create_goal(client, title="已完成", target_value=1)
         entry_id = _create_test_entry(storage, test_user.id)
         # 关联条目触发自动完成
@@ -546,10 +546,10 @@ class TestProgressSummary:
         data = resp.json()
         assert data["active_count"] == 0
         assert data["completed_count"] == 1
-        assert len(data["goals"]) == 1
+        assert len(data["goals"]) == 0  # 已完成目标不在 goals 列表中
 
     async def test_summary_mixed_goals(self, client, storage, test_user):
-        """混合活跃和已完成目标"""
+        """混合活跃和已完成目标，goals 只含活跃目标"""
         await _create_goal(client, title="活跃1")
         goal = await _create_goal(client, title="将完成", target_value=1)
         entry_id = _create_test_entry(storage, test_user.id)
@@ -559,4 +559,4 @@ class TestProgressSummary:
         data = resp.json()
         assert data["active_count"] == 1
         assert data["completed_count"] == 1
-        assert len(data["goals"]) == 2
+        assert len(data["goals"]) == 1  # 只有活跃目标

@@ -1,8 +1,8 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：R004 Phase 2
-> 最后更新：2026-04-15
+> 活跃需求包：R012 goal-tracking
+> 最后更新：2026-04-16
 
 ## 任务树
 

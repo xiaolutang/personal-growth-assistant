@@ -419,14 +419,22 @@ class GoalService:
 
     # === 进度汇总 ===
 
-    def _calc_goal_progress(self, goal: dict[str, Any], linked_entries_count: int = 0) -> float:
-        """计算单个目标的当前进度百分比（不依赖 _row_to_response 的完整转换）"""
+    def _calc_goal_progress(
+        self, goal: dict[str, Any], linked_entries_count: int = 0, *, override_count: Optional[int] = None
+    ) -> float:
+        """计算单个目标的当前进度百分比
+
+        Args:
+            override_count: 如果提供，直接使用此值作为 current_value（用于历史快照）
+        """
         metric_type = goal.get("metric_type", "count")
         target_value = goal.get("target_value", 1)
         if target_value <= 0:
             return 0.0
 
-        if metric_type == "checklist":
+        if override_count is not None:
+            current = override_count
+        elif metric_type == "checklist":
             items = goal.get("checklist_items") or []
             if isinstance(items, str):
                 items = json.loads(items)
@@ -455,9 +463,8 @@ class GoalService:
         active_goals = self._sqlite.list_goals_by_status(user_id, ["active"])
         completed_goals = self._sqlite.list_goals_by_status(user_id, ["completed"])
 
-        all_goals = active_goals + completed_goals
         items = []
-        for goal in all_goals:
+        for goal in active_goals:
             linked_count = self._sqlite.count_goal_entries(goal["id"], user_id)
             current_progress = self._calc_goal_progress(goal, linked_entries_count=linked_count)
 
@@ -466,8 +473,8 @@ class GoalService:
             if period in ("weekly", "monthly"):
                 try:
                     prev_end = self._get_prev_period_end(period)
-                    prev_goal = self._snapshot_goal_at(goal, prev_end)
-                    prev_progress = self._calc_goal_progress(prev_goal, linked_entries_count=0)
+                    prev_count = self._get_prev_period_count(goal, user_id, prev_end)
+                    prev_progress = self._calc_goal_progress(goal, override_count=prev_count)
                     progress_delta = round(current_progress - prev_progress, 1)
                 except Exception:
                     progress_delta = None
@@ -495,14 +502,12 @@ class GoalService:
             prev_end = now - timedelta(days=30)
         return prev_end.strftime("%Y-%m-%dT%H:%M:%S")
 
-    def _snapshot_goal_at(self, goal: dict[str, Any], cutoff: str) -> dict[str, Any]:
-        """生成目标在 cutoff 时刻的快照（用于计算历史进度）
+    def _get_prev_period_count(self, goal: dict[str, Any], user_id: str, cutoff: str) -> int:
+        """获取上一周期末的计数（用于计算 progress_delta）
 
-        对于 tag_auto：用时间范围限制的计数
-        对于 checklist：使用当前快照（checklist 变更不可追溯）
-        对于 count：使用当前快照（关联记录不可追溯）
+        tag_auto: 用 start_date~cutoff 时间范围统计
+        checklist/count: 不可追溯历史变更，返回 0
         """
-        snap = dict(goal)
         metric_type = goal.get("metric_type", "count")
         if metric_type == "tag_auto":
             tags = goal.get("auto_tags") or []
@@ -510,7 +515,7 @@ class GoalService:
                 tags = json.loads(tags)
             start_date = goal.get("start_date")
             if start_date and tags:
-                snap["_prev_count"] = self._sqlite.count_entries_by_tags_in_range(
-                    tags, goal["user_id"], start_date, cutoff
+                return self._sqlite.count_entries_by_tags_in_range(
+                    tags, user_id, start_date, cutoff
                 )
-        return snap
+        return 0
