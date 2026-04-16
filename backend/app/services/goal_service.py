@@ -469,7 +469,8 @@ class GoalService:
             current_progress = self._calc_goal_progress(goal, linked_entries_count=linked_count)
 
             # 计算 progress_delta：当前进度 - 上一周期末进度
-            # 仅 tag_auto 且有 start_date 时可追溯历史；其他类型返回 None
+            # 仅 tag_auto 且同时有 start_date + end_date 时可追溯历史
+            # 原因：当前进度用了 in_range，历史也必须用同样的范围才有可比性
             progress_delta = None
             if period in ("weekly", "monthly") and goal["metric_type"] == "tag_auto":
                 try:
@@ -477,7 +478,8 @@ class GoalService:
                     if isinstance(auto_tags, str):
                         auto_tags = json.loads(auto_tags)
                     start_date = goal.get("start_date")
-                    if auto_tags and start_date:
+                    end_date = goal.get("end_date")
+                    if auto_tags and start_date and end_date:
                         prev_end = self._get_prev_period_end(period)
                         prev_count = self._sqlite.count_entries_by_tags_in_range(
                             auto_tags, user_id, start_date, prev_end
