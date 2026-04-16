@@ -1,5 +1,59 @@
 # 对齐清单
 
+## R013: 月报AI总结 + 思考/决策记录
+
+### 契约对齐
+
+- [ ] B48: CONTRACT-REVIEW03 (月报 ai_summary 补齐) 已定义 ✓
+- [ ] B49: CONTRACT-ENTRY-TYPE01-04 (新类型 CRUD + 搜索) 已定义 ✓
+- [ ] F37 依赖 CONTRACT-REVIEW03 ✓
+- [ ] F38 依赖 CONTRACT-ENTRY-TYPE01-04 ✓
+
+### 依赖对齐
+
+- [ ] B48 无外部依赖 ✓（修改已有 review_service 方法）
+- [ ] B49 无外部依赖 ✓（扩展现有枚举和存储层）
+- [ ] F37 depends_on B48 ✓（需要后端返回 ai_summary）
+- [ ] F38 depends_on B49 ✓（需要后端支持新类型）
+- [ ] B48 和 B49 无互相依赖，可并行 ✓
+
+### 类型同步对齐
+
+- [ ] B49 包含 Category 枚举扩展 (backend/app/models/enums.py) ✓
+- [ ] B49 包含 schema 更新 (backend/app/api/schemas/entry.py) ✓
+- [ ] B49 验收条件包含 OpenAPI 类型同步 (npm run gen:types) ✓
+- [ ] F38 包含前端类型定义更新 (types/task.ts, constants.ts) ✓
+- [ ] F38 验收条件包含 npm run build 通过 ✓
+
+### 架构对齐
+
+- [ ] 新类型复用现有 entries 表，不新增数据表 ✓
+- [ ] 新类型使用 Markdown 目录存储，遵循 Source of Truth 原则 ✓
+- [ ] 意图识别扩展在 intent_service CATEGORY_KEYWORDS 中，不改架构 ✓
+- [ ] 模板为固定 Markdown heading 结构，不新增结构化字段 ✓
+- [ ] 所有 API 通过 Depends(get_current_user) 认证 ✓
+- [ ] 所有数据按 user_id 隔离 ✓
+- [ ] 前端遵循现有 api.ts + 类型定义模式 ✓
+
+### 渲染契约对齐
+
+- [ ] decision 类型详情页渲染：Markdown heading 解析 → 决策背景/选项/选择/理由结构 ✓
+- [ ] reflection 类型详情页渲染：Markdown heading 解析 → 回顾目标/结果/教训/下一步 ✓
+- [ ] question 类型详情页渲染：Markdown heading 解析 → 问题描述/背景/思考方向 ✓
+- [ ] 渲染方式为 Markdown 内容展示，不做额外结构化解析 ✓
+
+### 验收对齐
+
+- [ ] 每个任务有 acceptance_criteria ✓
+- [ ] 每个任务有 test_tasks ✓
+- [ ] B49 risk_tags: first_use ✓
+- [ ] B49 test_tasks 包含首用 smoke + 类型同步验证 + 搜索 fallback ✓
+- [ ] F37 test_tasks 包含错误态测试 ✓
+- [ ] F38 test_tasks 包含首用 smoke + 空数据 tab + 构建校验 ✓
+- [ ] 前端任务都要求 npm run build 通过 ✓
+
+---
+
 ## R012: 目标追踪闭环
 
 ### 契约对齐

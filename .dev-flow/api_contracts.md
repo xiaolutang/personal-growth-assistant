@@ -2,6 +2,65 @@
 
 ## 契约索引
 
+### R013 新增/变更契约
+
+| 契约 ID | 方法 | 端点 | 任务 | 状态 |
+|---------|------|------|------|------|
+| CONTRACT-REVIEW03 | GET | /review/monthly (ai_summary 补齐) | B48, F37 | planned |
+| CONTRACT-ENTRY-TYPE01 | POST | /entries (category 扩展) | B49, F38 | planned |
+| CONTRACT-ENTRY-TYPE02 | GET | /entries?type=decision\|reflection\|question | B49, F38 | planned |
+| CONTRACT-ENTRY-TYPE03 | GET | /entries/{id} (新类型详情) | B49, F38 | planned |
+| CONTRACT-ENTRY-TYPE04 | GET | /entries/search/query (新类型搜索) | B49, F38 | planned |
+
+### R013 契约详情
+
+#### CONTRACT-REVIEW03: GET /review/monthly (ai_summary 补齐)
+
+现有端点，变更仅限 ai_summary 字段从 None 变为 LLM 生成的总结文本。
+
+| 变更字段 | 类型 | 说明 |
+|---------|------|------|
+| ai_summary | string \| null | LLM 生成的月度总结，10 秒超时，失败时为 null |
+
+#### CONTRACT-ENTRY-TYPE01: POST /entries (category 扩展)
+
+现有端点，category 枚举新增三个值。
+
+| 新增枚举值 | 目录 | 模板 | 意图关键词 |
+|-----------|------|------|-----------|
+| decision | decisions/ | 决策背景/选项/选择/理由 | 记决策、决策日志 |
+| reflection | reflections/ | 回顾目标/实际结果/经验教训/下一步 | 写复盘、复盘笔记 |
+| question | questions/ | 问题描述/相关背景/思考方向 | 记疑问、待解问题 |
+
+请求/响应格式不变，仅 category 可选值扩展。
+
+#### CONTRACT-ENTRY-TYPE02: GET /entries?type=decision|reflection|question
+
+现有端点，type 过滤参数支持新值。返回格式不变。
+
+#### CONTRACT-ENTRY-TYPE03: GET /entries/{id} (新类型详情)
+
+现有端点，返回的 entry 对象 category 为新值。content 为对应模板的 Markdown 文本。
+
+#### CONTRACT-ENTRY-TYPE04: GET /entries/search/query (新类型搜索)
+
+现有端点，搜索结果包含新类型条目。
+
+### 类型同步链路
+
+```
+backend/app/models/enums.py Category 枚举
+  → backend/app/api/schemas/entry.py CreateEntryRequest.category
+    → OpenAPI schema (npm run gen:types)
+      → frontend/src/types/api.generated.ts Category 枚举
+        → frontend/src/types/task.ts category type
+          → frontend/src/config/constants.ts categoryConfig
+```
+
+---
+
+### 历史契约
+
 | 契约 ID | 方法 | 端点 | 任务 | 状态 |
 |---------|------|------|------|------|
 | CONTRACT-KG01 | GET | /knowledge/search | B28 | planned |

@@ -2,6 +2,13 @@
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
 |--------|----------|-----------|--------------------|--------|------|
+| 月报AI总结 | B48 | unit | 正常生成/超时返回null/LLM失败其他字段正常/无数据月份 | pending | — |
+| 新类型后端 | B49 | unit | 创建decision/reflection/question+模板/GET过滤/搜索/意图识别/已有类型不受影响/401/空模板 | pending | — |
+| 新类型后端 smoke | B49 | smoke | 新用户首次创建决策→列表筛选→搜索命中→详情返回正确类型 | pending | — |
+| 类型同步链路 | B49 | unit | Category枚举扩展/schema校验/构建通过/gen:types无报错 | pending | — |
+| 月报AI展示 | F37 | unit+manual | 月报Tab显示AI总结/空值显示生成中/API错误降级/构建通过 | pending | — |
+| 新类型前端 | F38 | unit+manual | 探索页Tab/首页快捷操作/详情差异化渲染/空数据Tab/构建通过 | pending | — |
+| 新类型前端 smoke | F38 | smoke | 首页记决策→探索页筛选→搜索命中→详情页结构正确 | pending | — |
 | 条目关联 API | B42 | unit | CRUD/双向/唯一约束/级联删除/事务/422枚举 | pending | — |
 | 知识上下文 API | B43 | unit | 正常子图/空tags/Neo4j降级/404 | pending | — |
 | AI 晨报增强 | B44 | unit | streak计算/LLM降级/兼容性/悬挂entry | pending | — |
