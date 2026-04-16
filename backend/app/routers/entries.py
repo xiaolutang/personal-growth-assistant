@@ -16,6 +16,9 @@ from app.api.schemas import (
     ProjectProgressResponse,
     RelatedEntriesResponse,
     EntrySummaryResponse,
+    EntryLinkCreate,
+    EntryLinkResponse,
+    EntryLinkListResponse,
 )
 from app.routers.deps import get_entry_service, get_storage, get_current_user
 from app.models.user import User
@@ -221,3 +224,50 @@ async def generate_ai_summary(entry_id: str, user: User = Depends(get_current_us
     if result is None:
         raise HTTPException(status_code=404, detail=f"条目不存在: {entry_id}")
     return result
+
+
+@router.post("/{entry_id}/links", response_model=EntryLinkResponse, status_code=201)
+async def create_entry_link(
+    entry_id: str,
+    request: EntryLinkCreate,
+    user: User = Depends(get_current_user),
+):
+    """创建条目关联（双向）"""
+    service = get_entry_service()
+    result, status_code, message = await service.create_entry_link(
+        entry_id, request, user_id=user.id
+    )
+    if result is None:
+        raise HTTPException(status_code=status_code, detail=message)
+    return result
+
+
+@router.get("/{entry_id}/links", response_model=EntryLinkListResponse)
+async def list_entry_links(
+    entry_id: str,
+    direction: str = Query("both", description="关联方向: in/out/both"),
+    user: User = Depends(get_current_user),
+):
+    """列出条目关联"""
+    service = get_entry_service()
+    result, status_code, message = await service.list_entry_links(
+        entry_id, user_id=user.id, direction=direction
+    )
+    if result is None:
+        raise HTTPException(status_code=status_code, detail=message)
+    return result
+
+
+@router.delete("/{entry_id}/links/{link_id}", status_code=204)
+async def delete_entry_link(
+    entry_id: str,
+    link_id: str,
+    user: User = Depends(get_current_user),
+):
+    """删除条目关联（双向）"""
+    service = get_entry_service()
+    success, status_code, message = await service.delete_entry_link(
+        entry_id, link_id, user_id=user.id
+    )
+    if not success:
+        raise HTTPException(status_code=status_code, detail=message)

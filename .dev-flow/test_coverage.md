@@ -2,6 +2,13 @@
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
 |--------|----------|-----------|--------------------|--------|------|
+| 条目关联 API | B42 | unit | CRUD/双向/唯一约束/级联删除/事务/422枚举 | pending | — |
+| 知识上下文 API | B43 | unit | 正常子图/空tags/Neo4j降级/404 | pending | — |
+| AI 晨报增强 | B44 | unit | streak计算/LLM降级/兼容性/悬挂entry | pending | — |
+| 图谱缩略图 | F31 | manual | 渲染/跳转?focus=/空态/移动端/API失败降级 | pending | — |
+| 手动关联 UI | F32 | manual | 搜索创建/删除/分区/API失败toast | pending | — |
+| 晨报展示 | F33 | manual | 连续天数/聚焦卡片/洞察/字段缺失降级 | pending | — |
+| 项目初始化 | S001 | unit | 默认值/环境变量覆盖 | completed | log-service repo commit e7a9b08 |
 | 项目初始化 | S001 | unit | 默认值/环境变量覆盖 | completed | log-service repo commit e7a9b08 |
 | 存储层 | B001 | unit | 建表/批量插入/按 service 查询/统计分组 | completed | log-service repo commit fec7f42 |
 | Handler | B002 | unit | 注册写入/批量 flush/进程退出 flush | completed | log-service repo commit d88b205 |

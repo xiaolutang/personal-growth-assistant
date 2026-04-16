@@ -21,6 +21,11 @@ from app.api.schemas import (
     ProjectProgressResponse,
     RelatedEntry,
     RelatedEntriesResponse,
+    EntryLinkCreate,
+    EntryLinkResponse,
+    EntryLinkItem,
+    EntryLinkListResponse,
+    LinkTargetEntry,
 )
 from app.mappers.entry_mapper import EntryMapper
 from app.models import Task, Category, TaskStatus, Priority
@@ -291,6 +296,10 @@ class EntryService:
         entry = self._get_markdown_storage(user_id).read_entry(entry_id)
         if not entry:
             return False, f"条目不存在: {entry_id}"
+
+        # 级联删除条目关联
+        if self.storage.sqlite:
+            self.storage.sqlite.delete_entry_links_by_entry(entry_id, user_id)
 
         # 删除
         success = await self.storage.delete_entry(entry_id, user_id=user_id)
@@ -590,3 +599,139 @@ class EntryService:
             self.storage.sqlite.save_ai_summary(entry_id, summary, user_id=user_id, generated_at=generated_at)
 
         return {"summary": summary, "generated_at": generated_at, "cached": False}
+
+    # === 条目关联操作 ===
+
+    async def create_entry_link(
+        self, entry_id: str, request: EntryLinkCreate, user_id: str = "_default"
+    ) -> Tuple[Optional[EntryLinkResponse], int, str]:
+        """创建条目关联（双向），返回 (响应, 状态码, 消息)"""
+        sqlite = self.storage.sqlite
+        if not sqlite:
+            return None, 503, "SQLite 索引不可用"
+
+        target_id = request.target_id
+        relation_type = request.relation_type
+
+        # 不允许自关联
+        if entry_id == target_id:
+            return None, 400, "不允许自关联: source_id 不能等于 target_id"
+
+        # 验证 source 条目存在且属于当前用户
+        if not sqlite.entry_belongs_to_user(entry_id, user_id):
+            return None, 404, f"条目不存在: {entry_id}"
+
+        # 验证 target 条目存在且属于当前用户
+        if not sqlite.entry_belongs_to_user(target_id, user_id):
+            return None, 404, f"目标条目不存在: {target_id}"
+
+        # 检查是否已存在（任一方向）
+        if sqlite.check_entry_link_exists(user_id, entry_id, target_id, relation_type):
+            return None, 409, f"关联已存在: {entry_id} -> {target_id} ({relation_type})"
+
+        # 创建双向关联
+        try:
+            sqlite.create_entry_links_pair(user_id, entry_id, target_id, relation_type)
+        except Exception as e:
+            if "UNIQUE constraint failed" in str(e):
+                return None, 409, f"关联已存在: {entry_id} -> {target_id} ({relation_type})"
+            raise
+
+        # 获取 target 条目信息
+        target_data = sqlite.get_entry(target_id, user_id)
+        target_entry = LinkTargetEntry(
+            id=target_id,
+            title=target_data.get("title", "") if target_data else "",
+            category=target_data.get("type", "") if target_data else "",
+        )
+
+        # 获取创建的正向记录
+        links = sqlite.list_entry_links(entry_id, user_id, direction="out")
+        fwd_link = None
+        for lk in links:
+            if lk["target_id"] == target_id and lk["relation_type"] == relation_type:
+                fwd_link = lk
+                break
+
+        return EntryLinkResponse(
+            id=fwd_link["id"],
+            source_id=fwd_link["source_id"],
+            target_id=fwd_link["target_id"],
+            relation_type=fwd_link["relation_type"],
+            created_at=fwd_link["created_at"],
+            target_entry=target_entry,
+        ), 201, "关联创建成功"
+
+    async def list_entry_links(
+        self, entry_id: str, user_id: str = "_default", direction: str = "both"
+    ) -> Tuple[Optional[EntryLinkListResponse], int, str]:
+        """列出条目关联"""
+        sqlite = self.storage.sqlite
+        if not sqlite:
+            return None, 503, "SQLite 索引不可用"
+
+        # 验证条目存在
+        if not sqlite.entry_belongs_to_user(entry_id, user_id):
+            return None, 404, f"条目不存在: {entry_id}"
+
+        if direction not in ("in", "out", "both"):
+            return None, 422, f"无效的 direction 参数: {direction}"
+
+        raw_links = sqlite.list_entry_links(entry_id, user_id, direction=direction)
+
+        # 去重（both 模式下，正向和反向可能指向同一对，需要用 id 去重）
+        seen_ids: set[str] = set()
+        items: list[EntryLinkItem] = []
+        for lk in raw_links:
+            if lk["id"] in seen_ids:
+                continue
+            seen_ids.add(lk["id"])
+
+            # target_id 根据 direction 决定
+            if lk["direction"] == "out":
+                tid = lk["target_id"]
+            else:
+                tid = lk["source_id"]
+
+            target_data = sqlite.get_entry(tid, user_id)
+            target_entry = LinkTargetEntry(
+                id=tid,
+                title=target_data.get("title", "") if target_data else "",
+                category=target_data.get("type", "") if target_data else "",
+            )
+            items.append(EntryLinkItem(
+                id=lk["id"],
+                target_id=tid,
+                target_entry=target_entry,
+                relation_type=lk["relation_type"],
+                direction=lk["direction"],
+                created_at=lk["created_at"],
+            ))
+
+        return EntryLinkListResponse(links=items), 200, ""
+
+    async def delete_entry_link(
+        self, entry_id: str, link_id: str, user_id: str = "_default"
+    ) -> Tuple[bool, int, str]:
+        """删除条目关联（双向），返回 (成功, 状态码, 消息)"""
+        sqlite = self.storage.sqlite
+        if not sqlite:
+            return False, 503, "SQLite 索引不可用"
+
+        # 验证条目存在
+        if not sqlite.entry_belongs_to_user(entry_id, user_id):
+            return False, 404, f"条目不存在: {entry_id}"
+
+        # 验证 link 属于该条目
+        link = sqlite.get_entry_link(link_id, user_id)
+        if not link:
+            return False, 404, f"关联不存在: {link_id}"
+        if link["source_id"] != entry_id and link["target_id"] != entry_id:
+            return False, 404, f"关联 {link_id} 不属于条目 {entry_id}"
+
+        # 删除双向
+        deleted = sqlite.delete_entry_link_pair(link_id, user_id)
+        if not deleted:
+            return False, 404, f"关联不存在: {link_id}"
+
+        return True, 204, ""

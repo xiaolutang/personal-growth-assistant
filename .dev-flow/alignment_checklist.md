@@ -1,5 +1,52 @@
 # 对齐清单
 
+## R011: 条目关联增强 + AI 晨报升级
+
+### 契约对齐
+
+- [ ] B42: CONTRACT-LINK01 (POST /entries/{id}/links) 已定义 → 含请求体/响应体/错误码
+- [ ] B42: CONTRACT-LINK02 (GET /entries/{id}/links) 已定义 → 含 direction 参数
+- [ ] B42: CONTRACT-LINK03 (DELETE /entries/{id}/links/{link_id}) 已定义 → 双向删除语义
+- [ ] B43: CONTRACT-KG04 (GET /entries/{id}/knowledge-context) 已定义 → 含 nodes/edges/center_concepts
+- [ ] B44: CONTRACT-REVIEW02 (GET /review/morning-digest 增强) 已定义 → 新增可选字段
+- [ ] F31 依赖 CONTRACT-KG04 ✓
+- [ ] F32 依赖 CONTRACT-LINK01/02/03 ✓，同时使用 GET /entries/search/query（已有）
+- [ ] F33 依赖 CONTRACT-REVIEW02 ✓
+
+### 依赖对齐
+
+- [ ] B42 无外部依赖 ✓（新表 + 新端点）
+- [ ] B43 无外部依赖 ✓（复用 knowledge_service + Neo4j/SQLite 降级）
+- [ ] B44 无外部依赖 ✓（增强现有 morning-digest）
+- [ ] F31 depends_on B43 ✓（需要 knowledge-context API）
+- [ ] F32 depends_on B42, F31 ✓（需要 links API + 避免同文件冲突）
+- [ ] F33 depends_on B44 ✓（需要增强后的 morning-digest 响应）
+
+### 架构对齐
+
+- [ ] 所有新 API 通过 Depends(get_current_user) 认证 ✓
+- [ ] 所有数据按 user_id 隔离 ✓
+- [ ] B42 entry_links 属于 SQLite 元数据层（与 users 表同级），不写入 Markdown ✓
+- [ ] B42 导出时由 export API 单独查询 entry_links 序列化 ✓
+- [ ] B43 Neo4j 不可达时降级为 SQLite 标签共现 ✓
+- [ ] B44 MorningDigestResponse 新增字段 Optional + 默认值 ✓（向后兼容）
+- [ ] F31 GraphPage 支持 ?focus= 参数 ✓（deep-link 落点）
+- [ ] 前端遵循现有 api.ts + 类型定义模式 ✓
+
+### 验收对齐
+
+- [ ] 每个任务有 acceptance_criteria ✓
+- [ ] 每个任务有 test_tasks ✓
+- [ ] B42 risk_tags: auth ✓
+- [ ] B42 test_tasks 包含级联删除 + 事务回滚 + 422 非法枚举 ✓
+- [ ] B44 test_tasks 包含向后兼容 + LLM 异常 + 悬挂 entry_id ✓
+- [ ] F31 test_tasks 包含 API 失败降级 + 移动端溢出 ✓
+- [ ] F32 test_tasks 包含 API 失败 toast ✓
+- [ ] F33 test_tasks 包含字段缺失降级 ✓
+- [ ] 前端任务都要求 npm run build 通过 ✓
+
+---
+
 ## R010: 工程化提升
 
 ### 契约对齐

@@ -8,6 +8,11 @@ from app.api.schemas.entry import (
     RelatedEntry,
     RelatedEntriesResponse,
     EntrySummaryResponse,
+    EntryLinkCreate,
+    EntryLinkResponse,
+    EntryLinkItem,
+    EntryLinkListResponse,
+    LinkTargetEntry,
 )
 from app.api.schemas.common import (
     SuccessResponse,
@@ -25,4 +30,9 @@ __all__ = [
     "RelatedEntry",
     "RelatedEntriesResponse",
     "EntrySummaryResponse",
+    "EntryLinkCreate",
+    "EntryLinkResponse",
+    "EntryLinkItem",
+    "EntryLinkListResponse",
+    "LinkTargetEntry",
 ]
