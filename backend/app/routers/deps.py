@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from app.services.review_service import ReviewService
     from app.services.knowledge_service import KnowledgeService
     from app.services.notification_service import NotificationService
+    from app.services.goal_service import GoalService
     from app.infrastructure.storage.user_storage import UserStorage
     from app.models.user import User
 
@@ -25,6 +26,7 @@ _intent_service: "IntentService" = None
 _review_service: "ReviewService" = None
 _knowledge_service: "KnowledgeService" = None
 _notification_service: "NotificationService" = None
+_goal_service: "GoalService" = None
 _user_storage: "UserStorage" = None
 
 
@@ -105,6 +107,17 @@ def get_user_storage() -> "UserStorage":
     return _user_storage
 
 
+def get_goal_service() -> "GoalService":
+    """获取目标服务的依赖函数"""
+    global _goal_service, storage
+    if storage is None:
+        raise HTTPException(status_code=503, detail="存储服务未初始化")
+    if _goal_service is None:
+        from app.services.goal_service import GoalService
+        _goal_service = GoalService(sqlite_storage=storage.sqlite)
+    return _goal_service
+
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(_bearer_scheme),
 ) -> "User":
@@ -117,12 +130,13 @@ def get_current_user(
 
 def reset_all_services():
     """重置所有服务缓存（用于测试）"""
-    global _entry_service, _intent_service, _review_service, _knowledge_service, _notification_service
+    global _entry_service, _intent_service, _review_service, _knowledge_service, _notification_service, _goal_service
     _entry_service = None
     _intent_service = None
     _review_service = None
     _knowledge_service = None
     _notification_service = None
+    _goal_service = None
 
 
 # 向后兼容
