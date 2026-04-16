@@ -503,12 +503,23 @@ class GoalService:
         }, 200, "获取成功"
 
     def _get_prev_period_end(self, period: str) -> str:
-        """获取上一周期的结束时间 ISO 字符串"""
-        from datetime import timedelta
+        """获取上一周期末的 ISO 字符串（归一到次日 00:00:00）
+
+        weekly: 上周一 00:00:00（即上周日末）
+        monthly: 本月1日 00:00:00（即上月末日）
+        """
+        import calendar
         now = datetime.utcnow()
         if period == "weekly":
-            prev_end = now - timedelta(weeks=1)
+            # 本周一
+            days_since_monday = now.weekday()
+            this_monday = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            if days_since_monday > 0:
+                from datetime import timedelta
+                this_monday = this_monday - timedelta(days=days_since_monday)
+            return this_monday.strftime("%Y-%m-%dT00:00:00")
         else:
-            prev_end = now - timedelta(days=30)
-        return prev_end.strftime("%Y-%m-%dT%H:%M:%S")
+            # 本月1日
+            first_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            return first_of_month.strftime("%Y-%m-%dT00:00:00")
 

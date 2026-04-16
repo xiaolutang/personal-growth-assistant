@@ -560,3 +560,41 @@ class TestProgressSummary:
         assert data["active_count"] == 1
         assert data["completed_count"] == 1
         assert len(data["goals"]) == 1  # 只有活跃目标
+
+    async def test_summary_progress_delta_tag_auto(self, client, storage, test_user):
+        """tag_auto + start_date + end_date 时 progress_delta 有值"""
+        from datetime import datetime, timedelta
+        now = datetime.utcnow()
+        start = (now - timedelta(days=60)).strftime("%Y-%m-%d")
+        end = (now + timedelta(days=30)).strftime("%Y-%m-%d")
+
+        resp = await client.post("/goals", json={
+            "title": "Tag Delta Goal",
+            "metric_type": "tag_auto",
+            "target_value": 10,
+            "auto_tags": ["test-delta"],
+            "start_date": start,
+            "end_date": end,
+        })
+        assert resp.status_code == 201
+
+        # 无 period 参数时 delta 为 None
+        resp = await client.get("/goals/progress-summary")
+        data = resp.json()
+        assert len(data["goals"]) == 1
+        assert data["goals"][0]["progress_delta"] is None
+
+        # weekly 参数时 delta 有值
+        resp = await client.get("/goals/progress-summary?period=weekly")
+        data = resp.json()
+        assert len(data["goals"]) == 1
+        assert data["goals"][0]["progress_delta"] is not None
+
+    async def test_summary_progress_delta_count_type_is_none(self, client, storage, test_user):
+        """count 类型目标 progress_delta 始终为 None"""
+        await _create_goal(client, title="Count Goal")
+
+        resp = await client.get("/goals/progress-summary?period=weekly")
+        data = resp.json()
+        assert len(data["goals"]) == 1
+        assert data["goals"][0]["progress_delta"] is None
