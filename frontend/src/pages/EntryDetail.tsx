@@ -49,7 +49,7 @@ import { LinkEntryDialog } from "@/components/LinkEntryDialog";
 type ContentTab = "preview" | "edit";
 
 /** 将 Markdown 按 ## 分割成结构化 sections 并以卡片形式渲染 */
-function StructuredContent({ content, category }: { content: string; category: string }) {
+function StructuredContent({ content, category, navigate }: { content: string; category: string; navigate: (path: string) => void }) {
   const sections = content.split(/\n(?=## )/).filter(Boolean);
   if (sections.length === 0) {
     return <div className="prose prose-sm dark:prose-invert max-w-none">{content || "暂无内容"}</div>;
@@ -90,7 +90,24 @@ function StructuredContent({ content, category }: { content: string; category: s
               <h3 className="text-sm font-semibold mb-2">{title}</h3>
             )}
             <div className="prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  a: ({ href, children }) => {
+                    if (href?.startsWith("/entry/")) {
+                      return (
+                        <span
+                          className="text-primary hover:underline cursor-pointer"
+                          onClick={() => navigate(href)}
+                        >
+                          {children}
+                        </span>
+                      );
+                    }
+                    return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
+                  },
+                }}
+              >
                 {body || "（待补充）"}
               </ReactMarkdown>
             </div>
@@ -849,6 +866,7 @@ export function EntryDetail() {
               <StructuredContent
                 content={parsedContent}
                 category={entry.category}
+                navigate={navigate}
               />
             ) : (
               <div className="prose prose-sm dark:prose-invert max-w-none">
