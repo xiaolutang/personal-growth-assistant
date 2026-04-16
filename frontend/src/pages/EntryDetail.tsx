@@ -48,6 +48,59 @@ import { LinkEntryDialog } from "@/components/LinkEntryDialog";
 
 type ContentTab = "preview" | "edit";
 
+/** 将 Markdown 按 ## 分割成结构化 sections 并以卡片形式渲染 */
+function StructuredContent({ content, category }: { content: string; category: string }) {
+  const sections = content.split(/\n(?=## )/).filter(Boolean);
+  if (sections.length === 0) {
+    return <div className="prose prose-sm dark:prose-invert max-w-none">{content || "暂无内容"}</div>;
+  }
+
+  const sectionLabels: Record<string, Record<string, string>> = {
+    decision: {
+      "决策背景": "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800",
+      "可选方案": "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800",
+      "最终选择": "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800",
+      "选择理由": "bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800",
+    },
+    reflection: {
+      "回顾目标": "bg-teal-50 dark:bg-teal-950/30 border-teal-200 dark:border-teal-800",
+      "实际结果": "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800",
+      "经验教训": "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800",
+      "下一步行动": "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800",
+    },
+    question: {
+      "问题描述": "bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800",
+      "相关背景": "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800",
+      "思考方向": "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800",
+    },
+  };
+  const colorMap = sectionLabels[category] || {};
+
+  return (
+    <div className="space-y-3">
+      {sections.map((section, i) => {
+        const match = section.match(/^## (.+)/);
+        const title = match ? match[1].trim() : "";
+        const body = match ? section.slice(match[0].length).trim() : section.trim();
+        const colorClass = colorMap[title] || "bg-muted/50 border-border";
+
+        return (
+          <div key={i} className={`rounded-lg border p-4 ${colorClass}`}>
+            {title && (
+              <h3 className="text-sm font-semibold mb-2">{title}</h3>
+            )}
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {body || "（待补充）"}
+              </ReactMarkdown>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function EntryDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -790,28 +843,37 @@ export function EntryDetail() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  a: ({ href, children }) => {
-                    if (href?.startsWith("/entry/")) {
-                      return (
-                        <span
-                          className="text-primary hover:underline cursor-pointer"
-                          onClick={() => navigate(href)}
-                        >
-                          {children}
-                        </span>
-                      );
-                    }
-                    return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
-                  },
-                }}
-              >
-                {(isEditing ? editContent : parsedContent) || "暂无内容"}
-              </ReactMarkdown>
-            </div>
+            {/* 结构化类型渲染: decision/reflection/question */}
+            {["decision", "reflection", "question"].includes(entry.category) &&
+            !isEditing ? (
+              <StructuredContent
+                content={parsedContent}
+                category={entry.category}
+              />
+            ) : (
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    a: ({ href, children }) => {
+                      if (href?.startsWith("/entry/")) {
+                        return (
+                          <span
+                            className="text-primary hover:underline cursor-pointer"
+                            onClick={() => navigate(href)}
+                          >
+                            {children}
+                          </span>
+                        );
+                      }
+                      return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
+                    },
+                  }}
+                >
+                  {(isEditing ? editContent : parsedContent) || "暂无内容"}
+                </ReactMarkdown>
+              </div>
+            )}
 
             {/* 引用笔记列表 */}
             {referenceIds.length > 0 && (
