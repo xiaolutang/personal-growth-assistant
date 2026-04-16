@@ -179,6 +179,22 @@ class SQLiteStorage:
                 )
             """)
 
+            # 条目关联表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS entry_links (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    source_id TEXT NOT NULL,
+                    target_id TEXT NOT NULL,
+                    relation_type TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    UNIQUE(user_id, source_id, target_id, relation_type)
+                )
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_entry_links_source ON entry_links(source_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_entry_links_target ON entry_links(target_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_entry_links_user_id ON entry_links(user_id)")
+
             conn.commit()
         finally:
             conn.close()
@@ -317,6 +333,150 @@ class SQLiteStorage:
         except Exception as e:
             print(f"SQLite delete 失败: {e}")
             return False
+        finally:
+            conn.close()
+
+    # === 条目关联操作 ===
+
+    def create_entry_link(
+        self, user_id: str, source_id: str, target_id: str, relation_type: str
+    ) -> dict[str, Any]:
+        """创建条目关联（单向），返回新记录。调用方负责在一个事务中创建双向记录。"""
+        import uuid as _uuid
+        link_id = _uuid.uuid4().hex
+        now = datetime.utcnow().isoformat()
+        conn = self._get_conn()
+        try:
+            conn.execute(
+                """INSERT INTO entry_links (id, user_id, source_id, target_id, relation_type, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (link_id, user_id, source_id, target_id, relation_type, now),
+            )
+            conn.commit()
+            row = conn.execute(
+                "SELECT * FROM entry_links WHERE id = ?", (link_id,)
+            ).fetchone()
+            return dict(row)
+        finally:
+            conn.close()
+
+    def create_entry_links_pair(
+        self, user_id: str, source_id: str, target_id: str, relation_type: str
+    ) -> list[dict[str, Any]]:
+        """创建双向条目关联（同一事务），返回两条记录。"""
+        import uuid as _uuid
+        now = datetime.utcnow().isoformat()
+        link_id_fwd = _uuid.uuid4().hex
+        link_id_rev = _uuid.uuid4().hex
+        conn = self._get_conn()
+        try:
+            conn.execute(
+                """INSERT INTO entry_links (id, user_id, source_id, target_id, relation_type, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (link_id_fwd, user_id, source_id, target_id, relation_type, now),
+            )
+            conn.execute(
+                """INSERT INTO entry_links (id, user_id, source_id, target_id, relation_type, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (link_id_rev, user_id, target_id, source_id, relation_type, now),
+            )
+            conn.commit()
+            row_fwd = conn.execute("SELECT * FROM entry_links WHERE id = ?", (link_id_fwd,)).fetchone()
+            row_rev = conn.execute("SELECT * FROM entry_links WHERE id = ?", (link_id_rev,)).fetchone()
+            return [dict(row_fwd), dict(row_rev)]
+        finally:
+            conn.close()
+
+    def get_entry_link(self, link_id: str, user_id: str) -> Optional[dict[str, Any]]:
+        """获取单条关联记录（含用户隔离）"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT * FROM entry_links WHERE id = ? AND user_id = ?",
+                (link_id, user_id),
+            ).fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def list_entry_links(
+        self, entry_id: str, user_id: str, direction: str = "both"
+    ) -> list[dict[str, Any]]:
+        """列出条目关联。direction: out/in/both"""
+        conn = self._get_conn()
+        try:
+            links = []
+            if direction in ("out", "both"):
+                rows = conn.execute(
+                    "SELECT * FROM entry_links WHERE source_id = ? AND user_id = ? ORDER BY created_at DESC",
+                    (entry_id, user_id),
+                ).fetchall()
+                for r in rows:
+                    d = dict(r)
+                    d["direction"] = "out"
+                    links.append(d)
+            if direction in ("in", "both"):
+                rows = conn.execute(
+                    "SELECT * FROM entry_links WHERE target_id = ? AND user_id = ? ORDER BY created_at DESC",
+                    (entry_id, user_id),
+                ).fetchall()
+                for r in rows:
+                    d = dict(r)
+                    d["direction"] = "in"
+                    links.append(d)
+            return links
+        finally:
+            conn.close()
+
+    def delete_entry_link_pair(self, link_id: str, user_id: str) -> bool:
+        """删除关联记录及其配对记录（同一事务）"""
+        conn = self._get_conn()
+        try:
+            # 找到原始记录
+            row = conn.execute(
+                "SELECT source_id, target_id, relation_type FROM entry_links WHERE id = ? AND user_id = ?",
+                (link_id, user_id),
+            ).fetchone()
+            if not row:
+                return False
+            # 删除正向和反向
+            conn.execute(
+                "DELETE FROM entry_links WHERE user_id = ? AND source_id = ? AND target_id = ? AND relation_type = ?",
+                (user_id, row["source_id"], row["target_id"], row["relation_type"]),
+            )
+            conn.execute(
+                "DELETE FROM entry_links WHERE user_id = ? AND source_id = ? AND target_id = ? AND relation_type = ?",
+                (user_id, row["target_id"], row["source_id"], row["relation_type"]),
+            )
+            conn.commit()
+            return True
+        finally:
+            conn.close()
+
+    def delete_entry_links_by_entry(self, entry_id: str, user_id: str) -> int:
+        """删除条目的所有关联（删除条目时级联调用）"""
+        conn = self._get_conn()
+        try:
+            cursor = conn.execute(
+                "DELETE FROM entry_links WHERE (source_id = ? OR target_id = ?) AND user_id = ?",
+                (entry_id, entry_id, user_id),
+            )
+            conn.commit()
+            return cursor.rowcount
+        finally:
+            conn.close()
+
+    def check_entry_link_exists(
+        self, user_id: str, source_id: str, target_id: str, relation_type: str
+    ) -> bool:
+        """检查关联是否已存在"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT 1 FROM entry_links WHERE user_id = ? AND source_id = ? AND target_id = ? AND relation_type = ? LIMIT 1",
+                (user_id, source_id, target_id, relation_type),
+            ).fetchone()
+            return row is not None
         finally:
             conn.close()
 

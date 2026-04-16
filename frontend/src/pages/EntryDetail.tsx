@@ -26,19 +26,22 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { getEntry, getEntries, getProjectProgress, getRelatedEntries, generateEntrySummary } from "@/services/api";
-import type { RelatedEntry, EntrySummaryResponse } from "@/services/api";
+import { getEntry, getEntries, getProjectProgress, getRelatedEntries, generateEntrySummary, getKnowledgeContext, getEntryLinks, deleteEntryLink } from "@/services/api";
+import type { RelatedEntry, EntrySummaryResponse, KnowledgeContextResponse, EntryLinkItem } from "@/services/api";
 import { useTaskStore } from "@/stores/taskStore";
 import type { Task, TaskStatus, Priority } from "@/types/task";
 import type { ProjectProgressResponse } from "@/services/api";
 import { statusConfig, categoryConfig, priorityConfig } from "@/config/constants";
 import { TaskList } from "@/components/TaskList";
+import { KnowledgeGraphThumbnail } from "@/components/KnowledgeGraphThumbnail";
+import { LinkEntryDialog } from "@/components/LinkEntryDialog";
 
 type ContentTab = "preview" | "edit";
 
@@ -55,6 +58,18 @@ export function EntryDetail() {
   const [relatedEntries, setRelatedEntries] = useState<RelatedEntry[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [relatedError, setRelatedError] = useState(false);
+
+  // 知识上下文状态
+  const [knowledgeContext, setKnowledgeContext] = useState<KnowledgeContextResponse | null>(null);
+  const [knowledgeContextLoading, setKnowledgeContextLoading] = useState(false);
+  const [knowledgeContextError, setKnowledgeContextError] = useState(false);
+  const [knowledgeContextExpanded, setKnowledgeContextExpanded] = useState(true);
+
+  // 手动关联状态
+  const [entryLinks, setEntryLinks] = useState<EntryLinkItem[]>([]);
+  const [, setEntryLinksLoading] = useState(false);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [deletingLinkId, setDeletingLinkId] = useState<string | null>(null);
 
   // AI 摘要状态
   const [aiSummaryExpanded, setAiSummaryExpanded] = useState(false);
@@ -176,6 +191,53 @@ export function EntryDetail() {
       })
       .finally(() => {
         if (!cancelled) setRelatedLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [id]);
+
+  // 手动关联加载
+  const loadEntryLinks = useCallback(() => {
+    if (!id) return;
+    setEntryLinksLoading(true);
+    getEntryLinks(id)
+      .then((data) => setEntryLinks(data.links))
+      .catch(() => {}) // 不阻塞页面
+      .finally(() => setEntryLinksLoading(false));
+  }, [id]);
+
+  useEffect(() => {
+    loadEntryLinks();
+  }, [loadEntryLinks]);
+
+  // 删除手动关联
+  const handleDeleteLink = useCallback(async (linkId: string) => {
+    if (!id) return;
+    setDeletingLinkId(linkId);
+    try {
+      await deleteEntryLink(id, linkId);
+      setEntryLinks((prev) => prev.filter((l) => l.id !== linkId));
+    } catch {
+      // 失败不更新列表
+    } finally {
+      setDeletingLinkId(null);
+    }
+  }, [id]);
+
+  // 知识上下文独立加载
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setKnowledgeContextLoading(true);
+    setKnowledgeContextError(false);
+    getKnowledgeContext(id)
+      .then((data) => {
+        if (!cancelled) setKnowledgeContext(data);
+      })
+      .catch(() => {
+        if (!cancelled) setKnowledgeContextError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setKnowledgeContextLoading(false);
       });
     return () => { cancelled = true; };
   }, [id]);
@@ -811,57 +873,144 @@ export function EntryDetail() {
           </Card>
         )}
 
-        {/* 相关条目 */}
-        {!relatedLoading && !relatedError && (
+        {/* 知识上下文缩略图 — 可折叠卡片 */}
+        {!isEditing && !knowledgeContextError && (
           <Card className="mt-6">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Link2 className="h-4 w-4" />
-                相关条目 {relatedEntries.length > 0 && `(${relatedEntries.length})`}
+            <CardHeader
+              className="pb-2 cursor-pointer select-none"
+              onClick={() => setKnowledgeContextExpanded(!knowledgeContextExpanded)}
+            >
+              <CardTitle className="text-base flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  知识上下文
+                </span>
+                {knowledgeContextExpanded ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
               </CardTitle>
             </CardHeader>
+            {knowledgeContextExpanded && (
+              <CardContent>
+                <KnowledgeGraphThumbnail
+                  nodes={knowledgeContext?.nodes ?? []}
+                  edges={knowledgeContext?.edges ?? []}
+                  centerConcepts={knowledgeContext?.center_concepts ?? []}
+                  loading={knowledgeContextLoading}
+                />
+                {knowledgeContext && knowledgeContext.nodes.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    点击概念节点查看详情
+                  </p>
+                )}
+              </CardContent>
+            )}
+          </Card>
+        )}
+
+        {/* 关联条目 — 手动关联 + 自动推荐 */}
+        {!isEditing && (
+          <Card className="mt-6">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Link2 className="h-4 w-4" />
+                  关联条目
+                </CardTitle>
+                <Button variant="outline" size="sm" onClick={() => setShowLinkDialog(true)}>
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  添加关联
+                </Button>
+              </div>
+            </CardHeader>
             <CardContent>
-              {relatedEntries.length > 0 ? (
-                <div className="space-y-2">
-                  {relatedEntries.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => navigate(`/entries/${item.id}`)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{item.title}</span>
-                        <Badge variant="outline" className="text-xs">
-                          {(categoryConfig as Record<string, { label: string }>)[item.category]?.label || item.category}
-                        </Badge>
+              {/* 手动关联 */}
+              {entryLinks.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">手动关联</p>
+                  <div className="space-y-2">
+                    {entryLinks.map((link) => (
+                      <div
+                        key={link.id}
+                        className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors group"
+                      >
+                        <div
+                          className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
+                          onClick={() => navigate(`/entry/${link.target_id}`)}
+                        >
+                          <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span className="text-sm truncate">{link.target_entry.title}</span>
+                          <Badge variant="outline" className="text-xs shrink-0">
+                            {(categoryConfig as Record<string, { label: string }>)[link.target_entry.category]?.label || link.target_entry.category}
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs shrink-0">
+                            {link.relation_type === "related" ? "关联" :
+                             link.relation_type === "depends_on" ? "依赖" :
+                             link.relation_type === "derived_from" ? "来源" : "引用"}
+                          </Badge>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteLink(link.id)}
+                          disabled={deletingLinkId === link.id}
+                          className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2"
+                          title="删除关联"
+                        >
+                          {deletingLinkId === link.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </button>
                       </div>
-                      <span className="text-xs text-muted-foreground">{item.relevance_reason}</span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              ) : (
+              )}
+
+              {/* 自动推荐 */}
+              {!relatedLoading && !relatedError && relatedEntries.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">自动推荐</p>
+                  <div className="space-y-2">
+                    {relatedEntries.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                        onClick={() => navigate(`/entries/${item.id}`)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{item.title}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {(categoryConfig as Record<string, { label: string }>)[item.category]?.label || item.category}
+                          </Badge>
+                        </div>
+                        <span className="text-xs text-muted-foreground">{item.relevance_reason}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 空态 */}
+              {entryLinks.length === 0 && relatedEntries.length === 0 && !relatedLoading && (
                 <p className="text-sm text-muted-foreground py-2">
-                  暂无关联条目，添加更多标签可自动发现关联
+                  暂无关联条目，点击「添加关联」或添加更多标签自动发现关联
                 </p>
               )}
             </CardContent>
           </Card>
         )}
-        {relatedError && (
-          <Card className="mt-6">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Link2 className="h-4 w-4" />
-                相关条目
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground py-2">
-                关联条目加载失败，不影响当前条目查看
-              </p>
-            </CardContent>
-          </Card>
+
+        {/* 添加关联弹窗 */}
+        {showLinkDialog && id && (
+          <LinkEntryDialog
+            entryId={id}
+            onClose={() => setShowLinkDialog(false)}
+            onCreated={loadEntryLinks}
+          />
         )}
       </div>
     </div>

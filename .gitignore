@@ -32,8 +32,18 @@ deploy/.remote.env
 # Runtime data
 data/index.db
 data/logs.db
+data/users/
 data/tasks/
+data/users.db
 backend/data/
+backend/checkpoints*.db
+
+# E2E dependencies
+e2e/node_modules/
+
+# Test results
+**/test-results/
+**/playwright-report/
 
 # Python package
 *.egg-info/

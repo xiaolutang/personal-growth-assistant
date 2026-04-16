@@ -1,7 +1,7 @@
 """条目相关 Schema (DTO) - 使用 category 统一命名"""
 
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field, AliasChoices
 
@@ -37,6 +37,14 @@ class EntryUpdate(BaseModel):
     planned_date: Optional[str] = Field(None, description="计划日期")
     time_spent: Optional[int] = Field(None, description="耗时（分钟）")
     completed_at: Optional[str] = Field(None, description="完成时间")
+
+
+class EntryLinkCreate(BaseModel):
+    """创建条目关联请求"""
+    target_id: str = Field(..., min_length=1, description="目标条目 ID")
+    relation_type: Literal["related", "depends_on", "derived_from", "references"] = Field(
+        ..., description="关联类型: related/depends_on/derived_from/references"
+    )
 
 
 # === 响应模型 ===
@@ -89,3 +97,60 @@ class EntrySummaryResponse(BaseModel):
     summary: Optional[str] = None
     generated_at: Optional[str] = None
     cached: bool = False
+
+
+class LinkTargetEntry(BaseModel):
+    """关联目标条目摘要"""
+    id: str
+    title: str
+    category: str
+
+
+class EntryLinkResponse(BaseModel):
+    """条目关联响应（创建时返回）"""
+    id: str
+    source_id: str
+    target_id: str
+    relation_type: str
+    created_at: str
+    target_entry: LinkTargetEntry
+
+
+class EntryLinkItem(BaseModel):
+    """条目关联列表项"""
+    id: str
+    target_id: str
+    target_entry: LinkTargetEntry
+    relation_type: str
+    direction: str
+    created_at: str
+
+
+class EntryLinkListResponse(BaseModel):
+    """条目关联列表响应"""
+    links: List[EntryLinkItem]
+
+
+# === 知识上下文 ===
+
+class KnowledgeContextNode(BaseModel):
+    """知识上下文节点"""
+    id: str
+    name: str
+    category: Optional[str] = None
+    mastery: Optional[str] = None
+    entry_count: int = 0
+
+
+class KnowledgeContextEdge(BaseModel):
+    """知识上下文边"""
+    source: str
+    target: str
+    relationship: str = "RELATED_TO"
+
+
+class KnowledgeContextResponse(BaseModel):
+    """条目知识上下文响应"""
+    nodes: List[KnowledgeContextNode] = []
+    edges: List[KnowledgeContextEdge] = []
+    center_concepts: List[str] = []
