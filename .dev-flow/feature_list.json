@@ -9,7 +9,7 @@
   "active_requirement_cycle": {
     "id": "R013",
     "name": "decision-reflection-entries",
-    "status": "planning",
+    "status": "active",
     "branch": "feat/R013-decision-reflection-entries"
   },
   "workflow": {
@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 4,
-    "pending": 1,
+    "pending": 0,
     "in_progress": 0,
-    "completed": 3,
+    "completed": 4,
     "blocked": 0,
     "cancelled": 0
   },
@@ -269,7 +269,11 @@
       "description": "前端支持三种新条目类型。探索页新增类型 Tab，快速操作区新增按钮，条目详情页针对不同类型做差异化渲染。",
       "verification": "F2",
       "depends_on": ["B49"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-17",
+      "completed_at": "2026-04-17",
+      "actual_minutes": 25,
+      "commit": "69f348c",
       "priority": "high",
       "acceptance_criteria": [
         "前端 category 类型定义新增 decision | reflection | question (types/task.ts + constants.ts)",
