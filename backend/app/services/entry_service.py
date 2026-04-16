@@ -96,13 +96,13 @@ class EntryService:
     }
 
     def _apply_category_template(self, category: Category, content: str, title: str) -> str:
-        """为新类型条目应用模板（仅当内容为空时）"""
-        if content.strip():
-            return content
+        """为新类型条目应用结构化模板"""
         template = self.CATEGORY_TEMPLATES.get(category)
-        if template:
-            return f"# {title}{template}"
-        return content
+        if not template:
+            return content
+        if content.strip():
+            return f"# {title}\n\n{content}{template}"
+        return f"# {title}{template}"
 
     # === CRUD 操作 ===
 

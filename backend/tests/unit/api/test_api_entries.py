@@ -590,8 +590,8 @@ async def test_create_question(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_create_decision_with_content_skips_template(client: AsyncClient):
-    """测试有内容时不使用模板"""
+async def test_create_decision_with_content_includes_template(client: AsyncClient):
+    """测试有内容时也追加模板结构"""
     response = await client.post(
         "/entries",
         json={
@@ -602,7 +602,8 @@ async def test_create_decision_with_content_skips_template(client: AsyncClient):
     )
     assert response.status_code == 200
     data = response.json()
-    assert data["content"] == "我们选了 Python"
+    assert "我们选了 Python" in data["content"]
+    assert "决策背景" in data["content"]
 
 
 @pytest.mark.asyncio

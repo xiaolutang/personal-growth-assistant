@@ -48,6 +48,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/entries/{entry_id}/related": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Related Entries
+         * @description 获取条目的关联推荐
+         */
+        get: operations["get_related_entries_entries__entry_id__related_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/entries/{entry_id}": {
         parameters: {
             query?: never;
@@ -130,6 +150,90 @@ export interface paths {
          * @description 同步所有条目到向量数据库（Qdrant）
          */
         post: operations["sync_vectors_entries_admin_sync_vectors_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/entries/{entry_id}/ai-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Ai Summary
+         * @description 为条目生成 AI 摘要（200字以内），结果缓存到 SQLite
+         */
+        post: operations["generate_ai_summary_entries__entry_id__ai_summary_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/entries/{entry_id}/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Entry Links
+         * @description 列出条目关联
+         */
+        get: operations["list_entry_links_entries__entry_id__links_get"];
+        put?: never;
+        /**
+         * Create Entry Link
+         * @description 创建条目关联（双向）
+         */
+        post: operations["create_entry_link_entries__entry_id__links_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/entries/{entry_id}/links/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Entry Link
+         * @description 删除条目关联（双向）
+         */
+        delete: operations["delete_entry_link_entries__entry_id__links__link_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/entries/{entry_id}/knowledge-context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Entry Knowledge Context
+         * @description 获取条目的知识图谱子图上下文（基于条目标签的 1-hop 子图）
+         */
+        get: operations["get_entry_knowledge_context_entries__entry_id__knowledge_context_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -223,6 +327,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/knowledge-map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Knowledge Map
+         * @description 获取全局知识图谱
+         *
+         *     返回所有概念节点及其关系，支持按掌握度/领域/项目分组查看。
+         */
+        get: operations["get_knowledge_map_knowledge_map_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/knowledge/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Knowledge Stats
+         * @description 获取知识概念统计
+         *
+         *     返回概念总数、关系总数、类别分布和热门概念。
+         */
+        get: operations["get_knowledge_stats_knowledge_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/knowledge/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Concepts
+         * @description 搜索概念（Neo4j 优先，SQLite tags 降级）
+         */
+        get: operations["search_concepts_knowledge_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/knowledge/concepts/{name}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Concept Timeline
+         * @description 概念学习时间线
+         */
+        get: operations["get_concept_timeline_knowledge_concepts__name__timeline_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/knowledge/mastery-distribution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Mastery Distribution
+         * @description 掌握度分布统计
+         */
+        get: operations["get_mastery_distribution_knowledge_mastery_distribution_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/review/daily": {
         parameters: {
             query?: never;
@@ -295,6 +503,86 @@ export interface paths {
          * @description 获取趋势数据
          */
         get: operations["get_trend_data_review_trend_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review/knowledge-heatmap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Knowledge Heatmap
+         * @description 获取知识热力图
+         */
+        get: operations["get_knowledge_heatmap_review_knowledge_heatmap_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review/growth-curve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Growth Curve
+         * @description 获取成长曲线数据
+         */
+        get: operations["get_growth_curve_review_growth_curve_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review/morning-digest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Morning Digest
+         * @description 获取 AI 晨报 — 每日主动建议
+         */
+        get: operations["get_morning_digest_review_morning_digest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review/activity-heatmap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Activity Heatmap
+         * @description 获取年度每日活动热力图
+         */
+        get: operations["get_activity_heatmap_review_activity_heatmap_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -653,6 +941,226 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ai Chat
+         * @description AI 对话端点 — SSE 流式返回
+         */
+        post: operations["ai_chat_ai_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Notifications
+         * @description 获取当前用户通知列表（按需生成）
+         */
+        get: operations["get_notifications_notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/{notification_id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dismiss Notification
+         * @description 标记通知已读
+         */
+        post: operations["dismiss_notification_notifications__notification_id__dismiss_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notification-preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Preferences
+         * @description 获取提醒偏好
+         */
+        get: operations["get_preferences_notification_preferences_get"];
+        /**
+         * Update Preferences
+         * @description 更新提醒偏好
+         */
+        put: operations["update_preferences_notification_preferences_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Goals
+         * @description 列出目标
+         */
+        get: operations["list_goals_goals_get"];
+        put?: never;
+        /**
+         * Create Goal
+         * @description 创建目标
+         */
+        post: operations["create_goal_goals_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/goals/progress-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Progress Summary
+         * @description 获取进度汇总
+         */
+        get: operations["get_progress_summary_goals_progress_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/goals/{goal_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Goal
+         * @description 获取目标详情
+         */
+        get: operations["get_goal_goals__goal_id__get"];
+        /**
+         * Update Goal
+         * @description 更新目标
+         */
+        put: operations["update_goal_goals__goal_id__put"];
+        post?: never;
+        /**
+         * Delete Goal
+         * @description 删除目标（仅 abandoned 状态可删除）
+         */
+        delete: operations["delete_goal_goals__goal_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/goals/{goal_id}/entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Goal Entries
+         * @description 列出目标关联的条目
+         */
+        get: operations["list_goal_entries_goals__goal_id__entries_get"];
+        put?: never;
+        /**
+         * Link Entry
+         * @description 关联条目到目标
+         */
+        post: operations["link_entry_goals__goal_id__entries_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/goals/{goal_id}/entries/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Unlink Entry
+         * @description 取消关联条目
+         */
+        delete: operations["unlink_entry_goals__goal_id__entries__entry_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/goals/{goal_id}/checklist/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Toggle Checklist Item
+         * @description 切换检查清单项的勾选状态
+         */
+        patch: operations["toggle_checklist_item_goals__goal_id__checklist__item_id__patch"];
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -662,7 +1170,7 @@ export interface paths {
         };
         /**
          * Health
-         * @description 健康检查
+         * @description 健康检查 — 返回服务状态和依赖连接检查
          */
         get: operations["health_health_get"];
         put?: never;
@@ -677,6 +1185,37 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ActivityHeatmapItem */
+        ActivityHeatmapItem: {
+            /** Date */
+            date: string;
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
+        };
+        /** ActivityHeatmapResponse */
+        ActivityHeatmapResponse: {
+            /** Year */
+            year: number;
+            /**
+             * Items
+             * @default []
+             */
+            items: components["schemas"]["ActivityHeatmapItem"][];
+        };
+        /** ChatMessage */
+        ChatMessage: {
+            /** Message */
+            message: string;
+            /** Context */
+            context?: {
+                [key: string]: unknown;
+            } | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+        };
         /**
          * ChatRequest
          * @description 统一聊天请求
@@ -701,6 +1240,28 @@ export interface components {
             skip_intent: boolean;
             /** @description 确认操作（多选场景） */
             confirm?: components["schemas"]["ConfirmAction"] | null;
+            /** @description 页面级上下文 */
+            page_context?: components["schemas"]["PageContext"] | null;
+            /**
+             * Force Intent
+             * @description 测试用：强制指定意图（跳过意图检测）
+             */
+            force_intent?: string | null;
+        };
+        /**
+         * ChecklistItem
+         * @description 检查清单项
+         */
+        ChecklistItem: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /**
+             * Checked
+             * @default false
+             */
+            checked: boolean;
         };
         /**
          * ConceptNode
@@ -727,6 +1288,75 @@ export interface components {
             category?: string | null;
         };
         /**
+         * ConceptSearchItem
+         * @description 概念搜索结果项
+         */
+        ConceptSearchItem: {
+            /** Name */
+            name: string;
+            /**
+             * Entry Count
+             * @default 0
+             */
+            entry_count: number;
+            /** Mastery */
+            mastery?: string | null;
+        };
+        /**
+         * ConceptSearchResponse
+         * @description 概念搜索响应
+         */
+        ConceptSearchResponse: {
+            /**
+             * Items
+             * @default []
+             */
+            items: components["schemas"]["ConceptSearchItem"][];
+        };
+        /**
+         * ConceptStatsResponse
+         * @description 概念统计响应
+         */
+        ConceptStatsResponse: {
+            /**
+             * Concept Count
+             * @default 0
+             */
+            concept_count: number;
+            /**
+             * Relation Count
+             * @default 0
+             */
+            relation_count: number;
+            /**
+             * Category Distribution
+             * @default {}
+             */
+            category_distribution: {
+                [key: string]: number;
+            };
+            /**
+             * Top Concepts
+             * @default []
+             */
+            top_concepts: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * ConceptTimelineResponse
+         * @description 概念学习时间线响应
+         */
+        ConceptTimelineResponse: {
+            /** Concept */
+            concept: string;
+            /**
+             * Items
+             * @default []
+             */
+            items: components["schemas"]["TimelineDay"][];
+        };
+        /**
          * ConfirmAction
          * @description 确认操作
          */
@@ -741,6 +1371,18 @@ export interface components {
              * @description 用户选择的条目 ID
              */
             item_id: string;
+        };
+        /**
+         * DailyFocus
+         * @description 每日聚焦
+         */
+        DailyFocus: {
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
+            /** Target Entry Id */
+            target_entry_id?: string | null;
         };
         /**
          * DailyReport
@@ -798,7 +1440,7 @@ export interface components {
         EntryCreate: {
             /**
              * Category
-             * @description 条目分类: project/task/note/inbox
+             * @description 条目分类: project/task/note/inbox/decision/reflection/question
              */
             category: string;
             /**
@@ -842,6 +1484,81 @@ export interface components {
              * @description 耗时（分钟）
              */
             time_spent?: number | null;
+        };
+        /**
+         * EntryInfo
+         * @description 关联条目简要信息
+         */
+        EntryInfo: {
+            /** Id */
+            id: string;
+            /** Title */
+            title?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Category */
+            category?: string | null;
+            /** Created At */
+            created_at?: string | null;
+        };
+        /**
+         * EntryLinkCreate
+         * @description 创建条目关联请求
+         */
+        EntryLinkCreate: {
+            /**
+             * Target Id
+             * @description 目标条目 ID
+             */
+            target_id: string;
+            /**
+             * Relation Type
+             * @description 关联类型: related/depends_on/derived_from/references
+             * @enum {string}
+             */
+            relation_type: "related" | "depends_on" | "derived_from" | "references";
+        };
+        /**
+         * EntryLinkItem
+         * @description 条目关联列表项
+         */
+        EntryLinkItem: {
+            /** Id */
+            id: string;
+            /** Target Id */
+            target_id: string;
+            target_entry: components["schemas"]["LinkTargetEntry"];
+            /** Relation Type */
+            relation_type: string;
+            /** Direction */
+            direction: string;
+            /** Created At */
+            created_at: string;
+        };
+        /**
+         * EntryLinkListResponse
+         * @description 条目关联列表响应
+         */
+        EntryLinkListResponse: {
+            /** Links */
+            links: components["schemas"]["EntryLinkItem"][];
+        };
+        /**
+         * EntryLinkResponse
+         * @description 条目关联响应（创建时返回）
+         */
+        EntryLinkResponse: {
+            /** Id */
+            id: string;
+            /** Source Id */
+            source_id: string;
+            /** Target Id */
+            target_id: string;
+            /** Relation Type */
+            relation_type: string;
+            /** Created At */
+            created_at: string;
+            target_entry: components["schemas"]["LinkTargetEntry"];
         };
         /**
          * EntryListResponse
@@ -894,6 +1611,21 @@ export interface components {
             file_path: string;
         };
         /**
+         * EntrySummaryResponse
+         * @description AI 摘要响应
+         */
+        EntrySummaryResponse: {
+            /** Summary */
+            summary?: string | null;
+            /** Generated At */
+            generated_at?: string | null;
+            /**
+             * Cached
+             * @default false
+             */
+            cached: boolean;
+        };
+        /**
          * EntryUpdate
          * @description 更新条目请求
          */
@@ -910,7 +1642,7 @@ export interface components {
             content?: string | null;
             /**
              * Category
-             * @description 条目分类: project/task/note/inbox
+             * @description 条目分类: project/task/note/inbox/decision/reflection/question
              */
             category?: string | null;
             /**
@@ -1015,6 +1747,261 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /**
+         * GoalCreate
+         * @description 创建目标请求
+         */
+        GoalCreate: {
+            /**
+             * Title
+             * @description 目标标题
+             */
+            title: string;
+            /**
+             * Description
+             * @description 目标描述
+             */
+            description?: string | null;
+            /**
+             * Metric Type
+             * @description 衡量方式: count(手动计数)/checklist(检查清单)/tag_auto(基于tag自动追踪)
+             * @enum {string}
+             */
+            metric_type: "count" | "checklist" | "tag_auto";
+            /**
+             * Target Value
+             * @description 目标值（必须 >= 1）
+             */
+            target_value: number;
+            /**
+             * Start Date
+             * @description 开始日期 (YYYY-MM-DD)
+             */
+            start_date?: string | null;
+            /**
+             * End Date
+             * @description 结束日期 (YYYY-MM-DD)
+             */
+            end_date?: string | null;
+            /**
+             * Auto Tags
+             * @description 自动追踪的标签列表（tag_auto 类型必填）
+             */
+            auto_tags?: string[] | null;
+            /**
+             * Checklist Items
+             * @description 检查清单项标题列表（checklist 类型必填）
+             */
+            checklist_items?: string[] | null;
+        };
+        /**
+         * GoalDetailResponse
+         * @description 目标详情响应（含关联条目数）
+         */
+        GoalDetailResponse: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /** Metric Type */
+            metric_type: string;
+            /** Target Value */
+            target_value: number;
+            /**
+             * Current Value
+             * @default 0
+             */
+            current_value: number;
+            /**
+             * Status
+             * @default active
+             */
+            status: string;
+            /** Start Date */
+            start_date?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /** Auto Tags */
+            auto_tags?: string[] | null;
+            /** Checklist Items */
+            checklist_items?: components["schemas"]["ChecklistItem"][] | null;
+            /**
+             * Progress Percentage
+             * @default 0
+             */
+            progress_percentage: number;
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+            /**
+             * Linked Entries Count
+             * @default 0
+             */
+            linked_entries_count: number;
+        };
+        /**
+         * GoalEntryCreate
+         * @description 创建目标-条目关联请求
+         */
+        GoalEntryCreate: {
+            /**
+             * Entry Id
+             * @description 条目 ID
+             */
+            entry_id: string;
+        };
+        /**
+         * GoalEntryListResponse
+         * @description 目标-条目关联列表响应
+         */
+        GoalEntryListResponse: {
+            /** Entries */
+            entries: components["schemas"]["GoalEntryResponse"][];
+        };
+        /**
+         * GoalEntryResponse
+         * @description 目标-条目关联响应
+         */
+        GoalEntryResponse: {
+            /** Id */
+            id: string;
+            /** Goal Id */
+            goal_id: string;
+            /** Entry Id */
+            entry_id: string;
+            /** Created At */
+            created_at: string;
+            entry: components["schemas"]["EntryInfo"];
+        };
+        /**
+         * GoalListResponse
+         * @description 目标列表响应
+         */
+        GoalListResponse: {
+            /** Goals */
+            goals: components["schemas"]["GoalResponse"][];
+        };
+        /**
+         * GoalResponse
+         * @description 目标响应
+         */
+        GoalResponse: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /** Metric Type */
+            metric_type: string;
+            /** Target Value */
+            target_value: number;
+            /**
+             * Current Value
+             * @default 0
+             */
+            current_value: number;
+            /**
+             * Status
+             * @default active
+             */
+            status: string;
+            /** Start Date */
+            start_date?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /** Auto Tags */
+            auto_tags?: string[] | null;
+            /** Checklist Items */
+            checklist_items?: components["schemas"]["ChecklistItem"][] | null;
+            /**
+             * Progress Percentage
+             * @default 0
+             */
+            progress_percentage: number;
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /**
+         * GoalUpdate
+         * @description 更新目标请求
+         */
+        GoalUpdate: {
+            /**
+             * Title
+             * @description 目标标题
+             */
+            title?: string | null;
+            /**
+             * Description
+             * @description 目标描述
+             */
+            description?: string | null;
+            /**
+             * Target Value
+             * @description 目标值（必须 >= 1）
+             */
+            target_value?: number | null;
+            /**
+             * Status
+             * @description 目标状态
+             */
+            status?: ("active" | "completed" | "abandoned") | null;
+            /**
+             * Start Date
+             * @description 开始日期 (YYYY-MM-DD)
+             */
+            start_date?: string | null;
+            /**
+             * End Date
+             * @description 结束日期 (YYYY-MM-DD)
+             */
+            end_date?: string | null;
+        };
+        /**
+         * GrowthCurvePoint
+         * @description 成长曲线点
+         */
+        GrowthCurvePoint: {
+            /** Week */
+            week: string;
+            /**
+             * Total Concepts
+             * @default 0
+             */
+            total_concepts: number;
+            /**
+             * Advanced Count
+             * @default 0
+             */
+            advanced_count: number;
+            /**
+             * Intermediate Count
+             * @default 0
+             */
+            intermediate_count: number;
+            /**
+             * Beginner Count
+             * @default 0
+             */
+            beginner_count: number;
+        };
+        /**
+         * GrowthCurveResponse
+         * @description 成长曲线响应
+         */
+        GrowthCurveResponse: {
+            /**
+             * Points
+             * @default []
+             */
+            points: components["schemas"]["GrowthCurvePoint"][];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1027,6 +2014,41 @@ export interface components {
         HealthResponse: {
             /** Status */
             status: string;
+            /** Services */
+            services: {
+                [key: string]: string;
+            };
+        };
+        /**
+         * HeatmapItem
+         * @description 热力图项
+         */
+        HeatmapItem: {
+            /** Concept */
+            concept: string;
+            /**
+             * Mastery
+             * @default new
+             */
+            mastery: string;
+            /**
+             * Entry Count
+             * @default 0
+             */
+            entry_count: number;
+            /** Category */
+            category?: string | null;
+        };
+        /**
+         * HeatmapResponse
+         * @description 知识热力图响应
+         */
+        HeatmapResponse: {
+            /**
+             * Items
+             * @default []
+             */
+            items: components["schemas"]["HeatmapItem"][];
         };
         /**
          * IntentRequest
@@ -1081,6 +2103,61 @@ export interface components {
             response_hint?: string | null;
         };
         /**
+         * KnowledgeContextEdge
+         * @description 知识上下文边
+         */
+        KnowledgeContextEdge: {
+            /** Source */
+            source: string;
+            /** Target */
+            target: string;
+            /**
+             * Relationship
+             * @default RELATED_TO
+             */
+            relationship: string;
+        };
+        /**
+         * KnowledgeContextNode
+         * @description 知识上下文节点
+         */
+        KnowledgeContextNode: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Category */
+            category?: string | null;
+            /** Mastery */
+            mastery?: string | null;
+            /**
+             * Entry Count
+             * @default 0
+             */
+            entry_count: number;
+        };
+        /**
+         * KnowledgeContextResponse
+         * @description 条目知识上下文响应
+         */
+        KnowledgeContextResponse: {
+            /**
+             * Nodes
+             * @default []
+             */
+            nodes: components["schemas"]["KnowledgeContextNode"][];
+            /**
+             * Edges
+             * @default []
+             */
+            edges: components["schemas"]["KnowledgeContextEdge"][];
+            /**
+             * Center Concepts
+             * @default []
+             */
+            center_concepts: string[];
+        };
+        /**
          * KnowledgeGraphResponse
          * @description 知识图谱响应
          */
@@ -1091,6 +2168,22 @@ export interface components {
              * @default []
              */
             connections: components["schemas"]["ConceptRelationModel"][];
+        };
+        /**
+         * KnowledgeMapResponse
+         * @description 全局图谱响应
+         */
+        KnowledgeMapResponse: {
+            /**
+             * Nodes
+             * @default []
+             */
+            nodes: components["schemas"]["MapNode"][];
+            /**
+             * Edges
+             * @default []
+             */
+            edges: components["schemas"]["MapEdge"][];
         };
         /**
          * LLMTestResponse
@@ -1144,6 +2237,86 @@ export interface components {
             related_notes: string[];
         };
         /**
+         * LinkTargetEntry
+         * @description 关联目标条目摘要
+         */
+        LinkTargetEntry: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Category */
+            category: string;
+        };
+        /**
+         * MapEdge
+         * @description 图谱边
+         */
+        MapEdge: {
+            /** Source */
+            source: string;
+            /** Target */
+            target: string;
+            /**
+             * Relationship
+             * @default RELATED_TO
+             */
+            relationship: string;
+        };
+        /**
+         * MapNode
+         * @description 图谱节点
+         */
+        MapNode: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Category */
+            category?: string | null;
+            /**
+             * Mastery
+             * @default new
+             */
+            mastery: string;
+            /**
+             * Entry Count
+             * @default 0
+             */
+            entry_count: number;
+        };
+        /**
+         * MasteryDistributionResponse
+         * @description 掌握度分布响应
+         */
+        MasteryDistributionResponse: {
+            /**
+             * New
+             * @default 0
+             */
+            new: number;
+            /**
+             * Beginner
+             * @default 0
+             */
+            beginner: number;
+            /**
+             * Intermediate
+             * @default 0
+             */
+            intermediate: number;
+            /**
+             * Advanced
+             * @default 0
+             */
+            advanced: number;
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+        };
+        /**
          * MessageInfo
          * @description 消息信息
          */
@@ -1174,6 +2347,105 @@ export interface components {
             ai_summary?: string | null;
         };
         /**
+         * MorningDigestOverdue
+         * @description 晨报拖延项
+         */
+        MorningDigestOverdue: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /**
+             * Priority
+             * @default medium
+             */
+            priority: string;
+            /** Planned Date */
+            planned_date?: string | null;
+        };
+        /**
+         * MorningDigestResponse
+         * @description AI 晨报响应
+         */
+        MorningDigestResponse: {
+            /** Date */
+            date: string;
+            /** Ai Suggestion */
+            ai_suggestion: string;
+            /**
+             * Todos
+             * @default []
+             */
+            todos: components["schemas"]["MorningDigestTodo"][];
+            /**
+             * Overdue
+             * @default []
+             */
+            overdue: components["schemas"]["MorningDigestOverdue"][];
+            /**
+             * Stale Inbox
+             * @default []
+             */
+            stale_inbox: components["schemas"]["MorningDigestStaleInbox"][];
+            weekly_summary?: components["schemas"]["MorningDigestWeeklySummary"];
+            /**
+             * Learning Streak
+             * @default 0
+             */
+            learning_streak: number;
+            daily_focus?: components["schemas"]["DailyFocus"] | null;
+            /**
+             * Pattern Insights
+             * @default []
+             */
+            pattern_insights: string[];
+        };
+        /**
+         * MorningDigestStaleInbox
+         * @description 晨报未跟进灵感
+         */
+        MorningDigestStaleInbox: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Created At */
+            created_at: string;
+        };
+        /**
+         * MorningDigestTodo
+         * @description 晨报待办项
+         */
+        MorningDigestTodo: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /**
+             * Priority
+             * @default medium
+             */
+            priority: string;
+            /** Planned Date */
+            planned_date?: string | null;
+        };
+        /**
+         * MorningDigestWeeklySummary
+         * @description 晨报本周学习摘要
+         */
+        MorningDigestWeeklySummary: {
+            /**
+             * New Concepts
+             * @default []
+             */
+            new_concepts: string[];
+            /**
+             * Entries Count
+             * @default 0
+             */
+            entries_count: number;
+        };
+        /**
          * NoteStats
          * @description 笔记统计
          */
@@ -1188,6 +2460,47 @@ export interface components {
              * @description 最近笔记标题
              */
             recent_titles?: string[];
+        };
+        /** NotificationPreferences */
+        NotificationPreferences: {
+            /**
+             * Overdue Task Enabled
+             * @default true
+             */
+            overdue_task_enabled: boolean;
+            /**
+             * Stale Inbox Enabled
+             * @default true
+             */
+            stale_inbox_enabled: boolean;
+            /**
+             * Review Prompt Enabled
+             * @default true
+             */
+            review_prompt_enabled: boolean;
+        };
+        /**
+         * PageContext
+         * @description 页面级上下文，标识用户当前所在的页面
+         */
+        PageContext: {
+            /**
+             * Page Type
+             * @description 页面类型: home/explore/entry/review/graph
+             */
+            page_type: string;
+            /**
+             * Entry Id
+             * @description 当前查看的条目 ID（entry 页面时使用）
+             */
+            entry_id?: string | null;
+            /**
+             * Extra
+             * @description 附加上下文信息
+             */
+            extra?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * ParseRequest
@@ -1205,6 +2518,32 @@ export interface components {
              * @default default
              */
             session_id: string;
+        };
+        /**
+         * ProgressItem
+         * @description 进度单项
+         */
+        ProgressItem: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Progress Percentage */
+            progress_percentage: number;
+            /** Progress Delta */
+            progress_delta?: number | null;
+        };
+        /**
+         * ProgressSummaryResponse
+         * @description 进度汇总响应
+         */
+        ProgressSummaryResponse: {
+            /** Active Count */
+            active_count: number;
+            /** Completed Count */
+            completed_count: number;
+            /** Goals */
+            goals: components["schemas"]["ProgressItem"][];
         };
         /**
          * ProjectProgressResponse
@@ -1233,6 +2572,28 @@ export interface components {
             concept: string;
             /** Related */
             related: components["schemas"]["ConceptNode"][];
+        };
+        /**
+         * RelatedEntriesResponse
+         * @description 关联条目列表响应
+         */
+        RelatedEntriesResponse: {
+            /** Related */
+            related: components["schemas"]["RelatedEntry"][];
+        };
+        /**
+         * RelatedEntry
+         * @description 关联条目
+         */
+        RelatedEntry: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Category */
+            category: string;
+            /** Relevance Reason */
+            relevance_reason: string;
         };
         /**
          * SearchRequest
@@ -1340,6 +2701,34 @@ export interface components {
              * @description 完成率
              */
             completion_rate: number;
+        };
+        /**
+         * TimelineDay
+         * @description 时间线日期组
+         */
+        TimelineDay: {
+            /** Date */
+            date: string;
+            /**
+             * Entries
+             * @default []
+             */
+            entries: components["schemas"]["TimelineEntry"][];
+        };
+        /**
+         * TimelineEntry
+         * @description 时间线条目
+         */
+        TimelineEntry: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /**
+             * Type
+             * @default note
+             */
+            type: string;
         };
         /**
          * Token
@@ -1531,7 +2920,7 @@ export interface operations {
     list_entries_entries_get: {
         parameters: {
             query?: {
-                /** @description 条目类型: project/task/note/inbox */
+                /** @description 条目类型: project/task/note/inbox/decision/reflection/question */
                 type?: string | null;
                 /** @description 状态: waitStart/doing/complete/paused/cancelled */
                 status?: string | null;
@@ -1612,7 +3001,7 @@ export interface operations {
             query?: {
                 /** @description 导出格式: markdown 或 json */
                 format?: string;
-                /** @description 条目类型: project/task/note/inbox */
+                /** @description 条目类型: project/task/note/inbox/decision/reflection/question */
                 type?: string | null;
                 /** @description 开始日期 (YYYY-MM-DD) */
                 start_date?: string | null;
@@ -1632,6 +3021,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_related_entries_entries__entry_id__related_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelatedEntriesResponse"];
                 };
             };
             /** @description Validation Error */
@@ -1827,6 +3247,167 @@ export interface operations {
             };
         };
     };
+    generate_ai_summary_entries__entry_id__ai_summary_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntrySummaryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_entry_links_entries__entry_id__links_get: {
+        parameters: {
+            query?: {
+                /** @description 关联方向: in/out/both */
+                direction?: string;
+            };
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntryLinkListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_entry_link_entries__entry_id__links_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntryLinkCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntryLinkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_entry_link_entries__entry_id__links__link_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_entry_knowledge_context_entries__entry_id__knowledge_context_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeContextResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     search_entries_search_post: {
         parameters: {
             query?: never;
@@ -1956,6 +3537,148 @@ export interface operations {
             };
         };
     };
+    get_knowledge_map_knowledge_map_get: {
+        parameters: {
+            query?: {
+                /** @description 关系深度 */
+                depth?: number;
+                /** @description 视图模式 */
+                view?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeMapResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_knowledge_stats_knowledge_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConceptStatsResponse"];
+                };
+            };
+        };
+    };
+    search_concepts_knowledge_search_get: {
+        parameters: {
+            query: {
+                /** @description 搜索关键词 */
+                q: string;
+                /** @description 最大返回数 */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConceptSearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_concept_timeline_knowledge_concepts__name__timeline_get: {
+        parameters: {
+            query?: {
+                /** @description 最近 N 天 */
+                days?: number;
+            };
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConceptTimelineResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_mastery_distribution_knowledge_mastery_distribution_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MasteryDistributionResponse"];
+                };
+            };
+        };
+    };
     get_daily_report_review_daily_get: {
         parameters: {
             query?: {
@@ -2075,6 +3798,110 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TrendResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_knowledge_heatmap_review_knowledge_heatmap_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeatmapResponse"];
+                };
+            };
+        };
+    };
+    get_growth_curve_review_growth_curve_get: {
+        parameters: {
+            query?: {
+                /** @description 回溯周数 */
+                weeks?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrowthCurveResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_morning_digest_review_morning_digest_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MorningDigestResponse"];
+                };
+            };
+        };
+    };
+    get_activity_heatmap_review_activity_heatmap_get: {
+        parameters: {
+            query?: {
+                /** @description 年份 */
+                year?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityHeatmapResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2594,6 +4421,467 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DefaultDataClaimResult"];
+                };
+            };
+        };
+    };
+    ai_chat_ai_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatMessage"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_notifications_notifications_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    dismiss_notification_notifications__notification_id__dismiss_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_preferences_notification_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferences"];
+                };
+            };
+        };
+    };
+    update_preferences_notification_preferences_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationPreferences"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferences"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_goals_goals_get: {
+        parameters: {
+            query?: {
+                /** @description 按状态过滤: active/completed/abandoned */
+                status?: string;
+                /** @description 每页数量 */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_goal_goals_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_progress_summary_goals_progress_summary_get: {
+        parameters: {
+            query?: {
+                /** @description 时间范围，如 week/month */
+                period?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressSummaryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_goal_goals__goal_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_goal_goals__goal_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_goal_goals__goal_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_goal_entries_goals__goal_id__entries_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalEntryListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    link_entry_goals__goal_id__entries_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalEntryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlink_entry_goals__goal_id__entries__entry_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    toggle_checklist_item_goals__goal_id__checklist__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
