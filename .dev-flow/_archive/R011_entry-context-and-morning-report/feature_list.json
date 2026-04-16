@@ -1,0 +1,626 @@
+{
+  "version": "1.4",
+  "plan_version": "2.0",
+  "project": "personal-growth-assistant",
+  "created_at": "2026-03-28",
+  "updated_at": "2026-04-16",
+  "status": "active",
+  "scope_notes": "R011 条目关联增强 + AI 晨报升级 — Phase 7 剩余（图谱缩略图 + 手动关联）+ Phase 13（学习连续天数 + 每日聚焦 + 模式洞察）",
+  "active_requirement_cycle": {
+    "id": "R011",
+    "name": "entry-context-and-morning-report",
+    "status": "completed",
+    "branch": "feat/R011-entry-context-and-morning-report"
+  },
+  "workflow": {
+    "name": "XLFoundry",
+    "mode": "B",
+    "runtime": "skill_orchestrated",
+    "review_provider": "codex_plugin",
+    "audit_provider": "codex_plugin",
+    "risk_provider": "codex_plugin"
+  },
+  "summary": {
+    "total_tasks": 6,
+    "pending": 0,
+    "in_progress": 0,
+    "completed": 6,
+    "blocked": 0,
+    "cancelled": 0
+  },
+  "archived_requirement_cycles": [
+    {
+      "id": "R003",
+      "name": "production-content-recovery",
+      "status": "completed",
+      "archive_dir": "_archive/R003_production-content-recovery",
+      "branch": "fix/R003-production-content-recovery"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase1a",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase1a",
+      "branch": "feat/R004-product-evolution-phase1a"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase1b",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase1b",
+      "branch": "feat/R004-product-evolution-phase1b"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase2",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase2",
+      "branch": "feat/R004-product-evolution-phase2"
+    },
+    {
+      "id": "R005",
+      "name": "product-evolution-phase3",
+      "status": "completed",
+      "archive_dir": "_archive/R005_product-evolution-phase3",
+      "branch": "feat/R005_product-evolution-phase3"
+    },
+    {
+      "id": "R006",
+      "name": "product-polish",
+      "status": "completed",
+      "archive_dir": "_archive/R006_product-polish",
+      "branch": "feat/R006_product-polish"
+    },
+    {
+      "id": "R007",
+      "name": "engagement-experience",
+      "status": "completed",
+      "archive_dir": "_archive/R007_engagement-experience",
+      "branch": "feat/R007-engagement-experience"
+    },
+    {
+      "id": "R008",
+      "name": "intelligence-omni",
+      "status": "completed",
+      "archive_dir": "_archive/R008_intelligence-omni",
+      "branch": "feat/R008-intelligence-omni"
+    },
+    {
+      "id": "R009",
+      "name": "chat-user-id-threading",
+      "status": "completed",
+      "archive_dir": "_archive/R009_chat-user-id-threading",
+      "branch": "feat/R009-chat-user-id-threading"
+    },
+    {
+      "id": "R010",
+      "name": "engineering-foundation",
+      "status": "completed",
+      "archive_dir": "_archive/R010_engineering-foundation",
+      "branch": "feat/R010-engineering-foundation"
+    }
+  ],
+  "archived_cycles": [
+    {
+      "cycle_id": "R001",
+      "name": "Personal Growth Assistant v1",
+      "archive_dir": "_archive/R001_personal-growth-assistant-v1",
+      "total_tasks": 36,
+      "phases": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5",
+        "P6",
+        "P7",
+        "P8",
+        "P9",
+        "P10",
+        "P11"
+      ],
+      "completed_at": "2026-04-13",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R003",
+      "name": "Production Content Recovery",
+      "archive_dir": "_archive/R003_production-content-recovery",
+      "total_tasks": 21,
+      "phases": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5",
+        "P6"
+      ],
+      "completed_at": "2026-04-14",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R004",
+      "name": "Product Evolution Phase 1A",
+      "archive_dir": "_archive/R004_product-evolution-phase1a",
+      "total_tasks": 7,
+      "phases": [
+        "P1A"
+      ],
+      "completed_at": "2026-04-14",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R004",
+      "name": "Product Evolution Phase 1B",
+      "archive_dir": "_archive/R004_product-evolution-phase1b",
+      "total_tasks": 2,
+      "phases": [
+        "P1B"
+      ],
+      "completed_at": "2026-04-15",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R004",
+      "name": "Product Evolution Phase 2",
+      "archive_dir": "_archive/R004_product-evolution-phase2",
+      "total_tasks": 7,
+      "phases": [
+        "P2A",
+        "P2B",
+        "P2C"
+      ],
+      "completed_at": "2026-04-15",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R005",
+      "name": "Product Evolution Phase 3",
+      "archive_dir": "_archive/R005_product-evolution-phase3",
+      "total_tasks": 7,
+      "phases": [
+        "P3A",
+        "P3B"
+      ],
+      "completed_at": "2026-04-15",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R006",
+      "name": "Product Polish",
+      "archive_dir": "_archive/R006_product-polish",
+      "total_tasks": 8,
+      "phases": [
+        "P4A",
+        "P4B",
+        "P4C"
+      ],
+      "completed_at": "2026-04-15",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R007",
+      "name": "Engagement & Experience",
+      "archive_dir": "_archive/R007_engagement-experience",
+      "total_tasks": 6,
+      "phases": [
+        "P1A",
+        "P1B",
+        "P2A"
+      ],
+      "completed_at": "2026-04-15",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R008",
+      "name": "Intelligence Omni",
+      "archive_dir": "_archive/R008_intelligence-omni",
+      "total_tasks": 8,
+      "phases": [
+        "P1",
+        "P2"
+      ],
+      "completed_at": "2026-04-16",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R009",
+      "name": "Chat User ID Threading",
+      "archive_dir": "_archive/R009_chat-user-id-threading",
+      "total_tasks": 2,
+      "phases": [
+        "P1"
+      ],
+      "completed_at": "2026-04-16",
+      "snapshot": "feature_list.snapshot.json"
+    },
+    {
+      "cycle_id": "R010",
+      "name": "Engineering Foundation",
+      "archive_dir": "_archive/R010_engineering-foundation",
+      "total_tasks": 8,
+      "phases": [
+        "P1",
+        "P2",
+        "P3"
+      ],
+      "completed_at": "2026-04-16",
+      "snapshot": "feature_list.snapshot.json"
+    }
+  ],
+  "modules": [
+    {
+      "id": "auth",
+      "name": "认证模块",
+      "description": "用户注册、登录、登出、JWT Token 管理"
+    },
+    {
+      "id": "data-isolation",
+      "name": "数据隔离模块",
+      "description": "SQLite/Markdown/Neo4j/Qdrant 四层存储的用户隔离改造"
+    },
+    {
+      "id": "route-guard",
+      "name": "路由守卫模块",
+      "description": "后端全路由认证守卫和用户上下文注入"
+    },
+    {
+      "id": "frontend-auth",
+      "name": "前端认证模块",
+      "description": "登录注册页面、路由守卫、Token 管理、用户状态"
+    },
+    {
+      "id": "review",
+      "name": "回顾模块",
+      "description": "成长回顾统计、趋势、热力图、AI 晨报"
+    },
+    {
+      "id": "entry-management",
+      "name": "条目管理模块",
+      "description": "条目 CRUD 与转化"
+    },
+    {
+      "id": "feedback-loop",
+      "name": "反馈闭环模块",
+      "description": "本地 + 远端双写反馈"
+    },
+    {
+      "id": "home",
+      "name": "首页模块",
+      "description": "首页行动中心"
+    },
+    {
+      "id": "explore",
+      "name": "探索模块",
+      "description": "统一浏览 + 搜索"
+    },
+    {
+      "id": "export",
+      "name": "导出模块",
+      "description": "数据导出 zip/json"
+    },
+    {
+      "id": "entry-relations",
+      "name": "条目关联模块",
+      "description": "标签+向量关联推荐 + 手动关联"
+    },
+    {
+      "id": "onboarding",
+      "name": "Onboarding 模块",
+      "description": "新用户引导"
+    },
+    {
+      "id": "knowledge-graph",
+      "name": "知识图谱模块",
+      "description": "图谱可视化 + 概念统计 + 掌握度 + 搜索 + 学习路径"
+    },
+    {
+      "id": "ai-assistant",
+      "name": "AI 助手模块",
+      "description": "页面级上下文 AI + AI 摘要 + 多轮对话"
+    },
+    {
+      "id": "mcp-terminal",
+      "name": "MCP 终端模块",
+      "description": "MCP Server 批量操作 + 降级搜索 + 新工具"
+    },
+    {
+      "id": "responsive",
+      "name": "响应式布局模块",
+      "description": "移动端/平板适配 + 导航统一 + 大屏优化"
+    },
+    {
+      "id": "theme",
+      "name": "主题模块",
+      "description": "深色/浅色模式"
+    },
+    {
+      "id": "pwa",
+      "name": "PWA 模块",
+      "description": "PWA + 离线缓存"
+    },
+    {
+      "id": "notification",
+      "name": "通知模块",
+      "description": "通知/提醒 + 偏好管理"
+    },
+    {
+      "id": "engineering",
+      "name": "工程化模块",
+      "description": "E2E 测试 + CI/CD + 性能基线 + 可观测性"
+    },
+    {
+      "id": "entry-links",
+      "name": "条目链接模块",
+      "description": "手动创建/删除条目间关联"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "B42",
+      "phase": "P1",
+      "module": "entry-links",
+      "name": "条目手动关联 API",
+      "description": "新增 entry_links SQLite 表和 CRUD API，支持用户手动创建/删除条目间关联。当前条目关联完全通过自动计算（标签重叠+搜索相似度），缺少用户主动建立关系的能力。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "started_at": "2026-04-16T14:20:00+08:00",
+      "completed_at": "2026-04-16T14:52:00+08:00",
+      "priority": "high",
+      "acceptance_criteria": [
+        "POST /entries/{id}/links 请求体 { target_id: str, relation_type: 'related'|'depends_on'|'derived_from'|'references' }，返回 201 + { id, source_id, target_id, relation_type, created_at, target_entry: { id, title, category } }",
+        "GET /entries/{id}/links 返回 { links: [{ id, target_id, target_entry: { id, title, category }, relation_type, created_at }] }，支持 ?direction=in|out|both 过滤",
+        "DELETE /entries/{id}/links/{link_id} 删除该 link_id 对应的记录及其配对记录，返回 204",
+        "关联是双向的：A→B 创建时自动创建 B→A（relation_type 相同），link_id 可使用 GET 返回的任一关联记录 id",
+        "不允许自关联（source_id ≠ target_id），返回 400",
+        "不允许重复关联（user_id + source_id + target_id + relation_type 唯一约束），返回 409",
+        "relation_type 非法值返回 422",
+        "双向关联写入使用 SQLite 事务保证原子性（两行同时成功或同时失败）",
+        "删除条目时级联清理 entry_links 中所有涉及该条目的关联记录（DELETE WHERE source_id=? OR target_id=?）",
+        "所有操作按 user_id 隔离",
+        "单元测试覆盖正常/边界/异常场景"
+      ],
+      "risk_tags": [
+        "auth"
+      ],
+      "test_tasks": [
+        "正常：创建 A→B 关联，GET /entries/A/links 和 /entries/B/links 都可见",
+        "正常：删除 link_id 后双向关联均消失",
+        "正常：GET /entries/{id}/links?direction=in 只返回指向该条目的关联",
+        "边界：自关联返回 400",
+        "边界：重复关联返回 409",
+        "边界：关联不存在的条目返回 404",
+        "边界：relation_type 非法值返回 422",
+        "异常：未认证返回 401",
+        "级联：删除条目后 entry_links 中相关记录自动清理",
+        "事务：双向关联写入失败时两行均回滚"
+      ],
+      "contract_refs": [
+        "POST /entries/{id}/links  { target_id, relation_type } → { id, source_id, target_id, relation_type, created_at, target_entry }",
+        "GET /entries/{id}/links[?direction=out|in|both（默认）] → { links: [{ id, target_entry, relation_type, created_at }] }",
+        "DELETE /entries/{id}/links/{link_id} → 204"
+      ],
+      "files": [
+        "backend/app/routers/entries.py",
+        "backend/app/services/entry_service.py",
+        "backend/app/infrastructure/storage/sqlite.py"
+      ],
+      "planning_notes": "relation_type 使用枚举：related | depends_on | derived_from | references。entry_links 表列：id, user_id, source_id, target_id, relation_type, created_at。唯一约束 UNIQUE(user_id, source_id, target_id, relation_type)。双向关联存两行（A→B + B→A），使用 SQLite 事务包裹双行写入。DELETE /entries/{id}/links/{link_id} 删除时按传入 link_id 定位该行，再按 (source_id, target_id, relation_type, user_id) 交换条件查找配对行一并删除。link_id 接受 GET 返回的任一记录 id。删除条目时在 entry_service.delete_entry 中级联 DELETE FROM entry_links WHERE source_id=? OR target_id=?。路由注册追加到 entries.py 文件末尾，确保 /{entry_id}/links 在 /{entry_id}/related 之后。手动关联属于 SQLite 元数据层（与 users 表同级），不写入 Markdown 文件，导出时由 export API 单独查询 entry_links 表序列化到 JSON 导出。"
+    },
+    {
+      "id": "B43",
+      "phase": "P1",
+      "module": "knowledge-graph",
+      "name": "条目知识上下文 API",
+      "description": "新增 GET /entries/{id}/knowledge-context 端点，返回与该条目相关的知识图谱子图（nodes + edges）。以条目的 tags 作为种子概念，从 Neo4j/SQLite 查询邻居节点和关系，供前端缩略图组件渲染。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "started_at": "2026-04-16T14:55:00+08:00",
+      "completed_at": "2026-04-16T15:30:00+08:00",
+      "priority": "high",
+      "acceptance_criteria": [
+        "GET /entries/{id}/knowledge-context 返回 { nodes, edges, center_concepts }",
+        "nodes 包含 id, name, category, mastery, entry_count",
+        "edges 包含 source, target, relationship",
+        "center_concepts 为该条目的 tags 列表",
+        "无 tags 时返回空子图（nodes=[], edges=[]）",
+        "Neo4j 不可达时降级为 SQLite 标签共现图",
+        "按 user_id 隔离",
+        "单元测试覆盖正常/降级/空数据场景"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：有 tags 的条目返回非空 nodes 和 edges",
+        "正常：center_concepts 与条目 tags 一致",
+        "边界：无 tags 条目返回空子图",
+        "边界：Neo4j 不可达时降级为 SQLite 数据",
+        "异常：不存在的条目返回 404",
+        "异常：未认证返回 401"
+      ],
+      "contract_refs": [
+        "GET /entries/{id}/knowledge-context"
+      ],
+      "files": [
+        "backend/app/routers/entries.py",
+        "backend/app/services/knowledge_service.py",
+        "backend/app/infrastructure/storage/sqlite.py",
+        "backend/app/infrastructure/storage/neo4j.py"
+      ],
+      "planning_notes": "新增 knowledge_service._build_subgraph_from_neo4j(seed_concepts) 方法：查询种子概念的直接邻居（1跳），节点上限 20。Neo4j 不可达时降级调用新增的 _build_subgraph_from_sqlite(seed_concepts)：基于种子概念匹配条目 tags，通过 tags 共现关系生成 CO_OCCURS 类型边。SQLite 降级需在 sqlite.py 中新增 find_entries_by_tag_list(tags) 方法批量查询。"
+    },
+    {
+      "id": "B44",
+      "phase": "P1",
+      "module": "review",
+      "name": "增强 AI 晨报 — 学习连续天数 + 每日聚焦",
+      "description": "增强 MorningDigestResponse，新增 learning_streak（连续记录天数）、daily_focus（AI 生成的每日聚焦建议）、pattern_insights（用户行为模式洞察）。提升晨报的个性化和可操作性。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "started_at": "2026-04-16T14:55:00+08:00",
+      "completed_at": "2026-04-16T17:45:00+08:00",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "MorningDigestResponse 新增 learning_streak: int（连续记录天数，今天有记录则含今天）",
+        "MorningDigestResponse 新增 daily_focus: { title, description, target_entry_id? }（AI 生成的每日聚焦建议）",
+        "MorningDigestResponse 新增 pattern_insights: string[]（最多 3 条，如「你最近一周更倾向于创建灵感而非任务」）",
+        "GET /review/morning-digest 返回增强后的数据",
+        "learning_streak 基于用户实际创建条目日期计算，跨 user_id 隔离",
+        "daily_focus LLM 不可用时降级为模板（基于 overdue 中最紧急的任务）",
+        "现有测试通过，新增字段有对应测试",
+        "向后兼容：新字段为可选（optional），现有客户端不报错"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：连续 5 天有记录的用户返回 learning_streak=5",
+        "正常：中断记录后 learning_streak 从 1 重新计算",
+        "正常：daily_focus 返回 title + description",
+        "边界：新用户（无记录）learning_streak=0",
+        "边界：LLM 不可用时 daily_focus 降级为模板",
+        "边界：数据不足时 pattern_insights 返回空数组",
+        "兼容：旧客户端（无新字段期望）不报错，新字段 Optional+默认值",
+        "异常：daily_focus.target_entry_id 指向已删除条目时不返回 target_entry_id",
+        "异常：LLM 返回非法输出时 daily_focus 降级为模板"
+      ],
+      "contract_refs": [
+        "GET /review/morning-digest"
+      ],
+      "files": [
+        "backend/app/services/review_service.py",
+        "backend/app/routers/review.py"
+      ],
+      "planning_notes": "learning_streak 计算：使用聚合 SQL 一次获取最近 90 天的条目创建日期列表（SELECT DATE(created_at) as date FROM entries WHERE user_id=? AND created_at >= date('now', '-90 days') GROUP BY DATE(created_at)），在内存中从今天往前逐日比对计算连续天数，避免 N+1 查询。pattern_insights 基于最近 30 天的条目类型分布、完成率趋势等简单统计。daily_focus 由 LLM 基于 overdue + streak + recent_activity 生成，300 token 以内。MorningDigestResponse 新增字段使用 Optional + 默认值（learning_streak=0, daily_focus=None, pattern_insights=[]），确保向后兼容。"
+    },
+    {
+      "id": "F31",
+      "phase": "P2",
+      "module": "knowledge-graph",
+      "name": "EntryDetail 知识图谱缩略图",
+      "description": "在 EntryDetail 页面关联面板区域新增知识图谱缩略图组件。使用 ReactFlow 渲染以条目 tags 为中心的子图（1 跳邻居），支持点击节点跳转到概念详情或全图谱页。折叠卡片形式，默认展开。",
+      "verification": "F2",
+      "depends_on": [
+        "B43"
+      ],
+      "status": "completed",
+      "priority": "high",
+      "acceptance_criteria": [
+        "EntryDetail 关联面板区域显示「知识上下文」卡片",
+        "缩略图使用 ReactFlow 渲染 nodes 和 edges",
+        "中心概念节点（条目 tags）高亮显示",
+        "点击节点跳转到 /graph?focus=concept_name，GraphPage 支持 ?focus= 参数自动选中并高亮该概念节点",
+        "无 tags 时显示「暂无关联概念」引导文案",
+        "卡片可折叠，默认展开",
+        "移动端图谱缩略图不溢出"
+      ],
+      "risk_tags": [],
+      "started_at": "2026-04-16T17:50:00+08:00",
+      "completed_at": "2026-04-16T18:00:00+08:00",
+      "test_tasks": [
+        "正常：有 tags 的条目显示知识图谱缩略图",
+        "正常：中心节点高亮",
+        "正常：点击节点跳转到图谱页（?focus= 参数传递正确）",
+        "正常：GraphPage 接收 ?focus= 参数后自动聚焦并高亮节点",
+        "边界：无 tags 条目显示空状态",
+        "边界：折叠/展开交互正常",
+        "异常：knowledge-context API 失败时显示降级文案（不阻塞页面）",
+        "移动端：图谱缩略图不溢出容器宽度"
+      ],
+      "contract_refs": [
+        "GET /entries/{id}/knowledge-context"
+      ],
+      "files": [
+        "frontend/src/pages/EntryDetail.tsx",
+        "frontend/src/components/KnowledgeGraphThumbnail.tsx",
+        "frontend/src/pages/GraphPage.tsx",
+        "frontend/src/services/api.ts"
+      ],
+      "planning_notes": "ReactFlow 已是项目依赖（GraphPage 使用）。缩略图复用 @xyflow/react，但布局固定为 force-directed，不允许用户拖动（只读模式）。节点颜色按 mastery 级别着色（复用 GraphPage 配色方案）。GraphPage 需新增 useSearchParams 支持 ?focus= 参数：页面加载时读取 focus 参数，在节点列表中找到匹配节点并调用 setCenter / fitView 聚焦 + 高亮样式。",
+      "started_at": "2026-04-16T17:50:00+08:00"
+    },
+    {
+      "id": "F32",
+      "phase": "P2",
+      "module": "entry-links",
+      "name": "EntryDetail 手动关联 UI",
+      "description": "在 EntryDetail 页面关联条目区域新增手动关联功能。用户可搜索条目并创建关联，可删除已有手动关联。关联列表区分手动关联和自动推荐关联。",
+      "verification": "F2",
+      "depends_on": [
+        "B42",
+        "F31"
+      ],
+      "status": "completed",
+      "priority": "high",
+      "acceptance_criteria": [
+        "关联条目区域新增「添加关联」按钮",
+        "点击按钮打开搜索弹窗，输入关键词搜索条目",
+        "选择条目 + 选择关系类型（related/depends_on/derived_from/references）→ 创建关联",
+        "手动关联条目带「手动」标签，可点击删除按钮移除",
+        "自动推荐关联保持不变，标记为「推荐」",
+        "创建/删除成功后 toast 提示，列表自动刷新",
+        "不允许关联自身"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：搜索条目 → 选择 → 创建关联成功",
+        "正常：删除手动关联成功，双向同时消失",
+        "正常：手动关联和自动推荐分区展示",
+        "边界：搜索无结果有提示",
+        "边界：关联自身时按钮禁用",
+        "边界：重复关联有提示",
+        "异常：创建关联 API 失败时显示错误 toast，不更新列表",
+        "异常：删除关联 API 失败时显示错误 toast，关联仍在列表中"
+      ],
+      "contract_refs": [
+        "POST /entries/{id}/links",
+        "GET /entries/{id}/links",
+        "DELETE /entries/{id}/links/{link_id}",
+        "GET /entries/search/query"
+      ],
+      "files": [
+        "frontend/src/pages/EntryDetail.tsx",
+        "frontend/src/components/LinkEntryDialog.tsx",
+        "frontend/src/services/api.ts"
+      ],
+      "planning_notes": "搜索复用已有 GET /entries/search/query。关联类型映射为中文：related→关联、depends_on→依赖、derived_from→来源于、references→引用。弹窗样式复用项目现有 Dialog/Modal 模式。"
+    },
+    {
+      "id": "F33",
+      "phase": "P2",
+      "module": "home",
+      "name": "增强 AI 晨报前端展示",
+      "description": "增强首页晨报卡片，新增学习连续天数展示（火焰图标+天数）、每日聚焦卡片（AI 建议的今日最重要事项）、模式洞察列表。提升晨报的视觉吸引力和可操作性。",
+      "verification": "F2",
+      "depends_on": [
+        "B44"
+      ],
+      "status": "completed",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "晨报卡片顶部显示学习连续天数（🔥 图标 + N 天），0 天时不显示",
+        "新增「今日聚焦」卡片：显示 daily_focus.title + description，可点击跳转到 target_entry",
+        "新增「洞察」区域：显示 pattern_insights 列表（最多 3 条）",
+        "连续天数 ≥7 天时火焰变大/变色，视觉奖励",
+        "向后兼容：新字段缺失时不报错，相关区域不显示"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：连续天数 ≥1 时显示火焰+天数",
+        "正常：连续天数 ≥7 时火焰视觉增强",
+        "正常：今日聚焦卡片可点击跳转",
+        "正常：洞察列表正确显示",
+        "边界：连续天数为 0 时不显示火焰区域",
+        "边界：daily_focus 为空时不显示聚焦卡片",
+        "边界：pattern_insights 为空时不显示洞察区域"
+      ],
+      "contract_refs": [
+        "GET /review/morning-digest"
+      ],
+      "files": [
+        "frontend/src/pages/Home.tsx"
+      ],
+      "planning_notes": "不引入新图表库。连续天数使用纯 CSS/图标实现。今日聚焦卡片样式参考现有 DigestStat 组件。火焰图标使用 Lucide 的 Flame 图标。"
+    }
+  ]
+}

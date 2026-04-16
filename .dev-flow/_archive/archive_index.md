@@ -2,6 +2,19 @@
 
 ## 已完成需求包
 
+### R011: Entry Context & Morning Report
+
+- 状态: 已完成
+- 分支: `feat/R011-entry-context-and-morning-report`
+- 主题: 条目关联增强 + AI 晨报升级 — 知识图谱缩略图 + 手动关联 + 学习连续天数 + 每日聚焦 + 模式洞察
+- 目录: `R011_entry-context-and-morning-report/`
+- 完成时间: 2026-04-16
+- 任务数: 6 (B42, B43, B44, F31, F32, F33)
+- Codex 审核: 代码质量通过 + 2 项 gitignore 防护修复
+- 新增测试: 38 个后端测试 + 231 前端测试全通过
+- 新增 API: 5 个 (entry links CRUD + knowledge context)
+- 新增前端组件: KnowledgeGraphThumbnail + LinkEntryDialog
+
 ### R010: Engineering Foundation
 
 - 状态: 已完成
