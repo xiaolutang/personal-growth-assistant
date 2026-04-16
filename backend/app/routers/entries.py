@@ -26,13 +26,13 @@ from app.models.user import User
 
 router = APIRouter(prefix="/entries", tags=["entries"])
 
-_VALID_EXPORT_TYPES = {"inbox", "task", "note", "project"}
+_VALID_EXPORT_TYPES = {"inbox", "task", "note", "project", "decision", "reflection", "question"}
 _ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 @router.get("", response_model=EntryListResponse)
 async def list_entries(
-    type: str | None = Query(None, description="条目类型: project/task/note/inbox"),
+    type: str | None = Query(None, description="条目类型: project/task/note/inbox/decision/reflection/question"),
     status: str | None = Query(None, description="状态: waitStart/doing/complete/paused/cancelled"),
     tags: str | None = Query(None, description="标签筛选（逗号分隔）"),
     parent_id: str | None = Query(None, description="父条目ID（用于获取子任务）"),
@@ -60,7 +60,7 @@ async def list_entries(
 @router.get("/export")
 async def export_entries(
     format: str = Query("markdown", description="导出格式: markdown 或 json"),
-    type: str | None = Query(None, description="条目类型: project/task/note/inbox"),
+    type: str | None = Query(None, description="条目类型: project/task/note/inbox/decision/reflection/question"),
     start_date: str | None = Query(None, description="开始日期 (YYYY-MM-DD)"),
     end_date: str | None = Query(None, description="结束日期 (YYYY-MM-DD)"),
     user: User = Depends(get_current_user),

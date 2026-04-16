@@ -90,6 +90,7 @@ interface MonthlyReport {
   task_stats: TaskStats;
   note_stats: NoteStats;
   weekly_breakdown: WeeklyBreakdown[];
+  ai_summary?: string;
 }
 
 type ReportType = "daily" | "weekly" | "monthly" | "trend";
@@ -242,6 +243,7 @@ export function Review() {
   const getAiSummary = (): string | null => {
     if (reportType === "daily") return dailyReport?.ai_summary ?? null;
     if (reportType === "weekly") return weeklyReport?.ai_summary ?? null;
+    if (reportType === "monthly") return monthlyReport?.ai_summary ?? null;
     return null;
   };
 
@@ -251,7 +253,7 @@ export function Review() {
 
   // AI 总结卡片渲染
   const renderAiSummaryCard = () => {
-    if (reportType === "monthly" || reportType === "trend") return null;
+    if (reportType === "trend") return null;
 
     return (
       <Card className="border-l-4 border-l-indigo-500 dark:border-l-indigo-400">

@@ -1,33 +1,28 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：R012 goal-tracking
+> 活跃需求包：R013 decision-reflection-entries
 > 最后更新：2026-04-17
 
 ## 任务树
 
 ```
-R012 (goal-tracking)
-├── P1: 后端 API
-│   ├── [completed] B45 目标 CRUD + 衡量方式 — count/checklist/tag_auto 三种类型
-│   ├── [completed] B46 目标条目关联 + 进度计算 — link/unlink/progress-summary
-│   └── [completed] B47 Tag 自动追踪触发 — entry tag 变更时异步重算进度 ← B45+B46
-└── P2: 前端页面
-    ├── [completed] F34 目标管理页面 — GoalsPage + GoalDetail ← B45+B46
-    ├── [completed] F35 首页目标进度卡片 — 前3活跃目标 ← B45
-    └── [completed] F36 回顾页目标概览 — progress_delta + weekly/monthly ← B45+B46+B47
+R013 (decision-reflection-entries)
+├── P1: 后端
+│   ├── [completed] B48 月报 AI 总结补齐 — monthly 接入 _generate_ai_summary
+│   └── [completed] B49 思考/决策记录后端 — decision/reflection/question 三种新类型
+└── P2: 前端
+    ├── [completed] F37 月报 AI 总结展示 — Review.tsx 月报 Tab 展示 AI 总结卡片
+    └── [completed] F38 思考/决策记录前端 — Tab/快捷操作/差异化渲染/专属图标颜色
 ```
 
 ## 依赖图
 
 ```
-B45 ──→ B47
-B46 ──→ B47
-B45+B46 ──→ F34
-B45 ──→ F35
-B45+B46+B47 ──→ F36
+B48 ──→ F37
+B49 ──→ F38
 
-无依赖的起点：B45, B46
+无依赖的起点：B48, B49
 ```
 
 ## 统计
@@ -36,8 +31,8 @@ B45+B46+B47 ──→ F36
 |------|------|
 | pending | 0 |
 | in_progress | 0 |
-| completed | 6 |
-| **总计** | **6** |
+| completed | 4 |
+| **总计** | **4** |
 
 ## 归档需求包
 
@@ -55,10 +50,12 @@ B45+B46+B47 ──→ F36
 | R009 Chat User ID Threading | _archive/R009_chat-user-id-threading | completed |
 | R010 Engineering Foundation | _archive/R010_engineering-foundation | completed |
 | R011 Entry Context & Morning Report | _archive/R011_entry-context-and-morning-report | completed |
+| R012 Goal Tracking | _archive/R012_goal-tracking | completed |
 
 ## 测试汇总
 
 | 项目 | 测试数 | 状态 |
 |------|--------|------|
-| 后端测试 | 715 passed | 全部通过 |
+| 后端测试 | 733 passed | 全部通过 |
 | 前端测试 | 231 passed | 全部通过 |
+| Codex Review | 4 rounds | conditional_pass → simplify → pass |

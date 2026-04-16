@@ -12,7 +12,7 @@ class EntryCreate(BaseModel):
     """创建条目请求"""
     category: str = Field(
         ...,
-        description="条目分类: project/task/note/inbox",
+        description="条目分类: project/task/note/inbox/decision/reflection/question",
         validation_alias=AliasChoices('category', 'type')
     )
     title: str = Field(..., min_length=1, description="标题")
@@ -29,7 +29,7 @@ class EntryUpdate(BaseModel):
     """更新条目请求"""
     title: Optional[str] = Field(None, description="新标题")
     content: Optional[str] = Field(None, description="新内容")
-    category: Optional[str] = Field(None, description="条目分类: project/task/note/inbox")
+    category: Optional[str] = Field(None, description="条目分类: project/task/note/inbox/decision/reflection/question")
     status: Optional[str] = Field(None, description="新状态: waitStart/doing/complete/paused/cancelled")
     priority: Optional[str] = Field(None, description="新优先级: high/medium/low")
     tags: Optional[List[str]] = Field(None, description="新标签")

@@ -4,10 +4,13 @@ from enum import Enum
 
 class Category(str, Enum):
     """条目分类"""
-    PROJECT = "project"  # 项目（可拆解为多个任务）
-    TASK = "task"        # 可执行任务
-    NOTE = "note"        # 学习笔记
-    INBOX = "inbox"      # 灵感收集
+    PROJECT = "project"      # 项目（可拆解为多个任务）
+    TASK = "task"            # 可执行任务
+    NOTE = "note"            # 学习笔记
+    INBOX = "inbox"          # 灵感收集
+    DECISION = "decision"    # 决策记录
+    REFLECTION = "reflection"  # 复盘笔记
+    QUESTION = "question"    # 待解疑问
 
 
 class TaskStatus(str, Enum):

@@ -27,6 +27,9 @@ import {
   ChevronUp,
   RefreshCw,
   Trash2,
+  Scale,
+  RotateCcw,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +47,81 @@ import { KnowledgeGraphThumbnail } from "@/components/KnowledgeGraphThumbnail";
 import { LinkEntryDialog } from "@/components/LinkEntryDialog";
 
 type ContentTab = "preview" | "edit";
+
+/** 共享的 Markdown 链接渲染器：/entry/ 走 SPA 导航，其他走原生跳转 */
+function getMarkdownComponents(navigate: (path: string) => void) {
+  return {
+    a: ({ href, children }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { children?: React.ReactNode }) => {
+      if (href?.startsWith("/entry/")) {
+        return (
+          <span
+            className="text-primary hover:underline cursor-pointer"
+            onClick={() => navigate(href)}
+          >
+            {children}
+          </span>
+        );
+      }
+      return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
+    },
+  };
+}
+
+/** 将 Markdown 按 ## 分割成结构化 sections 并以卡片形式渲染 */
+function StructuredContent({ content, category, navigate }: { content: string; category: string; navigate: (path: string) => void }) {
+  const sections = content.split(/\n(?=## )/).filter(Boolean);
+  if (sections.length === 0) {
+    return <div className="prose prose-sm dark:prose-invert max-w-none">{content || "暂无内容"}</div>;
+  }
+
+  const sectionLabels: Record<string, Record<string, string>> = {
+    decision: {
+      "决策背景": "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800",
+      "可选方案": "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800",
+      "最终选择": "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800",
+      "选择理由": "bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800",
+    },
+    reflection: {
+      "回顾目标": "bg-teal-50 dark:bg-teal-950/30 border-teal-200 dark:border-teal-800",
+      "实际结果": "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800",
+      "经验教训": "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800",
+      "下一步行动": "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800",
+    },
+    question: {
+      "问题描述": "bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800",
+      "相关背景": "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800",
+      "思考方向": "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800",
+    },
+  };
+  const colorMap = sectionLabels[category] || {};
+
+  return (
+    <div className="space-y-3">
+      {sections.map((section, i) => {
+        const match = section.match(/^## (.+)/);
+        const title = match ? match[1].trim() : "";
+        const body = match ? section.slice(match[0].length).trim() : section.trim();
+        const colorClass = colorMap[title] || "bg-muted/50 border-border";
+
+        return (
+          <div key={i} className={`rounded-lg border p-4 ${colorClass}`}>
+            {title && (
+              <h3 className="text-sm font-semibold mb-2">{title}</h3>
+            )}
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={getMarkdownComponents(navigate)}
+              >
+                {body || "（待补充）"}
+              </ReactMarkdown>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function EntryDetail() {
   const { id } = useParams<{ id: string }>();
@@ -654,6 +732,50 @@ export function EntryDetail() {
           </div>
         </div>
 
+        {/* Decision/Reflection/Question Info Card */}
+        {entry.category === "decision" && (
+          <Card className="mb-6 border-amber-200 dark:border-amber-800">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2 text-amber-700 dark:text-amber-300">
+                <Scale className="h-4 w-4" />
+                决策记录
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              记录重要决策的背景、方案对比和选择理由，帮助未来回顾决策脉络。
+            </CardContent>
+          </Card>
+        )}
+        {entry.category === "reflection" && (
+          <Card className="mb-6 border-teal-200 dark:border-teal-800">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2 text-teal-700 dark:text-teal-300">
+                <RotateCcw className="h-4 w-4" />
+                复盘笔记
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              结构化回顾目标、结果和经验教训，持续改进。
+            </CardContent>
+          </Card>
+        )}
+        {entry.category === "question" && (
+          <Card className="mb-6 border-rose-200 dark:border-rose-800">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2 text-rose-700 dark:text-rose-300">
+                <HelpCircle className="h-4 w-4" />
+                待解疑问
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              记录待解决的问题和思考方向，积累待探索的知识点。
+              {entry.status === "complete" && (
+                <span className="ml-2 text-green-600 dark:text-green-400">已解决</span>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Project Progress Section */}
         {entry.category === "project" && projectProgress && (
           <Card className="mb-6">
@@ -743,28 +865,24 @@ export function EntryDetail() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  a: ({ href, children }) => {
-                    if (href?.startsWith("/entry/")) {
-                      return (
-                        <span
-                          className="text-primary hover:underline cursor-pointer"
-                          onClick={() => navigate(href)}
-                        >
-                          {children}
-                        </span>
-                      );
-                    }
-                    return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
-                  },
-                }}
-              >
-                {(isEditing ? editContent : parsedContent) || "暂无内容"}
-              </ReactMarkdown>
-            </div>
+            {/* 结构化类型渲染: decision/reflection/question */}
+            {["decision", "reflection", "question"].includes(entry.category) &&
+            !isEditing ? (
+              <StructuredContent
+                content={parsedContent}
+                category={entry.category}
+                navigate={navigate}
+              />
+            ) : (
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={getMarkdownComponents(navigate)}
+                >
+                  {(isEditing ? editContent : parsedContent) || "暂无内容"}
+                </ReactMarkdown>
+              </div>
+            )}
 
             {/* 引用笔记列表 */}
             {referenceIds.length > 0 && (

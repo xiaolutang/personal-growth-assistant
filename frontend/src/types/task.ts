@@ -1,5 +1,5 @@
 // 条目类型
-export type Category = "task" | "inbox" | "note" | "project";
+export type Category = "task" | "inbox" | "note" | "project" | "decision" | "reflection" | "question";
 
 // 任务状态
 export type TaskStatus = "waitStart" | "doing" | "complete" | "paused" | "cancelled";

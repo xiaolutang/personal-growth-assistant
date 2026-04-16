@@ -81,6 +81,29 @@ class EntryService:
         dir_name = MarkdownStorage.CATEGORY_DIRS.get(category, "notes")
         return f"{dir_name}/{entry_id}.md" if dir_name else f"{entry_id}.md"
 
+    # === 类型模板 ===
+
+    CATEGORY_TEMPLATES = {
+        Category.DECISION: (
+            "\n\n## 决策背景\n\n\n## 可选方案\n\n\n## 最终选择\n\n\n## 选择理由\n"
+        ),
+        Category.REFLECTION: (
+            "\n\n## 回顾目标\n\n\n## 实际结果\n\n\n## 经验教训\n\n\n## 下一步行动\n"
+        ),
+        Category.QUESTION: (
+            "\n\n## 问题描述\n\n\n## 相关背景\n\n\n## 思考方向\n"
+        ),
+    }
+
+    def _apply_category_template(self, category: Category, content: str, title: str) -> str:
+        """为新类型条目应用结构化模板"""
+        template = self.CATEGORY_TEMPLATES.get(category)
+        if not template:
+            return content
+        if content.strip():
+            return f"# {title}\n\n{content}{template}"
+        return f"# {title}{template}"
+
     # === CRUD 操作 ===
 
     async def create_entry(self, request: EntryCreate, user_id: str = "_default") -> EntryResponse:
@@ -100,10 +123,11 @@ class EntryService:
         planned_date = self._parse_datetime(request.planned_date)
 
         # 创建条目对象
+        content = self._apply_category_template(category, request.content, request.title)
         entry = Task(
             id=entry_id,
             title=request.title,
-            content=request.content,
+            content=content,
             category=category,
             status=status,
             priority=priority,
