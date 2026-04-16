@@ -41,7 +41,7 @@
 - [ ] B45 test_tasks 包含 metric_type 校验 + 422 场景 ✓
 - [ ] B46 test_tasks 包含三种类型的进度计算 + 401/403/progress-summary + 状态不回退 ✓
 - [ ] B47 test_tasks 包含异步触发失败不影响主流程 + tag 更新前后集合重算 ✓
-- [ ] F34 test_tasks 包含无目标引导 + checklist 创建 + count 关联/取消关联 + API 失败降级 + 构建通过 ✓
+- [ ] F34 test_tasks 包含无目标引导 + checklist 创建 + count 关联/取消关联 + completed→active 重新激活 + API 失败降级 + 构建通过 ✓
 - [ ] F35 test_tasks 包含 API 失败不阻塞首页 + 构建通过 ✓
 - [ ] 前端任务都要求 npm run build 通过 ✓
 
