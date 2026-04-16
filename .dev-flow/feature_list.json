@@ -281,7 +281,7 @@
       "description": "覆盖完整认证用户路径：注册 → 登录 → 访问受保护页面 → 登出 → 重定向到登录页。包括未认证访问拦截等边界场景。",
       "verification": "L3",
       "depends_on": ["B35"],
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "acceptance_criteria": [
         "注册流程：填写表单 → 提交 → 跳转到首页",

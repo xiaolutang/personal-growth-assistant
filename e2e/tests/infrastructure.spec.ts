@@ -18,7 +18,7 @@ test.describe('E2E 基础设施', () => {
   });
 
   test('前端页面可访问', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/growth/');
     await expect(page).toHaveTitle(/Growth|个人成长/);
   });
 
