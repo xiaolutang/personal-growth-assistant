@@ -13,6 +13,9 @@ from app.api.schemas.entry import (
     EntryLinkItem,
     EntryLinkListResponse,
     LinkTargetEntry,
+    KnowledgeContextNode,
+    KnowledgeContextEdge,
+    KnowledgeContextResponse,
 )
 from app.api.schemas.common import (
     SuccessResponse,
@@ -35,4 +38,7 @@ __all__ = [
     "EntryLinkItem",
     "EntryLinkListResponse",
     "LinkTargetEntry",
+    "KnowledgeContextNode",
+    "KnowledgeContextEdge",
+    "KnowledgeContextResponse",
 ]

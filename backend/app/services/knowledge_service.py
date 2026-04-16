@@ -950,3 +950,254 @@ class KnowledgeService:
             advanced=dist["advanced"],
             total=sum(dist.values()),
         )
+
+    # ==================== B43: 条目知识上下文 ====================
+
+    async def get_entry_knowledge_context(
+        self, entry_id: str, user_id: str = "_default"
+    ) -> dict:
+        """
+        获取条目的知识图谱子图上下文
+
+        以条目的 tags 为种子概念，返回 1-hop 子图。
+
+        Args:
+            entry_id: 条目 ID
+            user_id: 用户 ID
+
+        Returns:
+            dict: { nodes, edges, center_concepts }
+        """
+        # 1. 获取条目的 tags
+        tags = self._get_entry_tags(entry_id, user_id)
+
+        # 2. 无 tags → 空子图
+        if not tags:
+            return {"nodes": [], "edges": [], "center_concepts": []}
+
+        # 3. 尝试 Neo4j，失败降级到 SQLite
+        if self.is_neo4j_available():
+            try:
+                nodes, edges = await self._build_subgraph_from_neo4j(tags, user_id)
+                return {
+                    "nodes": [n.dict() for n in nodes],
+                    "edges": [e.dict() for e in edges],
+                    "center_concepts": tags,
+                }
+            except Exception as e:
+                logger.warning(f"Neo4j subgraph failed, falling back to SQLite: {e}")
+
+        # SQLite 降级
+        if self._sqlite:
+            nodes, edges = self._build_subgraph_from_sqlite(tags, user_id)
+            return {
+                "nodes": [n.dict() for n in nodes],
+                "edges": [e.dict() for e in edges],
+                "center_concepts": tags,
+            }
+
+        # 无可用存储
+        return {"nodes": [], "edges": [], "center_concepts": tags}
+
+    def _get_entry_tags(self, entry_id: str, user_id: str) -> List[str]:
+        """从 SQLite 获取条目的 tags"""
+        if not self._sqlite:
+            return []
+        entry = self._sqlite.get_entry(entry_id, user_id=user_id)
+        if not entry:
+            return []
+        return entry.get("tags", [])
+
+    async def _build_subgraph_from_neo4j(
+        self, seed_concepts: List[str], user_id: str
+    ) -> tuple:
+        """从 Neo4j 构建种子概念的 1-hop 子图"""
+        all_nodes: Dict[str, MapNode] = {}
+        all_edges: List[MapEdge] = []
+
+        # 一次性获取所有概念的统计数据，避免 N+1 查询
+        concepts_stats_lookup: Dict[str, Dict] = {}
+        try:
+            all_concepts_stats = await self._neo4j.get_all_concepts_with_stats(user_id=user_id)
+            concepts_stats_lookup = {
+                cs.get("name", ""): cs
+                for cs in all_concepts_stats
+                if cs.get("name")
+            }
+        except Exception:
+            pass
+
+        for concept in seed_concepts:
+            try:
+                graph = await self._neo4j.get_knowledge_graph(
+                    concept, depth=1, user_id=user_id
+                )
+            except Exception:
+                continue
+
+            # 中心节点
+            center = graph.get("center")
+            if center:
+                name = center.get("name", concept)
+                if name not in all_nodes:
+                    cs = concepts_stats_lookup.get(name, {})
+                    entry_count = cs.get("entry_count", 0)
+                    mastery = self._calculate_mastery_from_stats(
+                        entry_count, cs.get("recent_count", 0), cs.get("note_count", 0)
+                    )
+                    all_nodes[name] = MapNode(
+                        id=name,
+                        name=name,
+                        category=center.get("category"),
+                        mastery=mastery,
+                        entry_count=entry_count,
+                    )
+
+            # 1-hop 邻居
+            for conn in graph.get("connections", []):
+                node_data = conn.get("node", {})
+                if not node_data:
+                    continue
+                neighbor_name = node_data.get("name", "")
+                if not neighbor_name:
+                    continue
+
+                if neighbor_name not in all_nodes:
+                    cs = concepts_stats_lookup.get(neighbor_name, {})
+                    entry_count = cs.get("entry_count", 0)
+                    mastery = self._calculate_mastery_from_stats(
+                        entry_count, cs.get("recent_count", 0), cs.get("note_count", 0)
+                    )
+                    all_nodes[neighbor_name] = MapNode(
+                        id=neighbor_name,
+                        name=neighbor_name,
+                        category=node_data.get("category"),
+                        mastery=mastery,
+                        entry_count=entry_count,
+                    )
+
+                # 边：从种子概念到邻居
+                if center:
+                    center_name = center.get("name", concept)
+                    edge = MapEdge(
+                        source=center_name,
+                        target=neighbor_name,
+                        relationship=conn.get("relationship", "RELATED_TO"),
+                    )
+                    # 去重
+                    edge_key = (edge.source, edge.target, edge.relationship)
+                    existing_keys = {(e.source, e.target, e.relationship) for e in all_edges}
+                    if edge_key not in existing_keys:
+                        all_edges.append(edge)
+
+            # 限制最多 20 个节点
+            if len(all_nodes) >= 20:
+                break
+
+        # 截断到 20 个节点（保留种子概念）
+        if len(all_nodes) > 20:
+            seed_set = set(seed_concepts)
+            seed_nodes = {k: v for k, v in all_nodes.items() if k in seed_set}
+            non_seed_nodes = {k: v for k, v in all_nodes.items() if k not in seed_set}
+            remaining = 20 - len(seed_nodes)
+            kept = dict(list(non_seed_nodes.items())[:max(0, remaining)])
+            all_nodes = {**seed_nodes, **kept}
+            # 过滤掉引用已删除节点的边
+            kept_ids = set(all_nodes.keys())
+            all_edges = [e for e in all_edges if e.source in kept_ids and e.target in kept_ids]
+
+        return list(all_nodes.values()), all_edges
+
+    def _build_subgraph_from_sqlite(
+        self, seed_concepts: List[str], user_id: str
+    ) -> tuple:
+        """从 SQLite 构建种子概念的 tag 共现子图"""
+        if not self._sqlite:
+            return [], []
+
+        all_entries = self._sqlite.list_entries(limit=10000, user_id=user_id)
+        now = datetime.now()
+        thirty_days_ago = now - timedelta(days=30)
+
+        # 收集包含种子概念的条目中的所有 tags
+        concept_map: Dict[str, Dict] = {}
+        concept_pairs: set = set()
+
+        # 标准化种子概念用于匹配
+        seed_set_lower = {c.lower() for c in seed_concepts}
+
+        for entry in all_entries:
+            tags = entry.get("tags", [])
+            tags_lower = [t.lower() for t in tags]
+
+            # 只处理包含至少一个种子概念的条目
+            if not any(tl in seed_set_lower for tl in tags_lower):
+                continue
+
+            entry_type = entry.get("type", "task")
+
+            for tag in tags:
+                if tag not in concept_map:
+                    concept_map[tag] = {
+                        "name": tag,
+                        "category": "tag",
+                        "entry_count": 0,
+                        "recent_count": 0,
+                        "note_count": 0,
+                    }
+                concept_map[tag]["entry_count"] += 1
+
+                if entry_type == "note":
+                    concept_map[tag]["note_count"] += 1
+
+                updated_str = entry.get("updated_at", "")
+                try:
+                    if updated_str:
+                        if isinstance(updated_str, str):
+                            updated_at = datetime.fromisoformat(updated_str.replace("Z", "").replace("+00:00", ""))
+                        else:
+                            updated_at = updated_str if updated_str.tzinfo is None else updated_str.replace(tzinfo=None)
+                        if updated_at >= thirty_days_ago:
+                            concept_map[tag]["recent_count"] += 1
+                except (ValueError, TypeError):
+                    pass
+
+            # 共现边
+            for i in range(len(tags)):
+                for j in range(i + 1, len(tags)):
+                    pair = tuple(sorted([tags[i], tags[j]]))
+                    concept_pairs.add(pair)
+
+        # 构建节点，限制 20 个
+        nodes = []
+        sorted_concepts = sorted(
+            concept_map.items(),
+            key=lambda x: (x[0].lower() in seed_set_lower, x[1]["entry_count"]),
+            reverse=True,
+        )
+        for name, info in sorted_concepts[:20]:
+            mastery = self._calculate_mastery_from_stats(
+                entry_count=info["entry_count"],
+                recent_count=info["recent_count"],
+                note_count=info["note_count"],
+            )
+            nodes.append(MapNode(
+                id=name,
+                name=name,
+                category=info.get("category"),
+                mastery=mastery,
+                entry_count=info["entry_count"],
+            ))
+
+        # 构建边（只保留在节点集合内的边）
+        node_ids = {n.id for n in nodes}
+        edges = []
+        for source, target in concept_pairs:
+            if source in node_ids and target in node_ids:
+                edges.append(MapEdge(
+                    source=source,
+                    target=target,
+                    relationship="CO_OCCURS",
+                ))
+
+        return nodes, edges

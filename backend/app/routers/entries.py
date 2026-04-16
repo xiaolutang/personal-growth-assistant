@@ -19,8 +19,9 @@ from app.api.schemas import (
     EntryLinkCreate,
     EntryLinkResponse,
     EntryLinkListResponse,
+    KnowledgeContextResponse,
 )
-from app.routers.deps import get_entry_service, get_storage, get_current_user
+from app.routers.deps import get_entry_service, get_storage, get_current_user, get_knowledge_service
 from app.models.user import User
 
 router = APIRouter(prefix="/entries", tags=["entries"])
@@ -271,3 +272,19 @@ async def delete_entry_link(
     )
     if not success:
         raise HTTPException(status_code=status_code, detail=message)
+
+
+@router.get("/{entry_id}/knowledge-context", response_model=KnowledgeContextResponse)
+async def get_entry_knowledge_context(
+    entry_id: str,
+    user: User = Depends(get_current_user),
+):
+    """获取条目的知识图谱子图上下文（基于条目标签的 1-hop 子图）"""
+    # 验证条目存在且属于当前用户
+    service = get_entry_service()
+    entry = await service.get_entry(entry_id, user_id=user.id)
+    if not entry:
+        raise HTTPException(status_code=404, detail=f"条目不存在: {entry_id}")
+
+    ks = get_knowledge_service()
+    return await ks.get_entry_knowledge_context(entry_id, user_id=user.id)

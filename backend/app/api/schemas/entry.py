@@ -129,3 +129,28 @@ class EntryLinkItem(BaseModel):
 class EntryLinkListResponse(BaseModel):
     """条目关联列表响应"""
     links: List[EntryLinkItem]
+
+
+# === 知识上下文 ===
+
+class KnowledgeContextNode(BaseModel):
+    """知识上下文节点"""
+    id: str
+    name: str
+    category: Optional[str] = None
+    mastery: Optional[str] = None
+    entry_count: int = 0
+
+
+class KnowledgeContextEdge(BaseModel):
+    """知识上下文边"""
+    source: str
+    target: str
+    relationship: str = "RELATED_TO"
+
+
+class KnowledgeContextResponse(BaseModel):
+    """条目知识上下文响应"""
+    nodes: List[KnowledgeContextNode] = []
+    edges: List[KnowledgeContextEdge] = []
+    center_concepts: List[str] = []

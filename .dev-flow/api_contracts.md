@@ -437,7 +437,7 @@ GET 返回的 `id` 字段即为 DELETE 操作使用的 `link_id`。无论 direct
 
 ### 降级行为
 
-- Neo4j 不可达时从 SQLite tags 共现关系生成子图，mastery 字段为 null
+- Neo4j 不可达时从 SQLite tags 共现关系生成子图，mastery 字段基于条目数量计算
 - 无 tags 时返回 `{"nodes": [], "edges": [], "center_concepts": []}`
 - 子图深度 1 跳，节点上限 20
 
