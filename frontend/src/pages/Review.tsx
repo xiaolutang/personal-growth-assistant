@@ -666,7 +666,7 @@ export function Review() {
             {renderAiSummaryCard()}
 
             {/* 目标进展概览（仅周报/月报） */}
-            {(reportType === "weekly" || reportType === "monthly") && goalSummary && goalSummary.goals.length > 0 && (
+            {(reportType === "weekly" || reportType === "monthly") && goalSummary && (goalSummary.active_count + goalSummary.completed_count > 0) && (
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">

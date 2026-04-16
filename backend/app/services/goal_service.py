@@ -469,13 +469,21 @@ class GoalService:
             current_progress = self._calc_goal_progress(goal, linked_entries_count=linked_count)
 
             # 计算 progress_delta：当前进度 - 上一周期末进度
+            # 仅 tag_auto 且有 start_date 时可追溯历史；其他类型返回 None
             progress_delta = None
-            if period in ("weekly", "monthly"):
+            if period in ("weekly", "monthly") and goal["metric_type"] == "tag_auto":
                 try:
-                    prev_end = self._get_prev_period_end(period)
-                    prev_count = self._get_prev_period_count(goal, user_id, prev_end)
-                    prev_progress = self._calc_goal_progress(goal, override_count=prev_count)
-                    progress_delta = round(current_progress - prev_progress, 1)
+                    auto_tags = goal.get("auto_tags") or []
+                    if isinstance(auto_tags, str):
+                        auto_tags = json.loads(auto_tags)
+                    start_date = goal.get("start_date")
+                    if auto_tags and start_date:
+                        prev_end = self._get_prev_period_end(period)
+                        prev_count = self._sqlite.count_entries_by_tags_in_range(
+                            auto_tags, user_id, start_date, prev_end
+                        )
+                        prev_progress = self._calc_goal_progress(goal, override_count=prev_count)
+                        progress_delta = round(current_progress - prev_progress, 1)
                 except Exception:
                     progress_delta = None
 
@@ -502,20 +510,3 @@ class GoalService:
             prev_end = now - timedelta(days=30)
         return prev_end.strftime("%Y-%m-%dT%H:%M:%S")
 
-    def _get_prev_period_count(self, goal: dict[str, Any], user_id: str, cutoff: str) -> int:
-        """获取上一周期末的计数（用于计算 progress_delta）
-
-        tag_auto: 用 start_date~cutoff 时间范围统计
-        checklist/count: 不可追溯历史变更，返回 0
-        """
-        metric_type = goal.get("metric_type", "count")
-        if metric_type == "tag_auto":
-            tags = goal.get("auto_tags") or []
-            if isinstance(tags, str):
-                tags = json.loads(tags)
-            start_date = goal.get("start_date")
-            if start_date and tags:
-                return self._sqlite.count_entries_by_tags_in_range(
-                    tags, user_id, start_date, cutoff
-                )
-        return 0
