@@ -592,6 +592,110 @@ class TestReviewAISummary:
         # 清理
         review_svc.set_llm_caller(None)
 
+    async def test_monthly_report_with_ai_summary(self, storage, client: AsyncClient):
+        """测试月报包含 AI 总结"""
+        from app.routers import deps
+        from app.infrastructure.llm.mock_caller import MockCaller
+
+        mock_llm = MockCaller(response="本月完成任务数显著提升，学习节奏稳定。建议下月增加项目实践。")
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(mock_llm)
+
+        response = await client.get("/review/monthly")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["ai_summary"] is not None
+        assert len(data["ai_summary"]) > 0
+
+        # 清理
+        review_svc.set_llm_caller(None)
+
+    async def test_monthly_report_without_llm(self, storage, client: AsyncClient):
+        """测试 LLM 不可用时月报 ai_summary 为 None"""
+        from app.routers import deps
+
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(None)
+
+        response = await client.get("/review/monthly")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["ai_summary"] is None
+
+    async def test_monthly_report_llm_failure_graceful(self, storage, client: AsyncClient):
+        """测试 LLM 失败时月报其他字段正常"""
+        from app.routers import deps
+        from unittest.mock import AsyncMock
+
+        mock_llm = AsyncMock()
+        mock_llm.call = AsyncMock(side_effect=Exception("LLM 服务不可用"))
+
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(mock_llm)
+
+        response = await client.get("/review/monthly")
+        assert response.status_code == 200
+
+        data = response.json()
+        # LLM 失败时 ai_summary 为空字符串
+        assert data["ai_summary"] == ""
+        # 其他字段正常返回
+        assert "month" in data
+        assert "task_stats" in data
+        assert "note_stats" in data
+        assert "weekly_breakdown" in data
+
+        # 清理
+        review_svc.set_llm_caller(None)
+
+    async def test_monthly_report_llm_timeout(self, storage, client: AsyncClient):
+        """测试 LLM 超时时月报 ai_summary 为空"""
+        from app.routers import deps
+        import asyncio
+        from unittest.mock import AsyncMock
+
+        async def slow_call(messages):
+            await asyncio.sleep(20)  # 超过 10 秒超时
+            return "不应返回"
+
+        mock_llm = AsyncMock()
+        mock_llm.call = slow_call
+
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(mock_llm)
+
+        response = await client.get("/review/monthly")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["ai_summary"] == ""
+
+        # 清理
+        review_svc.set_llm_caller(None)
+
+    async def test_monthly_report_empty_data_ai_summary(self, storage, client: AsyncClient):
+        """测试无数据月份的 AI 总结"""
+        from app.routers import deps
+        from app.infrastructure.llm.mock_caller import MockCaller
+
+        storage.sqlite.clear_all()
+
+        mock_llm = MockCaller(response="本月暂无记录，建议开始记录学习历程。")
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(mock_llm)
+
+        response = await client.get("/review/monthly")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["ai_summary"] is not None
+        assert data["task_stats"]["total"] == 0
+
+        # 清理
+        review_svc.set_llm_caller(None)
+
 
 class TestMorningDigestAPI:
     """AI 晨报 API 测试"""

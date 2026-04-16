@@ -412,11 +412,25 @@ class ReviewService:
             current_week_start = week_end + timedelta(days=1)
             week_num += 1
 
+        # 生成 AI 总结
+        ai_summary = None
+        if self._llm_caller:
+            stats_data = {
+                "task_stats": task_stats.model_dump(),
+                "note_stats": note_stats.model_dump(),
+                "weekly_breakdown": weekly_breakdown,
+                "recent_note_titles": note_stats.recent_titles,
+            }
+            ai_summary = _run_async(
+                self._generate_ai_summary("monthly", stats_data, user_id=user_id or "_default")
+            )
+
         return MonthlyReport(
             month=month_start.strftime("%Y-%m"),
             task_stats=task_stats,
             note_stats=note_stats,
             weekly_breakdown=weekly_breakdown,
+            ai_summary=ai_summary,
         )
 
     def get_trend_data(
