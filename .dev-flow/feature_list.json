@@ -5,16 +5,8 @@
   "created_at": "2026-03-28",
   "updated_at": "2026-04-17T21:00",
   "status": "active",
-  "scope_notes": "R014 页面级上下文 AI — 增强聊天 AI 对当前页面的感知能力，含条目页 update 直达路径",
-  "active_requirement_cycle": {
-    "id": "R014",
-    "name": "page-context-ai",
-    "branch": "feat/R014-page-context-ai",
-    "phases": [
-      { "id": "P1", "name": "后端上下文增强", "tasks": ["B50", "B51"] },
-      { "id": "P2", "name": "前端交互增强", "tasks": ["F39"] }
-    ]
-  },
+  "scope_notes": "",
+  "active_requirement_cycle": null,
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -122,6 +114,13 @@
       "status": "completed",
       "archive_dir": "_archive/R013_decision-reflection-entries",
       "branch": "feat/R013-decision-reflection-entries"
+    },
+    {
+      "id": "R014",
+      "name": "page-context-ai",
+      "status": "completed",
+      "archive_dir": "_archive/R014_page-context-ai",
+      "branch": "feat/R014-page-context-ai"
     }
   ],
   "modules": [
