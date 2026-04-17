@@ -50,6 +50,7 @@ class HeatmapItem(BaseModel):
     mastery: str = "new"
     entry_count: int = 0
     category: Optional[str] = None
+    mention_count: int = 0
 
 
 class HeatmapResponse(BaseModel):
@@ -184,14 +185,16 @@ class ActivityHeatmapResponse(BaseModel):
 class ReviewService:
     """成长回顾统计服务"""
 
-    def __init__(self, sqlite_storage=None):
+    def __init__(self, sqlite_storage=None, neo4j_client=None):
         """
         初始化服务
 
         Args:
             sqlite_storage: SQLite 存储实例
+            neo4j_client: Neo4j 客户端（可选，用于知识热力图增强）
         """
         self._sqlite = sqlite_storage
+        self._neo4j_client = neo4j_client
         self._llm_caller: Optional["APICaller"] = None
 
     def set_sqlite_storage(self, storage):
@@ -693,12 +696,41 @@ class ReviewService:
         """
         获取知识热力图
 
+        优先使用 Neo4j get_all_concepts_with_stats() 获取数据，
+        Neo4j 不可用时降级到 SQLite tags 现有逻辑。
+
         Args:
             user_id: 用户 ID
 
         Returns:
             HeatmapResponse: 知识热力图数据
         """
+        # 尝试 Neo4j 路径
+        if self._neo4j_client:
+            try:
+                concepts = _run_async(
+                    self._neo4j_client.get_all_concepts_with_stats(user_id)
+                )
+                if concepts:
+                    relationships = _run_async(
+                        self._neo4j_client.get_all_relationships(user_id)
+                    )
+                    rel_count_map = self._count_relationships_per_concept(relationships)
+                    items = [
+                        self._neo4j_concept_to_heatmap(c, rel_count_map)
+                        for c in concepts
+                    ]
+                    # 按 mastery 分组排序
+                    items.sort(key=lambda x: self._mastery_order(x.mastery))
+                    return HeatmapResponse(items=items)
+            except Exception:
+                logger.warning("Neo4j 查询失败，降级到 SQLite", exc_info=True)
+
+        # SQLite tags 降级路径
+        return self._get_heatmap_from_sqlite(user_id)
+
+    def _get_heatmap_from_sqlite(self, user_id: str) -> HeatmapResponse:
+        """从 SQLite tags 获取热力图数据（降级路径）"""
         if not self._sqlite:
             raise ValueError("SQLite 存储未初始化")
 
@@ -752,10 +784,54 @@ class ReviewService:
                 category="tag",
             ))
 
-        # 按 entry_count 降序排序
-        items.sort(key=lambda x: x.entry_count, reverse=True)
+        # 按 mastery 分组排序
+        items.sort(key=lambda x: self._mastery_order(x.mastery))
 
         return HeatmapResponse(items=items)
+
+    @staticmethod
+    def _count_relationships_per_concept(
+        relationships: List[Dict[str, Any]]
+    ) -> Dict[str, int]:
+        """统计每个概念的关系数量"""
+        rel_count: Dict[str, int] = {}
+        for rel in relationships:
+            source = rel.get("source", "")
+            target = rel.get("target", "")
+            rel_count[source] = rel_count.get(source, 0) + 1
+            rel_count[target] = rel_count.get(target, 0) + 1
+        return rel_count
+
+    def _neo4j_concept_to_heatmap(
+        self,
+        concept: Dict[str, Any],
+        rel_count_map: Dict[str, int],
+    ) -> HeatmapItem:
+        """将 Neo4j 概念统计转换为 HeatmapItem"""
+        name = concept.get("name", "")
+        entry_count = concept.get("entry_count", 0)
+        mention_count = concept.get("mention_count", 0)
+        category = concept.get("category")
+        relationship_count = rel_count_map.get(name, 0)
+
+        mastery = self._calculate_mastery_from_stats(
+            entry_count=entry_count,
+            relationship_count=relationship_count,
+        )
+
+        return HeatmapItem(
+            concept=name,
+            mastery=mastery,
+            entry_count=entry_count,
+            category=category,
+            mention_count=mention_count,
+        )
+
+    @staticmethod
+    def _mastery_order(mastery: str) -> int:
+        """掌握度排序权重（值越小掌握度越高）"""
+        order = {"advanced": 0, "intermediate": 1, "beginner": 2, "new": 3}
+        return order.get(mastery, 99)
 
     def get_growth_curve(
         self, weeks: int = 8, user_id: str = "_default"
@@ -1316,27 +1392,35 @@ class ReviewService:
 
     @staticmethod
     def _calculate_mastery_from_stats(
-        entry_count: int, recent_count: int, note_count: int
+        entry_count: int,
+        recent_count: int = 0,
+        note_count: int = 0,
+        relationship_count: int = 0,
     ) -> str:
         """
         根据统计数据计算掌握度
 
-        规则：
-        - 0 条目 → new
-        - 1-2 条目 → beginner
-        - 3+ 条目且有近期活动 → intermediate
-        - 6+ 条目且笔记占比 > 30% → advanced
+        规则（综合评分 = entry_count*2 + recent_count*3 + note_count*2 + relationship_count*1）：
+        - score >= 10 → advanced
+        - score >= 5 → intermediate
+        - score >= 2 → beginner
+        - 其他 → new
         """
-        if entry_count == 0:
+        if entry_count == 0 and relationship_count == 0:
             return "new"
 
-        note_ratio = note_count / entry_count if entry_count > 0 else 0
+        score = (
+            entry_count * 2
+            + recent_count * 3
+            + note_count * 2
+            + relationship_count * 1
+        )
 
-        if entry_count >= 6 and note_ratio > 0.3:
+        if score >= 10:
             return "advanced"
-        elif entry_count >= 3 and recent_count > 0:
+        elif score >= 5:
             return "intermediate"
-        elif entry_count >= 1:
+        elif score >= 2:
             return "beginner"
         return "new"
 

@@ -189,7 +189,9 @@
       "description": "将 get_knowledge_heatmap() 的数据源从 SQLite tags 切换到 Neo4j get_all_concepts_with_stats()。Neo4j 提供更丰富的概念数据（name, category, entry_count, mention_count）。Neo4j 不可用时优雅降级到现有 SQLite tags 逻辑。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-17T22:30",
+      "completed_at": "2026-04-17T23:00",
       "priority": 1,
       "acceptance_criteria": [
         "get_knowledge_heatmap() 优先使用 Neo4j get_all_concepts_with_stats()",
@@ -213,7 +215,8 @@
         "backend/app/routers/deps.py"
       ],
       "contract_refs": ["KnowledgeHeatmap"],
-      "planning_notes": "当前 get_knowledge_heatmap() 从 SQLite 的 tags 字段手动提取概念，缺少 category 和 mention_count。Neo4j 的 get_all_concepts_with_stats(user_id) 返回 name, category, entry_count, mention_count。掌握度增强可参考：entry_count 多 + mention_count 高 + 有 RELATED_TO 关系 = 更高掌握度。降级逻辑：如果 Neo4j client 未初始化或查询抛异常，回退到现有 _calculate_mastery_from_stats 逻辑。\n\n**关键前置**：deps.py 的 get_review_service() 需注入 neo4j_client 参数（当前只注入了 sqlite_storage）。ReviewService.__init__ 需新增可选 neo4j_client 属性。\n\n**同步/异步兼容**：get_knowledge_heatmap() 是同步方法，Neo4j 查询是异步的。使用现有 _run_async() 辅助函数在同步上下文中调用异步 Neo4j 查询。掌握度增强方法 _calculate_mastery_from_stats 需新增 relationship_count 参数。"
+      "planning_notes": "当前 get_knowledge_heatmap() 从 SQLite 的 tags 字段手动提取概念，缺少 category 和 mention_count。Neo4j 的 get_all_concepts_with_stats(user_id) 返回 name, category, entry_count, mention_count。掌握度增强可参考：entry_count 多 + mention_count 高 + 有 RELATED_TO 关系 = 更高掌握度。降级逻辑：如果 Neo4j client 未初始化或查询抛异常，回退到现有 _calculate_mastery_from_stats 逻辑。\n\n**关键前置**：deps.py 的 get_review_service() 需注入 neo4j_client 参数（当前只注入了 sqlite_storage）。ReviewService.__init__ 需新增可选 neo4j_client 属性。\n\n**同步/异步兼容**：get_knowledge_heatmap() 是同步方法，Neo4j 查询是异步的。使用现有 _run_async() 辅助函数在同步上下文中调用异步 Neo4j 查询。掌握度增强方法 _calculate_mastery_from_stats 需新增 relationship_count 参数。",
+      "evidence_file": ".dev-flow/evidence/B53.md"
     },
     {
       "id": "F40",
