@@ -533,6 +533,8 @@ export interface TrendPeriod {
   completed: number;
   completion_rate: number;
   notes_count: number;
+  task_count: number;
+  inbox_count: number;
 }
 
 export interface ReviewTrendResponse {

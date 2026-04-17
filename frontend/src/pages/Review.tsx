@@ -25,6 +25,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
 } from "recharts";
 import { API_BASE } from "@/config/api";
 import { authFetch } from "@/lib/authFetch";
@@ -68,6 +69,11 @@ interface DailyBreakdown {
   completed: number;
 }
 
+interface VsLastPeriod {
+  delta_completion_rate: number | null;
+  delta_total: number | null;
+}
+
 interface WeeklyReport {
   start_date: string;
   end_date: string;
@@ -75,6 +81,7 @@ interface WeeklyReport {
   note_stats: NoteStats;
   daily_breakdown: DailyBreakdown[];
   ai_summary?: string | null;
+  vs_last_week?: VsLastPeriod | null;
 }
 
 interface WeeklyBreakdown {
@@ -91,6 +98,7 @@ interface MonthlyReport {
   note_stats: NoteStats;
   weekly_breakdown: WeeklyBreakdown[];
   ai_summary?: string;
+  vs_last_month?: VsLastPeriod | null;
 }
 
 type ReportType = "daily" | "weekly" | "monthly" | "trend";
@@ -250,6 +258,129 @@ export function Review() {
   const taskStats = getTaskStats();
   const noteStats = getNoteStats();
   const aiSummary = getAiSummary();
+
+  // 环比标签渲染
+  const renderDeltaLabel = (label: string, delta: VsLastPeriod | null | undefined) => {
+    if (!delta || delta.delta_total === null || delta.delta_completion_rate === null) return null;
+    const rateSign = delta.delta_completion_rate >= 0 ? "+" : "";
+    const totalSign = delta.delta_total >= 0 ? "+" : "";
+    const rateColor = delta.delta_completion_rate >= 0 ? "text-green-600 dark:text-green-400" : "text-red-500";
+    const totalColor = delta.delta_total >= 0 ? "text-green-600 dark:text-green-400" : "text-red-500";
+    return (
+      <div className="flex gap-3 text-xs mt-1">
+        <span>vs {label}：</span>
+        <span className={rateColor}>完成率 {rateSign}{delta.delta_completion_rate.toFixed(1)}%</span>
+        <span className={totalColor}>任务 {totalSign}{delta.delta_total}</span>
+      </div>
+    );
+  };
+
+  // 多线趋势图渲染（复用）
+  const renderTrendChart = () => (
+    <>
+      <div className="w-full" style={{ height: 260 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={trendData.map((d) => ({
+              ...d,
+              date: formatDate(d.date),
+              completion_rate: Number(d.completion_rate.toFixed(1)),
+            }))}
+            margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 12 }}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              yAxisId="left"
+              domain={[0, 100]}
+              tick={{ fontSize: 12 }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v: number) => `${v}%`}
+              width={42}
+            />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tick={{ fontSize: 12 }}
+              tickLine={false}
+              axisLine={false}
+              width={32}
+            />
+            <Tooltip
+              formatter={(value, name) => {
+                if (name === "完成率") return [`${value}%`, name];
+                return [value, name];
+              }}
+              labelStyle={{ fontSize: 12 }}
+            />
+            <Legend
+              wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+            />
+            <Line
+              yAxisId="left"
+              type="monotone"
+              dataKey="completion_rate"
+              stroke="#6366F1"
+              strokeWidth={2}
+              dot={{ r: 3, fill: "#6366F1" }}
+              activeDot={{ r: 5 }}
+              name="完成率"
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="task_count"
+              stroke="#f97316"
+              strokeWidth={1.5}
+              strokeDasharray="5 3"
+              dot={{ r: 2, fill: "#f97316" }}
+              name="任务数"
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="notes_count"
+              stroke="#3b82f6"
+              strokeWidth={1.5}
+              strokeDasharray="5 3"
+              dot={{ r: 2, fill: "#3b82f6" }}
+              name="笔记数"
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="inbox_count"
+              stroke="#a855f7"
+              strokeWidth={1.5}
+              strokeDasharray="5 3"
+              dot={{ r: 2, fill: "#a855f7" }}
+              name="灵感数"
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      {trendData.length > 0 && (
+        <div className="mt-3 pt-3 border-t flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">
+            {trendPeriod === "daily" ? "近 7 天" : "近 8 周"}平均完成率
+          </span>
+          <span className="text-sm font-semibold">
+            {(
+              trendData.reduce((sum, d) => sum + d.completion_rate, 0) /
+              trendData.length
+            ).toFixed(1)}
+            %
+          </span>
+        </div>
+      )}
+    </>
+  );
 
   // AI 总结卡片渲染
   const renderAiSummaryCard = () => {
@@ -496,62 +627,7 @@ export function Review() {
                     </p>
                   </div>
                 ) : (
-                  <>
-                    <div className="w-full" style={{ height: 220 }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                          data={trendData.map((d) => ({
-                            ...d,
-                            date: formatDate(d.date),
-                            completion_rate: Number(d.completion_rate.toFixed(1)),
-                          }))}
-                          margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                          <XAxis
-                            dataKey="date"
-                            tick={{ fontSize: 12 }}
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <YAxis
-                            domain={[0, 100]}
-                            tick={{ fontSize: 12 }}
-                            tickLine={false}
-                            axisLine={false}
-                            tickFormatter={(v: number) => `${v}%`}
-                            width={42}
-                          />
-                          <Tooltip
-                            formatter={(value) => [`${value}%`, "完成率"]}
-                            labelStyle={{ fontSize: 12 }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="completion_rate"
-                            stroke="#6366F1"
-                            strokeWidth={2}
-                            dot={{ r: 3, fill: "#6366F1" }}
-                            activeDot={{ r: 5 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                    {trendData.length > 0 && (
-                      <div className="mt-3 pt-3 border-t flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          {trendPeriod === "daily" ? "近 7 天" : "近 8 周"}平均完成率
-                        </span>
-                        <span className="text-sm font-semibold">
-                          {(
-                            trendData.reduce((sum, d) => sum + d.completion_rate, 0) /
-                            trendData.length
-                          ).toFixed(1)}
-                          %
-                        </span>
-                      </div>
-                    )}
-                  </>
+                  renderTrendChart()
                 )}
               </CardContent>
             </Card>
@@ -605,60 +681,11 @@ export function Review() {
                   </div>
                 ) : (
                   <>
-                    <div className="w-full" style={{ height: 220 }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                          data={trendData.map((d) => ({
-                            ...d,
-                            date: formatDate(d.date),
-                            completion_rate: Number(d.completion_rate.toFixed(1)),
-                          }))}
-                          margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                          <XAxis
-                            dataKey="date"
-                            tick={{ fontSize: 12 }}
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <YAxis
-                            domain={[0, 100]}
-                            tick={{ fontSize: 12 }}
-                            tickLine={false}
-                            axisLine={false}
-                            tickFormatter={(v: number) => `${v}%`}
-                            width={42}
-                          />
-                          <Tooltip
-                            formatter={(value) => [`${value}%`, "完成率"]}
-                            labelStyle={{ fontSize: 12 }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="completion_rate"
-                            stroke="#6366F1"
-                            strokeWidth={2}
-                            dot={{ r: 3, fill: "#6366F1" }}
-                            activeDot={{ r: 5 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                    {trendData.length > 0 && (
-                      <div className="mt-3 pt-3 border-t flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          {trendPeriod === "daily" ? "近 7 天" : "近 8 周"}平均完成率
-                        </span>
-                        <span className="text-sm font-semibold">
-                          {(
-                            trendData.reduce((sum, d) => sum + d.completion_rate, 0) /
-                            trendData.length
-                          ).toFixed(1)}
-                          %
-                        </span>
-                      </div>
-                    )}
+                    {renderTrendChart()}
+                    {/* 周报环比标签 */}
+                    {reportType === "weekly" && renderDeltaLabel("上周", weeklyReport?.vs_last_week)}
+                    {/* 月报环比标签 */}
+                    {reportType === "monthly" && renderDeltaLabel("上月", monthlyReport?.vs_last_month)}
                   </>
                 )}
               </CardContent>

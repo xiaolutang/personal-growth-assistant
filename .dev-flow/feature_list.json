@@ -21,9 +21,9 @@
   },
   "summary": {
     "total_tasks": 5,
-    "pending": 5,
+    "pending": 2,
     "in_progress": 0,
-    "completed": 0,
+    "completed": 3,
     "blocked": 0,
     "cancelled": 0
   },
@@ -226,7 +226,9 @@
       "description": "将回顾页趋势折线图从单维度（completion_rate）升级为多线图，同时展示任务数/笔记数/灵感数的趋势变化。添加图例、增强 Tooltip。",
       "verification": "F2",
       "depends_on": ["B52"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-17T23:30",
+      "completed_at": "2026-04-17T23:50",
       "priority": 1,
       "acceptance_criteria": [
         "LineChart 改为多线展示（完成率主线 + 任务数/笔记数/灵感数辅助线）",
