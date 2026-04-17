@@ -569,6 +569,7 @@ export interface HeatmapItem {
   mastery: "new" | "beginner" | "intermediate" | "advanced";
   entry_count: number;
   category: string | null;
+  mention_count: number;
 }
 
 export interface HeatmapResponse {

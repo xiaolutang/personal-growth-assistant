@@ -21,9 +21,9 @@
   },
   "summary": {
     "total_tasks": 5,
-    "pending": 2,
+    "pending": 1,
     "in_progress": 0,
-    "completed": 3,
+    "completed": 4,
     "blocked": 0,
     "cancelled": 0
   },
@@ -263,7 +263,9 @@
       "description": "升级回顾页知识热力图组件，使用 Neo4j 增强数据。按 category 分组展示概念，显示 entry_count，改进视觉布局。",
       "verification": "F2",
       "depends_on": ["B53"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-17T23:55",
+      "completed_at": "2026-04-18T00:00",
       "priority": 1,
       "acceptance_criteria": [
         "热力图使用后端增强数据（含 category, entry_count, mention_count）",
