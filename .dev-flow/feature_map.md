@@ -1,8 +1,27 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：无
+> 活跃需求包：R015 review-enhancement
 > 最后更新：2026-04-17
+
+## 活跃需求包
+
+### R015 回顾增强
+
+| 任务 | 类型 | 模块 | 优先级 | 依赖 | 状态 |
+|------|------|------|--------|------|------|
+| B52 | 后端 | review | P1 | 无 | pending |
+| B53 | 后端 | review | P1 | 无 | pending |
+| F40 | 前端 | review | P1 | B52 | pending |
+| F41 | 前端 | review | P1 | B53 | pending |
+| F42 | 前端 | review | P2 | 无 | pending |
+
+**依赖关系**：
+```
+B52 ──→ F40（趋势多维）
+B53 ──→ F41（热力图升级）
+F42（晨报集成，独立）
+```
 
 ## 归档需求包
 
