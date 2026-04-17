@@ -6,6 +6,7 @@ import { TaskList } from "../components/TaskList";
 import type { Task } from "../types/task";
 import { Card, CardHeader, CardTitle } from "../components/ui/card";
 import { Header } from "../components/layout/Header";
+import { useChatStore } from "@/stores/chatStore";
 
 const TABS = [
   { key: "", label: "全部", icon: Layers },
@@ -76,6 +77,17 @@ export function Explore() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Task[] | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const { setPageExtra } = useChatStore();
+
+  // 同步 activeTab/searchQuery 到 chatStore.pageExtra
+  useEffect(() => {
+    const extra: Record<string, string> = { current_tab: activeTab || "all" };
+    if (searchQuery.trim()) {
+      extra.search_query = searchQuery.trim();
+    }
+    setPageExtra(extra);
+    return () => setPageExtra(null);
+  }, [activeTab, searchQuery, setPageExtra]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchHistory, setSearchHistory] = useState<string[]>(getSearchHistory());

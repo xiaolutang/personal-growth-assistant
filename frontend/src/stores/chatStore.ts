@@ -57,6 +57,7 @@ interface ChatStore {
   lastOperation: OperationStatus | null; // 最近操作状态
   isLoading: boolean; // 加载状态
   pageContext: PageContext | null; // 页面级 AI 上下文
+  pageExtra: Record<string, string | number> | null; // 页面组件主动写入的额外状态
 
   // API 操作
   fetchSessions: () => Promise<void>;
@@ -77,6 +78,7 @@ interface ChatStore {
   setLastOperation: (op: OperationStatus | null) => void;
   clearLastOperation: () => void;
   setPageContext: (ctx: PageContext | null) => void;
+  setPageExtra: (extra: Record<string, string | number> | null) => void;
 }
 
 // 默认面板高度
@@ -128,6 +130,7 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
   lastOperation: null,
   isLoading: false,
   pageContext: null,
+  pageExtra: null,
 
   fetchSessions: async () => {
     set({ isLoading: true });
@@ -258,5 +261,9 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
 
   setPageContext: (ctx: PageContext | null) => {
     set({ pageContext: ctx });
+  },
+
+  setPageExtra: (extra: Record<string, string | number> | null) => {
+    set({ pageExtra: extra });
   },
 }));

@@ -224,7 +224,7 @@
       "description": "为 FloatingChat 添加页面感知的快捷建议 chips。新增 chatStore.pageExtra 状态，页面组件（如 Explore）主动写入 local state 到 chatStore，FloatingChat 合并 pageExtra 到 pageContext.extra 发送到后端。",
       "verification": "F2",
       "depends_on": ["B51"],
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "acceptance_criteria": [
         "各页面显示对应的快捷建议 chips",

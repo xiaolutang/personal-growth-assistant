@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import PageSuggestions from "@/components/PageSuggestions";
 import {
   useStreamParse,
   type ConfirmData,
@@ -60,6 +61,8 @@ export function FloatingChat() {
     fetchSessionMessages,
     pageContext,
     setPageContext,
+    pageExtra,
+    setPageExtra,
   } = useChatStore();
 
   const currentSession = getCurrentSession();
@@ -94,6 +97,7 @@ export function FloatingChat() {
       current?.entry_id !== ctx?.entry_id
     ) {
       setPageContext(ctx);
+      setPageExtra(null);
     }
   }, [location.pathname]);
 
@@ -214,7 +218,11 @@ export function FloatingChat() {
     clearKnowledgeGraph();
 
     try {
-      const response = await parse(userMessage, activeSessionId, undefined, pageContext);
+      // 合并 pageExtra 到 pageContext.extra
+      const effectivePageContext = pageExtra && pageContext
+        ? { ...pageContext, extra: { ...pageContext.extra, ...pageExtra } }
+        : pageContext;
+      const response = await parse(userMessage, activeSessionId, undefined, effectivePageContext);
       const intent = response.intent.intent as Intent;
       setCurrentIntent(intent);
       const { query, entities } = response.intent;
@@ -354,6 +362,11 @@ export function FloatingChat() {
         />
 
         <div className="p-3">
+          <PageSuggestions
+            pageContext={pageContext}
+            onSuggestionClick={(text) => setInput(text)}
+            hasMessages={!!currentSession?.messages?.length}
+          />
           <form onSubmit={handleSubmit} className="flex gap-2">
             <Input
               value={input}
