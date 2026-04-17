@@ -25,9 +25,9 @@
   },
   "summary": {
     "total_tasks": 3,
-    "pending": 1,
+    "pending": 0,
     "in_progress": 0,
-    "completed": 2,
+    "completed": 3,
     "blocked": 0,
     "cancelled": 0
   },
@@ -182,7 +182,11 @@
         "backend/app/services/chat_service.py"
       ],
       "contract_refs": ["PageContext"],
-      "planning_notes": "数据源：Entry 走 EntryService.get_entry(user_id)，Home 走 EntryService.list_entries(user_id, date_filter=today)。_build_page_context_hint 从 @staticmethod 改为实例方法，利用 self.entry_service 获取数据。所有调用点（detect_intent, _handle_create, _handle_update）需传入 user_id。_handle_update 的 entry_id 消费策略：搜索优先——先正常搜索，只有搜索无结果或无精确匹配时，才 fallback 到 page_context.entry_id 作为目标条目。"
+      "planning_notes": "数据源：Entry 走 EntryService.get_entry(user_id)，Home 走 EntryService.list_entries(user_id, date_filter=today)。_build_page_context_hint 从 @staticmethod 改为实例方法，利用 self.entry_service 获取数据。所有调用点（detect_intent, _handle_create, _handle_update）需传入 user_id。_handle_update 的 entry_id 消费策略：搜索优先——先正常搜索，只有搜索无结果或无精确匹配时，才 fallback 到 page_context.entry_id 作为目标条目。",
+      "started_at": "2026-04-17T09:00",
+      "completed_at": "2026-04-17T12:30",
+      "evidence_file": ".dev-flow/evidence/B50.md",
+      "commit": "a29126c"
     },
     {
       "id": "B51",
@@ -214,7 +218,11 @@
         "backend/app/services/chat_service.py"
       ],
       "contract_refs": ["PageContext"],
-      "planning_notes": "在 SYSTEM_PROMPT_TEMPLATE 末尾追加动态 section：'## 当前页面上下文\n{page_context_hint}'。保留原有 _handle_create 中 context_hint 拼接到用户文本的方式作为备用。"
+      "planning_notes": "在 SYSTEM_PROMPT_TEMPLATE 末尾追加动态 section：'## 当前页面上下文\n{page_context_hint}'。保留原有 _handle_create 中 context_hint 拼接到用户文本的方式作为备用。",
+      "started_at": "2026-04-17T12:30",
+      "completed_at": "2026-04-17T14:00",
+      "evidence_file": ".dev-flow/evidence/B51.md",
+      "commit": "656e5e6"
     },
     {
       "id": "F39",
@@ -260,7 +268,11 @@
         "frontend/src/pages/Explore.tsx"
       ],
       "contract_refs": ["PageContext"],
-      "planning_notes": "状态同步方案：页面组件主动写 chatStore.pageExtra（而非 FloatingChat 被动读）。FloatingChat 在发送 parse 请求时合并 pageExtra 到 pageContext.extra。Explore 页 useEffect 监听 activeTab/searchQuery 变化，调用 setPageExtra。离开 Explore 页时（路由变化）chatStore 自动清空 pageExtra。"
+      "planning_notes": "状态同步方案：页面组件主动写 chatStore.pageExtra（而非 FloatingChat 被动读）。FloatingChat 在发送 parse 请求时合并 pageExtra 到 pageContext.extra。Explore 页 useEffect 监听 activeTab/searchQuery 变化，调用 setPageExtra。离开 Explore 页时（路由变化）chatStore 自动清空 pageExtra。",
+      "started_at": "2026-04-17T14:00",
+      "completed_at": "2026-04-17T16:00",
+      "evidence_file": ".dev-flow/evidence/F39.md",
+      "commit": "9fc1f06"
     }
   ]
 }
