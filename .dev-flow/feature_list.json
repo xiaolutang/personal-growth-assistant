@@ -25,9 +25,9 @@
   },
   "summary": {
     "total_tasks": 3,
-    "pending": 2,
+    "pending": 1,
     "in_progress": 0,
-    "completed": 1,
+    "completed": 2,
     "blocked": 0,
     "cancelled": 0
   },
@@ -192,7 +192,7 @@
       "description": "修改 task_parser_graph.py 使其能接受页面上下文，动态注入到系统提示词中。增加页面特定解析规则（如在条目页理解'补充'为更新当前条目）。同时增强 intent_service 的 extra_system_hint 使意图检测感知页面上下文。",
       "verification": "L2",
       "depends_on": ["B50"],
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "acceptance_criteria": [
         "stream_parse() 接受可选 page_context_hint 参数",

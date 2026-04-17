@@ -107,7 +107,7 @@ class TestHandleCreate:
         """create 意图 → entry_service.create_entry 收到 user_id"""
         tasks_json = json.dumps({"tasks": [{"title": "买菜", "category": "task", "content": "买菜", "tags": []}]})
 
-        async def fake_stream(text, session_id):
+        async def fake_stream(text, session_id, **kwargs):
             yield f'data: {{"content": {json.dumps(tasks_json)}}}\n\n'
             yield 'data: [DONE]\n\n'
 
@@ -451,7 +451,7 @@ class TestChatRouteUserIdThreading:
 
         tasks_json = json.dumps({"tasks": [{"title": "买菜", "category": "task", "content": "买菜", "tags": []}]})
 
-        async def fake_stream(text, session_id):
+        async def fake_stream(text, session_id, **kwargs):
             yield f'data: {{"content": {json.dumps(tasks_json)}}}\n\n'
             yield 'data: [DONE]\n\n'
 

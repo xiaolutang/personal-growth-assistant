@@ -10,7 +10,7 @@
 R014 (page-context-ai)
 ├── P1: 后端上下文增强
 │   ├── [completed] B50 页面上下文数据注入+更新路径打通 — _build_page_context_hint 改实例方法，Entry/Home 数据注入，_handle_update page_context fallback
-│   └── [pending] B51 LLM页面感知系统提示词 — task_parser_graph 接受 page_context_hint，intent_service extra_system_hint 增强页面指导
+│   └── [completed] B51 LLM页面感知系统提示词 — task_parser_graph 接受 page_context_hint，intent_service extra_system_hint 增强页面指导
 └── P2: 前端交互增强
     └── [pending] F39 快捷建议Chips+页面状态同步 — PageSuggestions组件，chatStore.pageExtra，Explore页状态同步
 ```
@@ -27,9 +27,9 @@ B50 ──→ B51 ──→ F39
 
 | 状态 | 数量 |
 |------|------|
-| pending | 2 |
+| pending | 1 |
 | in_progress | 0 |
-| completed | 1 |
+| completed | 2 |
 | **总计** | **3** |
 
 ## 归档需求包

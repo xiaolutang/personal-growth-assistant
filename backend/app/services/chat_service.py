@@ -119,10 +119,9 @@ class ChatService:
     ) -> AsyncGenerator[str, None]:
         """处理创建意图"""
         full_json = ""
-        # 构建带页面上下文的提示文本
+        # 构建页面上下文提示，通过参数注入到 graph 系统提示词
         context_hint = await self._build_page_context_hint(page_context, user_id)
-        effective_text = f"{context_hint}\n{text}" if context_hint else text
-        async for chunk in self.graph.stream_parse(effective_text, session_id):
+        async for chunk in self.graph.stream_parse(text, session_id, page_context_hint=context_hint):
             if chunk.startswith("data: "):
                 yield f"event: content\n{chunk}\n"
                 try:
