@@ -21,9 +21,9 @@
   },
   "summary": {
     "total_tasks": 5,
-    "pending": 1,
+    "pending": 0,
     "in_progress": 0,
-    "completed": 4,
+    "completed": 5,
     "blocked": 0,
     "cancelled": 0
   },
@@ -297,7 +297,9 @@
       "description": "在回顾页日报标签页顶部集成晨报卡片，显示 AI 建议、待办任务、过期提醒和学习连续天数。晨报 API 已实现但未在 Review 页展示。",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-18T00:00",
+      "completed_at": "2026-04-18T00:05",
       "priority": 2,
       "acceptance_criteria": [
         "日报标签页顶部显示晨报卡片（AI 建议摘要）",

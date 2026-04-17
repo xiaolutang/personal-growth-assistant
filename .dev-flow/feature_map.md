@@ -14,7 +14,7 @@
 | B53 | 后端 | review | P1 | 无 | completed |
 | F40 | 前端 | review | P1 | B52 | completed |
 | F41 | 前端 | review | P1 | B53 | completed |
-| F42 | 前端 | review | P2 | 无 | pending |
+| F42 | 前端 | review | P2 | 无 | completed |
 
 **依赖关系**：
 ```

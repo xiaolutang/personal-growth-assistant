@@ -40,6 +40,7 @@ vi.mock("@/services/api", () => ({
   getGrowthCurve: () => Promise.resolve([]),
   getProgressSummary: () =>
     Promise.resolve({ active_count: 0, completed_count: 0, goals: [] }),
+  getMorningDigest: () => Promise.reject(new Error("not available")),
 }));
 
 // 辅助：创建空日报 Response（主报告默认不报错）

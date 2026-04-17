@@ -35,10 +35,12 @@ import {
   getKnowledgeHeatmap,
   getGrowthCurve,
   getProgressSummary,
+  getMorningDigest,
   type TrendPeriod,
   type HeatmapItem,
   type GrowthCurvePoint,
   type ProgressSummaryResponse,
+  type MorningDigestResponse,
 } from "@/services/api";
 
 // 响应类型
@@ -127,6 +129,10 @@ export function Review() {
 
   // AI 总结展开状态
   const [aiSummaryExpanded, setAiSummaryExpanded] = useState(false);
+
+  // 晨报状态
+  const [morningDigest, setMorningDigest] = useState<MorningDigestResponse | null>(null);
+  const [morningDigestExpanded, setMorningDigestExpanded] = useState(false);
 
   // 知识热力图状态
   const [heatmapItems, setHeatmapItems] = useState<HeatmapItem[]>([]);
@@ -228,6 +234,13 @@ export function Review() {
     };
 
     fetchGrowthCurve();
+  }, []);
+
+  // 晨报数据获取
+  useEffect(() => {
+    getMorningDigest()
+      .then(setMorningDigest)
+      .catch(() => setMorningDigest(null));
   }, []);
 
   const formatDate = (dateStr: string) => {
@@ -381,6 +394,107 @@ export function Review() {
       )}
     </>
   );
+
+  // 晨报卡片渲染（仅日报标签页）
+  const renderMorningDigestCard = () => {
+    if (reportType !== "daily") return null;
+    if (!morningDigest) return null;
+
+    const hasContent = morningDigest.ai_suggestion || morningDigest.todos.length > 0 || morningDigest.overdue.length > 0 || morningDigest.stale_inbox.length > 0 || (morningDigest.learning_streak != null && morningDigest.learning_streak > 0);
+
+    return (
+      <Card className="border-l-4 border-l-amber-500 dark:border-l-amber-400">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-amber-500" />
+            今日晨报
+            {morningDigest.learning_streak != null && morningDigest.learning_streak > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                连续 {morningDigest.learning_streak} 天
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {hasContent ? (
+            <div>
+              {/* AI 建议 */}
+              {morningDigest.ai_suggestion && (
+                <div className={`text-sm leading-relaxed mb-3 ${!morningDigestExpanded ? "line-clamp-2" : ""}`}>
+                  {morningDigest.ai_suggestion}
+                </div>
+              )}
+
+              {/* 统计摘要 */}
+              <div className="flex flex-wrap gap-3 mb-2">
+                {morningDigest.todos.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    待办 {morningDigest.todos.length} 项
+                  </span>
+                )}
+                {morningDigest.overdue.length > 0 && (
+                  <span className="text-xs text-red-500">
+                    过期 {morningDigest.overdue.length} 项
+                  </span>
+                )}
+                {morningDigest.stale_inbox.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    灵感提醒 {morningDigest.stale_inbox.length} 项
+                  </span>
+                )}
+              </div>
+
+              {/* 展开后显示详细列表 */}
+              {morningDigestExpanded && (
+                <div className="space-y-2 mt-2 pt-2 border-t">
+                  {morningDigest.todos.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">待办任务</div>
+                      {morningDigest.todos.slice(0, 5).map((t) => (
+                        <div key={t.id} className="text-sm truncate">• {t.title}</div>
+                      ))}
+                    </div>
+                  )}
+                  {morningDigest.overdue.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-red-500 mb-1">过期任务</div>
+                      {morningDigest.overdue.slice(0, 3).map((t) => (
+                        <div key={t.id} className="text-sm truncate">• {t.title}</div>
+                      ))}
+                    </div>
+                  )}
+                  {morningDigest.stale_inbox.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">待处理灵感</div>
+                      {morningDigest.stale_inbox.slice(0, 3).map((t) => (
+                        <div key={t.id} className="text-sm truncate">• {t.title}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 展开/收起 */}
+              {(morningDigest.ai_suggestion && morningDigest.ai_suggestion.length > 80 || morningDigest.todos.length > 0 || morningDigest.overdue.length > 0) && (
+                <button
+                  onClick={() => setMorningDigestExpanded(!morningDigestExpanded)}
+                  className="mt-2 text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center gap-1"
+                >
+                  {morningDigestExpanded ? (
+                    <>收起 <ChevronUp className="h-3 w-3" /></>
+                  ) : (
+                    <>展开详情 <ChevronDown className="h-3 w-3" /></>
+                  )}
+                </button>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground/60 italic">今日暂无晨报内容</p>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   // AI 总结卡片渲染
   const renderAiSummaryCard = () => {
@@ -677,6 +791,9 @@ export function Review() {
           </div>
         ) : (
           <>
+            {/* 晨报卡片（仅日报，在顶部） */}
+            {renderMorningDigestCard()}
+
             {/* 趋势折线图卡片（日报/周报/月报下也保留） */}
             <Card className="mb-6">
               <CardHeader className="pb-2">
