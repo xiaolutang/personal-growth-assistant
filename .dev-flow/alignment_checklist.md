@@ -1,5 +1,47 @@
 # 对齐清单
 
+## R014: 页面级上下文 AI
+
+### 契约对齐
+
+- [ ] B50: 复用已有 PageContext 模型（parse.py），无新端点 ✓
+- [ ] B51: 复用已有 task_parser_graph.py stream_parse 接口，扩展参数 ✓
+- [ ] F39: 复用已有 chatStore pageContext，新增 pageExtra 状态 ✓
+- [ ] 不新增 API 端点，仅增强已有接口的上下文透传 ✓
+
+### 依赖对齐
+
+- [ ] B50 无外部依赖 ✓（使用已有 entry_service + chat_service）
+- [ ] B51 depends_on B50 ✓（需要增强后的上下文数据）
+- [ ] F39 depends_on B51 ✓（需要后端页面感知能力）
+- [ ] B50 和 B51 不可并行（B51 消费 B50 的 context hint）✓
+
+### 架构对齐
+
+- [ ] 所有数据操作显式携带 user_id（architecture.md:47）✓
+- [ ] _build_page_context_hint 改为实例方法，利用 self.entry_service ✓
+- [ ] 数据源失败时优雅降级（try/except 包裹，不阻塞主流程）✓
+- [ ] 不修改 deps.py 全局单例模式 ✓
+- [ ] 前端 pageExtra 状态同步由页面组件主动写入，FloatingChat 不被动读取 ✓
+- [ ] 不引入新的全局状态管理模式 ✓
+
+### 类型同步对齐
+
+- [ ] PageContext.extra 类型为 Optional[dict]，无需前端类型更新 ✓
+- [ ] chatStore.pageExtra 为 Record<string, unknown>，无需 OpenAPI 同步 ✓
+- [ ] 无新枚举值需要前后端同步 ✓
+
+### 验收对齐
+
+- [ ] 每个任务有 acceptance_criteria ✓
+- [ ] 每个任务有 test_tasks ✓
+- [ ] B50 risk_tags: auth ✓（涉及 user_id 数据访问）
+- [ ] B50 test_tasks 包含跨用户隔离 + 数据源异常降级 + update 路径 entry_id 消费 ✓
+- [ ] F39 test_tasks 包含 pageExtra 同步 + chip 隐藏/显示 ✓
+- [ ] 前端任务都要求 npm run build 通过 ✓
+
+---
+
 ## R013: 月报AI总结 + 思考/决策记录
 
 ### 契约对齐

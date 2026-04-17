@@ -3,10 +3,18 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-17",
+  "updated_at": "2026-04-17T21:00",
   "status": "active",
-  "scope_notes": "",
-  "active_requirement_cycle": null,
+  "scope_notes": "R014 页面级上下文 AI — 增强聊天 AI 对当前页面的感知能力，含条目页 update 直达路径",
+  "active_requirement_cycle": {
+    "id": "R014",
+    "name": "page-context-ai",
+    "branch": "feat/R014-page-context-ai",
+    "phases": [
+      { "id": "P1", "name": "后端上下文增强", "tasks": ["B50", "B51"] },
+      { "id": "P2", "name": "前端交互增强", "tasks": ["F39"] }
+    ]
+  },
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -16,10 +24,10 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 0,
-    "pending": 0,
+    "total_tasks": 3,
+    "pending": 2,
     "in_progress": 0,
-    "completed": 0,
+    "completed": 1,
     "blocked": 0,
     "cancelled": 0
   },
@@ -118,15 +126,141 @@
   ],
   "modules": [
     {
-      "id": "review",
-      "name": "回顾模块",
-      "description": "成长回顾统计、趋势、AI总结"
+      "id": "chat",
+      "name": "聊天模块",
+      "description": "AI 对话、意图识别、页面上下文"
     },
     {
       "id": "entries",
       "name": "条目管理模块",
       "description": "条目CRUD、分类类型扩展"
+    },
+    {
+      "id": "review",
+      "name": "回顾模块",
+      "description": "成长回顾统计、趋势、AI总结"
     }
   ],
-  "tasks": []
+  "tasks": [
+    {
+      "id": "B50",
+      "phase": "P1",
+      "module": "chat",
+      "name": "页面上下文数据注入 + 更新路径打通",
+      "description": "增强 _build_page_context_hint() 使其能获取页面特定业务数据。Entry 页获取条目标题/分类/标签/内容摘要。Home 页通过 EntryService.list_entries 获取今日任务统计。同时打通 update 路径：_handle_update() 接受 page_context，条目页直接用 entry_id 定位目标条目。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": 1,
+      "acceptance_criteria": [
+        "_build_page_context_hint() 改为实例方法，接受 user_id 参数",
+        "Entry page: 通过 EntryService.get_entry(user_id) 获取条目标题、分类、标签、内容前300字",
+        "Home page: 通过 EntryService.list_entries(user_id, date_filter) 获取今日任务数和进行中数",
+        "条目页 entry_id 无效时优雅降级（不报错，context 只含页面标识）",
+        "数据源失败时优雅降级（try/except 包裹，不阻塞主流程）",
+        "_handle_update() 接受 page_context 参数",
+        "条目页 + update 意图：当 page_context.entry_id 存在且搜索无精确匹配时，默认更新该条目",
+        "process_intent 传递 page_context 到 _handle_update()",
+        "user_id 始终显式传递，满足架构不变量（architecture.md:47）",
+        "单元测试覆盖：各页面类型上下文生成 + 更新路径 entry_id 消费 + 数据源失败降级"
+      ],
+      "risk_tags": ["auth"],
+      "test_tasks": [
+        "Entry page 有效 entry_id + user_id → context 含标题/分类/标签",
+        "Entry page 无效 entry_id → context 降级为基础信息",
+        "Entry page entry_id 存在但属于其他用户 → 降级（隔离验证）",
+        "Home page → context 含今日统计",
+        "Explore/Review/Graph page → context 含基本页面标识",
+        "page_context 为 None → 返回空字符串",
+        "extra 字段透传到 context hint",
+        "EntryService.get_entry 异常 → 优雅降级不阻塞",
+        "_handle_update 条目页 entry_id → 直接更新（不搜索）",
+        "_handle_update 条目页 entry_id + 精确搜索匹配 → 搜索结果优先",
+        "_handle_update 非条目页 → 行为不变"
+      ],
+      "files": [
+        "backend/app/services/chat_service.py"
+      ],
+      "contract_refs": ["PageContext"],
+      "planning_notes": "数据源：Entry 走 EntryService.get_entry(user_id)，Home 走 EntryService.list_entries(user_id, date_filter=today)。_build_page_context_hint 从 @staticmethod 改为实例方法，利用 self.entry_service 获取数据。所有调用点（detect_intent, _handle_create, _handle_update）需传入 user_id。_handle_update 的 entry_id 消费策略：搜索优先——先正常搜索，只有搜索无结果或无精确匹配时，才 fallback 到 page_context.entry_id 作为目标条目。"
+    },
+    {
+      "id": "B51",
+      "phase": "P1",
+      "module": "chat",
+      "name": "LLM 页面感知系统提示词",
+      "description": "修改 task_parser_graph.py 使其能接受页面上下文，动态注入到系统提示词中。增加页面特定解析规则（如在条目页理解'补充'为更新当前条目）。同时增强 intent_service 的 extra_system_hint 使意图检测感知页面上下文。",
+      "verification": "L2",
+      "depends_on": ["B50"],
+      "status": "pending",
+      "priority": 1,
+      "acceptance_criteria": [
+        "stream_parse() 接受可选 page_context_hint 参数",
+        "页面上下文注入到系统提示词末尾作为追加 section",
+        "无 page_context_hint 时系统提示词不变",
+        "_handle_create() 改为通过参数传递 context hint 到 graph",
+        "intent_service.detect() 的 extra_system_hint 包含页面行为指导",
+        "单元测试验证页面上下文影响系统提示词"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "stream_parse 传入 page_context_hint → 系统提示词包含页面信息",
+        "stream_parse 不传 page_context_hint → 系统提示词不变",
+        "_handle_create 正确传递 context hint 到 graph（非拼接到用户文本）",
+        "detect_intent 传入 page_context → extra_system_hint 包含页面指导"
+      ],
+      "files": [
+        "backend/app/graphs/task_parser_graph.py",
+        "backend/app/services/chat_service.py"
+      ],
+      "contract_refs": ["PageContext"],
+      "planning_notes": "在 SYSTEM_PROMPT_TEMPLATE 末尾追加动态 section：'## 当前页面上下文\n{page_context_hint}'。保留原有 _handle_create 中 context_hint 拼接到用户文本的方式作为备用。"
+    },
+    {
+      "id": "F39",
+      "phase": "P2",
+      "module": "chat",
+      "name": "页面快捷建议 Chips + 页面状态同步",
+      "description": "为 FloatingChat 添加页面感知的快捷建议 chips。新增 chatStore.pageExtra 状态，页面组件（如 Explore）主动写入 local state 到 chatStore，FloatingChat 合并 pageExtra 到 pageContext.extra 发送到后端。",
+      "verification": "F2",
+      "depends_on": ["B51"],
+      "status": "pending",
+      "priority": 2,
+      "acceptance_criteria": [
+        "各页面显示对应的快捷建议 chips",
+        "Home: '今日有哪些任务?' / '帮我记个想法' / '整理待办'",
+        "Explore: '最近学了什么?' / '搜索相关笔记'",
+        "Entry: '帮我补充内容' / '关联到其他条目'",
+        "Review: '本周完成率?' / '生成本月总结'",
+        "点击 chip 自动填入输入框",
+        "对话有消息时隐藏 chips",
+        "chatStore 新增 pageExtra 状态和 setPageExtra 方法",
+        "Explore 页 useEffect 同步 activeTab/searchQuery 到 chatStore.pageExtra",
+        "FloatingChat 合并 pageExtra 到 pageContext.extra 再发送 API",
+        "离开 Explore 页或 page_type 切换后 pageExtra 自动清空",
+        "npm run build 通过",
+        "前端测试通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "PageSuggestions 组件各 page_type 渲染正确建议",
+        "点击 chip 触发 onSuggestionClick 回调",
+        "消息数 > 0 时不渲染 chips",
+        "chatStore.pageExtra 状态读写正确",
+        "Explore 页 tab/query 变化 → chatStore.pageExtra 同步更新",
+        "FloatingChat 合并 pageExtra 到发送的 page_context",
+        "离开 Explore 页（路由变化）→ pageExtra 被清空",
+        "npm run build 通过",
+        "npm run test:run 通过"
+      ],
+      "files": [
+        "frontend/src/components/PageSuggestions.tsx",
+        "frontend/src/components/FloatingChat.tsx",
+        "frontend/src/stores/chatStore.ts",
+        "frontend/src/pages/Explore.tsx"
+      ],
+      "contract_refs": ["PageContext"],
+      "planning_notes": "状态同步方案：页面组件主动写 chatStore.pageExtra（而非 FloatingChat 被动读）。FloatingChat 在发送 parse 请求时合并 pageExtra 到 pageContext.extra。Explore 页 useEffect 监听 activeTab/searchQuery 变化，调用 setPageExtra。离开 Explore 页时（路由变化）chatStore 自动清空 pageExtra。"
+    }
+  ]
 }
