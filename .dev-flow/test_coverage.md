@@ -15,6 +15,9 @@
 | 图谱缩略图 | F31 | manual | 渲染/跳转?focus=/空态/移动端/API失败降级 | pending | — |
 | 手动关联 UI | F32 | manual | 搜索创建/删除/分区/API失败toast | pending | — |
 | 晨报展示 | F33 | manual | 连续天数/聚焦卡片/洞察/字段缺失降级 | pending | — |
+| 页面上下文注入+更新路径 | B50 | unit | Entry页获取条目数据/Home页获取统计/无效entry_id降级/跨用户隔离/数据源异常降级/page_context为None/_handle_update用entry_id直达/非条目页行为不变/多结果精确匹配优先 | covered | 22 unit + 12 API tests, risk: auth |
+| LLM页面感知提示词 | B51 | unit | 系统提示词含页面信息/无context时不变/_handle_create传递context/集成：条目页"补充"解析为更新 | covered | 7 unit tests |
+| 快捷建议+页面状态同步 | F39 | unit+manual | 各page_type建议正确/点击填入/消息>0隐藏/chatStore.pageExtra读写/Explore tab/query同步/FloatingChat合并extra/离开Explore清空extra/build+test通过 | covered | 245 frontend tests (PageSuggestions 9 + chatStore 5) + build pass + 代码映射验证 |
 | 项目初始化 | S001 | unit | 默认值/环境变量覆盖 | completed | log-service repo commit e7a9b08 |
 | 项目初始化 | S001 | unit | 默认值/环境变量覆盖 | completed | log-service repo commit e7a9b08 |
 | 存储层 | B001 | unit | 建表/批量插入/按 service 查询/统计分组 | completed | log-service repo commit fec7f42 |

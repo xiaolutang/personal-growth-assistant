@@ -129,10 +129,15 @@ class TaskParserGraph:
         builder.add_edge("parse", END)
         return builder.compile(checkpointer=self.checkpointer)
 
-    async def _parse_node(self, state: MessagesState):
+    async def _parse_node(self, state: MessagesState, config: RunnableConfig):
         """解析节点：调用 LLM 解析任务"""
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
         system_prompt = SYSTEM_PROMPT_TEMPLATE.format(current_time=current_time)
+
+        # 追加页面上下文到系统提示词末尾
+        page_context_hint = config.get("configurable", {}).get("page_context_hint", "")
+        if page_context_hint:
+            system_prompt = f"{system_prompt}\n\n## 当前页面上下文\n{page_context_hint}"
 
         # 将 LangChain 消息对象转换为字典格式
         dict_messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
@@ -151,7 +156,7 @@ class TaskParserGraph:
         return {"messages": [AIMessage(content=response)]}
 
     async def stream_parse(
-        self, text: str, thread_id: str = "default"
+        self, text: str, thread_id: str = "default", page_context_hint: str = ""
     ) -> AsyncGenerator[str, None]:
         """
         流式解析，返回 SSE 格式
@@ -159,11 +164,12 @@ class TaskParserGraph:
         Args:
             text: 用户输入
             thread_id: 线程 ID（用于对话历史隔离）
+            page_context_hint: 页面上下文提示（注入到系统提示词末尾）
 
         Yields:
             SSE 格式数据
         """
-        config: RunnableConfig = {"configurable": {"thread_id": thread_id}}  # type: ignore[typeddict-item]
+        config: RunnableConfig = {"configurable": {"thread_id": thread_id, "page_context_hint": page_context_hint}}  # type: ignore[typeddict-item]
 
         # 流式调用图
         async for event in self.graph.astream(

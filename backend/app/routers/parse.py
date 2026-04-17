@@ -206,7 +206,7 @@ async def chat(request: ChatRequest, user: User = Depends(get_current_user)):
             }
         else:
             intent_result = await _chat_service.detect_intent(
-                request.text, page_context=page_ctx
+                request.text, page_context=page_ctx, user_id=user.id
             )
 
         intent = intent_result["intent"]

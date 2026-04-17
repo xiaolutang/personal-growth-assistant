@@ -1,5 +1,7 @@
 """聊天服务 - 处理意图识别和操作执行"""
 import json
+import logging
+from datetime import date
 from typing import AsyncGenerator, Optional, TYPE_CHECKING
 
 from app.api.schemas import EntryCreate, EntryUpdate
@@ -8,6 +10,8 @@ from app.routers import intent as intent_module
 from app.routers.deps import get_entry_service
 from app.services.entry_service import EntryService
 from app.services.intent_service import IntentService
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from app.routers.parse import PageContext
@@ -54,9 +58,10 @@ class ChatService:
         self,
         text: str,
         page_context: Optional["PageContext"] = None,
+        user_id: str = "_default",
     ) -> dict:
         """检测用户意图"""
-        context_hint = self._build_page_context_hint(page_context)
+        context_hint = await self._build_page_context_hint(page_context, user_id)
         resp = await self.intent_service.detect(text, extra_system_hint=context_hint)
         return {
             "intent": resp.intent,
@@ -92,7 +97,7 @@ class ChatService:
             async for event in self._handle_create(text, session_id, user_id, page_context=page_context):
                 yield event
         elif intent == "update":
-            async for event in self._handle_update(query, entities, confirm, user_id):
+            async for event in self._handle_update(query, entities, confirm, user_id, page_context=page_context):
                 yield event
         elif intent == "delete":
             async for event in self._handle_delete(query, confirm, user_id):
@@ -114,10 +119,9 @@ class ChatService:
     ) -> AsyncGenerator[str, None]:
         """处理创建意图"""
         full_json = ""
-        # 构建带页面上下文的提示文本
-        context_hint = self._build_page_context_hint(page_context)
-        effective_text = f"{context_hint}\n{text}" if context_hint else text
-        async for chunk in self.graph.stream_parse(effective_text, session_id):
+        # 构建页面上下文提示，通过参数注入到 graph 系统提示词
+        context_hint = await self._build_page_context_hint(page_context, user_id)
+        async for chunk in self.graph.stream_parse(text, session_id, page_context_hint=context_hint):
             if chunk.startswith("data: "):
                 yield f"event: content\n{chunk}\n"
                 try:
@@ -171,9 +175,14 @@ class ChatService:
                 yield sse_event("error", {"message": f"解析失败: {str(e)}"})
 
     async def _handle_update(
-        self, query: str, entities: dict, confirm: Optional[dict], user_id: str
+        self, query: str, entities: dict, confirm: Optional[dict], user_id: str,
+        page_context: Optional["PageContext"] = None,
     ) -> AsyncGenerator[str, None]:
-        """处理更新意图"""
+        """处理更新意图
+
+        当 page_context.page_type == "entry" 且 entry_id 存在时，
+        搜索优先，未命中则 fallback 到 entry_id 作为目标。
+        """
         if confirm:
             entry_id = confirm.get("item_id")
             field = entities.get("field", "status")
@@ -193,8 +202,32 @@ class ChatService:
         results = await self.entry_service.search_entries(query, limit=10, user_id=user_id)
         items = [{"id": r.id, "title": r.title} for r in results.entries]
 
+        # 判断是否在条目页且有 entry_id，用于 fallback
+        ctx_entry_id = (
+            page_context.entry_id
+            if page_context and page_context.page_type == "entry" and page_context.entry_id
+            else None
+        )
+
         if len(items) == 0:
-            yield sse_event("done", {"message": f"未找到「{query}」相关内容"})
+            # 搜索无结果：如果有上下文 entry_id，直接更新该条目
+            if ctx_entry_id:
+                field = entities.get("field", "status")
+                value = entities.get("value")
+                if field and value:
+                    update_data = {field: value}
+                    success, msg = await self.entry_service.update_entry(
+                        ctx_entry_id, EntryUpdate(**update_data), user_id=user_id
+                    )
+                    if success:
+                        yield sse_event("updated", {"id": ctx_entry_id, "changes": update_data})
+                        yield sse_event("done", {"message": "已更新"})
+                    else:
+                        yield sse_event("error", {"message": msg})
+                else:
+                    yield sse_event("done", {"message": f"未找到「{query}」相关内容"})
+            else:
+                yield sse_event("done", {"message": f"未找到「{query}」相关内容"})
         elif len(items) == 1:
             entry_id = items[0]["id"]
             field = entities.get("field", "status")
@@ -210,7 +243,48 @@ class ChatService:
                 else:
                     yield sse_event("error", {"message": msg})
         else:
-            yield sse_event("confirm", {"action": "update", "items": items, "entities": entities})
+            # 搜索有多个结果：检查是否有精确匹配（query 与标题完全一致）
+            exact_match = None
+            for item in items:
+                if item["title"].strip() == query.strip():
+                    exact_match = item
+                    break
+
+            if exact_match:
+                # 精确匹配优先
+                entry_id = exact_match["id"]
+                field = entities.get("field", "status")
+                value = entities.get("value")
+                if field and value:
+                    update_data = {field: value}
+                    success, msg = await self.entry_service.update_entry(
+                        entry_id, EntryUpdate(**update_data), user_id=user_id
+                    )
+                    if success:
+                        yield sse_event("updated", {"id": entry_id, "title": exact_match["title"], "changes": update_data})
+                        yield sse_event("done", {"message": f"已更新「{exact_match['title']}」"})
+                    else:
+                        yield sse_event("error", {"message": msg})
+                else:
+                    yield sse_event("confirm", {"action": "update", "items": items, "entities": entities})
+            elif ctx_entry_id:
+                # 无精确匹配，fallback 到当前页面条目
+                field = entities.get("field", "status")
+                value = entities.get("value")
+                if field and value:
+                    update_data = {field: value}
+                    success, msg = await self.entry_service.update_entry(
+                        ctx_entry_id, EntryUpdate(**update_data), user_id=user_id
+                    )
+                    if success:
+                        yield sse_event("updated", {"id": ctx_entry_id, "changes": update_data})
+                        yield sse_event("done", {"message": "已更新"})
+                    else:
+                        yield sse_event("error", {"message": msg})
+                else:
+                    yield sse_event("confirm", {"action": "update", "items": items, "entities": entities})
+            else:
+                yield sse_event("confirm", {"action": "update", "items": items, "entities": entities})
 
     async def _handle_delete(
         self, query: str, confirm: Optional[dict], user_id: str
@@ -246,9 +320,15 @@ class ChatService:
         yield sse_event("results", {"items": items, "count": len(items)})
         yield sse_event("done", {"message": f"找到 {len(items)} 个结果"})
 
-    @staticmethod
-    def _build_page_context_hint(page_context: Optional["PageContext"]) -> str:
-        """根据页面上下文构建追加到 LLM prompt 的指令文本"""
+    async def _build_page_context_hint(
+        self, page_context: Optional["PageContext"], user_id: str = "_default"
+    ) -> str:
+        """根据页面上下文构建追加到 LLM prompt 的指令文本
+
+        当 page_type == "entry" 且 entry_id 存在时，注入条目详情数据。
+        当 page_type == "home" 时，注入今日统计。
+        所有数据获取失败时优雅降级，只保留基本页面标识。
+        """
         if page_context is None:
             return ""
 
@@ -263,9 +343,42 @@ class ChatService:
         page_label = PAGE_TYPE_LABELS.get(page_context.page_type, page_context.page_type)
         parts = [f"[页面上下文] 用户当前在「{page_label}」"]
 
-        if page_context.entry_id:
-            parts.append(f"正在查看条目 ID: {page_context.entry_id}")
+        # Entry page：注入条目详情数据
+        if page_context.page_type == "entry" and page_context.entry_id:
+            try:
+                entry = await self.entry_service.get_entry(page_context.entry_id, user_id)
+                if entry:
+                    parts.append(f"条目标题: {entry.title}")
+                    parts.append(f"分类: {entry.category}")
+                    if entry.tags:
+                        parts.append(f"标签: {', '.join(entry.tags)}")
+                    if entry.content:
+                        summary = entry.content[:300]
+                        parts.append(f"内容摘要: {summary}")
+                else:
+                    # get_entry 返回 None（不存在或属于其他用户）
+                    parts.append(f"正在查看条目 ID: {page_context.entry_id}")
+            except Exception:
+                logger.debug("获取条目详情失败，降级为基础信息", exc_info=True)
+                parts.append(f"正在查看条目 ID: {page_context.entry_id}")
 
+        # Home page：注入今日统计
+        if page_context.page_type == "home":
+            try:
+                today = date.today().isoformat()
+                result = await self.entry_service.list_entries(
+                    start_date=today, end_date=today, limit=1, user_id=user_id
+                )
+                parts.append(f"今日条目数: {result.total}")
+                # 获取进行中的条目数
+                doing_result = await self.entry_service.list_entries(
+                    status="doing", limit=1, user_id=user_id
+                )
+                parts.append(f"进行中条目数: {doing_result.total}")
+            except Exception:
+                logger.debug("获取今日统计失败，跳过", exc_info=True)
+
+        # extra 字段透传
         if page_context.extra:
             for key, value in page_context.extra.items():
                 parts.append(f"{key}: {value}")

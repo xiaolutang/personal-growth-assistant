@@ -1,49 +1,68 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.10.0
+> 版本：v0.11.0
 
 ## 目标
 
-- R013 月报AI总结 + 思考/决策记录 — 补齐月报AI总结，新增 decision/reflection/question 三种条目类型
+- R014 页面级上下文 AI — 让聊天 AI 感知用户当前所在页面，提供更精准的交互
 
-## 前置依赖（R001-R012 已完成）
+## 前置依赖（R001-R013 已完成）
 
 - 条目 CRUD、分类管理、搜索（R001-R004）
 - 知识图谱 + 图谱可视化（R005-R008）
 - 认证隔离 + 用户数据隔离（R002, R009）
 - 条目关联 + 知识上下文 + AI晨报（R011）
 - 目标追踪闭环（R012）
+- 月报 AI 总结 + 决策/复盘/疑问条目类型（R013）
+- 聊天意图识别 + SSE 流式对话（R009）
 - 探索页、导出、回顾页（R004-R006）
+
+## 现有基础设施
+
+### 已完成
+
+- `PageContext` 模型（backend `parse.py`）：`page_type` / `entry_id` / `extra` 三字段
+- `ChatRequest.page_context`：请求级透传
+- `chat_service._build_page_context_hint()`：生成基础上下文文本（"用户当前在「X页」"）
+- `FloatingChat.tsx` 路由感知：根据 pathname 设置 `pageContext`
+- `chatStore.ts` `pageContext` 状态管理
+- `useStreamParse.ts` 透传 `page_context` 到 API
+- `PageAIAssistant.tsx` 页面数据感知组件（独立于 FloatingChat）
+
+### 需增强
+
+1. `_build_page_context_hint()` 只生成"用户当前在「X页」"，不含业务数据
+2. `task_parser_graph.py` 系统提示词固定，不随页面变化
+3. `FloatingChat` 不注入页面业务数据到 `pageContext.extra`
+4. 无页面级快捷建议 chips
 
 ## 范围
 
 ### 包含
-- B48: 月报AI总结补齐（review_service 调用 _generate_ai_summary）
-- B49: 思考/决策记录后端（Category 扩展 + 模板 + 目录 + 意图识别 + 类型同步链路）
-- F37: 月报AI总结展示（Review.tsx 月报 Tab 展示 AI 总结卡片）
-- F38: 思考/决策记录前端（探索页 Tab + 快捷操作 + 详情页差异化渲染）
+
+- B50: 后端页面上下文数据注入（条目详情、今日统计等）
+- B51: 后端 LLM 页面感知系统提示词（动态调整解析规则）
+- F39: 前端快捷建议 Chips + 探索页上下文注入
 
 ### 不包含
-- 决策/复盘/疑问的专门页面（与探索页共享）
-- 新类型的目标追踪集成
-- 新类型的导出格式差异
-- AI 自动生成决策/复盘模板内容
+
+- PageAIAssistant 组件改造（独立入口，不在本轮范围）
+- 条目详情页内嵌 AI 助手面板
+- AI 自动分析当前页面并主动推送建议
+- 跨页面对话记忆持久化（已有 session 机制）
 
 ## 用户路径
 
-1. 首页 → 快捷操作「记决策」→ AI 对话或直接创建 → 决策条目出现在探索页
-2. 探索页 → 切换「决策」Tab → 浏览决策日志列表 → 点击查看详情（选项对比结构）
-3. 回顾页 → 月报 Tab → 看到 AI 生成的月度总结（与日报/周报一致）
-4. 条目详情 → 决策类型显示决策背景/选项/选择/理由结构化渲染
-5. AI 对话 → "记个决策：选了 Rust 而不是 Go" → 意图识别创建 decision 条目
+1. 首页 → 打开聊天 → 看到"今日有哪些任务?"建议 → 点击 → AI 返回今日任务列表
+2. 条目详情页 → 打开聊天 → 看到"帮我补充内容"建议 → 点击 → AI 理解为更新当前条目
+3. 探索页 → 打开聊天 → AI 知道当前在看什么类型的条目 → 建议相关搜索
+4. 回顾页 → 打开聊天 → 看到"本周完成率?"建议 → AI 返回统计数据
 
 ## 技术约束
 
-- 新类型复用现有 entries 表和 Markdown 存储架构
-- Category 枚举扩展需同步：后端 enums.py → schemas/entry.py → OpenAPI → 前端 types/task.ts + constants.ts
-- 每种类型有固定 Markdown 模板（heading 结构），不新增结构化字段
-- 目录映射：decision→decisions/、reflection→reflections/、question→questions/
-- ID 前缀：decision-xxx、reflection-xxx、question-xxx
-- 所有操作按 user_id 隔离
-- 前端遵循现有 api.ts + 类型定义模式
+- `_build_page_context_hint()` 改为实例方法，利用已有 `entry_service`
+- `task_parser_graph.py` 的 `stream_parse()` 新增可选参数，不破坏现有接口
+- `PageSuggestions.tsx` 为新组件，集成到 `FloatingChat.tsx`
+- 所有改动不涉及新的 API 端点
+- 前端遵循现有 Zustand store + api.ts 模式

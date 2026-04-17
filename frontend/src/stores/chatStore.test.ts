@@ -190,4 +190,39 @@ describe("chatStore", () => {
       expect(useChatStore.getState().lastOperation).toBeNull();
     });
   });
+
+  describe("pageContext", () => {
+    it("应该设置页面上下文", () => {
+      const ctx = { page_type: "entry", entry_id: "inbox-abc123" };
+      useChatStore.getState().setPageContext(ctx);
+      expect(useChatStore.getState().pageContext).toEqual(ctx);
+    });
+
+    it("应该清除页面上下文", () => {
+      useChatStore.getState().setPageContext({ page_type: "home" });
+      useChatStore.getState().setPageContext(null);
+      expect(useChatStore.getState().pageContext).toBeNull();
+    });
+  });
+
+  describe("pageExtra", () => {
+    it("应该设置页面额外状态", () => {
+      const extra = { current_tab: "note", search_query: "test" };
+      useChatStore.getState().setPageExtra(extra);
+      expect(useChatStore.getState().pageExtra).toEqual(extra);
+    });
+
+    it("应该清除页面额外状态", () => {
+      useChatStore.getState().setPageExtra({ current_tab: "all" });
+      useChatStore.getState().setPageExtra(null);
+      expect(useChatStore.getState().pageExtra).toBeNull();
+    });
+
+    it("切换 pageContext 时 pageExtra 不自动清空（由 FloatingChat 负责清理）", () => {
+      useChatStore.getState().setPageExtra({ current_tab: "note" });
+      useChatStore.getState().setPageContext({ page_type: "home" });
+      // pageExtra 保持不变，FloatingChat 路由变化时负责清空
+      expect(useChatStore.getState().pageExtra).toEqual({ current_tab: "note" });
+    });
+  });
 });

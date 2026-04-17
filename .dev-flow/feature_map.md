@@ -1,28 +1,26 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：R013 decision-reflection-entries
+> 活跃需求包：R014 page-context-ai
 > 最后更新：2026-04-17
 
 ## 任务树
 
 ```
-R013 (decision-reflection-entries)
-├── P1: 后端
-│   ├── [completed] B48 月报 AI 总结补齐 — monthly 接入 _generate_ai_summary
-│   └── [completed] B49 思考/决策记录后端 — decision/reflection/question 三种新类型
-└── P2: 前端
-    ├── [completed] F37 月报 AI 总结展示 — Review.tsx 月报 Tab 展示 AI 总结卡片
-    └── [completed] F38 思考/决策记录前端 — Tab/快捷操作/差异化渲染/专属图标颜色
+R014 (page-context-ai)
+├── P1: 后端上下文增强
+│   ├── [completed] B50 页面上下文数据注入+更新路径打通 — _build_page_context_hint 改实例方法，Entry/Home 数据注入，_handle_update page_context fallback
+│   └── [completed] B51 LLM页面感知系统提示词 — task_parser_graph 接受 page_context_hint，intent_service extra_system_hint 增强页面指导
+└── P2: 前端交互增强
+    └── [completed] F39 快捷建议Chips+页面状态同步 — PageSuggestions组件，chatStore.pageExtra，Explore页状态同步
 ```
 
 ## 依赖图
 
 ```
-B48 ──→ F37
-B49 ──→ F38
+B50 ──→ B51 ──→ F39
 
-无依赖的起点：B48, B49
+起点：B50（无外部依赖）
 ```
 
 ## 统计
@@ -31,8 +29,8 @@ B49 ──→ F38
 |------|------|
 | pending | 0 |
 | in_progress | 0 |
-| completed | 4 |
-| **总计** | **4** |
+| completed | 3 |
+| **总计** | **3** |
 
 ## 归档需求包
 
@@ -51,11 +49,11 @@ B49 ──→ F38
 | R010 Engineering Foundation | _archive/R010_engineering-foundation | completed |
 | R011 Entry Context & Morning Report | _archive/R011_entry-context-and-morning-report | completed |
 | R012 Goal Tracking | _archive/R012_goal-tracking | completed |
+| R013 Decision Reflection Entries | _archive/R013_decision-reflection-entries | completed |
 
 ## 测试汇总
 
 | 项目 | 测试数 | 状态 |
 |------|--------|------|
-| 后端测试 | 733 passed | 全部通过 |
-| 前端测试 | 231 passed | 全部通过 |
-| Codex Review | 4 rounds | conditional_pass → simplify → pass |
+| 后端测试 | 765 passed | B50 相关 22 unit + 12 API 全通过 |
+| 前端测试 | 245 passed | 含 PageSuggestions(9) + chatStore pageExtra(5) 新增测试 |

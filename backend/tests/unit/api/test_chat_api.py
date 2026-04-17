@@ -112,6 +112,90 @@ class TestChatAPIUserIdThreading:
         assert call_kwargs["user_id"] == test_user.id
 
 
+class TestChatAPIPageContext:
+    """POST /chat 路由级测试 — 验证 page_context 和 user_id 透传到 detect_intent"""
+
+    @pytest.mark.asyncio
+    async def test_chat_passes_page_context_to_detect_intent(self, client, test_user):
+        """/chat 路由将 page_context 正确传递给 detect_intent"""
+        mock_process = _make_process_intent_mock()
+        mock_svc = _make_chat_service_mock()
+        mock_svc.process_intent = mock_process
+
+        with patch("app.routers.parse._chat_service", mock_svc):
+            response = await client.post(
+                "/chat",
+                json={
+                    "text": "帮我补充内容",
+                    "session_id": "sess-ctx-1",
+                    "page_context": {
+                        "page_type": "entry",
+                        "entry_id": "entry-123",
+                        "extra": {"tab": "detail"},
+                    },
+                },
+            )
+
+        assert response.status_code == 200
+        # 验证 detect_intent 收到 page_context 和 user_id
+        detect_call = mock_svc.detect_intent.call_args
+        assert detect_call.kwargs["user_id"] == test_user.id
+        pc = detect_call.kwargs["page_context"]
+        assert pc.page_type == "entry"
+        assert pc.entry_id == "entry-123"
+        assert pc.extra == {"tab": "detail"}
+
+    @pytest.mark.asyncio
+    async def test_chat_passes_page_context_to_process_intent(self, client, test_user):
+        """/chat 路由将 page_context 正确传递给 process_intent"""
+        mock_process = _make_process_intent_mock()
+        mock_svc = _make_chat_service_mock()
+        mock_svc.detect_intent = AsyncMock(return_value={
+            "intent": "update",
+            "confidence": 0.9,
+            "query": "补充",
+            "entities": {"field": "content", "value": "新内容"},
+        })
+        mock_svc.process_intent = mock_process
+
+        with patch("app.routers.parse._chat_service", mock_svc):
+            response = await client.post(
+                "/chat",
+                json={
+                    "text": "补充内容",
+                    "session_id": "sess-ctx-2",
+                    "page_context": {
+                        "page_type": "entry",
+                        "entry_id": "entry-456",
+                    },
+                },
+            )
+
+        assert response.status_code == 200
+        call_kwargs = mock_process.call_args.kwargs
+        assert call_kwargs["user_id"] == test_user.id
+        pc = call_kwargs["page_context"]
+        assert pc.page_type == "entry"
+        assert pc.entry_id == "entry-456"
+
+    @pytest.mark.asyncio
+    async def test_chat_without_page_context(self, client, test_user):
+        """/chat 路由不传 page_context 时服务层收到 None"""
+        mock_process = _make_process_intent_mock()
+        mock_svc = _make_chat_service_mock()
+        mock_svc.process_intent = mock_process
+
+        with patch("app.routers.parse._chat_service", mock_svc):
+            response = await client.post(
+                "/chat",
+                json={"text": "看看", "session_id": "sess-no-ctx"},
+            )
+
+        assert response.status_code == 200
+        detect_call = mock_svc.detect_intent.call_args
+        assert detect_call.kwargs["page_context"] is None
+
+
 class TestForceIntentSecurityGate:
     """force_intent 仅在 DEBUG 模式允许"""
 
