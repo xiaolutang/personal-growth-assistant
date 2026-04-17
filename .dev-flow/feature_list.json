@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 2,
-    "pending": 1,
+    "pending": 0,
     "in_progress": 0,
-    "completed": 1,
+    "completed": 2,
     "blocked": 0,
     "cancelled": 0
   },
@@ -194,8 +194,12 @@
       "description": "在首页最近灵感卡片的每条灵感项上增加「转为任务」/「转为笔记」操作按钮，复用 TaskCard 的 handleConvert 模式。转化成功后 toast 提示，列表自动刷新。",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
+      "started_at": "2026-04-18T19:55",
+      "completed_at": "2026-04-18T20:02",
+      "actual_minutes": 7,
+      "evidence_file": ".dev-flow/evidence/F55.md",
       "acceptance_criteria": [
         "首页最近灵感列表每项显示「转为任务」/「转为笔记」操作按钮",
         "操作按钮点击时 stopPropagation，不触发 Link 跳转到详情页",
