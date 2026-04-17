@@ -3,10 +3,15 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-18T01:00",
+  "updated_at": "2026-04-18T10:00",
   "status": "active",
-  "scope_notes": "",
-  "active_requirement_cycle": null,
+  "scope_notes": "R016 小闭环收口：Cmd+K 全局搜索 + 首页灵感转化按钮",
+  "active_requirement_cycle": {
+    "id": "R016",
+    "name": "polish-cleanup",
+    "branch": "feat/R016-polish-cleanup",
+    "status": "planning"
+  },
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -16,10 +21,10 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 0,
-    "pending": 0,
+    "total_tasks": 2,
+    "pending": 1,
     "in_progress": 0,
-    "completed": 0,
+    "completed": 1,
     "blocked": 0,
     "cancelled": 0
   },
@@ -147,5 +152,70 @@
       "description": "成长回顾统计、趋势、AI总结"
     }
   ],
-  "tasks": []
+  "tasks": [
+    {
+      "id": "F54",
+      "phase": "P1",
+      "module": "entries",
+      "name": "全局 Cmd+K 搜索快捷键",
+      "description": "将 Cmd+K/Ctrl+K 快捷键从 Explore 页面级提升到 App 层全局监听，按下后导航到 /explore 并聚焦搜索框。移除 Explore.tsx 内的局部 keydown 监听。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": 1,
+      "started_at": "2026-04-18T19:43",
+      "completed_at": "2026-04-18T19:54",
+      "actual_minutes": 11,
+      "evidence_file": ".dev-flow/evidence/F54.md",
+      "acceptance_criteria": [
+        "在任意页面按 Cmd+K/Ctrl+K 均可跳转到 /explore 并聚焦搜索框",
+        "已在 Explore 页时仅聚焦搜索框，不重复导航",
+        "input/textarea/floatingChat 输入态下 Cmd+K 不触发搜索跳转（不抢占输入快捷键）",
+        "监听挂在 AppLayout 层，组件卸载时清理不重复注册",
+        "Explore.tsx 内的局部 keydown 监听已移除",
+        "npm run build 通过",
+        "npm run test:run 通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "跨页触发：非 Explore 页按 Cmd+K → 路由跳转到 /explore + 搜索框聚焦",
+        "同页触发：已在 Explore 页按 Cmd+K → 仅聚焦不导航",
+        "输入态边界：input/textarea 聚焦时按 Cmd+K → 不触发搜索",
+        "监听清理：组件卸载后 keydown 不再触发（无内存泄漏）",
+        "smoke：浏览器中实际按 Cmd+K 搜索流程可用"
+      ],
+      "files": ["frontend/src/App.tsx", "frontend/src/pages/Explore.tsx"]
+    },
+    {
+      "id": "F55",
+      "phase": "P1",
+      "module": "entries",
+      "name": "首页最近灵感转化按钮",
+      "description": "在首页最近灵感卡片的每条灵感项上增加「转为任务」/「转为笔记」操作按钮，复用 TaskCard 的 handleConvert 模式。转化成功后 toast 提示，列表自动刷新。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": 2,
+      "acceptance_criteria": [
+        "首页最近灵感列表每项显示「转为任务」/「转为笔记」操作按钮",
+        "操作按钮点击时 stopPropagation，不触发 Link 跳转到详情页",
+        "每条灵感有独立 loading 状态，转化中按钮禁用防止双击",
+        "点击后调用 updateEntry(id, { category }) 并 toast 提示",
+        "转化成功后灵感从列表消失（因 category 变更，store 自动刷新）",
+        "转化失败时 toast 错误提示，条目保留在列表",
+        "npm run build 通过",
+        "npm run test:run 通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "转任务成功：点击转为任务 → updateEntry 调用 → toast 成功 → 条目消失",
+        "转笔记成功：点击转为笔记 → updateEntry 调用 → toast 成功 → 条目消失",
+        "转化失败：API 失败 → toast 错误 → 条目保留在列表",
+        "点击隔离：按钮点击不触发 Link 导航到详情页",
+        "防双击：loading 中按钮禁用，不重复调用 API",
+        "smoke：首页实际转化灵感流程可用"
+      ],
+      "files": ["frontend/src/pages/Home.tsx"]
+    }
+  ]
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
@@ -34,6 +34,8 @@ const TABLET_BREAKPOINT = 1024;
 function AppLayout() {
   const panelHeight = useChatStore((state) => state.panelHeight);
   const { isOpen, close } = useSidebar();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth < TABLET_BREAKPOINT : false
   );
@@ -48,6 +50,25 @@ function AppLayout() {
   }, []);
 
   const toggleCollapse = useCallback(() => setSidebarCollapsed((v) => !v), []);
+
+  // 全局 Cmd+K / Ctrl+K：跳转探索页并聚焦搜索框
+  useEffect(() => {
+    const handleGlobalSearch = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key !== "k") return;
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
+      e.preventDefault();
+      // 已在 explore 页时仅聚焦，不重复导航（保留现有 query params）
+      if (!location.pathname.startsWith("/explore")) {
+        navigate("/explore");
+      }
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new CustomEvent("focus-explore-search"));
+      });
+    };
+    document.addEventListener("keydown", handleGlobalSearch);
+    return () => document.removeEventListener("keydown", handleGlobalSearch);
+  }, [navigate, location.pathname]);
 
   return (
     <div className="flex min-h-screen bg-background">

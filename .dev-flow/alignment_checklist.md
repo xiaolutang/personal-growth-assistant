@@ -1,5 +1,38 @@
 # 对齐清单
 
+## R016: 小闭环收口
+
+### 契约对齐
+
+- [ ] F54: 无新 API 契约（前端路由+快捷键调整）✓
+- [ ] F55: 复用已有 PUT /entries/:id（category 变更），无新端点 ✓
+- [ ] F55: 复用已有 taskStore.updateEntry 调用模式 ✓
+
+### 依赖对齐
+
+- [ ] F54 无外部依赖 ✓
+- [ ] F55 无外部依赖 ✓
+- [ ] F54 和 F55 可并行 ✓
+
+### 架构对齐
+
+- [ ] Cmd+K 监听挂在 AppLayout 层，不在全局 window ✓
+- [ ] input/textarea 输入态不抢占快捷键 ✓
+- [ ] Explore.tsx 局部监听移除，不重复注册 ✓
+- [ ] F55 按钮点击 stopPropagation 不触发 Link 导航 ✓
+- [ ] 每条灵感独立 loading 状态，转化中禁用按钮 ✓
+- [ ] 前端遵循现有 api.ts + taskStore 模式 ✓
+
+### 验收对齐
+
+- [ ] 每个任务有 acceptance_criteria ✓
+- [ ] 每个任务有 test_tasks ✓
+- [ ] F54 test_tasks 包含输入态边界 + 监听清理 ✓
+- [ ] F55 test_tasks 包含点击隔离 + 防双击 + 失败保留 ✓
+- [ ] 前端任务都要求 npm run build 通过 ✓
+
+---
+
 ## R014: 页面级上下文 AI
 
 ### 契约对齐
