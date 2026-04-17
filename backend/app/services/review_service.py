@@ -35,6 +35,8 @@ class TrendPeriod(BaseModel):
     completed: int = Field(0, description="已完成数")
     completion_rate: float = Field(0.0, description="完成率（百分比）")
     notes_count: int = Field(0, description="笔记数")
+    task_count: int = Field(0, description="任务数")
+    inbox_count: int = Field(0, description="灵感数")
 
 
 class TrendResponse(BaseModel):
@@ -142,6 +144,12 @@ class DailyReport(BaseModel):
     ai_summary: Optional[str] = None
 
 
+class VsLastPeriod(BaseModel):
+    """环比差值"""
+    delta_completion_rate: Optional[float] = Field(None, description="完成率差值（百分比）")
+    delta_total: Optional[int] = Field(None, description="总任务数差值")
+
+
 class WeeklyReport(BaseModel):
     """周报响应"""
     start_date: str
@@ -150,6 +158,7 @@ class WeeklyReport(BaseModel):
     note_stats: NoteStats
     daily_breakdown: List[dict] = Field(default_factory=list)
     ai_summary: Optional[str] = None
+    vs_last_week: Optional[VsLastPeriod] = Field(None, description="环比上周")
 
 
 class MonthlyReport(BaseModel):
@@ -159,6 +168,7 @@ class MonthlyReport(BaseModel):
     note_stats: NoteStats
     weekly_breakdown: List[dict] = Field(default_factory=list)
     ai_summary: Optional[str] = None
+    vs_last_month: Optional[VsLastPeriod] = Field(None, description="环比上月")
 
 
 class ActivityHeatmapItem(BaseModel):
@@ -340,6 +350,11 @@ class ReviewService:
                 self._generate_ai_summary("weekly", stats_data, user_id=user_id or "_default")
             )
 
+        # 计算环比上周
+        vs_last_week = self._calculate_weekly_vs_last_week(
+            week_start, task_stats, user_id
+        )
+
         return WeeklyReport(
             start_date=start_str,
             end_date=week_end.isoformat(),
@@ -347,6 +362,68 @@ class ReviewService:
             note_stats=note_stats,
             daily_breakdown=daily_breakdown,
             ai_summary=ai_summary,
+            vs_last_week=vs_last_week,
+        )
+
+    def _calculate_weekly_vs_last_week(
+        self, week_start: date, current_task_stats: TaskStats, user_id: Optional[str]
+    ) -> Optional[VsLastPeriod]:
+        """计算周环比差值"""
+        last_week_start = week_start - timedelta(weeks=1)
+        last_week_end = last_week_start + timedelta(days=6)
+
+        last_tasks = self._sqlite.list_entries(
+            type="task",
+            start_date=last_week_start.isoformat(),
+            end_date=(last_week_end + timedelta(days=1)).isoformat(),
+            limit=1000,
+            user_id=user_id,
+        )
+
+        last_total = len(last_tasks)
+        last_completed = sum(1 for t in last_tasks if t.get("status") == "complete")
+        last_completion_rate = (last_completed / last_total * 100) if last_total > 0 else 0.0
+
+        if last_total == 0 and current_task_stats.total == 0:
+            return VsLastPeriod(delta_completion_rate=None, delta_total=None)
+
+        return VsLastPeriod(
+            delta_completion_rate=round(current_task_stats.completion_rate - last_completion_rate, 1),
+            delta_total=current_task_stats.total - last_total,
+        )
+
+    def _calculate_monthly_vs_last_month(
+        self, month_start: date, current_task_stats: TaskStats, user_id: Optional[str]
+    ) -> Optional[VsLastPeriod]:
+        """计算月环比差值"""
+        if month_start.month == 1:
+            last_month_start = date(month_start.year - 1, 12, 1)
+        else:
+            last_month_start = date(month_start.year, month_start.month - 1, 1)
+
+        if last_month_start.month == 12:
+            last_month_end = date(last_month_start.year + 1, 1, 1) - timedelta(days=1)
+        else:
+            last_month_end = date(last_month_start.year, last_month_start.month + 1, 1) - timedelta(days=1)
+
+        last_tasks = self._sqlite.list_entries(
+            type="task",
+            start_date=last_month_start.isoformat(),
+            end_date=(last_month_end + timedelta(days=1)).isoformat(),
+            limit=1000,
+            user_id=user_id,
+        )
+
+        last_total = len(last_tasks)
+        last_completed = sum(1 for t in last_tasks if t.get("status") == "complete")
+        last_completion_rate = (last_completed / last_total * 100) if last_total > 0 else 0.0
+
+        if last_total == 0 and current_task_stats.total == 0:
+            return VsLastPeriod(delta_completion_rate=None, delta_total=None)
+
+        return VsLastPeriod(
+            delta_completion_rate=round(current_task_stats.completion_rate - last_completion_rate, 1),
+            delta_total=current_task_stats.total - last_total,
         )
 
     def get_monthly_report(self, month_start: Optional[date] = None, user_id: Optional[str] = None) -> MonthlyReport:
@@ -425,12 +502,18 @@ class ReviewService:
                 self._generate_ai_summary("monthly", stats_data, user_id=user_id or "_default")
             )
 
+        # 计算环比上月
+        vs_last_month = self._calculate_monthly_vs_last_month(
+            month_start, task_stats, user_id
+        )
+
         return MonthlyReport(
             month=month_start.strftime("%Y-%m"),
             task_stats=task_stats,
             note_stats=note_stats,
             weekly_breakdown=weekly_breakdown,
             ai_summary=ai_summary,
+            vs_last_month=vs_last_month,
         )
 
     def get_trend_data(
@@ -470,6 +553,13 @@ class ReviewService:
                     limit=1000,
                     user_id=user_id,
                 )
+                inbox = self._sqlite.list_entries(
+                    type="inbox",
+                    start_date=target_date.isoformat(),
+                    end_date=next_day.isoformat(),
+                    limit=1000,
+                    user_id=user_id,
+                )
 
                 total = len(tasks)
                 completed = sum(1 for t in tasks if t.get("status") == "complete")
@@ -481,6 +571,8 @@ class ReviewService:
                     completed=completed,
                     completion_rate=completion_rate,
                     notes_count=len(notes),
+                    task_count=len(tasks),
+                    inbox_count=len(inbox),
                 ))
         else:  # weekly
             count = max(1, min(weeks, 52))
@@ -506,6 +598,13 @@ class ReviewService:
                     limit=1000,
                     user_id=user_id,
                 )
+                inbox = self._sqlite.list_entries(
+                    type="inbox",
+                    start_date=week_start.isoformat(),
+                    end_date=next_day_after_week.isoformat(),
+                    limit=1000,
+                    user_id=user_id,
+                )
 
                 total = len(tasks)
                 completed = sum(1 for t in tasks if t.get("status") == "complete")
@@ -517,6 +616,8 @@ class ReviewService:
                     completed=completed,
                     completion_rate=completion_rate,
                     notes_count=len(notes),
+                    task_count=len(tasks),
+                    inbox_count=len(inbox),
                 ))
 
         return TrendResponse(periods=periods)

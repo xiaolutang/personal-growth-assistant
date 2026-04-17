@@ -153,7 +153,8 @@
       "description": "扩展 TrendPeriod 模型增加 task_count/note_count/inbox_count 分类字段，get_trend_data() 按分类统计各时段数据。WeeklyReport 和 MonthlyReport 增加 vs_last_period 对比数据（delta_completion_rate, delta_total）。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "in_progress",
+      "started_at": "2026-04-17T22:15",
       "priority": 1,
       "acceptance_criteria": [
         "TrendPeriod 模型增加 task_count, note_count, inbox_count 字段（默认 0）",
@@ -177,7 +178,8 @@
         "backend/app/routers/review.py"
       ],
       "contract_refs": ["ReviewTrend"],
-      "planning_notes": "现有 TrendPeriod 只有 total/completed/completion_rate/notes_count。扩展时保持向后兼容——新增字段默认 0。delta 计算需要先查询上一周期数据再计算差值，注意首周/首月无对比数据时 delta 为 null。"
+      "planning_notes": "现有 TrendPeriod 只有 total/completed/completion_rate/notes_count。扩展时保持向后兼容——新增字段默认 0。delta 计算需要先查询上一周期数据再计算差值，注意首周/首月无对比数据时 delta 为 null。",
+      "evidence_file": ".dev-flow/evidence/B52.md"
     },
     {
       "id": "B53",
