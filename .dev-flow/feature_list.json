@@ -3,14 +3,10 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-17T22:00",
+  "updated_at": "2026-04-18T01:00",
   "status": "active",
   "scope_notes": "",
-  "active_requirement_cycle": {
-    "id": "R015",
-    "name": "review-enhancement",
-    "branch": "feat/R015-review-enhancement"
-  },
+  "active_requirement_cycle": null,
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -20,10 +16,10 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 5,
+    "total_tasks": 0,
     "pending": 0,
     "in_progress": 0,
-    "completed": 5,
+    "completed": 0,
     "blocked": 0,
     "cancelled": 0
   },
@@ -125,6 +121,13 @@
       "status": "completed",
       "archive_dir": "_archive/R014_page-context-ai",
       "branch": "feat/R014-page-context-ai"
+    },
+    {
+      "id": "R015",
+      "name": "review-enhancement",
+      "status": "completed",
+      "archive_dir": "_archive/R015_review-enhancement",
+      "branch": "feat/R015-review-enhancement"
     }
   ],
   "modules": [
@@ -144,184 +147,5 @@
       "description": "成长回顾统计、趋势、AI总结"
     }
   ],
-  "tasks": [
-    {
-      "id": "B52",
-      "phase": "P1",
-      "module": "review",
-      "name": "趋势数据多维扩展 + 周环比对比",
-      "description": "扩展 TrendPeriod 模型增加 task_count/note_count/inbox_count 分类字段，get_trend_data() 按分类统计各时段数据。WeeklyReport 和 MonthlyReport 增加 vs_last_period 对比数据（delta_completion_rate, delta_total）。",
-      "verification": "L2",
-      "depends_on": [],
-      "status": "in_progress",
-      "started_at": "2026-04-17T22:15",
-      "priority": 1,
-      "acceptance_criteria": [
-        "TrendPeriod 模型增加 task_count, note_count, inbox_count 字段（默认 0）",
-        "get_trend_data() 按条目 category 统计各时段分类数量",
-        "WeeklyReport 增加 vs_last_week 字段：delta_completion_rate, delta_total",
-        "MonthlyReport 增加 vs_last_month 字段：delta_completion_rate, delta_total",
-        "空数据时各计数字段为 0，delta 字段为 null",
-        "用户认证隔离正确"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "趋势 API 返回 task_count/note_count/inbox_count 正确",
-        "有数据时各分类计数与实际条目数一致",
-        "周报 vs_last_week delta 正确（环比上周）",
-        "月报 vs_last_month delta 正确（环比上月）",
-        "空用户返回零值和 null delta",
-        "按用户隔离验证（用户 A 的数据不影响用户 B）"
-      ],
-      "files": [
-        "backend/app/services/review_service.py",
-        "backend/app/routers/review.py"
-      ],
-      "contract_refs": ["ReviewTrend"],
-      "planning_notes": "现有 TrendPeriod 只有 total/completed/completion_rate/notes_count。扩展时保持向后兼容——新增字段默认 0。delta 计算需要先查询上一周期数据再计算差值，注意首周/首月无对比数据时 delta 为 null。",
-      "evidence_file": ".dev-flow/evidence/B52.md"
-    },
-    {
-      "id": "B53",
-      "phase": "P1",
-      "module": "review",
-      "name": "知识热力图 Neo4j 数据源升级",
-      "description": "将 get_knowledge_heatmap() 的数据源从 SQLite tags 切换到 Neo4j get_all_concepts_with_stats()。Neo4j 提供更丰富的概念数据（name, category, entry_count, mention_count）。Neo4j 不可用时优雅降级到现有 SQLite tags 逻辑。",
-      "verification": "L2",
-      "depends_on": [],
-      "status": "completed",
-      "started_at": "2026-04-17T22:30",
-      "completed_at": "2026-04-17T23:00",
-      "priority": 1,
-      "acceptance_criteria": [
-        "get_knowledge_heatmap() 优先使用 Neo4j get_all_concepts_with_stats()",
-        "Neo4j 数据包含 concept name, category, entry_count, mention_count",
-        "Neo4j 不可用时降级到 SQLite tags 现有逻辑（try/except 包裹）",
-        "掌握度算法增强：除 entry_count 外考虑 concept 关系数量（get_all_relationships）",
-        "HeatmapItem 增加 category 字段",
-        "返回数据按 mastery 分组：advanced > intermediate > beginner > new"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "Neo4j 可用时返回增强数据（含 category, mention_count）",
-        "Neo4j 不可用时降级到 SQLite tags 逻辑不报错",
-        "掌握度计算覆盖 new/beginner/intermediate/advanced 四级",
-        "用户隔离验证（Neo4j 查询带 user_id）",
-        "空 Neo4j 数据返回空列表",
-        "降级路径数据格式与增强数据格式一致（HeatmapItem 兼容）"
-      ],
-      "files": [
-        "backend/app/services/review_service.py",
-        "backend/app/routers/deps.py"
-      ],
-      "contract_refs": ["KnowledgeHeatmap"],
-      "planning_notes": "当前 get_knowledge_heatmap() 从 SQLite 的 tags 字段手动提取概念，缺少 category 和 mention_count。Neo4j 的 get_all_concepts_with_stats(user_id) 返回 name, category, entry_count, mention_count。掌握度增强可参考：entry_count 多 + mention_count 高 + 有 RELATED_TO 关系 = 更高掌握度。降级逻辑：如果 Neo4j client 未初始化或查询抛异常，回退到现有 _calculate_mastery_from_stats 逻辑。\n\n**关键前置**：deps.py 的 get_review_service() 需注入 neo4j_client 参数（当前只注入了 sqlite_storage）。ReviewService.__init__ 需新增可选 neo4j_client 属性。\n\n**同步/异步兼容**：get_knowledge_heatmap() 是同步方法，Neo4j 查询是异步的。使用现有 _run_async() 辅助函数在同步上下文中调用异步 Neo4j 查询。掌握度增强方法 _calculate_mastery_from_stats 需新增 relationship_count 参数。",
-      "evidence_file": ".dev-flow/evidence/B53.md"
-    },
-    {
-      "id": "F40",
-      "phase": "P1",
-      "module": "review",
-      "name": "前端趋势图多维展示",
-      "description": "将回顾页趋势折线图从单维度（completion_rate）升级为多线图，同时展示任务数/笔记数/灵感数的趋势变化。添加图例、增强 Tooltip。",
-      "verification": "F2",
-      "depends_on": ["B52"],
-      "status": "completed",
-      "started_at": "2026-04-17T23:30",
-      "completed_at": "2026-04-17T23:50",
-      "priority": 1,
-      "acceptance_criteria": [
-        "LineChart 改为多线展示（完成率主线 + 任务数/笔记数/灵感数辅助线）",
-        "添加图例说明各线含义",
-        "Tooltip 展示完整多维数据（日期、完成率、各分类数量）",
-        "日/周切换保留并正确联动新数据",
-        "周报/月报显示环比对比标签（如 ↑12% vs 上周）",
-        "空数据时图表区域显示引导文案",
-        "npm run build 通过"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "多线趋势图渲染正确（4 条线）",
-        "日/周切换后数据更新正确",
-        "Tooltip 显示多维数据",
-        "空数据不崩溃，显示引导",
-        "环比对比标签正确显示",
-        "npm run build 通过",
-        "npm run test:run 通过"
-      ],
-      "files": [
-        "frontend/src/pages/Review.tsx"
-      ],
-      "contract_refs": ["ReviewTrend"],
-      "planning_notes": "现有 LineChart 只展示 completion_rate 单线。扩展时使用 recharts 多 Line 组件，完成率用实线，分类数量用虚线或不同颜色。Y 轴可能需要双轴（完成率 0-100%，数量 0-N）。周报/月报的环比 delta 来自 B52 新增字段。"
-    },
-    {
-      "id": "F41",
-      "phase": "P1",
-      "module": "review",
-      "name": "前端知识热力图升级",
-      "description": "升级回顾页知识热力图组件，使用 Neo4j 增强数据。按 category 分组展示概念，显示 entry_count，改进视觉布局。",
-      "verification": "F2",
-      "depends_on": ["B53"],
-      "status": "completed",
-      "started_at": "2026-04-17T23:55",
-      "completed_at": "2026-04-18T00:00",
-      "priority": 1,
-      "acceptance_criteria": [
-        "热力图使用后端增强数据（含 category, entry_count, mention_count）",
-        "按 category 分组展示概念（如果后端返回 category）",
-        "掌握度四级着色保持一致（advanced=紫, intermediate=蓝, beginner=绿, new=灰）",
-        "每个概念标签显示 entry_count 角标",
-        "Neo4j 降级时 UI 不变（兼容旧数据格式）",
-        "npm run build 通过"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "增强数据渲染正确（category 分组 + entry_count 角标）",
-        "降级场景 UI 不崩溃（旧格式数据兼容）",
-        "四级掌握度着色正确",
-        "空数据不渲染或显示引导文案",
-        "npm run build 通过"
-      ],
-      "files": [
-        "frontend/src/pages/Review.tsx"
-      ],
-      "contract_refs": ["KnowledgeHeatmap"],
-      "planning_notes": "当前知识热力图是概念标签云形式，按掌握度四级着色。升级后在现有基础上添加 category 分组和 entry_count 显示。降级时 HeatmapItem 无 category 字段则不显示分组，保持向后兼容。"
-    },
-    {
-      "id": "F42",
-      "phase": "P2",
-      "module": "review",
-      "name": "晨报集成到回顾日报页",
-      "description": "在回顾页日报标签页顶部集成晨报卡片，显示 AI 建议、待办任务、过期提醒和学习连续天数。晨报 API 已实现但未在 Review 页展示。",
-      "verification": "F2",
-      "depends_on": [],
-      "status": "completed",
-      "started_at": "2026-04-18T00:00",
-      "completed_at": "2026-04-18T00:05",
-      "priority": 2,
-      "acceptance_criteria": [
-        "日报标签页顶部显示晨报卡片（AI 建议摘要）",
-        "卡片显示：AI 建议、待办任务数、过期任务数、灵感提醒",
-        "显示学习连续天数（learning_streak）",
-        "晨报 API 失败时卡片不显示（优雅降级，不影响日报其他内容）",
-        "卡片可展开/收起",
-        "npm run build 通过"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "晨报卡片在日报标签页正确渲染",
-        "各字段（AI建议/待办/过期/连续天数）正确展示",
-        "晨报 API 失败时优雅降级（不显示卡片）",
-        "空数据时不显示空卡片",
-        "npm run build 通过"
-      ],
-      "files": [
-        "frontend/src/pages/Review.tsx"
-      ],
-      "contract_refs": [],
-      "planning_notes": "后端 get_morning_digest() 已实现，返回 MorningDigestResponse（ai_suggestion, todos, overdue, stale_inbox, learning_streak, daily_focus, pattern_insights）。前端 api.ts 已有 getMorningDigest() 封装。只需在 Review.tsx 的日报标签页调用 API 并渲染卡片。卡片样式参考现有 AI 总结卡片的可展开/收起模式。"
-    }
-  ]
+  "tasks": []
 }
