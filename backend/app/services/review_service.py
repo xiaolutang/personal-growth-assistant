@@ -35,6 +35,8 @@ class TrendPeriod(BaseModel):
     completed: int = Field(0, description="已完成数")
     completion_rate: float = Field(0.0, description="完成率（百分比）")
     notes_count: int = Field(0, description="笔记数")
+    task_count: int = Field(0, description="任务数")
+    inbox_count: int = Field(0, description="灵感数")
 
 
 class TrendResponse(BaseModel):
@@ -48,6 +50,7 @@ class HeatmapItem(BaseModel):
     mastery: str = "new"
     entry_count: int = 0
     category: Optional[str] = None
+    mention_count: int = 0
 
 
 class HeatmapResponse(BaseModel):
@@ -142,6 +145,12 @@ class DailyReport(BaseModel):
     ai_summary: Optional[str] = None
 
 
+class VsLastPeriod(BaseModel):
+    """环比差值"""
+    delta_completion_rate: Optional[float] = Field(None, description="完成率差值（百分比）")
+    delta_total: Optional[int] = Field(None, description="总任务数差值")
+
+
 class WeeklyReport(BaseModel):
     """周报响应"""
     start_date: str
@@ -150,6 +159,7 @@ class WeeklyReport(BaseModel):
     note_stats: NoteStats
     daily_breakdown: List[dict] = Field(default_factory=list)
     ai_summary: Optional[str] = None
+    vs_last_week: Optional[VsLastPeriod] = Field(None, description="环比上周")
 
 
 class MonthlyReport(BaseModel):
@@ -159,6 +169,7 @@ class MonthlyReport(BaseModel):
     note_stats: NoteStats
     weekly_breakdown: List[dict] = Field(default_factory=list)
     ai_summary: Optional[str] = None
+    vs_last_month: Optional[VsLastPeriod] = Field(None, description="环比上月")
 
 
 class ActivityHeatmapItem(BaseModel):
@@ -174,14 +185,16 @@ class ActivityHeatmapResponse(BaseModel):
 class ReviewService:
     """成长回顾统计服务"""
 
-    def __init__(self, sqlite_storage=None):
+    def __init__(self, sqlite_storage=None, neo4j_client=None):
         """
         初始化服务
 
         Args:
             sqlite_storage: SQLite 存储实例
+            neo4j_client: Neo4j 客户端（可选，用于知识热力图增强）
         """
         self._sqlite = sqlite_storage
+        self._neo4j_client = neo4j_client
         self._llm_caller: Optional["APICaller"] = None
 
     def set_sqlite_storage(self, storage):
@@ -340,6 +353,11 @@ class ReviewService:
                 self._generate_ai_summary("weekly", stats_data, user_id=user_id or "_default")
             )
 
+        # 计算环比上周
+        vs_last_week = self._calculate_weekly_vs_last_week(
+            week_start, task_stats, user_id
+        )
+
         return WeeklyReport(
             start_date=start_str,
             end_date=week_end.isoformat(),
@@ -347,6 +365,68 @@ class ReviewService:
             note_stats=note_stats,
             daily_breakdown=daily_breakdown,
             ai_summary=ai_summary,
+            vs_last_week=vs_last_week,
+        )
+
+    def _calculate_weekly_vs_last_week(
+        self, week_start: date, current_task_stats: TaskStats, user_id: Optional[str]
+    ) -> Optional[VsLastPeriod]:
+        """计算周环比差值"""
+        last_week_start = week_start - timedelta(weeks=1)
+        last_week_end = last_week_start + timedelta(days=6)
+
+        last_tasks = self._sqlite.list_entries(
+            type="task",
+            start_date=last_week_start.isoformat(),
+            end_date=(last_week_end + timedelta(days=1)).isoformat(),
+            limit=1000,
+            user_id=user_id,
+        )
+
+        last_total = len(last_tasks)
+        last_completed = sum(1 for t in last_tasks if t.get("status") == "complete")
+        last_completion_rate = (last_completed / last_total * 100) if last_total > 0 else 0.0
+
+        if last_total == 0 and current_task_stats.total == 0:
+            return VsLastPeriod(delta_completion_rate=None, delta_total=None)
+
+        return VsLastPeriod(
+            delta_completion_rate=round(current_task_stats.completion_rate - last_completion_rate, 1),
+            delta_total=current_task_stats.total - last_total,
+        )
+
+    def _calculate_monthly_vs_last_month(
+        self, month_start: date, current_task_stats: TaskStats, user_id: Optional[str]
+    ) -> Optional[VsLastPeriod]:
+        """计算月环比差值"""
+        if month_start.month == 1:
+            last_month_start = date(month_start.year - 1, 12, 1)
+        else:
+            last_month_start = date(month_start.year, month_start.month - 1, 1)
+
+        if last_month_start.month == 12:
+            last_month_end = date(last_month_start.year + 1, 1, 1) - timedelta(days=1)
+        else:
+            last_month_end = date(last_month_start.year, last_month_start.month + 1, 1) - timedelta(days=1)
+
+        last_tasks = self._sqlite.list_entries(
+            type="task",
+            start_date=last_month_start.isoformat(),
+            end_date=(last_month_end + timedelta(days=1)).isoformat(),
+            limit=1000,
+            user_id=user_id,
+        )
+
+        last_total = len(last_tasks)
+        last_completed = sum(1 for t in last_tasks if t.get("status") == "complete")
+        last_completion_rate = (last_completed / last_total * 100) if last_total > 0 else 0.0
+
+        if last_total == 0 and current_task_stats.total == 0:
+            return VsLastPeriod(delta_completion_rate=None, delta_total=None)
+
+        return VsLastPeriod(
+            delta_completion_rate=round(current_task_stats.completion_rate - last_completion_rate, 1),
+            delta_total=current_task_stats.total - last_total,
         )
 
     def get_monthly_report(self, month_start: Optional[date] = None, user_id: Optional[str] = None) -> MonthlyReport:
@@ -425,12 +505,18 @@ class ReviewService:
                 self._generate_ai_summary("monthly", stats_data, user_id=user_id or "_default")
             )
 
+        # 计算环比上月
+        vs_last_month = self._calculate_monthly_vs_last_month(
+            month_start, task_stats, user_id
+        )
+
         return MonthlyReport(
             month=month_start.strftime("%Y-%m"),
             task_stats=task_stats,
             note_stats=note_stats,
             weekly_breakdown=weekly_breakdown,
             ai_summary=ai_summary,
+            vs_last_month=vs_last_month,
         )
 
     def get_trend_data(
@@ -470,6 +556,13 @@ class ReviewService:
                     limit=1000,
                     user_id=user_id,
                 )
+                inbox = self._sqlite.list_entries(
+                    type="inbox",
+                    start_date=target_date.isoformat(),
+                    end_date=next_day.isoformat(),
+                    limit=1000,
+                    user_id=user_id,
+                )
 
                 total = len(tasks)
                 completed = sum(1 for t in tasks if t.get("status") == "complete")
@@ -481,6 +574,8 @@ class ReviewService:
                     completed=completed,
                     completion_rate=completion_rate,
                     notes_count=len(notes),
+                    task_count=len(tasks),
+                    inbox_count=len(inbox),
                 ))
         else:  # weekly
             count = max(1, min(weeks, 52))
@@ -506,6 +601,13 @@ class ReviewService:
                     limit=1000,
                     user_id=user_id,
                 )
+                inbox = self._sqlite.list_entries(
+                    type="inbox",
+                    start_date=week_start.isoformat(),
+                    end_date=next_day_after_week.isoformat(),
+                    limit=1000,
+                    user_id=user_id,
+                )
 
                 total = len(tasks)
                 completed = sum(1 for t in tasks if t.get("status") == "complete")
@@ -517,6 +619,8 @@ class ReviewService:
                     completed=completed,
                     completion_rate=completion_rate,
                     notes_count=len(notes),
+                    task_count=len(tasks),
+                    inbox_count=len(inbox),
                 ))
 
         return TrendResponse(periods=periods)
@@ -592,12 +696,41 @@ class ReviewService:
         """
         获取知识热力图
 
+        优先使用 Neo4j get_all_concepts_with_stats() 获取数据，
+        Neo4j 不可用时降级到 SQLite tags 现有逻辑。
+
         Args:
             user_id: 用户 ID
 
         Returns:
             HeatmapResponse: 知识热力图数据
         """
+        # 尝试 Neo4j 路径
+        if self._neo4j_client:
+            try:
+                concepts = _run_async(
+                    self._neo4j_client.get_all_concepts_with_stats(user_id)
+                )
+                if concepts:
+                    relationships = _run_async(
+                        self._neo4j_client.get_all_relationships(user_id)
+                    )
+                    rel_count_map = self._count_relationships_per_concept(relationships)
+                    items = [
+                        self._neo4j_concept_to_heatmap(c, rel_count_map)
+                        for c in concepts
+                    ]
+                    # 按 mastery 分组排序
+                    items.sort(key=lambda x: self._mastery_order(x.mastery))
+                    return HeatmapResponse(items=items)
+            except Exception:
+                logger.warning("Neo4j 查询失败，降级到 SQLite", exc_info=True)
+
+        # SQLite tags 降级路径
+        return self._get_heatmap_from_sqlite(user_id)
+
+    def _get_heatmap_from_sqlite(self, user_id: str) -> HeatmapResponse:
+        """从 SQLite tags 获取热力图数据（降级路径）"""
         if not self._sqlite:
             raise ValueError("SQLite 存储未初始化")
 
@@ -651,10 +784,54 @@ class ReviewService:
                 category="tag",
             ))
 
-        # 按 entry_count 降序排序
-        items.sort(key=lambda x: x.entry_count, reverse=True)
+        # 按 mastery 分组排序
+        items.sort(key=lambda x: self._mastery_order(x.mastery))
 
         return HeatmapResponse(items=items)
+
+    @staticmethod
+    def _count_relationships_per_concept(
+        relationships: List[Dict[str, Any]]
+    ) -> Dict[str, int]:
+        """统计每个概念的关系数量"""
+        rel_count: Dict[str, int] = {}
+        for rel in relationships:
+            source = rel.get("source", "")
+            target = rel.get("target", "")
+            rel_count[source] = rel_count.get(source, 0) + 1
+            rel_count[target] = rel_count.get(target, 0) + 1
+        return rel_count
+
+    def _neo4j_concept_to_heatmap(
+        self,
+        concept: Dict[str, Any],
+        rel_count_map: Dict[str, int],
+    ) -> HeatmapItem:
+        """将 Neo4j 概念统计转换为 HeatmapItem"""
+        name = concept.get("name", "")
+        entry_count = concept.get("entry_count", 0)
+        mention_count = concept.get("mention_count", 0)
+        category = concept.get("category")
+        relationship_count = rel_count_map.get(name, 0)
+
+        mastery = self._calculate_mastery_from_stats(
+            entry_count=entry_count,
+            relationship_count=relationship_count,
+        )
+
+        return HeatmapItem(
+            concept=name,
+            mastery=mastery,
+            entry_count=entry_count,
+            category=category,
+            mention_count=mention_count,
+        )
+
+    @staticmethod
+    def _mastery_order(mastery: str) -> int:
+        """掌握度排序权重（值越小掌握度越高）"""
+        order = {"advanced": 0, "intermediate": 1, "beginner": 2, "new": 3}
+        return order.get(mastery, 99)
 
     def get_growth_curve(
         self, weeks: int = 8, user_id: str = "_default"
@@ -1215,27 +1392,35 @@ class ReviewService:
 
     @staticmethod
     def _calculate_mastery_from_stats(
-        entry_count: int, recent_count: int, note_count: int
+        entry_count: int,
+        recent_count: int = 0,
+        note_count: int = 0,
+        relationship_count: int = 0,
     ) -> str:
         """
         根据统计数据计算掌握度
 
-        规则：
-        - 0 条目 → new
-        - 1-2 条目 → beginner
-        - 3+ 条目且有近期活动 → intermediate
-        - 6+ 条目且笔记占比 > 30% → advanced
+        规则（综合评分 = entry_count*2 + recent_count*3 + note_count*2 + relationship_count*1）：
+        - score >= 10 → advanced
+        - score >= 5 → intermediate
+        - score >= 2 → beginner
+        - 其他 → new
         """
-        if entry_count == 0:
+        if entry_count == 0 and relationship_count == 0:
             return "new"
 
-        note_ratio = note_count / entry_count if entry_count > 0 else 0
+        score = (
+            entry_count * 2
+            + recent_count * 3
+            + note_count * 2
+            + relationship_count * 1
+        )
 
-        if entry_count >= 6 and note_ratio > 0.3:
+        if score >= 10:
             return "advanced"
-        elif entry_count >= 3 and recent_count > 0:
+        elif score >= 5:
             return "intermediate"
-        elif entry_count >= 1:
+        elif score >= 2:
             return "beginner"
         return "new"
 

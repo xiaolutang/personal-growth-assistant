@@ -25,6 +25,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
 } from "recharts";
 import { API_BASE } from "@/config/api";
 import { authFetch } from "@/lib/authFetch";
@@ -34,10 +35,12 @@ import {
   getKnowledgeHeatmap,
   getGrowthCurve,
   getProgressSummary,
+  getMorningDigest,
   type TrendPeriod,
   type HeatmapItem,
   type GrowthCurvePoint,
   type ProgressSummaryResponse,
+  type MorningDigestResponse,
 } from "@/services/api";
 
 // 响应类型
@@ -68,6 +71,11 @@ interface DailyBreakdown {
   completed: number;
 }
 
+interface VsLastPeriod {
+  delta_completion_rate: number | null;
+  delta_total: number | null;
+}
+
 interface WeeklyReport {
   start_date: string;
   end_date: string;
@@ -75,6 +83,7 @@ interface WeeklyReport {
   note_stats: NoteStats;
   daily_breakdown: DailyBreakdown[];
   ai_summary?: string | null;
+  vs_last_week?: VsLastPeriod | null;
 }
 
 interface WeeklyBreakdown {
@@ -91,6 +100,7 @@ interface MonthlyReport {
   note_stats: NoteStats;
   weekly_breakdown: WeeklyBreakdown[];
   ai_summary?: string;
+  vs_last_month?: VsLastPeriod | null;
 }
 
 type ReportType = "daily" | "weekly" | "monthly" | "trend";
@@ -98,9 +108,9 @@ type TrendPeriodType = "daily" | "weekly";
 
 // 掌握度颜色映射
 const MASTERY_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  advanced: { bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-700 dark:text-green-300", label: "精通" },
+  advanced: { bg: "bg-purple-100 dark:bg-purple-900/30", text: "text-purple-700 dark:text-purple-300", label: "精通" },
   intermediate: { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-300", label: "中级" },
-  beginner: { bg: "bg-orange-100 dark:bg-orange-900/30", text: "text-orange-700 dark:text-orange-300", label: "入门" },
+  beginner: { bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-700 dark:text-green-300", label: "入门" },
   new: { bg: "bg-gray-100 dark:bg-gray-800/30", text: "text-gray-600 dark:text-gray-400", label: "新知" },
 };
 
@@ -119,6 +129,10 @@ export function Review() {
 
   // AI 总结展开状态
   const [aiSummaryExpanded, setAiSummaryExpanded] = useState(false);
+
+  // 晨报状态
+  const [morningDigest, setMorningDigest] = useState<MorningDigestResponse | null>(null);
+  const [morningDigestExpanded, setMorningDigestExpanded] = useState(false);
 
   // 知识热力图状态
   const [heatmapItems, setHeatmapItems] = useState<HeatmapItem[]>([]);
@@ -222,6 +236,13 @@ export function Review() {
     fetchGrowthCurve();
   }, []);
 
+  // 晨报数据获取
+  useEffect(() => {
+    getMorningDigest()
+      .then(setMorningDigest)
+      .catch(() => setMorningDigest(null));
+  }, []);
+
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
     return d.toLocaleDateString("zh-CN", { month: "short", day: "numeric" });
@@ -250,6 +271,230 @@ export function Review() {
   const taskStats = getTaskStats();
   const noteStats = getNoteStats();
   const aiSummary = getAiSummary();
+
+  // 环比标签渲染
+  const renderDeltaLabel = (label: string, delta: VsLastPeriod | null | undefined) => {
+    if (!delta || delta.delta_total === null || delta.delta_completion_rate === null) return null;
+    const rateSign = delta.delta_completion_rate >= 0 ? "+" : "";
+    const totalSign = delta.delta_total >= 0 ? "+" : "";
+    const rateColor = delta.delta_completion_rate >= 0 ? "text-green-600 dark:text-green-400" : "text-red-500";
+    const totalColor = delta.delta_total >= 0 ? "text-green-600 dark:text-green-400" : "text-red-500";
+    return (
+      <div className="flex gap-3 text-xs mt-1">
+        <span>vs {label}：</span>
+        <span className={rateColor}>完成率 {rateSign}{delta.delta_completion_rate.toFixed(1)}%</span>
+        <span className={totalColor}>任务 {totalSign}{delta.delta_total}</span>
+      </div>
+    );
+  };
+
+  // 多线趋势图渲染（复用）
+  const renderTrendChart = () => (
+    <>
+      <div className="w-full" style={{ height: 260 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={trendData.map((d) => ({
+              ...d,
+              date: formatDate(d.date),
+              completion_rate: Number(d.completion_rate.toFixed(1)),
+            }))}
+            margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 12 }}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              yAxisId="left"
+              domain={[0, 100]}
+              tick={{ fontSize: 12 }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v: number) => `${v}%`}
+              width={42}
+            />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tick={{ fontSize: 12 }}
+              tickLine={false}
+              axisLine={false}
+              width={32}
+            />
+            <Tooltip
+              formatter={(value, name) => {
+                if (name === "完成率") return [`${value}%`, name];
+                return [value, name];
+              }}
+              labelStyle={{ fontSize: 12 }}
+            />
+            <Legend
+              wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+            />
+            <Line
+              yAxisId="left"
+              type="monotone"
+              dataKey="completion_rate"
+              stroke="#6366F1"
+              strokeWidth={2}
+              dot={{ r: 3, fill: "#6366F1" }}
+              activeDot={{ r: 5 }}
+              name="完成率"
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="task_count"
+              stroke="#f97316"
+              strokeWidth={1.5}
+              strokeDasharray="5 3"
+              dot={{ r: 2, fill: "#f97316" }}
+              name="任务数"
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="notes_count"
+              stroke="#3b82f6"
+              strokeWidth={1.5}
+              strokeDasharray="5 3"
+              dot={{ r: 2, fill: "#3b82f6" }}
+              name="笔记数"
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="inbox_count"
+              stroke="#a855f7"
+              strokeWidth={1.5}
+              strokeDasharray="5 3"
+              dot={{ r: 2, fill: "#a855f7" }}
+              name="灵感数"
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      {trendData.length > 0 && (
+        <div className="mt-3 pt-3 border-t flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">
+            {trendPeriod === "daily" ? "近 7 天" : "近 8 周"}平均完成率
+          </span>
+          <span className="text-sm font-semibold">
+            {(
+              trendData.reduce((sum, d) => sum + d.completion_rate, 0) /
+              trendData.length
+            ).toFixed(1)}
+            %
+          </span>
+        </div>
+      )}
+    </>
+  );
+
+  // 晨报卡片渲染（仅日报标签页）
+  const renderMorningDigestCard = () => {
+    if (reportType !== "daily") return null;
+    if (!morningDigest) return null;
+
+    const hasContent = morningDigest.ai_suggestion || morningDigest.todos.length > 0 || morningDigest.overdue.length > 0 || morningDigest.stale_inbox.length > 0 || (morningDigest.learning_streak != null && morningDigest.learning_streak > 0);
+
+    return (
+      <Card className="border-l-4 border-l-amber-500 dark:border-l-amber-400">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-amber-500" />
+            今日晨报
+            {morningDigest.learning_streak != null && morningDigest.learning_streak > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                连续 {morningDigest.learning_streak} 天
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {hasContent ? (
+            <div>
+              {/* AI 建议 */}
+              {morningDigest.ai_suggestion && (
+                <div className={`text-sm leading-relaxed mb-3 ${!morningDigestExpanded ? "line-clamp-2" : ""}`}>
+                  {morningDigest.ai_suggestion}
+                </div>
+              )}
+
+              {/* 统计摘要 */}
+              <div className="flex flex-wrap gap-3 mb-2">
+                {morningDigest.todos.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    待办 {morningDigest.todos.length} 项
+                  </span>
+                )}
+                {morningDigest.overdue.length > 0 && (
+                  <span className="text-xs text-red-500">
+                    过期 {morningDigest.overdue.length} 项
+                  </span>
+                )}
+                {morningDigest.stale_inbox.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    灵感提醒 {morningDigest.stale_inbox.length} 项
+                  </span>
+                )}
+              </div>
+
+              {/* 展开后显示详细列表 */}
+              {morningDigestExpanded && (
+                <div className="space-y-2 mt-2 pt-2 border-t">
+                  {morningDigest.todos.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">待办任务</div>
+                      {morningDigest.todos.slice(0, 5).map((t) => (
+                        <div key={t.id} className="text-sm truncate">• {t.title}</div>
+                      ))}
+                    </div>
+                  )}
+                  {morningDigest.overdue.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-red-500 mb-1">过期任务</div>
+                      {morningDigest.overdue.slice(0, 3).map((t) => (
+                        <div key={t.id} className="text-sm truncate">• {t.title}</div>
+                      ))}
+                    </div>
+                  )}
+                  {morningDigest.stale_inbox.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">待处理灵感</div>
+                      {morningDigest.stale_inbox.slice(0, 3).map((t) => (
+                        <div key={t.id} className="text-sm truncate">• {t.title}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 展开/收起 */}
+              {(morningDigest.ai_suggestion && morningDigest.ai_suggestion.length > 80 || morningDigest.todos.length > 0 || morningDigest.overdue.length > 0) && (
+                <button
+                  onClick={() => setMorningDigestExpanded(!morningDigestExpanded)}
+                  className="mt-2 text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center gap-1"
+                >
+                  {morningDigestExpanded ? (
+                    <>收起 <ChevronUp className="h-3 w-3" /></>
+                  ) : (
+                    <>展开详情 <ChevronDown className="h-3 w-3" /></>
+                  )}
+                </button>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground/60 italic">今日暂无晨报内容</p>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   // AI 总结卡片渲染
   const renderAiSummaryCard = () => {
@@ -300,57 +545,94 @@ export function Review() {
   };
 
   // 知识热力图卡片渲染
-  const renderHeatmapCard = () => (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Brain className="h-4 w-4" />
-          知识热力图
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {heatmapLoading ? (
-          <div className="flex flex-wrap gap-2">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-7 w-20 bg-muted rounded-full animate-pulse" />
-            ))}
-          </div>
-        ) : heatmapItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Brain className="h-8 w-8 text-muted-foreground/40 mb-2" />
-            <p className="text-sm text-muted-foreground">记录更多内容，知识图谱将自动丰富</p>
-          </div>
-        ) : (
-          <>
-            {/* 掌握度图例 */}
-            <div className="flex flex-wrap gap-3 mb-3 text-xs text-muted-foreground">
-              {Object.entries(MASTERY_STYLES).map(([key, style]) => (
-                <span key={key} className="flex items-center gap-1">
-                  <span className={`inline-block w-2.5 h-2.5 rounded-full ${style.bg}`} />
-                  {style.label}
-                </span>
+  const renderHeatmapCard = () => {
+    // 按 category 分组（category 为 null 的归入"其他"）
+    const grouped = heatmapItems.reduce<Record<string, HeatmapItem[]>>((acc, item) => {
+      const cat = item.category || "其他";
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(item);
+      return acc;
+    }, {});
+    const categories = Object.keys(grouped);
+    const hasCategory = categories.length > 1 || (categories.length === 1 && categories[0] !== "其他");
+
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            知识热力图
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {heatmapLoading ? (
+            <div className="flex flex-wrap gap-2">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="h-7 w-20 bg-muted rounded-full animate-pulse" />
               ))}
             </div>
-            {/* 概念标签 */}
-            <div className="flex flex-wrap gap-2">
-              {heatmapItems.map((item) => {
-                const style = MASTERY_STYLES[item.mastery] || MASTERY_STYLES.new;
-                return (
-                  <span
-                    key={item.concept}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}
-                  >
-                    {item.concept}
-                    <span className="opacity-60">({item.entry_count})</span>
-                  </span>
-                );
-              })}
+          ) : heatmapItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Brain className="h-8 w-8 text-muted-foreground/40 mb-2" />
+              <p className="text-sm text-muted-foreground">记录更多内容，知识图谱将自动丰富</p>
             </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
+          ) : (
+            <>
+              {/* 掌握度图例 */}
+              <div className="flex flex-wrap gap-3 mb-3 text-xs text-muted-foreground">
+                {Object.entries(MASTERY_STYLES).map(([key, style]) => (
+                  <span key={key} className="flex items-center gap-1">
+                    <span className={`inline-block w-2.5 h-2.5 rounded-full ${style.bg}`} />
+                    {style.label}
+                  </span>
+                ))}
+              </div>
+              {/* 按 category 分组展示 */}
+              {hasCategory ? (
+                <div className="space-y-3">
+                  {categories.map((cat) => (
+                    <div key={cat}>
+                      <div className="text-xs font-medium text-muted-foreground mb-1.5">{cat}</div>
+                      <div className="flex flex-wrap gap-2">
+                        {grouped[cat].map((item) => {
+                          const style = MASTERY_STYLES[item.mastery] || MASTERY_STYLES.new;
+                          return (
+                            <span
+                              key={item.concept}
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}
+                            >
+                              {item.concept}
+                              <span className="opacity-60">({item.entry_count})</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                /* 无分类信息时保持原标签云布局（降级兼容） */
+                <div className="flex flex-wrap gap-2">
+                  {heatmapItems.map((item) => {
+                    const style = MASTERY_STYLES[item.mastery] || MASTERY_STYLES.new;
+                    return (
+                      <span
+                        key={item.concept}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}
+                      >
+                        {item.concept}
+                        <span className="opacity-60">({item.entry_count})</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   // 成长曲线卡片渲染
   const renderGrowthCurveCard = () => (
@@ -496,62 +778,7 @@ export function Review() {
                     </p>
                   </div>
                 ) : (
-                  <>
-                    <div className="w-full" style={{ height: 220 }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                          data={trendData.map((d) => ({
-                            ...d,
-                            date: formatDate(d.date),
-                            completion_rate: Number(d.completion_rate.toFixed(1)),
-                          }))}
-                          margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                          <XAxis
-                            dataKey="date"
-                            tick={{ fontSize: 12 }}
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <YAxis
-                            domain={[0, 100]}
-                            tick={{ fontSize: 12 }}
-                            tickLine={false}
-                            axisLine={false}
-                            tickFormatter={(v: number) => `${v}%`}
-                            width={42}
-                          />
-                          <Tooltip
-                            formatter={(value) => [`${value}%`, "完成率"]}
-                            labelStyle={{ fontSize: 12 }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="completion_rate"
-                            stroke="#6366F1"
-                            strokeWidth={2}
-                            dot={{ r: 3, fill: "#6366F1" }}
-                            activeDot={{ r: 5 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                    {trendData.length > 0 && (
-                      <div className="mt-3 pt-3 border-t flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          {trendPeriod === "daily" ? "近 7 天" : "近 8 周"}平均完成率
-                        </span>
-                        <span className="text-sm font-semibold">
-                          {(
-                            trendData.reduce((sum, d) => sum + d.completion_rate, 0) /
-                            trendData.length
-                          ).toFixed(1)}
-                          %
-                        </span>
-                      </div>
-                    )}
-                  </>
+                  renderTrendChart()
                 )}
               </CardContent>
             </Card>
@@ -564,6 +791,9 @@ export function Review() {
           </div>
         ) : (
           <>
+            {/* 晨报卡片（仅日报，在顶部） */}
+            {renderMorningDigestCard()}
+
             {/* 趋势折线图卡片（日报/周报/月报下也保留） */}
             <Card className="mb-6">
               <CardHeader className="pb-2">
@@ -605,60 +835,11 @@ export function Review() {
                   </div>
                 ) : (
                   <>
-                    <div className="w-full" style={{ height: 220 }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                          data={trendData.map((d) => ({
-                            ...d,
-                            date: formatDate(d.date),
-                            completion_rate: Number(d.completion_rate.toFixed(1)),
-                          }))}
-                          margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                          <XAxis
-                            dataKey="date"
-                            tick={{ fontSize: 12 }}
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <YAxis
-                            domain={[0, 100]}
-                            tick={{ fontSize: 12 }}
-                            tickLine={false}
-                            axisLine={false}
-                            tickFormatter={(v: number) => `${v}%`}
-                            width={42}
-                          />
-                          <Tooltip
-                            formatter={(value) => [`${value}%`, "完成率"]}
-                            labelStyle={{ fontSize: 12 }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="completion_rate"
-                            stroke="#6366F1"
-                            strokeWidth={2}
-                            dot={{ r: 3, fill: "#6366F1" }}
-                            activeDot={{ r: 5 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                    {trendData.length > 0 && (
-                      <div className="mt-3 pt-3 border-t flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          {trendPeriod === "daily" ? "近 7 天" : "近 8 周"}平均完成率
-                        </span>
-                        <span className="text-sm font-semibold">
-                          {(
-                            trendData.reduce((sum, d) => sum + d.completion_rate, 0) /
-                            trendData.length
-                          ).toFixed(1)}
-                          %
-                        </span>
-                      </div>
-                    )}
+                    {renderTrendChart()}
+                    {/* 周报环比标签 */}
+                    {reportType === "weekly" && renderDeltaLabel("上周", weeklyReport?.vs_last_week)}
+                    {/* 月报环比标签 */}
+                    {reportType === "monthly" && renderDeltaLabel("上月", monthlyReport?.vs_last_month)}
                   </>
                 )}
               </CardContent>

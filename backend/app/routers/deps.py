@@ -68,7 +68,11 @@ def get_review_service() -> "ReviewService":
         raise HTTPException(status_code=503, detail="存储服务未初始化")
     if _review_service is None:
         from app.services.review_service import ReviewService
-        _review_service = ReviewService(sqlite_storage=storage.sqlite)
+        neo4j_client = getattr(storage, "neo4j", None)
+        _review_service = ReviewService(
+            sqlite_storage=storage.sqlite,
+            neo4j_client=neo4j_client,
+        )
         if hasattr(storage, "llm_caller") and storage.llm_caller:
             _review_service.set_llm_caller(storage.llm_caller)
     return _review_service

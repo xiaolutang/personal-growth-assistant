@@ -21,6 +21,7 @@ vi.mock("recharts", () => ({
   YAxis: () => null,
   CartesianGrid: () => null,
   Tooltip: () => null,
+  Legend: () => null,
 }));
 
 // Mock authFetch — Review 主报告用到，返回空日报让它不报错
@@ -39,6 +40,7 @@ vi.mock("@/services/api", () => ({
   getGrowthCurve: () => Promise.resolve([]),
   getProgressSummary: () =>
     Promise.resolve({ active_count: 0, completed_count: 0, goals: [] }),
+  getMorningDigest: () => Promise.reject(new Error("not available")),
 }));
 
 // 辅助：创建空日报 Response（主报告默认不报错）
@@ -63,6 +65,8 @@ function makeTrendPeriods(count: number) {
     completed: 3 + i,
     completion_rate: 50 + i * 5,
     notes_count: 1,
+    task_count: 3 + i,
+    inbox_count: 1,
   }));
 }
 
@@ -101,9 +105,9 @@ describe("Review — 趋势折线图", () => {
       expect(screen.getByText("完成率趋势")).toBeInTheDocument();
     });
 
-    // 折线图组件应该被渲染
+    // 折线图组件应该被渲染（4 条线：完成率 + 任务数 + 笔记数 + 灵感数）
     expect(screen.getByTestId("recharts-linechart")).toBeInTheDocument();
-    expect(screen.getByTestId("recharts-line")).toBeInTheDocument();
+    expect(screen.getAllByTestId("recharts-line").length).toBeGreaterThanOrEqual(1);
   });
 
   // ---- 2. 日/周切换 ----
@@ -160,8 +164,8 @@ describe("Review — 趋势折线图", () => {
   // ---- 5. 平均完成率摘要 ----
   it("有数据时图表下方显示平均完成率百分比", async () => {
     const periods = [
-      { date: "2026-04-14", total: 5, completed: 3, completion_rate: 60.0, notes_count: 1 },
-      { date: "2026-04-13", total: 4, completed: 2, completion_rate: 40.0, notes_count: 0 },
+      { date: "2026-04-14", total: 5, completed: 3, completion_rate: 60.0, notes_count: 1, task_count: 3, inbox_count: 0 },
+      { date: "2026-04-13", total: 4, completed: 2, completion_rate: 40.0, notes_count: 0, task_count: 2, inbox_count: 1 },
     ];
     mockGetReviewTrend.mockResolvedValue({ periods });
 
@@ -194,7 +198,7 @@ describe("Review — 趋势折线图", () => {
   // ---- 7. 只有 1 天数据时折线图不报错 ----
   it("只有 1 天数据时折线图正常渲染且显示摘要", async () => {
     const periods = [
-      { date: "2026-04-14", total: 3, completed: 2, completion_rate: 66.7, notes_count: 0 },
+      { date: "2026-04-14", total: 3, completed: 2, completion_rate: 66.7, notes_count: 0, task_count: 2, inbox_count: 0 },
     ];
     mockGetReviewTrend.mockResolvedValue({ periods });
 

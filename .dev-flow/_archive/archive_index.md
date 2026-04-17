@@ -2,6 +2,17 @@
 
 ## 已完成需求包
 
+### R015: Review Enhancement
+
+- 状态: 已完成
+- 分支: `feat/R015-review-enhancement`
+- 主题: 回顾增强 — 趋势多维扩展 + 知识热力图 Neo4j 升级 + 晨报集成
+- 目录: `R015_review-enhancement/`
+- 完成时间: 2026-04-18
+- 任务数: 5 (B52, B53, F40, F41, F42)
+- 新增测试: 45 个后端测试 (B52 13 + B53 32)
+- 关键改动: TrendPeriod 多分类 + 周环比、Neo4j 热力图降级、多线趋势图、晨报卡片
+
 ### R011: Entry Context & Morning Report
 
 - 状态: 已完成

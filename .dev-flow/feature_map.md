@@ -2,7 +2,11 @@
 
 > 项目：personal-growth-assistant
 > 活跃需求包：无
-> 最后更新：2026-04-17
+> 最后更新：2026-04-18
+
+## 活跃需求包
+
+当前无活跃需求包。
 
 ## 归档需求包
 
@@ -23,11 +27,12 @@
 | R012 Goal Tracking | _archive/R012_goal-tracking | completed |
 | R013 Decision Reflection Entries | _archive/R013_decision-reflection-entries | completed |
 | R014 Page Context AI | _archive/R014_page-context-ai | completed |
+| R015 Review Enhancement | _archive/R015_review-enhancement | completed |
 
 ## 测试汇总
 
 | 项目 | 测试数 | 状态 |
 |------|--------|------|
-| 后端测试 | 765 passed | 全绿 |
+| 后端测试 | 810 passed | 全绿 |
 | 前端测试 | 245 passed | 全绿 |
 | E2E 测试 | 8 passed (page-context) | 全绿 |
