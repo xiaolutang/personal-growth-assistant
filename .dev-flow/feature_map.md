@@ -55,5 +55,5 @@ B50 ──→ B51 ──→ F39
 
 | 项目 | 测试数 | 状态 |
 |------|--------|------|
-| 后端测试 | 815 passed | B50 相关 22 unit + 12 API 全通过 |
-| 前端测试 | 231 passed | 全部通过 |
+| 后端测试 | 765 passed | B50 相关 22 unit + 12 API 全通过 |
+| 前端测试 | 245 passed | 含 PageSuggestions(9) + chatStore pageExtra(5) 新增测试 |
