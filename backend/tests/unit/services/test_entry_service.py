@@ -514,6 +514,75 @@ class TestCategoryConversion:
         assert updated.status == TaskStatus.COMPLETE
 
 
+class TestBatchCreateEntries:
+    """B65: batch_create_entries 批量创建 — status/category 字段不丢失"""
+
+    @pytest.fixture
+    def service(self, storage):
+        return EntryService(storage=storage)
+
+    @pytest.mark.asyncio
+    async def test_batch_create_has_status_field(self, service):
+        """批量创建的条目都包含 status 字段"""
+        requests = [
+            EntryCreate(category="task", title="任务1"),
+            EntryCreate(category="task", title="任务2"),
+        ]
+        results = await service.batch_create_entries(requests)
+
+        assert len(results) == 2
+        for r in results:
+            assert r.status == "doing"  # 默认值
+
+    @pytest.mark.asyncio
+    async def test_batch_create_has_category_field(self, service):
+        """批量创建的条目都包含 category 字段"""
+        requests = [
+            EntryCreate(category="task", title="任务1"),
+            EntryCreate(category="note", title="笔记1"),
+        ]
+        results = await service.batch_create_entries(requests)
+
+        assert len(results) == 2
+        assert results[0].category == "task"
+        assert results[1].category == "note"
+
+    @pytest.mark.asyncio
+    async def test_batch_create_explicit_status_preserved(self, service):
+        """批量创建时显式指定的 status 应被保留"""
+        requests = [
+            EntryCreate(category="task", title="任务1", status="complete"),
+            EntryCreate(category="task", title="任务2", status="waitStart"),
+        ]
+        results = await service.batch_create_entries(requests)
+
+        assert results[0].status == "complete"
+        assert results[1].status == "waitStart"
+
+    @pytest.mark.asyncio
+    async def test_batch_create_uses_same_defaults_as_single(self, service):
+        """批量创建与单个创建使用相同的默认值"""
+        # 单个创建（无 status）
+        single = await service.create_entry(
+            EntryCreate(category="task", title="单个创建")
+        )
+
+        # 批量创建（无 status）
+        batch = await service.batch_create_entries([
+            EntryCreate(category="task", title="批量创建"),
+        ])
+
+        # 默认值应一致
+        assert single.status == batch[0].status
+        assert single.priority == batch[0].priority
+
+    @pytest.mark.asyncio
+    async def test_batch_create_empty_list(self, service):
+        """批量创建空列表应返回空列表"""
+        results = await service.batch_create_entries([])
+        assert results == []
+
+
 class TestB58VerifyEntryOwnerNoSqlite:
     """B58: _verify_entry_owner 在无 SQLite 时拒绝访问"""
 

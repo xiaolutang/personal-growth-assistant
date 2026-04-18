@@ -374,6 +374,21 @@ class EntryService:
         else:
             return False, "删除失败"
 
+    async def batch_create_entries(
+        self, requests: list[EntryCreate], user_id: str = "_default"
+    ) -> list[EntryResponse]:
+        """批量创建条目，复用 create_entry 的字段默认值逻辑
+
+        确保批量创建与单个创建使用完全相同的 status/category 默认值：
+        - status 缺失时默认 "doing"
+        - category 缺失时默认 "note"
+        """
+        results: list[EntryResponse] = []
+        for req in requests:
+            resp = await self.create_entry(req, user_id=user_id)
+            results.append(resp)
+        return results
+
     # === 查询操作 ===
 
     async def list_entries(
