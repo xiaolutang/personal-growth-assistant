@@ -21,7 +21,7 @@ from app.api.schemas import (
     EntryLinkListResponse,
     KnowledgeContextResponse,
 )
-from app.routers.deps import get_entry_service, get_storage, get_current_user, get_knowledge_service
+from app.routers.deps import get_entry_service, get_current_user, get_knowledge_service
 from app.models.user import User
 
 router = APIRouter(prefix="/entries", tags=["entries"])
@@ -195,21 +195,8 @@ async def get_project_progress(entry_id: str, user: User = Depends(get_current_u
         raise HTTPException(status_code=503, detail=str(e))
 
 
-@router.post("/admin/sync-vectors", response_model=SuccessResponse)
-async def sync_vectors(user: User = Depends(get_current_user)):
-    """同步所有条目到向量数据库（Qdrant）"""
-    storage = get_storage()
-    if not storage.qdrant:
-        raise HTTPException(status_code=503, detail="向量数据库未配置")
-
-    try:
-        result = await storage.sync_all()
-        return SuccessResponse(
-            success=True,
-            message=f"同步完成: {result['success']} 条成功, {result['failed']} 条失败"
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"同步失败: {str(e)}")
+# NOTE: sync-vectors 端点已移除（B64 安全加固）。
+# 全量向量同步应通过内部脚本或管理 CLI 触发，不应作为公开 API 暴露。
 
 
 @router.post("/{entry_id}/ai-summary", response_model=EntrySummaryResponse)
