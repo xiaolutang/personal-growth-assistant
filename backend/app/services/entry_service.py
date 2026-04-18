@@ -159,7 +159,8 @@ class EntryService:
     def _verify_entry_owner(self, entry_id: str, user_id: str) -> bool:
         """验证条目是否属于当前用户"""
         if not self.storage.sqlite:
-            return True  # 无 SQLite 时无法验证，放行
+            logger.warning("SQLite 不可用，拒绝访问 entry_id=%s user_id=%s", entry_id, user_id)
+            return False  # 无 SQLite 时无法验证，安全优先拒绝
         return self.storage.sqlite.entry_belongs_to_user(entry_id, user_id)
 
     async def get_entry(self, entry_id: str, user_id: str = "_default") -> Optional[EntryResponse]:
@@ -596,7 +597,7 @@ class EntryService:
         if not entry:
             # 检查是否属于其他用户
             if self.storage.sqlite:
-                db_entry = self.storage.sqlite.get_entry(entry_id)
+                db_entry = self.storage.sqlite.get_entry(entry_id, user_id=user_id)
                 if db_entry and db_entry.get("user_id") and db_entry["user_id"] != user_id:
                     raise PermissionError(f"无权访问条目: {entry_id}")
             return None

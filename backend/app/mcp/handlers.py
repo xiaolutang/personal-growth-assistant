@@ -38,8 +38,8 @@ def _entry_belongs_to_user(entry, user_id: str) -> bool:
     # SQLite dict
     if isinstance(entry, dict) and "user_id" in entry:
         return entry["user_id"] == user_id
-    # 无法判断归属时允许访问（Markdown 回退场景）
-    return True
+    # 无法判断归属时拒绝访问（安全优先）
+    return False
 
 
 async def handle_list_entries(storage: SyncService, args: dict, user_id: str) -> list[TextContent]:
@@ -110,7 +110,7 @@ async def handle_get_entry(storage: SyncService, args: dict, user_id: str) -> li
 
     # 用户隔离检查：SQLite 中验证归属
     if storage.sqlite:
-        db_entry = storage.sqlite.get_entry(entry_id)
+        db_entry = storage.sqlite.get_entry(entry_id, user_id=user_id)
         if db_entry and db_entry.get("user_id") and db_entry["user_id"] != user_id:
             return [TextContent(type="text", text=f"找不到条目: {entry_id}")]
 
@@ -186,7 +186,7 @@ async def handle_update_entry(storage: SyncService, args: dict, user_id: str) ->
 
     # 用户隔离检查 + 按 user_id 读取 Markdown
     if storage.sqlite:
-        db_entry = storage.sqlite.get_entry(entry_id)
+        db_entry = storage.sqlite.get_entry(entry_id, user_id=user_id)
         if db_entry and db_entry.get("user_id") and db_entry["user_id"] != user_id:
             return [TextContent(type="text", text=f"找不到条目: {entry_id}")]
 
@@ -234,7 +234,7 @@ async def handle_delete_entry(storage: SyncService, args: dict, user_id: str) ->
 
     # 用户隔离检查
     if storage.sqlite:
-        db_entry = storage.sqlite.get_entry(entry_id)
+        db_entry = storage.sqlite.get_entry(entry_id, user_id=user_id)
         if db_entry and db_entry.get("user_id") and db_entry["user_id"] != user_id:
             return [TextContent(type="text", text=f"删除失败: {entry_id}")]
 
@@ -344,7 +344,7 @@ async def handle_get_project_progress(storage: SyncService, args: dict, user_id:
 
     # 用户隔离检查
     if storage.sqlite:
-        db_entry = storage.sqlite.get_entry(project_id)
+        db_entry = storage.sqlite.get_entry(project_id, user_id=user_id)
         if db_entry and db_entry.get("user_id") and db_entry["user_id"] != user_id:
             return [TextContent(type="text", text=f"找不到条目: {project_id}")]
 
@@ -560,7 +560,7 @@ async def handle_batch_update_status(storage: SyncService, args: dict, user_id: 
         try:
             # 用户隔离检查
             if storage.sqlite:
-                db_entry = storage.sqlite.get_entry(entry_id)
+                db_entry = storage.sqlite.get_entry(entry_id, user_id=user_id)
                 if db_entry and db_entry.get("user_id") and db_entry["user_id"] != user_id:
                     not_found.append(entry_id)
                     continue

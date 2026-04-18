@@ -170,3 +170,176 @@ class TestCallToolDispatch:
         """main 函数存在且可调用"""
         from app.mcp.server import main
         assert callable(main)
+
+
+class TestB58EntryBelongsToUserFallback:
+    """B58: _entry_belongs_to_user 回退策略为 return False"""
+
+    def test_entry_belongs_to_user_returns_false_on_unknown_object(self):
+        """无法判断归属的对象（无 user_id 属性）应返回 False"""
+        from app.mcp.handlers import _entry_belongs_to_user
+
+        # 普通对象没有 user_id 属性，也不是 dict
+        class FakeEntry:
+            pass
+
+        result = _entry_belongs_to_user(FakeEntry(), "usr_alice")
+        assert result is False
+
+    def test_entry_belongs_to_user_task_object_no_user_id_field(self):
+        """Task 对象没有 user_id 字段，走不到 hasattr 分支，返回 False"""
+        from app.mcp.handlers import _entry_belongs_to_user
+        from app.models import Task, Category, TaskStatus, Priority
+        from datetime import datetime
+
+        entry = Task(
+            id="test-1", title="t", content="",
+            category=Category.TASK, status=TaskStatus.DOING,
+            priority=Priority.MEDIUM, tags=[],
+            created_at=datetime.now(), updated_at=datetime.now(),
+            file_path="tasks/test-1.md",
+        )
+
+        # Task 没有 user_id 属性，无法判断归属 → 返回 False
+        assert _entry_belongs_to_user(entry, "usr_alice") is False
+
+    def test_entry_belongs_to_user_object_with_user_id_attr(self):
+        """带 user_id 属性的自定义对象应正确判断"""
+        from app.mcp.handlers import _entry_belongs_to_user
+
+        class EntryWithUser:
+            def __init__(self, uid):
+                self.user_id = uid
+
+        entry = EntryWithUser("usr_alice")
+        assert _entry_belongs_to_user(entry, "usr_alice") is True
+        assert _entry_belongs_to_user(entry, "usr_bob") is False
+
+    def test_entry_belongs_to_user_dict_match(self):
+        """dict 格式条目 user_id 匹配时返回 True"""
+        from app.mcp.handlers import _entry_belongs_to_user
+
+        entry = {"id": "test-1", "user_id": "usr_alice"}
+        assert _entry_belongs_to_user(entry, "usr_alice") is True
+        assert _entry_belongs_to_user(entry, "usr_bob") is False
+
+    def test_entry_belongs_to_user_dict_no_user_id_key(self):
+        """dict 没有 user_id 键时返回 False（安全优先）"""
+        from app.mcp.handlers import _entry_belongs_to_user
+
+        entry = {"id": "test-1", "title": "no user"}
+        assert _entry_belongs_to_user(entry, "usr_alice") is False
+
+
+class TestB58McpHandlerUserIsolation:
+    """B58: MCP handler 传递 user_id 后隔离生效"""
+
+    @pytest.mark.asyncio
+    async def test_get_entry_passes_user_id_to_sqlite(self):
+        """handle_get_entry 应将 user_id 传递给 sqlite.get_entry"""
+        mock_storage = MagicMock()
+        mock_storage.sqlite = MagicMock()
+        mock_storage.sqlite.get_entry = MagicMock(return_value={"id": "task-1", "user_id": "usr_alice"})
+
+        mock_md = MagicMock()
+        from app.models import Task, Category, TaskStatus, Priority
+        from datetime import datetime
+        mock_md.read_entry = MagicMock(return_value=Task(
+            id="task-1", title="测试", content="内容",
+            category=Category.TASK, status=TaskStatus.DOING,
+            priority=Priority.MEDIUM, tags=[],
+            created_at=datetime.now(), updated_at=datetime.now(),
+            file_path="tasks/task-1.md",
+        ))
+        mock_storage.get_markdown_storage = MagicMock(return_value=mock_md)
+
+        result = await handle_get_entry(mock_storage, {"id": "task-1"}, "usr_alice")
+
+        # 验证 get_entry 被调用时传递了 user_id
+        mock_storage.sqlite.get_entry.assert_called_once_with("task-1", user_id="usr_alice")
+
+    @pytest.mark.asyncio
+    async def test_update_entry_passes_user_id_to_sqlite(self):
+        """handle_update_entry 应将 user_id 传递给 sqlite.get_entry"""
+        mock_storage = MagicMock()
+        mock_storage.sqlite = MagicMock()
+        mock_storage.sqlite.get_entry = MagicMock(return_value={"id": "task-1", "user_id": "usr_alice"})
+
+        mock_md = MagicMock()
+        from app.models import Task, Category, TaskStatus, Priority
+        from datetime import datetime
+        mock_md.read_entry = MagicMock(return_value=Task(
+            id="task-1", title="测试", content="内容",
+            category=Category.TASK, status=TaskStatus.DOING,
+            priority=Priority.MEDIUM, tags=[],
+            created_at=datetime.now(), updated_at=datetime.now(),
+            file_path="tasks/task-1.md",
+        ))
+        mock_storage.get_markdown_storage = MagicMock(return_value=mock_md)
+        mock_storage.sync_entry = AsyncMock()
+
+        result = await handle_update_entry(mock_storage, {"id": "task-1", "title": "新标题"}, "usr_alice")
+
+        mock_storage.sqlite.get_entry.assert_called_once_with("task-1", user_id="usr_alice")
+
+    @pytest.mark.asyncio
+    async def test_delete_entry_passes_user_id_to_sqlite(self):
+        """handle_delete_entry 应将 user_id 传递给 sqlite.get_entry"""
+        mock_storage = MagicMock()
+        mock_storage.sqlite = MagicMock()
+        mock_storage.sqlite.get_entry = MagicMock(return_value={"id": "task-1", "user_id": "usr_alice"})
+        mock_storage.delete_entry = AsyncMock(return_value=True)
+
+        result = await handle_delete_entry(mock_storage, {"id": "task-1"}, "usr_alice")
+
+        mock_storage.sqlite.get_entry.assert_called_once_with("task-1", user_id="usr_alice")
+
+    @pytest.mark.asyncio
+    async def test_get_project_progress_passes_user_id_to_sqlite(self):
+        """handle_get_project_progress 应将 user_id 传递给 sqlite.get_entry"""
+        mock_storage = MagicMock()
+        mock_storage.sqlite = MagicMock()
+        mock_storage.sqlite.get_entry = MagicMock(return_value={"id": "project-1", "user_id": "usr_alice"})
+        mock_storage.sqlite.list_entries = MagicMock(return_value=[])
+
+        mock_md = MagicMock()
+        from app.models import Task, Category, TaskStatus, Priority
+        from datetime import datetime
+        mock_md.read_entry = MagicMock(return_value=Task(
+            id="project-1", title="项目", content="",
+            category=Category.PROJECT, status=TaskStatus.DOING,
+            priority=Priority.MEDIUM, tags=[],
+            created_at=datetime.now(), updated_at=datetime.now(),
+            file_path="projects/project-1.md",
+        ))
+        mock_storage.get_markdown_storage = MagicMock(return_value=mock_md)
+
+        result = await handle_get_project_progress(mock_storage, {"project_id": "project-1"}, "usr_alice")
+
+        mock_storage.sqlite.get_entry.assert_called_once_with("project-1", user_id="usr_alice")
+
+    @pytest.mark.asyncio
+    async def test_batch_update_status_passes_user_id_to_sqlite(self):
+        """handle_batch_update_status 应将 user_id 传递给 sqlite.get_entry"""
+        mock_storage = MagicMock()
+        mock_storage.sqlite = MagicMock()
+        mock_storage.sqlite.get_entry = MagicMock(return_value={"id": "task-1", "user_id": "usr_alice"})
+
+        mock_md = MagicMock()
+        from app.models import Task, Category, TaskStatus, Priority
+        from datetime import datetime
+        mock_md.read_entry = MagicMock(return_value=Task(
+            id="task-1", title="测试", content="内容",
+            category=Category.TASK, status=TaskStatus.DOING,
+            priority=Priority.MEDIUM, tags=[],
+            created_at=datetime.now(), updated_at=datetime.now(),
+            file_path="tasks/task-1.md",
+        ))
+        mock_storage.get_markdown_storage = MagicMock(return_value=mock_md)
+        mock_storage.sync_entry = AsyncMock()
+
+        result = await handle_batch_update_status(
+            mock_storage, {"ids": ["task-1"], "status": "complete"}, "usr_alice"
+        )
+
+        mock_storage.sqlite.get_entry.assert_called_once_with("task-1", user_id="usr_alice")

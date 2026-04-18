@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from app.services.entry_service import EntryService
 from app.models import Task, Category, TaskStatus, Priority
 from app.api.schemas import EntryCreate, EntryUpdate
+from tests.conftest import _make_entry
 
 
 class TestEntryServiceHelpers:
@@ -511,3 +512,47 @@ class TestCategoryConversion:
         updated = await service.get_entry(entry.id)
         assert updated.title == "新标题"
         assert updated.status == TaskStatus.COMPLETE
+
+
+class TestB58VerifyEntryOwnerNoSqlite:
+    """B58: _verify_entry_owner 在无 SQLite 时拒绝访问"""
+
+    def test_verify_entry_owner_returns_false_when_no_sqlite(self):
+        """SQLite 不可用时 _verify_entry_owner 应返回 False"""
+        from app.services.sync_service import SyncService
+
+        # 构造一个没有 sqlite 的 SyncService
+        mock_storage = MagicMock(spec=SyncService)
+        mock_storage.sqlite = None
+
+        service = EntryService(storage=mock_storage)
+        result = service._verify_entry_owner("any-entry-id", "any-user-id")
+        assert result is False
+
+    def test_verify_entry_owner_returns_true_when_owner_matches(self, sqlite_storage):
+        """SQLite 可用且属于当前用户时返回 True"""
+        from app.services.sync_service import SyncService
+
+        entry = _make_entry("verify-owner-1")
+        sqlite_storage.upsert_entry(entry, user_id="usr_alice")
+
+        mock_storage = MagicMock(spec=SyncService)
+        mock_storage.sqlite = sqlite_storage
+
+        service = EntryService(storage=mock_storage)
+        result = service._verify_entry_owner("verify-owner-1", "usr_alice")
+        assert result is True
+
+    def test_verify_entry_owner_returns_false_when_owner_mismatch(self, sqlite_storage):
+        """SQLite 可用但不属于当前用户时返回 False"""
+        from app.services.sync_service import SyncService
+
+        entry = _make_entry("verify-owner-2")
+        sqlite_storage.upsert_entry(entry, user_id="usr_alice")
+
+        mock_storage = MagicMock(spec=SyncService)
+        mock_storage.sqlite = sqlite_storage
+
+        service = EntryService(storage=mock_storage)
+        result = service._verify_entry_owner("verify-owner-2", "usr_bob")
+        assert result is False
