@@ -7,6 +7,7 @@ import tempfile
 import uuid
 import zipfile
 from datetime import datetime
+from pathlib import Path
 from typing import AsyncGenerator, Optional, Tuple, Any
 
 logger = logging.getLogger(__name__)
@@ -298,6 +299,8 @@ class EntryService:
             if new_category != entry.category:
                 old_file_path = entry.file_path
                 entry.category = new_category
+                # 更新 file_path 到新 category 目录
+                entry.file_path = self._get_file_path(new_category, entry.id)
                 updated = True
 
         if not updated:
@@ -305,17 +308,32 @@ class EntryService:
 
         entry.updated_at = datetime.now()
 
-        # 写入 Markdown
-        self._get_markdown_storage(user_id).write_entry(entry)
+        # 写入 Markdown（写入新 file_path 位置）
+        md_storage = self._get_markdown_storage(user_id)
+        md_storage.write_entry(entry)
 
-        # Category 变更后删除旧文件
+        # Category 变更后移动旧文件（先尝试 rename，失败则删旧留新）
         if old_file_path:
-            old_path = self._get_markdown_storage(user_id).data_dir / old_file_path
-            if old_path.exists() and str(old_path) != entry.file_path:
+            old_path = md_storage.data_dir / old_file_path
+            new_path = md_storage.data_dir / entry.file_path
+            if old_path.exists() and Path(old_path) != Path(new_path):
                 try:
-                    old_path.unlink()
+                    # 确保目标目录存在
+                    new_path.parent.mkdir(parents=True, exist_ok=True)
+                    if not new_path.exists():
+                        old_path.rename(new_path)
+                    else:
+                        # 新文件已由 write_entry 写入，只需删除旧文件
+                        old_path.unlink()
                 except OSError:
-                    pass  # 旧文件删除失败不阻塞
+                    logger.warning(
+                        "文件迁移失败 old=%s new=%s，依赖 write_entry 的新副本",
+                        old_path, new_path,
+                    )
+                    try:
+                        old_path.unlink()
+                    except OSError:
+                        pass  # 旧文件清理失败不阻塞
 
         # SQLite 同步 + 清除 AI 摘要缓存（内容变更后旧摘要失效）
         if self.storage.sqlite:

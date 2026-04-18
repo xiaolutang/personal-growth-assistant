@@ -116,6 +116,20 @@ async def export_entries(
     return JSONResponse(content=data)
 
 
+@router.get("/search/query", response_model=SearchResult)
+async def search_entries(
+    q: str = Query(..., min_length=1, description="搜索关键词"),
+    limit: int = Query(10, ge=1, le=50, description="返回数量限制"),
+    user: User = Depends(get_current_user),
+):
+    """全文搜索条目（使用 SQLite FTS5）"""
+    service = get_entry_service()
+    try:
+        return await service.search_entries(q, limit, user_id=user.id)
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
 @router.get("/{entry_id}/related", response_model=RelatedEntriesResponse)
 async def get_related_entries(entry_id: str, user: User = Depends(get_current_user)):
     """获取条目的关联推荐"""
@@ -157,20 +171,6 @@ async def update_entry(entry_id: str, request: EntryUpdate, user: User = Depends
         return SuccessResponse(success=success, message=message)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.get("/search/query", response_model=SearchResult)
-async def search_entries(
-    q: str = Query(..., min_length=1, description="搜索关键词"),
-    limit: int = Query(10, ge=1, le=50, description="返回数量限制"),
-    user: User = Depends(get_current_user),
-):
-    """全文搜索条目（使用 SQLite FTS5）"""
-    service = get_entry_service()
-    try:
-        return await service.search_entries(q, limit, user_id=user.id)
-    except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=str(e))
 
 
 @router.delete("/{entry_id}", response_model=SuccessResponse)
