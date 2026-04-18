@@ -146,26 +146,28 @@ export function Review() {
   const [growthCurveLoading, setGrowthCurveLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchReport = async () => {
       setIsLoading(true);
       try {
         if (reportType === "daily") {
           const res = await authFetch(`${API_BASE}/review/daily`);
           const data = await res.json();
-          setDailyReport(data);
+          if (!cancelled) setDailyReport(data);
         } else if (reportType === "weekly") {
           const res = await authFetch(`${API_BASE}/review/weekly`);
           const data = await res.json();
-          setWeeklyReport(data);
+          if (!cancelled) setWeeklyReport(data);
         } else if (reportType === "monthly") {
           const res = await authFetch(`${API_BASE}/review/monthly`);
           const data = await res.json();
-          setMonthlyReport(data);
+          if (!cancelled) setMonthlyReport(data);
         }
       } catch (err) {
-        console.error("获取报告失败:", err);
+        if (!cancelled) console.error("获取报告失败:", err);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
@@ -174,73 +176,97 @@ export function Review() {
     } else {
       setIsLoading(false);
     }
+
+    return () => { cancelled = true; };
   }, [reportType]);
 
   // 趋势数据获取（独立于主报告）
   useEffect(() => {
+    let cancelled = false;
+
     const fetchTrend = async () => {
       setTrendLoading(true);
       setTrendError(null);
       try {
         const data = await getReviewTrend(trendPeriod, trendPeriod === "daily" ? 7 : 8);
-        setTrendData(data.periods ?? []);
+        if (!cancelled) setTrendData(data.periods ?? []);
       } catch (err) {
-        console.error("获取趋势数据失败:", err);
-        setTrendError("趋势数据加载失败，请稍后重试");
+        if (!cancelled) {
+          console.error("获取趋势数据失败:", err);
+          setTrendError("趋势数据加载失败，请稍后重试");
+        }
       } finally {
-        setTrendLoading(false);
+        if (!cancelled) setTrendLoading(false);
       }
     };
 
     fetchTrend();
+
+    return () => { cancelled = true; };
   }, [trendPeriod]);
 
   // 目标进展概览
   useEffect(() => {
+    let cancelled = false;
+
     getProgressSummary(reportType === "monthly" ? "monthly" : "weekly")
-      .then(setGoalSummary)
-      .catch(() => setGoalSummary(null));
+      .then((data) => { if (!cancelled) setGoalSummary(data); })
+      .catch(() => { if (!cancelled) setGoalSummary(null); });
+
+    return () => { cancelled = true; };
   }, [reportType]);
 
   // 知识热力图数据获取
   useEffect(() => {
+    let cancelled = false;
+
     const fetchHeatmap = async () => {
       setHeatmapLoading(true);
       try {
         const data = await getKnowledgeHeatmap();
-        setHeatmapItems(data.items ?? []);
+        if (!cancelled) setHeatmapItems(data.items ?? []);
       } catch (err) {
-        console.error("获取知识热力图失败:", err);
+        if (!cancelled) console.error("获取知识热力图失败:", err);
       } finally {
-        setHeatmapLoading(false);
+        if (!cancelled) setHeatmapLoading(false);
       }
     };
 
     fetchHeatmap();
+
+    return () => { cancelled = true; };
   }, []);
 
   // 成长曲线数据获取
   useEffect(() => {
+    let cancelled = false;
+
     const fetchGrowthCurve = async () => {
       setGrowthCurveLoading(true);
       try {
         const data = await getGrowthCurve(8);
-        setGrowthCurveData(data.points ?? []);
+        if (!cancelled) setGrowthCurveData(data.points ?? []);
       } catch (err) {
-        console.error("获取成长曲线失败:", err);
+        if (!cancelled) console.error("获取成长曲线失败:", err);
       } finally {
-        setGrowthCurveLoading(false);
+        if (!cancelled) setGrowthCurveLoading(false);
       }
     };
 
     fetchGrowthCurve();
+
+    return () => { cancelled = true; };
   }, []);
 
   // 晨报数据获取
   useEffect(() => {
+    let cancelled = false;
+
     getMorningDigest()
-      .then(setMorningDigest)
-      .catch(() => setMorningDigest(null));
+      .then((data) => { if (!cancelled) setMorningDigest(data); })
+      .catch(() => { if (!cancelled) setMorningDigest(null); });
+
+    return () => { cancelled = true; };
   }, []);
 
   const formatDate = (dateStr: string) => {

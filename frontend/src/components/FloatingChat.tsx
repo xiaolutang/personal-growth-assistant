@@ -159,7 +159,7 @@ export function FloatingChat() {
   });
 
   // Stream parse hook
-  const { result, isLoading, error, parse } = useStreamParse({
+  const { result, isLoading, error, parse, abort: abortStream } = useStreamParse({
     onMessage: (role, content) => {
       if (currentSessionId) {
         addMessage(currentSessionId, { role, content });
@@ -172,6 +172,13 @@ export function FloatingChat() {
     onConfirm,
     onResults,
   });
+
+  // 组件卸载时取消进行中的 SSE 请求
+  useEffect(() => {
+    return () => {
+      abortStream();
+    };
+  }, [abortStream]);
 
   // Confirm handler hook
   const { handleConfirm } = useConfirmHandler(confirmData, {
