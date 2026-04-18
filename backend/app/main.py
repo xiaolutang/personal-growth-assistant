@@ -199,8 +199,11 @@ async def _check_services(storage) -> dict:
     try:
         if storage and storage.sqlite is not None:
             conn = storage.sqlite._get_conn()
-            conn.execute("SELECT 1")
-            services["sqlite"] = "ok"
+            try:
+                conn.execute("SELECT 1")
+                services["sqlite"] = "ok"
+            finally:
+                conn.close()
         else:
             services["sqlite"] = "error"
     except Exception:

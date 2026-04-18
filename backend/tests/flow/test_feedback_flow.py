@@ -3,8 +3,9 @@
 使用真实 FastAPI app 实例（含中间件），mock report_issue SDK，
 验证从前端请求到后端响应的完整链路。
 """
+import asyncio
 import importlib
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -26,12 +27,20 @@ MOCK_ISSUE_RESPONSE = {
 }
 
 
+def _sync_create_task(coro):
+    """将 asyncio.create_task 替换为同步执行，便于测试断言"""
+    try:
+        asyncio.get_event_loop().run_until_complete(coro)
+    except RuntimeError:
+        pass
+
+
 class TestFeedbackFullFlow:
     """全链路验证：模拟前端真实请求 → 后端处理 → SDK 调用 → 响应返回"""
 
     async def test_full_chain_success(self, client):
-        """完整链路：正常提交反馈，验证请求穿透到 SDK 并返回正确响应"""
-        with patch("app.routers.feedback.report_issue", return_value=MOCK_ISSUE_RESPONSE) as mock_sdk:
+        """完整链路：正常提交反馈，验证本地写入并返回正确响应"""
+        with patch("app.routers.feedback.report_issue", return_value=MOCK_ISSUE_RESPONSE):
             response = await client.post("/feedback", json={
                 "title": "搜索加载慢",
                 "description": "任务列表搜索时页面卡顿约 3 秒",
@@ -42,38 +51,29 @@ class TestFeedbackFullFlow:
         assert response.status_code == 200
         body = response.json()
         assert body["success"] is True
-        assert body["issue"]["id"] == 42
-        assert body["issue"]["title"] == "搜索加载慢"
-        assert body["issue"]["status"] == "open"
-
-        # SDK 被正确调用
-        mock_sdk.assert_called_once()
-        args, kwargs = mock_sdk.call_args
-        assert args[1] == "搜索加载慢"           # title
-        assert args[2] == "personal-growth-assistant"  # service_name
-        assert kwargs["severity"] == "high"
-        assert kwargs["description"] == "任务列表搜索时页面卡顿约 3 秒"
+        assert body["feedback"]["title"] == "搜索加载慢"
 
     async def test_full_chain_sdk_timeout(self, client):
-        """SDK 超时场景：模拟 log-service 不可达，验证 503 降级"""
+        """SDK 超时场景：后台上报失败不影响本地写入"""
         with patch("app.routers.feedback.report_issue", side_effect=TimeoutError("connection timed out")):
             response = await client.post("/feedback", json={
                 "title": "测试超时",
                 "severity": "low",
             })
 
-        assert response.status_code == 503
-        assert "暂时不可用" in response.json()["detail"]
+        # 异步双写：本地写入成功即可
+        assert response.status_code == 200
+        assert response.json()["success"] is True
 
     async def test_full_chain_connection_refused(self, client):
-        """SDK 连接拒绝：模拟 log-service 宕机"""
+        """SDK 连接拒绝：后台上报失败不影响本地写入"""
         with patch("app.routers.feedback.report_issue", side_effect=ConnectionRefusedError("refused")):
             response = await client.post("/feedback", json={
                 "title": "测试连接拒绝",
                 "severity": "medium",
             })
 
-        assert response.status_code == 503
+        assert response.status_code == 200
 
     async def test_full_chain_severity_enum_boundary(self, client):
         """severity 枚举边界：验证四个合法值都能通过"""
@@ -102,24 +102,24 @@ class TestFeedbackFullFlow:
 
     async def test_full_chain_default_severity(self, client):
         """不传 severity 时默认 medium"""
-        with patch("app.routers.feedback.report_issue", return_value=MOCK_ISSUE_RESPONSE) as mock_sdk:
+        with patch("app.routers.feedback.report_issue", return_value=MOCK_ISSUE_RESPONSE):
             response = await client.post("/feedback", json={"title": "默认严重程度"})
 
         assert response.status_code == 200
-        _, kwargs = mock_sdk.call_args
-        assert kwargs["severity"] == "medium"
+        body = response.json()
+        assert body["feedback"]["severity"] == "medium"
 
     async def test_full_chain_no_description(self, client):
         """不传 description 时为 None"""
-        with patch("app.routers.feedback.report_issue", return_value=MOCK_ISSUE_RESPONSE) as mock_sdk:
+        with patch("app.routers.feedback.report_issue", return_value=MOCK_ISSUE_RESPONSE):
             response = await client.post("/feedback", json={
                 "title": "无描述反馈",
                 "severity": "high",
             })
 
         assert response.status_code == 200
-        _, kwargs = mock_sdk.call_args
-        assert kwargs["description"] is None
+        body = response.json()
+        assert body["feedback"]["description"] is None
 
     async def test_full_chain_cors_preflight(self, client):
         """CORS 预检：验证 OPTIONS /feedback 通过"""
