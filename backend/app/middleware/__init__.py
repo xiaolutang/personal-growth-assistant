@@ -7,6 +7,8 @@ import uuid
 from contextvars import ContextVar
 from typing import Optional
 
+from app.core.config import get_settings
+
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -215,15 +217,23 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 exc_info=True,
             )
 
-            # 返回标准错误响应
+            # 返回标准错误响应（生产环境不暴露内部异常详情）
+            debug = get_settings().DEBUG
+            if debug:
+                error_message = str(e)
+                error_type = type(e).__name__
+            else:
+                error_message = "Internal Server Error"
+                error_type = "INTERNAL_ERROR"
+
             return JSONResponse(
                 status_code=500,
                 content={
                     "success": False,
                     "error": {
                         "code": "INTERNAL_ERROR",
-                        "message": str(e),
-                        "type": type(e).__name__,
+                        "message": error_message,
+                        "type": error_type,
                         "request_id": request_id,
                     },
                 },

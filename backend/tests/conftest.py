@@ -13,6 +13,10 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# 确保测试环境有 JWT_SECRET（避免因 .env 缺失导致认证相关测试失败）
+if not os.environ.get("JWT_SECRET"):
+    os.environ["JWT_SECRET"] = "test-secret-key-for-unit-tests"
+
 
 @pytest.fixture(scope="session")
 def event_loop():

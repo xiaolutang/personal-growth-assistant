@@ -2,6 +2,7 @@
 import tempfile
 import os
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -173,6 +174,29 @@ class TestJWTToken:
         token = create_access_token(user.id)
         with pytest.raises(Exception):
             get_current_user_from_token(token, user_db)
+
+    def test_create_token_with_empty_jwt_secret_raises(self):
+        """B57: JWT_SECRET 为空字符串时 create_access_token 抛出 ValueError"""
+        from app.core.config import get_settings
+        get_settings.cache_clear()
+        with patch.dict("os.environ", {"JWT_SECRET": "", "DATA_DIR": "/tmp/test_b57_empty"}):
+            get_settings.cache_clear()
+            with pytest.raises(ValueError, match="JWT_SECRET 环境变量未设置"):
+                create_access_token("some-user-id")
+            get_settings.cache_clear()
+
+    def test_create_token_with_missing_jwt_secret_raises(self):
+        """B57: JWT_SECRET 环境变量不存在时 create_access_token 抛出 ValueError"""
+        from app.core.config import get_settings
+        get_settings.cache_clear()
+        env = dict(os.environ)
+        env.pop("JWT_SECRET", None)
+        env["DATA_DIR"] = "/tmp/test_b57_missing"
+        with patch.dict("os.environ", env, clear=True):
+            get_settings.cache_clear()
+            with pytest.raises(ValueError, match="JWT_SECRET 环境变量未设置"):
+                create_access_token("some-user-id")
+            get_settings.cache_clear()
 
 
 class TestOnboardingMigration:
