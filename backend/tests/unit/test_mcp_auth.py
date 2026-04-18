@@ -130,7 +130,7 @@ class TestHandleGetReviewSummary:
             ai_summary=None,
         )
         mock_review_svc = MagicMock()
-        mock_review_svc.get_daily_report.return_value = mock_report
+        mock_review_svc.get_daily_report = AsyncMock(return_value=mock_report)
 
         with patch("app.services.review_service.ReviewService", return_value=mock_review_svc):
             result = await handle_get_review_summary(mock_storage, {"period": "daily"}, "user-1")
@@ -152,7 +152,7 @@ class TestHandleGetReviewSummary:
             ai_summary=None,
         )
         mock_review_svc = MagicMock()
-        mock_review_svc.get_weekly_report.return_value = mock_report
+        mock_review_svc.get_weekly_report = AsyncMock(return_value=mock_report)
 
         with patch("app.services.review_service.ReviewService", return_value=mock_review_svc):
             result = await handle_get_review_summary(mock_storage, {"period": "weekly"}, "user-1")

@@ -157,28 +157,28 @@ class TestNeo4jPath:
         ])
         return neo4j
 
-    def test_neo4j_path_returns_data(self, mock_neo4j):
+    async def test_neo4j_path_returns_data(self, mock_neo4j):
         """Neo4j 路径返回正确的热力图数据"""
         svc = ReviewService(sqlite_storage=MagicMock(), neo4j_client=mock_neo4j)
-        result = svc.get_knowledge_heatmap(user_id="user1")
+        result = await svc.get_knowledge_heatmap(user_id="user1")
 
         assert isinstance(result, HeatmapResponse)
         assert len(result.items) == 3
 
-    def test_neo4j_concept_fields(self, mock_neo4j):
+    async def test_neo4j_concept_fields(self, mock_neo4j):
         """Neo4j 数据包含 category 和 mention_count"""
         svc = ReviewService(sqlite_storage=MagicMock(), neo4j_client=mock_neo4j)
-        result = svc.get_knowledge_heatmap(user_id="user1")
+        result = await svc.get_knowledge_heatmap(user_id="user1")
 
         python_item = next(i for i in result.items if i.concept == "Python")
         assert python_item.category == "技术"
         assert python_item.mention_count == 8
         assert python_item.entry_count == 5
 
-    def test_neo4j_relationship_contribution(self, mock_neo4j):
+    async def test_neo4j_relationship_contribution(self, mock_neo4j):
         """关系数量影响掌握度计算"""
         svc = ReviewService(sqlite_storage=MagicMock(), neo4j_client=mock_neo4j)
-        result = svc.get_knowledge_heatmap(user_id="user1")
+        result = await svc.get_knowledge_heatmap(user_id="user1")
 
         # Python: entry=5, rel=1 → score=5*2+1=11 → advanced
         python_item = next(i for i in result.items if i.concept == "Python")
@@ -192,17 +192,17 @@ class TestNeo4jPath:
         react_item = next(i for i in result.items if i.concept == "React")
         assert react_item.mastery == "beginner"
 
-    def test_neo4j_sorted_by_mastery(self, mock_neo4j):
+    async def test_neo4j_sorted_by_mastery(self, mock_neo4j):
         """结果按 mastery 排序（advanced 在前）"""
         svc = ReviewService(sqlite_storage=MagicMock(), neo4j_client=mock_neo4j)
-        result = svc.get_knowledge_heatmap(user_id="user1")
+        result = await svc.get_knowledge_heatmap(user_id="user1")
 
         masteries = [item.mastery for item in result.items]
         # advanced < intermediate < beginner < new
         for i in range(len(masteries) - 1):
             assert ReviewService._mastery_order(masteries[i]) <= ReviewService._mastery_order(masteries[i + 1])
 
-    def test_neo4j_empty_concepts_falls_back(self, mock_neo4j):
+    async def test_neo4j_empty_concepts_falls_back(self, mock_neo4j):
         """Neo4j 返回空列表时降级到 SQLite"""
         mock_neo4j.get_all_concepts_with_stats = AsyncMock(return_value=[])
 
@@ -210,7 +210,7 @@ class TestNeo4jPath:
         mock_sqlite.list_entries.return_value = []
 
         svc = ReviewService(sqlite_storage=mock_sqlite, neo4j_client=mock_neo4j)
-        result = svc.get_knowledge_heatmap(user_id="user1")
+        result = await svc.get_knowledge_heatmap(user_id="user1")
 
         # 应该调用 SQLite 降级路径
         mock_sqlite.list_entries.assert_called_once()
@@ -222,7 +222,7 @@ class TestNeo4jPath:
 class TestNeo4jDegradation:
     """Neo4j 降级测试"""
 
-    def test_neo4j_exception_falls_back_to_sqlite(self):
+    async def test_neo4j_exception_falls_back_to_sqlite(self):
         """Neo4j 抛出异常时降级到 SQLite"""
         mock_neo4j = AsyncMock()
         mock_neo4j.get_all_concepts_with_stats = AsyncMock(
@@ -233,24 +233,24 @@ class TestNeo4jDegradation:
         mock_sqlite.list_entries.return_value = []
 
         svc = ReviewService(sqlite_storage=mock_sqlite, neo4j_client=mock_neo4j)
-        result = svc.get_knowledge_heatmap(user_id="user1")
+        result = await svc.get_knowledge_heatmap(user_id="user1")
 
         # 不抛异常，返回降级结果
         assert isinstance(result, HeatmapResponse)
         mock_sqlite.list_entries.assert_called_once()
 
-    def test_no_neo4j_uses_sqlite(self):
+    async def test_no_neo4j_uses_sqlite(self):
         """没有 Neo4j client 时直接使用 SQLite"""
         mock_sqlite = MagicMock()
         mock_sqlite.list_entries.return_value = []
 
         svc = ReviewService(sqlite_storage=mock_sqlite, neo4j_client=None)
-        result = svc.get_knowledge_heatmap(user_id="user1")
+        result = await svc.get_knowledge_heatmap(user_id="user1")
 
         assert isinstance(result, HeatmapResponse)
         mock_sqlite.list_entries.assert_called_once()
 
-    def test_sqlite_fallback_data_format(self):
+    async def test_sqlite_fallback_data_format(self):
         """SQLite 降级路径返回格式一致（包含 category 和 mention_count）"""
         mock_sqlite = MagicMock()
         now = datetime.now().isoformat()
@@ -270,7 +270,7 @@ class TestNeo4jDegradation:
         ]
 
         svc = ReviewService(sqlite_storage=mock_sqlite, neo4j_client=None)
-        result = svc.get_knowledge_heatmap(user_id="user1")
+        result = await svc.get_knowledge_heatmap(user_id="user1")
 
         assert len(result.items) == 2
         python_item = next(i for i in result.items if i.concept == "Python")

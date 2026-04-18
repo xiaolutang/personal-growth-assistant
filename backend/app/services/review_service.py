@@ -12,22 +12,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _run_async(coro):
-    """安全地在同步方法中运行异步协程"""
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
-
-    if loop and loop.is_running():
-        # 已经在事件循环中（FastAPI async 路由），使用 nest_asyncio 或创建新线程
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            return pool.submit(asyncio.run, coro).result()
-    else:
-        return asyncio.run(coro)
-
-
 class TrendPeriod(BaseModel):
     """趋势统计周期"""
     date: str = Field(..., description="日期（YYYY-MM-DD 或 YYYY-WXX）")
@@ -231,7 +215,7 @@ class ReviewService:
             recent_titles=[n.get("title", "")[:50] for n in notes[:5]],
         )
 
-    def get_daily_report(self, target_date: Optional[date] = None, user_id: Optional[str] = None) -> DailyReport:
+    async def get_daily_report(self, target_date: Optional[date] = None, user_id: Optional[str] = None) -> DailyReport:
         """获取日报"""
         if not self._sqlite:
             raise ValueError("SQLite 存储未初始化")
@@ -274,9 +258,7 @@ class ReviewService:
                 ],
                 "recent_note_titles": note_stats.recent_titles,
             }
-            ai_summary = _run_async(
-                self._generate_ai_summary("daily", stats_data, user_id=user_id or "_default")
-            )
+            ai_summary = await self._generate_ai_summary("daily", stats_data, user_id=user_id or "_default")
 
         return DailyReport(
             date=date_str,
@@ -286,7 +268,7 @@ class ReviewService:
             ai_summary=ai_summary,
         )
 
-    def get_weekly_report(self, week_start: Optional[date] = None, user_id: Optional[str] = None) -> WeeklyReport:
+    async def get_weekly_report(self, week_start: Optional[date] = None, user_id: Optional[str] = None) -> WeeklyReport:
         """获取周报"""
         if not self._sqlite:
             raise ValueError("SQLite 存储未初始化")
@@ -349,9 +331,7 @@ class ReviewService:
                 "daily_breakdown": daily_breakdown,
                 "recent_note_titles": note_stats.recent_titles,
             }
-            ai_summary = _run_async(
-                self._generate_ai_summary("weekly", stats_data, user_id=user_id or "_default")
-            )
+            ai_summary = await self._generate_ai_summary("weekly", stats_data, user_id=user_id or "_default")
 
         # 计算环比上周
         vs_last_week = self._calculate_weekly_vs_last_week(
@@ -429,7 +409,7 @@ class ReviewService:
             delta_total=current_task_stats.total - last_total,
         )
 
-    def get_monthly_report(self, month_start: Optional[date] = None, user_id: Optional[str] = None) -> MonthlyReport:
+    async def get_monthly_report(self, month_start: Optional[date] = None, user_id: Optional[str] = None) -> MonthlyReport:
         """获取月报"""
         if not self._sqlite:
             raise ValueError("SQLite 存储未初始化")
@@ -501,9 +481,7 @@ class ReviewService:
                 "weekly_breakdown": weekly_breakdown,
                 "recent_note_titles": note_stats.recent_titles,
             }
-            ai_summary = _run_async(
-                self._generate_ai_summary("monthly", stats_data, user_id=user_id or "_default")
-            )
+            ai_summary = await self._generate_ai_summary("monthly", stats_data, user_id=user_id or "_default")
 
         # 计算环比上月
         vs_last_month = self._calculate_monthly_vs_last_month(
@@ -692,7 +670,7 @@ class ReviewService:
             logger.warning(f"AI 总结生成失败: {e}")
             return ""
 
-    def get_knowledge_heatmap(self, user_id: str = "_default") -> HeatmapResponse:
+    async def get_knowledge_heatmap(self, user_id: str = "_default") -> HeatmapResponse:
         """
         获取知识热力图
 
@@ -708,13 +686,9 @@ class ReviewService:
         # 尝试 Neo4j 路径
         if self._neo4j_client:
             try:
-                concepts = _run_async(
-                    self._neo4j_client.get_all_concepts_with_stats(user_id)
-                )
+                concepts = await self._neo4j_client.get_all_concepts_with_stats(user_id)
                 if concepts:
-                    relationships = _run_async(
-                        self._neo4j_client.get_all_relationships(user_id)
-                    )
+                    relationships = await self._neo4j_client.get_all_relationships(user_id)
                     rel_count_map = self._count_relationships_per_concept(relationships)
                     items = [
                         self._neo4j_concept_to_heatmap(c, rel_count_map)
@@ -936,7 +910,7 @@ class ReviewService:
         """
         计算学习连续天数（从今天开始往前数连续有记录的天数）
 
-        使用聚合 SQL 获取最近 90 天内有条目的日期列表，
+        使用 SQLite 公共方法获取最近 90 天内有条目的日期列表，
         然后在内存中从今天开始往前计算连续天数。
 
         Args:
@@ -948,23 +922,13 @@ class ReviewService:
         if not self._sqlite:
             return 0
 
-        conn = self._sqlite._get_conn()
-        try:
-            rows = conn.execute(
-                """SELECT DISTINCT DATE(created_at) AS d
-                   FROM entries
-                   WHERE user_id = ? AND created_at >= date('now', '-90 days')
-                   ORDER BY d DESC""",
-                (user_id,),
-            ).fetchall()
-        finally:
-            conn.close()
+        active_dates = self._sqlite.get_active_dates(user_id, days=90)
 
-        if not rows:
+        if not active_dates:
             return 0
 
         # 从今天开始往前数连续天数
-        date_set = {row["d"] for row in rows}
+        date_set = set(active_dates)
         today = date.today()
         streak = 0
         current = today
@@ -1086,7 +1050,7 @@ class ReviewService:
             except (ValueError, TypeError):
                 return None
 
-    def _generate_daily_focus(
+    async def _generate_daily_focus(
         self,
         user_id: str,
         overdue: list,
@@ -1136,9 +1100,7 @@ class ReviewService:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message},
                 ]
-                result = _run_async(
-                    asyncio.wait_for(self._llm_caller.call(messages), timeout=10.0)
-                )
+                result = await asyncio.wait_for(self._llm_caller.call(messages), timeout=10.0)
                 if result:
                     # 尝试解析 JSON
                     try:
@@ -1187,7 +1149,7 @@ class ReviewService:
 
         return None
 
-    def get_morning_digest(self, user_id: str) -> MorningDigestResponse:
+    async def get_morning_digest(self, user_id: str) -> MorningDigestResponse:
         """
         获取 AI 晨报数据
 
@@ -1283,7 +1245,7 @@ class ReviewService:
         )
 
         # 5. 构建 AI 建议
-        ai_suggestion = self._generate_morning_suggestion(
+        ai_suggestion = await self._generate_morning_suggestion(
             today_todos=today_todos,
             overdue=overdue,
             stale_inbox=stale_inbox,
@@ -1294,7 +1256,7 @@ class ReviewService:
         # 6. 新增增强字段
         learning_streak = self._calculate_learning_streak(user_id)
         pattern_insights = self._generate_pattern_insights(user_id)
-        daily_focus = self._generate_daily_focus(
+        daily_focus = await self._generate_daily_focus(
             user_id=user_id,
             overdue=overdue,
             learning_streak=learning_streak,
@@ -1336,7 +1298,7 @@ class ReviewService:
             pattern_insights=pattern_insights,
         )
 
-    def _generate_morning_suggestion(
+    async def _generate_morning_suggestion(
         self,
         today_todos: list,
         overdue: list,
@@ -1363,9 +1325,7 @@ class ReviewService:
                     "todos": [t.get("title", "") for t in today_todos[:3]],
                     "overdue_titles": [t.get("title", "") for t in overdue[:3]],
                 }
-                suggestion = _run_async(
-                    self._generate_ai_summary("morning_digest", stats_data, user_id=user_id)
-                )
+                suggestion = await self._generate_ai_summary("morning_digest", stats_data, user_id=user_id)
                 if suggestion:
                     return suggestion
             except Exception:
@@ -1433,18 +1393,7 @@ class ReviewService:
         start_str = start.isoformat()
         end_str = end.isoformat() + "T23:59:59"
 
-        conn = self._sqlite._get_conn()
-        try:
-            rows = conn.execute(
-                """SELECT DATE(created_at) as d, COUNT(*) as cnt
-                   FROM entries
-                   WHERE user_id = ? AND created_at >= ? AND created_at <= ?
-                   GROUP BY DATE(created_at)""",
-                (user_id, start_str, end_str),
-            ).fetchall()
-            counts = {row["d"]: row["cnt"] for row in rows}
-        finally:
-            conn.close()
+        counts = self._sqlite.get_daily_activity_counts(user_id, start_str, end_str)
 
         items = []
         current = start

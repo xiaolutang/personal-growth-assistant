@@ -406,7 +406,7 @@ async def handle_get_review_summary(storage: SyncService, args: dict, user_id: s
 
     if period == "weekly":
         target = ReviewService.parse_date(target_date_str) if target_date_str else None
-        report = review_svc.get_weekly_report(week_start=target, user_id=user_id)
+        report = await review_svc.get_weekly_report(week_start=target, user_id=user_id)
         lines = [
             f"# 周报: {report.start_date} ~ {report.end_date}\n\n",
             f"## 任务统计\n",
@@ -423,7 +423,7 @@ async def handle_get_review_summary(storage: SyncService, args: dict, user_id: s
         return [TextContent(type="text", text="".join(lines))]
     else:
         target = ReviewService.parse_date(target_date_str) if target_date_str else None
-        report = review_svc.get_daily_report(target_date=target, user_id=user_id)
+        report = await review_svc.get_daily_report(target_date=target, user_id=user_id)
         lines = [
             f"# 日报: {report.date}\n\n",
             f"## 任务统计\n",

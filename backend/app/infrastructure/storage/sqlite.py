@@ -1,6 +1,6 @@
 """SQLite 索引层 - 快速元数据查询和全文搜索"""
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 
@@ -65,6 +65,57 @@ class SQLiteStorage:
         # 启用外键约束
         conn.execute("PRAGMA foreign_keys = ON")
         return conn
+
+    # === 公共聚合查询方法 ===
+
+    def get_active_dates(self, user_id: str, days: int = 90) -> list[str]:
+        """获取最近 N 天内有条目的日期列表（YYYY-MM-DD 格式，降序）
+
+        Args:
+            user_id: 用户 ID
+            days: 回溯天数，默认 90
+
+        Returns:
+            日期字符串列表，如 ["2026-04-19", "2026-04-18"]
+        """
+        conn = self._get_conn()
+        try:
+            rows = conn.execute(
+                """SELECT DISTINCT DATE(created_at) AS d
+                   FROM entries
+                   WHERE user_id = ? AND created_at >= date('now', ?)
+                   ORDER BY d DESC""",
+                (user_id, f"-{days} days"),
+            ).fetchall()
+        finally:
+            conn.close()
+        return [row["d"] for row in rows]
+
+    def get_daily_activity_counts(
+        self, user_id: str, start_date: str, end_date: str
+    ) -> dict[str, int]:
+        """获取指定日期范围内每日的活动条目数
+
+        Args:
+            user_id: 用户 ID
+            start_date: 起始日期字符串，如 "2026-01-01"
+            end_date: 结束日期字符串（含），如 "2026-12-31T23:59:59"
+
+        Returns:
+            日期字符串到条目数的映射，如 {"2026-04-19": 3, "2026-04-18": 5}
+        """
+        conn = self._get_conn()
+        try:
+            rows = conn.execute(
+                """SELECT DATE(created_at) AS d, COUNT(*) AS cnt
+                   FROM entries
+                   WHERE user_id = ? AND created_at >= ? AND created_at <= ?
+                   GROUP BY DATE(created_at)""",
+                (user_id, start_date, end_date),
+            ).fetchall()
+        finally:
+            conn.close()
+        return {row["d"]: row["cnt"] for row in rows}
 
     def _init_db(self):
         """初始化数据库表结构"""
@@ -395,7 +446,7 @@ class SQLiteStorage:
         """创建条目关联（单向），返回新记录。调用方负责在一个事务中创建双向记录。"""
         import uuid as _uuid
         link_id = _uuid.uuid4().hex
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         conn = self._get_conn()
         try:
             conn.execute(
@@ -416,7 +467,7 @@ class SQLiteStorage:
     ) -> list[dict[str, Any]]:
         """创建双向条目关联（同一事务），返回两条记录。"""
         import uuid as _uuid
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         link_id_fwd = _uuid.uuid4().hex
         link_id_rev = _uuid.uuid4().hex
         conn = self._get_conn()
@@ -857,7 +908,7 @@ class SQLiteStorage:
         """创建本地反馈记录，返回新记录"""
         conn = self._get_conn()
         try:
-            now = datetime.utcnow().isoformat()
+            now = datetime.now(timezone.utc).isoformat()
             cursor = conn.execute(
                 """
                 INSERT INTO feedback (user_id, title, description, severity, status, created_at)
@@ -946,7 +997,7 @@ class SQLiteStorage:
         checklist_items: str | None = None,
     ) -> dict[str, Any]:
         """创建目标，返回新记录"""
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         conn = self._get_conn()
         try:
             conn.execute(
@@ -1014,7 +1065,7 @@ class SQLiteStorage:
                 f"合法值: {sorted(ALLOWED_GOAL_FIELDS)}"
             )
 
-        updates["updated_at"] = datetime.utcnow().isoformat()
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
 
         set_clause = ", ".join(f"{k} = ?" for k in updates)
         values = list(updates.values()) + [goal_id, user_id]
@@ -1157,7 +1208,7 @@ class SQLiteStorage:
     ) -> dict[str, Any]:
         """创建目标-条目关联，返回新记录"""
         import uuid as _uuid
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         link_id = _uuid.uuid4().hex
         conn = self._get_conn()
         try:
