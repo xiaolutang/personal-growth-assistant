@@ -104,46 +104,52 @@ class SyncService:
         同步单个条目到 SQLite + Neo4j + Qdrant
 
         流程：
-        1. 同步到 SQLite（快速索引）- 同步执行
-        2. 提取知识（tags, concepts, relations）
-        3. 并行同步到 Neo4j + Qdrant
+        1. 写入 Markdown（Source of Truth）
+        2. 同步到 SQLite（快速索引）- 失败时记录 warning，Markdown 保留不丢失
+        3. 提取知识（tags, concepts, relations）
+        4. 并行同步到 Neo4j + Qdrant - 失败时不影响主流程返回
         """
+        # 1. 写入 Markdown（Source of Truth）— 必须成功
         try:
             markdown = self.get_markdown_storage(user_id)
             markdown.write_entry(entry)
-
-            # 1. 同步到 SQLite（如果可用）- 同步执行，因为 SQLite 操作很快
-            if self.sqlite:
-                self.sqlite.upsert_entry(entry, user_id=user_id)
-
-            # 2. 提取知识（委托给 KnowledgeService）
-            knowledge = await self._knowledge_service.extract_knowledge(entry)
-
-            # 3. 并行同步到 Neo4j 和 Qdrant
-            tasks = []
-
-            if self.neo4j and self.neo4j._driver:
-                tasks.append(self._sync_to_neo4j(entry, knowledge, user_id))
-
-            if self.qdrant:
-                try:
-                    tasks.append(self.qdrant.upsert_entry(entry, user_id=user_id))
-                except Exception as e:
-                    logger.warning(f"Qdrant 任务创建失败，忽略: {e}")
-
-            if tasks:
-                results = await asyncio.gather(*tasks, return_exceptions=True)
-                errors = [(i, r) for i, r in enumerate(results) if isinstance(r, Exception)]
-                for i, err in errors:
-                    logger.error(f"同步任务 {i} 失败: {err}")
-
-                if errors:
-                    return False
-
-            return True
         except Exception as e:
-            logger.error(f"同步失败: {e}")
+            logger.error(f"Markdown 写入失败（Source of Truth），中止同步: {e}")
             return False
+
+        # 2. 同步到 SQLite（索引层）— 失败时 Markdown 保留，记录 warning
+        if self.sqlite:
+            try:
+                self.sqlite.upsert_entry(entry, user_id=user_id)
+            except Exception as e:
+                logger.warning(f"SQLite 索引写入失败（Markdown 已保留，可稍后 sync_all 重建）: {e}")
+
+        # 3. 提取知识（委托给 KnowledgeService）
+        try:
+            knowledge = await self._knowledge_service.extract_knowledge(entry)
+        except Exception as e:
+            logger.warning(f"知识提取失败（跳过图谱/向量同步）: {e}")
+            return True
+
+        # 4. 并行同步到 Neo4j 和 Qdrant（索引层，失败不阻塞主流程）
+        tasks = []
+
+        if self.neo4j and self.neo4j._driver:
+            tasks.append(self._sync_to_neo4j(entry, knowledge, user_id))
+
+        if self.qdrant:
+            try:
+                tasks.append(self.qdrant.upsert_entry(entry, user_id=user_id))
+            except Exception as e:
+                logger.warning(f"Qdrant 任务创建失败，忽略: {e}")
+
+        if tasks:
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for i, r in enumerate(results):
+                if isinstance(r, Exception):
+                    logger.warning(f"图谱/向量同步任务 {i} 失败（可稍后 sync_all 重建）: {r}")
+
+        return True
 
     async def sync_to_graph_and_vector(self, entry: Task, user_id: str = "_default") -> bool:
         """
@@ -200,37 +206,51 @@ class SyncService:
             await asyncio.gather(*relation_tasks, return_exceptions=True)
 
     async def delete_entry(self, entry_id: str, user_id: str = "_default") -> bool:
-        """删除条目及其关联数据（并行删除）"""
+        """
+        删除条目及其关联数据
+
+        顺序：Markdown（Source of Truth）→ SQLite → Neo4j/Qdrant
+        - Markdown 删除即确认删除
+        - 索引层删除失败时记录 warning，不阻塞（重启后 sync_all 可重建索引）
+        """
+        # 1. 删除 Markdown（Source of Truth）— 先删，确认删除意图
+        markdown_deleted = False
         try:
-            tasks = []
-
-            # 1. 删除 SQLite 索引（同步，因为很快)
-            if self.sqlite:
-                self.sqlite.delete_entry(entry_id, user_id=user_id)
-
-            # 2. 并行删除 Neo4j 和 Qdrant
-            if self.neo4j:
-                try:
-                    tasks.append(self.neo4j.delete_entry(entry_id, user_id=user_id))
-                except Exception as e:
-                    logger.warning(f"Neo4j 删除失败，忽略: {e}")
-
-            if self.qdrant:
-                try:
-                    tasks.append(self.qdrant.delete_entry(entry_id))
-                except Exception as e:
-                    logger.warning(f"Qdrant 删除失败，忽略: {e}")
-
-            if tasks:
-                await asyncio.gather(*tasks, return_exceptions=True)
-
-            # 3. 删除 Markdown 文件
-            self.get_markdown_storage(user_id).delete_entry(entry_id)
-
-            return True
+            markdown_deleted = self.get_markdown_storage(user_id).delete_entry(entry_id)
         except Exception as e:
-            logger.error(f"删除失败: {e}")
+            logger.error(f"Markdown 删除失败: {e}")
             return False
+
+        # 2. 删除 SQLite 索引（同步，因为很快）
+        if self.sqlite:
+            try:
+                self.sqlite.delete_entry(entry_id, user_id=user_id)
+            except Exception as e:
+                logger.warning(f"SQLite 索引删除失败（可稍后 sync_all 重建）: {e}")
+
+        # 3. 并行删除 Neo4j 和 Qdrant 索引
+        tasks = []
+
+        if self.neo4j:
+            try:
+                tasks.append(self.neo4j.delete_entry(entry_id, user_id=user_id))
+            except Exception as e:
+                logger.warning(f"Neo4j 删除任务创建失败，忽略: {e}")
+
+        if self.qdrant:
+            try:
+                tasks.append(self.qdrant.delete_entry(entry_id))
+            except Exception as e:
+                logger.warning(f"Qdrant 删除任务创建失败，忽略: {e}")
+
+        if tasks:
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for i, r in enumerate(results):
+                if isinstance(r, Exception):
+                    logger.warning(f"图谱/向量索引删除失败（可稍后 sync_all 重建）: {r}")
+
+        # 返回值反映 Markdown 是否删除成功
+        return markdown_deleted
 
     async def sync_all(self) -> Dict[str, int]:
         """同步所有 Markdown 文件"""
