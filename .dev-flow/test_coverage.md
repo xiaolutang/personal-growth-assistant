@@ -97,3 +97,5 @@
 | Goals 页面 + 详情 | F34 | manual | 目标列表进度条/创建弹窗（含 checklist 项输入）/tag 选择/详情页环形图/检查项勾选/count 关联条目搜索+关联+取消关联/completed→active 重新激活/无目标引导/API 失败降级/移动端适配/npm run build 通过 | covered | — |
 | 首页目标进度卡片 | F35 | manual | 活跃目标卡片/点击跳转/无目标引导/3 个不截断/API 失败不阻塞/npm run build 通过 | covered | — |
 | 回顾页目标概览 | F36 | manual | 目标进展卡片/进度变化/无目标隐藏/API 失败不阻塞/npm run build 通过 | covered | — |
+| 全局 Cmd+K 搜索 | F54 | unit+manual | 跨页触发跳转+聚焦/同页仅聚焦不导航/输入态不抢占/监听清理无泄漏/smoke浏览器验证 | pending | — |
+| 首页灵感转化按钮 | F55 | unit+manual | 转任务成功/转笔记成功/失败toast保留/按钮点击不跳详情/loading防双击/列表刷新/smoke浏览器验证 | pending | — |

@@ -92,16 +92,11 @@ export function Explore() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchHistory, setSearchHistory] = useState<string[]>(getSearchHistory());
 
-  // Cmd+K / Ctrl+K 全局聚焦搜索框
+  // 监听 AppLayout 派发的聚焦事件（由全局 Cmd+K 触发）
   useEffect(() => {
-    const handleGlobalKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    };
-    document.addEventListener("keydown", handleGlobalKey);
-    return () => document.removeEventListener("keydown", handleGlobalKey);
+    const handleFocusSearch = () => searchInputRef.current?.focus();
+    window.addEventListener("focus-explore-search", handleFocusSearch);
+    return () => window.removeEventListener("focus-explore-search", handleFocusSearch);
   }, []);
 
   // 根据 URL 参数同步 Tab

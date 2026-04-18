@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Header } from "@/components/layout/Header";
 import { useTaskStore } from "@/stores/taskStore";
+import { toast } from "sonner";
 import {
   CheckCircle,
   Circle,
@@ -39,6 +40,28 @@ export function Home() {
 
   // 当前正在切换状态的任务 ID（防止双击）
   const [togglingTaskId, setTogglingTaskId] = useState<string | null>(null);
+
+  // 当前正在转化的灵感 ID（防止双击）
+  const [convertingId, setConvertingId] = useState<string | null>(null);
+
+  const storeUpdateEntry = useTaskStore((state) => state.updateEntry);
+
+  // 灵感转化处理
+  const handleConvert = useCallback(async (e: React.MouseEvent, id: string, title: string, targetCategory: "task" | "note") => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (convertingId) return;
+    setConvertingId(id);
+    try {
+      await storeUpdateEntry(id, { category: targetCategory });
+      const label = targetCategory === "task" ? "任务" : "笔记";
+      toast.success(`已转为${label}：${title}`);
+    } catch {
+      toast.error("转化失败，请重试");
+    } finally {
+      setConvertingId(null);
+    }
+  }, [convertingId, storeUpdateEntry]);
 
   // 今日任务
   const todayTasks = useMemo(() => {
@@ -450,22 +473,42 @@ export function Home() {
                 {recentInbox.length > 0 ? (
                   <div className="space-y-1">
                     {recentInbox.map((item) => (
-                      <Link
+                      <div
                         key={item.id}
-                        to={`/entries/${item.id}`}
-                        className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-accent/50 transition-colors"
+                        className="flex items-center gap-1 rounded-lg px-2 py-1.5 hover:bg-accent/50 transition-colors group"
                       >
-                        <Lightbulb className="h-3.5 w-3.5 text-yellow-500 dark:text-yellow-400 shrink-0" />
-                        <span className="text-sm truncate flex-1">{item.title}</span>
-                        {item.status !== "complete" && (
-                          <span className="text-[10px] text-muted-foreground shrink-0">
-                            {new Date(item.created_at).toLocaleDateString("zh-CN", {
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </span>
-                        )}
-                      </Link>
+                        <Link
+                          to={`/entries/${item.id}`}
+                          className="flex items-center gap-2 flex-1 min-w-0"
+                        >
+                          <Lightbulb className="h-3.5 w-3.5 text-yellow-500 dark:text-yellow-400 shrink-0" />
+                          <span className="text-sm truncate">{item.title}</span>
+                          {item.status !== "complete" && (
+                            <span className="text-[10px] text-muted-foreground shrink-0">
+                              {new Date(item.created_at).toLocaleDateString("zh-CN", {
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </span>
+                          )}
+                        </Link>
+                        <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => handleConvert(e, item.id, item.title, "task")}
+                            disabled={convertingId === item.id}
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 disabled:opacity-50 transition-colors"
+                          >
+                            {convertingId === item.id ? "..." : "转任务"}
+                          </button>
+                          <button
+                            onClick={(e) => handleConvert(e, item.id, item.title, "note")}
+                            disabled={convertingId === item.id}
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 disabled:opacity-50 transition-colors"
+                          >
+                            {convertingId === item.id ? "..." : "转笔记"}
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 ) : (
