@@ -6,6 +6,19 @@ from typing import List, Optional, Dict, Any
 
 from app.models import Task, Category, TaskStatus, Priority
 
+# update_goal 允许更新的字段白名单，防止 SQL 注入
+ALLOWED_GOAL_FIELDS = frozenset({
+    "title",
+    "description",
+    "status",
+    "target_value",
+    "metric_type",
+    "start_date",
+    "end_date",
+    "auto_tags",
+    "checklist_items",
+})
+
 
 class SQLiteStorage:
     """SQLite 索引层"""
@@ -992,6 +1005,14 @@ class SQLiteStorage:
         updates = {k: v for k, v in fields.items() if v is not None}
         if not updates:
             return self.get_goal(goal_id, user_id)
+
+        # 字段名白名单校验，防止 SQL 注入
+        invalid_fields = set(updates.keys()) - ALLOWED_GOAL_FIELDS
+        if invalid_fields:
+            raise ValueError(
+                f"非法字段名: {sorted(invalid_fields)}，"
+                f"合法值: {sorted(ALLOWED_GOAL_FIELDS)}"
+            )
 
         updates["updated_at"] = datetime.utcnow().isoformat()
 

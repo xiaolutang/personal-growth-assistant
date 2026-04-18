@@ -501,3 +501,80 @@ class AsyncIterator:
         item = self.items[self.index]
         self.index += 1
         return item
+
+
+class TestNeo4jInjectionPrevention:
+    """Neo4j Cypher 注入防护测试 — relation_type 白名单"""
+
+    @pytest.fixture
+    def mock_session(self):
+        session = AsyncMock()
+        session.__aenter__ = AsyncMock(return_value=session)
+        session.__aexit__ = AsyncMock(return_value=None)
+        return session
+
+    @pytest.fixture
+    def client(self, mock_session):
+        c = Neo4jClient(uri="bolt://test:7687")
+        c._driver = MagicMock()
+        c._driver.session = MagicMock(return_value=mock_session)
+        return c
+
+    async def test_create_concept_relation_rejects_invalid_type(self, client):
+        """create_concept_relation 拒绝非白名单 relation_type"""
+        malicious = ConceptRelation(
+            from_concept="A",
+            to_concept="B",
+            relation_type="MALICIOUS_TYPE; DROP ALL",
+        )
+        with pytest.raises(ValueError, match="非法关系类型"):
+            await client.create_concept_relation(malicious)
+
+    async def test_create_concept_relation_accepts_valid_types(self, client, mock_session):
+        """create_concept_relation 接受白名单中的合法值"""
+        mock_result = MagicMock()
+        mock_result.single = AsyncMock(return_value={})
+        mock_session.run = AsyncMock(return_value=mock_result)
+
+        for rt in ["RELATED_TO", "PART_OF", "BELONGS_TO", "DEPENDS_ON", "DERIVED_FROM"]:
+            relation = ConceptRelation(
+                from_concept="A", to_concept="B", relation_type=rt
+            )
+            result = await client.create_concept_relation(relation)
+            assert result is True
+
+    async def test_create_entry_relation_rejects_invalid_type(self, client):
+        """create_entry_relation 拒绝非白名单 relation_type"""
+        with pytest.raises(ValueError, match="非法关系类型"):
+            await client.create_entry_relation("e1", "e2", "HACK DETACH DELETE ALL")
+
+    async def test_create_entry_relation_accepts_default_type(self, client, mock_session):
+        """create_entry_relation 默认 BELONGS_TO 合法"""
+        mock_result = MagicMock()
+        mock_result.single = AsyncMock(return_value={})
+        mock_session.run = AsyncMock(return_value=mock_result)
+
+        result = await client.create_entry_relation("e1", "e2")
+        assert result is True
+
+    async def test_create_concept_relation_error_message(self, client):
+        """错误消息包含合法值列表"""
+        bad = ConceptRelation(
+            from_concept="X", to_concept="Y", relation_type="INVALID"
+        )
+        with pytest.raises(ValueError) as exc_info:
+            await client.create_concept_relation(bad)
+
+        msg = str(exc_info.value)
+        assert "INVALID" in msg
+        assert "RELATED_TO" in msg
+        assert "BELONGS_TO" in msg
+
+    async def test_create_entry_relation_error_message(self, client):
+        """entry relation 错误消息包含合法值列表"""
+        with pytest.raises(ValueError) as exc_info:
+            await client.create_entry_relation("e1", "e2", "NO_SUCH_TYPE")
+
+        msg = str(exc_info.value)
+        assert "NO_SUCH_TYPE" in msg
+        assert "RELATED_TO" in msg
