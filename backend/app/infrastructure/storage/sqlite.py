@@ -117,6 +117,34 @@ class SQLiteStorage:
             conn.close()
         return {row["d"]: row["cnt"] for row in rows}
 
+    def get_trend_aggregation(
+        self, user_id: str, start_date: str, end_date: str
+    ) -> list[dict]:
+        """获取指定日期范围内按日期+category+status 的聚合统计
+
+        用于趋势数据，单次 SQL 替代 N+1 循环查询。
+
+        Args:
+            user_id: 用户 ID
+            start_date: 起始日期字符串，如 "2026-01-01"
+            end_date: 结束日期字符串（不含），如 "2026-01-08"
+
+        Returns:
+            行列表，每行含 d(日期), category, status, cnt(数量)
+        """
+        conn = self._get_conn()
+        try:
+            rows = conn.execute(
+                """SELECT DATE(created_at) AS d, type AS category, status, COUNT(*) AS cnt
+                   FROM entries
+                   WHERE user_id = ? AND created_at >= ? AND created_at < ?
+                   GROUP BY DATE(created_at), type, status""",
+                (user_id, start_date, end_date),
+            ).fetchall()
+        finally:
+            conn.close()
+        return [dict(row) for row in rows]
+
     def _init_db(self):
         """初始化数据库表结构"""
         conn = self._get_conn()

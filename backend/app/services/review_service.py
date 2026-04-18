@@ -504,102 +504,127 @@ class ReviewService:
         weeks: int = 8,
         user_id: Optional[str] = None,
     ) -> TrendResponse:
-        """获取趋势数据"""
+        """获取趋势数据（单次聚合 SQL 替代 N+1 循环查询）"""
         if not self._sqlite:
             raise ValueError("SQLite 存储未初始化")
 
         if period not in ("daily", "weekly"):
             raise ValueError("period 参数必须是 daily 或 weekly")
 
-        periods: List[TrendPeriod] = []
-
         if period == "daily":
             count = max(1, min(days, 365))
             today = date.today()
-            for i in range(count):
-                target_date = today - timedelta(days=i)
-                next_day = target_date + timedelta(days=1)
-
-                tasks = self._sqlite.list_entries(
-                    type="task",
-                    start_date=target_date.isoformat(),
-                    end_date=next_day.isoformat(),
-                    limit=1000,
-                    user_id=user_id,
-                )
-                notes = self._sqlite.list_entries(
-                    type="note",
-                    start_date=target_date.isoformat(),
-                    end_date=next_day.isoformat(),
-                    limit=1000,
-                    user_id=user_id,
-                )
-                inbox = self._sqlite.list_entries(
-                    type="inbox",
-                    start_date=target_date.isoformat(),
-                    end_date=next_day.isoformat(),
-                    limit=1000,
-                    user_id=user_id,
-                )
-
-                total = len(tasks)
-                completed = sum(1 for t in tasks if t.get("status") == "complete")
-                completion_rate = round((completed / total * 100), 1) if total > 0 else 0.0
-
-                periods.append(TrendPeriod(
-                    date=target_date.isoformat(),
-                    total=total,
-                    completed=completed,
-                    completion_rate=completion_rate,
-                    notes_count=len(notes),
-                    task_count=len(tasks),
-                    inbox_count=len(inbox),
-                ))
+            start = today - timedelta(days=count - 1)
+            end = today + timedelta(days=1)
+            agg = self._sqlite.get_trend_aggregation(
+                user_id=user_id,
+                start_date=start.isoformat(),
+                end_date=end.isoformat(),
+            )
+            return self._build_daily_trend(agg, start, count)
         else:  # weekly
             count = max(1, min(weeks, 52))
             today = date.today()
             current_week_start = today - timedelta(days=today.weekday())
+            oldest_week_start = current_week_start - timedelta(weeks=count - 1)
+            end = current_week_start + timedelta(days=7)
+            agg = self._sqlite.get_trend_aggregation(
+                user_id=user_id,
+                start_date=oldest_week_start.isoformat(),
+                end_date=end.isoformat(),
+            )
+            return self._build_weekly_trend(agg, current_week_start, count)
 
-            for i in range(count):
-                week_start = current_week_start - timedelta(weeks=i)
-                week_end = week_start + timedelta(days=6)
-                next_day_after_week = week_end + timedelta(days=1)
+    def _build_daily_trend(
+        self, agg: list[dict], start: date, count: int
+    ) -> TrendResponse:
+        """从聚合数据构建日趋势（内存 O(N) 分桶）"""
+        from collections import defaultdict
 
-                tasks = self._sqlite.list_entries(
-                    type="task",
-                    start_date=week_start.isoformat(),
-                    end_date=next_day_after_week.isoformat(),
-                    limit=1000,
-                    user_id=user_id,
-                )
-                notes = self._sqlite.list_entries(
-                    type="note",
-                    start_date=week_start.isoformat(),
-                    end_date=next_day_after_week.isoformat(),
-                    limit=1000,
-                    user_id=user_id,
-                )
-                inbox = self._sqlite.list_entries(
-                    type="inbox",
-                    start_date=week_start.isoformat(),
-                    end_date=next_day_after_week.isoformat(),
-                    limit=1000,
-                    user_id=user_id,
-                )
+        buckets: dict[str, dict] = defaultdict(
+            lambda: {"task": 0, "task_complete": 0, "note": 0, "inbox": 0}
+        )
+        for row in agg:
+            d = row["d"]
+            cat = row["category"] or "task"
+            status = row["status"] or ""
+            cnt = row["cnt"]
+            b = buckets[d]
+            if cat == "task":
+                b["task"] += cnt
+                if status == "complete":
+                    b["task_complete"] += cnt
+            elif cat == "note":
+                b["note"] += cnt
+            elif cat == "inbox":
+                b["inbox"] += cnt
 
-                total = len(tasks)
-                completed = sum(1 for t in tasks if t.get("status") == "complete")
-                completion_rate = round((completed / total * 100), 1) if total > 0 else 0.0
+        periods: List[TrendPeriod] = []
+        for i in range(count):
+            target = start + timedelta(days=i)
+            ds = target.isoformat()
+            b = buckets.get(ds, {"task": 0, "task_complete": 0, "note": 0, "inbox": 0})
+            total = b["task"]
+            completed = b["task_complete"]
+            completion_rate = round((completed / total * 100), 1) if total > 0 else 0.0
+            periods.append(TrendPeriod(
+                date=ds,
+                total=total,
+                completed=completed,
+                completion_rate=completion_rate,
+                notes_count=b["note"],
+                task_count=total,
+                inbox_count=b["inbox"],
+            ))
 
-                periods.append(TrendPeriod(
-                    date=week_start.isoformat(),
-                    total=total,
-                    completed=completed,
-                    completion_rate=completion_rate,
-                    notes_count=len(notes),
-                    task_count=len(tasks),
-                    inbox_count=len(inbox),
-                ))
+        return TrendResponse(periods=periods)
+
+    def _build_weekly_trend(
+        self, agg: list[dict], current_week_start: date, count: int
+    ) -> TrendResponse:
+        """从聚合数据构建周趋势"""
+        from collections import defaultdict
+
+        def _week_key(d_str: str) -> str:
+            """将日期字符串转为所属周的周一日期"""
+            dt = datetime.strptime(d_str, "%Y-%m-%d").date()
+            return (dt - timedelta(days=dt.weekday())).isoformat()
+
+        buckets: dict[str, dict] = defaultdict(
+            lambda: {"task": 0, "task_complete": 0, "note": 0, "inbox": 0}
+        )
+        for row in agg:
+            wk = _week_key(row["d"])
+            cat = row["category"] or "task"
+            status = row["status"] or ""
+            cnt = row["cnt"]
+            b = buckets[wk]
+            if cat == "task":
+                b["task"] += cnt
+                if status == "complete":
+                    b["task_complete"] += cnt
+            elif cat == "note":
+                b["note"] += cnt
+            elif cat == "inbox":
+                b["inbox"] += cnt
+
+        periods: List[TrendPeriod] = []
+        for i in range(count):
+            week_start = current_week_start - timedelta(weeks=i)
+            ws = week_start.isoformat()
+            b = buckets.get(ws, {"task": 0, "task_complete": 0, "note": 0, "inbox": 0})
+            total = b["task"]
+            completed = b["task_complete"]
+            completion_rate = round((completed / total * 100), 1) if total > 0 else 0.0
+            periods.append(TrendPeriod(
+                date=ws,
+                total=total,
+                completed=completed,
+                completion_rate=completion_rate,
+                notes_count=b["note"],
+                task_count=total,
+                inbox_count=b["inbox"],
+            ))
 
         return TrendResponse(periods=periods)
 
@@ -1168,12 +1193,19 @@ class ReviewService:
         today_str = today.isoformat()
         tomorrow_str = (today + timedelta(days=1)).isoformat()
 
-        # 1. 今日待办（状态非 complete，优先级排序）
-        all_tasks = self._sqlite.list_entries(
+        # 1. 今日待办（状态非 complete，planned_date=today）
+        today_tasks = self._sqlite.list_entries(
             type="task",
-            limit=1000,
+            start_date=today_str,
+            end_date=tomorrow_str,
+            limit=200,
             user_id=user_id,
         )
+
+        today_todos = [
+            t for t in today_tasks
+            if t.get("status") in ("waitStart", "doing")
+        ]
 
         def _parse_date_str(val):
             """解析 planned_date 字段为 date 对象"""
@@ -1189,17 +1221,18 @@ class ReviewService:
                 except (ValueError, TypeError):
                     return None
 
-        today_todos = [
-            t for t in all_tasks
-            if t.get("status") in ("waitStart", "doing")
-            and _parse_date_str(t.get("planned_date")) == today
-        ]
         priority_order = {"high": 0, "medium": 1, "low": 2}
         today_todos.sort(key=lambda t: priority_order.get(t.get("priority", "medium"), 1))
 
         # 2. 拖延任务（planned_date 已过，状态非 complete）
+        past_tasks = self._sqlite.list_entries(
+            type="task",
+            end_date=today_str,
+            limit=200,
+            user_id=user_id,
+        )
         overdue = [
-            t for t in all_tasks
+            t for t in past_tasks
             if t.get("status") in ("waitStart", "doing")
             and t.get("planned_date")
             and _parse_date_str(t.get("planned_date")) is not None
@@ -1209,16 +1242,15 @@ class ReviewService:
 
         # 3. 未跟进灵感（>3天未转化的 inbox 条目）
         three_days_ago = today - timedelta(days=3)
-        all_inbox = self._sqlite.list_entries(
+        old_inbox = self._sqlite.list_entries(
             type="inbox",
-            limit=1000,
+            end_date=three_days_ago.isoformat(),
+            limit=200,
             user_id=user_id,
         )
         stale_inbox = [
-            i for i in all_inbox
-            if _parse_date_str(i.get("created_at")) is not None
-            and _parse_date_str(i.get("created_at")) <= three_days_ago
-            and i.get("status") in ("waitStart", "pending")
+            i for i in old_inbox
+            if i.get("status") in ("waitStart", "pending")
         ]
 
         # 4. 本周学习摘要

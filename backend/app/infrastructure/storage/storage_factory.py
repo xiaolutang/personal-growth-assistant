@@ -1,10 +1,13 @@
 """存储工厂 - 按用户创建隔离的存储实例"""
 
 import shutil
+from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional
 
 from app.infrastructure.storage.markdown import MarkdownStorage, _INBOX_FILE_RE
+
+_MAX_CACHE_SIZE = 50
 
 
 class StorageFactory:
@@ -16,15 +19,18 @@ class StorageFactory:
         data/users/{user_id}/projects/
         data/users/{user_id}/inbox.md
         data/users/{user_id}/inbox-{id}.md
+
+    缓存策略：LRU 淘汰，最多保留 50 个用户实例。
     """
 
     def __init__(self, base_data_dir: str):
         self._base_dir = Path(base_data_dir) / "users"
-        self._cache: Dict[str, MarkdownStorage] = {}
+        self._cache: OrderedDict[str, MarkdownStorage] = OrderedDict()
 
     def get_markdown_storage(self, user_id: str) -> MarkdownStorage:
-        """获取指定用户的 MarkdownStorage（带缓存）"""
+        """获取指定用户的 MarkdownStorage（带 LRU 缓存）"""
         if user_id in self._cache:
+            self._cache.move_to_end(user_id)
             return self._cache[user_id]
 
         user_dir = self._base_dir / user_id
@@ -32,6 +38,10 @@ class StorageFactory:
 
         storage = MarkdownStorage(data_dir=str(user_dir))
         self._cache[user_id] = storage
+
+        if len(self._cache) > _MAX_CACHE_SIZE:
+            self._cache.popitem(last=False)
+
         return storage
 
     def _ensure_user_dirs(self, user_dir: Path):
