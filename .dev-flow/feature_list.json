@@ -3,14 +3,14 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-19T11:30",
+  "updated_at": "2026-04-19T20:00",
   "status": "active",
-  "scope_notes": "缺陷修复 + 质量收口：修复失效 flow 测试、验证/修复项目详情页缺陷、处理审计遗留",
+  "scope_notes": "离线增强 + PWA：修复 SW 缓存、离线状态检测、离线读取、离线写入队列、PWA 安装引导",
   "active_requirement_cycle": {
-    "id": "R018",
-    "name": "defect-fix-quality",
-    "branch": "fix/R018-defect-fix-quality",
-    "archive_dir": "_archive/R018_defect-fix-quality"
+    "id": "R019",
+    "name": "offline-pwa",
+    "branch": "feat/R019-offline-pwa",
+    "archive_dir": "_archive/R019_offline-pwa"
   },
   "workflow": {
     "name": "XLFoundry",
@@ -21,323 +21,369 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 6,
+    "total_tasks": 8,
     "pending": 0,
-    "completed": 6,
+    "completed": 8,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
   },
   "archived_requirement_cycles": [
-    {
-      "id": "R003",
-      "name": "production-content-recovery",
-      "status": "completed",
-      "archive_dir": "_archive/R003_production-content-recovery",
-      "branch": "fix/R003-production-content-recovery"
-    },
-    {
-      "id": "R004",
-      "name": "product-evolution-phase1a",
-      "status": "completed",
-      "archive_dir": "_archive/R004_product-evolution-phase1a",
-      "branch": "feat/R004-product-evolution-phase1a"
-    },
-    {
-      "id": "R004",
-      "name": "product-evolution-phase1b",
-      "status": "completed",
-      "archive_dir": "_archive/R004_product-evolution-phase1b",
-      "branch": "feat/R004-product-evolution-phase1b"
-    },
-    {
-      "id": "R004",
-      "name": "product-evolution-phase2",
-      "status": "completed",
-      "archive_dir": "_archive/R004_product-evolution-phase2",
-      "branch": "feat/R004-product-evolution-phase2"
-    },
-    {
-      "id": "R005",
-      "name": "product-evolution-phase3",
-      "status": "completed",
-      "archive_dir": "_archive/R005_product-evolution-phase3",
-      "branch": "feat/R005_product-evolution-phase3"
-    },
-    {
-      "id": "R006",
-      "name": "product-polish",
-      "status": "completed",
-      "archive_dir": "_archive/R006_product-polish",
-      "branch": "feat/R006_product-polish"
-    },
-    {
-      "id": "R007",
-      "name": "engagement-experience",
-      "status": "completed",
-      "archive_dir": "_archive/R007_engagement-experience",
-      "branch": "feat/R007-engagement-experience"
-    },
-    {
-      "id": "R008",
-      "name": "intelligence-omni",
-      "status": "completed",
-      "archive_dir": "_archive/R008_intelligence-omni",
-      "branch": "feat/R008-intelligence-omni"
-    },
-    {
-      "id": "R009",
-      "name": "chat-user-id-threading",
-      "status": "completed",
-      "archive_dir": "_archive/R009_chat-user-id-threading",
-      "branch": "feat/R009-chat-user-id-threading"
-    },
-    {
-      "id": "R010",
-      "name": "engineering-foundation",
-      "status": "completed",
-      "archive_dir": "_archive/R010_engineering-foundation",
-      "branch": "feat/R010-engineering-foundation"
-    },
-    {
-      "id": "R011",
-      "name": "entry-context-and-morning-report",
-      "status": "completed",
-      "archive_dir": "_archive/R011_entry-context-and-morning-report",
-      "branch": "feat/R011-entry-context-and-morning-report"
-    },
-    {
-      "id": "R012",
-      "name": "goal-tracking",
-      "status": "completed",
-      "archive_dir": "_archive/R012_goal-tracking",
-      "branch": "feat/R012-goal-tracking"
-    },
-    {
-      "id": "R013",
-      "name": "decision-reflection-entries",
-      "status": "completed",
-      "archive_dir": "_archive/R013_decision-reflection-entries",
-      "branch": "feat/R013-decision-reflection-entries"
-    },
-    {
-      "id": "R014",
-      "name": "page-context-ai",
-      "status": "completed",
-      "archive_dir": "_archive/R014_page-context-ai",
-      "branch": "feat/R014-page-context-ai"
-    },
-    {
-      "id": "R015",
-      "name": "review-enhancement",
-      "status": "completed",
-      "archive_dir": "_archive/R015_review-enhancement",
-      "branch": "feat/R015-review-enhancement"
-    },
-    {
-      "id": "R016",
-      "name": "polish-cleanup",
-      "status": "completed",
-      "archive_dir": "_archive/R016_polish-cleanup",
-      "branch": "feat/R016-polish-cleanup"
-    },
-    {
-      "id": "R017",
-      "name": "code-audit-hardening",
-      "status": "completed",
-      "archive_dir": "_archive/R017_code-audit-hardening",
-      "branch": "fix/R017-code-audit-hardening"
-    }
+    {"id": "R003", "name": "production-content-recovery", "status": "completed", "archive_dir": "_archive/R003_production-content-recovery", "branch": "fix/R003-production-content-recovery"},
+    {"id": "R004", "name": "product-evolution-phase1a", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase1a", "branch": "feat/R004-product-evolution-phase1a"},
+    {"id": "R004", "name": "product-evolution-phase1b", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase1b", "branch": "feat/R004-product-evolution-phase1b"},
+    {"id": "R004", "name": "product-evolution-phase2", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase2", "branch": "feat/R004-product-evolution-phase2"},
+    {"id": "R005", "name": "product-evolution-phase3", "status": "completed", "archive_dir": "_archive/R005_product-evolution-phase3", "branch": "feat/R005_product-evolution-phase3"},
+    {"id": "R006", "name": "product-polish", "status": "completed", "archive_dir": "_archive/R006_product-polish", "branch": "feat/R006_product-polish"},
+    {"id": "R007", "name": "engagement-experience", "status": "completed", "archive_dir": "_archive/R007_engagement-experience", "branch": "feat/R007-engagement-experience"},
+    {"id": "R008", "name": "intelligence-omni", "status": "completed", "archive_dir": "_archive/R008_intelligence-omni", "branch": "feat/R008-intelligence-omni"},
+    {"id": "R009", "name": "chat-user-id-threading", "status": "completed", "archive_dir": "_archive/R009_chat-user-id-threading", "branch": "feat/R009-chat-user-id-threading"},
+    {"id": "R010", "name": "engineering-foundation", "status": "completed", "archive_dir": "_archive/R010_engineering-foundation", "branch": "feat/R010-engineering-foundation"},
+    {"id": "R011", "name": "entry-context-and-morning-report", "status": "completed", "archive_dir": "_archive/R011_entry-context-and-morning-report", "branch": "feat/R011-entry-context-and-morning-report"},
+    {"id": "R012", "name": "goal-tracking", "status": "completed", "archive_dir": "_archive/R012_goal-tracking", "branch": "feat/R012-goal-tracking"},
+    {"id": "R013", "name": "decision-reflection-entries", "status": "completed", "archive_dir": "_archive/R013_decision-reflection-entries", "branch": "feat/R013-decision-reflection-entries"},
+    {"id": "R014", "name": "page-context-ai", "status": "completed", "archive_dir": "_archive/R014_page-context-ai", "branch": "feat/R014-page-context-ai"},
+    {"id": "R015", "name": "review-enhancement", "status": "completed", "archive_dir": "_archive/R015_review-enhancement", "branch": "feat/R015-review-enhancement"},
+    {"id": "R016", "name": "polish-cleanup", "status": "completed", "archive_dir": "_archive/R016_polish-cleanup", "branch": "feat/R016-polish-cleanup"},
+    {"id": "R017", "name": "code-audit-hardening", "status": "completed", "archive_dir": "_archive/R017_code-audit-hardening", "branch": "fix/R017-code-audit-hardening"},
+    {"id": "R018", "name": "defect-fix-quality", "status": "completed", "archive_dir": "_archive/R018_defect-fix-quality", "branch": "fix/R018-defect-fix-quality"}
   ],
   "modules": [
     {
-      "id": "tests",
-      "name": "测试修复",
-      "description": "修复 Python 3.13 兼容性导致的 15 个 flow 测试错误"
+      "id": "sw-cache",
+      "name": "SW 缓存修复",
+      "description": "修复 Service Worker 运行时缓存 URL pattern，分层配置缓存策略"
     },
     {
-      "id": "defects",
-      "name": "缺陷修复",
-      "description": "验证并修复已知缺陷（项目详情页等）"
+      "id": "offline-ux",
+      "name": "离线体验",
+      "description": "在线/离线状态检测、离线指示器、离线回退页"
+    },
+    {
+      "id": "offline-write",
+      "name": "离线写入",
+      "description": "IndexedDB 离线队列、上线自动同步（online 事件 + app 启动触发）"
+    },
+    {
+      "id": "pwa-install",
+      "name": "PWA 安装",
+      "description": "PWA 安装引导、manifest 优化"
     },
     {
       "id": "quality",
       "name": "质量收口",
-      "description": "处理审计遗留、补充测试覆盖"
+      "description": "全量测试 + 构建验证"
     }
   ],
   "tasks": [
     {
-      "id": "B66",
+      "id": "S03",
       "phase": 1,
-      "module": "tests",
-      "name": "修复 flow 测试 fixture（Python 3.13 asyncio 兼容）",
-      "description": "test_entry_api_flow.py 和 test_list_sync.py 共 15 个测试因 asyncio.get_event_loop() 在 Python 3.13 报 RuntimeError 而全部 ERROR。需将 sync fixture 改为 async fixture 或使用 event_loop policy 修复。",
-      "verification": "Python 3.13 环境下 uv run pytest tests/flow/ -v 全部通过",
+      "module": "sw-cache",
+      "name": "修复 SW 缓存策略 + URL pattern",
+      "description": "当前 SW runtimeCaching 的 urlPattern 使用路径正则（/^\\/growth\\/api\\/.*/i），Workbox 路由匹配的是完整请求 URL，此正则无法匹配。修复为匹配完整 URL 格式（如 https://domain/growth/api/entries），并分层配置缓存策略：条目列表 NetworkFirst(5min)、条目详情 StaleWhileRevalidate、搜索/流式请求 NetworkOnly。验证离线时已缓存数据可正常读取。",
+      "verification": "npm run build 后在浏览器 DevTools Offline 模式下刷新页面，已缓存的条目列表可正常显示",
       "depends_on": [],
       "status": "completed",
+      "started_at": "2026-04-19T20:05",
+      "completed_at": "2026-04-19T20:15",
+      "actual_minutes": 10,
+      "evidence_file": ".dev-flow/evidence/S03.md",
+      "execution_notes": "修复 SW runtimeCaching URL pattern，从路径正则改为动态完整 URL 正则，4 条分层缓存规则。构建通过，URL pattern 验证 17/17 通过",
+      "commit": "pending",
       "priority": 1,
-      "started_at": "2026-04-19T11:00",
-      "completed_at": "2026-04-19T11:30",
-      "evidence_file": "evidence/B66.md",
       "acceptance_criteria": [
-        "tests/flow/test_entry_api_flow.py 9 个测试全部 PASS",
-        "tests/flow/test_list_sync.py 6 个测试全部 PASS",
-        "不使用 asyncio.get_event_loop()，改用 pytest-asyncio async fixture 或 httpx AsyncClient",
-        "其他 920 个已有测试不受影响"
+        "runtimeCaching URL pattern 使用完整 URL 正则匹配 API 请求（含 query string，如 /entries?limit=100）",
+        "条目列表 GET /entries 使用 NetworkFirst（5min TTL，URL pattern 匹配含 query string 的请求）",
+        "条目详情 GET /entries/{id} 使用 StaleWhileRevalidate",
+        "搜索 POST /search 和 SSE 流式接口使用 NetworkOnly（不缓存）",
+        "构建后 Offline 模式刷新不白屏，已缓存页面可渲染"
       ],
-      "risk_tags": ["startup"],
+      "risk_tags": ["network", "startup"],
       "test_tasks": [
-        "uv run pytest tests/flow/ -v 确认全部通过",
-        "uv run pytest tests/ -q 确认总数不变或增加"
+        "npm run build 成功",
+        "Chrome DevTools → Offline → 刷新 → 已缓存条目列表显示",
+        "Chrome DevTools → Offline → 刷新 → 非缓存页面显示离线提示而非白屏",
+        "DevTools Network 面板 → 确认 /entries 请求缓存命中（from ServiceWorker）"
       ],
       "files": [
-        "backend/tests/flow/test_entry_api_flow.py",
-        "backend/tests/flow/test_list_sync.py"
+        "frontend/vite.config.ts"
       ]
     },
     {
-      "id": "B67",
+      "id": "S04",
       "phase": 1,
-      "module": "defects",
-      "name": "验证并修复项目详情页无内容缺陷",
-      "description": "defect_feedback.md 记录：访问 /entries/project-xxx 时无实质内容。EntryDetail.tsx 已有项目进度、子任务、关联面板等 UI，但可能因为后端数据不完整或 API 未正确返回导致前端无内容展示。需验证当前状态并修复。",
-      "verification": "创建项目+子任务 → 访问详情页 → 显示项目描述、进度、子任务列表",
+      "module": "offline-ux",
+      "name": "useOnlineStatus hook + OfflineIndicator + 离线启动恢复",
+      "description": "创建 useOnlineStatus React hook（监听 navigator.onLine + online/offline 事件）。创建 OfflineIndicator 组件（全局 Toast 或底部条，离线时显示「当前处于离线状态，部分功能不可用」，上线时显示「已恢复连接」后自动消失）。在 App.tsx 全局挂载。**离线启动恢复**：修改 userStore 的 token 验证逻辑，当 localStorage 有 token 但网络请求失败（如 /auth/me 超时或网络不可达）时，不调用 logout() 清除 token，而是保持登录状态并标记为 offline 模式。ProtectedRoute 检查 token 存在即放行，不强制要求 /auth/me 成功。这样离线重启 app 时用户不会被踢到登录页。",
+      "verification": "Chrome DevTools Offline 切换时，页面顶部或底部出现离线提示；离线状态下刷新页面，已登录用户不会被踢到登录页",
       "depends_on": [],
       "status": "completed",
+      "started_at": "2026-04-19T20:20",
+      "completed_at": "2026-04-19T20:40",
+      "actual_minutes": 20,
+      "evidence_file": ".dev-flow/evidence/S04.md",
+      "execution_notes": "useOnlineStatus hook + OfflineIndicator 组件 + userStore 离线启动恢复（401才logout，500/503/网络失败保留）。20个测试。",
       "priority": 1,
-      "started_at": "2026-04-19T11:30",
-      "completed_at": "2026-04-19T11:45",
-      "evidence_file": "evidence/B67.md",
-      "acceptance_criteria": [
-        "项目详情页显示项目描述（content markdown）",
-        "项目详情页显示子任务进度条（getProjectProgress API 正常返回）",
-        "项目详情页显示子任务列表",
-        "空项目（无子任务）显示空状态引导",
-        "后端 API 测试覆盖 project detail 场景"
+        "离线时页面出现视觉提示（非 alert）",
+        "上线时提示「已恢复连接」并在 3 秒后自动消失",
+        "离线刷新时，userStore 遇网络失败不调用 logout()，保留 token 和 user 信息",
+        "ProtectedRoute 检查 token 存在即放行（不要求 /auth/me 成功）",
+        "离线刷新后页面正常渲染，不跳转到登录页",
+        "组件有对应单元测试"
       ],
-      "risk_tags": [],
       "test_tasks": [
-        "手动验证：创建项目+子任务 → 打开详情页",
-        "后端 API 测试：getProjectProgress 返回正确数据"
+        "渲染 OfflineIndicator → 模拟 offline 事件 → 显示离线提示",
+        "渲染 OfflineIndicator → 模拟 online 事件 → 显示恢复提示 → 3 秒后消失",
+        "mock /auth/me 网络失败（TypeError: Failed to fetch）→ userStore 不调用 logout → token 保留",
+        "mock /auth/me 返回 401 → userStore 调用 logout → token 清除",
+        "离线状态 + token 存在 → ProtectedRoute 放行不跳转登录页",
+        "离线状态 + 无 token → ProtectedRoute 跳转到登录页"
       ],
       "files": [
-        "backend/app/routers/entries.py",
-        "backend/app/services/entry_service.py",
-        "frontend/src/pages/EntryDetail.tsx"
+        "frontend/src/hooks/useOnlineStatus.ts",
+        "frontend/src/components/OfflineIndicator.tsx",
+        "frontend/src/App.tsx",
+        "frontend/src/stores/userStore.ts",
+        "frontend/src/components/ProtectedRoute.tsx"
       ]
     },
     {
-      "id": "B68",
+      "id": "F58",
       "phase": 2,
-      "module": "defects",
-      "name": "前端空状态和加载态统一处理",
-      "description": "检查列表页空状态和加载态是否一致：首页、任务页、探索页。确保空数据时有引导文案、loading 时有指示。详情页（EntryDetail）由 B67 覆盖。",
-      "verification": "清空数据 → 各页面有合理空状态提示",
+      "module": "offline-ux",
+      "name": "离线回退页面",
+      "description": "当用户离线时访问未缓存的页面，显示友好的离线回退页面而非浏览器默认错误。**实现路径**：在 SPA 内新增 `/offline` React 路由（OfflineFallback.tsx），不做独立 precached 文档，不修改 SW navigateFallback（保持 index.html 支持 SPA deep-link）。SW 缓存策略保持 index.html 为 navigateFallback，离线时 React 应用正常加载，App.tsx 检测到 navigator.onLine === false 时对未缓存路由显示离线提示组件（作为 fallback Route）。显示「你当前处于离线状态」+ 可跳转到已缓存的首页/任务页的链接。",
+      "verification": "离线状态访问未缓存 URL 显示离线回退页而非浏览器错误",
+      "depends_on": ["S03"],
+      "status": "completed",
+      "started_at": "2026-04-19T20:55",
+      "completed_at": "2026-04-19T21:00",
+      "actual_minutes": 5,
+      "evidence_file": ".dev-flow/evidence/F58.md",
+      "execution_notes": "SPA内离线回退页 + /offline路由 + 4个测试",
+      "priority": 2,
+        "离线页面包含返回首页/任务页的链接",
+        "离线页面样式符合 design-system.md",
+        "SPA deep-link 正常工作（navigateFallback 保持 index.html 不变）",
+        "在线时正常路由不受离线回退影响"
+      ],
+      "test_tasks": [
+        "渲染 OfflineFallback → 显示离线提示文案",
+        "渲染 OfflineFallback → 首页/任务页链接可点击",
+        "在线状态 → SPA deep-link（如 /tasks）正常导航不显示离线页",
+        "构建后 DevTools Offline → 访问未缓存路由 → 显示自定义离线页（非浏览器错误）"
+      ],
+      "files": [
+        "frontend/src/pages/OfflineFallback.tsx",
+        "frontend/src/App.tsx"
+      ]
+    },
+    {
+      "id": "F59",
+      "phase": 2,
+      "module": "offline-write",
+      "name": "IndexedDB 离线队列服务（纯数据层）",
+      "description": "创建 offlineQueue 模块（lib/offlineQueue.ts）：使用 IndexedDB（数据库名 growth-offline，store 名 mutations）存储离线 mutation。仅提供纯数据操作，不做 API 拦截。队列项 schema：{id: string, user_id: string, client_entry_id: string, method: string, url: string, body: object, timestamp: number, status: 'pending' | 'synced' | 'failed', retry_count: number}。client_entry_id 存储本地乐观条目 ID（如 'local-{ts}'），同步成功后用于映射 taskStore.removeOfflineEntry(client_entry_id)。user_id 从 userStore 获取，所有查询按 user_id 过滤实现多账号隔离。支持 add / getAll / update / remove / count / clear 操作。IndexedDB 不可用时统一 fallback：add 返回空字符串，getAll 返回空数组，count 返回 0，不返回 null 不抛错。",
+      "verification": "单元测试验证 add → getAll 返回正确数据；IndexedDB mock 不可用时操作返回默认值不抛错",
       "depends_on": [],
       "status": "completed",
-      "priority": 2,
-      "started_at": "2026-04-19T11:45",
-      "completed_at": "2026-04-19T12:00",
-      "evidence_file": "evidence/B68.md",
+      "started_at": "2026-04-19T20:45",
+      "completed_at": "2026-04-19T20:50",
+      "actual_minutes": 5,
+      "evidence_file": ".dev-flow/evidence/F59.md",
+      "execution_notes": "IndexedDB 离线队列模块，6个异步方法，user_id 隔离，优雅降级，11个测试",
       "acceptance_criteria": [
-        "首页空状态有引导文案（如「记录你的第一条想法」）",
-        "任务页空状态有引导文案",
-        "探索页空状态有引导文案",
-        "列表页加载中有 loading 指示",
-        "样式符合 design-system.md 规范"
+        "offlineQueue 模块导出 add / getAll / update / remove / count / clear 六个异步方法",
+        "add(query) 写入 IndexedDB，自动注入 user_id，返回生成的 id",
+        "getAll() 返回当前用户的队列项（按 user_id 过滤），按 timestamp 排序",
+        "update(id, changes) 更新队列项字段（retry_count/status），F60 用于标记失败和重试计数",
+        "remove(id) 删除指定队列项",
+        "count() 返回当前用户 pending 状态的队列项数量",
+        "IndexedDB 不可用时：add 返回 ''，getAll 返回 []，count 返回 0，不 throw",
+        "clear() 清空当前用户的队列项（登出时调用）",
+        "有对应单元测试（mock IndexedDB）"
       ],
+      "risk_tags": ["first_use"],
       "test_tasks": [
-        "清空 localStorage → 打开首页 → 验证空状态引导文案存在",
-        "清空 localStorage → 打开任务页 → 验证空状态引导文案存在",
-        "清空 localStorage → 打开探索页 → 验证空状态引导文案存在",
-        "慢网络下验证各页面有 loading 指示"
+        "add(query) → getAll() 返回包含该条目的数组（含正确 user_id 和 client_entry_id）",
+        "多次 add → getAll 返回多条，count() 返回正确数字",
+        "update(id, {retry_count: 1}) → getAll() 返回更新后的条目",
+        "remove(id) → 再次 getAll 不包含该条目",
+        "mock IndexedDB.open 抛错 → add 返回 ''，getAll 返回 []，count 返回 0",
+        "不同 user_id 的 add → getAll 只返回当前用户的条目",
+        "clear() → getAll 返回空数组"
       ],
       "files": [
-        "frontend/src/pages/Home.tsx",
-        "frontend/src/pages/Tasks.tsx",
-        "frontend/src/pages/Explore.tsx"
+        "frontend/src/lib/offlineQueue.ts"
       ]
     },
     {
-      "id": "B69",
-      "phase": 2,
-      "module": "quality",
-      "name": "补充 API 集成测试覆盖缺口",
-      "description": "R017 审计中多处修复后缺少对应集成测试。补充：entries export、goal CRUD、feedback 边界场景。",
-      "verification": "uv run pytest tests/ 新增测试通过",
-      "depends_on": ["B66"],
-      "status": "completed",
-      "priority": 2,
-      "started_at": "2026-04-19T12:00",
-      "completed_at": "2026-04-19T12:20",
-      "evidence_file": "evidence/B69.md",
-      "acceptance_criteria": [
-        "entries export API 集成测试（zip + json 格式）",
-        "goal CRUD API 集成测试（创建/更新/删除/列表）",
-        "feedback 边界测试（空标题 422、默认 severity、无描述）",
-        "export/goal/feedback 无 token 返回 401",
-        "export/goal/feedback 跨用户不可见（user_a 看不到 user_b 数据）",
-        "新增测试数 ≥ 15",
-        "总测试数 ≥ 935"
-      ],
-      "files": [
-        "backend/tests/flow/"
-      ]
-    },
-    {
-      "id": "F57",
-      "phase": 2,
-      "module": "quality",
-      "name": "前端组件测试补充",
-      "description": "补充关键前端组件的测试覆盖：ExportDialog、OnboardingFlow、TaskCard。",
-      "verification": "npm run test:run 通过",
-      "depends_on": [],
-      "status": "completed",
-      "priority": 2,
-      "started_at": "2026-04-19T12:20",
-      "completed_at": "2026-04-19T12:40",
-      "evidence_file": "evidence/F57.md",
-      "acceptance_criteria": [
-        "ExportDialog 测试：格式切换、类型筛选、日期范围、导出成功/失败",
-        "OnboardingFlow 测试已存在，确认通过",
-        "TaskCard 测试已存在，确认通过（状态显示、优先级标识、点击交互）",
-        "新增测试数 7 ≥ 5"
-      ],
-      "test_tasks": [
-        "ExportDialog：切换 markdown/json 格式、选择类型、导出成功和失败场景",
-        "OnboardingFlow：确认已有测试通过（welcome/guide/error 步骤）",
-        "TaskCard：渲染不同状态（doing/complete）、点击跳转"
-      ],
-      "files": [
-        "frontend/src/components/ExportDialog.test.tsx",
-        "frontend/src/components/OnboardingFlow.test.tsx",
-        "frontend/src/components/TaskCard.test.tsx"
-      ]
-    },
-    {
-      "id": "B70",
+      "id": "F60",
       "phase": 3,
+      "module": "offline-write",
+      "name": "离线同步：上线后自动回放队列",
+      "description": "创建 offlineSync 模块（lib/offlineSync.ts）：监听 useOnlineStatus 的 online 回调，自动重放 offlineQueue 中的 pending mutation。逐条调用 createEntry（api.ts 封装的 openapi-fetch，已处理 category 映射和 auth headers），成功则从队列移除并通知 taskStore 清除对应 _offlinePending 条目（通过 client_entry_id 映射），失败则按类型处理：5xx 重试（retry_count + 1，超过 3 次标记 failed），401 立即标记 failed（认证错误不可重试）并触发 UI 提示「请重新登录」。防重入：同步进行中的布尔锁阻止重复触发。同步完成后通过回调通知 taskStore 调用 fetchEntries() 刷新服务端数据，同时清除已同步的离线条目。OfflineIndicator 组件显示同步进度（如「正在同步 2/3...」）。**初始化同步**：除 online 事件外，模块导出 initSync() 方法，在 app 启动时（App.tsx useEffect）检查 navigator.onLine === true 且队列有 pending 项时立即触发同步，覆盖「app 重启时已在线但有 pending 队列」场景。",
+      "verification": "离线创建 3 条 inbox → 上线 → 自动同步 → 条目出现在列表中",
+      "depends_on": ["F59", "F61", "S04"],
+      "status": "completed",
+      "started_at": "2026-04-19T22:05",
+      "completed_at": "2026-04-19T22:20",
+      "actual_minutes": 15,
+      "evidence_file": ".dev-flow/evidence/F60.md",
+      "execution_notes": "offlineSync 模块 + OfflineIndicator 同步进度 + initSync 启动触发。9 个单元测试 + 7 个集成测试，318 tests total",
+      "priority": 2,
+      "acceptance_criteria": [
+        "online 事件触发后自动重放 pending 队列",
+        "同步请求使用 createEntry（api.ts）发送，复用已有的 openapi-fetch + auth headers 封装",
+        "同步成功后通过 client_entry_id 映射 taskStore.removeOfflineEntry(client_entry_id)",
+        "防重入：同步进行中不重复触发（布尔锁）",
+        "同步过程中 OfflineIndicator 显示进度提示（如「正在同步 2/3...」）",
+        "同步成功后调用回调通知 taskStore.fetchEntries() + 清除已同步离线条目",
+        "单条 5xx 失败不影响后续条目同步，retry_count + 1",
+        "单条 401 立即标记 failed（不重试），UI 显示「请重新登录」提示",
+        "retry_count 超过 3 次的条目标记 failed",
+        "导出 initSync() 方法：app 启动时检查 navigator.onLine && queue.count() > 0 立即触发同步",
+        "App.tsx useEffect 中调用 initSync() 覆盖重启时已在线场景",
+        "有对应单元测试"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        "队列 3 条 pending → 触发同步 → 全部成功 → 队列清空 + taskStore 无 _offlinePending",
+        "队列 3 条 → 第 2 条返回 500 → 第 1、3 条成功，第 2 条 retry_count=1",
+        "队列 1 条已 retry_count=3 → 触发同步 → 5xx → retry_count=4 → 标记 failed",
+        "空队列 → 触发同步 → 无 API 请求发出",
+        "同步进行中再次触发 → 不重入（布尔锁生效）",
+        "队列 1 条返回 401 → 立即标记 failed（retry_count 不变），UI 显示重新登录提示",
+        "initSync: navigator.onLine=true + 队列 2 条 → 自动触发同步 → 全部成功",
+        "initSync: navigator.onLine=false → 不触发同步",
+        "同步过程中 OfflineIndicator 显示「正在同步 1/3...」"
+      ],
+      "files": [
+        "frontend/src/lib/offlineSync.ts",
+        "frontend/src/components/OfflineIndicator.tsx",
+        "frontend/src/App.tsx"
+      ]
+    },
+    {
+      "id": "F61",
+      "phase": 3,
+      "module": "offline-write",
+      "name": "离线创建拦截 + 待同步标识",
+      "description": "在首页 AI 对话路径（useStreamParse → POST /chat SSE）中集成离线拦截：当 navigator.onLine === false 时，跳过 SSE 请求，将用户输入构造为 POST /entries inbox mutation 写入 offlineQueue（含 user_id 和 client_entry_id），返回本地乐观响应。**关键：add() 返回值检查** — 如果 offlineQueue.add() 返回空字符串（IndexedDB 不可用），则不生成乐观条目，显示失败 toast（「保存失败，请检查浏览器存储设置」），并保留用户输入内容不清空，允许用户重试。仅当 add() 成功（返回有效 id）时，才生成乐观 Task（id 即为 client_entry_id，如 'local-{ts}'），写入队列时同步设置 client_entry_id，显示「灵感已保存，将在恢复连接后同步」。离线分支必须触发与 SSE created 事件等价的 onCreated 回调（仅在 add() 成功时：fetchEntries 更新列表、会话标题更新、lastOperation 状态、F62 usageCount 递增）。状态管理：taskStore 内部维护 _offlineEntries: Task[] 数组存储离线条目（带 _offlinePending: true），fetchEntries() 在获取服务端数据后合并离线条目（按 id 去重，离线条目保留），确保离线条目不会被 fetchEntries 覆盖丢失。同步成功后由 offlineSync 通过 client_entry_id 映射 taskStore.removeOfflineEntry + fetchEntries()。UI 展示范围（MVP）：仅 Home.tsx 的 recentInbox 区域对 _offlinePending 条目渲染「待同步」badge。Explore.tsx 使用独立 getEntries() 不消费 taskStore，离线条目在 Explore 暂不可见，上线同步后 fetchEntries() 触发 Explore 页面刷新自然可见。登出时同步清理：taskStore.clearOfflineEntries() + offlineQueue.clear()（fire-and-forget，不阻塞同步 logout 流程）。在线时行为完全不变。",
+      "verification": "离线状态在首页输入灵感 → 显示保存成功提示 → 首页 recentInbox 出现带「待同步」badge 的条目 → 上线同步 → badge 消失 → 重新进入 Explore inbox tab 可见真实条目",
+      "depends_on": ["F59", "S04"],
+      "status": "completed",
+      "started_at": "2026-04-19T21:05",
+      "completed_at": "2026-04-19T22:00",
+      "actual_minutes": 55,
+      "evidence_file": ".dev-flow/evidence/F61.md",
+      "execution_notes": "离线拦截 useStreamParse + taskStore 离线条目管理 + Home 待同步 badge + FloatingChat 错误处理 + 登出清理 + 6 个集成测试。构建通过，318 tests pass",
+      "priority": 2,
+      "acceptance_criteria": [
+        "离线时首页 AI 对话（useStreamParse）跳过 SSE 请求，将用户输入写入 offlineQueue（含 user_id + client_entry_id）",
+        "add() 成功时：UI 显示「灵感已保存，将在恢复连接后同步」+ 生成乐观条目 + 触发 onCreated 回调",
+        "add() 返回空字符串（IndexedDB 不可用）时：显示失败 toast「保存失败，请检查浏览器存储设置」+ 保留用户输入不清空 + 不生成乐观条目",
+        "离线分支触发 onCreated 回调（仅 add() 成功时），保证 fetchEntries/标题更新/lastOperation/usageCount 一致",
+        "Task 类型添加 _offlinePending?: boolean 可选字段",
+        "taskStore 内部维护 _offlineEntries 数组，新增 upsertOfflineEntry / removeOfflineEntry / clearOfflineEntries 方法",
+        "taskStore.fetchEntries() 获取服务端数据后合并 _offlineEntries（离线条目不被覆盖）",
+        "Home.tsx recentInbox 中 _offlinePending 条目显示「待同步」badge",
+        "Explore.tsx 使用独立 getEntries()，离线条目 MVP 阶段不在 Explore 显示。同步完成后 Explore 在重新进入页面时通过 getEntries() 获取真实数据",
+        "上线同步成功后通过 client_entry_id 映射 taskStore.removeOfflineEntry + fetchEntries 替换为真实数据",
+        "登出时 clearOfflineEntries + offlineQueue.clear()（fire-and-forget，不阻塞同步 logout）。登出即丢弃未同步数据",
+        "在线时 useStreamParse 走正常 SSE 路径，不经过队列",
+        "有对应单元测试"
+      ],
+      "risk_tags": ["network", "first_use"],
+      "test_tasks": [
+        "离线 → useStreamParse.parse('学一下 React') → add() 成功 → 队列有 1 条 pending + client_entry_id 正确 → UI 显示保存成功",
+        "离线 → mock add() 返回 '' → UI 显示失败 toast → 用户输入保留未清空",
+        "taskStore.upsertOfflineEntry → tasks 数组包含 _offlinePending=true 的条目",
+        "taskStore.fetchEntries() 后 _offlinePending 条目仍然保留（不被覆盖）",
+        "上线同步 → removeOfflineEntry(client_entry_id) + fetchEntries → badge 消失，条目有后端真实 id",
+        "在线 → useStreamParse 正常走 SSE → 不写入队列",
+        "登出 → _offlineEntries 清空 + offlineQueue.clear() 被调用"
+      ],
+      "files": [
+        "frontend/src/hooks/useStreamParse.ts",
+        "frontend/src/types/task.ts",
+        "frontend/src/stores/taskStore.ts",
+        "frontend/src/stores/userStore.ts",
+        "frontend/src/pages/Home.tsx",
+        "frontend/src/lib/offlineQueue.ts",
+        "frontend/src/components/FloatingChat.tsx"
+      ]
+    },
+    {
+      "id": "F62",
+      "phase": 4,
+      "module": "pwa-install",
+      "name": "PWA 安装引导（增强已有 usePWAInstall + Header）",
+      "description": "增强已有的 usePWAInstall hook 和 Header.tsx 安装按钮，不创建新组件。具体：1) usePWAInstall 新增 usageCount 追踪（localStorage pwa-usage-count），暴露 incrementUsageCount() 方法供外部调用，写入后触发 window 自定义事件 `pwa-usage-updated`；2) usePWAInstall 监听 `pwa-usage-updated` 事件和 `storage` 事件（跨 tab），收到后重读 localStorage 更新 usageCount 状态，解决同 tab 多 hook 实例状态同步问题；3) useChatActions.ts 的 onCreated 回调中调用 incrementUsageCount()（条目创建成功时 +1，这是唯一可靠的创建事件源）；4) 当 canInstall && usageCount >= 3 时，Header 安装按钮升级为醒目的引导横条（带关闭按钮和「安装到桌面」文案）；5) 用户关闭横条后 7 天内不再显示（localStorage pwa-banner-dismissed）；6) vite.config.ts manifest 添加 lang: 'zh-CN'。",
+      "verification": "Chrome 中 canInstall=true 且 usageCount>=3 时显示安装引导横条，点击触发系统安装对话框",
+      "depends_on": ["S03"],
+      "status": "completed",
+      "started_at": "2026-04-19T22:20",
+      "completed_at": "2026-04-19T22:30",
+      "actual_minutes": 10,
+      "evidence_file": ".dev-flow/evidence/F62.md",
+      "execution_notes": "usePWAInstall 增强 usageCount + showBanner + dismissBanner + Header 横条 + onCreated 计数 + manifest lang。8 个测试",
+      "priority": 3,
+      "acceptance_criteria": [
+        "manifest lang 改为 zh-CN",
+        "usePWAInstall 新增 usageCount 追踪（localStorage pwa-usage-count）+ incrementUsageCount() 方法",
+        "useChatActions.ts onCreated 回调中调用 incrementUsageCount()",
+        "usePWAInstall 新增 showBanner 状态：canInstall && usageCount >= 3 && 未被关闭",
+        "Header.tsx 在 showBanner 时渲染醒目引导横条（带关闭和安装按钮）",
+        "安装成功后（appinstalled 事件）横条不再显示",
+        "用户关闭横条后 7 天内不再显示（localStorage pwa-banner-dismissed）",
+        "已安装用户（canInstall=false）不显示横条"
+      ],
+      "test_tasks": [
+        "渲染 Header → canInstall=true, usageCount=3, 无 dismissed → 显示引导横条",
+        "渲染 Header → canInstall=true, usageCount=1 → 不显示横条",
+        "点击安装按钮 → promptInstall 被调用",
+        "点击关闭 → 写入 localStorage pwa-banner-dismissed → 横条消失",
+        "canInstall=false（已安装/Safari）→ 不显示横条",
+        "onCreated 调用 → localStorage pwa-usage-count + 1",
+        "appinstalled 事件触发 → canInstall 变 false → 横条消失",
+        "关闭横条 7 天后 → pwa-banner-dismissed 过期 → 横条恢复显示"
+      ],
+      "files": [
+        "frontend/src/lib/usePWAInstall.ts",
+        "frontend/src/components/layout/Header.tsx",
+        "frontend/src/hooks/useChatActions.ts",
+        "frontend/vite.config.ts"
+      ]
+    },
+    {
+      "id": "B73",
+      "phase": 4,
       "module": "quality",
       "name": "质量收口：全量测试 + 构建验证",
-      "description": "最终收口任务。确保所有测试通过、前端构建通过、无已知缺陷遗留。验证 defect_feedback.md 中缺陷是否全部关闭。",
-      "verification": "全量测试通过 + 前端构建通过 + 无已知缺陷",
-      "depends_on": ["B66", "B67", "B68", "B69", "F57"],
+      "description": "最终收口任务。确保后端测试通过、前端构建通过、前端测试通过。新增 hook/service 有单元测试覆盖。",
+      "verification": "全量测试通过 + 前端构建通过",
+      "depends_on": ["S03", "S04", "F58", "F59", "F60", "F61", "F62"],
       "status": "completed",
+      "started_at": "2026-04-19T22:30",
+      "completed_at": "2026-04-19T22:35",
+      "actual_minutes": 5,
+      "evidence_file": ".dev-flow/evidence/B73.md",
+      "execution_notes": "质量收口：857 后端 + 318 前端测试全通过 + 构建通过 + 新增 72 个测试（含 12 个集成测试）",
       "priority": 3,
-      "started_at": "2026-04-19T12:40",
-      "completed_at": "2026-04-19T13:00",
-      "evidence_file": "evidence/B70.md",
       "acceptance_criteria": [
-        "uv run pytest tests/ — 0 errors, 0 failures",
-        "npm run build — 构建成功",
-        "npm run test:run — 全部通过",
-        "defect_feedback.md 中缺陷状态已更新为 closed"
+        "cd backend && uv run pytest tests/ — 0 errors, 0 failures",
+        "cd frontend && npm run build — 构建成功",
+        "cd frontend && npm run test:run — 全部通过",
+        "新增测试数 ≥ 5",
+        "手动 smoke：DevTools Offline → 首页输入灵感 → 显示保存成功 → 首页 recentInbox 可见待同步条目 → 恢复网络 → 自动同步 → badge 消失 → 重新进入 Explore inbox tab 可见真实条目"
       ],
       "risk_tags": ["startup"],
       "test_tasks": [
         "uv run pytest tests/ -v 确认全量通过",
-        "npm run build && npm run test:run 确认前端 OK"
+        "npm run build && npm run test:run 确认前端 OK",
+        "手动 smoke：离线创建首页灵感 → recentInbox 可见待同步 → 恢复网络 → 自动同步 → badge 消失 → 重新进入 Explore inbox tab 确认真实条目可见（完整用户旅程）"
       ]
     }
   ]

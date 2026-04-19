@@ -17,17 +17,11 @@ cd backend && uv sync
 # 安装开发依赖（测试）
 uv pip install -e ".[dev]"
 
-# 运行开发服务
-uv run uvicorn app.main:app --reload
-
 # 运行测试
 uv run pytest                          # 所有测试
 uv run pytest tests/unit/              # 单元测试
 uv run pytest tests/integration/       # 集成测试（需要网络）
 uv run pytest -m "not slow"            # 跳过慢测试
-
-# 访问 API 文档
-open http://localhost:8000/docs
 ```
 
 ### 前端 (frontend/)
@@ -35,9 +29,6 @@ open http://localhost:8000/docs
 ```bash
 # 安装依赖
 cd frontend && npm install
-
-# 运行开发服务
-npm run dev
 
 # 构建
 npm run build

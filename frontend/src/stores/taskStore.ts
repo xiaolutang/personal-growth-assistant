@@ -25,6 +25,8 @@ interface TaskStore {
   serviceUnavailable: boolean;
   searchResults: SearchResult[];
   knowledgeGraph: KnowledgeGraphResponse | null;
+  /** 离线创建的条目列表（同步完成后移除） */
+  _offlineEntries: Task[];
 
   // Actions
   fetchEntries: (params?: {
@@ -48,6 +50,12 @@ interface TaskStore {
   getTasksByCategory: (category: Category) => Task[];
   getTasksByStatus: (status: TaskStatus) => Task[];
   getTodayTasks: () => Task[];
+  /** 添加或更新离线条目 */
+  upsertOfflineEntry: (entry: Task) => void;
+  /** 移除指定离线条目（同步完成后） */
+  removeOfflineEntry: (clientEntryId: string) => void;
+  /** 清空所有离线条目（登出时） */
+  clearOfflineEntries: () => void;
 }
 
 export const useTaskStore = create<TaskStore>()((set, get) => ({
@@ -57,16 +65,17 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
   serviceUnavailable: false,
   searchResults: [],
   knowledgeGraph: null,
+  _offlineEntries: [],
 
   fetchEntries: async (params) => {
     set({ isLoading: true, error: null });
     try {
       const response = await getEntries(params);
-      set({
-        tasks: response.entries,
+      set(state => ({
+        tasks: [...response.entries, ...state._offlineEntries],
         isLoading: false,
         serviceUnavailable: false,
-      });
+      }));
     } catch (error) {
       const is503 = error instanceof ApiError && error.isServiceUnavailable;
       set({
@@ -212,6 +221,37 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
 
   clearKnowledgeGraph: () => {
     set({ knowledgeGraph: null });
+  },
+
+  upsertOfflineEntry: (entry: Task) => {
+    set(state => {
+      const offlineEntry = { ...entry, _offlinePending: true };
+      const exists = state._offlineEntries.find(e => e.id === entry.id);
+      if (exists) {
+        return {
+          _offlineEntries: state._offlineEntries.map(e => e.id === entry.id ? offlineEntry : e),
+          tasks: state.tasks.map(t => t.id === entry.id ? offlineEntry : t),
+        };
+      }
+      return {
+        _offlineEntries: [...state._offlineEntries, offlineEntry],
+        tasks: [offlineEntry, ...state.tasks],
+      };
+    });
+  },
+
+  removeOfflineEntry: (clientEntryId: string) => {
+    set(state => ({
+      _offlineEntries: state._offlineEntries.filter(e => e.id !== clientEntryId),
+      tasks: state.tasks.filter(t => t.id !== clientEntryId),
+    }));
+  },
+
+  clearOfflineEntries: () => {
+    set(state => ({
+      _offlineEntries: [],
+      tasks: state.tasks.filter(t => !t._offlinePending),
+    }));
   },
 
   getTasksByCategory: (category: Category) => {

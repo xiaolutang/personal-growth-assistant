@@ -3,6 +3,16 @@ import type { Intent } from "@/lib/intentDetection";
 import type { IntentResult, ConfirmData, ResultItem } from "./useStreamParse";
 import { DEFAULT_SESSION_TITLE, MAX_TITLE_LENGTH } from "@/lib/sessionUtils";
 
+/** PWA 安装使用计数 — 直接操作 localStorage 避免循环依赖 */
+function incrementPWAUsage() {
+  try {
+    const key = "pwa-usage-count";
+    const next = (Number(localStorage.getItem(key)) || 0) + 1;
+    localStorage.setItem(key, String(next));
+    window.dispatchEvent(new CustomEvent("pwa-usage-updated"));
+  } catch {}
+}
+
 interface OperationStatus {
   type: Intent | "tool" | "skill";
   name?: string;
@@ -81,6 +91,7 @@ export function useChatActions(options: UseChatActionsOptions) {
         message: `已创建 ${count} 个条目`,
         timestamp: Date.now(),
       });
+      incrementPWAUsage();
     },
     [fetchEntries, updateTitleIfNeeded, setCurrentAction, setLastOperation]
   );

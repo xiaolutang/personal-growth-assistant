@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import PageSuggestions from "@/components/PageSuggestions";
 import {
   useStreamParse,
@@ -230,6 +231,15 @@ export function FloatingChat() {
         ? { ...pageContext, extra: { ...pageContext.extra, ...pageExtra } }
         : pageContext;
       const response = await parse(userMessage, activeSessionId, undefined, effectivePageContext);
+
+      // 离线保存失败：IndexedDB 不可用
+      if ((response as any).error === "offline_save_failed") {
+        toast.error("保存失败，请检查浏览器存储设置");
+        setInput(userMessage); // 保留用户输入
+        setIsSubmitting(false);
+        return;
+      }
+
       const intent = response.intent.intent as Intent;
       setCurrentIntent(intent);
       const { query, entities } = response.intent;

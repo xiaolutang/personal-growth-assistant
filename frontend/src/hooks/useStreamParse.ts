@@ -163,6 +163,72 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
       return new Promise((resolve, reject) => {
         (async () => {
           try {
+            // 离线拦截：仅 create 意图走离线队列，其他提示不支持
+            if (!navigator.onLine) {
+              // 如果是 confirm 请求或明确非创建意图，提示离线不支持
+              if (confirm) {
+                setIsLoading(false);
+                optionsRef.current.onMessage?.("assistant", "离线时暂不支持确认操作，请恢复网络后重试");
+                resolve({
+                  intent: { intent: "update" as const, confidence: 1, query: text, entities: {} },
+                });
+                return;
+              }
+              const clientEntryId = `local-${Date.now()}`;
+              const { add } = await import("@/lib/offlineQueue");
+              const queueId = await add({
+                client_entry_id: clientEntryId,
+                method: "POST",
+                url: "/entries",
+                body: { type: "inbox", title: text, content: text, status: "complete" },
+              });
+
+              if (!queueId) {
+                // IndexedDB 不可用
+                setIsLoading(false);
+                optionsRef.current.onMessage?.("assistant", "离线保存失败，请检查浏览器存储设置后重试");
+                resolve({
+                  intent: { intent: "create" as const, confidence: 1, query: text, entities: {} },
+                  error: "offline_save_failed",
+                } as ParseResponse & { error: string });
+                return;
+              }
+
+              // 乐观响应
+              const optimisticTask: ParsedTask = {
+                id: clientEntryId,
+                title: text,
+                content: text,
+                category: "inbox",
+                status: "complete",
+                tags: [],
+              };
+
+              // 添加离线条目到 taskStore
+              const { useTaskStore } = await import("@/stores/taskStore");
+              useTaskStore.getState().upsertOfflineEntry({
+                id: clientEntryId,
+                title: text,
+                content: text,
+                category: "inbox",
+                status: "complete",
+                tags: [],
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                file_path: "",
+                _offlinePending: true,
+              });
+
+              optionsRef.current.onCreated?.([clientEntryId], 1);
+              optionsRef.current.onMessage?.("assistant", "✅ 灵感已保存，将在恢复连接后同步");
+              setIsLoading(false);
+              resolve({
+                intent: { intent: "create" as const, confidence: 1, query: text, entities: {} },
+                result: { tasks: [optimisticTask] },
+              });
+              return;
+            }
+
             const res = await authFetch(`${API_BASE}/chat`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },

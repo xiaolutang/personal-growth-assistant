@@ -8,6 +8,7 @@ import { FloatingChat } from "@/components/FloatingChat";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import { PageAIAssistant } from "@/components/PageAIAssistant";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ThemeProvider } from "@/lib/theme";
 import { Home } from "@/pages/Home";
@@ -20,10 +21,12 @@ import { GoalsPage } from "@/pages/GoalsPage";
 import { GoalDetail } from "@/pages/GoalDetail";
 import { Login } from "@/pages/Login";
 import { Register } from "@/pages/Register";
+import { OfflineFallback } from "@/pages/OfflineFallback";
 import { useChatStore } from "@/stores/chatStore";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUserStore } from "@/stores/userStore";
 import { initFetchInterceptor } from "@/lib/uid";
+import { initSync } from "@/lib/offlineSync";
 
 // 在首次渲染前初始化 fetch 拦截器，确保所有请求都带 auth header
 initFetchInterceptor();
@@ -94,6 +97,7 @@ function AppLayout() {
             <Route path="/projects" element={<Navigate to="/explore?type=project" replace />} />
             <Route path="/review" element={<Review />} />
             <Route path="/entries/:id" element={<EntryDetail />} />
+            <Route path="/offline" element={<OfflineFallback />} />
           </Routes>
         </div>
       </div>
@@ -133,12 +137,14 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 认证后才加载数据
+  // 认证校验完成且有效后才加载数据和同步
+  const isLoading = useUserStore((state) => state.isLoading);
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !isLoading) {
       fetchEntries({ limit: 100 });
+      initSync();
     }
-  }, [isAuthenticated, fetchEntries]);
+  }, [isAuthenticated, isLoading, fetchEntries]);
 
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
@@ -158,6 +164,7 @@ function App() {
                   <OnboardingFlow onComplete={handleOnboardingComplete} />
                 )}
                 <Toaster position="top-center" richColors />
+                <OfflineIndicator />
                 <AppLayout />
               </SidebarProvider>
               </ThemeProvider>

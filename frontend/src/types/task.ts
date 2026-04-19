@@ -23,6 +23,8 @@ export interface Task {
   parent_id?: string;
   file_path: string;
   priority?: Priority;
+  /** 离线创建的条目标识，同步完成后移除 */
+  _offlinePending?: boolean;
 }
 
 // 创建条目请求

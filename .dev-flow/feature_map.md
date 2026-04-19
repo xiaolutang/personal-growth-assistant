@@ -1,12 +1,25 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：无
-> 最后更新：2026-04-18
+> 活跃需求包：R019 离线增强 + PWA
+> 最后更新：2026-04-19
 
 ## 活跃需求包
 
-当前无活跃需求包。
+### R019 离线增强 + PWA
+- 分支：feat/R019-offline-pwa
+- 状态：审计中
+
+| 任务 | 模块 | 状态 | 审查 |
+|------|------|------|------|
+| S03 | PWA 基础设施 | completed | PASS |
+| S04 | 在线状态检测 | completed | PASS |
+| F58 | 离线降级页面 | completed | PASS |
+| F59 | IndexedDB 离线队列 | completed | PASS |
+| F60 | 离线同步回放 | completed | Codex PASS |
+| F61 | 离线创建拦截 | completed | Codex PASS |
+| F62 | PWA 安装引导 | completed | Codex PASS |
+| B73 | 质量收口 | completed | PASS |
 
 ## 归档需求包
 
@@ -33,6 +46,6 @@
 
 | 项目 | 测试数 | 状态 |
 |------|--------|------|
-| 后端测试 | 810 passed | 全绿 |
-| 前端测试 | 245 passed | 全绿 |
+| 后端测试 | 857 passed | 全绿 |
+| 前端测试 | 321 passed | 全绿 |
 | E2E 测试 | 8 passed (page-context) | 全绿 |
