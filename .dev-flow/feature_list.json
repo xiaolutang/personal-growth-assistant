@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 2,
-    "completed": 3,
+    "pending": 1,
+    "completed": 4,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -267,8 +267,11 @@
       "description": "R017 审计中多处修复后缺少对应集成测试。补充：entries export、goal CRUD、feedback 边界场景。",
       "verification": "uv run pytest tests/ 新增测试通过",
       "depends_on": ["B66"],
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
+      "started_at": "2026-04-19T12:00",
+      "completed_at": "2026-04-19T12:20",
+      "evidence_file": "evidence/B69.md",
       "acceptance_criteria": [
         "entries export API 集成测试（zip + json 格式）",
         "goal CRUD API 集成测试（创建/更新/删除/列表）",
