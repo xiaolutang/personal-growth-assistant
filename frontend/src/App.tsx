@@ -26,6 +26,7 @@ import { useChatStore } from "@/stores/chatStore";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUserStore } from "@/stores/userStore";
 import { initFetchInterceptor } from "@/lib/uid";
+import { initSync } from "@/lib/offlineSync";
 
 // 在首次渲染前初始化 fetch 拦截器，确保所有请求都带 auth header
 initFetchInterceptor();
@@ -140,6 +141,7 @@ function App() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchEntries({ limit: 100 });
+      initSync();
     }
   }, [isAuthenticated, fetchEntries]);
 

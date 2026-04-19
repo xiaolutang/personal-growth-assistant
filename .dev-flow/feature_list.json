@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 8,
-    "pending": 3,
-    "completed": 5,
+    "pending": 2,
+    "completed": 6,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -226,7 +226,12 @@
       "description": "创建 offlineSync 模块（lib/offlineSync.ts）：监听 useOnlineStatus 的 online 回调，自动重放 offlineQueue 中的 pending mutation。逐条调用 createEntry（api.ts 封装的 openapi-fetch，已处理 category 映射和 auth headers），成功则从队列移除并通知 taskStore 清除对应 _offlinePending 条目（通过 client_entry_id 映射），失败则按类型处理：5xx 重试（retry_count + 1，超过 3 次标记 failed），401 立即标记 failed（认证错误不可重试）并触发 UI 提示「请重新登录」。防重入：同步进行中的布尔锁阻止重复触发。同步完成后通过回调通知 taskStore 调用 fetchEntries() 刷新服务端数据，同时清除已同步的离线条目。OfflineIndicator 组件显示同步进度（如「正在同步 2/3...」）。**初始化同步**：除 online 事件外，模块导出 initSync() 方法，在 app 启动时（App.tsx useEffect）检查 navigator.onLine === true 且队列有 pending 项时立即触发同步，覆盖「app 重启时已在线但有 pending 队列」场景。",
       "verification": "离线创建 3 条 inbox → 上线 → 自动同步 → 条目出现在列表中",
       "depends_on": ["F59", "F61", "S04"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-19T22:05",
+      "completed_at": "2026-04-19T22:20",
+      "actual_minutes": 15,
+      "evidence_file": ".dev-flow/evidence/F60.md",
+      "execution_notes": "offlineSync 模块 + OfflineIndicator 同步进度 + initSync 启动触发。8 个单元测试，295 tests total",
       "priority": 2,
       "acceptance_criteria": [
         "online 事件触发后自动重放 pending 队列",
