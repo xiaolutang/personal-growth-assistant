@@ -225,11 +225,18 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
 
   upsertOfflineEntry: (entry: Task) => {
     set(state => {
+      const offlineEntry = { ...entry, _offlinePending: true };
       const exists = state._offlineEntries.find(e => e.id === entry.id);
       if (exists) {
-        return { _offlineEntries: state._offlineEntries.map(e => e.id === entry.id ? entry : e) };
+        return {
+          _offlineEntries: state._offlineEntries.map(e => e.id === entry.id ? offlineEntry : e),
+          tasks: state.tasks.map(t => t.id === entry.id ? offlineEntry : t),
+        };
       }
-      return { _offlineEntries: [...state._offlineEntries, { ...entry, _offlinePending: true }] };
+      return {
+        _offlineEntries: [...state._offlineEntries, offlineEntry],
+        tasks: [offlineEntry, ...state.tasks],
+      };
     });
   },
 

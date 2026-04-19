@@ -20,6 +20,14 @@ export function usePWAInstall() {
       return 0;
     }
   });
+  const [dismissedAt, setDismissedAt] = useState(() => {
+    try {
+      const v = localStorage.getItem(DISMISSED_KEY);
+      return v ? Number(v) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Listen for beforeinstallprompt
   useEffect(() => {
@@ -80,20 +88,15 @@ export function usePWAInstall() {
   }
 
   // Banner logic: canInstall && usageCount >= 3 && not recently dismissed
-  const showBanner = canInstall && usageCount >= 3 && (() => {
-    try {
-      const dismissed = localStorage.getItem(DISMISSED_KEY);
-      if (!dismissed) return true;
-      return Date.now() - Number(dismissed) > DISMISS_DURATION;
-    } catch {
-      return true;
-    }
-  })();
+  const isDismissed = dismissedAt !== null && (Date.now() - dismissedAt) <= DISMISS_DURATION;
+  const showBanner = canInstall && usageCount >= 3 && !isDismissed;
 
   const dismissBanner = useCallback(() => {
+    const now = Date.now();
     try {
-      localStorage.setItem(DISMISSED_KEY, String(Date.now()));
+      localStorage.setItem(DISMISSED_KEY, String(now));
     } catch {}
+    setDismissedAt(now);
   }, []);
 
   return { canInstall, promptInstall, usageCount, incrementUsageCount, showBanner, dismissBanner };

@@ -163,8 +163,17 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
       return new Promise((resolve, reject) => {
         (async () => {
           try {
-            // 离线拦截：跳过 SSE，写入离线队列
+            // 离线拦截：仅 create 意图走离线队列，其他提示不支持
             if (!navigator.onLine) {
+              // 如果是 confirm 请求或明确非创建意图，提示离线不支持
+              if (confirm) {
+                setIsLoading(false);
+                optionsRef.current.onMessage?.("assistant", "离线时暂不支持确认操作，请恢复网络后重试");
+                resolve({
+                  intent: { intent: "update" as const, confidence: 1, query: text, entities: {} },
+                });
+                return;
+              }
               const clientEntryId = `local-${Date.now()}`;
               const { add } = await import("@/lib/offlineQueue");
               const queueId = await add({
@@ -177,6 +186,7 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
               if (!queueId) {
                 // IndexedDB 不可用
                 setIsLoading(false);
+                optionsRef.current.onMessage?.("assistant", "离线保存失败，请检查浏览器存储设置后重试");
                 resolve({
                   intent: { intent: "create" as const, confidence: 1, query: text, entities: {} },
                   error: "offline_save_failed",

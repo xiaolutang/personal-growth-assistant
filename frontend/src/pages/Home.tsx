@@ -477,42 +477,49 @@ export function Home() {
                         key={item.id}
                         className="flex items-center gap-1 rounded-lg px-2 py-1.5 hover:bg-accent/50 transition-colors group"
                       >
-                        <Link
-                          to={`/entries/${item.id}`}
-                          className="flex items-center gap-2 flex-1 min-w-0"
-                        >
-                          <Lightbulb className="h-3.5 w-3.5 text-yellow-500 dark:text-yellow-400 shrink-0" />
-                          <span className="text-sm truncate">{item.title}</span>
-                          {item._offlinePending && (
+                        {item._offlinePending ? (
+                          <span className="flex items-center gap-2 flex-1 min-w-0 cursor-default">
+                            <Lightbulb className="h-3.5 w-3.5 text-yellow-500 dark:text-yellow-400 shrink-0" />
+                            <span className="text-sm truncate">{item.title}</span>
                             <span className="inline-flex items-center rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 shrink-0">
                               待同步
                             </span>
-                          )}
-                          {item.status !== "complete" && (
-                            <span className="text-[10px] text-muted-foreground shrink-0">
-                              {new Date(item.created_at).toLocaleDateString("zh-CN", {
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </span>
-                          )}
-                        </Link>
-                        <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => handleConvert(e, item.id, item.title, "task")}
-                            disabled={convertingId === item.id}
-                            className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 disabled:opacity-50 transition-colors"
-                          >
-                            {convertingId === item.id ? "..." : "转任务"}
-                          </button>
-                          <button
-                            onClick={(e) => handleConvert(e, item.id, item.title, "note")}
-                            disabled={convertingId === item.id}
-                            className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 disabled:opacity-50 transition-colors"
-                          >
-                            {convertingId === item.id ? "..." : "转笔记"}
-                          </button>
-                        </div>
+                          </span>
+                        ) : (
+                          <>
+                            <Link
+                              to={`/entries/${item.id}`}
+                              className="flex items-center gap-2 flex-1 min-w-0"
+                            >
+                              <Lightbulb className="h-3.5 w-3.5 text-yellow-500 dark:text-yellow-400 shrink-0" />
+                              <span className="text-sm truncate">{item.title}</span>
+                              {item.status !== "complete" && (
+                                <span className="text-[10px] text-muted-foreground shrink-0">
+                                  {new Date(item.created_at).toLocaleDateString("zh-CN", {
+                                    month: "short",
+                                    day: "numeric",
+                                  })}
+                                </span>
+                              )}
+                            </Link>
+                            <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={(e) => handleConvert(e, item.id, item.title, "task")}
+                                disabled={convertingId === item.id}
+                                className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 disabled:opacity-50 transition-colors"
+                              >
+                                {convertingId === item.id ? "..." : "转任务"}
+                              </button>
+                              <button
+                                onClick={(e) => handleConvert(e, item.id, item.title, "note")}
+                                disabled={convertingId === item.id}
+                                className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 disabled:opacity-50 transition-colors"
+                              >
+                                {convertingId === item.id ? "..." : "转笔记"}
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     ))}
                   </div>

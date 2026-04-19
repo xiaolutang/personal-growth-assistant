@@ -220,6 +220,18 @@ export async function clear(): Promise<void> {
     const user_id = getUserId();
     if (!user_id) return;
 
+    await clearForUser(user_id);
+  } catch {
+    // 静默
+  }
+}
+
+/**
+ * 清空指定用户的所有队列项（logout 时使用，避免竞态）。
+ * IndexedDB 不可用时静默忽略。
+ */
+export async function clearForUser(userId: string): Promise<void> {
+  try {
     const db = await openDB();
 
     return new Promise((resolve) => {
@@ -230,7 +242,7 @@ export async function clear(): Promise<void> {
       req.onsuccess = () => {
         const records = req.result as OfflineQueueItem[];
         for (const r of records) {
-          if (r.user_id === user_id) {
+          if (r.user_id === userId) {
             store.delete(r.id);
           }
         }

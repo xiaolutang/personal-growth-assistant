@@ -66,13 +66,17 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   logout: () => {
-    // 清理离线条目（fire-and-forget，不阻塞登出）
-    import("@/stores/taskStore").then(m => m.useTaskStore.getState().clearOfflineEntries()).catch(() => {});
-    import("@/lib/offlineQueue").then(m => m.clear().catch(() => {}));
+    // 先捕获当前 user_id，再异步清理（避免清理时 user 已被置空）
+    const userId = get().user?.id;
 
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     set({ user: null, token: null, isAuthenticated: false });
+
+    if (userId) {
+      import("@/stores/taskStore").then(m => m.useTaskStore.getState().clearOfflineEntries()).catch(() => {});
+      import("@/lib/offlineQueue").then(m => m.clearForUser(userId).catch(() => {})).catch(() => {});
+    }
   },
 
   loadFromStorage: () => {

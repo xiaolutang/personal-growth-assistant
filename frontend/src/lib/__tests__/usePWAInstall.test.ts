@@ -51,10 +51,20 @@ describe("usePWAInstall", () => {
     expect(result.current.showBanner).toBe(false);
   });
 
-  it("dismissBanner writes timestamp to localStorage", () => {
+  it("dismissBanner writes timestamp and immediately hides banner", () => {
     storage["pwa-usage-count"] = "3";
     const { result } = renderHook(() => usePWAInstall());
 
+    // First make banner visible
+    act(() => {
+      const event = new Event("beforeinstallprompt");
+      Object.defineProperty(event, "prompt", { value: vi.fn() });
+      Object.defineProperty(event, "userChoice", { value: Promise.resolve({ outcome: "dismissed" }) });
+      window.dispatchEvent(event);
+    });
+    expect(result.current.showBanner).toBe(true);
+
+    // Dismiss and verify immediate state change
     act(() => {
       result.current.dismissBanner();
     });
@@ -63,6 +73,7 @@ describe("usePWAInstall", () => {
       "pwa-banner-dismissed",
       expect.any(String)
     );
+    expect(result.current.showBanner).toBe(false);
   });
 
   it("showBanner=false when recently dismissed", () => {
