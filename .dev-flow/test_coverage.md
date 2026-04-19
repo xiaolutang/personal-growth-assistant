@@ -110,5 +110,5 @@
 | IndexedDB 队列 | F59 | unit | add+getAll+update 正确/remove 清空/count 正确/IndexedDB 不可用返回默认值不抛错/user_id 隔离过滤/client_entry_id 字段正确存储 | completed | 11 tests in offlineQueue.test.ts |
 | 离线同步 | F60 | unit | 3 条全成功/第 2 条 5xx 失败不影响/空队列无操作/防重入布尔锁/401 立即 failed 不重试/UI 显示重新登录提示/initSync 已在线+队列非空触发/initSync 离线不触发/client_entry_id 映射 removeOfflineEntry | completed | 8 tests in offlineSync.test.ts, 295 total frontend tests |
 | 离线创建拦截 | F61 | unit | 离线→add()成功→写队列+返回乐观响应+触发 onCreated 回调/离线→add()返回''→失败 toast+保留输入+不触发回调/在线→正常 SSE 不走队列/taskStore.upsertOfflineEntry 正确合并/fetchEntries 后离线条目不丢失/Home.tsx recentInbox 显示待同步 badge（Explore MVP 不显示，重新进入后可见）/同步后 badge 消失/client_entry_id 正确映射/登出丢弃未同步数据 | completed | npm run build 通过 + 287 tests pass + 代码映射验证 |
-| PWA 安装引导 | F62 | unit | canInstall+usageCount>=3 显示横条/usageCount<3 不显示/点击安装调用 promptInstall/关闭 7 天不显示/canInstall=false 不显示/appinstalled 横条消失/7 天后恢复显示 | pending | — |
+| PWA 安装引导 | F62 | unit | canInstall+usageCount>=3 显示横条/usageCount<3 不显示/点击安装调用 promptInstall/关闭 7 天不显示/canInstall=false 不显示/appinstalled 横条消失/7 天后恢复显示 | completed | 8 tests in usePWAInstall.test.ts, 303 total |
 | 质量收口 | B73 | integration+smoke | 后端测试全通过/前端构建通过/前端测试通过/新增测试 ≥ 5/smoke：离线创建→恢复网络→自动同步→UI更新 | pending | risk: startup |

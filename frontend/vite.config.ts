@@ -16,6 +16,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['vite.svg'],
       manifest: {
+        lang: 'zh-CN',
         name: 'Growth Assistant - 个人成长助手',
         short_name: 'Growth',
         description: '个人成长管理助手 — 任务、灵感、笔记、知识图谱',

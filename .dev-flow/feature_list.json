@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 8,
-    "pending": 2,
-    "completed": 6,
+    "pending": 1,
+    "completed": 7,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -323,7 +323,12 @@
       "description": "增强已有的 usePWAInstall hook 和 Header.tsx 安装按钮，不创建新组件。具体：1) usePWAInstall 新增 usageCount 追踪（localStorage pwa-usage-count），暴露 incrementUsageCount() 方法供外部调用，写入后触发 window 自定义事件 `pwa-usage-updated`；2) usePWAInstall 监听 `pwa-usage-updated` 事件和 `storage` 事件（跨 tab），收到后重读 localStorage 更新 usageCount 状态，解决同 tab 多 hook 实例状态同步问题；3) useChatActions.ts 的 onCreated 回调中调用 incrementUsageCount()（条目创建成功时 +1，这是唯一可靠的创建事件源）；4) 当 canInstall && usageCount >= 3 时，Header 安装按钮升级为醒目的引导横条（带关闭按钮和「安装到桌面」文案）；5) 用户关闭横条后 7 天内不再显示（localStorage pwa-banner-dismissed）；6) vite.config.ts manifest 添加 lang: 'zh-CN'。",
       "verification": "Chrome 中 canInstall=true 且 usageCount>=3 时显示安装引导横条，点击触发系统安装对话框",
       "depends_on": ["S03"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-19T22:20",
+      "completed_at": "2026-04-19T22:30",
+      "actual_minutes": 10,
+      "evidence_file": ".dev-flow/evidence/F62.md",
+      "execution_notes": "usePWAInstall 增强 usageCount + showBanner + dismissBanner + Header 横条 + onCreated 计数 + manifest lang。8 个测试",
       "priority": 3,
       "acceptance_criteria": [
         "manifest lang 改为 zh-CN",
