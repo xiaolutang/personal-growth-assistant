@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 8,
-    "pending": 6,
-    "completed": 2,
+    "pending": 5,
+    "completed": 3,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -184,8 +184,12 @@
       "description": "创建 offlineQueue 模块（lib/offlineQueue.ts）：使用 IndexedDB（数据库名 growth-offline，store 名 mutations）存储离线 mutation。仅提供纯数据操作，不做 API 拦截。队列项 schema：{id: string, user_id: string, client_entry_id: string, method: string, url: string, body: object, timestamp: number, status: 'pending' | 'synced' | 'failed', retry_count: number}。client_entry_id 存储本地乐观条目 ID（如 'local-{ts}'），同步成功后用于映射 taskStore.removeOfflineEntry(client_entry_id)。user_id 从 userStore 获取，所有查询按 user_id 过滤实现多账号隔离。支持 add / getAll / update / remove / count / clear 操作。IndexedDB 不可用时统一 fallback：add 返回空字符串，getAll 返回空数组，count 返回 0，不返回 null 不抛错。",
       "verification": "单元测试验证 add → getAll 返回正确数据；IndexedDB mock 不可用时操作返回默认值不抛错",
       "depends_on": [],
-      "status": "pending",
-      "priority": 2,
+      "status": "completed",
+      "started_at": "2026-04-19T20:45",
+      "completed_at": "2026-04-19T20:50",
+      "actual_minutes": 5,
+      "evidence_file": ".dev-flow/evidence/F59.md",
+      "execution_notes": "IndexedDB 离线队列模块，6个异步方法，user_id 隔离，优雅降级，11个测试",
       "acceptance_criteria": [
         "offlineQueue 模块导出 add / getAll / update / remove / count / clear 六个异步方法",
         "add(query) 写入 IndexedDB，自动注入 user_id，返回生成的 id",
