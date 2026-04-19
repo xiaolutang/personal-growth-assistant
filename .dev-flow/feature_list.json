@@ -231,7 +231,7 @@
       "completed_at": "2026-04-19T22:20",
       "actual_minutes": 15,
       "evidence_file": ".dev-flow/evidence/F60.md",
-      "execution_notes": "offlineSync 模块 + OfflineIndicator 同步进度 + initSync 启动触发。8 个单元测试，295 tests total",
+      "execution_notes": "offlineSync 模块 + OfflineIndicator 同步进度 + initSync 启动触发。9 个单元测试 + 7 个集成测试，318 tests total",
       "priority": 2,
       "acceptance_criteria": [
         "online 事件触发后自动重放 pending 队列",
@@ -278,7 +278,7 @@
       "completed_at": "2026-04-19T22:00",
       "actual_minutes": 55,
       "evidence_file": ".dev-flow/evidence/F61.md",
-      "execution_notes": "离线拦截 useStreamParse + taskStore 离线条目管理 + Home 待同步 badge + FloatingChat 错误处理 + 登出清理。构建通过，287 tests pass",
+      "execution_notes": "离线拦截 useStreamParse + taskStore 离线条目管理 + Home 待同步 badge + FloatingChat 错误处理 + 登出清理 + 6 个集成测试。构建通过，318 tests pass",
       "priority": 2,
       "acceptance_criteria": [
         "离线时首页 AI 对话（useStreamParse）跳过 SSE 请求，将用户输入写入 offlineQueue（含 user_id + client_entry_id）",
@@ -370,7 +370,7 @@
       "completed_at": "2026-04-19T22:35",
       "actual_minutes": 5,
       "evidence_file": ".dev-flow/evidence/B73.md",
-      "execution_notes": "质量收口：857 后端 + 303 前端测试全通过 + 构建通过 + 新增 51 个测试",
+      "execution_notes": "质量收口：857 后端 + 318 前端测试全通过 + 构建通过 + 新增 72 个测试（含 12 个集成测试）",
       "priority": 3,
       "acceptance_criteria": [
         "cd backend && uv run pytest tests/ — 0 errors, 0 failures",
