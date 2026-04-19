@@ -1,13 +1,13 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.12.0
+> 版本：v0.15.0
 
 ## 目标
 
-- R015 回顾增强 — 升级回顾页数据质量和可视化，让用户更清晰地看见成长轨迹
+- R019 离线增强 + PWA — 修复 SW 缓存策略、离线状态检测、离线写入队列、PWA 安装引导
 
-## 前置依赖（R001-R014 已完成）
+## 前置依赖（R001-R018 已完成）
 
 - 条目 CRUD、分类管理、搜索（R001-R004）
 - 知识图谱 + 图谱可视化（R005-R008）
@@ -16,56 +16,50 @@
 - 目标追踪闭环（R012）
 - 月报 AI 总结 + 决策/复盘/疑问条目类型（R013）
 - 页面级上下文 AI + 快捷建议 Chips（R014）
-- 回顾页基础功能：日报/周报/月报、趋势折线图、成长曲线、知识热力图、活动热力图
+- 回顾增强：多维趋势、Neo4j 热力图、晨报集成（R015）
+- 全局 Cmd+K 搜索 + 首页灵感转化（R016）
+- 代码审计加固：注入防护、认证加固、N+1 优化（R017）
+- 缺陷修复 + 质量收口（R018）
 
-## 现有基础设施
+## 基线分析
 
-### 已完成（回顾页）
-
-- `GET /review/trend` 趋势数据 API（TrendPeriod: total/completed/completion_rate/notes_count）
-- `GET /review/knowledge-heatmap` 知识热力图 API（从 SQLite tags 提取概念）
-- `GET /review/growth-curve` 成长曲线 API（按周统计概念数量）
-- `GET /review/morning-digest` 晨报 API（AI 建议、待办、过期、连续天数）
-- `GET /review/activity-heatmap` 活动热力图 API
-- Review.tsx 四标签页：日报/周报/月报/趋势
-- recharts 图表库已安装（LineChart + AreaChart）
-- Neo4j `get_all_concepts_with_stats()` 已有但 review 未使用
-
-### 需增强
-
-1. 趋势数据仅单维度（completion_rate），TrendPeriod 有 notes_count 但未在前端渲染
-2. 知识热力图用 SQLite tags，数据质量不如 Neo4j 概念数据
-3. 晨报 API 已实现但未在 Review 页展示
-4. 掌握度计算仅基于 entry_count，未利用概念关系数据
+当前 PWA 状态：
+- 静态资源 precache ✓
+- API runtime caching URL pattern 不匹配（正则用路径而非完整 URL）
+- 无离线状态检测 UI
+- 无离线写入队列
+- 无 Background Sync
+- 无 PWA 安装引导
 
 ## 范围
 
-### 包含
+### 包含（8 个任务）
 
-- B52: 后端趋势数据多维扩展 + 周环比对比
-- B53: 后端知识热力图 Neo4j 数据源升级
-- F40: 前端趋势图多维展示
-- F41: 前端知识热力图升级
-- F42: 前端晨报集成到回顾日报页
+- S03: 修复 SW 缓存策略 + URL pattern
+- S04: useOnlineStatus hook + OfflineIndicator 组件
+- F58: 离线回退页面
+- F59: IndexedDB 离线队列服务
+- F60: 离线同步：上线后自动回放队列
+- F61: API 层离线拦截集成
+- F62: PWA 安装引导
+- B73: 质量收口
 
 ### 不包含
 
-- 知识图谱可视化（@xyflow/react 图谱，留给后续周期）
-- 灵感转化率统计（需跟踪 category 变更历史，超出本轮范围）
-- Flutter 移动端（第三阶段 Phase 12，需独立周期）
-- AI 主动推送完善（第三阶段 Phase 13，需数据积累）
+- 离线编辑已有条目（仅支持离线创建 inbox）
+- Background Sync API（Safari 不支持，用 online 事件替代）
+- 离线搜索（搜索依赖后端 LLM）
+- 离线知识图谱（依赖 Neo4j）
 
 ## 用户路径
 
-1. 回顾页 → 趋势标签 → 看到多线图（完成率 + 任务/笔记/灵感数量趋势）→ 直观了解成长节奏
-2. 回顾页 → 趋势标签 → 知识热力图显示按类别分组的概念 → 点击查看掌握度详情
-3. 回顾页 → 日报标签 → 顶部看到晨报卡片（AI 建议 + 待办 + 过期 + 连续天数）
-4. 回顾页 → 周报 → 看到环比对比（↑12% vs 上周）
+1. 地铁离线 → 打开应用 → 看到离线提示 → 可查看已缓存条目
+2. 离线时在首页输入灵感 → 创建成功（本地）→ 上线后自动同步
+3. 首次使用后出现安装引导 → 点击安装 → 桌面图标可用
 
 ## 技术约束
 
-- 趋势 API 扩展保持向后兼容（新增字段默认 0）
-- 知识热力图 Neo4j 降级到 SQLite tags 必须无缝（try/except）
-- recharts 已安装，不引入新图表库
-- 晨报卡片样式复用现有 AI 总结卡片的展开/收起模式
-- 所有数据操作带 user_id 隔离
+- 离线队列使用 IndexedDB，不引入重量级依赖
+- 离线写入仅支持 inbox 创建（最小验证）
+- SW 缓存策略不缓存搜索和流式请求
+- workflow: B/codex_plugin/skill_orchestrated

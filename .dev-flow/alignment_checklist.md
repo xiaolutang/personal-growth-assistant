@@ -1,5 +1,83 @@
 # 对齐清单
 
+## R019: 离线增强 + PWA
+
+### 契约对齐
+
+- [ ] S03: CONTRACT-SWCACHE01 (SW URL pattern 修复) 已定义 → 含完整 URL 正则 + 三层策略 ✓
+- [ ] F59: CONTRACT-OFFLINE01 (IndexedDB offlineQueue) 已定义 → 纯前端数据层，无后端 API ✓
+- [ ] F60: 复用已有 POST /entries 端点回放队列，无新端点 ✓
+- [ ] F61: CONTRACT-OFFLINE03 (POST /chat 离线拦截) 已定义 → 拦截 useStreamParse SSE 请求 ✓
+- [ ] F62: CONTRACT-PWA01 (manifest lang) 已定义 → 仅修改 vite.config.ts ✓
+- [ ] F61 不假设 createEntry 路径，正确描述 useStreamParse → POST /chat SSE 路径 ✓
+
+### 依赖对齐
+
+- [ ] S03 无外部依赖 ✓
+- [ ] S04 无外部依赖 ✓
+- [ ] F58 使用 SPA 内 React 路由实现（不替换 SW navigateFallback index.html），保持 deep-link 兼容 ✓
+- [ ] F59 无外部依赖 ✓（纯 IndexedDB 模块）
+- [ ] F60 depends_on F59 + F61 + S04 ✓（需要队列数据 + taskStore 离线方法 + 在线状态检测）
+- [ ] F61 depends_on F59 + S04 ✓（需要队列 + 在线状态）
+- [ ] F62 depends_on S03 ✓（需要 SW 正确配置）
+- [ ] B73 depends_on 全部 ✓（收口任务）
+- [ ] F59 和 S04 无互相依赖，可并行 ✓
+
+### 架构对齐
+
+- [ ] 离线队列使用 IndexedDB，不引入重量级依赖 ✓
+- [ ] 离线创建仅支持 inbox 类型（最小验证），不覆盖编辑/搜索/图谱 ✓
+- [ ] F59 纯数据层，不做 API 拦截（与 F61 职责清晰分离）✓
+- [ ] F61 拦截点在 useStreamParse（首页 AI 对话），不在 api.ts createEntry ✓
+- [ ] F61 FloatingChat 通过 ParseResponse.error === 'offline_save_failed' 分支控制不清空输入 + 不追加聊天历史 ✓
+- [ ] 首页 AI 对话创建 inbox 路径：useStreamParse → POST /chat SSE（非 createEntry）✓
+- [ ] Task 类型添加 _offlinePending 可选字段，不破坏已有类型 ✓
+- [ ] taskStore 内部维护 _offlineEntries 数组，新增 upsertOfflineEntry / removeOfflineEntry ✓
+- [ ] taskStore.fetchEntries() 合并离线条目，不被整包覆盖丢失 ✓
+- [ ] /inbox 已重定向到 /explore?type=inbox（App.tsx:92），F61 落点在 Home.tsx + Explore.tsx ✓
+- [ ] F62 增强已有 usePWAInstall + Header，不创建新 InstallPrompt 组件 ✓
+- [ ] F62 incrementUsageCount 由 useChatActions.onCreated 调用（可靠的创建事件源）✓
+- [ ] F62 使用 localStorage 追踪使用次数，不引入新状态管理 ✓
+- [ ] SW 缓存不缓存搜索和流式请求（NetworkOnly）✓
+- [ ] 前端遵循现有 api.ts + authFetch + store 模式 ✓
+- [ ] S04 离线启动恢复：userStore 网络失败不 logout，ProtectedRoute 检查 token 存在即放行 ✓
+- [ ] F60 initSync() 覆盖 app 重启时已在线 + pending 队列场景 ✓
+
+### 数据模型对齐
+
+- [ ] OfflineMutation 类型定义在 offlineQueue.ts 模块内 ✓
+- [ ] OfflineMutation 包含 client_entry_id 字段，同步成功后映射 removeOfflineEntry ✓
+- [ ] Task._offlinePending 为可选字段，后端不感知 ✓
+- [ ] taskStore._offlineEntries 独立于 tasks，fetchEntries 合并后不被覆盖 ✓
+- [ ] offlineQueue 按 user_id 隔离，getAll/count 按当前用户过滤 ✓
+- [ ] userStore.logout() 清理 _offlineEntries + offlineQueue.clear() ✓
+- [ ] F60 401 = 立即 failed（不重试），5xx = retry_count + 1（策略明确）✓
+- [ ] F60 同步成功后通过 client_entry_id 映射 removeOfflineEntry + fetchEntries ✓
+- [ ] F60 使用 createEntry（api.ts）回放，body 用 `type` 字段（与 EntryCreate 输入一致），createEntry 自动映射 type→category ✓
+- [ ] F61 覆盖 FloatingChat.tsx（输入清空控制：add() 失败时保留输入）✓
+- [ ] F62 usePWAInstall 通过 window 自定义事件 `pwa-usage-updated` + storage 事件实现跨 hook 实例状态同步 ✓
+- [ ] 本期不做 Background Sync API，仅用 online 事件 + initSync() 实现同步 ✓
+- [ ] IndexedDB 不可用时统一 fallback：add→''，getAll→[]，count→0，不返回 null ✓
+- [ ] F61 add() 返回 '' 时：失败 toast + 保留输入 + 不生成乐观条目 + 不触发 onCreated ✓
+- [ ] Explore.tsx MVP 阶段不显示离线条目（独立 getEntries），同步后需重新进入 Explore 才可见（不自动刷新）✓
+- [ ] Home.tsx recentInbox 是离线「待同步」badge 的主要 UI 落点 ✓
+- [ ] 登出即丢弃未同步数据（clear 清空当前用户队列），不承诺重新登录后恢复 ✓
+- [ ] S04 区分网络失败（保留登录态）vs 401/无效 token（登出），认证不变量不被破坏 ✓
+
+### 验收对齐
+
+- [ ] 每个任务有 acceptance_criteria ✓
+- [ ] 每个任务有 test_tasks ✓
+- [ ] S03 risk_tags: network, startup ✓
+- [ ] S03 test_tasks 包含 DevTools 缓存命中验证 ✓
+- [ ] F59 test_tasks 包含 IndexedDB 不可用 fallback ✓
+- [ ] F60 test_tasks 包含防重入 + 401 token 过期 ✓
+- [ ] F61 test_tasks 包含在线/离线路径对比 ✓
+- [ ] F62 test_tasks 包含使用次数阈值 + 关闭 7 天逻辑 ✓
+- [ ] 前端任务都要求 npm run build 通过 ✓
+
+---
+
 ## R016: 小闭环收口
 
 ### 契约对齐
