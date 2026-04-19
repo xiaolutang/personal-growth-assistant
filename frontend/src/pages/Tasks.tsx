@@ -6,7 +6,7 @@ import { TaskList } from "@/components/TaskList";
 import { Header } from "@/components/layout/Header";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { useTaskStore } from "@/stores/taskStore";
-import { Filter, X, Calendar } from "lucide-react";
+import { Filter, X, Calendar, Loader2 } from "lucide-react";
 import type { TaskStatus } from "@/types/task";
 import { statusConfig } from "@/config/constants";
 
@@ -229,7 +229,10 @@ export function Tasks() {
 
           <CardContent>
             {isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">加载中...</div>
+              <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                加载中...
+              </div>
             ) : (
               <TaskList
                 tasks={filteredTasks}

@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 3,
-    "completed": 2,
+    "pending": 2,
+    "completed": 3,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -235,8 +235,11 @@
       "description": "检查列表页空状态和加载态是否一致：首页、任务页、探索页。确保空数据时有引导文案、loading 时有指示。详情页（EntryDetail）由 B67 覆盖。",
       "verification": "清空数据 → 各页面有合理空状态提示",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
+      "started_at": "2026-04-19T11:45",
+      "completed_at": "2026-04-19T12:00",
+      "evidence_file": "evidence/B68.md",
       "acceptance_criteria": [
         "首页空状态有引导文案（如「记录你的第一条想法」）",
         "任务页空状态有引导文案",

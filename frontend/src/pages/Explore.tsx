@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, Lightbulb, FileText, Folder, Layers, Clock, X, TrendingUp, Scale, RotateCcw, HelpCircle } from "lucide-react";
+import { Search, Lightbulb, FileText, Folder, Layers, Clock, X, TrendingUp, Scale, RotateCcw, HelpCircle, Loader2 } from "lucide-react";
 import { getEntries, searchEntries } from "../services/api";
 import { TaskList } from "../components/TaskList";
 import type { Task } from "../types/task";
@@ -371,9 +371,15 @@ export function Explore() {
           </CardTitle>
         </CardHeader>
         {isLoading ? (
-          <div className="p-4 text-center text-gray-500 dark:text-gray-400">加载中...</div>
+          <div className="flex items-center justify-center gap-2 p-4 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            加载中...
+          </div>
         ) : isSearching ? (
-          <div className="p-4 text-center text-gray-500 dark:text-gray-400">搜索中...</div>
+          <div className="flex items-center justify-center gap-2 p-4 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            搜索中...
+          </div>
         ) : searchError ? (
           <div className="p-4 text-center text-red-500 dark:text-red-400">{searchError}</div>
         ) : (
