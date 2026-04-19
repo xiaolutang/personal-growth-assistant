@@ -1194,18 +1194,21 @@ class ReviewService:
         tomorrow_str = (today + timedelta(days=1)).isoformat()
 
         # 1. 今日待办（状态非 complete，planned_date=today）
-        today_tasks = self._sqlite.list_entries(
+        # 注意：list_entries 按 created_at 过滤，不能完全依赖它来筛选 planned_date
+        # 需要查询更宽的时间范围，再按 planned_date 精确过滤
+        all_active_tasks = self._sqlite.list_entries(
             type="task",
-            start_date=today_str,
-            end_date=tomorrow_str,
+            status="doing",
             limit=200,
             user_id=user_id,
         )
-
-        today_todos = [
-            t for t in today_tasks
-            if t.get("status") in ("waitStart", "doing")
-        ]
+        all_wait_tasks = self._sqlite.list_entries(
+            type="task",
+            status="waitStart",
+            limit=200,
+            user_id=user_id,
+        )
+        active_tasks = all_active_tasks + all_wait_tasks
 
         def _parse_date_str(val):
             """解析 planned_date 字段为 date 对象"""
@@ -1220,6 +1223,11 @@ class ReviewService:
                     return datetime.strptime(str(val)[:10], "%Y-%m-%d").date()
                 except (ValueError, TypeError):
                     return None
+
+        today_todos = [
+            t for t in active_tasks
+            if _parse_date_str(t.get("planned_date")) == today
+        ]
 
         priority_order = {"high": 0, "medium": 1, "low": 2}
         today_todos.sort(key=lambda t: priority_order.get(t.get("priority", "medium"), 1))

@@ -210,8 +210,9 @@ class SyncService:
         删除条目及其关联数据
 
         顺序：Markdown（Source of Truth）→ SQLite → Neo4j/Qdrant
-        - Markdown 删除即确认删除
-        - 索引层删除失败时记录 warning，不阻塞（重启后 sync_all 可重建索引）
+        - Markdown 删除即确认删除意图
+        - SQLite 删除失败时记录 error 并返回 False（索引残留需手动清理）
+        - Neo4j/Qdrant 删除失败时记录 warning（索引残留，需手动清理或重启后重新全量同步）
         """
         # 1. 删除 Markdown（Source of Truth）— 先删，确认删除意图
         markdown_deleted = False
@@ -226,7 +227,9 @@ class SyncService:
             try:
                 self.sqlite.delete_entry(entry_id, user_id=user_id)
             except Exception as e:
-                logger.warning(f"SQLite 索引删除失败（可稍后 sync_all 重建）: {e}")
+                logger.error(f"SQLite 索引删除失败，索引残留 entry_id=%s: %s", entry_id, e)
+                # SQLite 删除失败是异常情况，但仍继续清理 Neo4j/Qdrant
+                # 注意：此时索引中有残留数据，需手动清理
 
         # 3. 并行删除 Neo4j 和 Qdrant 索引
         tasks = []
