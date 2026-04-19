@@ -8,6 +8,7 @@ import { FloatingChat } from "@/components/FloatingChat";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import { PageAIAssistant } from "@/components/PageAIAssistant";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ThemeProvider } from "@/lib/theme";
 import { Home } from "@/pages/Home";
@@ -158,6 +159,7 @@ function App() {
                   <OnboardingFlow onComplete={handleOnboardingComplete} />
                 )}
                 <Toaster position="top-center" richColors />
+                <OfflineIndicator />
                 <AppLayout />
               </SidebarProvider>
               </ThemeProvider>

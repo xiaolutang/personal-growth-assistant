@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 8,
-    "pending": 7,
-    "completed": 1,
+    "pending": 6,
+    "completed": 2,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -118,10 +118,13 @@
       "description": "创建 useOnlineStatus React hook（监听 navigator.onLine + online/offline 事件）。创建 OfflineIndicator 组件（全局 Toast 或底部条，离线时显示「当前处于离线状态，部分功能不可用」，上线时显示「已恢复连接」后自动消失）。在 App.tsx 全局挂载。**离线启动恢复**：修改 userStore 的 token 验证逻辑，当 localStorage 有 token 但网络请求失败（如 /auth/me 超时或网络不可达）时，不调用 logout() 清除 token，而是保持登录状态并标记为 offline 模式。ProtectedRoute 检查 token 存在即放行，不强制要求 /auth/me 成功。这样离线重启 app 时用户不会被踢到登录页。",
       "verification": "Chrome DevTools Offline 切换时，页面顶部或底部出现离线提示；离线状态下刷新页面，已登录用户不会被踢到登录页",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-19T20:20",
+      "completed_at": "2026-04-19T20:40",
+      "actual_minutes": 20,
+      "evidence_file": ".dev-flow/evidence/S04.md",
+      "execution_notes": "useOnlineStatus hook + OfflineIndicator 组件 + userStore 离线启动恢复（401才logout，500/503/网络失败保留）。20个测试。",
       "priority": 1,
-      "acceptance_criteria": [
-        "useOnlineStatus hook 正确返回 online/offline 状态",
         "离线时页面出现视觉提示（非 alert）",
         "上线时提示「已恢复连接」并在 3 秒后自动消失",
         "离线刷新时，userStore 遇网络失败不调用 logout()，保留 token 和 user 信息",

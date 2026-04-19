@@ -96,15 +96,21 @@ export const useUserStore = create<UserState>((set, get) => ({
     if (!token) return;
     try {
       const res = await authFetch(`${API_BASE}/auth/me`);
-      if (!res.ok) {
+      if (res.status === 401) {
+        // 401 明确表示 token 无效，执行 logout
         get().logout();
+        return;
+      }
+      if (!res.ok) {
+        // 其他非 ok 响应（500/503 等），服务端临时故障，保留登录态
         return;
       }
       const user = await res.json();
       localStorage.setItem(USER_KEY, JSON.stringify(user));
       set({ user });
     } catch {
-      get().logout();
+      // 网络失败（TypeError: Failed to fetch）或其他异常，保留 token 和 user
+      // 以支持离线启动恢复
     }
   },
 

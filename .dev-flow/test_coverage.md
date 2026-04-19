@@ -105,7 +105,7 @@
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
 |--------|----------|-----------|--------------------|--------|------|
 | SW 缓存策略 | S03 | unit+manual | URL pattern 匹配完整 URL/NetworkFirst TTL 5min/NetworkOnly 不缓存/构建成功/Offline 刷新不白屏 | completed | npm run build 通过 + URL pattern 17/17 验证通过 |
-| 在线状态检测+离线启动恢复 | S04 | unit | useOnlineStatus 返回正确状态/offline 事件触发/online 事件触发/OfflineIndicator 离线显示/上线 3 秒消失/网络失败不 logout 保留 token/401 无效 token 仍 logout/ProtectedRoute token 存在即放行/无 token 跳转登录 | pending | risk: startup |
+| 在线状态检测+离线启动恢复 | S04 | unit | useOnlineStatus 返回正确状态/offline 事件触发/online 事件触发/OfflineIndicator 离线显示/上线 3 秒消失/网络失败不 logout 保留 token/401 无效 token 仍 logout/ProtectedRoute token 存在即放行/无 token 跳转登录 | completed | 20 tests (5 hook + 6 indicator + 6 userStore + 3 route) |
 | 离线回退页 | F58 | unit+manual | 渲染离线提示/首页链接可点击/样式符合 design-system | pending | — |
 | IndexedDB 队列 | F59 | unit | add+getAll+update 正确/remove 清空/count 正确/IndexedDB 不可用返回默认值不抛错/user_id 隔离过滤/client_entry_id 字段正确存储 | pending | risk: first_use |
 | 离线同步 | F60 | unit | 3 条全成功/第 2 条 5xx 失败不影响/空队列无操作/防重入布尔锁/401 立即 failed 不重试/UI 显示重新登录提示/initSync 已在线+队列非空触发/initSync 离线不触发/client_entry_id 映射 removeOfflineEntry | pending | risk: network |
