@@ -483,6 +483,11 @@ export function Home() {
                         >
                           <Lightbulb className="h-3.5 w-3.5 text-yellow-500 dark:text-yellow-400 shrink-0" />
                           <span className="text-sm truncate">{item.title}</span>
+                          {item._offlinePending && (
+                            <span className="inline-flex items-center rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 shrink-0">
+                              待同步
+                            </span>
+                          )}
                           {item.status !== "complete" && (
                             <span className="text-[10px] text-muted-foreground shrink-0">
                               {new Date(item.created_at).toLocaleDateString("zh-CN", {

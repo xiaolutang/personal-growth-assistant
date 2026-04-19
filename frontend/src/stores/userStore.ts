@@ -66,6 +66,10 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   logout: () => {
+    // 清理离线条目（fire-and-forget，不阻塞登出）
+    import("@/stores/taskStore").then(m => m.useTaskStore.getState().clearOfflineEntries()).catch(() => {});
+    import("@/lib/offlineQueue").then(m => m.clear().catch(() => {}));
+
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     set({ user: null, token: null, isAuthenticated: false });

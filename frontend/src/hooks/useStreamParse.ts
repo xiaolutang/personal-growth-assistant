@@ -163,6 +163,62 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
       return new Promise((resolve, reject) => {
         (async () => {
           try {
+            // 离线拦截：跳过 SSE，写入离线队列
+            if (!navigator.onLine) {
+              const clientEntryId = `local-${Date.now()}`;
+              const { add } = await import("@/lib/offlineQueue");
+              const queueId = await add({
+                client_entry_id: clientEntryId,
+                method: "POST",
+                url: "/entries",
+                body: { type: "inbox", title: text, content: text, status: "complete" },
+              });
+
+              if (!queueId) {
+                // IndexedDB 不可用
+                setIsLoading(false);
+                resolve({
+                  intent: { intent: "create" as const, confidence: 1, query: text, entities: {} },
+                  error: "offline_save_failed",
+                } as ParseResponse & { error: string });
+                return;
+              }
+
+              // 乐观响应
+              const optimisticTask: ParsedTask = {
+                id: clientEntryId,
+                title: text,
+                content: text,
+                category: "inbox",
+                status: "complete",
+                tags: [],
+              };
+
+              // 添加离线条目到 taskStore
+              const { useTaskStore } = await import("@/stores/taskStore");
+              useTaskStore.getState().upsertOfflineEntry({
+                id: clientEntryId,
+                title: text,
+                content: text,
+                category: "inbox",
+                status: "complete",
+                tags: [],
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                file_path: "",
+                _offlinePending: true,
+              });
+
+              optionsRef.current.onCreated?.([clientEntryId], 1);
+              optionsRef.current.onMessage?.("assistant", "✅ 灵感已保存，将在恢复连接后同步");
+              setIsLoading(false);
+              resolve({
+                intent: { intent: "create" as const, confidence: 1, query: text, entities: {} },
+                result: { tasks: [optimisticTask] },
+              });
+              return;
+            }
+
             const res = await authFetch(`${API_BASE}/chat`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },

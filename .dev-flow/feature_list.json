@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 8,
-    "pending": 4,
-    "completed": 4,
+    "pending": 3,
+    "completed": 5,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -268,7 +268,12 @@
       "description": "在首页 AI 对话路径（useStreamParse → POST /chat SSE）中集成离线拦截：当 navigator.onLine === false 时，跳过 SSE 请求，将用户输入构造为 POST /entries inbox mutation 写入 offlineQueue（含 user_id 和 client_entry_id），返回本地乐观响应。**关键：add() 返回值检查** — 如果 offlineQueue.add() 返回空字符串（IndexedDB 不可用），则不生成乐观条目，显示失败 toast（「保存失败，请检查浏览器存储设置」），并保留用户输入内容不清空，允许用户重试。仅当 add() 成功（返回有效 id）时，才生成乐观 Task（id 即为 client_entry_id，如 'local-{ts}'），写入队列时同步设置 client_entry_id，显示「灵感已保存，将在恢复连接后同步」。离线分支必须触发与 SSE created 事件等价的 onCreated 回调（仅在 add() 成功时：fetchEntries 更新列表、会话标题更新、lastOperation 状态、F62 usageCount 递增）。状态管理：taskStore 内部维护 _offlineEntries: Task[] 数组存储离线条目（带 _offlinePending: true），fetchEntries() 在获取服务端数据后合并离线条目（按 id 去重，离线条目保留），确保离线条目不会被 fetchEntries 覆盖丢失。同步成功后由 offlineSync 通过 client_entry_id 映射 taskStore.removeOfflineEntry + fetchEntries()。UI 展示范围（MVP）：仅 Home.tsx 的 recentInbox 区域对 _offlinePending 条目渲染「待同步」badge。Explore.tsx 使用独立 getEntries() 不消费 taskStore，离线条目在 Explore 暂不可见，上线同步后 fetchEntries() 触发 Explore 页面刷新自然可见。登出时同步清理：taskStore.clearOfflineEntries() + offlineQueue.clear()（fire-and-forget，不阻塞同步 logout 流程）。在线时行为完全不变。",
       "verification": "离线状态在首页输入灵感 → 显示保存成功提示 → 首页 recentInbox 出现带「待同步」badge 的条目 → 上线同步 → badge 消失 → 重新进入 Explore inbox tab 可见真实条目",
       "depends_on": ["F59", "S04"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-19T21:05",
+      "completed_at": "2026-04-19T22:00",
+      "actual_minutes": 55,
+      "evidence_file": ".dev-flow/evidence/F61.md",
+      "execution_notes": "离线拦截 useStreamParse + taskStore 离线条目管理 + Home 待同步 badge + FloatingChat 错误处理 + 登出清理。构建通过，287 tests pass",
       "priority": 2,
       "acceptance_criteria": [
         "离线时首页 AI 对话（useStreamParse）跳过 SSE 请求，将用户输入写入 offlineQueue（含 user_id + client_entry_id）",
