@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 1,
-    "completed": 4,
+    "pending": 0,
+    "completed": 6,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -293,13 +293,16 @@
       "description": "补充关键前端组件的测试覆盖：ExportDialog、OnboardingFlow、TaskCard。",
       "verification": "npm run test:run 通过",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
+      "started_at": "2026-04-19T12:20",
+      "completed_at": "2026-04-19T12:40",
+      "evidence_file": "evidence/F57.md",
       "acceptance_criteria": [
         "ExportDialog 测试：格式切换、类型筛选、日期范围、导出成功/失败",
         "OnboardingFlow 测试已存在，确认通过",
-        "TaskCard 测试：状态显示、优先级标识、点击交互",
-        "新增测试数 ≥ 5"
+        "TaskCard 测试已存在，确认通过（状态显示、优先级标识、点击交互）",
+        "新增测试数 7 ≥ 5"
       ],
       "test_tasks": [
         "ExportDialog：切换 markdown/json 格式、选择类型、导出成功和失败场景",
@@ -320,8 +323,11 @@
       "description": "最终收口任务。确保所有测试通过、前端构建通过、无已知缺陷遗留。验证 defect_feedback.md 中缺陷是否全部关闭。",
       "verification": "全量测试通过 + 前端构建通过 + 无已知缺陷",
       "depends_on": ["B66", "B67", "B68", "B69", "F57"],
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
+      "started_at": "2026-04-19T12:40",
+      "completed_at": "2026-04-19T13:00",
+      "evidence_file": "evidence/B70.md",
       "acceptance_criteria": [
         "uv run pytest tests/ — 0 errors, 0 failures",
         "npm run build — 构建成功",
