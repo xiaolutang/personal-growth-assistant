@@ -4,12 +4,22 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
+
+// Mock subscribeSyncProgress to capture the callback
+let syncCallback: ((event: any) => void) | null = null;
+vi.mock("@/lib/offlineSync", () => ({
+  subscribeSyncProgress: (cb: (event: any) => void) => {
+    syncCallback = cb;
+    return () => { syncCallback = null; };
+  },
+}));
+
 import { OfflineIndicator } from "../OfflineIndicator";
 
 describe("OfflineIndicator", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.stubGlobal("navigator", { onLine: true });
+    syncCallback = null;
   });
 
   afterEach(() => {
@@ -33,10 +43,8 @@ describe("OfflineIndicator", () => {
     vi.stubGlobal("navigator", { onLine: false });
     render(<OfflineIndicator />);
 
-    // 确认离线状态
     expect(screen.getByText("当前处于离线状态，部分功能不可用")).toBeInTheDocument();
 
-    // 模拟上线
     vi.stubGlobal("navigator", { onLine: true });
     act(() => {
       window.dispatchEvent(new Event("online"));
@@ -49,19 +57,16 @@ describe("OfflineIndicator", () => {
     vi.stubGlobal("navigator", { onLine: false });
     const { container } = render(<OfflineIndicator />);
 
-    // 模拟上线 → 进入 recovered 状态
     vi.stubGlobal("navigator", { onLine: true });
     act(() => {
       window.dispatchEvent(new Event("online"));
     });
     expect(screen.getByText("已恢复连接")).toBeInTheDocument();
 
-    // 快进 3 秒
     act(() => {
       vi.advanceTimersByTime(3000);
     });
 
-    // 提示消失
     expect(container.innerHTML).toBe("");
   });
 
@@ -83,5 +88,48 @@ describe("OfflineIndicator", () => {
 
     const status = screen.getByRole("status");
     expect(status).toBeInTheDocument();
+  });
+
+  it("sync completed 事件显示已恢复连接，3 秒后消失", () => {
+    vi.stubGlobal("navigator", { onLine: true });
+    const { container } = render(<OfflineIndicator />);
+
+    // 模拟 sync progress 事件
+    act(() => {
+      syncCallback?.({ type: "progress", progress: { current: 1, total: 2 } });
+    });
+    expect(screen.getByText(/正在同步/)).toBeInTheDocument();
+
+    // 模拟 sync completed
+    act(() => {
+      syncCallback?.({ type: "completed" });
+    });
+    expect(screen.getByText("已恢复连接")).toBeInTheDocument();
+
+    // 3 秒后消失
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("auth_failed 事件显示重新登录提示，3 秒后消失", () => {
+    vi.stubGlobal("navigator", { onLine: true });
+    const { container } = render(<OfflineIndicator />);
+
+    // 模拟 sync progress → auth_failed
+    act(() => {
+      syncCallback?.({ type: "progress", progress: { current: 1, total: 1 } });
+    });
+    act(() => {
+      syncCallback?.({ type: "auth_failed" });
+    });
+    expect(screen.getByText("同步失败，请重新登录")).toBeInTheDocument();
+
+    // 3 秒后消失
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(container.innerHTML).toBe("");
   });
 });

@@ -16,17 +16,24 @@ export interface SyncProgress {
   total: number;
 }
 
-type SyncProgressListener = (progress: SyncProgress | null) => void;
-const listeners = new Set<SyncProgressListener>();
+export type SyncEventType = "progress" | "completed" | "auth_failed";
+
+export interface SyncEvent {
+  type: SyncEventType;
+  progress?: SyncProgress;
+}
+
+type SyncEventListener = (event: SyncEvent) => void;
+const listeners = new Set<SyncEventListener>();
 
 /** 订阅同步进度变化 */
-export function subscribeSyncProgress(cb: SyncProgressListener): () => void {
+export function subscribeSyncProgress(cb: SyncEventListener): () => void {
   listeners.add(cb);
   return () => { listeners.delete(cb); };
 }
 
-function notifyProgress(progress: SyncProgress | null) {
-  listeners.forEach((cb) => cb(progress));
+function notifyProgress(event: SyncEvent) {
+  listeners.forEach((cb) => cb(event));
 }
 
 // ─── 同步核心 ────────────────────────────────────────
@@ -55,21 +62,24 @@ export async function sync(): Promise<void> {
     }
 
     let synced = 0;
+    let authFailed = false;
 
     for (const item of pending) {
-      notifyProgress({ current: synced + 1, total: pending.length });
+      // 目前仅支持 POST /entries，跳过不支持的 mutation
+      if (!(item.method === "POST" && item.url === "/entries")) {
+        continue;
+      }
+
+      notifyProgress({ type: "progress", progress: { current: synced + 1, total: pending.length } });
 
       try {
-        // 目前仅支持 POST /entries
-        if (item.method === "POST" && item.url === "/entries") {
-          const body = item.body as Record<string, unknown>;
-          await createEntry({
-            type: (body.type as string) || "inbox",
-            title: (body.title as string) || "",
-            content: body.content as string | undefined,
-            status: body.status as TaskStatus | undefined,
-          });
-        }
+        const body = item.body as Record<string, unknown>;
+        await createEntry({
+          type: (body.type as string) || "inbox",
+          title: (body.title as string) || "",
+          content: body.content as string | undefined,
+          status: body.status as TaskStatus | undefined,
+        });
 
         // 同步成功：从队列移除 + 移除离线条目
         await queue.remove(item.id);
@@ -84,8 +94,7 @@ export async function sync(): Promise<void> {
         if (status === 401) {
           // 认证错误：标记 failed，停止同步
           await queue.update(item.id, { status: "failed" });
-          // 通知 UI 显示重新登录提示
-          notifyProgress({ current: -1, total: -1 });
+          authFailed = true;
           break;
         } else if (!status || status >= 500) {
           // 网络错误 / 5xx：递增重试计数
@@ -107,9 +116,15 @@ export async function sync(): Promise<void> {
       const { useTaskStore } = await import("@/stores/taskStore");
       await useTaskStore.getState().fetchEntries();
     }
+
+    // 发送完成事件
+    if (authFailed) {
+      notifyProgress({ type: "auth_failed" });
+    } else {
+      notifyProgress({ type: "completed" });
+    }
   } finally {
     syncing = false;
-    notifyProgress(null);
   }
 }
 

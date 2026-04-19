@@ -137,13 +137,14 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 认证后才加载数据
+  // 认证校验完成且有效后才加载数据和同步
+  const isLoading = useUserStore((state) => state.isLoading);
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !isLoading) {
       fetchEntries({ limit: 100 });
       initSync();
     }
-  }, [isAuthenticated, fetchEntries]);
+  }, [isAuthenticated, isLoading, fetchEntries]);
 
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>

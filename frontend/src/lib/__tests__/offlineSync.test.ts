@@ -55,9 +55,6 @@ function makeItem(overrides: Partial<{ id: string; client_entry_id: string; meth
 describe("offlineSync", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset syncing state between tests by reimporting... but we can't.
-    // The sync function uses a module-level `syncing` boolean.
-    // We rely on each test completing sync before the next one.
   });
 
   afterEach(() => {
@@ -70,8 +67,8 @@ describe("offlineSync", () => {
     mockCreateEntry.mockResolvedValue({} as any);
     mockQueue.remove.mockResolvedValue();
 
-    const progressEvents: (any | null)[] = [];
-    const unsub = subscribeSyncProgress((p) => progressEvents.push(p));
+    const events: any[] = [];
+    const unsub = subscribeSyncProgress((e) => events.push(e));
 
     await sync();
 
@@ -80,9 +77,9 @@ describe("offlineSync", () => {
     expect(removeOfflineEntry()).toHaveBeenCalledTimes(3);
     expect(fetchEntries()).toHaveBeenCalledTimes(1);
 
-    // Progress events: 3 items + final null
-    expect(progressEvents.filter((p) => p !== null)).toHaveLength(3);
-    expect(progressEvents[progressEvents.length - 1]).toBeNull();
+    // Events: 3 progress + 1 completed
+    expect(events.filter((e) => e.type === "progress")).toHaveLength(3);
+    expect(events[events.length - 1].type).toBe("completed");
 
     unsub();
   });
@@ -148,7 +145,7 @@ describe("offlineSync", () => {
     expect(isSyncing()).toBe(false);
   });
 
-  it("401 marks failed and stops", async () => {
+  it("401 marks failed, stops, and emits auth_failed event", async () => {
     const items = [makeItem({ id: "q-1" }), makeItem({ id: "q-2" })];
     mockQueue.getAll.mockResolvedValue(items);
 
@@ -156,12 +153,38 @@ describe("offlineSync", () => {
     err.status = 401;
     mockCreateEntry.mockRejectedValue(err);
 
+    const events: any[] = [];
+    const unsub = subscribeSyncProgress((e) => events.push(e));
+
     await sync();
 
     // Only first item attempted, second skipped
     expect(mockCreateEntry).toHaveBeenCalledTimes(1);
     expect(mockQueue.update).toHaveBeenCalledWith("q-1", { status: "failed" });
     expect(mockQueue.remove).not.toHaveBeenCalled();
+    // Last event should be auth_failed
+    expect(events[events.length - 1].type).toBe("auth_failed");
+
+    unsub();
+  });
+
+  it("skips unsupported method/url without deleting", async () => {
+    const items = [
+      makeItem({ id: "q-1", method: "PUT", url: "/entries/123", body: { title: "update" } }),
+      makeItem({ id: "q-2", method: "DELETE", url: "/entries/456", body: {} }),
+      makeItem({ id: "q-3", method: "POST", url: "/entries", body: { type: "inbox", title: "valid" } }),
+    ];
+    mockQueue.getAll.mockResolvedValue(items);
+    mockCreateEntry.mockResolvedValue({} as any);
+    mockQueue.remove.mockResolvedValue();
+
+    await sync();
+
+    // Only POST /entries is processed
+    expect(mockCreateEntry).toHaveBeenCalledTimes(1);
+    // PUT and DELETE are not deleted from queue
+    expect(mockQueue.remove).toHaveBeenCalledTimes(1);
+    expect(mockQueue.remove).toHaveBeenCalledWith("q-3");
   });
 
   it("initSync triggers sync when online + queue has items", async () => {
