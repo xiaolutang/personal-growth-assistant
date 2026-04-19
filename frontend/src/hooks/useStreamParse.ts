@@ -135,9 +135,23 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
+  // 用于取消进行中的 SSE 请求
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // 组件卸载时取消进行中的请求
+  const abort = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+  }, []);
+
   const parse = useCallback(
     async (text: string, sessionId: string = "default", confirm?: ConfirmRequest, pageContext?: PageContext | null): Promise<ParseResponse> => {
       if (!text.trim()) throw new Error("文本为空");
+
+      // 取消之前的请求
+      abortControllerRef.current?.abort();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
 
       optionsRef.current.onMessage?.("user", text);
       setRawJson("");
@@ -158,6 +172,7 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
                 confirm,
                 page_context: pageContext || null,
               }),
+              signal: controller.signal,
             });
 
             if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
@@ -175,6 +190,10 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
             let buffer = "";
 
             while (true) {
+              if (controller.signal.aborted) {
+                reader.cancel();
+                return;
+              }
               const { done, value } = await reader.read();
               if (done) break;
 
@@ -320,6 +339,13 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
               reject(new Error("未收到意图检测结果"));
             }
           } catch (err) {
+            // 请求被取消时不更新状态
+            if (err instanceof DOMException && err.name === "AbortError") {
+              return;
+            }
+            if (controller.signal.aborted) {
+              return;
+            }
             const error = err instanceof Error ? err : new Error(String(err));
             setError(error);
             setIsLoading(false);
@@ -348,5 +374,6 @@ export function useStreamParse(options: UseStreamParseOptions = {}) {
     error,
     parse,
     reset,
+    abort,
   };
 }

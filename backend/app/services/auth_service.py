@@ -12,6 +12,8 @@ from app.models.user import DefaultDataClaimResult, User, UserResponse, TokenDat
 def create_access_token(user_id: str) -> str:
     """创建 JWT access token"""
     settings = get_settings()
+    if not settings.JWT_SECRET:
+        raise ValueError("JWT_SECRET 环境变量未设置，应用无法启动")
     expire = datetime.now(timezone.utc) + timedelta(days=settings.ACCESS_TOKEN_EXPIRE_DAYS)
     payload = {
         "sub": user_id,

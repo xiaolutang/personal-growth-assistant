@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from app.services.entry_service import EntryService
 from app.models import Task, Category, TaskStatus, Priority
 from app.api.schemas import EntryCreate, EntryUpdate
+from tests.conftest import _make_entry
 
 
 class TestEntryServiceHelpers:
@@ -511,3 +512,116 @@ class TestCategoryConversion:
         updated = await service.get_entry(entry.id)
         assert updated.title == "新标题"
         assert updated.status == TaskStatus.COMPLETE
+
+
+class TestBatchCreateEntries:
+    """B65: batch_create_entries 批量创建 — status/category 字段不丢失"""
+
+    @pytest.fixture
+    def service(self, storage):
+        return EntryService(storage=storage)
+
+    @pytest.mark.asyncio
+    async def test_batch_create_has_status_field(self, service):
+        """批量创建的条目都包含 status 字段"""
+        requests = [
+            EntryCreate(category="task", title="任务1"),
+            EntryCreate(category="task", title="任务2"),
+        ]
+        results = await service.batch_create_entries(requests)
+
+        assert len(results) == 2
+        for r in results:
+            assert r.status == "doing"  # 默认值
+
+    @pytest.mark.asyncio
+    async def test_batch_create_has_category_field(self, service):
+        """批量创建的条目都包含 category 字段"""
+        requests = [
+            EntryCreate(category="task", title="任务1"),
+            EntryCreate(category="note", title="笔记1"),
+        ]
+        results = await service.batch_create_entries(requests)
+
+        assert len(results) == 2
+        assert results[0].category == "task"
+        assert results[1].category == "note"
+
+    @pytest.mark.asyncio
+    async def test_batch_create_explicit_status_preserved(self, service):
+        """批量创建时显式指定的 status 应被保留"""
+        requests = [
+            EntryCreate(category="task", title="任务1", status="complete"),
+            EntryCreate(category="task", title="任务2", status="waitStart"),
+        ]
+        results = await service.batch_create_entries(requests)
+
+        assert results[0].status == "complete"
+        assert results[1].status == "waitStart"
+
+    @pytest.mark.asyncio
+    async def test_batch_create_uses_same_defaults_as_single(self, service):
+        """批量创建与单个创建使用相同的默认值"""
+        # 单个创建（无 status）
+        single = await service.create_entry(
+            EntryCreate(category="task", title="单个创建")
+        )
+
+        # 批量创建（无 status）
+        batch = await service.batch_create_entries([
+            EntryCreate(category="task", title="批量创建"),
+        ])
+
+        # 默认值应一致
+        assert single.status == batch[0].status
+        assert single.priority == batch[0].priority
+
+    @pytest.mark.asyncio
+    async def test_batch_create_empty_list(self, service):
+        """批量创建空列表应返回空列表"""
+        results = await service.batch_create_entries([])
+        assert results == []
+
+
+class TestB58VerifyEntryOwnerNoSqlite:
+    """B58: _verify_entry_owner 在无 SQLite 时拒绝访问"""
+
+    def test_verify_entry_owner_returns_false_when_no_sqlite(self):
+        """SQLite 不可用时 _verify_entry_owner 应返回 False"""
+        from app.services.sync_service import SyncService
+
+        # 构造一个没有 sqlite 的 SyncService
+        mock_storage = MagicMock(spec=SyncService)
+        mock_storage.sqlite = None
+
+        service = EntryService(storage=mock_storage)
+        result = service._verify_entry_owner("any-entry-id", "any-user-id")
+        assert result is False
+
+    def test_verify_entry_owner_returns_true_when_owner_matches(self, sqlite_storage):
+        """SQLite 可用且属于当前用户时返回 True"""
+        from app.services.sync_service import SyncService
+
+        entry = _make_entry("verify-owner-1")
+        sqlite_storage.upsert_entry(entry, user_id="usr_alice")
+
+        mock_storage = MagicMock(spec=SyncService)
+        mock_storage.sqlite = sqlite_storage
+
+        service = EntryService(storage=mock_storage)
+        result = service._verify_entry_owner("verify-owner-1", "usr_alice")
+        assert result is True
+
+    def test_verify_entry_owner_returns_false_when_owner_mismatch(self, sqlite_storage):
+        """SQLite 可用但不属于当前用户时返回 False"""
+        from app.services.sync_service import SyncService
+
+        entry = _make_entry("verify-owner-2")
+        sqlite_storage.upsert_entry(entry, user_id="usr_alice")
+
+        mock_storage = MagicMock(spec=SyncService)
+        mock_storage.sqlite = sqlite_storage
+
+        service = EntryService(storage=mock_storage)
+        result = service._verify_entry_owner("verify-owner-2", "usr_bob")
+        assert result is False

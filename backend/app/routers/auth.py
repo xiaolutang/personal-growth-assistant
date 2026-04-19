@@ -18,7 +18,6 @@ from app.infrastructure.storage.user_storage import UserStorage, verify_password
 from app.services.auth_service import (
     auto_claim_default_user_data,
     create_access_token,
-    get_current_user_from_token,
 )
 from app.routers.deps import get_current_user, get_storage, get_user_storage
 
@@ -122,11 +121,9 @@ async def logout(
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    user_storage: UserStorage = Depends(get_user_storage),
+    user=Depends(get_current_user),
 ):
     """获取当前用户信息"""
-    user = get_current_user_from_token(credentials.credentials, user_storage)
     return UserResponse(
         id=user.id,
         username=user.username,

@@ -37,7 +37,7 @@ async def get_daily_report(
         raise HTTPException(status_code=400, detail=str(e))
 
     try:
-        return review_service.get_daily_report(target_date, user_id=user.id)
+        return await review_service.get_daily_report(target_date, user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
 
@@ -59,7 +59,7 @@ async def get_weekly_report(
         raise HTTPException(status_code=400, detail=str(e))
 
     try:
-        return review_service.get_weekly_report(week_start, user_id=user.id)
+        return await review_service.get_weekly_report(week_start, user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
 
@@ -78,7 +78,7 @@ async def get_monthly_report(
         raise HTTPException(status_code=400, detail=str(e))
 
     try:
-        return review_service.get_monthly_report(month_start, user_id=user.id)
+        return await review_service.get_monthly_report(month_start, user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
 
@@ -115,7 +115,7 @@ async def get_knowledge_heatmap(
     review_service = get_review_service()
 
     try:
-        return review_service.get_knowledge_heatmap(user_id=user.id)
+        return await review_service.get_knowledge_heatmap(user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
 
@@ -142,7 +142,7 @@ async def get_morning_digest(
     review_service = get_review_service()
 
     try:
-        return review_service.get_morning_digest(user_id=user.id)
+        return await review_service.get_morning_digest(user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
 

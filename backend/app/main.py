@@ -46,11 +46,12 @@ async def lifespan(app: FastAPI):
 
     settings = get_settings()
 
-    # 校验 JWT 配置（非阻塞警告）
+    # 校验 JWT 配置（阻塞式，空密钥拒绝启动）
     try:
         settings.validate_jwt()
     except ValueError as e:
-        logger.warning("JWT 配置校验失败: %s（认证功能不可用）", e)
+        logger.error("JWT 配置校验失败: %s，应用无法启动", e)
+        raise
 
     # 初始化远程日志（log-service SDK，非阻塞，即使服务不可达也不影响启动）
     try:
@@ -198,8 +199,11 @@ async def _check_services(storage) -> dict:
     try:
         if storage and storage.sqlite is not None:
             conn = storage.sqlite._get_conn()
-            conn.execute("SELECT 1")
-            services["sqlite"] = "ok"
+            try:
+                conn.execute("SELECT 1")
+                services["sqlite"] = "ok"
+            finally:
+                conn.close()
         else:
             services["sqlite"] = "error"
     except Exception:

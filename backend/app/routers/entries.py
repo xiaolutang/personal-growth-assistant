@@ -21,7 +21,7 @@ from app.api.schemas import (
     EntryLinkListResponse,
     KnowledgeContextResponse,
 )
-from app.routers.deps import get_entry_service, get_storage, get_current_user, get_knowledge_service
+from app.routers.deps import get_entry_service, get_current_user, get_knowledge_service
 from app.models.user import User
 
 router = APIRouter(prefix="/entries", tags=["entries"])
@@ -116,6 +116,20 @@ async def export_entries(
     return JSONResponse(content=data)
 
 
+@router.get("/search/query", response_model=SearchResult)
+async def search_entries(
+    q: str = Query(..., min_length=1, description="搜索关键词"),
+    limit: int = Query(10, ge=1, le=50, description="返回数量限制"),
+    user: User = Depends(get_current_user),
+):
+    """全文搜索条目（使用 SQLite FTS5）"""
+    service = get_entry_service()
+    try:
+        return await service.search_entries(q, limit, user_id=user.id)
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
 @router.get("/{entry_id}/related", response_model=RelatedEntriesResponse)
 async def get_related_entries(entry_id: str, user: User = Depends(get_current_user)):
     """获取条目的关联推荐"""
@@ -159,20 +173,6 @@ async def update_entry(entry_id: str, request: EntryUpdate, user: User = Depends
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/search/query", response_model=SearchResult)
-async def search_entries(
-    q: str = Query(..., min_length=1, description="搜索关键词"),
-    limit: int = Query(10, ge=1, le=50, description="返回数量限制"),
-    user: User = Depends(get_current_user),
-):
-    """全文搜索条目（使用 SQLite FTS5）"""
-    service = get_entry_service()
-    try:
-        return await service.search_entries(q, limit, user_id=user.id)
-    except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=str(e))
-
-
 @router.delete("/{entry_id}", response_model=SuccessResponse)
 async def delete_entry(entry_id: str, user: User = Depends(get_current_user)):
     """删除条目"""
@@ -195,21 +195,8 @@ async def get_project_progress(entry_id: str, user: User = Depends(get_current_u
         raise HTTPException(status_code=503, detail=str(e))
 
 
-@router.post("/admin/sync-vectors", response_model=SuccessResponse)
-async def sync_vectors(user: User = Depends(get_current_user)):
-    """同步所有条目到向量数据库（Qdrant）"""
-    storage = get_storage()
-    if not storage.qdrant:
-        raise HTTPException(status_code=503, detail="向量数据库未配置")
-
-    try:
-        result = await storage.sync_all()
-        return SuccessResponse(
-            success=True,
-            message=f"同步完成: {result['success']} 条成功, {result['failed']} 条失败"
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"同步失败: {str(e)}")
+# NOTE: sync-vectors 端点已移除（B64 安全加固）。
+# 全量向量同步应通过内部脚本或管理 CLI 触发，不应作为公开 API 暴露。
 
 
 @router.post("/{entry_id}/ai-summary", response_model=EntrySummaryResponse)

@@ -7,6 +7,20 @@ from neo4j import AsyncGraphDatabase, AsyncDriver
 
 from app.models import Task, Concept, ConceptRelation
 
+# 合法的 Neo4j 关系类型白名单，防止 Cypher 注入
+VALID_RELATION_TYPES = frozenset({
+    "RELATED_TO",
+    "PART_OF",
+    "PREREQUISITE",
+    "BELONGS_TO",
+    "DEPENDS_ON",
+    "APPLIED_IN",
+    "EXAMPLE_OF",
+    "CONTRASTS_WITH",
+    "SUPPORTS",
+    "DERIVED_FROM",
+})
+
 
 class Neo4jClient:
     """Neo4j 知识图谱客户端"""
@@ -220,6 +234,11 @@ class Neo4jClient:
 
     async def create_concept_relation(self, relation: ConceptRelation) -> bool:
         """创建概念之间的关系"""
+        if relation.relation_type not in VALID_RELATION_TYPES:
+            raise ValueError(
+                f"非法关系类型: {relation.relation_type}，"
+                f"合法值: {sorted(VALID_RELATION_TYPES)}"
+            )
         query = f"""
         MATCH (from:Concept {{name: $from_concept}})
         MATCH (to:Concept {{name: $to_concept}})
@@ -250,6 +269,11 @@ class Neo4jClient:
         relation_type: str = "BELONGS_TO"
     ) -> bool:
         """创建条目之间的关系"""
+        if relation_type not in VALID_RELATION_TYPES:
+            raise ValueError(
+                f"非法关系类型: {relation_type}，"
+                f"合法值: {sorted(VALID_RELATION_TYPES)}"
+            )
         query = f"""
         MATCH (from:Entry {{id: $from_id}})
         MATCH (to:Entry {{id: $to_id}})
@@ -272,6 +296,8 @@ class Neo4jClient:
         user_id: str = "_default",
     ) -> Dict[str, Any]:
         """获取概念的知识图谱"""
+        if not isinstance(depth, int) or depth < 1 or depth > 5:
+            raise ValueError(f"depth 必须是 1-5 的整数，当前值: {depth}")
         query = f"""
         MATCH path = (c:Concept {{name: $name, user_id: $user_id}})-[*1..{depth}]-(related)
         RETURN c as center,

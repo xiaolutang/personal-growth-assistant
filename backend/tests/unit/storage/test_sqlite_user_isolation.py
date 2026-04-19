@@ -156,3 +156,80 @@ class TestUserIsolation:
 
         assert count == 0
         assert sqlite_storage.get_entry_owner("claimed-entry") == "usr_alice"
+
+
+class TestUpdateGoalFieldWhitelist:
+    """update_goal 字段名白名单校验测试"""
+
+    def _create_goal(self, sqlite_storage, user_id="usr_test"):
+        """辅助：创建一个目标"""
+        return sqlite_storage.create_goal(
+            goal_id="goal-whitelist-1",
+            user_id=user_id,
+            title="白名单测试目标",
+            metric_type="count",
+            target_value=10,
+        )
+
+    def test_update_goal_accepts_allowed_field(self, sqlite_storage):
+        """合法字段名正常更新"""
+        self._create_goal(sqlite_storage)
+        result = sqlite_storage.update_goal(
+            "goal-whitelist-1", "usr_test", title="新标题"
+        )
+        assert result is not None
+        assert result["title"] == "新标题"
+
+    def test_update_goal_rejects_invalid_field(self, sqlite_storage):
+        """非法字段名抛出 ValueError"""
+        self._create_goal(sqlite_storage)
+        with pytest.raises(ValueError, match="非法字段名"):
+            sqlite_storage.update_goal(
+                "goal-whitelist-1", "usr_test", evil_column="hack"
+            )
+
+    def test_update_goal_rejects_mixed_fields(self, sqlite_storage):
+        """混合合法与非法字段时，整体拒绝"""
+        self._create_goal(sqlite_storage)
+        with pytest.raises(ValueError, match="非法字段名"):
+            sqlite_storage.update_goal(
+                "goal-whitelist-1", "usr_test",
+                title="合法", evil_col="非法",
+            )
+
+    def test_update_goal_accepts_all_allowed_fields(self, sqlite_storage):
+        """所有白名单中存在于表中的字段均可正常更新"""
+        self._create_goal(sqlite_storage)
+        result = sqlite_storage.update_goal(
+            "goal-whitelist-1", "usr_test",
+            title="t", description="d", status="completed",
+            target_value=99, metric_type="percent",
+            start_date="2026-01-01", end_date="2026-12-31",
+            auto_tags="tag1,tag2",
+        )
+        assert result is not None
+        assert result["title"] == "t"
+        assert result["status"] == "completed"
+
+    def test_update_goal_none_values_are_skipped(self, sqlite_storage):
+        """None 值被跳过，不触发白名单校验"""
+        self._create_goal(sqlite_storage)
+        result = sqlite_storage.update_goal(
+            "goal-whitelist-1", "usr_test",
+            title="新标题", description=None,
+        )
+        assert result is not None
+        assert result["title"] == "新标题"
+
+    def test_update_goal_error_message_lists_invalid(self, sqlite_storage):
+        """错误消息包含非法字段名和合法值列表"""
+        self._create_goal(sqlite_storage)
+        with pytest.raises(ValueError) as exc_info:
+            sqlite_storage.update_goal(
+                "goal-whitelist-1", "usr_test",
+                bad_field="x", another_bad="y",
+            )
+        msg = str(exc_info.value)
+        assert "another_bad" in msg
+        assert "bad_field" in msg
+        assert "title" in msg  # 合法值列表中包含 title

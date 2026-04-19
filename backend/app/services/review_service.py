@@ -12,22 +12,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _run_async(coro):
-    """安全地在同步方法中运行异步协程"""
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
-
-    if loop and loop.is_running():
-        # 已经在事件循环中（FastAPI async 路由），使用 nest_asyncio 或创建新线程
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            return pool.submit(asyncio.run, coro).result()
-    else:
-        return asyncio.run(coro)
-
-
 class TrendPeriod(BaseModel):
     """趋势统计周期"""
     date: str = Field(..., description="日期（YYYY-MM-DD 或 YYYY-WXX）")
@@ -231,7 +215,7 @@ class ReviewService:
             recent_titles=[n.get("title", "")[:50] for n in notes[:5]],
         )
 
-    def get_daily_report(self, target_date: Optional[date] = None, user_id: Optional[str] = None) -> DailyReport:
+    async def get_daily_report(self, target_date: Optional[date] = None, user_id: Optional[str] = None) -> DailyReport:
         """获取日报"""
         if not self._sqlite:
             raise ValueError("SQLite 存储未初始化")
@@ -274,9 +258,7 @@ class ReviewService:
                 ],
                 "recent_note_titles": note_stats.recent_titles,
             }
-            ai_summary = _run_async(
-                self._generate_ai_summary("daily", stats_data, user_id=user_id or "_default")
-            )
+            ai_summary = await self._generate_ai_summary("daily", stats_data, user_id=user_id or "_default")
 
         return DailyReport(
             date=date_str,
@@ -286,7 +268,7 @@ class ReviewService:
             ai_summary=ai_summary,
         )
 
-    def get_weekly_report(self, week_start: Optional[date] = None, user_id: Optional[str] = None) -> WeeklyReport:
+    async def get_weekly_report(self, week_start: Optional[date] = None, user_id: Optional[str] = None) -> WeeklyReport:
         """获取周报"""
         if not self._sqlite:
             raise ValueError("SQLite 存储未初始化")
@@ -349,9 +331,7 @@ class ReviewService:
                 "daily_breakdown": daily_breakdown,
                 "recent_note_titles": note_stats.recent_titles,
             }
-            ai_summary = _run_async(
-                self._generate_ai_summary("weekly", stats_data, user_id=user_id or "_default")
-            )
+            ai_summary = await self._generate_ai_summary("weekly", stats_data, user_id=user_id or "_default")
 
         # 计算环比上周
         vs_last_week = self._calculate_weekly_vs_last_week(
@@ -429,7 +409,7 @@ class ReviewService:
             delta_total=current_task_stats.total - last_total,
         )
 
-    def get_monthly_report(self, month_start: Optional[date] = None, user_id: Optional[str] = None) -> MonthlyReport:
+    async def get_monthly_report(self, month_start: Optional[date] = None, user_id: Optional[str] = None) -> MonthlyReport:
         """获取月报"""
         if not self._sqlite:
             raise ValueError("SQLite 存储未初始化")
@@ -501,9 +481,7 @@ class ReviewService:
                 "weekly_breakdown": weekly_breakdown,
                 "recent_note_titles": note_stats.recent_titles,
             }
-            ai_summary = _run_async(
-                self._generate_ai_summary("monthly", stats_data, user_id=user_id or "_default")
-            )
+            ai_summary = await self._generate_ai_summary("monthly", stats_data, user_id=user_id or "_default")
 
         # 计算环比上月
         vs_last_month = self._calculate_monthly_vs_last_month(
@@ -526,102 +504,127 @@ class ReviewService:
         weeks: int = 8,
         user_id: Optional[str] = None,
     ) -> TrendResponse:
-        """获取趋势数据"""
+        """获取趋势数据（单次聚合 SQL 替代 N+1 循环查询）"""
         if not self._sqlite:
             raise ValueError("SQLite 存储未初始化")
 
         if period not in ("daily", "weekly"):
             raise ValueError("period 参数必须是 daily 或 weekly")
 
-        periods: List[TrendPeriod] = []
-
         if period == "daily":
             count = max(1, min(days, 365))
             today = date.today()
-            for i in range(count):
-                target_date = today - timedelta(days=i)
-                next_day = target_date + timedelta(days=1)
-
-                tasks = self._sqlite.list_entries(
-                    type="task",
-                    start_date=target_date.isoformat(),
-                    end_date=next_day.isoformat(),
-                    limit=1000,
-                    user_id=user_id,
-                )
-                notes = self._sqlite.list_entries(
-                    type="note",
-                    start_date=target_date.isoformat(),
-                    end_date=next_day.isoformat(),
-                    limit=1000,
-                    user_id=user_id,
-                )
-                inbox = self._sqlite.list_entries(
-                    type="inbox",
-                    start_date=target_date.isoformat(),
-                    end_date=next_day.isoformat(),
-                    limit=1000,
-                    user_id=user_id,
-                )
-
-                total = len(tasks)
-                completed = sum(1 for t in tasks if t.get("status") == "complete")
-                completion_rate = round((completed / total * 100), 1) if total > 0 else 0.0
-
-                periods.append(TrendPeriod(
-                    date=target_date.isoformat(),
-                    total=total,
-                    completed=completed,
-                    completion_rate=completion_rate,
-                    notes_count=len(notes),
-                    task_count=len(tasks),
-                    inbox_count=len(inbox),
-                ))
+            start = today - timedelta(days=count - 1)
+            end = today + timedelta(days=1)
+            agg = self._sqlite.get_trend_aggregation(
+                user_id=user_id,
+                start_date=start.isoformat(),
+                end_date=end.isoformat(),
+            )
+            return self._build_daily_trend(agg, start, count)
         else:  # weekly
             count = max(1, min(weeks, 52))
             today = date.today()
             current_week_start = today - timedelta(days=today.weekday())
+            oldest_week_start = current_week_start - timedelta(weeks=count - 1)
+            end = current_week_start + timedelta(days=7)
+            agg = self._sqlite.get_trend_aggregation(
+                user_id=user_id,
+                start_date=oldest_week_start.isoformat(),
+                end_date=end.isoformat(),
+            )
+            return self._build_weekly_trend(agg, current_week_start, count)
 
-            for i in range(count):
-                week_start = current_week_start - timedelta(weeks=i)
-                week_end = week_start + timedelta(days=6)
-                next_day_after_week = week_end + timedelta(days=1)
+    def _build_daily_trend(
+        self, agg: list[dict], start: date, count: int
+    ) -> TrendResponse:
+        """从聚合数据构建日趋势（内存 O(N) 分桶）"""
+        from collections import defaultdict
 
-                tasks = self._sqlite.list_entries(
-                    type="task",
-                    start_date=week_start.isoformat(),
-                    end_date=next_day_after_week.isoformat(),
-                    limit=1000,
-                    user_id=user_id,
-                )
-                notes = self._sqlite.list_entries(
-                    type="note",
-                    start_date=week_start.isoformat(),
-                    end_date=next_day_after_week.isoformat(),
-                    limit=1000,
-                    user_id=user_id,
-                )
-                inbox = self._sqlite.list_entries(
-                    type="inbox",
-                    start_date=week_start.isoformat(),
-                    end_date=next_day_after_week.isoformat(),
-                    limit=1000,
-                    user_id=user_id,
-                )
+        buckets: dict[str, dict] = defaultdict(
+            lambda: {"task": 0, "task_complete": 0, "note": 0, "inbox": 0}
+        )
+        for row in agg:
+            d = row["d"]
+            cat = row["category"] or "task"
+            status = row["status"] or ""
+            cnt = row["cnt"]
+            b = buckets[d]
+            if cat == "task":
+                b["task"] += cnt
+                if status == "complete":
+                    b["task_complete"] += cnt
+            elif cat == "note":
+                b["note"] += cnt
+            elif cat == "inbox":
+                b["inbox"] += cnt
 
-                total = len(tasks)
-                completed = sum(1 for t in tasks if t.get("status") == "complete")
-                completion_rate = round((completed / total * 100), 1) if total > 0 else 0.0
+        periods: List[TrendPeriod] = []
+        for i in range(count):
+            target = start + timedelta(days=i)
+            ds = target.isoformat()
+            b = buckets.get(ds, {"task": 0, "task_complete": 0, "note": 0, "inbox": 0})
+            total = b["task"]
+            completed = b["task_complete"]
+            completion_rate = round((completed / total * 100), 1) if total > 0 else 0.0
+            periods.append(TrendPeriod(
+                date=ds,
+                total=total,
+                completed=completed,
+                completion_rate=completion_rate,
+                notes_count=b["note"],
+                task_count=total,
+                inbox_count=b["inbox"],
+            ))
 
-                periods.append(TrendPeriod(
-                    date=week_start.isoformat(),
-                    total=total,
-                    completed=completed,
-                    completion_rate=completion_rate,
-                    notes_count=len(notes),
-                    task_count=len(tasks),
-                    inbox_count=len(inbox),
-                ))
+        return TrendResponse(periods=periods)
+
+    def _build_weekly_trend(
+        self, agg: list[dict], current_week_start: date, count: int
+    ) -> TrendResponse:
+        """从聚合数据构建周趋势"""
+        from collections import defaultdict
+
+        def _week_key(d_str: str) -> str:
+            """将日期字符串转为所属周的周一日期"""
+            dt = datetime.strptime(d_str, "%Y-%m-%d").date()
+            return (dt - timedelta(days=dt.weekday())).isoformat()
+
+        buckets: dict[str, dict] = defaultdict(
+            lambda: {"task": 0, "task_complete": 0, "note": 0, "inbox": 0}
+        )
+        for row in agg:
+            wk = _week_key(row["d"])
+            cat = row["category"] or "task"
+            status = row["status"] or ""
+            cnt = row["cnt"]
+            b = buckets[wk]
+            if cat == "task":
+                b["task"] += cnt
+                if status == "complete":
+                    b["task_complete"] += cnt
+            elif cat == "note":
+                b["note"] += cnt
+            elif cat == "inbox":
+                b["inbox"] += cnt
+
+        periods: List[TrendPeriod] = []
+        for i in range(count):
+            week_start = current_week_start - timedelta(weeks=i)
+            ws = week_start.isoformat()
+            b = buckets.get(ws, {"task": 0, "task_complete": 0, "note": 0, "inbox": 0})
+            total = b["task"]
+            completed = b["task_complete"]
+            completion_rate = round((completed / total * 100), 1) if total > 0 else 0.0
+            periods.append(TrendPeriod(
+                date=ws,
+                total=total,
+                completed=completed,
+                completion_rate=completion_rate,
+                notes_count=b["note"],
+                task_count=total,
+                inbox_count=b["inbox"],
+            ))
 
         return TrendResponse(periods=periods)
 
@@ -692,7 +695,7 @@ class ReviewService:
             logger.warning(f"AI 总结生成失败: {e}")
             return ""
 
-    def get_knowledge_heatmap(self, user_id: str = "_default") -> HeatmapResponse:
+    async def get_knowledge_heatmap(self, user_id: str = "_default") -> HeatmapResponse:
         """
         获取知识热力图
 
@@ -708,13 +711,9 @@ class ReviewService:
         # 尝试 Neo4j 路径
         if self._neo4j_client:
             try:
-                concepts = _run_async(
-                    self._neo4j_client.get_all_concepts_with_stats(user_id)
-                )
+                concepts = await self._neo4j_client.get_all_concepts_with_stats(user_id)
                 if concepts:
-                    relationships = _run_async(
-                        self._neo4j_client.get_all_relationships(user_id)
-                    )
+                    relationships = await self._neo4j_client.get_all_relationships(user_id)
                     rel_count_map = self._count_relationships_per_concept(relationships)
                     items = [
                         self._neo4j_concept_to_heatmap(c, rel_count_map)
@@ -936,7 +935,7 @@ class ReviewService:
         """
         计算学习连续天数（从今天开始往前数连续有记录的天数）
 
-        使用聚合 SQL 获取最近 90 天内有条目的日期列表，
+        使用 SQLite 公共方法获取最近 90 天内有条目的日期列表，
         然后在内存中从今天开始往前计算连续天数。
 
         Args:
@@ -948,23 +947,13 @@ class ReviewService:
         if not self._sqlite:
             return 0
 
-        conn = self._sqlite._get_conn()
-        try:
-            rows = conn.execute(
-                """SELECT DISTINCT DATE(created_at) AS d
-                   FROM entries
-                   WHERE user_id = ? AND created_at >= date('now', '-90 days')
-                   ORDER BY d DESC""",
-                (user_id,),
-            ).fetchall()
-        finally:
-            conn.close()
+        active_dates = self._sqlite.get_active_dates(user_id, days=90)
 
-        if not rows:
+        if not active_dates:
             return 0
 
         # 从今天开始往前数连续天数
-        date_set = {row["d"] for row in rows}
+        date_set = set(active_dates)
         today = date.today()
         streak = 0
         current = today
@@ -1086,7 +1075,7 @@ class ReviewService:
             except (ValueError, TypeError):
                 return None
 
-    def _generate_daily_focus(
+    async def _generate_daily_focus(
         self,
         user_id: str,
         overdue: list,
@@ -1136,9 +1125,7 @@ class ReviewService:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message},
                 ]
-                result = _run_async(
-                    asyncio.wait_for(self._llm_caller.call(messages), timeout=10.0)
-                )
+                result = await asyncio.wait_for(self._llm_caller.call(messages), timeout=10.0)
                 if result:
                     # 尝试解析 JSON
                     try:
@@ -1187,7 +1174,7 @@ class ReviewService:
 
         return None
 
-    def get_morning_digest(self, user_id: str) -> MorningDigestResponse:
+    async def get_morning_digest(self, user_id: str) -> MorningDigestResponse:
         """
         获取 AI 晨报数据
 
@@ -1206,12 +1193,22 @@ class ReviewService:
         today_str = today.isoformat()
         tomorrow_str = (today + timedelta(days=1)).isoformat()
 
-        # 1. 今日待办（状态非 complete，优先级排序）
-        all_tasks = self._sqlite.list_entries(
+        # 1. 今日待办（状态非 complete，planned_date=today）
+        # 注意：list_entries 按 created_at 过滤，不能完全依赖它来筛选 planned_date
+        # 需要查询更宽的时间范围，再按 planned_date 精确过滤
+        all_active_tasks = self._sqlite.list_entries(
             type="task",
-            limit=1000,
+            status="doing",
+            limit=200,
             user_id=user_id,
         )
+        all_wait_tasks = self._sqlite.list_entries(
+            type="task",
+            status="waitStart",
+            limit=200,
+            user_id=user_id,
+        )
+        active_tasks = all_active_tasks + all_wait_tasks
 
         def _parse_date_str(val):
             """解析 planned_date 字段为 date 对象"""
@@ -1228,16 +1225,22 @@ class ReviewService:
                     return None
 
         today_todos = [
-            t for t in all_tasks
-            if t.get("status") in ("waitStart", "doing")
-            and _parse_date_str(t.get("planned_date")) == today
+            t for t in active_tasks
+            if _parse_date_str(t.get("planned_date")) == today
         ]
+
         priority_order = {"high": 0, "medium": 1, "low": 2}
         today_todos.sort(key=lambda t: priority_order.get(t.get("priority", "medium"), 1))
 
         # 2. 拖延任务（planned_date 已过，状态非 complete）
+        past_tasks = self._sqlite.list_entries(
+            type="task",
+            end_date=today_str,
+            limit=200,
+            user_id=user_id,
+        )
         overdue = [
-            t for t in all_tasks
+            t for t in past_tasks
             if t.get("status") in ("waitStart", "doing")
             and t.get("planned_date")
             and _parse_date_str(t.get("planned_date")) is not None
@@ -1247,16 +1250,15 @@ class ReviewService:
 
         # 3. 未跟进灵感（>3天未转化的 inbox 条目）
         three_days_ago = today - timedelta(days=3)
-        all_inbox = self._sqlite.list_entries(
+        old_inbox = self._sqlite.list_entries(
             type="inbox",
-            limit=1000,
+            end_date=three_days_ago.isoformat(),
+            limit=200,
             user_id=user_id,
         )
         stale_inbox = [
-            i for i in all_inbox
-            if _parse_date_str(i.get("created_at")) is not None
-            and _parse_date_str(i.get("created_at")) <= three_days_ago
-            and i.get("status") in ("waitStart", "pending")
+            i for i in old_inbox
+            if i.get("status") in ("waitStart", "pending")
         ]
 
         # 4. 本周学习摘要
@@ -1283,7 +1285,7 @@ class ReviewService:
         )
 
         # 5. 构建 AI 建议
-        ai_suggestion = self._generate_morning_suggestion(
+        ai_suggestion = await self._generate_morning_suggestion(
             today_todos=today_todos,
             overdue=overdue,
             stale_inbox=stale_inbox,
@@ -1294,7 +1296,7 @@ class ReviewService:
         # 6. 新增增强字段
         learning_streak = self._calculate_learning_streak(user_id)
         pattern_insights = self._generate_pattern_insights(user_id)
-        daily_focus = self._generate_daily_focus(
+        daily_focus = await self._generate_daily_focus(
             user_id=user_id,
             overdue=overdue,
             learning_streak=learning_streak,
@@ -1336,7 +1338,7 @@ class ReviewService:
             pattern_insights=pattern_insights,
         )
 
-    def _generate_morning_suggestion(
+    async def _generate_morning_suggestion(
         self,
         today_todos: list,
         overdue: list,
@@ -1363,9 +1365,7 @@ class ReviewService:
                     "todos": [t.get("title", "") for t in today_todos[:3]],
                     "overdue_titles": [t.get("title", "") for t in overdue[:3]],
                 }
-                suggestion = _run_async(
-                    self._generate_ai_summary("morning_digest", stats_data, user_id=user_id)
-                )
+                suggestion = await self._generate_ai_summary("morning_digest", stats_data, user_id=user_id)
                 if suggestion:
                     return suggestion
             except Exception:
@@ -1433,18 +1433,7 @@ class ReviewService:
         start_str = start.isoformat()
         end_str = end.isoformat() + "T23:59:59"
 
-        conn = self._sqlite._get_conn()
-        try:
-            rows = conn.execute(
-                """SELECT DATE(created_at) as d, COUNT(*) as cnt
-                   FROM entries
-                   WHERE user_id = ? AND created_at >= ? AND created_at <= ?
-                   GROUP BY DATE(created_at)""",
-                (user_id, start_str, end_str),
-            ).fetchall()
-            counts = {row["d"]: row["cnt"] for row in rows}
-        finally:
-            conn.close()
+        counts = self._sqlite.get_daily_activity_counts(user_id, start_str, end_str)
 
         items = []
         current = start

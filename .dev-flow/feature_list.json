@@ -3,10 +3,14 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-18T20:05",
+  "updated_at": "2026-04-18T21:00",
   "status": "active",
-  "scope_notes": "",
-  "active_requirement_cycle": null,
+  "scope_notes": "R017: 全面审计发现的安全加固与数据正确性修复。Deferred: logout无服务端Token失效(JWT 7天短过期可接受)、search混合搜索(功能增强)、Neo4j/Qdrant降级策略(功能增强)",
+  "active_requirement_cycle": {
+    "id": "R017",
+    "name": "code-audit-hardening",
+    "branch": "fix/R017-code-audit-hardening"
+  },
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -16,10 +20,10 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 0,
+    "total_tasks": 11,
     "pending": 0,
+    "completed": 11,
     "in_progress": 0,
-    "completed": 0,
     "blocked": 0,
     "cancelled": 0
   },
@@ -139,20 +143,365 @@
   ],
   "modules": [
     {
-      "id": "chat",
-      "name": "聊天模块",
-      "description": "AI 对话、意图识别、页面上下文"
+      "id": "security",
+      "name": "安全模块",
+      "description": "注入防护、认证加固、信息泄露修复"
     },
     {
       "id": "entries",
       "name": "条目管理模块",
-      "description": "条目CRUD、分类类型扩展"
+      "description": "条目CRUD、分类变更、路由修复"
     },
     {
       "id": "review",
       "name": "回顾模块",
-      "description": "成长回顾统计、趋势、AI总结"
+      "description": "review_service async 重构、N+1 查询优化"
+    },
+    {
+      "id": "frontend",
+      "name": "前端模块",
+      "description": "SSE AbortController、useEffect cleanup"
+    },
+    {
+      "id": "infra",
+      "name": "基础设施模块",
+      "description": "SyncService 排序、StorageFactory 缓存、datetime 统一"
     }
   ],
-  "tasks": []
+  "tasks": [
+    {
+      "id": "B56",
+      "phase": "security",
+      "module": "security",
+      "name": "注入防护：Neo4j Cypher + SQLite 字段名",
+      "status": "completed",
+      "commit": "0e74e60",
+      "evidence_file": ".dev-flow/evidence/B56.md",
+      "description": "修复 Neo4j Cypher 注入漏洞（f-string 拼接 relation_type）和 SQLite update_goal 字段名动态拼接风险。Neo4j: 在 create_concept_relation/create_entry_relation 中对 relation_type 添加白名单校验（RELATED_TO, PART_OF, PREREQUISITE, BELONGS_TO 等已知类型）。SQLite: 在 update_goal 中对 set_clause 的字段名添加白名单校验。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": 1,
+      "acceptance_criteria": [
+        "relation_type 白名单校验，不在白名单中的值抛出 ValueError",
+        "update_goal 字段名白名单校验，非法字段名被拒绝",
+        "现有测试全部通过",
+        "新增注入防护测试（验证恶意输入被拦截）"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        "测试合法 relation_type 通过",
+        "测试恶意 relation_type（含 Cypher 注入）被拦截",
+        "测试 update_goal 合法字段更新",
+        "测试 update_goal 非法字段名被拒绝"
+      ],
+      "files": [
+        "backend/app/infrastructure/storage/neo4j_client.py",
+        "backend/app/infrastructure/storage/sqlite.py"
+      ],
+      "fix_level": "L2",
+      "root_cause_analysis": "Neo4j 和 SQLite 方法信任外部输入作为查询结构的一部分，未做参数化或白名单校验",
+      "similar_locations": [
+        "neo4j_client.py 所有使用 f-string 构建 Cypher 的方法",
+        "sqlite.py 所有使用动态字段名的 update 方法"
+      ]
+    },
+    {
+      "id": "B57",
+      "phase": "security",
+      "module": "security",
+      "name": "认证加固 + 信息泄露修复 + 部署安全",
+      "description": "三合一安全加固：1) JWT_SECRET 为空时启动拒绝（auth_service.py 添加启动检查）；2) 错误处理中间件生产环境不返回内部异常详情（middleware/__init__.py）；3) docker-compose.yml 移除 Neo4j 默认弱密码 changeme123。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": 1,
+      "acceptance_criteria": [
+        "JWT_SECRET 为空字符串时应用启动抛出明确错误",
+        "500 错误响应不含 str(e) 和异常类型名（生产环境）",
+        "docker-compose.yml 中 NEO4J_PASSWORD 无默认值，必须通过 .env 设置",
+        "现有测试全部通过"
+      ],
+      "risk_tags": ["auth", "config"],
+      "test_tasks": [
+        "测试 JWT_SECRET 为空字符串时启动失败（明确错误信息）",
+        "测试 JWT_SECRET 正常设置时启动成功",
+        "测试 500 错误响应不含 str(e)、异常类型名、文件路径",
+        "测试 docker-compose.yml 中 NEO4J_PASSWORD 无默认值",
+        "smoke: 启动后验证正常认证流程（注册→登录→访问 API）"
+      ],
+      "files": [
+        "backend/app/services/auth_service.py",
+        "backend/app/middleware/__init__.py",
+        "deploy/docker-compose.yml"
+      ],
+      "fix_level": "L2",
+      "root_cause_analysis": "安全配置缺少启动时强制校验；错误处理中间件未区分开发/生产环境"
+    },
+    {
+      "id": "B58",
+      "phase": "security",
+      "module": "security",
+      "name": "用户隔离修复：MCP handler + entry owner",
+      "description": "修复两个用户隔离问题：1) MCP handlers 中 get_entry 调用未传 user_id 参数，隔离检查始终对比 _default；2) entry_service._verify_entry_owner 在 SQLite 不可用时直接放行。修复：MCP handler 所有 get_entry 调用补上 user_id；_verify_entry_owner 在无 SQLite 时改为拒绝而非放行。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": 1,
+      "acceptance_criteria": [
+        "MCP handler 所有 get_entry 调用传递 user_id",
+        "_verify_entry_owner 在无 SQLite 时拒绝访问（返回 False）",
+        "_entry_belongs_to_user 回退策略从 return True 改为 return False",
+        "现有测试全部通过"
+      ],
+      "risk_tags": ["auth"],
+      "test_tasks": [
+        "测试 MCP handler 传递 user_id 后隔离生效",
+        "测试 _verify_entry_owner 无 SQLite 时拒绝访问（返回 False）",
+        "测试 _entry_belongs_to_user 回退策略从 return True 改为 return False",
+        "测试用户 A 无法访问用户 B 的条目（跨用户隔离）",
+        "smoke: MCP 端到端流程正常（认证→读取自身数据→隔离校验）"
+      ],
+      "files": [
+        "backend/app/mcp/handlers.py",
+        "backend/app/services/entry_service.py"
+      ],
+      "fix_level": "L2",
+      "root_cause_analysis": "MCP handler 开发时未传 user_id 给 get_entry；_verify_entry_owner 的回退策略过于宽松"
+    },
+    {
+      "id": "B59",
+      "phase": "data-correctness",
+      "module": "entries",
+      "name": "条目操作修复：分类变更 + 路由冲突 + file_path",
+      "description": "修复三个条目管理问题：1) category 变更时不更新 file_path，导致 SQLite 索引指向旧路径、旧文件残留；2) /search/query 路由被 /{entry_id} 先匹配导致不可达；3) file_path 比较逻辑错误。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": 1,
+      "acceptance_criteria": [
+        "category 变更时 file_path 同步更新到新目录（如 inbox→tasks）",
+        "旧 Markdown 文件被移到新目录",
+        "/search/query 路由可正常访问",
+        "file_path 比较逻辑使用标准化路径",
+        "现有测试全部通过"
+      ],
+      "test_tasks": [
+        "测试 inbox 转 task 时 file_path 更新和文件移动",
+        "测试 /search/query 路由返回正确搜索结果",
+        "测试路径比较使用 Path 标准化"
+      ],
+      "files": [
+        "backend/app/services/entry_service.py",
+        "backend/app/routers/entries.py"
+      ],
+      "fix_level": "L2",
+      "root_cause_analysis": "category 变更逻辑只更新了数据库字段，未同步 file_path 和物理文件；路由注册顺序导致通配符路由先匹配"
+    },
+    {
+      "id": "B60",
+      "phase": "data-correctness",
+      "module": "infra",
+      "name": "SyncService 写入/删除顺序修复",
+      "description": "修复 SyncService 三层存储一致性：写入时先写 Markdown（Source of Truth），SQLite upsert 失败时记录告警但不删除 Markdown，确保数据不丢失。删除时先删 Markdown，索引删除失败时记录告警（重启后 sync_all 可重建索引）。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": 2,
+      "acceptance_criteria": [
+        "sync_entry: Markdown 写入后 SQLite 失败时数据不丢失（Markdown 保留）",
+        "delete_entry: Markdown 先删，索引删除失败不影响最终一致性",
+        "添加适当的错误日志记录",
+        "现有测试全部通过"
+      ],
+      "test_tasks": [
+        "测试 sync_entry 在 SQLite 失败时 Markdown 保留",
+        "测试 delete_entry 在索引删除失败时 Markdown 已删除",
+        "测试 Neo4j/Qdrant 失败不阻塞主流程"
+      ],
+      "files": [
+        "backend/app/services/sync_service.py"
+      ],
+      "fix_level": "L2",
+      "root_cause_analysis": "三层存储操作未考虑部分失败的回滚策略，写入/删除顺序不一致"
+    },
+    {
+      "id": "F56",
+      "phase": "frontend",
+      "module": "frontend",
+      "name": "前端修复：SSE AbortController + Review cleanup",
+      "description": "修复两个前端问题：1) FloatingChat SSE 流式请求无 AbortController，组件卸载时请求继续造成内存泄漏；2) Review.tsx 6 个 useEffect 无 cleanup，组件卸载后 setState 可能内存泄漏。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": 2,
+      "acceptance_criteria": [
+        "SSE 请求创建 AbortController，组件卸载时 abort",
+        "Review.tsx 所有 useEffect 添加 cancelled flag 或 cleanup",
+        "前端构建通过",
+        "前端测试通过"
+      ],
+      "test_tasks": [
+        "测试 FloatingChat 组件卸载后无 pending SSE 请求",
+        "测试 Review 页面快速切换 Tab 不触发 unmounted setState",
+        "测试 SSE 连接超时后自动清理",
+        "前端构建 + 现有测试通过"
+      ],
+      "files": [
+        "frontend/src/components/FloatingChat.tsx",
+        "frontend/src/pages/Review.tsx"
+      ]
+    },
+    {
+      "id": "B61",
+      "phase": "backend-arch",
+      "module": "review",
+      "name": "review_service async 重构 + datetime 统一",
+      "description": "修复 review_service 架构问题：1) _run_async 在 async 路由中用 ThreadPoolExecutor 运行协程，高并发死锁风险 — 改为原生 async 方法；2) 直接操作 _get_conn() 绕过抽象 — 改为调用 SQLite 公共方法或添加专用聚合方法；3) goal_service 和 sqlite.py 中 datetime.utcnow() 替换为 datetime.now(timezone.utc)；4) goal_service tag_auto 重算逻辑修复（count_goal_entries → 正确的 tags 计数）。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": 2,
+      "acceptance_criteria": [
+        "review_service 核心方法改为 async（get_daily_report/get_weekly_report/get_monthly_report/get_morning_digest）",
+        "不再使用 _run_async 和 ThreadPoolExecutor",
+        "不再直接调用 _sqlite._get_conn()",
+        "所有 datetime.utcnow() 替换为 datetime.now(timezone.utc)",
+        "goal_service tag_auto 重算使用正确的计数方法",
+        "后端测试全部通过"
+      ],
+      "files": [
+        "backend/app/services/review_service.py",
+        "backend/app/services/goal_service.py",
+        "backend/app/infrastructure/storage/sqlite.py"
+      ],
+      "test_tasks": [
+        "测试 async 方法可直接 await（无 _run_async）",
+        "测试 _run_async 和 ThreadPoolExecutor 完全移除",
+        "测试 datetime.now(timezone.utc) 替换后时区正确",
+        "测试 goal_service tag_auto 重算使用正确计数",
+        "测试 review 路由返回数据与重构前一致"
+      ],
+      "fix_level": "L2",
+      "root_cause_analysis": "review_service 初始设计为同步方法，后接入 LLM 异步调用时用 _run_async 桥接，积累了技术债"
+    },
+    {
+      "id": "B62",
+      "phase": "performance",
+      "module": "review",
+      "name": "性能优化：N+1 查询 + StorageFactory 缓存",
+      "description": "修复性能瓶颈：1) 趋势 API get_trend_data 对每个时间周期分别查询（daily 7天=21次），改为单次聚合 SQL；2) 晨报 get_morning_digest 全量加载 1000 条后内存过滤，改为带条件的 SQL 查询；3) StorageFactory._cache 无淘汰机制，添加 LRU 策略限制最多 50 个用户。",
+      "verification": "L2",
+      "depends_on": ["B61"],
+      "status": "completed",
+      "priority": 3,
+      "acceptance_criteria": [
+        "get_trend_data 使用单次聚合查询替代循环查询",
+        "get_morning_digest 使用带 status/planned_date 条件的查询",
+        "StorageFactory 添加 LRU 淘汰（maxsize=50）",
+        "后端测试全部通过",
+        "新增性能相关测试"
+      ],
+      "test_tasks": [
+        "测试趋势 API 查询次数 <= 3（而非 N+1 的 21 次）",
+        "测试趋势 API 返回数据与重构前值一致",
+        "测试晨报带条件查询返回正确待办/逾期列表",
+        "测试晨报不再全量加载（无 limit=1000）",
+        "测试 StorageFactory 创建 51 个用户后最先创建的被淘汰",
+        "测试 StorageFactory 缓存命中/未命中行为正确"
+      ],
+      "files": [
+        "backend/app/services/review_service.py",
+        "backend/app/infrastructure/storage/storage_factory.py",
+        "backend/app/infrastructure/storage/sqlite.py"
+      ]
+    },
+    {
+      "id": "B63",
+      "phase": "tests",
+      "module": "infra",
+      "name": "修复失效测试 + 补充测试覆盖",
+      "description": "修复已知失效的测试：1) test_feedback_flow.py 集成测试与异步双写实现不匹配（预期同步 SDK 调用，实际异步 create_task）；2) Review.trend.test.tsx mock 返回值与实际类型不匹配（getGrowthCurve 返回 [] 应为 {points:[]}）；3) 健康检查连接泄漏（main.py _check_services 中 _get_conn 未 close）。",
+      "verification": "L1",
+      "depends_on": ["B56", "B57", "B58", "B59", "B60", "B61", "B62", "B64", "B65", "F56"],
+      "status": "completed",
+      "priority": 3,
+      "acceptance_criteria": [
+        "test_feedback_flow.py 测试全部通过",
+        "Review.trend.test.tsx 测试全部通过",
+        "健康检查不再泄漏连接",
+        "所有后端测试通过",
+        "所有前端测试通过"
+      ],
+      "test_tasks": [
+        "test_feedback_flow.py 异步双写测试通过",
+        "Review.trend.test.tsx mock 返回值与实际类型匹配",
+        "健康检查 _check_services 连接正确关闭",
+        "全量后端测试通过（uv run pytest）",
+        "全量前端测试通过（npm run test:run）"
+      ],
+      "files": [
+        "backend/tests/flow/test_feedback_flow.py",
+        "frontend/src/pages/Review.trend.test.tsx",
+        "backend/app/main.py"
+      ]
+    },
+    {
+      "id": "B64",
+      "phase": "security",
+      "module": "security",
+      "name": "路由认证修复：auth/me + sync_vectors 权限",
+      "description": "修复两个认证绕过问题：1) GET /auth/me 绕过标准 Depends(get_current_user)，直接解析 token 但缺少标准异常处理和用户不存在校验；2) POST /entries/admin/sync-vectors 只需任意已认证用户即可触发全量同步（消耗 embedding API 配额），需增加管理员角色检查或移除公开端点。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": 1,
+      "acceptance_criteria": [
+        "GET /auth/me 使用标准 Depends(get_current_user) 或补齐等价的异常处理",
+        "sync-vectors 端点移除公开路由，改为内部触发（不在 API 路由中暴露）",
+        "现有测试全部通过"
+      ],
+      "risk_tags": ["auth", "config"],
+      "test_tasks": [
+        "测试 /auth/me 无 token 返回 401",
+        "测试 /auth/me 无效 token 返回 401",
+        "测试 /auth/me 过期 token 返回 401",
+        "测试 /auth/me token 有效但用户不存在返回 401",
+        "测试 sync-vectors 端点不再公开暴露（404）",
+        "smoke: 启动后验证 /auth/me 正常认证流程"
+      ],
+      "files": [
+        "backend/app/routers/auth.py",
+        "backend/app/routers/entries.py"
+      ],
+      "fix_level": "L2",
+      "root_cause_analysis": "/auth/me 是认证路由自身端点，早期实现绕过了标准 Depends 注入；sync-vectors 端点路径含 admin 但未实际校验角色。决策：不引入 RBAC，改为移除公开端点，保持与现有架构一致"
+    },
+    {
+      "id": "B65",
+      "phase": "data-correctness",
+      "module": "entries",
+      "name": "条目批量创建字段丢失修复",
+      "description": "修复 addTasks/批量创建条目时 status 和 category 字段丢失的问题。批量创建路径未传递完整的字段集，导致部分条目缺少默认值。",
+      "verification": "L2",
+      "depends_on": ["B59"],
+      "status": "completed",
+      "priority": 2,
+      "acceptance_criteria": [
+        "批量创建时所有条目都包含 status 和 category 字段",
+        "缺失字段使用合理默认值（status=doing, category=task）",
+        "现有测试全部通过"
+      ],
+      "test_tasks": [
+        "测试批量创建的条目包含完整 status 字段",
+        "测试批量创建的条目包含完整 category 字段",
+        "测试部分字段缺失时使用默认值"
+      ],
+      "files": [
+        "backend/app/services/entry_service.py"
+      ],
+      "fix_level": "L1",
+      "root_cause_analysis": "批量创建路径复用了单个创建逻辑但字段映射不完整"
+    }
+  ]
 }

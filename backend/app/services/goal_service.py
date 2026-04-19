@@ -2,7 +2,7 @@
 import json
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from pydantic import BaseModel
@@ -401,10 +401,9 @@ class GoalService:
             if not tag_set.intersection(set(auto_tags)):
                 continue
 
-            # 重算进度
+            # 重算进度 — tag_auto 类型由 _row_to_response 自行计算进度，不传手动关联计数
             try:
-                linked_count = self._sqlite.count_goal_entries(goal["id"], user_id)
-                response = self._row_to_response(goal, linked_entries_count=linked_count)
+                response = self._row_to_response(goal, linked_entries_count=0)
                 progress = response["progress_percentage"]
 
                 # 自动完成
@@ -509,7 +508,7 @@ class GoalService:
         monthly: 本月1日 00:00:00（即上月末日）
         """
         import calendar
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         if period == "weekly":
             # 本周一
             days_since_monday = now.weekday()
