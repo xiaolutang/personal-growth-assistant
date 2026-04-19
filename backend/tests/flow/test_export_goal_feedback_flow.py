@@ -4,7 +4,6 @@
 验证 auth 要求和用户隔离。
 """
 
-import pytest
 from httpx import AsyncClient
 
 
@@ -80,6 +79,8 @@ class TestGoalCRUDFlow:
         assert list_resp.status_code == 200
         goals = list_resp.json()["goals"]
         assert any(g["id"] == goal_id for g in goals)
+
+    async def test_goal_update(self, client: AsyncClient):
         """更新目标"""
         create_resp = await client.post("/goals", json={"title": "原始目标", "metric_type": "count", "target_value": 1})
         goal_id = create_resp.json()["id"]
@@ -177,8 +178,8 @@ class TestFeedbackBoundaryFlow:
             resp = await c.post("/feedback", json={"title": "test", "severity": "low"})
             assert resp.status_code == 401
 
-    async def test_feedback_cross_user_isolation(self, client: AsyncClient):
-        """用户只能看到自己的反馈"""
+    async def test_feedback_submit_and_list_own(self, client: AsyncClient):
+        """用户提交反馈后可在列表中查看"""
         from unittest.mock import patch
         mock_resp = {"id": 10, "title": "我的反馈", "status": "open", "severity": "medium"}
         with patch("app.routers.feedback.report_issue", return_value=mock_resp):
