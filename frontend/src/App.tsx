@@ -21,6 +21,7 @@ import { GoalsPage } from "@/pages/GoalsPage";
 import { GoalDetail } from "@/pages/GoalDetail";
 import { Login } from "@/pages/Login";
 import { Register } from "@/pages/Register";
+import { OfflineFallback } from "@/pages/OfflineFallback";
 import { useChatStore } from "@/stores/chatStore";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUserStore } from "@/stores/userStore";
@@ -95,6 +96,7 @@ function AppLayout() {
             <Route path="/projects" element={<Navigate to="/explore?type=project" replace />} />
             <Route path="/review" element={<Review />} />
             <Route path="/entries/:id" element={<EntryDetail />} />
+            <Route path="/offline" element={<OfflineFallback />} />
           </Routes>
         </div>
       </div>

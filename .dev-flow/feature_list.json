@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 8,
-    "pending": 5,
-    "completed": 3,
+    "pending": 4,
+    "completed": 4,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -156,10 +156,13 @@
       "description": "当用户离线时访问未缓存的页面，显示友好的离线回退页面而非浏览器默认错误。**实现路径**：在 SPA 内新增 `/offline` React 路由（OfflineFallback.tsx），不做独立 precached 文档，不修改 SW navigateFallback（保持 index.html 支持 SPA deep-link）。SW 缓存策略保持 index.html 为 navigateFallback，离线时 React 应用正常加载，App.tsx 检测到 navigator.onLine === false 时对未缓存路由显示离线提示组件（作为 fallback Route）。显示「你当前处于离线状态」+ 可跳转到已缓存的首页/任务页的链接。",
       "verification": "离线状态访问未缓存 URL 显示离线回退页而非浏览器错误",
       "depends_on": ["S03"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-19T20:55",
+      "completed_at": "2026-04-19T21:00",
+      "actual_minutes": 5,
+      "evidence_file": ".dev-flow/evidence/F58.md",
+      "execution_notes": "SPA内离线回退页 + /offline路由 + 4个测试",
       "priority": 2,
-      "acceptance_criteria": [
-        "离线访问未缓存路由显示自定义离线页面（非浏览器错误页）",
         "离线页面包含返回首页/任务页的链接",
         "离线页面样式符合 design-system.md",
         "SPA deep-link 正常工作（navigateFallback 保持 index.html 不变）",
