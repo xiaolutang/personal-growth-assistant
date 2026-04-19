@@ -9,7 +9,7 @@
  *  5. Full sync flow (queue -> sync -> cleanup)
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
 // ─── Mocks (must precede imports) ────────────────────────
@@ -35,17 +35,17 @@ vi.mock("@/stores/taskStore", () => {
   const upsertOfflineEntrySpy = vi.fn();
 
   // In-memory arrays so the mock behaves like the real store
-  let _tasks: any[] = [];
-  let _offlineEntries: any[] = [];
+  let _tasks: Task[] = [];
+  let _offlineEntries: Task[] = [];
 
-  const upsertOfflineEntry = (entry: any) => {
+  const upsertOfflineEntry = (entry: Task) => {
     const offlineEntry = { ...entry, _offlinePending: true };
-    const exists = _offlineEntries.find((e: any) => e.id === entry.id);
+    const exists = _offlineEntries.find((e) => e.id === entry.id);
     if (exists) {
-      _offlineEntries = _offlineEntries.map((e: any) =>
+      _offlineEntries = _offlineEntries.map((e) =>
         e.id === entry.id ? offlineEntry : e,
       );
-      _tasks = _tasks.map((t: any) =>
+      _tasks = _tasks.map((t) =>
         t.id === entry.id ? offlineEntry : t,
       );
     } else {
@@ -56,13 +56,14 @@ vi.mock("@/stores/taskStore", () => {
   };
 
   const state = {
-    tasks: _tasks,
-    _offlineEntries: _offlineEntries,
     removeOfflineEntry,
     fetchEntries,
     upsertOfflineEntry,
     // Expose the spy for assertions
     upsertOfflineEntrySpy,
+    // Internal state is accessed via __getState() because closure variables
+    // (_tasks, _offlineEntries) are reassigned on each upsert — direct
+    // properties would point to stale references.
     __getState: () => ({ tasks: [..._tasks], _offlineEntries: [..._offlineEntries] }),
     __resetState: () => {
       _tasks = [];
@@ -102,6 +103,23 @@ import type { Task } from "@/types/task";
 const mockQueue = vi.mocked(queue);
 const mockCreateEntry = vi.mocked(createEntry);
 const mockTaskStore = vi.mocked(useTaskStore);
+
+// ─── Mock state types ──────────────────────────────────
+
+interface MockTaskStoreState {
+  removeOfflineEntry: Mock;
+  fetchEntries: Mock;
+  upsertOfflineEntry: (entry: Task) => void;
+  upsertOfflineEntrySpy: Mock;
+  __getState: () => { tasks: Task[]; _offlineEntries: Task[] };
+  __resetState: () => void;
+}
+
+// vi.mocked() preserves the original module type, so we need a cast to
+// access mock-specific helpers (__getState, __resetState, upsertOfflineEntrySpy).
+function getMockState(): MockTaskStoreState {
+  return mockTaskStore.getState() as unknown as MockTaskStoreState;
+}
 
 // ─── Helpers ─────────────────────────────────────────────
 
@@ -145,7 +163,7 @@ describe("Offline create -> sync integration", () => {
     vi.clearAllMocks();
     setNavigatorOnLine(false);
     mockQueue.add.mockResolvedValue("q-fake-id");
-    (mockTaskStore.getState() as any).__resetState();
+    getMockState().__resetState();
   });
 
   afterEach(() => {
@@ -184,8 +202,8 @@ describe("Offline create -> sync integration", () => {
       expect(addCallArgs.client_entry_id).toMatch(/^local-/);
 
       // upsertOfflineEntry should be called via taskStore
-      const storeState = mockTaskStore.getState();
-      expect((storeState as any).upsertOfflineEntrySpy).toHaveBeenCalledTimes(1);
+      const storeState = getMockState();
+      expect(storeState.upsertOfflineEntrySpy).toHaveBeenCalledTimes(1);
 
       // Result should contain optimistic task
       expect(parseResult.result?.tasks).toHaveLength(1);
@@ -195,7 +213,7 @@ describe("Offline create -> sync integration", () => {
       expect(optimisticTask.id).toMatch(/^local-/);
 
       // The entry stored in taskStore has _offlinePending: true
-      const upsertArg = (storeState as any).upsertOfflineEntrySpy.mock.calls[0][0];
+      const upsertArg = storeState.upsertOfflineEntrySpy.mock.calls[0][0];
       expect(upsertArg._offlinePending).toBe(true);
 
       // onCreated callback should fire with the client-side id
@@ -218,8 +236,7 @@ describe("Offline create -> sync integration", () => {
   // ─────────────────────────────────────────────────────
   describe("2. taskStore offline state consistency", () => {
     it("upsertOfflineEntry adds to both tasks and _offlineEntries, removeOfflineEntry cleans both", () => {
-      const state = mockTaskStore.getState();
-      (state as any).__resetState();
+      const state = getMockState();
 
       const mockEntry: Task = {
         id: "local-100",
@@ -237,7 +254,7 @@ describe("Offline create -> sync integration", () => {
       // upsertOfflineEntry is the mock's wrapper that updates internal arrays
       state.upsertOfflineEntry(mockEntry);
 
-      const afterUpsert = (state as any).__getState();
+      const afterUpsert = state.__getState();
       expect(afterUpsert._offlineEntries).toHaveLength(1);
       expect(afterUpsert._offlineEntries[0].id).toBe("local-100");
       expect(afterUpsert._offlineEntries[0]._offlinePending).toBe(true);
@@ -264,7 +281,7 @@ describe("Offline create -> sync integration", () => {
       // To verify the actual behavioral contract, let's manually apply the same
       // logic the real store uses and verify it cleans both arrays.
       // We'll re-implement the remove logic on the mock's internal state:
-      const current = (state as any).__getState();
+      const current = state.__getState();
       const filteredOffline = current._offlineEntries.filter(
         (e: any) => e.id !== "local-100",
       );
@@ -281,8 +298,7 @@ describe("Offline create -> sync integration", () => {
     });
 
     it("upsertOfflineEntry updates existing entry in both arrays", () => {
-      const state = mockTaskStore.getState();
-      (state as any).__resetState();
+      const state = getMockState();
 
       const entry1: Task = {
         id: "local-200",
@@ -307,7 +323,7 @@ describe("Offline create -> sync integration", () => {
 
       state.upsertOfflineEntry(entry1Updated);
 
-      const afterUpdate = (state as any).__getState();
+      const afterUpdate = state.__getState();
       // Should still have exactly one entry in each array (not duplicated)
       expect(afterUpdate._offlineEntries).toHaveLength(1);
       expect(afterUpdate.tasks).toHaveLength(1);
