@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 8,
-    "pending": 1,
-    "completed": 7,
+    "pending": 0,
+    "completed": 8,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -365,7 +365,12 @@
       "description": "最终收口任务。确保后端测试通过、前端构建通过、前端测试通过。新增 hook/service 有单元测试覆盖。",
       "verification": "全量测试通过 + 前端构建通过",
       "depends_on": ["S03", "S04", "F58", "F59", "F60", "F61", "F62"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-19T22:30",
+      "completed_at": "2026-04-19T22:35",
+      "actual_minutes": 5,
+      "evidence_file": ".dev-flow/evidence/B73.md",
+      "execution_notes": "质量收口：857 后端 + 303 前端测试全通过 + 构建通过 + 新增 51 个测试",
       "priority": 3,
       "acceptance_criteria": [
         "cd backend && uv run pytest tests/ — 0 errors, 0 failures",
