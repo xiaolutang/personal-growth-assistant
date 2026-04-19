@@ -3,10 +3,15 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-19T08:30",
+  "updated_at": "2026-04-19T11:30",
   "status": "active",
-  "scope_notes": "",
-  "active_requirement_cycle": null,
+  "scope_notes": "缺陷修复 + 质量收口：修复失效 flow 测试、验证/修复项目详情页缺陷、处理审计遗留",
+  "active_requirement_cycle": {
+    "id": "R018",
+    "name": "defect-fix-quality",
+    "branch": "fix/R018-defect-fix-quality",
+    "archive_dir": "_archive/R018_defect-fix-quality"
+  },
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -16,9 +21,9 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 0,
-    "pending": 0,
-    "completed": 0,
+    "total_tasks": 6,
+    "pending": 4,
+    "completed": 1,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -144,6 +149,181 @@
       "branch": "fix/R017-code-audit-hardening"
     }
   ],
-  "modules": [],
-  "tasks": []
+  "modules": [
+    {
+      "id": "tests",
+      "name": "测试修复",
+      "description": "修复 Python 3.13 兼容性导致的 15 个 flow 测试错误"
+    },
+    {
+      "id": "defects",
+      "name": "缺陷修复",
+      "description": "验证并修复已知缺陷（项目详情页等）"
+    },
+    {
+      "id": "quality",
+      "name": "质量收口",
+      "description": "处理审计遗留、补充测试覆盖"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "B66",
+      "phase": 1,
+      "module": "tests",
+      "name": "修复 flow 测试 fixture（Python 3.13 asyncio 兼容）",
+      "description": "test_entry_api_flow.py 和 test_list_sync.py 共 15 个测试因 asyncio.get_event_loop() 在 Python 3.13 报 RuntimeError 而全部 ERROR。需将 sync fixture 改为 async fixture 或使用 event_loop policy 修复。",
+      "verification": "Python 3.13 环境下 uv run pytest tests/flow/ -v 全部通过",
+      "depends_on": [],
+      "status": "completed",
+      "priority": 1,
+      "started_at": "2026-04-19T11:00",
+      "completed_at": "2026-04-19T11:30",
+      "evidence_file": "evidence/B66.md",
+      "acceptance_criteria": [
+        "tests/flow/test_entry_api_flow.py 9 个测试全部 PASS",
+        "tests/flow/test_list_sync.py 6 个测试全部 PASS",
+        "不使用 asyncio.get_event_loop()，改用 pytest-asyncio async fixture 或 httpx AsyncClient",
+        "其他 920 个已有测试不受影响"
+      ],
+      "risk_tags": ["startup"],
+      "test_tasks": [
+        "uv run pytest tests/flow/ -v 确认全部通过",
+        "uv run pytest tests/ -q 确认总数不变或增加"
+      ],
+      "files": [
+        "backend/tests/flow/test_entry_api_flow.py",
+        "backend/tests/flow/test_list_sync.py"
+      ]
+    },
+    {
+      "id": "B67",
+      "phase": 1,
+      "module": "defects",
+      "name": "验证并修复项目详情页无内容缺陷",
+      "description": "defect_feedback.md 记录：访问 /entries/project-xxx 时无实质内容。EntryDetail.tsx 已有项目进度、子任务、关联面板等 UI，但可能因为后端数据不完整或 API 未正确返回导致前端无内容展示。需验证当前状态并修复。",
+      "verification": "创建项目+子任务 → 访问详情页 → 显示项目描述、进度、子任务列表",
+      "depends_on": [],
+      "status": "pending",
+      "priority": 1,
+      "acceptance_criteria": [
+        "项目详情页显示项目描述（content markdown）",
+        "项目详情页显示子任务进度条（getProjectProgress API 正常返回）",
+        "项目详情页显示子任务列表",
+        "空项目（无子任务）显示空状态引导",
+        "后端 API 测试覆盖 project detail 场景"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "手动验证：创建项目+子任务 → 打开详情页",
+        "后端 API 测试：getProjectProgress 返回正确数据"
+      ],
+      "files": [
+        "backend/app/routers/entries.py",
+        "backend/app/services/entry_service.py",
+        "frontend/src/pages/EntryDetail.tsx"
+      ]
+    },
+    {
+      "id": "B68",
+      "phase": 2,
+      "module": "defects",
+      "name": "前端空状态和加载态统一处理",
+      "description": "检查列表页空状态和加载态是否一致：首页、任务页、探索页。确保空数据时有引导文案、loading 时有指示。详情页（EntryDetail）由 B67 覆盖。",
+      "verification": "清空数据 → 各页面有合理空状态提示",
+      "depends_on": [],
+      "status": "pending",
+      "priority": 2,
+      "acceptance_criteria": [
+        "首页空状态有引导文案（如「记录你的第一条想法」）",
+        "任务页空状态有引导文案",
+        "探索页空状态有引导文案",
+        "列表页加载中有 loading 指示",
+        "样式符合 design-system.md 规范"
+      ],
+      "test_tasks": [
+        "清空 localStorage → 打开首页 → 验证空状态引导文案存在",
+        "清空 localStorage → 打开任务页 → 验证空状态引导文案存在",
+        "清空 localStorage → 打开探索页 → 验证空状态引导文案存在",
+        "慢网络下验证各页面有 loading 指示"
+      ],
+      "files": [
+        "frontend/src/pages/Home.tsx",
+        "frontend/src/pages/Tasks.tsx",
+        "frontend/src/pages/Explore.tsx"
+      ]
+    },
+    {
+      "id": "B69",
+      "phase": 2,
+      "module": "quality",
+      "name": "补充 API 集成测试覆盖缺口",
+      "description": "R017 审计中多处修复后缺少对应集成测试。补充：entries export、goal CRUD、feedback 边界场景。",
+      "verification": "uv run pytest tests/ 新增测试通过",
+      "depends_on": ["B66"],
+      "status": "pending",
+      "priority": 2,
+      "acceptance_criteria": [
+        "entries export API 集成测试（zip + json 格式）",
+        "goal CRUD API 集成测试（创建/更新/删除/列表）",
+        "feedback 边界测试（空标题 422、默认 severity、无描述）",
+        "export/goal/feedback 无 token 返回 401",
+        "export/goal/feedback 跨用户不可见（user_a 看不到 user_b 数据）",
+        "新增测试数 ≥ 15",
+        "总测试数 ≥ 935"
+      ],
+      "files": [
+        "backend/tests/flow/"
+      ]
+    },
+    {
+      "id": "F57",
+      "phase": 2,
+      "module": "quality",
+      "name": "前端组件测试补充",
+      "description": "补充关键前端组件的测试覆盖：ExportDialog、OnboardingFlow、TaskCard。",
+      "verification": "npm run test:run 通过",
+      "depends_on": [],
+      "status": "pending",
+      "priority": 2,
+      "acceptance_criteria": [
+        "ExportDialog 测试：格式切换、类型筛选、日期范围、导出成功/失败",
+        "OnboardingFlow 测试已存在，确认通过",
+        "TaskCard 测试：状态显示、优先级标识、点击交互",
+        "新增测试数 ≥ 5"
+      ],
+      "test_tasks": [
+        "ExportDialog：切换 markdown/json 格式、选择类型、导出成功和失败场景",
+        "OnboardingFlow：确认已有测试通过（welcome/guide/error 步骤）",
+        "TaskCard：渲染不同状态（doing/complete）、点击跳转"
+      ],
+      "files": [
+        "frontend/src/components/ExportDialog.test.tsx",
+        "frontend/src/components/OnboardingFlow.test.tsx",
+        "frontend/src/components/TaskCard.test.tsx"
+      ]
+    },
+    {
+      "id": "B70",
+      "phase": 3,
+      "module": "quality",
+      "name": "质量收口：全量测试 + 构建验证",
+      "description": "最终收口任务。确保所有测试通过、前端构建通过、无已知缺陷遗留。验证 defect_feedback.md 中缺陷是否全部关闭。",
+      "verification": "全量测试通过 + 前端构建通过 + 无已知缺陷",
+      "depends_on": ["B66", "B67", "B68", "B69", "F57"],
+      "status": "pending",
+      "priority": 3,
+      "acceptance_criteria": [
+        "uv run pytest tests/ — 0 errors, 0 failures",
+        "npm run build — 构建成功",
+        "npm run test:run — 全部通过",
+        "defect_feedback.md 中缺陷状态已更新为 closed"
+      ],
+      "risk_tags": ["startup"],
+      "test_tasks": [
+        "uv run pytest tests/ -v 确认全量通过",
+        "npm run build && npm run test:run 确认前端 OK"
+      ]
+    }
+  ]
 }
