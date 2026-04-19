@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 4,
-    "completed": 1,
+    "pending": 3,
+    "completed": 2,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -204,8 +204,11 @@
       "description": "defect_feedback.md 记录：访问 /entries/project-xxx 时无实质内容。EntryDetail.tsx 已有项目进度、子任务、关联面板等 UI，但可能因为后端数据不完整或 API 未正确返回导致前端无内容展示。需验证当前状态并修复。",
       "verification": "创建项目+子任务 → 访问详情页 → 显示项目描述、进度、子任务列表",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
+      "started_at": "2026-04-19T11:30",
+      "completed_at": "2026-04-19T11:45",
+      "evidence_file": "evidence/B67.md",
       "acceptance_criteria": [
         "项目详情页显示项目描述（content markdown）",
         "项目详情页显示子任务进度条（getProjectProgress API 正常返回）",

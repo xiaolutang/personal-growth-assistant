@@ -14,9 +14,13 @@
 
 ---
 
-## 待处理：项目条目详情页无内容
+## 已关闭：项目条目详情页无内容
 
+- issue_id: DF-2026-04-14-001
 - 发现日期：2026-04-14
 - source: real_use
-- symptom: 访问 `/entries/project-79b2cb23` 时，项目详情页没有展示具体内容（应该显示项目描述、子任务进度、关联笔记等）。
-- 处理计划: 随项目重构（R004）一并处理，详情页增强方案见 `docs/product-design-analysis.md` 第七章「条目详情页增强」。
+- symptom: 访问 `/entries/project-79b2cb23` 时，项目详情页没有展示具体内容
+- verification_result: B67 验证通过（2026-04-19）。后端 API 层面：getEntry 正确返回 content、getProjectProgress 正确计算进度、getEntries(parent_id) 正确返回子任务。前端 EntryDetail.tsx 已有完整的项目进度卡片、子任务列表、Markdown 内容渲染。新增 test_project_detail_flow.py 4 个端到端测试全部通过。
+- root_cause: 可能是当时项目条目确实没有 content 数据，或认证问题导致 API 未返回数据。当前已验证 API 和前端功能完整。
+- status: closed
+- closed_by: B67 (R018)
