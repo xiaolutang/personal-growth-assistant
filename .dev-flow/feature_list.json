@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 11,
-    "pending": 11,
-    "completed": 0,
+    "pending": 10,
+    "completed": 1,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -117,7 +117,11 @@
       "description": "删除已被路由重定向替代的页面组件（Inbox.tsx、Projects.tsx、Notes.tsx）、未使用的组件（QuickCommandHints.tsx）和未调用的 API 函数（getRelatedConcepts）。同时清理对应的路由 import 和 Navigate 重定向改为直接不注册旧路由。",
       "verification": "前端构建通过 + 现有测试通过",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-20T17:10:00",
+      "completed_at": "2026-04-20T17:20:00",
+      "commit": "2aa0caf",
+      "summary": "删除 4 个死代码文件 + getRelatedConcepts 函数，保留路由重定向，372 行清理",
       "priority": 1,
       "acceptance_criteria": [
         "删除 Inbox.tsx、Projects.tsx、Notes.tsx（路由已重定向到 Explore）",
