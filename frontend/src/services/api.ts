@@ -6,7 +6,6 @@ import type {
   SearchResponse,
   SearchResult,
   KnowledgeGraphResponse,
-  RelatedConceptsResponse,
 } from "@/types/task";
 import { API_BASE } from "@/config/api";
 import { handleApiResponse, ApiError } from "@/lib/errors";
@@ -316,16 +315,6 @@ export async function getKnowledgeGraph(
     headers: buildAuthHeaders(),
   });
   return handleApiResponse<KnowledgeGraphResponse>(response);
-}
-
-/**
- * 获取相关概念
- */
-export async function getRelatedConcepts(concept: string): Promise<RelatedConceptsResponse> {
-  const response = await fetch(`${API_BASE}/related-concepts/${encodeURIComponent(concept)}`, {
-    headers: buildAuthHeaders(),
-  });
-  return handleApiResponse<RelatedConceptsResponse>(response);
 }
 
 // === 全局图谱 API ===
