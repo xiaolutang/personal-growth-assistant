@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -11,22 +11,29 @@ import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ThemeProvider } from "@/lib/theme";
-import { Home } from "@/pages/Home";
-import { Tasks } from "@/pages/Tasks";
-import { EntryDetail } from "@/pages/EntryDetail";
-import { Review } from "@/pages/Review";
-import { Explore } from "@/pages/Explore";
-import { GraphPage } from "@/pages/GraphPage";
-import { GoalsPage } from "@/pages/GoalsPage";
-import { GoalDetail } from "@/pages/GoalDetail";
-import { Login } from "@/pages/Login";
-import { Register } from "@/pages/Register";
-import { OfflineFallback } from "@/pages/OfflineFallback";
 import { useChatStore } from "@/stores/chatStore";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUserStore } from "@/stores/userStore";
 import { initFetchInterceptor } from "@/lib/uid";
 import { initSync } from "@/lib/offlineSync";
+
+// 路由懒加载
+const Home = lazy(() => import("@/pages/Home").then(m => ({ default: m.Home })));
+const Tasks = lazy(() => import("@/pages/Tasks").then(m => ({ default: m.Tasks })));
+const EntryDetail = lazy(() => import("@/pages/EntryDetail").then(m => ({ default: m.EntryDetail })));
+const Review = lazy(() => import("@/pages/Review").then(m => ({ default: m.Review })));
+const Explore = lazy(() => import("@/pages/Explore").then(m => ({ default: m.Explore })));
+const GraphPage = lazy(() => import("@/pages/GraphPage").then(m => ({ default: m.GraphPage })));
+const GoalsPage = lazy(() => import("@/pages/GoalsPage").then(m => ({ default: m.GoalsPage })));
+const GoalDetail = lazy(() => import("@/pages/GoalDetail").then(m => ({ default: m.GoalDetail })));
+const Login = lazy(() => import("@/pages/Login").then(m => ({ default: m.Login })));
+const Register = lazy(() => import("@/pages/Register").then(m => ({ default: m.Register })));
+const OfflineFallback = lazy(() => import("@/pages/OfflineFallback").then(m => ({ default: m.OfflineFallback })));
+
+// Suspense fallback
+function PageSpinner() {
+  return <div className="flex items-center justify-center h-64 text-muted-foreground">加载中...</div>;
+}
 
 // 在首次渲染前初始化 fetch 拦截器，确保所有请求都带 auth header
 initFetchInterceptor();
@@ -85,6 +92,7 @@ function AppLayout() {
       >
         {/* 大屏内容区最大宽度限制 */}
         <div className="mx-auto w-full max-w-[1280px]">
+          <Suspense fallback={<PageSpinner />}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/explore" element={<Explore />} />
@@ -99,6 +107,7 @@ function AppLayout() {
             <Route path="/entries/:id" element={<EntryDetail />} />
             <Route path="/offline" element={<OfflineFallback />} />
           </Routes>
+          </Suspense>
         </div>
       </div>
       <FeedbackButton />

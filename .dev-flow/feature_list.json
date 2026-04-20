@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 11,
-    "pending": 10,
-    "completed": 1,
+    "pending": 9,
+    "completed": 2,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -146,7 +146,11 @@
       "description": "entries 表缺少 parent_id 索引（sqlite.py:678 WHERE parent_id=? 用于项目子任务查询）和 planned_date 索引（notification_service.py:160 WHERE planned_date=? 用于待办提醒）。因架构不变量要求 user_id 隔离，优先创建复合索引 (user_id, parent_id) 和 (user_id, planned_date)。",
       "verification": "后端测试通过 + EXPLAIN QUERY PLAN 确认索引命中",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-20T17:22:00",
+      "completed_at": "2026-04-20T17:25:00",
+      "commit": "d82e5c5",
+      "summary": "新增 (user_id,parent_id) 和 (user_id,planned_date) 复合索引，EXPLAIN 确认命中",
       "priority": 1,
       "acceptance_criteria": [
         "entries 表新增 (user_id, parent_id) 复合索引（覆盖 sqlite.py get_project_progress 的 WHERE user_id=? AND parent_id=? 查询）",
