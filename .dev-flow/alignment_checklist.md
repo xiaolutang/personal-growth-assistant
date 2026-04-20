@@ -1,5 +1,54 @@
 # 对齐清单
 
+## R020: E2E 测试补齐 + CI PR 增强
+
+### 契约对齐
+
+- [ ] S05: 扩展现有 e2e/tests/helpers/api.ts，新增 goals.ts + export.ts ✓
+- [ ] B74: 依赖 CONTRACT-GOAL01/06/10（Goals CRUD + 关联 + 进度汇总）✓
+- [ ] F63: 依赖 B74（Goals API E2E 通过后测 UI）✓
+- [ ] B75: 搜索使用 GET /entries/search/query（SQLite FTS5），不依赖 Qdrant ✓
+- [ ] B76: 依赖已有 GET /entries/export 端点 ✓
+- [ ] S05 searchEntries helper 使用 GET /entries/search/query（与 B75 一致）✓
+
+### 依赖对齐
+
+- [ ] S05 无外部依赖 ✓
+- [ ] B74 depends_on S05 ✓（需要 Goals API helper）
+- [ ] F63 depends_on B74 ✓（需要 API 测试验证端点正确）
+- [ ] B75 depends_on S05 ✓（需要 searchEntries helper）
+- [ ] F64 depends_on B75 ✓（需要 API 测试验证端点正确）
+- [ ] B76 depends_on S05 ✓（需要 Export API helper）
+- [ ] F65 depends_on B76 ✓（需要 API 测试验证端点正确）
+- [ ] S06 depends_on B74, B75, B76 ✓（需要 API E2E 测试就绪）
+- [ ] B77 depends_on F63, F64, F65, S06 ✓（收口任务）
+
+### 架构对齐
+
+- [ ] API E2E 使用 Playwright APIRequestContext 直接测试后端 API；UI E2E 使用 Page + Browser ✓
+- [ ] 假 LLM 配置（LLM_BASE_URL=http://localhost:19999）✓
+- [ ] 独立 DATA_DIR 隔离，测试后回收 ✓
+- [ ] 搜索 E2E 使用 FTS5 全文搜索端点，不依赖 Qdrant 向量搜索 ✓
+- [ ] F63 重新激活 AC 为 completed → active（前端仅 completed 状态显示重新激活按钮）✓
+- [ ] B76 包含新类型导出测试（decision/reflection/question），跨模块闭环 ✓
+- [ ] CI E2E 只跑关键子集（auth + entries + goals-api + new-types-api），控制运行时间 ✓
+
+### 验收对齐
+
+- [ ] 每个任务有 acceptance_criteria ✓
+- [ ] 每个任务有 test_tasks ✓
+- [ ] B74 risk_tags: network ✓
+- [ ] F63 risk_tags: network ✓
+- [ ] B75 risk_tags: network ✓
+- [ ] F64 risk_tags: network ✓
+- [ ] B76 risk_tags: network ✓
+- [ ] F65 risk_tags: network ✓
+- [ ] S06 risk_tags: config ✓
+- [ ] B77 risk_tags: startup ✓
+- [ ] S06 统一 Python 版本为 3.12 ✓
+
+---
+
 ## R019: 离线增强 + PWA
 
 ### 契约对齐

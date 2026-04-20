@@ -106,7 +106,8 @@ export async function deleteEntry(
 }
 
 /**
- * 搜索条目
+ * 搜索条目（向量搜索，依赖 Qdrant）
+ * POST /api/search
  */
 export async function searchEntries(
   request: APIRequestContext,
@@ -118,6 +119,26 @@ export async function searchEntries(
     headers: authHeaders(token),
     data: { query, limit },
   });
+  expect(resp.ok()).toBeTruthy();
+  return resp.json();
+}
+
+/**
+ * 全文搜索条目（SQLite FTS5，不依赖 Qdrant）
+ * GET /api/entries/search/query?q=xxx&limit=10
+ */
+export async function searchEntriesFTS5(
+  request: APIRequestContext,
+  query: string,
+  token?: string,
+  limit = 10
+) {
+  const resp = await request.get(
+    `/api/entries/search/query?q=${encodeURIComponent(query)}&limit=${limit}`,
+    {
+      headers: authHeaders(token),
+    }
+  );
   expect(resp.ok()).toBeTruthy();
   return resp.json();
 }
