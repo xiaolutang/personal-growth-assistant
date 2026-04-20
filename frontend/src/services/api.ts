@@ -8,8 +8,8 @@ import type {
   KnowledgeGraphResponse,
 } from "@/types/task";
 import { API_BASE } from "@/config/api";
-import { handleApiResponse, ApiError } from "@/lib/errors";
-import { authFetch, buildAuthHeaders } from "@/lib/authFetch";
+import { ApiError } from "@/lib/errors";
+import { authFetch } from "@/lib/authFetch";
 import createClient from "openapi-fetch";
 import type { paths, components } from "@/types/api.generated";
 
@@ -119,10 +119,18 @@ export async function getEntry(id: string): Promise<Task> {
  * 创建条目
  */
 export async function createEntry(data: EntryCreate): Promise<Task> {
-  // EntryCreate.type 映射为 api.generated.ts EntryCreate.category
-  const body = { ...data, category: data.type };
   const { data: responseData, error, response } = await client.POST("/entries", {
-    body: body as unknown as components["schemas"]["EntryCreate"],
+    body: {
+      category: data.type,
+      title: data.title,
+      content: data.content ?? "",
+      tags: data.tags,
+      parent_id: data.parent_id ?? null,
+      status: data.status ?? null,
+      priority: data.priority ?? null,
+      planned_date: data.planned_date ?? null,
+      time_spent: data.time_spent,
+    },
   });
   return handleOpenApiResponse<Task>(responseData as Task | undefined, error, response);
 }
@@ -133,7 +141,18 @@ export async function createEntry(data: EntryCreate): Promise<Task> {
 export async function updateEntry(id: string, data: EntryUpdate): Promise<{ success: boolean; message: string }> {
   const { data: responseData, error, response } = await client.PUT("/entries/{entry_id}", {
     params: { path: { entry_id: id } },
-    body: data as unknown as components["schemas"]["EntryUpdate"],
+    body: {
+      title: data.title ?? null,
+      content: data.content ?? null,
+      category: data.category ?? null,
+      status: data.status ?? null,
+      priority: data.priority ?? null,
+      tags: data.tags ?? null,
+      parent_id: data.parent_id ?? null,
+      planned_date: data.planned_date ?? null,
+      time_spent: data.time_spent,
+      completed_at: data.completed_at ?? null,
+    },
   });
   return handleOpenApiResponse<{ success: boolean; message: string }>(
     responseData as { success: boolean; message: string } | undefined,
@@ -164,14 +183,14 @@ type SearchResultItem = SearchResult;
 /**
  * 归一化搜索结果项
  */
-function normalizeSearchItem(e: any, defaultScore = 1): SearchResultItem {
+function normalizeSearchItem(e: { id?: string; title?: string; score?: number; type?: string; category?: string; status?: string; tags?: string[]; created_at?: string; file_path?: string }, defaultScore = 1): SearchResultItem {
   return {
-    id: e.id,
-    title: e.title,
+    id: e.id ?? "",
+    title: e.title ?? "",
     score: e.score ?? defaultScore,
-    type: e.type ?? e.category,
+    type: e.type ?? e.category ?? "note",
     category: e.category ?? e.type ?? "note",
-    status: e.status ?? "doing",
+    status: (e.status ?? "doing") as SearchResult["status"],
     tags: e.tags || [],
     created_at: e.created_at ?? "",
     file_path: e.file_path || "",
@@ -182,21 +201,12 @@ function normalizeSearchItem(e: any, defaultScore = 1): SearchResultItem {
  * 向量搜索（Qdrant）
  */
 async function vectorSearch(query: string, limit: number): Promise<SearchResponse> {
-  const response = await fetch(`${API_BASE}/search`, {
-    method: "POST",
-    headers: buildAuthHeaders({
-      headers: { "Content-Type": "application/json" },
-    }),
-    body: JSON.stringify({ query, limit }),
+  const { data, error, response } = await client.POST("/search", {
+    body: { query, limit },
   });
-
-  if (!response.ok) {
-    throw new ApiError(response.status, `Vector search failed: ${response.status}`);
-  }
-
-  const data = await response.json();
+  handleOpenApiResponse(data, error, response);
   return {
-    results: data.results.map((e: any) => normalizeSearchItem(e)),
+    results: ((data as { results?: unknown[] })?.results ?? []).map((e: unknown) => normalizeSearchItem(e as Record<string, unknown>)),
   };
 }
 
@@ -204,17 +214,12 @@ async function vectorSearch(query: string, limit: number): Promise<SearchRespons
  * SQLite 全文搜索（FTS5）
  */
 async function sqliteSearch(query: string, limit: number): Promise<SearchResponse> {
-  const response = await fetch(`${API_BASE}/entries/search/query?q=${encodeURIComponent(query)}&limit=${limit}`, {
-    headers: buildAuthHeaders(),
+  const { data, error, response } = await client.GET("/entries/search/query", {
+    params: { query: { q: query, limit } },
   });
-
-  if (!response.ok) {
-    throw new ApiError(response.status, `SQLite search failed: ${response.status}`);
-  }
-
-  const data = await response.json();
+  handleOpenApiResponse(data, error, response);
   return {
-    results: data.entries.map((e: any) => normalizeSearchItem(e)),
+    results: ((data as { entries?: unknown[] })?.entries ?? []).map((e: unknown) => normalizeSearchItem(e as Record<string, unknown>)),
   };
 }
 
@@ -311,10 +316,10 @@ export async function getKnowledgeGraph(
   concept: string,
   depth: number = 2
 ): Promise<KnowledgeGraphResponse> {
-  const response = await fetch(`${API_BASE}/knowledge-graph/${encodeURIComponent(concept)}?depth=${depth}`, {
-    headers: buildAuthHeaders(),
+  const { data, error, response } = await client.GET("/knowledge-graph/{concept}", {
+    params: { path: { concept }, query: { depth } },
   });
-  return handleApiResponse<KnowledgeGraphResponse>(response);
+  return handleOpenApiResponse<KnowledgeGraphResponse>(data as KnowledgeGraphResponse | undefined, error, response);
 }
 
 // === 全局图谱 API ===
@@ -349,30 +354,27 @@ export async function getKnowledgeMap(
   depth: number = 2,
   view: string = "domain"
 ): Promise<KnowledgeMapResponse> {
-  const response = await fetch(`${API_BASE}/knowledge-map?depth=${depth}&view=${view}`, {
-    headers: buildAuthHeaders(),
+  const { data, error, response } = await client.GET("/knowledge-map", {
+    params: { query: { depth, view } },
   });
-  return handleApiResponse<KnowledgeMapResponse>(response);
+  return handleOpenApiResponse<KnowledgeMapResponse>(data as KnowledgeMapResponse | undefined, error, response);
 }
 
 export async function getKnowledgeStats(): Promise<ConceptStatsResponse> {
-  const response = await fetch(`${API_BASE}/knowledge/stats`, {
-    headers: buildAuthHeaders(),
-  });
-  return handleApiResponse<ConceptStatsResponse>(response);
+  const { data, error, response } = await client.GET("/knowledge/stats");
+  return handleOpenApiResponse<ConceptStatsResponse>(data as ConceptStatsResponse | undefined, error, response);
 }
 
 // === 解析 API (旧接口) ===
 
 /**
  * 解析自然语言 (SSE 流式)
+ * 注：SSE 流式响应需要原始 Response 对象，无法使用 openapi-fetch
  */
 export async function parseText(text: string, sessionId?: string): Promise<Response> {
-  const response = await fetch(`${API_BASE}/parse`, {
+  const response = await authFetch(`${API_BASE}/parse`, {
     method: "POST",
-    headers: buildAuthHeaders({
-      headers: { "Content-Type": "application/json" },
-    }),
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text, session_id: sessionId }),
   });
   if (!response.ok) {
@@ -385,11 +387,10 @@ export async function parseText(text: string, sessionId?: string): Promise<Respo
  * 清空会话历史
  */
 export async function clearSession(sessionId: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/session/${sessionId}`, {
-    method: "DELETE",
-    headers: buildAuthHeaders(),
+  const { error, response } = await client.DELETE("/session/{session_id}", {
+    params: { path: { session_id: sessionId } },
   });
-  await handleApiResponse<void>(response as any);
+  handleOpenApiResponse(undefined, error, response);
 }
 
 // === 项目进度 API ===
@@ -412,34 +413,28 @@ export async function getProjectProgress(projectId: string): Promise<ProjectProg
  * 提交用户反馈
  */
 export async function submitFeedback(payload: FeedbackPayload): Promise<FeedbackSubmitResponse> {
-  const response = await fetch(`${API_BASE}/feedback`, {
-    method: "POST",
-    headers: buildAuthHeaders({
-      headers: { "Content-Type": "application/json" },
-    }),
-    body: JSON.stringify(payload),
+  const { data, error, response } = await client.POST("/feedback", {
+    body: payload,
   });
-  return handleApiResponse<FeedbackSubmitResponse>(response);
+  return handleOpenApiResponse<FeedbackSubmitResponse>(data as FeedbackSubmitResponse | undefined, error, response);
 }
 
 /**
  * 获取反馈列表
  */
 export async function getFeedbackList(): Promise<FeedbackListResponse> {
-  const response = await fetch(`${API_BASE}/feedback`, {
-    headers: buildAuthHeaders(),
-  });
-  return handleApiResponse<FeedbackListResponse>(response);
+  const { data, error, response } = await client.GET("/feedback");
+  return handleOpenApiResponse<FeedbackListResponse>(data as FeedbackListResponse | undefined, error, response);
 }
 
 /**
  * 获取单条反馈详情
  */
 export async function getFeedbackDetail(id: number): Promise<FeedbackItem> {
-  const response = await fetch(`${API_BASE}/feedback/${id}`, {
-    headers: buildAuthHeaders(),
+  const { data, error, response } = await client.GET("/feedback/{feedback_id}", {
+    params: { path: { feedback_id: id } },
   });
-  return handleApiResponse<FeedbackItem>(response);
+  return handleOpenApiResponse<FeedbackItem>(data as FeedbackItem | undefined, error, response);
 }
 
 // === AI 对话 API ===
@@ -457,17 +452,15 @@ export interface AIChatContext {
 
 /**
  * 发送 AI 对话消息（SSE 流式响应）
- * 返回原始 Response 对象，调用方自行读取 ReadableStream
+ * 注：SSE 流式响应需要原始 Response 对象，无法使用 openapi-fetch
  */
 export async function sendAIChat(
   message: string,
   context?: AIChatContext,
 ): Promise<Response> {
-  const response = await fetch(`${API_BASE}/ai/chat`, {
+  const response = await authFetch(`${API_BASE}/ai/chat`, {
     method: "POST",
-    headers: buildAuthHeaders({
-      headers: { "Content-Type": "application/json" },
-    }),
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message, context }),
   });
   if (!response.ok) {
@@ -492,16 +485,23 @@ export interface IntentResponse {
  * 检测用户输入的意图（调用后端 LLM，失败时回退到本地）
  */
 export async function detectIntent(text: string): Promise<IntentResponse> {
-  const response = await fetch(`${API_BASE}/intent`, {
-    method: "POST",
-    headers: buildAuthHeaders({
-      headers: { "Content-Type": "application/json" },
-    }),
-    body: JSON.stringify({ text }),
-  });
-
-  if (!response.ok) {
-    // 如果后端 API 不可用，回退到本地检测
+  try {
+    const { data, error, response } = await client.POST("/intent", {
+      body: { text },
+    });
+    if (error || !response.ok) {
+      // 后端 API 不可用，回退到本地检测
+      console.warn("Intent API 不可用，回退到本地检测");
+      return {
+        intent: detectIntentLocal(text),
+        confidence: 0.8,
+        entities: {},
+        query: text,
+      };
+    }
+    return handleOpenApiResponse<IntentResponse>(data as IntentResponse | undefined, error, response);
+  } catch {
+    // 网络错误等异常，回退到本地检测
     console.warn("Intent API 不可用，回退到本地检测");
     return {
       intent: detectIntentLocal(text),
@@ -510,8 +510,6 @@ export async function detectIntent(text: string): Promise<IntentResponse> {
       query: text,
     };
   }
-
-  return response.json();
 }
 
 // === 回顾趋势 API ===
@@ -592,24 +590,18 @@ export interface MonthlyReport {
 }
 
 export async function getDailyReport(): Promise<DailyReport> {
-  const response = await fetch(`${API_BASE}/review/daily`, {
-    headers: buildAuthHeaders(),
-  });
-  return handleApiResponse<DailyReport>(response);
+  const { data, error, response } = await client.GET("/review/daily");
+  return handleOpenApiResponse<DailyReport>(data as DailyReport | undefined, error, response);
 }
 
 export async function getWeeklyReport(): Promise<WeeklyReport> {
-  const response = await fetch(`${API_BASE}/review/weekly`, {
-    headers: buildAuthHeaders(),
-  });
-  return handleApiResponse<WeeklyReport>(response);
+  const { data, error, response } = await client.GET("/review/weekly");
+  return handleOpenApiResponse<WeeklyReport>(data as WeeklyReport | undefined, error, response);
 }
 
 export async function getMonthlyReport(): Promise<MonthlyReport> {
-  const response = await fetch(`${API_BASE}/review/monthly`, {
-    headers: buildAuthHeaders(),
-  });
-  return handleApiResponse<MonthlyReport>(response);
+  const { data, error, response } = await client.GET("/review/monthly");
+  return handleOpenApiResponse<MonthlyReport>(data as MonthlyReport | undefined, error, response);
 }
 
 /**
@@ -621,16 +613,14 @@ export async function getReviewTrend(
   period: "daily" | "weekly",
   count?: number
 ): Promise<ReviewTrendResponse> {
-  const params = new URLSearchParams({ period });
-  if (period === "daily") {
-    params.set("days", String(count ?? 7));
-  } else {
-    params.set("weeks", String(count ?? 8));
-  }
-  const response = await fetch(`${API_BASE}/review/trend?${params}`, {
-    headers: buildAuthHeaders(),
+  const { data, error, response } = await client.GET("/review/trend", {
+    params: {
+      query: period === "daily"
+        ? { period, days: count ?? 7 }
+        : { period, weeks: count ?? 8 },
+    },
   });
-  return handleApiResponse<ReviewTrendResponse>(response);
+  return handleOpenApiResponse<ReviewTrendResponse>(data as ReviewTrendResponse | undefined, error, response);
 }
 
 // === 知识热力图 API ===
@@ -660,17 +650,15 @@ export interface GrowthCurveResponse {
 }
 
 export async function getKnowledgeHeatmap(): Promise<HeatmapResponse> {
-  const response = await fetch(`${API_BASE}/review/knowledge-heatmap`, {
-    headers: buildAuthHeaders(),
-  });
-  return handleApiResponse<HeatmapResponse>(response);
+  const { data, error, response } = await client.GET("/review/knowledge-heatmap");
+  return handleOpenApiResponse<HeatmapResponse>(data as HeatmapResponse | undefined, error, response);
 }
 
 export async function getGrowthCurve(weeks: number = 8): Promise<GrowthCurveResponse> {
-  const response = await fetch(`${API_BASE}/review/growth-curve?weeks=${weeks}`, {
-    headers: buildAuthHeaders(),
+  const { data, error, response } = await client.GET("/review/growth-curve", {
+    params: { query: { weeks } },
   });
-  return handleApiResponse<GrowthCurveResponse>(response);
+  return handleOpenApiResponse<GrowthCurveResponse>(data as GrowthCurveResponse | undefined, error, response);
 }
 
 // === AI 晨报 ===
@@ -719,10 +707,8 @@ export interface MorningDigestResponse {
 }
 
 export async function getMorningDigest(): Promise<MorningDigestResponse> {
-  const response = await fetch(`${API_BASE}/review/morning-digest`, {
-    headers: buildAuthHeaders(),
-  });
-  return handleApiResponse<MorningDigestResponse>(response);
+  const { data, error, response } = await client.GET("/review/morning-digest");
+  return handleOpenApiResponse<MorningDigestResponse>(data as MorningDigestResponse | undefined, error, response);
 }
 
 // 导出错误类供外部使用
@@ -730,6 +716,7 @@ export { ApiError } from "@/lib/errors";
 
 /**
  * 导出条目 — markdown (zip) 或 json
+ * 注：二进制 Blob 响应需要原始 Response 对象，无法使用 openapi-fetch
  */
 export interface ExportOptions {
   format: "markdown" | "json";
@@ -745,9 +732,7 @@ export async function exportEntries(options: ExportOptions): Promise<Blob> {
   if (options.startDate) params.set("start_date", options.startDate);
   if (options.endDate) params.set("end_date", options.endDate);
 
-  const response = await fetch(`${API_BASE}/entries/export?${params.toString()}`, {
-    headers: buildAuthHeaders(),
-  });
+  const response = await authFetch(`${API_BASE}/entries/export?${params.toString()}`);
   if (!response.ok) {
     throw new Error(`导出失败: ${response.status}`);
   }
@@ -765,14 +750,11 @@ export interface RelatedEntry {
 }
 
 export async function getRelatedEntries(entryId: string): Promise<RelatedEntry[]> {
-  const response = await fetch(`${API_BASE}/entries/${encodeURIComponent(entryId)}/related`, {
-    headers: buildAuthHeaders(),
+  const { data, error, response } = await client.GET("/entries/{entry_id}/related", {
+    params: { path: { entry_id: entryId } },
   });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch related entries: ${response.status}`);
-  }
-  const data = await response.json();
-  return data.related ?? [];
+  handleOpenApiResponse(data, error, response);
+  return ((data as { related?: unknown[] })?.related ?? []) as RelatedEntry[];
 }
 
 // === AI 条目摘要 API ===
@@ -788,13 +770,10 @@ export interface EntrySummaryResponse {
  * POST /entries/{id}/ai-summary
  */
 export async function generateEntrySummary(entryId: string): Promise<EntrySummaryResponse> {
-  const response = await fetch(`${API_BASE}/entries/${encodeURIComponent(entryId)}/ai-summary`, {
-    method: "POST",
-    headers: buildAuthHeaders({
-      headers: { "Content-Type": "application/json" },
-    }),
+  const { data, error, response } = await client.POST("/entries/{entry_id}/ai-summary", {
+    params: { path: { entry_id: entryId } },
   });
-  return handleApiResponse<EntrySummaryResponse>(response);
+  return handleOpenApiResponse<EntrySummaryResponse>(data as EntrySummaryResponse | undefined, error, response);
 }
 
 // === 通知 API ===
@@ -821,34 +800,27 @@ export interface NotificationPreferences {
 }
 
 export async function getNotifications(): Promise<NotificationResponse> {
-  const response = await fetch(`${API_BASE}/notifications`, {
-    headers: buildAuthHeaders(),
-  });
-  return handleApiResponse<NotificationResponse>(response);
+  const { data, error, response } = await client.GET("/notifications");
+  return handleOpenApiResponse<NotificationResponse>(data as NotificationResponse | undefined, error, response);
 }
 
 export async function dismissNotification(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/notifications/${encodeURIComponent(id)}/dismiss`, {
-    method: "POST",
-    headers: buildAuthHeaders(),
+  const { error, response } = await client.POST("/notifications/{notification_id}/dismiss", {
+    params: { path: { notification_id: id } },
   });
-  if (!response.ok) throw new ApiError(response.status, `dismiss failed: ${response.status}`);
+  handleOpenApiResponse(undefined, error, response);
 }
 
 export async function getNotificationPreferences(): Promise<NotificationPreferences> {
-  const response = await fetch(`${API_BASE}/notification-preferences`, {
-    headers: buildAuthHeaders(),
-  });
-  return handleApiResponse<NotificationPreferences>(response);
+  const { data, error, response } = await client.GET("/notification-preferences");
+  return handleOpenApiResponse<NotificationPreferences>(data as NotificationPreferences | undefined, error, response);
 }
 
 export async function updateNotificationPreferences(prefs: NotificationPreferences): Promise<NotificationPreferences> {
-  const response = await fetch(`${API_BASE}/notification-preferences`, {
-    method: "PUT",
-    headers: { ...buildAuthHeaders(), "Content-Type": "application/json" },
-    body: JSON.stringify(prefs),
+  const { data, error, response } = await client.PUT("/notification-preferences", {
+    body: prefs,
   });
-  return handleApiResponse<NotificationPreferences>(response);
+  return handleOpenApiResponse<NotificationPreferences>(data as NotificationPreferences | undefined, error, response);
 }
 
 // === 知识图谱增强 API (F27) ===
@@ -891,36 +863,31 @@ export interface MasteryDistributionResponse {
  * 搜索知识概念
  */
 export async function getKnowledgeSearch(query: string, limit?: number): Promise<KnowledgeSearchResponse> {
-  const params = new URLSearchParams({ q: query });
-  if (limit !== undefined) params.set("limit", String(limit));
-  const response = await fetch(`${API_BASE}/knowledge/search?${params}`, {
-    headers: buildAuthHeaders(),
+  const { data, error, response } = await client.GET("/knowledge/search", {
+    params: { query: { q: query, limit } },
   });
-  return handleApiResponse<KnowledgeSearchResponse>(response);
+  return handleOpenApiResponse<KnowledgeSearchResponse>(data as KnowledgeSearchResponse | undefined, error, response);
 }
 
 /**
  * 获取概念学习时间线
  */
 export async function getConceptTimeline(concept: string, days?: number): Promise<ConceptTimelineResponse> {
-  const params = new URLSearchParams();
-  if (days !== undefined) params.set("days", String(days));
-  const qs = params.toString();
-  const url = `${API_BASE}/knowledge/concepts/${encodeURIComponent(concept)}/timeline${qs ? `?${qs}` : ""}`;
-  const response = await fetch(url, {
-    headers: buildAuthHeaders(),
+  const { data, error, response } = await client.GET("/knowledge/concepts/{name}/timeline", {
+    params: {
+      path: { name: concept },
+      query: days !== undefined ? { days } : undefined,
+    },
   });
-  return handleApiResponse<ConceptTimelineResponse>(response);
+  return handleOpenApiResponse<ConceptTimelineResponse>(data as ConceptTimelineResponse | undefined, error, response);
 }
 
 /**
  * 获取掌握度分布
  */
 export async function getMasteryDistribution(): Promise<MasteryDistributionResponse> {
-  const response = await fetch(`${API_BASE}/knowledge/mastery-distribution`, {
-    headers: buildAuthHeaders(),
-  });
-  return handleApiResponse<MasteryDistributionResponse>(response);
+  const { data, error, response } = await client.GET("/knowledge/mastery-distribution");
+  return handleOpenApiResponse<MasteryDistributionResponse>(data as MasteryDistributionResponse | undefined, error, response);
 }
 
 // === 条目手动关联 API (F32) ===
@@ -956,12 +923,13 @@ export interface EntryLinkCreateResponse {
 }
 
 export async function getEntryLinks(entryId: string, direction?: "out" | "in" | "both"): Promise<EntryLinkListResponse> {
-  const params = new URLSearchParams();
-  if (direction) params.set("direction", direction);
-  const qs = params.toString();
-  const url = `${API_BASE}/entries/${encodeURIComponent(entryId)}/links${qs ? `?${qs}` : ""}`;
-  const response = await fetch(url, { headers: buildAuthHeaders() });
-  return handleApiResponse<EntryLinkListResponse>(response);
+  const { data, error, response } = await client.GET("/entries/{entry_id}/links", {
+    params: {
+      path: { entry_id: entryId },
+      query: direction ? { direction } : undefined,
+    },
+  });
+  return handleOpenApiResponse<EntryLinkListResponse>(data as EntryLinkListResponse | undefined, error, response);
 }
 
 export async function createEntryLink(
@@ -969,20 +937,18 @@ export async function createEntryLink(
   targetId: string,
   relationType: RelationType
 ): Promise<EntryLinkCreateResponse> {
-  const response = await fetch(`${API_BASE}/entries/${encodeURIComponent(entryId)}/links`, {
-    method: "POST",
-    headers: buildAuthHeaders({ headers: { "Content-Type": "application/json" } }),
-    body: JSON.stringify({ target_id: targetId, relation_type: relationType }),
+  const { data, error, response } = await client.POST("/entries/{entry_id}/links", {
+    params: { path: { entry_id: entryId } },
+    body: { target_id: targetId, relation_type: relationType },
   });
-  return handleApiResponse<EntryLinkCreateResponse>(response);
+  return handleOpenApiResponse<EntryLinkCreateResponse>(data as EntryLinkCreateResponse | undefined, error, response);
 }
 
 export async function deleteEntryLink(entryId: string, linkId: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/entries/${encodeURIComponent(entryId)}/links/${encodeURIComponent(linkId)}`, {
-    method: "DELETE",
-    headers: buildAuthHeaders(),
+  const { error, response } = await client.DELETE("/entries/{entry_id}/links/{link_id}", {
+    params: { path: { entry_id: entryId, link_id: linkId } },
   });
-  if (!response.ok) throw new ApiError(response.status, `删除关联失败: ${response.status}`);
+  handleOpenApiResponse(undefined, error, response);
 }
 
 // === 条目知识上下文 API (F31) ===
@@ -1008,10 +974,10 @@ export interface KnowledgeContextResponse {
 }
 
 export async function getKnowledgeContext(entryId: string): Promise<KnowledgeContextResponse> {
-  const response = await fetch(`${API_BASE}/entries/${encodeURIComponent(entryId)}/knowledge-context`, {
-    headers: buildAuthHeaders(),
+  const { data, error, response } = await client.GET("/entries/{entry_id}/knowledge-context", {
+    params: { path: { entry_id: entryId } },
   });
-  return handleApiResponse<KnowledgeContextResponse>(response);
+  return handleOpenApiResponse<KnowledgeContextResponse>(data as KnowledgeContextResponse | undefined, error, response);
 }
 
 // === 活动热力图 API ===
@@ -1027,10 +993,10 @@ export interface ActivityHeatmapResponse {
 }
 
 export async function getActivityHeatmap(year: number): Promise<ActivityHeatmapResponse> {
-  const response = await fetch(`${API_BASE}/review/activity-heatmap?year=${year}`, {
-    headers: buildAuthHeaders(),
+  const { data, error, response } = await client.GET("/review/activity-heatmap", {
+    params: { query: { year } },
   });
-  return handleApiResponse<ActivityHeatmapResponse>(response);
+  return handleOpenApiResponse<ActivityHeatmapResponse>(data as ActivityHeatmapResponse | undefined, error, response);
 }
 
 // === Goals API ===
@@ -1102,20 +1068,17 @@ export interface ProgressSummaryResponse {
 }
 
 export async function getGoals(status?: string): Promise<GoalListResponse> {
-  const params = new URLSearchParams();
-  if (status) params.set("status", status);
-  const qs = params.toString();
-  const response = await fetch(`${API_BASE}/goals${qs ? `?${qs}` : ""}`, {
-    headers: buildAuthHeaders(),
+  const { data, error, response } = await client.GET("/goals", {
+    params: { query: status ? { status } : undefined },
   });
-  return handleApiResponse<GoalListResponse>(response);
+  return handleOpenApiResponse<GoalListResponse>(data as GoalListResponse | undefined, error, response);
 }
 
 export async function getGoal(goalId: string): Promise<GoalDetailResponse> {
-  const response = await fetch(`${API_BASE}/goals/${encodeURIComponent(goalId)}`, {
-    headers: buildAuthHeaders(),
+  const { data, error, response } = await client.GET("/goals/{goal_id}", {
+    params: { path: { goal_id: goalId } },
   });
-  return handleApiResponse<GoalDetailResponse>(response);
+  return handleOpenApiResponse<GoalDetailResponse>(data as GoalDetailResponse | undefined, error, response);
 }
 
 export async function createGoal(data: {
@@ -1128,12 +1091,10 @@ export async function createGoal(data: {
   auto_tags?: string[];
   checklist_items?: string[];
 }): Promise<Goal> {
-  const response = await fetch(`${API_BASE}/goals`, {
-    method: "POST",
-    headers: buildAuthHeaders({ headers: { "Content-Type": "application/json" } }),
-    body: JSON.stringify(data),
+  const { data: responseData, error, response } = await client.POST("/goals", {
+    body: data,
   });
-  return handleApiResponse<Goal>(response);
+  return handleOpenApiResponse<Goal>(responseData as Goal | undefined, error, response);
 }
 
 export async function updateGoal(goalId: string, data: {
@@ -1144,66 +1105,53 @@ export async function updateGoal(goalId: string, data: {
   start_date?: string;
   end_date?: string;
 }): Promise<Goal> {
-  const response = await fetch(`${API_BASE}/goals/${encodeURIComponent(goalId)}`, {
-    method: "PUT",
-    headers: buildAuthHeaders({ headers: { "Content-Type": "application/json" } }),
-    body: JSON.stringify(data),
+  const { data: responseData, error, response } = await client.PUT("/goals/{goal_id}", {
+    params: { path: { goal_id: goalId } },
+    body: data as components["schemas"]["GoalUpdate"],
   });
-  return handleApiResponse<Goal>(response);
+  return handleOpenApiResponse<Goal>(responseData as Goal | undefined, error, response);
 }
 
 export async function deleteGoal(goalId: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/goals/${encodeURIComponent(goalId)}`, {
-    method: "DELETE",
-    headers: buildAuthHeaders(),
+  const { error, response } = await client.DELETE("/goals/{goal_id}", {
+    params: { path: { goal_id: goalId } },
   });
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new ApiError(response.status, data.detail || `删除失败: ${response.status}`);
-  }
+  handleOpenApiResponse(undefined, error, response);
 }
 
-export async function linkGoalEntry(goalId: string, entryId: string): Promise<any> {
-  const response = await fetch(`${API_BASE}/goals/${encodeURIComponent(goalId)}/entries`, {
-    method: "POST",
-    headers: buildAuthHeaders({ headers: { "Content-Type": "application/json" } }),
-    body: JSON.stringify({ entry_id: entryId }),
+export async function linkGoalEntry(goalId: string, entryId: string): Promise<EntryLinkCreateResponse> {
+  const { data, error, response } = await client.POST("/goals/{goal_id}/entries", {
+    params: { path: { goal_id: goalId } },
+    body: { entry_id: entryId },
   });
-  return handleApiResponse<any>(response);
+  // API 返回 unknown 类型，转换为具体类型
+  return handleOpenApiResponse<EntryLinkCreateResponse>(data as EntryLinkCreateResponse | undefined, error, response);
 }
 
 export async function unlinkGoalEntry(goalId: string, entryId: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/goals/${encodeURIComponent(goalId)}/entries/${encodeURIComponent(entryId)}`, {
-    method: "DELETE",
-    headers: buildAuthHeaders(),
+  const { error, response } = await client.DELETE("/goals/{goal_id}/entries/{entry_id}", {
+    params: { path: { goal_id: goalId, entry_id: entryId } },
   });
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new ApiError(response.status, data.detail || `取消关联失败: ${response.status}`);
-  }
+  handleOpenApiResponse(undefined, error, response);
 }
 
 export async function getGoalEntries(goalId: string): Promise<GoalEntryListResponse> {
-  const response = await fetch(`${API_BASE}/goals/${encodeURIComponent(goalId)}/entries`, {
-    headers: buildAuthHeaders(),
+  const { data, error, response } = await client.GET("/goals/{goal_id}/entries", {
+    params: { path: { goal_id: goalId } },
   });
-  return handleApiResponse<GoalEntryListResponse>(response);
+  return handleOpenApiResponse<GoalEntryListResponse>(data as GoalEntryListResponse | undefined, error, response);
 }
 
 export async function toggleChecklistItem(goalId: string, itemId: string): Promise<Goal> {
-  const response = await fetch(`${API_BASE}/goals/${encodeURIComponent(goalId)}/checklist/${encodeURIComponent(itemId)}`, {
-    method: "PATCH",
-    headers: buildAuthHeaders(),
+  const { data, error, response } = await client.PATCH("/goals/{goal_id}/checklist/{item_id}", {
+    params: { path: { goal_id: goalId, item_id: itemId } },
   });
-  return handleApiResponse<Goal>(response);
+  return handleOpenApiResponse<Goal>(data as Goal | undefined, error, response);
 }
 
 export async function getProgressSummary(period?: string): Promise<ProgressSummaryResponse> {
-  const params = new URLSearchParams();
-  if (period) params.set("period", period);
-  const qs = params.toString();
-  const response = await fetch(`${API_BASE}/goals/progress-summary${qs ? `?${qs}` : ""}`, {
-    headers: buildAuthHeaders(),
+  const { data, error, response } = await client.GET("/goals/progress-summary", {
+    params: { query: period ? { period } : undefined },
   });
-  return handleApiResponse<ProgressSummaryResponse>(response);
+  return handleOpenApiResponse<ProgressSummaryResponse>(data as ProgressSummaryResponse | undefined, error, response);
 }

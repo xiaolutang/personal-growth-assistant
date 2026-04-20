@@ -1,5 +1,11 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 
+// openapi-fetch 内部用 new Request(url) 构造请求，需要绝对 URL
+vi.mock("@/config/api", () => ({
+  API_BASE: "http://localhost:3000/api",
+  API_CONFIG: { base: "http://localhost:3000/api", backendUrl: "http://localhost" },
+}));
+
 import { submitFeedback, getFeedbackList, getFeedbackDetail } from "./api";
 
 describe("submitFeedback", () => {

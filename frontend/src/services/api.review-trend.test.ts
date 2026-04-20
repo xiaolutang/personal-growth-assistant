@@ -1,5 +1,11 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 
+// openapi-fetch 内部用 new Request(url) 构造请求，需要绝对 URL
+vi.mock("@/config/api", () => ({
+  API_BASE: "http://localhost:3000/api",
+  API_CONFIG: { base: "http://localhost:3000/api", backendUrl: "http://localhost" },
+}));
+
 import { getReviewTrend } from "./api";
 
 describe("getReviewTrend", () => {
@@ -25,7 +31,7 @@ describe("getReviewTrend", () => {
 
     expect(result.periods).toHaveLength(2);
     expect(result.periods[0].completion_rate).toBe(60.0);
-    const calledUrl = fetchSpy.mock.calls[0][0] as string;
+    const calledUrl = (fetchSpy.mock.calls[0][0] as Request).url;
     expect(calledUrl).toContain("period=daily");
     expect(calledUrl).toContain("days=7");
   });
@@ -40,7 +46,7 @@ describe("getReviewTrend", () => {
     const result = await getReviewTrend("weekly", 8);
 
     expect(result.periods).toHaveLength(2);
-    const calledUrl = fetchSpy.mock.calls[0][0] as string;
+    const calledUrl = (fetchSpy.mock.calls[0][0] as Request).url;
     expect(calledUrl).toContain("period=weekly");
     expect(calledUrl).toContain("weeks=8");
   });
@@ -55,10 +61,10 @@ describe("getReviewTrend", () => {
     vi.stubGlobal("fetch", fetchSpy);
 
     await getReviewTrend("daily");
-    expect((fetchSpy.mock.calls[0][0] as string)).toContain("days=7");
+    expect((fetchSpy.mock.calls[0][0] as Request).url).toContain("days=7");
 
     await getReviewTrend("weekly");
-    expect((fetchSpy.mock.calls[1][0] as string)).toContain("weeks=8");
+    expect((fetchSpy.mock.calls[1][0] as Request).url).toContain("weeks=8");
   });
 
   it("空数组返回时正常返回空 periods", async () => {
