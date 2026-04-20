@@ -145,6 +145,268 @@ class SQLiteStorage:
             conn.close()
         return [dict(row) for row in rows]
 
+    # === 知识图谱聚合查询（替代 list_entries(limit=10000) 全表扫描） ===
+
+    def get_tag_stats_for_knowledge_map(self, user_id: str = "_default") -> dict:
+        """获取所有标签的统计数据和共现边，用于构建知识图谱。
+
+        Returns:
+            {
+                "tags": [{"name": str, "entry_count": int, "note_count": int, "recent_count": int}],
+                "co_occurrence_pairs": [(source, target), ...]
+            }
+        """
+        thirty_days_ago = (datetime.now() - __import__("datetime").timedelta(days=30)).isoformat()
+        conn = self._get_conn()
+        try:
+            # 1. 标签统计：entry_count, note_count, recent_count
+            tag_rows = conn.execute("""
+                SELECT t.name AS tag_name,
+                       COUNT(DISTINCT e.id) AS entry_count,
+                       SUM(CASE WHEN e.type = 'note' THEN 1 ELSE 0 END) AS note_count,
+                       SUM(CASE WHEN e.updated_at >= ? THEN 1 ELSE 0 END) AS recent_count
+                FROM tags t
+                JOIN entry_tags et ON t.id = et.tag_id
+                JOIN entries e ON et.entry_id = e.id
+                WHERE e.user_id = ?
+                GROUP BY t.name
+            """, (thirty_days_ago, user_id)).fetchall()
+
+            tags = [
+                {
+                    "name": row["tag_name"],
+                    "entry_count": row["entry_count"],
+                    "note_count": row["note_count"] or 0,
+                    "recent_count": row["recent_count"] or 0,
+                }
+                for row in tag_rows
+            ]
+
+            # 2. 共现边：同一 entry 中出现的标签对
+            pair_rows = conn.execute("""
+                SELECT DISTINCT t1.name AS tag_a, t2.name AS tag_b
+                FROM entry_tags et1
+                JOIN entry_tags et2 ON et1.entry_id = et2.entry_id AND et1.tag_id < et2.tag_id
+                JOIN tags t1 ON et1.tag_id = t1.id
+                JOIN tags t2 ON et2.tag_id = t2.id
+                JOIN entries e ON et1.entry_id = e.id
+                WHERE e.user_id = ?
+            """, (user_id,)).fetchall()
+
+            co_occurrence_pairs = [
+                (row["tag_a"], row["tag_b"])
+                for row in pair_rows
+            ]
+
+            return {
+                "tags": tags,
+                "co_occurrence_pairs": co_occurrence_pairs,
+            }
+        finally:
+            conn.close()
+
+    def search_tags_by_keyword(
+        self, keyword: str, limit: int = 20, user_id: str = "_default"
+    ) -> list[dict]:
+        """按关键词搜索标签及其出现次数。
+
+        Returns:
+            [{"name": str, "entry_count": int}]
+        """
+        conn = self._get_conn()
+        try:
+            rows = conn.execute("""
+                SELECT t.name AS tag_name, COUNT(DISTINCT e.id) AS entry_count
+                FROM tags t
+                JOIN entry_tags et ON t.id = et.tag_id
+                JOIN entries e ON et.entry_id = e.id
+                WHERE e.user_id = ? AND t.name LIKE ?
+                GROUP BY t.name
+                ORDER BY entry_count DESC
+                LIMIT ?
+            """, (user_id, f"%{keyword}%", limit)).fetchall()
+
+            return [{"name": row["tag_name"], "entry_count": row["entry_count"]} for row in rows]
+        finally:
+            conn.close()
+
+    def find_entries_by_concept(
+        self, concept: str, days: int = 90, user_id: str = "_default"
+    ) -> list[dict]:
+        """按概念词查找条目（匹配 tags、title、content），用于时间线。
+
+        Args:
+            concept: 概念名称
+            days: 回溯天数
+            user_id: 用户 ID
+
+        Returns:
+            条目列表，每项含 id, title, type, created_at, updated_at
+        """
+        like_pattern = f"%{concept}%"
+        days_ago = (datetime.now() - __import__("datetime").timedelta(days=days)).isoformat()
+        conn = self._get_conn()
+        try:
+            # 通过 tag 匹配
+            rows_by_tag = conn.execute("""
+                SELECT DISTINCT e.id, e.title, e.type, e.created_at, e.updated_at
+                FROM entries e
+                JOIN entry_tags et ON e.id = et.entry_id
+                JOIN tags t ON et.tag_id = t.id
+                WHERE e.user_id = ? AND t.name = ? AND e.created_at >= ?
+            """, (user_id, concept, days_ago)).fetchall()
+
+            ids_by_tag = {row["id"] for row in rows_by_tag}
+
+            # 通过 title/content LIKE 匹配
+            rows_by_text = conn.execute("""
+                SELECT id, title, type, created_at, updated_at
+                FROM entries
+                WHERE user_id = ? AND (title LIKE ? OR content LIKE ?) AND created_at >= ?
+            """, (user_id, like_pattern, like_pattern, days_ago)).fetchall()
+
+            # 合并去重
+            seen = set(ids_by_tag)
+            all_rows = list(rows_by_tag)
+            for row in rows_by_text:
+                if row["id"] not in seen:
+                    seen.add(row["id"])
+                    all_rows.append(row)
+
+            return [dict(row) for row in all_rows]
+        finally:
+            conn.close()
+
+    def get_tag_stats_for_concept_stats(self, user_id: str = "_default") -> dict:
+        """获取标签统计和共现边数，用于 _stats_from_sqlite。
+
+        Returns:
+            {
+                "concept_count": int,
+                "tags": [{"name": str, "entry_count": int, "category": str}],
+                "edge_count": int
+            }
+        """
+        conn = self._get_conn()
+        try:
+            # 标签计数
+            tag_rows = conn.execute("""
+                SELECT t.name AS tag_name, COUNT(DISTINCT e.id) AS entry_count
+                FROM tags t
+                JOIN entry_tags et ON t.id = et.tag_id
+                JOIN entries e ON et.entry_id = e.id
+                WHERE e.user_id = ?
+                GROUP BY t.name
+                ORDER BY entry_count DESC
+            """, (user_id,)).fetchall()
+
+            tags = [
+                {"name": row["tag_name"], "entry_count": row["entry_count"], "category": "tag"}
+                for row in tag_rows
+            ]
+
+            # 共现边计数
+            edge_row = conn.execute("""
+                SELECT COUNT(DISTINCT CASE WHEN et1.tag_id < et2.tag_id
+                                      THEN et1.entry_id || '-' || et1.tag_id || '-' || et2.tag_id
+                                      ELSE et2.entry_id || '-' || et2.tag_id || '-' || et1.tag_id
+                                 END) AS edge_count
+                FROM entry_tags et1
+                JOIN entry_tags et2 ON et1.entry_id = et2.entry_id AND et1.tag_id < et2.tag_id
+                JOIN entries e ON et1.entry_id = e.id
+                WHERE e.user_id = ?
+            """, (user_id,)).fetchone()
+
+            return {
+                "concept_count": len(tags),
+                "tags": tags,
+                "edge_count": edge_row["edge_count"] if edge_row else 0,
+            }
+        finally:
+            conn.close()
+
+    def get_tag_stats_for_subgraph(
+        self, seed_concepts: list[str], user_id: str = "_default"
+    ) -> dict:
+        """获取种子概念的 tag 共现子图数据。
+
+        只返回包含至少一个种子概念的条目中的标签统计和共现边。
+
+        Args:
+            seed_concepts: 种子概念名称列表
+            user_id: 用户 ID
+
+        Returns:
+            {
+                "tags": [{"name": str, "entry_count": int, "note_count": int, "recent_count": int}],
+                "co_occurrence_pairs": [(source, target), ...]
+            }
+        """
+        if not seed_concepts:
+            return {"tags": [], "co_occurrence_pairs": []}
+
+        thirty_days_ago = (datetime.now() - __import__("datetime").timedelta(days=30)).isoformat()
+        seed_placeholders = ",".join("?" * len(seed_concepts))
+        conn = self._get_conn()
+        try:
+            # 1. 标签统计：只统计包含至少一个种子概念的条目
+            tag_rows = conn.execute(f"""
+                SELECT t.name AS tag_name,
+                       COUNT(DISTINCT e.id) AS entry_count,
+                       SUM(CASE WHEN e.type = 'note' THEN 1 ELSE 0 END) AS note_count,
+                       SUM(CASE WHEN e.updated_at >= ? THEN 1 ELSE 0 END) AS recent_count
+                FROM tags t
+                JOIN entry_tags et ON t.id = et.tag_id
+                JOIN entries e ON et.entry_id = e.id
+                WHERE e.user_id = ?
+                  AND e.id IN (
+                      SELECT DISTINCT et2.entry_id
+                      FROM entry_tags et2
+                      JOIN tags t2 ON et2.tag_id = t2.id
+                      WHERE t2.name IN ({seed_placeholders})
+                  )
+                GROUP BY t.name
+            """, (thirty_days_ago, user_id, *seed_concepts)).fetchall()
+
+            tags = [
+                {
+                    "name": row["tag_name"],
+                    "entry_count": row["entry_count"],
+                    "note_count": row["note_count"] or 0,
+                    "recent_count": row["recent_count"] or 0,
+                }
+                for row in tag_rows
+            ]
+
+            # 2. 共现边
+            pair_rows = conn.execute(f"""
+                SELECT DISTINCT t1.name AS tag_a, t2.name AS tag_b
+                FROM entry_tags et1
+                JOIN entry_tags et2 ON et1.entry_id = et2.entry_id AND et1.tag_id < et2.tag_id
+                JOIN tags t1 ON et1.tag_id = t1.id
+                JOIN tags t2 ON et2.tag_id = t2.id
+                JOIN entries e ON et1.entry_id = e.id
+                WHERE e.user_id = ?
+                  AND e.id IN (
+                      SELECT DISTINCT et3.entry_id
+                      FROM entry_tags et3
+                      JOIN tags t3 ON et3.tag_id = t3.id
+                      WHERE t3.name IN ({seed_placeholders})
+                  )
+            """, (user_id, *seed_concepts)).fetchall()
+
+            co_occurrence_pairs = [
+                (row["tag_a"], row["tag_b"])
+                for row in pair_rows
+            ]
+
+            return {
+                "tags": tags,
+                "co_occurrence_pairs": co_occurrence_pairs,
+            }
+        finally:
+            conn.close()
+
     def _init_db(self):
         """初始化数据库表结构"""
         conn = self._get_conn()
