@@ -6,12 +6,12 @@
 |--------|----------|-----------|--------------------|--------|------|
 | E2E Helper 扩展 | S05 | integration | Goals API helper (CRUD + link/unlink + checklist + progress-summary) / Export helper (markdown/json) / createEntry 支持新类型 / searchEntries (GET /entries/search/query) | completed | 40 E2E tests passed, code review 1 round fix |
 | Goals API E2E | B74 | e2e-api | 3 种 metric_type 创建 / 列表+status 过滤 / 详情含 linked_entries_count / 状态更新 / 删除保护 / 关联+取消关联 / checklist 切换 / 进度汇总 / tag_auto 必填 422 / checklist 必填 422 / 401 / listGoalEntries / abandoned 删除成功 / 跨用户隔离 | completed | 25 tests passed, code review 3 rounds, risk: network |
-| Goals 页面 E2E | F63 | e2e-ui | 空目标引导 / 创建弹窗 / checklist 创建 / tag_auto 创建 / 状态筛选 / 详情页跳转 / 环形进度图 / 关联条目 / 取消关联 / 归档 / completed→active 重新激活 | pending | ~12 tests, risk: network |
+| Goals 页面 E2E | F63 | e2e-ui | 空目标引导 / 创建弹窗 / checklist 创建 / tag_auto 创建 / 状态筛选 / 详情页跳转 / 环形进度图 / 关联条目 / 取消关联 / 归档 / completed→active 重新激活 | completed | 10 tests passed, risk: network |
 | 新类型 API E2E | B75 | e2e-api | 创建 decision/reflection/question / 列表 type 过滤 / FTS5 全文搜索 / 搜索无匹配 / 更新 / 删除 / 混合类型 / 401 / 特殊字符 | completed | 14 tests passed, code review 1 round, +后端 read_entry 缺陷修复, risk: network |
-| 探索页新类型 E2E | F64 | e2e-ui | 7 个 Tab 显示 / 决策/复盘/疑问 Tab 筛选 / 搜索+Tab 交集 / URL 参数同步 / 空数据 Tab / 全部 Tab | pending | ~8 tests, risk: network |
+| 探索页新类型 E2E | F64 | e2e-ui | 7 个 Tab 显示 / 决策/复盘/疑问 Tab 筛选 / 搜索+Tab 交集 / URL 参数同步 / 空数据 Tab / 全部 Tab | completed | 8 tests passed, + Explore.tsx limit 200→100 修复, risk: network |
 | 导出 API E2E | B76 | e2e-api | markdown 导出 200 / json 导出 200 / task 过滤 / decision 过滤（跨模块）/ reflection 过滤 / question 过滤 / 日期范围 / 无效 format 422 / 无效 type 422 / 空数据 / 401 | completed | 11 tests passed, risk: network |
-| 导出 UI E2E | F65 | e2e-ui | Sidebar 打开对话框 / markdown 下载 / json 下载 / 类型过滤+下载 / 关闭不下载 | pending | ~5 tests, risk: network |
-| CI PR 增强 | S06 | config | e2e-test-pr job 触发 / Python 3.12 统一 / test_coverage 状态更新 / YAML 语法正确 | pending | risk: config |
+| 导出 UI E2E | F65 | e2e-ui | Sidebar 打开对话框 / markdown 下载 / json 下载 / 类型过滤+下载 / 关闭不下载 | completed | 5 tests passed, risk: network |
+| CI PR 增强 | S06 | config | e2e-test-pr job 触发 / Python 3.12 统一 / test_coverage 状态更新 / YAML 语法正确 | completed | risk: config |
 | 质量收口 | B77 | integration+smoke | 后端 857+ / 前端 321+ / 前端构建 / 全量 E2E / 新增 E2E >= 50 / CI PR 流水线 | pending | risk: startup |
 
 ---
@@ -100,12 +100,12 @@
 | Export 导出 UI | F12 | manual+unit | Sidebar 导出入口/格式选择/下载文件/loading 态/构建通过 | completed | 493 backend + 231 frontend + build pass |
 | 条目关联面板 | F13 | manual+unit | 关联条目列表/点击跳转/无关联引导/API 失败不影响详情页/构建通过 | completed | 231 frontend + build pass |
 | Health check 增强 | B34 | unit+integration | /health 返回服务状态/SQLite 不可达 503/Neo4j 降级 200 | pending | risk: startup |
-| E2E 基础设施 | B35 | integration | 双服务启停/认证 fixture/API helper/假 LLM 配置 | pending | risk: startup, config |
-| 认证流程 E2E | B36 | e2e | 注册→登录→访问→登出/未认证重定向/临时 DATA_DIR 回收 | pending | risk: auth |
-| 条目 CRUD E2E | B37 | e2e | 创建/列表/搜索/更新/删除/空状态 | pending | - |
-| Chat E2E (read/delete) | B38 | e2e | Chat read 搜索/Chat delete 删除/不依赖 LLM | pending | risk: network |
-| 回顾页 E2E | B39 | e2e | daily/weekly/monthly/trend/knowledge-heatmap/growth-curve/activity-heatmap | pending | - |
-| CI Pipeline | B40 | integration | PR=backend+frontend+build; main=+E2E(B36/B37); docker-build-test 独立保留 | pending | risk: config |
+| E2E 基础设施 | B35 | integration | 双服务启停/认证 fixture/API helper/假 LLM 配置 | completed | risk: startup, config |
+| 认证流程 E2E | B36 | e2e | 注册→登录→访问→登出/未认证重定向/临时 DATA_DIR 回收 | completed | risk: auth |
+| 条目 CRUD E2E | B37 | e2e | 创建/列表/搜索/更新/删除/空状态 | completed | - |
+| Chat E2E (read/delete) | B38 | e2e | Chat read 搜索/Chat delete 删除/不依赖 LLM | completed | risk: network |
+| 回顾页 E2E | B39 | e2e | daily/weekly/monthly/trend/knowledge-heatmap/growth-curve/activity-heatmap | completed | - |
+| CI Pipeline | B40 | integration | PR=backend+frontend+build+e2e-pr; main=+E2E 全量; docker-build-test 独立保留 | completed | risk: config |
 | 性能基线 | B41 | manual | bundle 大小/API 响应时间/SSE 首字节延迟 | pending | - |
 | Goals CRUD API | B45 | unit | 创建三种类型/列出过滤/更新状态/completed→active 重新激活/删除保护/401/403/metric_type 422/auto_tags 必填/checklist_items 必填 | covered | risk: auth |
 | Goal 条目关联 + 进度 | B46 | unit | count 关联进度（关联即计数）/checklist 勾选进度/tag_auto SQL 进度/100% 自动完成/进度下降不自动回退/progress-summary 概览/关联到非 count 返回 400/重复关联 409/401/403/时间范围外不计 | covered | — |
