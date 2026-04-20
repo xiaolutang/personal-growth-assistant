@@ -150,26 +150,39 @@ test.describe('探索页新类型 E2E', () => {
   });
 
   // ========================
-  // AC 5: 搜索框驱动搜索 + 结果验证
+  // AC 5: 搜索 + Tab 交集（搜索框驱动 + Tab 过滤 + 排除验证）
   // ========================
 
-  test('搜索框输入关键词 → 搜索结果包含匹配条目', async ({ request, page }) => {
+  test('搜索关键词 + Tab 过滤 → 结果为交集', async ({ request, page }) => {
     await setupWithEntries(request, page, 'exp_search', [
       { type: 'decision', title: '搜索决策-架构选型' },
       { type: 'reflection', title: '搜索复盘-架构优化' },
-      { type: 'question', title: '搜索疑问-架构疑问' },
+      { type: 'note', title: '无关笔记-干扰项' },
     ]);
 
     await goToExplore(page);
 
-    // 在探索页搜索框输入关键词
+    // 在探索页搜索框输入关键词（匹配 decision 和 reflection 条目）
     await page.getByPlaceholder('试试搜索：最近学习的主题...').fill('架构');
 
     // 等待搜索结果加载（300ms debounce + 搜索请求）
     await expect(page.getByText('搜索决策-架构选型')).toBeVisible({ timeout: 10000 });
-
-    // 搜索结果应包含匹配条目
     await expect(page.getByText('搜索复盘-架构优化')).toBeVisible({ timeout: 5000 });
+
+    // 切换到决策 Tab → 应只显示"架构"匹配的 decision 条目，排除 reflection 和 note
+    await page.getByRole('button', { name: '决策', exact: true }).click();
+    await page.waitForTimeout(500);
+
+    await expect(page.getByText('搜索决策-架构选型')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('搜索复盘-架构优化')).not.toBeVisible();
+    await expect(page.getByText('无关笔记-干扰项')).not.toBeVisible();
+
+    // 切换到复盘 Tab → 应只显示"架构"匹配的 reflection 条目
+    await page.getByRole('button', { name: '复盘', exact: true }).click();
+    await page.waitForTimeout(500);
+
+    await expect(page.getByText('搜索复盘-架构优化')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('搜索决策-架构选型')).not.toBeVisible();
   });
 
   // ========================
