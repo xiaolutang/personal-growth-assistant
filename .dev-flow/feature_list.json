@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 9,
-    "pending": 7,
-    "completed": 2,
+    "pending": 6,
+    "completed": 3,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -213,10 +213,13 @@
       "description": "decision/reflection/question 三种新类型条目的 API E2E 测试。覆盖创建、列表过滤、搜索、更新、删除。",
       "verification": "npx playwright test tests/new-types-api.spec.ts 通过",
       "depends_on": ["S05"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-20",
+      "completed_at": "2026-04-20",
+      "actual_minutes": 20,
+      "execution_notes": "14 个 E2E 测试覆盖 12 个 AC。修复后端 read_entry 不搜索 decisions/reflections/questions 目录的缺陷。Code review 1 轮 conditional_pass 后修复断言对齐。",
+      "evidence_file": ".dev-flow/evidence/B75.md",
       "priority": 2,
-      "acceptance_criteria": [
-        "创建 decision → 201 + category=decision",
         "创建 reflection → 201 + category=reflection",
         "创建 question → 201 + category=question",
         "列表 type=decision 过滤 → 只含 decision",
