@@ -14,7 +14,7 @@
 |------|------|------|--------|
 | S05 | E2E 基础设施 | completed | 0（helper） |
 | B74 | Goals API E2E | completed | 25 |
-| F63 | Goals 页面 E2E | pending | ~12（含 completed→active 重新激活） |
+| F63 | Goals 页面 E2E | completed | 10 |
 | B75 | 新类型 API E2E | completed | 14 |
 | F64 | 探索页新类型 E2E | pending | ~8 |
 | B76 | 导出 API E2E | completed | 11 |

@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 9,
-    "pending": 5,
-    "completed": 4,
+    "pending": 4,
+    "completed": 5,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -181,7 +181,11 @@
       "description": "Goals 前端页面完整 E2E 测试，覆盖创建弹窗、列表展示、状态筛选、详情页、进度交互等。",
       "verification": "npx playwright test tests/goals-ui.spec.ts 通过",
       "depends_on": ["B74"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-20",
+      "completed_at": "2026-04-20",
+      "actual_minutes": 45,
+      "execution_notes": "10 个 E2E 测试覆盖 12 个 AC。首页目标卡片需先创建 entry 避免 isEmpty 空状态隐藏。底部导航 z-50 冲突用 evaluate(el.click()) 绕过。Qdrant 不可用时关联条目走 API 工作绕过。",
       "priority": 2,
       "acceptance_criteria": [
         "空目标列表 → 显示引导文案",
