@@ -7,8 +7,7 @@
  * - 关联/取消关联条目 / 归档 / 重新激活
  * - 首页目标卡片
  *
- * 每个测试独立注册用户。底部导航 z-50 与弹窗 z-50 冲突，
- * 对话框内被遮挡按钮使用 evaluate(el.click()) 绕过。
+ * 每个测试独立注册用户。
  * 导航通过 sidebar 链接（客户端路由），避免 page.goto 全量刷新。
  */
 import { test, expect } from '@playwright/test';
@@ -53,10 +52,6 @@ async function goToGoals(page: any) {
   await expect(page.getByRole('heading', { name: /目标追踪/ })).toBeVisible({ timeout: 15000 });
 }
 
-/** 绕过底部导航遮挡，直接调用 DOM click */
-async function forceClick(locator: any) {
-  await locator.evaluate((el: HTMLElement) => el.click());
-}
 
 test.describe('Goals 页面 E2E', () => {
 
@@ -79,8 +74,8 @@ test.describe('Goals 页面 E2E', () => {
     // 填写标题（默认 count 类型，目标值 5）
     await page.getByPlaceholder('如：完成 React 学习').fill('UI测试-count目标');
 
-    // 提交（底部导航 z-50 遮挡，用 evaluate 绕过）
-    await forceClick(page.getByRole('button', { name: '创建', exact: true }));
+    // 提交
+    await page.getByRole('button', { name: '创建', exact: true }).click();
 
     // 验证卡片出现 + 手动计数 badge
     await expect(page.getByText('UI测试-count目标')).toBeVisible({ timeout: 10000 });
@@ -110,12 +105,12 @@ test.describe('Goals 页面 E2E', () => {
     // 填写第一个检查项
     await page.getByPlaceholder('检查项 1').fill('步骤一');
 
-    // 添加第二个检查项（底部导航遮挡）
-    await forceClick(page.getByRole('button', { name: '+ 添加检查项' }));
+    // 添加第二个检查项
+    await page.getByRole('button', { name: '+ 添加检查项' }).click();
     await page.getByPlaceholder('检查项 2').fill('步骤二');
 
-    // 提交
-    await forceClick(page.getByRole('button', { name: '创建', exact: true }));
+    // 提交创建
+    await page.getByRole('button', { name: '创建', exact: true }).click();
 
     // 验证卡片出现 + 检查清单 badge
     await expect(page.getByText('UI测试-checklist目标')).toBeVisible({ timeout: 10000 });
@@ -238,11 +233,14 @@ test.describe('Goals 页面 E2E', () => {
   });
 
   // ========================
-  // AC 8: 关联条目（搜索弹窗 + API 关联 + UI 验证）
+  // AC 8: 关联条目（搜索弹窗 → 输入关键词 → 搜索 → 点击关联 → 列表更新）
   // ========================
 
-  test('详情页关联条目 → 搜索弹窗 → 关联 → 列表更新', async ({ request, page }) => {
+  test('详情页关联条目 → 搜索弹窗 → 搜索 → 关联 → 列表更新', async ({ request, page }) => {
     const token = await setupUser(request, page, 'goal_link');
+
+    // 预创建可搜索条目（在 UI 登录前，确保数据已落库）
+    await createEntry(request, { type: 'task', title: '关联搜索条目-E2E' }, token);
 
     const gResp = await createGoal(request, {
       title: '关联测试-count目标',
@@ -255,26 +253,24 @@ test.describe('Goals 页面 E2E', () => {
     await page.getByText('关联测试-count目标').click();
     await expect(page.getByRole('heading', { name: /目标详情/ })).toBeVisible({ timeout: 15000 });
 
-    // 测试搜索弹窗打开
-    await forceClick(page.getByRole('button', { name: /关联条目/ }));
+    // 点击关联条目按钮 → 打开搜索弹窗
+    await page.getByRole('button', { name: /关联条目/ }).click();
     await expect(page.getByPlaceholder('输入关键词搜索...')).toBeVisible({ timeout: 5000 });
 
-    // 关闭弹窗（点击视口左上角 backdrop 区域）
-    await page.mouse.click(5, 5);
-    await page.waitForTimeout(500);
+    // 在搜索框输入预创建条目的唯一关键词
+    await page.getByPlaceholder('输入关键词搜索...').fill('关联搜索条目');
 
-    // 通过 API 关联条目（Qdrant 不可用，搜索无法返回结果）
-    const linkedEntry = await createEntry(request, { type: 'task', title: '关联测试条目-E2E' }, token);
-    await linkEntry(request, goal.id, linkedEntry.id, token);
+    // 等待搜索结果出现（300ms debounce + 网络请求）
+    await expect(page.getByText('关联搜索条目-E2E')).toBeVisible({ timeout: 10000 });
 
-    // 导航回列表再进入详情（客户端路由刷新数据）
-    await page.getByText('返回目标列表').click();
-    await expect(page.getByRole('heading', { name: /目标追踪/ })).toBeVisible({ timeout: 10000 });
-    await page.getByText('关联测试-count目标').click();
-    await expect(page.getByRole('heading', { name: /目标详情/ })).toBeVisible({ timeout: 15000 });
+    // 点击搜索结果关联条目
+    await page.getByText('关联搜索条目-E2E').click();
 
-    // 验证关联条目
-    await expect(page.getByText('关联测试条目-E2E')).toBeVisible({ timeout: 10000 });
+    // 验证关联成功 toast
+    await expect(page.getByText('已关联')).toBeVisible({ timeout: 5000 });
+
+    // 验证关联条目出现在列表中（刷新后）
+    await expect(page.locator('div.rounded-lg.border', { hasText: '关联搜索条目-E2E' })).toBeVisible({ timeout: 10000 });
   });
 
   // ========================
@@ -305,7 +301,7 @@ test.describe('Goals 页面 E2E', () => {
 
     // 精确定位要取消的条目行中的 X 按钮
     const entryRow = page.locator('div.rounded-lg.border', { hasText: '要取消关联-E2E' });
-    await entryRow.locator('button[title="取消关联"]').evaluate((el: HTMLElement) => el.click());
+    await entryRow.locator('button[title="取消关联"]').click();
 
     // 验证条目消失
     await expect(page.getByText('要取消关联-E2E')).not.toBeVisible({ timeout: 5000 });
@@ -335,7 +331,7 @@ test.describe('Goals 页面 E2E', () => {
     await expect(page.getByRole('heading', { name: /目标详情/ })).toBeVisible({ timeout: 15000 });
 
     // 点击归档
-    await forceClick(page.getByRole('button', { name: '归档' }));
+    await page.getByRole('button', { name: '归档' }).click();
 
     // 验证返回目标列表
     await expect(page).toHaveURL(/\/goals$/, { timeout: 10000 });
@@ -379,7 +375,7 @@ test.describe('Goals 页面 E2E', () => {
     await expect(page.getByText('已完成').first()).toBeVisible();
 
     // 点击重新激活按钮
-    await forceClick(page.getByRole('button', { name: /重新激活/ }));
+    await page.getByRole('button', { name: /重新激活/ }).click();
 
     // 验证 toast + 按钮变化
     await expect(page.getByText('已重新激活')).toBeVisible({ timeout: 5000 });

@@ -93,7 +93,7 @@ export function LinkEntryDialog({ entryId, onClose, onCreated }: LinkEntryDialog
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
       <div className="bg-card rounded-xl shadow-xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">

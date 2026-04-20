@@ -4,15 +4,15 @@
  * 覆盖探索页 Tab 切换、类型筛选、搜索、URL 参数同步：
  * - 7 个 Tab 显示 / 决策/复盘/疑问 Tab 筛选
  * - 全部 Tab 显示非 task 类型
- * - 搜索 + Tab 交集 / URL 参数自动切换
+ * - 搜索框驱动搜索 / URL 参数深链接切换 Tab
  * - 空数据 Tab 空状态引导
  *
  * 每个测试独立注册用户。导航通过 sidebar 链接（客户端路由）。
  * 条目必须在 UI 登录前创建（Explore.tsx 有独立 useEffect getEntries）。
- * 搜索依赖 Qdrant 向量检索（E2E 环境不可用），使用 FTS5 全文搜索替代。
+ * 搜索使用前端 searchEntries（混合搜索：向量 + FTS5），E2E 环境下 FTS5 返回结果。
  */
 import { test, expect } from '@playwright/test';
-import { createEntry, searchEntriesFTS5 } from './helpers/api';
+import { createEntry } from './helpers/api';
 
 test.describe.configure({ timeout: 120000 });
 
@@ -150,45 +150,61 @@ test.describe('探索页新类型 E2E', () => {
   });
 
   // ========================
-  // AC 5: 搜索 + Tab 交集（FTS5 替代向量搜索）
+  // AC 5: 搜索框驱动搜索 + 结果验证
   // ========================
 
-  test('FTS5 搜索 + Tab 过滤 → 结果为交集', async ({ request, page }) => {
-    const token = await setupWithEntries(request, page, 'exp_search', [
+  test('搜索框输入关键词 → 搜索结果包含匹配条目', async ({ request, page }) => {
+    await setupWithEntries(request, page, 'exp_search', [
       { type: 'decision', title: '搜索决策-架构选型' },
       { type: 'reflection', title: '搜索复盘-架构优化' },
       { type: 'question', title: '搜索疑问-架构疑问' },
     ]);
 
-    // 用 FTS5 API 验证搜索可用（返回 { entries: [...], query } 格式）
-    const searchData = await searchEntriesFTS5(request, '架构', token);
-    expect(searchData.entries?.length ?? 0).toBeGreaterThanOrEqual(1);
-
     await goToExplore(page);
 
-    // 切换到决策 Tab 验证内容存在
-    await page.getByRole('button', { name: '决策', exact: true }).click();
-    await page.waitForTimeout(500);
+    // 在探索页搜索框输入关键词
+    await page.getByPlaceholder('试试搜索：最近学习的主题...').fill('架构');
+
+    // 等待搜索结果加载（300ms debounce + 搜索请求）
     await expect(page.getByText('搜索决策-架构选型')).toBeVisible({ timeout: 10000 });
+
+    // 搜索结果应包含匹配条目
+    await expect(page.getByText('搜索复盘-架构优化')).toBeVisible({ timeout: 5000 });
   });
 
   // ========================
-  // AC 6: URL 参数自动切换 Tab
+  // AC 6: URL 参数 → Tab 同步（SPA 内导航模拟深链接）
   // ========================
 
-  test('URL ?type=decision → 自动切换到决策 Tab', async ({ request, page }) => {
+  test('URL ?type=decision → 自动切换到决策 Tab → 显示条目', async ({ request, page }) => {
     await setupWithEntries(request, page, 'exp_url', [
       { type: 'decision', title: 'URL决策条目' },
+      { type: 'note', title: 'URL笔记条目' },
     ]);
 
-    // 先导航到探索页确认内容
+    // 先导航到探索页（通过 sidebar，确保 auth 状态正常）
     await goToExplore(page);
 
-    // 点击决策 Tab → URL 应变为 ?type=decision
-    await page.getByRole('button', { name: '决策', exact: true }).click();
-    await page.waitForTimeout(500);
-    await expect(page).toHaveURL(/type=decision/);
+    // 确认默认是"全部"Tab，两个条目都可见
     await expect(page.getByText('URL决策条目')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('URL笔记条目')).toBeVisible();
+
+    // 模拟深链接：通过 pushState + popstate 在 SPA 内改变 URL 参数
+    // 这模拟了用户通过外部链接/书签进入 ?type=decision 的场景
+    await page.evaluate((url) => {
+      window.history.pushState({}, '', url);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, `${BASE}/explore?type=decision`);
+
+    // 等待 Tab 切换生效
+    await page.waitForTimeout(500);
+
+    // 验证 URL 参数已生效
+    await expect(page).toHaveURL(/type=decision/);
+
+    // 验证决策 Tab 被激活 → 决策条目可见，笔记条目不可见
+    await expect(page.getByText('URL决策条目')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('URL笔记条目')).not.toBeVisible();
 
     // 切换到全部 Tab → URL 清空 type 参数
     await page.getByRole('button', { name: '全部', exact: true }).click();

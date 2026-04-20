@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 9,
-    "pending": 4,
-    "completed": 5,
+    "pending": 3,
+    "completed": 6,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -224,6 +224,7 @@
       "execution_notes": "14 个 E2E 测试覆盖 12 个 AC。修复后端 read_entry 不搜索 decisions/reflections/questions 目录的缺陷。Code review 1 轮 conditional_pass 后修复断言对齐。",
       "evidence_file": ".dev-flow/evidence/B75.md",
       "priority": 2,
+      "acceptance_criteria": [
         "创建 reflection → 201 + category=reflection",
         "创建 question → 201 + category=question",
         "列表 type=decision 过滤 → 只含 decision",
@@ -252,7 +253,13 @@
       "description": "探索页新类型 Tab 切换、筛选、搜索命中的前端 E2E 测试。",
       "verification": "npx playwright test tests/new-types-ui.spec.ts 通过",
       "depends_on": ["B75"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-20",
+      "completed_at": "2026-04-20",
+      "actual_minutes": 30,
+      "execution_notes": "8 个 E2E 测试覆盖 8 个 AC。修复 Explore.tsx getEntries limit 200→100 的 bug。Code review 通过。",
+      "evidence_file": ".dev-flow/evidence/F64.md",
+      "commit": "b94ee06",
       "priority": 2,
       "acceptance_criteria": [
         "探索页显示 7 个 Tab（全部/灵感/笔记/项目/决策/复盘/疑问）",
@@ -287,6 +294,7 @@
       "execution_notes": "11 个 E2E 测试覆盖 11 个 AC，含跨模块闭环（decision/reflection/question 导出）。所有测试通过。",
       "evidence_file": ".dev-flow/evidence/B76.md",
       "priority": 2,
+      "acceptance_criteria": [
         "json 导出 → 200 + JSON 数组 + 包含已创建条目",
         "按 type=task 过滤 → 只含 task 类型",
         "按 type=decision 过滤 → 只含 decision 类型（跨模块闭环：新类型可导出）",
