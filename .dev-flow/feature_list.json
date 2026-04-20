@@ -175,7 +175,7 @@
       "description": "将 App.tsx 中 11 个页面组件改为 React.lazy + Suspense 动态导入。配置 Vite manualChunks 将 recharts、@xyflow/react、react-markdown 等大型依赖分离为独立 chunk，减少首屏体积约 350KB gz。",
       "verification": "前端构建通过 + bundle 分析确认代码分割生效",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "acceptance_criteria": [
         "App.tsx 中 11 个页面组件改为 React.lazy() 动态导入",
@@ -202,7 +202,7 @@
       "description": "将 E2E 测试中 26 处 waitForTimeout 硬等待替换为基于断言的 waitFor（waitForSelector、toBeVisible、toHaveText 等）。减少测试脆弱性，提升运行速度。",
       "verification": "E2E 全量测试通过 + 无 waitForTimeout 残留",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "acceptance_criteria": [
         "goals-ui.spec.ts 中 6 处 waitForTimeout 替换为断言等待",
@@ -228,7 +228,7 @@
       "description": "将 Review.tsx 中直接使用 authFetch 的 daily/weekly/monthly 报告调用改为使用 api.ts 中封装的函数。统一 API 调用风格，减少维护负担。",
       "verification": "Review 页面功能正常 + 前端测试通过",
       "depends_on": ["S07"],
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "acceptance_criteria": [
         "Review.tsx 中 3 处 authFetch 调用替换为 api.ts 封装函数",
@@ -252,7 +252,7 @@
       "description": "将 Review.tsx（1098 行）拆分为多个子组件：TrendChart、MorningDigestCard、AiSummaryCard、HeatmapCard、GrowthCurveCard。MorningDigestCard 复用 F70 提取的 useMorningDigest Hook，不独立持有晨报请求状态。",
       "verification": "Review 页面功能正常 + 前端测试通过 + 组件文件 < 200 行",
       "depends_on": ["F70"],
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "acceptance_criteria": [
         "Review.tsx 拆分后主文件 < 200 行",
@@ -280,7 +280,7 @@
       "description": "将 getMorningDigest() 从 Home.tsx 和 Review.tsx 中提取到共享自定义 Hook useMorningDigest，消除重复 API 调用和数据不一致。",
       "verification": "Home 和 Review 页面晨报功能正常",
       "depends_on": ["F68"],
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "acceptance_criteria": [
         "新增 useMorningDigest Hook（frontend/src/hooks/useMorningDigest.ts）",
@@ -305,7 +305,7 @@
       "description": "将 Explore.tsx 中 2 处重复的搜索结果映射（any 类型）提取为独立函数 normalizeSearchResult()，消除重复代码并引入正确的类型定义。",
       "verification": "Explore 页面搜索功能正常 + 无 any 类型残留",
       "depends_on": ["S07"],
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "acceptance_criteria": [
         "提取 normalizeSearchResult() 函数，替换 2 处重复的 any 映射",
@@ -329,7 +329,7 @@
       "description": "将 KnowledgeService 中 5 处 list_entries(limit=10000) 全量扫描替换为按需查询：tag 查询用 SQL GROUP BY、日期范围查询用 WHERE 过滤、掌握度分布用聚合查询。避免将大量数据加载到 Python 内存。验证方式：准备固定测试数据集（>= 100 条），对比优化前后 get_knowledge_map 响应时间。",
       "verification": "知识图谱 API 功能正确 + 无 list_entries(limit=10000) 残留",
       "depends_on": ["B78"],
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "acceptance_criteria": [
         "knowledge_service.py 中不再有 list_entries(limit=10000) 调用",
@@ -356,7 +356,11 @@
       "description": "将 api.ts 中使用原始 fetch 的搜索、知识图谱、反馈、通知、目标等 API 函数迁移到 openapi-fetch 类型安全客户端，消除 as unknown as 强转和 any 返回类型。sessionApi.ts 不在本次范围内。",
       "verification": "前端构建通过 + API 功能正常",
       "depends_on": ["F68"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-20T20:37:00",
+      "completed_at": "2026-04-20T20:52:00",
+      "commit": "f2273e1",
+      "summary": "41 个原始 fetch 迁移到 openapi-fetch，消除 2 处 as unknown as 和 1 处 any 返回类型",
       "priority": 3,
       "acceptance_criteria": [
         "api.ts 中搜索、知识图谱、反馈、通知、目标 API 函数迁移到 openapi-fetch",
@@ -381,7 +385,9 @@
       "description": "全量后端测试 + 前端测试 + E2E 测试 + 构建验证。确认技术债清理未引入回归。",
       "verification": "全量测试通过 + 构建通过",
       "depends_on": ["S07", "B78", "F66", "F67", "F68", "F69", "F70", "F71", "B79", "F72"],
-      "status": "pending",
+      "status": "in_progress",
+      "started_at": "2026-04-20T20:52:00",
+      "execution_state": { "current_step": "running_quality_gate" },
       "priority": 3,
       "acceptance_criteria": [
         "后端测试全通过（uv run pytest）",
