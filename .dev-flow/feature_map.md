@@ -8,12 +8,12 @@
 
 ### R020 E2E 测试补齐 + CI PR 增强
 - 分支：feat/R020-e2e-ci-pipeline
-- 状态：规划中
+- 状态：执行中
 
 | 任务 | 模块 | 状态 | ~Tests |
 |------|------|------|--------|
 | S05 | E2E 基础设施 | completed | 0（helper） |
-| B74 | Goals API E2E | pending | ~15 |
+| B74 | Goals API E2E | completed | 25 |
 | F63 | Goals 页面 E2E | pending | ~12（含 completed→active 重新激活） |
 | B75 | 新类型 API E2E | pending | ~12 |
 | F64 | 探索页新类型 E2E | pending | ~8 |

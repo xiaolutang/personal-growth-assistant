@@ -5,7 +5,7 @@
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
 |--------|----------|-----------|--------------------|--------|------|
 | E2E Helper 扩展 | S05 | integration | Goals API helper (CRUD + link/unlink + checklist + progress-summary) / Export helper (markdown/json) / createEntry 支持新类型 / searchEntries (GET /entries/search/query) | completed | 40 E2E tests passed, code review 1 round fix |
-| Goals API E2E | B74 | e2e-api | 3 种 metric_type 创建 / 列表+status 过滤 / 详情含 linked_entries_count / 状态更新 / 删除保护 / 关联+取消关联 / checklist 切换 / 进度汇总 / tag_auto 必填 422 / checklist 必填 422 / 401 | pending | ~15 tests, risk: network |
+| Goals API E2E | B74 | e2e-api | 3 种 metric_type 创建 / 列表+status 过滤 / 详情含 linked_entries_count / 状态更新 / 删除保护 / 关联+取消关联 / checklist 切换 / 进度汇总 / tag_auto 必填 422 / checklist 必填 422 / 401 / listGoalEntries / abandoned 删除成功 / 跨用户隔离 | completed | 25 tests passed, code review 3 rounds, risk: network |
 | Goals 页面 E2E | F63 | e2e-ui | 空目标引导 / 创建弹窗 / checklist 创建 / tag_auto 创建 / 状态筛选 / 详情页跳转 / 环形进度图 / 关联条目 / 取消关联 / 归档 / completed→active 重新激活 | pending | ~12 tests, risk: network |
 | 新类型 API E2E | B75 | e2e-api | 创建 decision/reflection/question / 列表 type 过滤 / FTS5 全文搜索 / 搜索无匹配 / 更新 / 删除 / 混合类型 / 401 | pending | ~12 tests, risk: network |
 | 探索页新类型 E2E | F64 | e2e-ui | 7 个 Tab 显示 / 决策/复盘/疑问 Tab 筛选 / 搜索+Tab 交集 / URL 参数同步 / 空数据 Tab / 全部 Tab | pending | ~8 tests, risk: network |

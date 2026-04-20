@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 9,
-    "pending": 8,
-    "completed": 1,
+    "pending": 7,
+    "completed": 2,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -140,7 +140,12 @@
       "description": "Goals 完整 API E2E 测试，覆盖所有端点的正常、边界、异常场景。使用 Playwright APIRequestContext 直接测试后端 API。",
       "verification": "npx playwright test tests/goals-api.spec.ts 通过",
       "depends_on": ["S05"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-20",
+      "completed_at": "2026-04-20",
+      "actual_minutes": 30,
+      "execution_notes": "25 个 E2E 测试覆盖 15 个 AC + 4 个额外覆盖（listGoalEntries、abandoned 删除成功、跨用户隔离、progress-summary 精确断言）。Code review 3 轮通过。",
+      "evidence_file": ".dev-flow/evidence/B74.md",
       "priority": 2,
       "acceptance_criteria": [
         "创建 count 类型目标 → 201 + 正确字段",
