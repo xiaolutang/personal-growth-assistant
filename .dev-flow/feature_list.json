@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 9,
-    "pending": 6,
-    "completed": 3,
+    "pending": 5,
+    "completed": 4,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -276,10 +276,13 @@
       "description": "导出功能的 API 级 E2E 测试。覆盖 markdown/JSON 格式、类型过滤、日期范围。",
       "verification": "npx playwright test tests/export-api.spec.ts 通过",
       "depends_on": ["S05"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-20",
+      "completed_at": "2026-04-20",
+      "actual_minutes": 15,
+      "execution_notes": "11 个 E2E 测试覆盖 11 个 AC，含跨模块闭环（decision/reflection/question 导出）。所有测试通过。",
+      "evidence_file": ".dev-flow/evidence/B76.md",
       "priority": 2,
-      "acceptance_criteria": [
-        "markdown 导出 → 200 + content-type=application/zip",
         "json 导出 → 200 + JSON 数组 + 包含已创建条目",
         "按 type=task 过滤 → 只含 task 类型",
         "按 type=decision 过滤 → 只含 decision 类型（跨模块闭环：新类型可导出）",

@@ -9,7 +9,7 @@
 | Goals 页面 E2E | F63 | e2e-ui | 空目标引导 / 创建弹窗 / checklist 创建 / tag_auto 创建 / 状态筛选 / 详情页跳转 / 环形进度图 / 关联条目 / 取消关联 / 归档 / completed→active 重新激活 | pending | ~12 tests, risk: network |
 | 新类型 API E2E | B75 | e2e-api | 创建 decision/reflection/question / 列表 type 过滤 / FTS5 全文搜索 / 搜索无匹配 / 更新 / 删除 / 混合类型 / 401 / 特殊字符 | completed | 14 tests passed, code review 1 round, +后端 read_entry 缺陷修复, risk: network |
 | 探索页新类型 E2E | F64 | e2e-ui | 7 个 Tab 显示 / 决策/复盘/疑问 Tab 筛选 / 搜索+Tab 交集 / URL 参数同步 / 空数据 Tab / 全部 Tab | pending | ~8 tests, risk: network |
-| 导出 API E2E | B76 | e2e-api | markdown 导出 200 / json 导出 200 / task 过滤 / decision 过滤（跨模块）/ reflection 过滤 / question 过滤 / 日期范围 / 无效 format 422 / 无效 type 422 / 空数据 / 401 | pending | ~10 tests, risk: network |
+| 导出 API E2E | B76 | e2e-api | markdown 导出 200 / json 导出 200 / task 过滤 / decision 过滤（跨模块）/ reflection 过滤 / question 过滤 / 日期范围 / 无效 format 422 / 无效 type 422 / 空数据 / 401 | completed | 11 tests passed, risk: network |
 | 导出 UI E2E | F65 | e2e-ui | Sidebar 打开对话框 / markdown 下载 / json 下载 / 类型过滤+下载 / 关闭不下载 | pending | ~5 tests, risk: network |
 | CI PR 增强 | S06 | config | e2e-test-pr job 触发 / Python 3.12 统一 / test_coverage 状态更新 / YAML 语法正确 | pending | risk: config |
 | 质量收口 | B77 | integration+smoke | 后端 857+ / 前端 321+ / 前端构建 / 全量 E2E / 新增 E2E >= 50 / CI PR 流水线 | pending | risk: startup |

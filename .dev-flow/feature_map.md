@@ -17,7 +17,7 @@
 | F63 | Goals 页面 E2E | pending | ~12（含 completed→active 重新激活） |
 | B75 | 新类型 API E2E | completed | 14 |
 | F64 | 探索页新类型 E2E | pending | ~8 |
-| B76 | 导出 API E2E | pending | ~8 |
+| B76 | 导出 API E2E | completed | 11 |
 | F65 | 导出 UI E2E | pending | ~5 |
 | S06 | CI PR 增强 | pending | 0（配置） |
 | B77 | 质量收口 | pending | 0（验证） |
