@@ -92,7 +92,49 @@ jobs:
           docker stop pga-test
           docker rm pga-test
 
-  # E2E 测试（仅 main 分支推送）
+  # E2E 关键子集（PR 时运行）
+  e2e-test-pr:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install backend dependencies
+        run: cd ../backend && uv sync
+
+      - name: Install frontend dependencies
+        run: cd ../frontend && npm ci
+
+      - name: Install E2E dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E critical subset
+        run: npx playwright test tests/auth.spec.ts tests/entries.spec.ts tests/goals-api.spec.ts tests/new-types-api.spec.ts --workers=1
+        env:
+          CI: true
+
+  # E2E 全量测试（仅 main 分支推送）
   e2e-test:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -105,7 +147,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.12"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5

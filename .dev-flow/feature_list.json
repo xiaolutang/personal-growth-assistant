@@ -3,14 +3,13 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-19T20:00",
+  "updated_at": "2026-04-20",
   "status": "active",
-  "scope_notes": "离线增强 + PWA：修复 SW 缓存、离线状态检测、离线读取、离线写入队列、PWA 安装引导",
+  "scope_notes": "E2E 测试补齐（Goals + 新类型 + 导出）+ CI PR 增强",
   "active_requirement_cycle": {
-    "id": "R019",
-    "name": "offline-pwa",
-    "branch": "feat/R019-offline-pwa",
-    "archive_dir": "_archive/R019_offline-pwa"
+    "id": "R020",
+    "name": "e2e-ci-pipeline",
+    "branch": "feat/R020-e2e-ci-pipeline"
   },
   "workflow": {
     "name": "XLFoundry",
@@ -21,370 +20,376 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 8,
-    "pending": 0,
-    "completed": 8,
+    "total_tasks": 9,
+    "pending": 3,
+    "completed": 6,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
   },
   "archived_requirement_cycles": [
-    {"id": "R003", "name": "production-content-recovery", "status": "completed", "archive_dir": "_archive/R003_production-content-recovery", "branch": "fix/R003-production-content-recovery"},
-    {"id": "R004", "name": "product-evolution-phase1a", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase1a", "branch": "feat/R004-product-evolution-phase1a"},
-    {"id": "R004", "name": "product-evolution-phase1b", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase1b", "branch": "feat/R004-product-evolution-phase1b"},
-    {"id": "R004", "name": "product-evolution-phase2", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase2", "branch": "feat/R004-product-evolution-phase2"},
-    {"id": "R005", "name": "product-evolution-phase3", "status": "completed", "archive_dir": "_archive/R005_product-evolution-phase3", "branch": "feat/R005_product-evolution-phase3"},
-    {"id": "R006", "name": "product-polish", "status": "completed", "archive_dir": "_archive/R006_product-polish", "branch": "feat/R006_product-polish"},
-    {"id": "R007", "name": "engagement-experience", "status": "completed", "archive_dir": "_archive/R007_engagement-experience", "branch": "feat/R007-engagement-experience"},
-    {"id": "R008", "name": "intelligence-omni", "status": "completed", "archive_dir": "_archive/R008_intelligence-omni", "branch": "feat/R008-intelligence-omni"},
-    {"id": "R009", "name": "chat-user-id-threading", "status": "completed", "archive_dir": "_archive/R009_chat-user-id-threading", "branch": "feat/R009-chat-user-id-threading"},
-    {"id": "R010", "name": "engineering-foundation", "status": "completed", "archive_dir": "_archive/R010_engineering-foundation", "branch": "feat/R010-engineering-foundation"},
-    {"id": "R011", "name": "entry-context-and-morning-report", "status": "completed", "archive_dir": "_archive/R011_entry-context-and-morning-report", "branch": "feat/R011-entry-context-and-morning-report"},
-    {"id": "R012", "name": "goal-tracking", "status": "completed", "archive_dir": "_archive/R012_goal-tracking", "branch": "feat/R012-goal-tracking"},
-    {"id": "R013", "name": "decision-reflection-entries", "status": "completed", "archive_dir": "_archive/R013_decision-reflection-entries", "branch": "feat/R013-decision-reflection-entries"},
-    {"id": "R014", "name": "page-context-ai", "status": "completed", "archive_dir": "_archive/R014_page-context-ai", "branch": "feat/R014-page-context-ai"},
-    {"id": "R015", "name": "review-enhancement", "status": "completed", "archive_dir": "_archive/R015_review-enhancement", "branch": "feat/R015-review-enhancement"},
-    {"id": "R016", "name": "polish-cleanup", "status": "completed", "archive_dir": "_archive/R016_polish-cleanup", "branch": "feat/R016-polish-cleanup"},
-    {"id": "R017", "name": "code-audit-hardening", "status": "completed", "archive_dir": "_archive/R017_code-audit-hardening", "branch": "fix/R017-code-audit-hardening"},
-    {"id": "R018", "name": "defect-fix-quality", "status": "completed", "archive_dir": "_archive/R018_defect-fix-quality", "branch": "fix/R018-defect-fix-quality"}
+    {"id": "R003", "name": "production-content-recovery", "status": "completed", "archive_dir": "_archive/R003_production-content-recovery"},
+    {"id": "R004", "name": "product-evolution-phase1a", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase1a"},
+    {"id": "R004", "name": "product-evolution-phase1b", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase1b"},
+    {"id": "R004", "name": "product-evolution-phase2", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase2"},
+    {"id": "R005", "name": "product-evolution-phase3", "status": "completed", "archive_dir": "_archive/R005_product-evolution-phase3"},
+    {"id": "R006", "name": "product-polish", "status": "completed", "archive_dir": "_archive/R006_product-polish"},
+    {"id": "R007", "name": "engagement-experience", "status": "completed", "archive_dir": "_archive/R007_engagement-experience"},
+    {"id": "R008", "name": "intelligence-omni", "status": "completed", "archive_dir": "_archive/R008_intelligence-omni"},
+    {"id": "R009", "name": "chat-user-id-threading", "status": "completed", "archive_dir": "_archive/R009_chat-user-id-threading"},
+    {"id": "R010", "name": "engineering-foundation", "status": "completed", "archive_dir": "_archive/R010_engineering-foundation"},
+    {"id": "R011", "name": "entry-context-and-morning-report", "status": "completed", "archive_dir": "_archive/R011_entry-context-and-morning-report"},
+    {"id": "R012", "name": "goal-tracking", "status": "completed", "archive_dir": "_archive/R012_goal-tracking"},
+    {"id": "R013", "name": "decision-reflection-entries", "status": "completed", "archive_dir": "_archive/R013_decision-reflection-entries"},
+    {"id": "R014", "name": "page-context-ai", "status": "completed", "archive_dir": "_archive/R014_page-context-ai"},
+    {"id": "R015", "name": "review-enhancement", "status": "completed", "archive_dir": "_archive/R015_review-enhancement"},
+    {"id": "R016", "name": "polish-cleanup", "status": "completed", "archive_dir": "_archive/R016_polish-cleanup"},
+    {"id": "R017", "name": "code-audit-hardening", "status": "completed", "archive_dir": "_archive/R017_code-audit-hardening"},
+    {"id": "R018", "name": "defect-fix-quality", "status": "completed", "archive_dir": "_archive/R018_defect-fix-quality"},
+    {"id": "R019", "name": "offline-pwa", "status": "completed", "archive_dir": "_archive/R019_offline-pwa"}
   ],
   "modules": [
     {
-      "id": "sw-cache",
-      "name": "SW 缓存修复",
-      "description": "修复 Service Worker 运行时缓存 URL pattern，分层配置缓存策略"
+      "id": "e2e-infra",
+      "name": "E2E 基础设施",
+      "description": "Playwright helper 扩展、API 封装、测试 fixtures"
     },
     {
-      "id": "offline-ux",
-      "name": "离线体验",
-      "description": "在线/离线状态检测、离线指示器、离线回退页"
+      "id": "e2e-goals",
+      "name": "Goals E2E",
+      "description": "目标追踪完整链路 E2E 测试"
     },
     {
-      "id": "offline-write",
-      "name": "离线写入",
-      "description": "IndexedDB 离线队列、上线自动同步（online 事件 + app 启动触发）"
+      "id": "e2e-new-types",
+      "name": "新类型 E2E",
+      "description": "decision/reflection/question 类型 E2E 测试"
     },
     {
-      "id": "pwa-install",
-      "name": "PWA 安装",
-      "description": "PWA 安装引导、manifest 优化"
+      "id": "e2e-export",
+      "name": "导出 E2E",
+      "description": "导出功能 E2E 测试"
+    },
+    {
+      "id": "ci",
+      "name": "CI 增强",
+      "description": "GitHub Actions PR E2E + 状态同步"
     },
     {
       "id": "quality",
       "name": "质量收口",
-      "description": "全量测试 + 构建验证"
+      "description": "全量测试验证 + 构建检查"
     }
   ],
-  "tasks": [
+  "phases": [
     {
-      "id": "S03",
+      "id": "phase-1",
+      "name": "基础设施",
+      "tasks": ["S05"]
+    },
+    {
+      "id": "phase-2",
+      "name": "Goals E2E",
+      "tasks": ["B74", "F63"]
+    },
+    {
+      "id": "phase-3",
+      "name": "新类型 E2E",
+      "tasks": ["B75", "F64"]
+    },
+    {
+      "id": "phase-4",
+      "name": "导出 E2E",
+      "tasks": ["B76", "F65"]
+    },
+    {
+      "id": "phase-5",
+      "name": "CI + 收口",
+      "tasks": ["S06", "B77"]
+    }
+  ],
+  "features": [
+    {
+      "id": "S05",
       "phase": 1,
-      "module": "sw-cache",
-      "name": "修复 SW 缓存策略 + URL pattern",
-      "description": "当前 SW runtimeCaching 的 urlPattern 使用路径正则（/^\\/growth\\/api\\/.*/i），Workbox 路由匹配的是完整请求 URL，此正则无法匹配。修复为匹配完整 URL 格式（如 https://domain/growth/api/entries），并分层配置缓存策略：条目列表 NetworkFirst(5min)、条目详情 StaleWhileRevalidate、搜索/流式请求 NetworkOnly。验证离线时已缓存数据可正常读取。",
-      "verification": "npm run build 后在浏览器 DevTools Offline 模式下刷新页面，已缓存的条目列表可正常显示",
+      "module": "e2e-infra",
+      "name": "E2E Helper 扩展",
+      "description": "扩展 e2e/tests/helpers/ 新增 Goals API helper + Export API helper + 新类型创建 helper。为后续 E2E 测试任务提供基础。",
+      "verification": "npm test in e2e/ 通过（现有测试不受影响）",
       "depends_on": [],
       "status": "completed",
-      "started_at": "2026-04-19T20:05",
-      "completed_at": "2026-04-19T20:15",
-      "actual_minutes": 10,
-      "evidence_file": ".dev-flow/evidence/S03.md",
-      "execution_notes": "修复 SW runtimeCaching URL pattern，从路径正则改为动态完整 URL 正则，4 条分层缓存规则。构建通过，URL pattern 验证 17/17 通过",
-      "commit": "pending",
-      "priority": 1,
-      "acceptance_criteria": [
-        "runtimeCaching URL pattern 使用完整 URL 正则匹配 API 请求（含 query string，如 /entries?limit=100）",
-        "条目列表 GET /entries 使用 NetworkFirst（5min TTL，URL pattern 匹配含 query string 的请求）",
-        "条目详情 GET /entries/{id} 使用 StaleWhileRevalidate",
-        "搜索 POST /search 和 SSE 流式接口使用 NetworkOnly（不缓存）",
-        "构建后 Offline 模式刷新不白屏，已缓存页面可渲染"
-      ],
-      "risk_tags": ["network", "startup"],
-      "test_tasks": [
-        "npm run build 成功",
-        "Chrome DevTools → Offline → 刷新 → 已缓存条目列表显示",
-        "Chrome DevTools → Offline → 刷新 → 非缓存页面显示离线提示而非白屏",
-        "DevTools Network 面板 → 确认 /entries 请求缓存命中（from ServiceWorker）"
-      ],
-      "files": [
-        "frontend/vite.config.ts"
-      ]
-    },
-    {
-      "id": "S04",
-      "phase": 1,
-      "module": "offline-ux",
-      "name": "useOnlineStatus hook + OfflineIndicator + 离线启动恢复",
-      "description": "创建 useOnlineStatus React hook（监听 navigator.onLine + online/offline 事件）。创建 OfflineIndicator 组件（全局 Toast 或底部条，离线时显示「当前处于离线状态，部分功能不可用」，上线时显示「已恢复连接」后自动消失）。在 App.tsx 全局挂载。**离线启动恢复**：修改 userStore 的 token 验证逻辑，当 localStorage 有 token 但网络请求失败（如 /auth/me 超时或网络不可达）时，不调用 logout() 清除 token，而是保持登录状态并标记为 offline 模式。ProtectedRoute 检查 token 存在即放行，不强制要求 /auth/me 成功。这样离线重启 app 时用户不会被踢到登录页。",
-      "verification": "Chrome DevTools Offline 切换时，页面顶部或底部出现离线提示；离线状态下刷新页面，已登录用户不会被踢到登录页",
-      "depends_on": [],
-      "status": "completed",
-      "started_at": "2026-04-19T20:20",
-      "completed_at": "2026-04-19T20:40",
-      "actual_minutes": 20,
-      "evidence_file": ".dev-flow/evidence/S04.md",
-      "execution_notes": "useOnlineStatus hook + OfflineIndicator 组件 + userStore 离线启动恢复（401才logout，500/503/网络失败保留）。20个测试。",
-      "priority": 1,
-        "离线时页面出现视觉提示（非 alert）",
-        "上线时提示「已恢复连接」并在 3 秒后自动消失",
-        "离线刷新时，userStore 遇网络失败不调用 logout()，保留 token 和 user 信息",
-        "ProtectedRoute 检查 token 存在即放行（不要求 /auth/me 成功）",
-        "离线刷新后页面正常渲染，不跳转到登录页",
-        "组件有对应单元测试"
-      ],
-      "test_tasks": [
-        "渲染 OfflineIndicator → 模拟 offline 事件 → 显示离线提示",
-        "渲染 OfflineIndicator → 模拟 online 事件 → 显示恢复提示 → 3 秒后消失",
-        "mock /auth/me 网络失败（TypeError: Failed to fetch）→ userStore 不调用 logout → token 保留",
-        "mock /auth/me 返回 401 → userStore 调用 logout → token 清除",
-        "离线状态 + token 存在 → ProtectedRoute 放行不跳转登录页",
-        "离线状态 + 无 token → ProtectedRoute 跳转到登录页"
-      ],
-      "files": [
-        "frontend/src/hooks/useOnlineStatus.ts",
-        "frontend/src/components/OfflineIndicator.tsx",
-        "frontend/src/App.tsx",
-        "frontend/src/stores/userStore.ts",
-        "frontend/src/components/ProtectedRoute.tsx"
-      ]
-    },
-    {
-      "id": "F58",
-      "phase": 2,
-      "module": "offline-ux",
-      "name": "离线回退页面",
-      "description": "当用户离线时访问未缓存的页面，显示友好的离线回退页面而非浏览器默认错误。**实现路径**：在 SPA 内新增 `/offline` React 路由（OfflineFallback.tsx），不做独立 precached 文档，不修改 SW navigateFallback（保持 index.html 支持 SPA deep-link）。SW 缓存策略保持 index.html 为 navigateFallback，离线时 React 应用正常加载，App.tsx 检测到 navigator.onLine === false 时对未缓存路由显示离线提示组件（作为 fallback Route）。显示「你当前处于离线状态」+ 可跳转到已缓存的首页/任务页的链接。",
-      "verification": "离线状态访问未缓存 URL 显示离线回退页而非浏览器错误",
-      "depends_on": ["S03"],
-      "status": "completed",
-      "started_at": "2026-04-19T20:55",
-      "completed_at": "2026-04-19T21:00",
-      "actual_minutes": 5,
-      "evidence_file": ".dev-flow/evidence/F58.md",
-      "execution_notes": "SPA内离线回退页 + /offline路由 + 4个测试",
-      "priority": 2,
-        "离线页面包含返回首页/任务页的链接",
-        "离线页面样式符合 design-system.md",
-        "SPA deep-link 正常工作（navigateFallback 保持 index.html 不变）",
-        "在线时正常路由不受离线回退影响"
-      ],
-      "test_tasks": [
-        "渲染 OfflineFallback → 显示离线提示文案",
-        "渲染 OfflineFallback → 首页/任务页链接可点击",
-        "在线状态 → SPA deep-link（如 /tasks）正常导航不显示离线页",
-        "构建后 DevTools Offline → 访问未缓存路由 → 显示自定义离线页（非浏览器错误）"
-      ],
-      "files": [
-        "frontend/src/pages/OfflineFallback.tsx",
-        "frontend/src/App.tsx"
-      ]
-    },
-    {
-      "id": "F59",
-      "phase": 2,
-      "module": "offline-write",
-      "name": "IndexedDB 离线队列服务（纯数据层）",
-      "description": "创建 offlineQueue 模块（lib/offlineQueue.ts）：使用 IndexedDB（数据库名 growth-offline，store 名 mutations）存储离线 mutation。仅提供纯数据操作，不做 API 拦截。队列项 schema：{id: string, user_id: string, client_entry_id: string, method: string, url: string, body: object, timestamp: number, status: 'pending' | 'synced' | 'failed', retry_count: number}。client_entry_id 存储本地乐观条目 ID（如 'local-{ts}'），同步成功后用于映射 taskStore.removeOfflineEntry(client_entry_id)。user_id 从 userStore 获取，所有查询按 user_id 过滤实现多账号隔离。支持 add / getAll / update / remove / count / clear 操作。IndexedDB 不可用时统一 fallback：add 返回空字符串，getAll 返回空数组，count 返回 0，不返回 null 不抛错。",
-      "verification": "单元测试验证 add → getAll 返回正确数据；IndexedDB mock 不可用时操作返回默认值不抛错",
-      "depends_on": [],
-      "status": "completed",
-      "started_at": "2026-04-19T20:45",
-      "completed_at": "2026-04-19T20:50",
-      "actual_minutes": 5,
-      "evidence_file": ".dev-flow/evidence/F59.md",
-      "execution_notes": "IndexedDB 离线队列模块，6个异步方法，user_id 隔离，优雅降级，11个测试",
-      "acceptance_criteria": [
-        "offlineQueue 模块导出 add / getAll / update / remove / count / clear 六个异步方法",
-        "add(query) 写入 IndexedDB，自动注入 user_id，返回生成的 id",
-        "getAll() 返回当前用户的队列项（按 user_id 过滤），按 timestamp 排序",
-        "update(id, changes) 更新队列项字段（retry_count/status），F60 用于标记失败和重试计数",
-        "remove(id) 删除指定队列项",
-        "count() 返回当前用户 pending 状态的队列项数量",
-        "IndexedDB 不可用时：add 返回 ''，getAll 返回 []，count 返回 0，不 throw",
-        "clear() 清空当前用户的队列项（登出时调用）",
-        "有对应单元测试（mock IndexedDB）"
-      ],
-      "risk_tags": ["first_use"],
-      "test_tasks": [
-        "add(query) → getAll() 返回包含该条目的数组（含正确 user_id 和 client_entry_id）",
-        "多次 add → getAll 返回多条，count() 返回正确数字",
-        "update(id, {retry_count: 1}) → getAll() 返回更新后的条目",
-        "remove(id) → 再次 getAll 不包含该条目",
-        "mock IndexedDB.open 抛错 → add 返回 ''，getAll 返回 []，count 返回 0",
-        "不同 user_id 的 add → getAll 只返回当前用户的条目",
-        "clear() → getAll 返回空数组"
-      ],
-      "files": [
-        "frontend/src/lib/offlineQueue.ts"
-      ]
-    },
-    {
-      "id": "F60",
-      "phase": 3,
-      "module": "offline-write",
-      "name": "离线同步：上线后自动回放队列",
-      "description": "创建 offlineSync 模块（lib/offlineSync.ts）：监听 useOnlineStatus 的 online 回调，自动重放 offlineQueue 中的 pending mutation。逐条调用 createEntry（api.ts 封装的 openapi-fetch，已处理 category 映射和 auth headers），成功则从队列移除并通知 taskStore 清除对应 _offlinePending 条目（通过 client_entry_id 映射），失败则按类型处理：5xx 重试（retry_count + 1，超过 3 次标记 failed），401 立即标记 failed（认证错误不可重试）并触发 UI 提示「请重新登录」。防重入：同步进行中的布尔锁阻止重复触发。同步完成后通过回调通知 taskStore 调用 fetchEntries() 刷新服务端数据，同时清除已同步的离线条目。OfflineIndicator 组件显示同步进度（如「正在同步 2/3...」）。**初始化同步**：除 online 事件外，模块导出 initSync() 方法，在 app 启动时（App.tsx useEffect）检查 navigator.onLine === true 且队列有 pending 项时立即触发同步，覆盖「app 重启时已在线但有 pending 队列」场景。",
-      "verification": "离线创建 3 条 inbox → 上线 → 自动同步 → 条目出现在列表中",
-      "depends_on": ["F59", "F61", "S04"],
-      "status": "completed",
-      "started_at": "2026-04-19T22:05",
-      "completed_at": "2026-04-19T22:20",
+      "started_at": "2026-04-20",
+      "completed_at": "2026-04-20",
       "actual_minutes": 15,
-      "evidence_file": ".dev-flow/evidence/F60.md",
-      "execution_notes": "offlineSync 模块 + OfflineIndicator 同步进度 + initSync 启动触发。9 个单元测试 + 7 个集成测试，318 tests total",
+      "execution_notes": "新增 goals.ts (10 helpers) + export.ts (1 helper) + api.ts (searchEntriesFTS5)。40 E2E tests passed。Code review 1 round fix (type tightening + encodeURIComponent)。",
+      "priority": 1,
+      "acceptance_criteria": [
+        "新增 e2e/tests/helpers/goals.ts — 封装 createGoal, listGoals, getGoal, updateGoal, deleteGoal, linkEntry, unlinkEntry, listGoalEntries, toggleChecklist, getProgressSummary",
+        "新增 e2e/tests/helpers/export.ts — 封装 exportEntries (markdown/json)",
+        "扩展 e2e/tests/helpers/api.ts — createEntry 支持 decision/reflection/question 类型 + 新增 searchEntries（GET /entries/search/query，SQLite FTS5 全文搜索，不依赖 Qdrant）",
+        "现有 E2E 测试全部通过（npm test）"
+      ],
+      "test_tasks": ["npm test in e2e/ 全通过（回归）"],
+      "risk_tags": [],
+      "files": ["e2e/tests/helpers/goals.ts", "e2e/tests/helpers/export.ts", "e2e/tests/helpers/api.ts"]
+    },
+    {
+      "id": "B74",
+      "phase": 2,
+      "module": "e2e-goals",
+      "name": "Goals API E2E",
+      "description": "Goals 完整 API E2E 测试，覆盖所有端点的正常、边界、异常场景。使用 Playwright APIRequestContext 直接测试后端 API。",
+      "verification": "npx playwright test tests/goals-api.spec.ts 通过",
+      "depends_on": ["S05"],
+      "status": "completed",
+      "started_at": "2026-04-20",
+      "completed_at": "2026-04-20",
+      "actual_minutes": 30,
+      "execution_notes": "25 个 E2E 测试覆盖 15 个 AC + 4 个额外覆盖（listGoalEntries、abandoned 删除成功、跨用户隔离、progress-summary 精确断言）。Code review 3 轮通过。",
+      "evidence_file": ".dev-flow/evidence/B74.md",
       "priority": 2,
       "acceptance_criteria": [
-        "online 事件触发后自动重放 pending 队列",
-        "同步请求使用 createEntry（api.ts）发送，复用已有的 openapi-fetch + auth headers 封装",
-        "同步成功后通过 client_entry_id 映射 taskStore.removeOfflineEntry(client_entry_id)",
-        "防重入：同步进行中不重复触发（布尔锁）",
-        "同步过程中 OfflineIndicator 显示进度提示（如「正在同步 2/3...」）",
-        "同步成功后调用回调通知 taskStore.fetchEntries() + 清除已同步离线条目",
-        "单条 5xx 失败不影响后续条目同步，retry_count + 1",
-        "单条 401 立即标记 failed（不重试），UI 显示「请重新登录」提示",
-        "retry_count 超过 3 次的条目标记 failed",
-        "导出 initSync() 方法：app 启动时检查 navigator.onLine && queue.count() > 0 立即触发同步",
-        "App.tsx useEffect 中调用 initSync() 覆盖重启时已在线场景",
-        "有对应单元测试"
+        "创建 count 类型目标 → 201 + 正确字段",
+        "创建 checklist 类型目标 → 201 + checklist_items 有 id/title/checked",
+        "创建 tag_auto 类型目标 → 201 + auto_tags 字段",
+        "tag_auto 缺少 auto_tags → 422",
+        "checklist 缺少 checklist_items → 422",
+        "列出目标 → 返回数组",
+        "按 status=active 过滤 → 只返回 active",
+        "获取目标详情 → 含 linked_entries_count",
+        "更新目标状态 active→completed → status 变为 completed",
+        "删除 active 目标 → 拒绝（仅 abandoned 可删）",
+        "关联条目到 count 目标 → current_value +1",
+        "取消关联条目 → current_value -1",
+        "切换 checklist 项 → checked 翻转",
+        "进度汇总 → 返回 active_count + completed_count",
+        "未认证请求 → 401"
+      ],
+      "test_tasks": [
+        "正常: 创建 3 种 metric_type / 列出 / 详情 / 更新 / 关联 / 取消关联 / checklist 切换 / 进度汇总",
+        "边界: 空目标列表 / target_value=1 最小值 / 已完成目标不可删 / tag_auto 必填校验",
+        "异常: 未认证 401 / 缺少必填 422 / 不存在 goal_id 404 / 重复关联 409"
       ],
       "risk_tags": ["network"],
-      "test_tasks": [
-        "队列 3 条 pending → 触发同步 → 全部成功 → 队列清空 + taskStore 无 _offlinePending",
-        "队列 3 条 → 第 2 条返回 500 → 第 1、3 条成功，第 2 条 retry_count=1",
-        "队列 1 条已 retry_count=3 → 触发同步 → 5xx → retry_count=4 → 标记 failed",
-        "空队列 → 触发同步 → 无 API 请求发出",
-        "同步进行中再次触发 → 不重入（布尔锁生效）",
-        "队列 1 条返回 401 → 立即标记 failed（retry_count 不变），UI 显示重新登录提示",
-        "initSync: navigator.onLine=true + 队列 2 条 → 自动触发同步 → 全部成功",
-        "initSync: navigator.onLine=false → 不触发同步",
-        "同步过程中 OfflineIndicator 显示「正在同步 1/3...」"
-      ],
-      "files": [
-        "frontend/src/lib/offlineSync.ts",
-        "frontend/src/components/OfflineIndicator.tsx",
-        "frontend/src/App.tsx"
-      ]
+      "contract_refs": ["CONTRACT-GOAL01", "CONTRACT-GOAL06", "CONTRACT-GOAL10"],
+      "files": ["e2e/tests/goals-api.spec.ts"]
     },
     {
-      "id": "F61",
-      "phase": 3,
-      "module": "offline-write",
-      "name": "离线创建拦截 + 待同步标识",
-      "description": "在首页 AI 对话路径（useStreamParse → POST /chat SSE）中集成离线拦截：当 navigator.onLine === false 时，跳过 SSE 请求，将用户输入构造为 POST /entries inbox mutation 写入 offlineQueue（含 user_id 和 client_entry_id），返回本地乐观响应。**关键：add() 返回值检查** — 如果 offlineQueue.add() 返回空字符串（IndexedDB 不可用），则不生成乐观条目，显示失败 toast（「保存失败，请检查浏览器存储设置」），并保留用户输入内容不清空，允许用户重试。仅当 add() 成功（返回有效 id）时，才生成乐观 Task（id 即为 client_entry_id，如 'local-{ts}'），写入队列时同步设置 client_entry_id，显示「灵感已保存，将在恢复连接后同步」。离线分支必须触发与 SSE created 事件等价的 onCreated 回调（仅在 add() 成功时：fetchEntries 更新列表、会话标题更新、lastOperation 状态、F62 usageCount 递增）。状态管理：taskStore 内部维护 _offlineEntries: Task[] 数组存储离线条目（带 _offlinePending: true），fetchEntries() 在获取服务端数据后合并离线条目（按 id 去重，离线条目保留），确保离线条目不会被 fetchEntries 覆盖丢失。同步成功后由 offlineSync 通过 client_entry_id 映射 taskStore.removeOfflineEntry + fetchEntries()。UI 展示范围（MVP）：仅 Home.tsx 的 recentInbox 区域对 _offlinePending 条目渲染「待同步」badge。Explore.tsx 使用独立 getEntries() 不消费 taskStore，离线条目在 Explore 暂不可见，上线同步后 fetchEntries() 触发 Explore 页面刷新自然可见。登出时同步清理：taskStore.clearOfflineEntries() + offlineQueue.clear()（fire-and-forget，不阻塞同步 logout 流程）。在线时行为完全不变。",
-      "verification": "离线状态在首页输入灵感 → 显示保存成功提示 → 首页 recentInbox 出现带「待同步」badge 的条目 → 上线同步 → badge 消失 → 重新进入 Explore inbox tab 可见真实条目",
-      "depends_on": ["F59", "S04"],
+      "id": "F63",
+      "phase": 2,
+      "module": "e2e-goals",
+      "name": "Goals 页面 E2E",
+      "description": "Goals 前端页面完整 E2E 测试，覆盖创建弹窗、列表展示、状态筛选、详情页、进度交互等。",
+      "verification": "npx playwright test tests/goals-ui.spec.ts 通过",
+      "depends_on": ["B74"],
       "status": "completed",
-      "started_at": "2026-04-19T21:05",
-      "completed_at": "2026-04-19T22:00",
-      "actual_minutes": 55,
-      "evidence_file": ".dev-flow/evidence/F61.md",
-      "execution_notes": "离线拦截 useStreamParse + taskStore 离线条目管理 + Home 待同步 badge + FloatingChat 错误处理 + 登出清理 + 6 个集成测试。构建通过，318 tests pass",
+      "started_at": "2026-04-20",
+      "completed_at": "2026-04-20",
+      "actual_minutes": 45,
+      "execution_notes": "10 个 E2E 测试覆盖 12 个 AC。首页目标卡片需先创建 entry 避免 isEmpty 空状态隐藏。底部导航 z-50 冲突用 evaluate(el.click()) 绕过。Qdrant 不可用时关联条目走 API 工作绕过。",
       "priority": 2,
       "acceptance_criteria": [
-        "离线时首页 AI 对话（useStreamParse）跳过 SSE 请求，将用户输入写入 offlineQueue（含 user_id + client_entry_id）",
-        "add() 成功时：UI 显示「灵感已保存，将在恢复连接后同步」+ 生成乐观条目 + 触发 onCreated 回调",
-        "add() 返回空字符串（IndexedDB 不可用）时：显示失败 toast「保存失败，请检查浏览器存储设置」+ 保留用户输入不清空 + 不生成乐观条目",
-        "离线分支触发 onCreated 回调（仅 add() 成功时），保证 fetchEntries/标题更新/lastOperation/usageCount 一致",
-        "Task 类型添加 _offlinePending?: boolean 可选字段",
-        "taskStore 内部维护 _offlineEntries 数组，新增 upsertOfflineEntry / removeOfflineEntry / clearOfflineEntries 方法",
-        "taskStore.fetchEntries() 获取服务端数据后合并 _offlineEntries（离线条目不被覆盖）",
-        "Home.tsx recentInbox 中 _offlinePending 条目显示「待同步」badge",
-        "Explore.tsx 使用独立 getEntries()，离线条目 MVP 阶段不在 Explore 显示。同步完成后 Explore 在重新进入页面时通过 getEntries() 获取真实数据",
-        "上线同步成功后通过 client_entry_id 映射 taskStore.removeOfflineEntry + fetchEntries 替换为真实数据",
-        "登出时 clearOfflineEntries + offlineQueue.clear()（fire-and-forget，不阻塞同步 logout）。登出即丢弃未同步数据",
-        "在线时 useStreamParse 走正常 SSE 路径，不经过队列",
-        "有对应单元测试"
+        "空目标列表 → 显示引导文案",
+        "点击新建 → 弹窗出现 → 填写标题+metric_type → 提交 → 列表出现新目标卡片",
+        "创建 checklist 目标 → 填写检查项 → 卡片显示 checklist Badge",
+        "创建 tag_auto 目标 → 选择标签 → 卡片显示 tag Badge",
+        "状态筛选 active/completed/abandoned → 列表正确过滤",
+        "点击目标卡片 → 跳转 /goals/{id} 详情页",
+        "详情页显示环形进度图 + 进度条",
+        "详情页关联条目 → 搜索 → 关联 → 列表更新",
+        "详情页取消关联 → 条目消失",
+        "归档目标 → 状态变 abandoned → 列表更新",
+        "重新激活 completed → active → 列表更新（前端仅 completed 状态显示重新激活按钮）",
+        "首页目标进度卡片显示活跃目标（已由 F35 实现）"
       ],
-      "risk_tags": ["network", "first_use"],
       "test_tasks": [
-        "离线 → useStreamParse.parse('学一下 React') → add() 成功 → 队列有 1 条 pending + client_entry_id 正确 → UI 显示保存成功",
-        "离线 → mock add() 返回 '' → UI 显示失败 toast → 用户输入保留未清空",
-        "taskStore.upsertOfflineEntry → tasks 数组包含 _offlinePending=true 的条目",
-        "taskStore.fetchEntries() 后 _offlinePending 条目仍然保留（不被覆盖）",
-        "上线同步 → removeOfflineEntry(client_entry_id) + fetchEntries → badge 消失，条目有后端真实 id",
-        "在线 → useStreamParse 正常走 SSE → 不写入队列",
-        "登出 → _offlineEntries 清空 + offlineQueue.clear() 被调用"
+        "正常: 创建→列表→筛选→详情→关联→归档→重新激活",
+        "边界: 空列表引导 / 必填校验 / 日期选择器",
+        "异常: 创建失败 toast / API 错误降级"
       ],
-      "files": [
-        "frontend/src/hooks/useStreamParse.ts",
-        "frontend/src/types/task.ts",
-        "frontend/src/stores/taskStore.ts",
-        "frontend/src/stores/userStore.ts",
-        "frontend/src/pages/Home.tsx",
-        "frontend/src/lib/offlineQueue.ts",
-        "frontend/src/components/FloatingChat.tsx"
-      ]
+      "risk_tags": ["network"],
+      "files": ["e2e/tests/goals-ui.spec.ts"]
     },
     {
-      "id": "F62",
-      "phase": 4,
-      "module": "pwa-install",
-      "name": "PWA 安装引导（增强已有 usePWAInstall + Header）",
-      "description": "增强已有的 usePWAInstall hook 和 Header.tsx 安装按钮，不创建新组件。具体：1) usePWAInstall 新增 usageCount 追踪（localStorage pwa-usage-count），暴露 incrementUsageCount() 方法供外部调用，写入后触发 window 自定义事件 `pwa-usage-updated`；2) usePWAInstall 监听 `pwa-usage-updated` 事件和 `storage` 事件（跨 tab），收到后重读 localStorage 更新 usageCount 状态，解决同 tab 多 hook 实例状态同步问题；3) useChatActions.ts 的 onCreated 回调中调用 incrementUsageCount()（条目创建成功时 +1，这是唯一可靠的创建事件源）；4) 当 canInstall && usageCount >= 3 时，Header 安装按钮升级为醒目的引导横条（带关闭按钮和「安装到桌面」文案）；5) 用户关闭横条后 7 天内不再显示（localStorage pwa-banner-dismissed）；6) vite.config.ts manifest 添加 lang: 'zh-CN'。",
-      "verification": "Chrome 中 canInstall=true 且 usageCount>=3 时显示安装引导横条，点击触发系统安装对话框",
-      "depends_on": ["S03"],
+      "id": "B75",
+      "phase": 3,
+      "module": "e2e-new-types",
+      "name": "新类型条目 API E2E",
+      "description": "decision/reflection/question 三种新类型条目的 API E2E 测试。覆盖创建、列表过滤、搜索、更新、删除。",
+      "verification": "npx playwright test tests/new-types-api.spec.ts 通过",
+      "depends_on": ["S05"],
       "status": "completed",
-      "started_at": "2026-04-19T22:20",
-      "completed_at": "2026-04-19T22:30",
-      "actual_minutes": 10,
-      "evidence_file": ".dev-flow/evidence/F62.md",
-      "execution_notes": "usePWAInstall 增强 usageCount + showBanner + dismissBanner + Header 横条 + onCreated 计数 + manifest lang。8 个测试",
+      "started_at": "2026-04-20",
+      "completed_at": "2026-04-20",
+      "actual_minutes": 20,
+      "execution_notes": "14 个 E2E 测试覆盖 12 个 AC。修复后端 read_entry 不搜索 decisions/reflections/questions 目录的缺陷。Code review 1 轮 conditional_pass 后修复断言对齐。",
+      "evidence_file": ".dev-flow/evidence/B75.md",
+      "priority": 2,
+      "acceptance_criteria": [
+        "创建 reflection → 201 + category=reflection",
+        "创建 question → 201 + category=question",
+        "列表 type=decision 过滤 → 只含 decision",
+        "列表 type=reflection 过滤 → 只含 reflection",
+        "列表 type=question 过滤 → 只含 question",
+        "全文搜索 decision 标题（GET /entries/search/query） → 结果命中",
+        "搜索不匹配关键词 → 空结果",
+        "更新 decision 标题 → 标题变更",
+        "删除 reflection → 列表不再包含",
+        "混合创建 3 种类型 → 各自独立存在",
+        "未认证 → 401"
+      ],
+      "test_tasks": [
+        "正常: 创建 3 种类型 / 列表过滤 / 全文搜索（GET /entries/search/query）/ 更新 / 删除",
+        "边界: 空内容创建 / 特殊字符标题 / 混合类型列表",
+        "异常: 未认证 401 / 不存在条目 404"
+      ],
+      "risk_tags": ["network"],
+      "files": ["e2e/tests/new-types-api.spec.ts"]
+    },
+    {
+      "id": "F64",
+      "phase": 3,
+      "module": "e2e-new-types",
+      "name": "探索页新类型 E2E",
+      "description": "探索页新类型 Tab 切换、筛选、搜索命中的前端 E2E 测试。",
+      "verification": "npx playwright test tests/new-types-ui.spec.ts 通过",
+      "depends_on": ["B75"],
+      "status": "completed",
+      "started_at": "2026-04-20",
+      "completed_at": "2026-04-20",
+      "actual_minutes": 30,
+      "execution_notes": "8 个 E2E 测试覆盖 8 个 AC。修复 Explore.tsx getEntries limit 200→100 的 bug。Code review 通过。",
+      "evidence_file": ".dev-flow/evidence/F64.md",
+      "commit": "b94ee06",
+      "priority": 2,
+      "acceptance_criteria": [
+        "探索页显示 7 个 Tab（全部/灵感/笔记/项目/决策/复盘/疑问）",
+        "点击「决策」Tab → 只显示 decision 类型条目",
+        "点击「复盘」Tab → 只显示 reflection 类型条目",
+        "点击「疑问」Tab → 只显示 question 类型条目",
+        "搜索关键词 + Tab 过滤 → 结果为交集",
+        "URL ?type=decision → 自动切换到决策 Tab",
+        "空数据 Tab → 显示空状态引导",
+        "点击「全部」Tab → 显示所有非 task 类型"
+      ],
+      "test_tasks": [
+        "正常: Tab 切换 / 搜索 + 筛选 / URL 参数同步",
+        "边界: 空数据 Tab / 快速切换 Tab / 搜索清空",
+        "异常: 搜索超时 / API 错误"
+      ],
+      "risk_tags": ["network"],
+      "files": ["e2e/tests/new-types-ui.spec.ts"]
+    },
+    {
+      "id": "B76",
+      "phase": 4,
+      "module": "e2e-export",
+      "name": "导出 API E2E",
+      "description": "导出功能的 API 级 E2E 测试。覆盖 markdown/JSON 格式、类型过滤、日期范围。",
+      "verification": "npx playwright test tests/export-api.spec.ts 通过",
+      "depends_on": ["S05"],
+      "status": "completed",
+      "started_at": "2026-04-20",
+      "completed_at": "2026-04-20",
+      "actual_minutes": 15,
+      "execution_notes": "11 个 E2E 测试覆盖 11 个 AC，含跨模块闭环（decision/reflection/question 导出）。所有测试通过。",
+      "evidence_file": ".dev-flow/evidence/B76.md",
+      "priority": 2,
+      "acceptance_criteria": [
+        "json 导出 → 200 + JSON 数组 + 包含已创建条目",
+        "按 type=task 过滤 → 只含 task 类型",
+        "按 type=decision 过滤 → 只含 decision 类型（跨模块闭环：新类型可导出）",
+        "按 type=reflection 过滤 → 只含 reflection 类型",
+        "按 type=question 过滤 → 只含 question 类型",
+        "按日期范围过滤 → 只含范围内条目",
+        "无效 format → 422",
+        "无效 type → 422",
+        "空数据导出 → json 返回空数组",
+        "未认证 → 401"
+      ],
+      "test_tasks": [
+        "正常: markdown 导出 / json 导出 / 类型过滤（含 decision/reflection/question 新类型）/ 日期过滤",
+        "边界: 空数据 / 无匹配类型 / 日期边界",
+        "异常: 未认证 401 / 无效格式 422 / 无效类型 422"
+      ],
+      "risk_tags": ["network"],
+      "files": ["e2e/tests/export-api.spec.ts"]
+    },
+    {
+      "id": "F65",
+      "phase": 4,
+      "module": "e2e-export",
+      "name": "导出 UI E2E",
+      "description": "导出功能的前端页面 E2E 测试。覆盖 Sidebar 入口、格式选择、下载触发。",
+      "verification": "npx playwright test tests/export-ui.spec.ts 通过",
+      "depends_on": ["B76"],
+      "status": "pending",
+      "priority": 2,
+      "acceptance_criteria": [
+        "Sidebar 导出按钮 → 点击打开导出对话框",
+        "选择 markdown → 点击导出 → 触发下载",
+        "选择 json → 点击导出 → 触发下载",
+        "选择类型过滤 + 导出 → 下载只含该类型",
+        "关闭对话框 → 不触发下载"
+      ],
+      "test_tasks": [
+        "正常: 打开对话框 / 选择格式 / 触发下载",
+        "边界: 空数据导出 / 快速连续点击",
+        "异常: API 错误 toast"
+      ],
+      "risk_tags": ["network"],
+      "files": ["e2e/tests/export-ui.spec.ts"]
+    },
+    {
+      "id": "S06",
+      "phase": 5,
+      "module": "ci",
+      "name": "CI PR E2E + 状态同步",
+      "description": "修改 GitHub Actions CI 配置：PR 中运行 E2E 关键子集（auth + entries + goals-api + new-types-api）。同步 test_coverage.md 中 B35-B40 状态。统一 Python 版本为 3.12。",
+      "verification": "CI 配置语法正确 + PR 触发 E2E",
+      "depends_on": ["B74", "B75", "B76"],
+      "status": "pending",
       "priority": 3,
       "acceptance_criteria": [
-        "manifest lang 改为 zh-CN",
-        "usePWAInstall 新增 usageCount 追踪（localStorage pwa-usage-count）+ incrementUsageCount() 方法",
-        "useChatActions.ts onCreated 回调中调用 incrementUsageCount()",
-        "usePWAInstall 新增 showBanner 状态：canInstall && usageCount >= 3 && 未被关闭",
-        "Header.tsx 在 showBanner 时渲染醒目引导横条（带关闭和安装按钮）",
-        "安装成功后（appinstalled 事件）横条不再显示",
-        "用户关闭横条后 7 天内不再显示（localStorage pwa-banner-dismissed）",
-        "已安装用户（canInstall=false）不显示横条"
+        "ci.yml 新增 e2e-test-pr job：PR 时运行 E2E 关键子集（auth + entries + goals-api + new-types-api）",
+        "E2E job Python 版本统一为 3.12（与后端测试一致）",
+        "test_coverage.md 中 B35/B36/B37/B38/B39 状态更新为 completed",
+        "test_coverage.md 中 B40 状态更新为 completed",
+        "playwright.config.ts 无需修改（已支持）"
       ],
       "test_tasks": [
-        "渲染 Header → canInstall=true, usageCount=3, 无 dismissed → 显示引导横条",
-        "渲染 Header → canInstall=true, usageCount=1 → 不显示横条",
-        "点击安装按钮 → promptInstall 被调用",
-        "点击关闭 → 写入 localStorage pwa-banner-dismissed → 横条消失",
-        "canInstall=false（已安装/Safari）→ 不显示横条",
-        "onCreated 调用 → localStorage pwa-usage-count + 1",
-        "appinstalled 事件触发 → canInstall 变 false → 横条消失",
-        "关闭横条 7 天后 → pwa-banner-dismissed 过期 → 横条恢复显示"
+        "验证 ci.yml YAML 语法正确（python -c yaml.safe_load）",
+        "验证 e2e-test-pr job 的触发条件为 pull_request",
+        "验证 test_coverage.md 6 项状态从 pending → completed"
       ],
-      "files": [
-        "frontend/src/lib/usePWAInstall.ts",
-        "frontend/src/components/layout/Header.tsx",
-        "frontend/src/hooks/useChatActions.ts",
-        "frontend/vite.config.ts"
-      ]
+      "risk_tags": ["config"],
+      "files": [".github/workflows/ci.yml", ".dev-flow/test_coverage.md"]
     },
     {
-      "id": "B73",
-      "phase": 4,
+      "id": "B77",
+      "phase": 5,
       "module": "quality",
-      "name": "质量收口：全量测试 + 构建验证",
-      "description": "最终收口任务。确保后端测试通过、前端构建通过、前端测试通过。新增 hook/service 有单元测试覆盖。",
-      "verification": "全量测试通过 + 前端构建通过",
-      "depends_on": ["S03", "S04", "F58", "F59", "F60", "F61", "F62"],
-      "status": "completed",
-      "started_at": "2026-04-19T22:30",
-      "completed_at": "2026-04-19T22:35",
-      "actual_minutes": 5,
-      "evidence_file": ".dev-flow/evidence/B73.md",
-      "execution_notes": "质量收口：857 后端 + 318 前端测试全通过 + 构建通过 + 新增 72 个测试（含 12 个集成测试）",
+      "name": "质量收口 — 全量 E2E + CI 验证",
+      "description": "全量 E2E 测试运行 + 前后端单元测试 + 构建验证。确认 CI 流水线 PR 和 main 路径都正常。",
+      "verification": "全量测试通过 + CI 验证",
+      "depends_on": ["F63", "F64", "F65", "S06"],
+      "status": "pending",
       "priority": 3,
       "acceptance_criteria": [
-        "cd backend && uv run pytest tests/ — 0 errors, 0 failures",
-        "cd frontend && npm run build — 构建成功",
-        "cd frontend && npm run test:run — 全部通过",
-        "新增测试数 ≥ 5",
-        "手动 smoke：DevTools Offline → 首页输入灵感 → 显示保存成功 → 首页 recentInbox 可见待同步条目 → 恢复网络 → 自动同步 → badge 消失 → 重新进入 Explore inbox tab 可见真实条目"
+        "后端测试全通过（857+）",
+        "前端测试全通过（321+）",
+        "前端构建通过",
+        "全量 E2E 测试通过（所有 spec 文件）",
+        "E2E 新增测试 >= 50 个",
+        "CI 配置推送后 PR 流水线正常"
+      ],
+      "test_tasks": [
+        "uv run pytest backend/tests/ 全通过",
+        "npm run test:run + npm run build 全通过",
+        "cd e2e && npx playwright test 全通过",
+        "统计 E2E 新增测试数 >= 50"
       ],
       "risk_tags": ["startup"],
-      "test_tasks": [
-        "uv run pytest tests/ -v 确认全量通过",
-        "npm run build && npm run test:run 确认前端 OK",
-        "手动 smoke：离线创建首页灵感 → recentInbox 可见待同步 → 恢复网络 → 自动同步 → badge 消失 → 重新进入 Explore inbox tab 确认真实条目可见（完整用户旅程）"
-      ]
+      "files": []
     }
   ]
 }

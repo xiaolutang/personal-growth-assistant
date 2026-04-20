@@ -214,7 +214,7 @@ class MarkdownStorage:
             if file_path.exists():
                 return self._parse_file(file_path)
         else:
-            for cat in [Category.NOTE, Category.PROJECT, Category.TASK, Category.INBOX]:
+            for cat in [Category.NOTE, Category.PROJECT, Category.TASK, Category.INBOX, Category.DECISION, Category.REFLECTION, Category.QUESTION]:
                 file_path = self._get_file_path(entry_id, cat)
                 if file_path.exists():
                     return self._parse_file(file_path)

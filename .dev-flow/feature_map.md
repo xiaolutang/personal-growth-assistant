@@ -1,25 +1,26 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：R019 离线增强 + PWA
-> 最后更新：2026-04-19
+> 活跃需求包：R020 E2E 测试补齐 + CI PR 增强
+> 最后更新：2026-04-20
 
 ## 活跃需求包
 
-### R019 离线增强 + PWA
-- 分支：feat/R019-offline-pwa
-- 状态：审计中
+### R020 E2E 测试补齐 + CI PR 增强
+- 分支：feat/R020-e2e-ci-pipeline
+- 状态：completed
 
-| 任务 | 模块 | 状态 | 审查 |
-|------|------|------|------|
-| S03 | PWA 基础设施 | completed | PASS |
-| S04 | 在线状态检测 | completed | PASS |
-| F58 | 离线降级页面 | completed | PASS |
-| F59 | IndexedDB 离线队列 | completed | PASS |
-| F60 | 离线同步回放 | completed | Codex PASS |
-| F61 | 离线创建拦截 | completed | Codex PASS |
-| F62 | PWA 安装引导 | completed | Codex PASS |
-| B73 | 质量收口 | completed | PASS |
+| 任务 | 模块 | 状态 | ~Tests |
+|------|------|------|--------|
+| S05 | E2E 基础设施 | completed | 0（helper） |
+| B74 | Goals API E2E | completed | 25 |
+| F63 | Goals 页面 E2E | completed | 10 |
+| B75 | 新类型 API E2E | completed | 14 |
+| F64 | 探索页新类型 E2E | completed | 8 |
+| B76 | 导出 API E2E | completed | 11 |
+| F65 | 导出 UI E2E | completed | 5 |
+| S06 | CI PR 增强 | completed | 0（配置） |
+| B77 | 质量收口 | completed | 0（验证） |
 
 ## 归档需求包
 
@@ -41,11 +42,12 @@
 | R013 Decision Reflection Entries | _archive/R013_decision-reflection-entries | completed |
 | R014 Page Context AI | _archive/R014_page-context-ai | completed |
 | R015 Review Enhancement | _archive/R015_review-enhancement | completed |
+| R019 离线增强 + PWA | _archive/R019_offline-pwa | completed |
 
 ## 测试汇总
 
 | 项目 | 测试数 | 状态 |
 |------|--------|------|
-| 后端测试 | 857 passed | 全绿 |
+| 后端测试 | 955 passed | 全绿（1 已知遗留） |
 | 前端测试 | 321 passed | 全绿 |
-| E2E 测试 | 8 passed (page-context) | 全绿 |
+| E2E 测试 | 113 passed | 全绿（R020 新增 73） |

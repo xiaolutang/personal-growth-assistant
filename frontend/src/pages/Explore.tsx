@@ -158,7 +158,7 @@ export function Explore() {
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
-    getEntries({ limit: 200 })
+    getEntries({ limit: 100 })
       .then((res) => {
         if (!cancelled) {
           setEntries(res.entries ?? []);
