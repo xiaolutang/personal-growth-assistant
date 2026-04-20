@@ -42,8 +42,6 @@ test.describe('页面上下文 AI (F39)', () => {
   /** 通过侧边栏导航（React Router 客户端导航，避免 Vite base path 问题） */
   async function navigateViaSidebar(page: any, label: string) {
     await page.getByRole('link', { name: new RegExp(label) }).first().click();
-    // 等待路由切换和页面渲染
-    await page.waitForTimeout(500);
   }
 
   test('首页显示快捷建议 chips（今日有哪些任务 / 帮我记个想法 / 整理待办）', async ({ page, request }) => {
@@ -76,9 +74,13 @@ test.describe('页面上下文 AI (F39)', () => {
 
     // 第一次发送：创建会话（首次 currentSessionId 闭包为 null，消息不会被添加，但会话已创建）
     await input.fill('第一条消息');
+    const chatResponsePromise = page.waitForResponse(
+      resp => resp.url().includes('/api/chat') && resp.request().method() === 'POST',
+      { timeout: 10000 }
+    );
     await input.press('Enter');
     // 等待 SSE 错误（fake LLM 会快速失败：connection refused）
-    await page.waitForTimeout(3000);
+    await chatResponsePromise;
 
     // 第二次发送：React 已重渲染，currentSessionId 已设置，消息会被添加到 store
     await input.fill('第二条消息');
@@ -169,22 +171,29 @@ test.describe('页面上下文 AI (F39)', () => {
     // 点击笔记 Tab（exact 避免"搜索相关笔记" chip 干扰）
     const noteTab = page.getByRole('button', { name: '笔记', exact: true });
     await noteTab.click();
-    await page.waitForTimeout(500); // 等待 pageExtra 同步
 
     // 输入搜索查询（精确匹配探索页搜索框，排除 chat 输入框）
     const searchInput = page.getByPlaceholder(/试试搜索/);
     if (await searchInput.isVisible()) {
       await searchInput.fill('测试关键词');
-      await page.waitForTimeout(400); // 等待 debounce + pageExtra 同步
+      // 等待 debounce (300ms) + pageExtra 同步，用 waitForFunction 检查内部 store
+      await page.waitForFunction(() => {
+        // 等搜索输入值被处理后 pageExtra 更新
+        return document.querySelector('[placeholder*="试试搜索"]')?.value === '测试关键词';
+      }, { timeout: 3000 }).catch(() => {});
     }
 
     // 在 chat 输入框输入并发送
     const chatInput = page.getByPlaceholder(/输入内容|帮我搜索|改为/);
     await chatInput.fill('搜索测试');
+    const chatRespPromise = page.waitForResponse(
+      resp => resp.url().includes('/api/chat') && resp.request().method() === 'POST',
+      { timeout: 10000 }
+    );
     await chatInput.press('Enter');
 
-    // 等待请求发出
-    await page.waitForTimeout(3000);
+    // 等待 chat API 请求发出并捕获
+    await chatRespPromise;
 
     // 验证 page_context 包含 explore 类型和 extra 信息
     expect(capturedContext).toBeTruthy();
@@ -239,15 +248,19 @@ test.describe('页面上下文 AI (F39)', () => {
 
     // Step 1: 导航到探索页，触发 pageExtra 设置
     await navigateViaSidebar(page, '探索');
+    await expect(page.getByRole('heading', { name: '探索' })).toBeVisible({ timeout: 10000 });
     const noteTab = page.getByRole('button', { name: '笔记', exact: true });
     await noteTab.click();
-    await page.waitForTimeout(500);
 
     // 在 Explore 页发送消息，捕获带 extra 的请求
     const chatInput = page.getByPlaceholder(/输入内容|帮我搜索|改为/);
     await chatInput.fill('探索页消息');
+    const exploreChatRespPromise = page.waitForResponse(
+      resp => resp.url().includes('/api/chat') && resp.request().method() === 'POST',
+      { timeout: 10000 }
+    );
     await chatInput.press('Enter');
-    await page.waitForTimeout(3000);
+    await exploreChatRespPromise;
 
     // 验证 Explore 页请求包含 extra
     const exploreRequest = capturedContexts.find(ctx => ctx?.page_type === 'explore');
@@ -256,12 +269,17 @@ test.describe('页面上下文 AI (F39)', () => {
 
     // Step 2: 离开探索页，导航到首页
     await navigateViaSidebar(page, '今天');
-    await page.waitForTimeout(500);
+    // 等待首页 chips 加载确认路由已切换
+    await expect(page.getByText('今日有哪些任务?')).toBeVisible({ timeout: 10000 });
 
     // 在首页发送消息，捕获请求
     await chatInput.fill('首页消息');
+    const homeChatRespPromise = page.waitForResponse(
+      resp => resp.url().includes('/api/chat') && resp.request().method() === 'POST',
+      { timeout: 10000 }
+    );
     await chatInput.press('Enter');
-    await page.waitForTimeout(3000);
+    await homeChatRespPromise;
 
     // 验证首页请求的 pageExtra 已被清空（不包含旧的 current_tab/search_query）
     const homeRequest = capturedContexts.find(ctx => ctx?.page_type === 'home');

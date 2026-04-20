@@ -76,7 +76,7 @@ test.describe('条目 CRUD', () => {
       await expect(page.locator('p', { hasText: 'E2E测试-状态切换' })).toBeVisible({ timeout: 10000 });
       const toggleBtn = page.getByRole('button', { name: '切换状态' }).first();
       await toggleBtn.click();
-      await page.waitForTimeout(2000);
+      // 等待状态更新 API 响应并验证条目仍然可见
       await expect(page.locator('p', { hasText: 'E2E测试-状态切换' })).toBeVisible({ timeout: 10000 });
     } finally {
       await deleteEntry(request, entry.id, token);

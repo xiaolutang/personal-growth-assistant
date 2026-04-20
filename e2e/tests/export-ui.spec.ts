@@ -179,10 +179,11 @@ test.describe('导出 UI E2E', () => {
     await page.getByRole('button', { name: '取消' }).click();
     await expect(page.getByRole('heading', { name: '导出数据' })).not.toBeVisible({ timeout: 5000 });
 
-    // 确认没有下载
+    // 确认没有下载：等待对话框完全消失（DOM 稳定），然后检查
     let downloadTriggered = false;
     page.on('download', () => { downloadTriggered = true; });
-    await page.waitForTimeout(2000);
+    // 等待页面稳定 — 用 expect 断言确认 Sidebar 导出按钮仍可用（无对话框残留）
+    await expect(page.getByRole('button', { name: '导出数据', exact: true })).toBeVisible({ timeout: 3000 });
     expect(downloadTriggered).toBeFalsy();
   });
 });
