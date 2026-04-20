@@ -12,7 +12,7 @@
 | 导出 API E2E | B76 | e2e-api | markdown 导出 200 / json 导出 200 / task 过滤 / decision 过滤（跨模块）/ reflection 过滤 / question 过滤 / 日期范围 / 无效 format 422 / 无效 type 422 / 空数据 / 401 | completed | 11 tests passed, risk: network |
 | 导出 UI E2E | F65 | e2e-ui | Sidebar 打开对话框 / markdown 下载 / json 下载 / 类型过滤+下载 / 关闭不下载 | completed | 5 tests passed, risk: network |
 | CI PR 增强 | S06 | config | e2e-test-pr job 触发 / Python 3.12 统一 / test_coverage 状态更新 / YAML 语法正确 | completed | risk: config |
-| 质量收口 | B77 | integration+smoke | 后端 857+ / 前端 321+ / 前端构建 / 全量 E2E / 新增 E2E >= 50 / CI PR 流水线 | pending | risk: startup |
+| 质量收口 | B77 | integration+smoke | 后端 857+ / 前端 321+ / 前端构建 / 全量 E2E / 新增 E2E >= 50 / CI PR 流水线 | completed | 955 backend + 321 frontend + build pass + 113 E2E (73 new in R020) |
 
 ---
 
