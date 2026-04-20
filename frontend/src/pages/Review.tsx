@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Header } from "@/components/layout/Header";
+import { useMorningDigest } from "@/hooks/useMorningDigest";
 import {
   Calendar,
   CheckCircle,
@@ -33,7 +34,6 @@ import {
   getKnowledgeHeatmap,
   getGrowthCurve,
   getProgressSummary,
-  getMorningDigest,
   getDailyReport,
   getWeeklyReport,
   getMonthlyReport,
@@ -41,7 +41,6 @@ import {
   type HeatmapItem,
   type GrowthCurvePoint,
   type ProgressSummaryResponse,
-  type MorningDigestResponse,
   type DailyReport,
   type WeeklyReport,
   type MonthlyReport,
@@ -78,8 +77,8 @@ export function Review() {
   // AI 总结展开状态
   const [aiSummaryExpanded, setAiSummaryExpanded] = useState(false);
 
-  // 晨报状态
-  const [morningDigest, setMorningDigest] = useState<MorningDigestResponse | null>(null);
+  // 晨报状态（共享 Hook）
+  const { data: morningDigest } = useMorningDigest();
   const [morningDigestExpanded, setMorningDigestExpanded] = useState(false);
 
   // 知识热力图状态
@@ -199,17 +198,6 @@ export function Review() {
     };
 
     fetchGrowthCurve();
-
-    return () => { cancelled = true; };
-  }, []);
-
-  // 晨报数据获取
-  useEffect(() => {
-    let cancelled = false;
-
-    getMorningDigest()
-      .then((data) => { if (!cancelled) setMorningDigest(data); })
-      .catch(() => { if (!cancelled) setMorningDigest(null); });
 
     return () => { cancelled = true; };
   }, []);
