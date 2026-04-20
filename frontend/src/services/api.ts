@@ -530,6 +530,88 @@ export interface ReviewTrendResponse {
   periods: TrendPeriod[];
 }
 
+// === 回顾报告 API ===
+
+export interface TaskStats {
+  total: number;
+  completed: number;
+  doing: number;
+  wait_start: number;
+  completion_rate: number;
+}
+
+export interface NoteStats {
+  total: number;
+  recent_titles: string[];
+}
+
+export interface VsLastPeriod {
+  delta_completion_rate: number | null;
+  delta_total: number | null;
+}
+
+export interface DailyReport {
+  date: string;
+  task_stats: TaskStats;
+  note_stats: NoteStats;
+  completed_tasks: Array<{ id: string; title: string; status: string }>;
+  ai_summary?: string | null;
+}
+
+export interface DailyBreakdown {
+  date: string;
+  total: number;
+  completed: number;
+}
+
+export interface WeeklyReport {
+  start_date: string;
+  end_date: string;
+  task_stats: TaskStats;
+  note_stats: NoteStats;
+  daily_breakdown: DailyBreakdown[];
+  ai_summary?: string | null;
+  vs_last_week?: VsLastPeriod | null;
+}
+
+export interface WeeklyBreakdown {
+  week: string;
+  start_date: string;
+  end_date: string;
+  total: number;
+  completed: number;
+}
+
+export interface MonthlyReport {
+  month: string;
+  task_stats: TaskStats;
+  note_stats: NoteStats;
+  weekly_breakdown: WeeklyBreakdown[];
+  ai_summary?: string;
+  vs_last_month?: VsLastPeriod | null;
+}
+
+export async function getDailyReport(): Promise<DailyReport> {
+  const response = await fetch(`${API_BASE}/review/daily`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<DailyReport>(response);
+}
+
+export async function getWeeklyReport(): Promise<WeeklyReport> {
+  const response = await fetch(`${API_BASE}/review/weekly`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<WeeklyReport>(response);
+}
+
+export async function getMonthlyReport(): Promise<MonthlyReport> {
+  const response = await fetch(`${API_BASE}/review/monthly`, {
+    headers: buildAuthHeaders(),
+  });
+  return handleApiResponse<MonthlyReport>(response);
+}
+
 /**
  * 获取回顾趋势数据
  * @param period - "daily" | "weekly"

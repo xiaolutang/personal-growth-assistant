@@ -27,8 +27,6 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import { API_BASE } from "@/config/api";
-import { authFetch } from "@/lib/authFetch";
 import { ActivityHeatmap } from "@/components/ActivityHeatmap";
 import {
   getReviewTrend,
@@ -36,73 +34,23 @@ import {
   getGrowthCurve,
   getProgressSummary,
   getMorningDigest,
+  getDailyReport,
+  getWeeklyReport,
+  getMonthlyReport,
   type TrendPeriod,
   type HeatmapItem,
   type GrowthCurvePoint,
   type ProgressSummaryResponse,
   type MorningDigestResponse,
+  type DailyReport,
+  type WeeklyReport,
+  type MonthlyReport,
+  type TaskStats,
+  type NoteStats,
+  type VsLastPeriod,
 } from "@/services/api";
 
-// 响应类型
-interface TaskStats {
-  total: number;
-  completed: number;
-  doing: number;
-  wait_start: number;
-  completion_rate: number;
-}
-
-interface NoteStats {
-  total: number;
-  recent_titles: string[];
-}
-
-interface DailyReport {
-  date: string;
-  task_stats: TaskStats;
-  note_stats: NoteStats;
-  completed_tasks: Array<{ id: string; title: string; status: string }>;
-  ai_summary?: string | null;
-}
-
-interface DailyBreakdown {
-  date: string;
-  total: number;
-  completed: number;
-}
-
-interface VsLastPeriod {
-  delta_completion_rate: number | null;
-  delta_total: number | null;
-}
-
-interface WeeklyReport {
-  start_date: string;
-  end_date: string;
-  task_stats: TaskStats;
-  note_stats: NoteStats;
-  daily_breakdown: DailyBreakdown[];
-  ai_summary?: string | null;
-  vs_last_week?: VsLastPeriod | null;
-}
-
-interface WeeklyBreakdown {
-  week: string;
-  start_date: string;
-  end_date: string;
-  total: number;
-  completed: number;
-}
-
-interface MonthlyReport {
-  month: string;
-  task_stats: TaskStats;
-  note_stats: NoteStats;
-  weekly_breakdown: WeeklyBreakdown[];
-  ai_summary?: string;
-  vs_last_month?: VsLastPeriod | null;
-}
-
+// 报告类型
 type ReportType = "daily" | "weekly" | "monthly" | "trend";
 type TrendPeriodType = "daily" | "weekly";
 
@@ -152,16 +100,13 @@ export function Review() {
       setIsLoading(true);
       try {
         if (reportType === "daily") {
-          const res = await authFetch(`${API_BASE}/review/daily`);
-          const data = await res.json();
+          const data = await getDailyReport();
           if (!cancelled) setDailyReport(data);
         } else if (reportType === "weekly") {
-          const res = await authFetch(`${API_BASE}/review/weekly`);
-          const data = await res.json();
+          const data = await getWeeklyReport();
           if (!cancelled) setWeeklyReport(data);
         } else if (reportType === "monthly") {
-          const res = await authFetch(`${API_BASE}/review/monthly`);
-          const data = await res.json();
+          const data = await getMonthlyReport();
           if (!cancelled) setMonthlyReport(data);
         }
       } catch (err) {
