@@ -17,6 +17,20 @@ const typeIcons: Record<string, typeof AlertTriangle> = {
   review_prompt: BookOpen,
 };
 
+function formatRelativeTime(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diff = Math.max(0, now - then);
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 1) return "刚刚";
+  if (minutes < 60) return `${minutes} 分钟前`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} 小时前`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} 天前`;
+  return new Date(dateStr).toLocaleDateString("zh-CN", { month: "short", day: "numeric" });
+}
+
 export function NotificationCenter() {
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -32,6 +46,9 @@ export function NotificationCenter() {
 
   useEffect(() => {
     loadNotifications();
+    // 每 60 秒轮询刷新通知
+    const interval = setInterval(loadNotifications, 60_000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -199,6 +216,9 @@ export function NotificationCenter() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium leading-tight">{n.title}</p>
                           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
+                          {n.created_at && (
+                            <p className="text-[10px] text-muted-foreground/60 mt-0.5">{formatRelativeTime(n.created_at)}</p>
+                          )}
                         </div>
                         {!n.dismissed && (
                           <Button

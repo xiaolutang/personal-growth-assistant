@@ -1,13 +1,13 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.17.0
+> 版本：v0.18.0
 
 ## 目标
 
-- R021 技术债清理 — 代码质量 + 性能优化 + 架构整理 + 测试质量，11 项技术债整改
+- R022 体验打磨 + 遗留项 — 移动端响应式、错误状态、搜索统一、离线同步扩展、批量操作，共 15 项任务
 
-## 前置依赖（R001-R020 已完成）
+## 前置依赖（R001-R021 已完成）
 
 - 条目 CRUD + 7 种类型（R001-R004, R013）
 - 知识图谱 + 向量搜索（R005-R008）
@@ -16,55 +16,61 @@
 - 页面级上下文 AI + Cmd+K 搜索（R014, R016）
 - 离线 PWA（R019）
 - E2E 测试补齐 + CI PR 增强（R020，113 个 E2E 用例）
+- 技术债清理（R021，api.ts 统一、路由懒加载、索引补齐等 11 项）
+- 混合搜索服务已有（R008 hybrid_search.py，向量 0.7 + 全文 0.3 融合）
 
-## 基线分析
+## 基线分析（Codex plan review 修正后）
 
-当前技术债分布（代码扫描 2026-04-20）：
+**搜索现状**：
+- `HybridSearchService`（hybrid_search.py）已实现向量+全文混合搜索，被 `GET /entries/search/query` 使用
+- `POST /search`（search.py）仍为纯 Qdrant 向量搜索，不支持 filter_type，Qdrant 不可用时返回 503
+- 前端同时调用两个搜索端点（api.ts searchEntries + searchEntriesByKeyword）
+- SearchResult 仅有 id/title/score/type/tags/file_path，无内容摘要
 
-**代码质量**：
-- 3 个页面死代码（Inbox/Projects/Notes.tsx，路由已重定向）231 行
-- QuickCommandHints.tsx + getRelatedConcepts() 无消费者
-- Review.tsx 1098 行需拆分，混用 authFetch/api.ts
-- Explore.tsx 搜索映射 any 类型 ×2 处重复
-- getMorningDigest Home/Review 重复调用
+**移动端响应式**：FloatingChat 无触摸事件、Home grid-cols-4 小屏挤压、Explore Tab 溢出、TaskCard 触摸目标偏小
 
-**性能**：
-- 前端未做路由级 lazy loading，recharts/@xyflow/react 打入首屏 ~350KB gz
-- KnowledgeService 5 处 list_entries(limit=10000) 全量扫描
-- SQLite 缺 parent_id/planned_date 索引
+**错误状态**：Review 加载态无 spinner、Review 无错误提示、Explore 失败静默吞错、TaskList 空状态无引导
 
-**测试质量**：
-- E2E 26 处 waitForTimeout 硬等待（分布在 5 个文件）
+**离线同步现状**：
+- OfflineIndicator.tsx 已有同步进度 UI（"正在同步 1/3..."）✅ 无需重复实现
+- useStreamParse 离线时入队 POST /entries ✅ 创建已覆盖
+- taskStore.updateEntry/deleteTask 仍直接打在线 API ❌ 更新/删除未拦截
+- offlineSync 仅回放 POST /entries ❌ PUT/DELETE 未扩展
 
-**架构**：
-- api.ts 混用 openapi-fetch 和原始 fetch（30+ 函数）
+**批量操作**：前端无多选和批量操作能力
 
 ## 范围
 
-### 包含（11 个任务）
+### 包含（15 个任务）
 
-**Phase 1 快速清理**：S07 死代码清理 + B78 SQLite 索引
-**Phase 2 性能**：F66 路由懒加载 + F67 E2E 硬等待清理
-**Phase 3 代码质量**：F68 Review API 统一 + F69 Review 拆分 + F70 晨报共享 Hook + F71 Explore 类型安全
-**Phase 4 重构**：B79 KnowledgeService 优化 + F72 api.ts 统一
-**Phase 5 收口**：S08 质量验证
+**Phase 1 快速赢**（9 项）：F73-F81 移动端响应式 + 错误状态 + 搜索摘要
+**Phase 2 搜索统一**（2 项）：B80 统一搜索入口 + F83 前端统一+过滤透传
+**Phase 3 体验增强**（3 项）：F84 离线同步扩展 + F85 多选框架 + F86 批量执行
+**Phase 4 收口**（1 项）：S09 质量验证
 
 ### 不包含
 
-- 13 个页面组件单元测试（范围过大，留后续专项）
-- 4 个 router 单测补齐（search/intent/parse/playground）
-- 跨浏览器测试（Firefox/WebKit）
-- 前端状态管理统一（useState → Zustand 迁移）
-- taskStore 乐观更新优化
-- Neo4j N+1 查询并行化
+- logout Token 黑名单（D1，需要 Redis/DB 支撑，留后续专项）
+- 移动端下拉刷新手势（需要全局手势管理，复杂度高）
+- 同步失败项重试 UI（需要独立管理页面，留后续）
+- 通知偏好改用 Switch 组件（纯 UI 细节，低优先级）
+- Flutter 移动端 MVP（独立代码库，需单独规划）
+- F82 离线同步进度展示（已由 OfflineIndicator.tsx 实现，无需重复）
 
 ## 用户路径
 
-本轮无新增用户路径。改动集中在现有路径的性能和质量提升。
+本轮改进的现有路径：
+- 移动端使用：拖拽面板、查看统计卡片、浏览 Tab、操作任务卡片
+- 搜索：关键词搜索 → POST /search（统一后）→ 结果列表 → Tab 过滤
+- 离线使用：创建/更新/删除条目 → 队列入队 → 上线后回放
+- 批量管理：进入编辑模式 → 多选条目 → 批量删除或转分类
 
 ## 技术约束
 
-- 不改变任何 API 接口契约
-- 不改变任何用户可见的功能行为
-- 不引入新依赖（除非 lazy loading 需要 @loadable/component 等，但 React.lazy 已内置）
+- B80 迁移 POST /search 到 HybridSearchService，不新建搜索服务
+- 搜索返回结构仅扩展（content_snippet、filter_type），不破坏现有契约
+- 移动端响应式使用 Tailwind 断点（sm/md/lg）
+- 触摸事件使用原生 DOM API（onTouchStart 等），不引入手势库
+- 离线拦截在 taskStore 层实现，乐观更新 + 回滚
+- 批量操作仅限 Tasks 页，操作通过逐个调用现有 API 执行
 - workflow: B/codex_plugin/skill_orchestrated

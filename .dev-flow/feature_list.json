@@ -3,13 +3,14 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-20",
+  "updated_at": "2026-04-21",
   "status": "active",
-  "scope_notes": "技术债清理：代码质量 + 性能优化 + 架构整理 + 测试质量",
+  "scope_notes": "R022 体验打磨 + 遗留项：移动端响应式、错误状态、搜索统一、离线同步扩展、批量操作（Codex plan review 后修订版）",
   "active_requirement_cycle": {
-    "id": "R021",
-    "name": "tech-debt-cleanup",
-    "branch": "chore/R021-tech-debt-cleanup"
+    "id": "R022",
+    "name": "polish-deferred",
+    "branch": "feat/R022-polish-deferred",
+    "status": "planning"
   },
   "workflow": {
     "name": "XLFoundry",
@@ -20,9 +21,9 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 11,
-    "pending": 0,
-    "completed": 11,
+    "total_tasks": 17,
+    "pending": 17,
+    "completed": 0,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -47,367 +48,367 @@
     {"id": "R017", "name": "code-audit-hardening", "status": "completed", "archive_dir": "_archive/R017_code-audit-hardening"},
     {"id": "R018", "name": "defect-fix-quality", "status": "completed", "archive_dir": "_archive/R018_defect-fix-quality"},
     {"id": "R019", "name": "offline-pwa", "status": "completed", "archive_dir": "_archive/R019_offline-pwa"},
-    {"id": "R020", "name": "e2e-ci-pipeline", "status": "completed", "archive_dir": "_archive/R020_e2e-ci-pipeline"}
+    {"id": "R020", "name": "e2e-ci-pipeline", "status": "completed", "archive_dir": "_archive/R020_e2e-ci-pipeline"},
+    {"id": "R021", "name": "tech-debt-cleanup", "status": "completed", "archive_dir": "_archive/R021_tech-debt-cleanup"}
   ],
-  "modules": [
-    {
-      "id": "cleanup",
-      "name": "死代码清理",
-      "description": "删除已废弃的页面组件和未使用的 API 函数"
-    },
-    {
-      "id": "perf-backend",
-      "name": "后端性能",
-      "description": "SQLite 索引 + KnowledgeService 查询优化"
-    },
-    {
-      "id": "perf-frontend",
-      "name": "前端性能",
-      "description": "路由懒加载 + 代码分割"
-    },
-    {
-      "id": "e2e-quality",
-      "name": "E2E 质量",
-      "description": "消除硬等待、改进测试稳定性"
-    },
-    {
-      "id": "code-quality",
-      "name": "代码质量",
-      "description": "Review.tsx 拆分、API 风格统一、类型安全"
-    },
-    {
-      "id": "quality-gate",
-      "name": "质量收口",
-      "description": "全量测试 + 构建验证"
-    }
-  ],
+  "modules": ["frontend-ui", "search", "offline", "quality"],
   "phases": [
-    {
-      "id": "phase-1",
-      "name": "快速清理",
-      "tasks": ["S07", "B78"]
-    },
-    {
-      "id": "phase-2",
-      "name": "性能优化",
-      "tasks": ["F66", "F67"]
-    },
-    {
-      "id": "phase-3",
-      "name": "代码质量",
-      "tasks": ["F68", "F69", "F70", "F71"]
-    },
-    {
-      "id": "phase-4",
-      "name": "重构",
-      "tasks": ["B79", "F72"]
-    },
-    {
-      "id": "phase-5",
-      "name": "收口",
-      "tasks": ["S08"]
-    }
+    {"id": 1, "name": "快速赢", "description": "移动端响应式 + 错误状态 + 小修补，9 项高可见度改动"},
+    {"id": 2, "name": "搜索统一", "description": "统一搜索入口 + 过滤参数 + 降级策略"},
+    {"id": 3, "name": "体验增强", "description": "离线同步扩展 + 批量操作"},
+    {"id": 4, "name": "收口", "description": "质量收口验证"}
   ],
   "features": [
     {
-      "id": "S07",
+      "id": "F73",
       "phase": 1,
-      "module": "cleanup",
-      "name": "死代码清理",
-      "description": "删除已被路由重定向替代的页面组件（Inbox.tsx、Projects.tsx、Notes.tsx）、未使用的组件（QuickCommandHints.tsx）和未调用的 API 函数（getRelatedConcepts）。同时清理对应的路由 import 和 Navigate 重定向改为直接不注册旧路由。",
-      "verification": "前端构建通过 + 现有测试通过",
+      "module": "frontend-ui",
+      "name": "FloatingChat 触摸拖拽支持",
+      "description": "FloatingChat 拖拽条仅 onMouseDown，移动端无法调整面板高度。添加 onTouchStart/onTouchMove/onTouchEnd 支持。",
+      "verification": "F1",
       "depends_on": [],
-      "status": "completed",
-      "started_at": "2026-04-20T17:10:00",
-      "completed_at": "2026-04-20T17:20:00",
-      "commit": "2aa0caf",
-      "summary": "删除 4 个死代码文件 + getRelatedConcepts 函数，保留路由重定向，372 行清理",
-      "priority": 1,
+      "status": "pending",
+      "priority": "high",
       "acceptance_criteria": [
-        "删除 Inbox.tsx、Projects.tsx、Notes.tsx（路由已重定向到 Explore）",
-        "删除 QuickCommandHints.tsx（无任何引用）",
-        "删除 api.ts 中 getRelatedConcepts() 函数（无消费者）",
-        "App.tsx 中移除对已删除组件的 import 和旧路由定义",
-        "前端构建通过（npm run build）",
-        "前端测试通过（npm run test:run）"
+        "拖拽条支持 onTouchStart/onTouchMove/onTouchEnd 事件",
+        "touch 事件中使用 e.touches[0].clientY 获取坐标",
+        "touchstart 中 e.preventDefault() 防止触摸+鼠标双触发",
+        "拖拽时 body 禁止滚动（overflow: hidden），松手后恢复",
+        "移动端可正常拖拽调整面板高度",
+        "桌面端 mouse 事件不受影响",
+        "触摸结束后面板位置保持"
       ],
-      "test_tasks": [
-        "正常: npm run build 通过 + npm run test:run 通过",
-        "边界: grep 确认无残留引用"
-      ],
-      "risk_tags": [],
-      "files": ["frontend/src/pages/Inbox.tsx", "frontend/src/pages/Projects.tsx", "frontend/src/pages/Notes.tsx", "frontend/src/components/QuickCommandHints.tsx", "frontend/src/services/api.ts", "frontend/src/App.tsx"]
+      "files": ["frontend/src/components/FloatingChat.tsx"],
+      "risk_tags": []
     },
     {
-      "id": "B78",
+      "id": "F74",
       "phase": 1,
-      "module": "perf-backend",
-      "name": "SQLite 缺失索引补齐",
-      "description": "entries 表缺少 parent_id 索引（sqlite.py:678 WHERE parent_id=? 用于项目子任务查询）和 planned_date 索引（notification_service.py:160 WHERE planned_date=? 用于待办提醒）。因架构不变量要求 user_id 隔离，优先创建复合索引 (user_id, parent_id) 和 (user_id, planned_date)。",
-      "verification": "后端测试通过 + EXPLAIN QUERY PLAN 确认索引命中",
+      "module": "frontend-ui",
+      "name": "Home 统计卡片响应式",
+      "description": "Home 晨报统计卡片 grid-cols-4 在 320px 屏宽下每列仅 ~70px，数字和标签挤压。改为 grid-cols-2 sm:grid-cols-4。",
+      "verification": "F1",
       "depends_on": [],
-      "status": "completed",
-      "started_at": "2026-04-20T17:22:00",
-      "completed_at": "2026-04-20T17:25:00",
-      "commit": "d82e5c5",
-      "summary": "新增 (user_id,parent_id) 和 (user_id,planned_date) 复合索引，EXPLAIN 确认命中",
-      "priority": 1,
+      "status": "pending",
+      "priority": "high",
       "acceptance_criteria": [
-        "entries 表新增 (user_id, parent_id) 复合索引（覆盖 sqlite.py get_project_progress 的 WHERE user_id=? AND parent_id=? 查询）",
-        "entries 表新增 (user_id, planned_date) 复合索引（覆盖 notification_service.py 的 WHERE planned_date=? 查询）",
-        "已有索引不受影响（type, status, updated_at, user_id, user_id+created_at）",
-        "SQLiteStorage._init_db() 创建索引逻辑幂等（IF NOT EXISTS）",
-        "EXPLAIN QUERY PLAN 确认项目子任务查询命中新索引",
-        "后端测试全通过（uv run pytest）"
+        "统计卡片 grid-cols-4 改为 grid-cols-2 sm:grid-cols-4（第 227 行）",
+        "骨架屏 grid-cols-4 同步改为 grid-cols-2 sm:grid-cols-4（第 197 行）",
+        "统计卡片文字不挤压、不截断",
+        "桌面端保持 4 列布局不变"
       ],
-      "test_tasks": [
-        "正常: EXPLAIN QUERY PLAN 验证索引命中 / 项目子任务查询不再全表扫描",
-        "边界: 重复运行 _init_db 不报错（幂等性）"
-      ],
-      "risk_tags": [],
-      "files": ["backend/app/infrastructure/storage/sqlite.py"]
+      "files": ["frontend/src/pages/Home.tsx"],
+      "risk_tags": []
     },
     {
-      "id": "F66",
-      "phase": 2,
-      "module": "perf-frontend",
-      "name": "路由懒加载 + Vite 代码分割",
-      "description": "将 App.tsx 中 11 个页面组件改为 React.lazy + Suspense 动态导入。配置 Vite manualChunks 将 recharts、@xyflow/react、react-markdown 等大型依赖分离为独立 chunk，减少首屏体积约 350KB gz。",
-      "verification": "前端构建通过 + bundle 分析确认代码分割生效",
+      "id": "F75",
+      "phase": 1,
+      "module": "frontend-ui",
+      "name": "Explore Tab 栏横向滚动",
+      "description": "Explore 页 7 个 Tab 按钮水平排列，小屏被挤压变形。添加 overflow-x-auto 允许横向滚动。",
+      "verification": "F1",
       "depends_on": [],
-      "status": "completed",
-      "priority": 1,
+      "status": "pending",
+      "priority": "high",
       "acceptance_criteria": [
-        "App.tsx 中 11 个页面组件改为 React.lazy() 动态导入",
-        "Suspense fallback 显示加载指示器（Spinner）",
-        "Vite manualChunks 配置将 recharts/@xyflow/react/react-markdown 分离为独立 chunk",
-        "实施前记录基线：npm run build 输出各 chunk 大小，作为对比依据",
-        "首屏 chunk（不含 recharts/@xyflow）体积相比基线减少 > 200KB gz",
-        "所有路由正常跳转、页面正常渲染",
-        "前端构建通过（npm run build）"
+        "Tab 栏添加 overflow-x-auto 允许横向滚动，不换行",
+        "隐藏横向滚动条（scrollbar-hide 或 CSS）",
+        "当前选中 Tab 切换时自动滚动到可见区域（scrollIntoView）",
+        "桌面端无多余滚动条"
       ],
-      "test_tasks": [
-        "正常: 所有路由可访问 / 页面渲染正确 / 构建成功",
-        "边界: Suspense fallback 正常显示 / 加载失败有 ErrorBoundary",
-        "性能: npm run build 输出 chunk 大小对比"
-      ],
-      "risk_tags": [],
-      "files": ["frontend/src/App.tsx", "frontend/vite.config.ts"]
+      "files": ["frontend/src/pages/Explore.tsx"],
+      "risk_tags": []
     },
     {
-      "id": "F67",
-      "phase": 2,
-      "module": "e2e-quality",
-      "name": "E2E waitForTimeout 硬等待清理",
-      "description": "将 E2E 测试中 26 处 waitForTimeout 硬等待替换为基于断言的 waitFor（waitForSelector、toBeVisible、toHaveText 等）。减少测试脆弱性，提升运行速度。",
-      "verification": "E2E 全量测试通过 + 无 waitForTimeout 残留",
+      "id": "F76",
+      "phase": 1,
+      "module": "frontend-ui",
+      "name": "TaskCard 触摸目标增大",
+      "description": "TaskCard 状态切换按钮 h-4 w-4、删除按钮 h-6 w-6，触摸设备难以精准点击。用 padding 扩大热区至 ≥ 44px。",
+      "verification": "F1",
       "depends_on": [],
-      "status": "completed",
-      "priority": 2,
+      "status": "pending",
+      "priority": "high",
       "acceptance_criteria": [
-        "goals-ui.spec.ts 中 6 处 waitForTimeout 替换为断言等待",
-        "new-types-ui.spec.ts 中 9 处 waitForTimeout 替换为断言等待",
-        "page-context.spec.ts 中 9 处 waitForTimeout 替换为断言等待",
-        "export-ui.spec.ts 中 1 处 waitForTimeout 替换为断言等待",
-        "entries.spec.ts 中 1 处 waitForTimeout 替换为断言等待",
-        "grep 确认全量 E2E 测试中无 waitForTimeout 残留",
-        "E2E 全量测试通过（npx playwright test）"
+        "状态切换按钮可点击区域 ≥ 44px（WCAG 标准）",
+        "删除按钮可点击区域 ≥ 44px",
+        "视觉大小不变，通过 padding 扩大热区",
+        "热区扩大不影响相邻元素交互"
       ],
+      "files": ["frontend/src/components/TaskCard.tsx"],
+      "risk_tags": []
+    },
+    {
+      "id": "F77",
+      "phase": 1,
+      "module": "frontend-ui",
+      "name": "Review 加载态 spinner + 错误状态",
+      "description": "Review 页加载态仅文字「加载中...」无动画，错误态只 console.error 用户无感知。添加 Loader2 spinner + 错误提示 + 重试按钮。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "import Loader2 from lucide-react",
+        "加载态显示 Loader2 旋转动画替代纯文字",
+        "请求失败显示错误提示文案（替代 console.error）",
+        "错误提示包含重试按钮",
+        "重试按钮可重新触发数据加载",
+        "getProgressSummary 的静默 catch 同步改为错误提示"
+      ],
+      "files": ["frontend/src/pages/Review.tsx"],
+      "risk_tags": [],
       "test_tasks": [
-        "正常: 所有 E2E 测试通过",
-        "边界: 网络慢场景下断言等待比硬等待更可靠"
+        "正常加载显示 spinner",
+        "请求失败显示错误提示 + 重试按钮",
+        "重试按钮可重新加载",
+        "加载完成后 spinner 消失"
+      ]
+    },
+    {
+      "id": "F78",
+      "phase": 1,
+      "module": "frontend-ui",
+      "name": "Explore 错误状态处理",
+      "description": "Explore 页 getEntries 失败时 .catch(() => {}) 静默忽略，用户看到空列表但不知原因。改为显示错误提示 + 重试。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "getEntries 失败时新增 entriesError state 并显示错误提示文案",
+        "错误提示包含重试按钮",
+        "移除 .catch(() => {}) 静默吞错",
+        "搜索错误处理已到位（searchError state），无需重复"
       ],
+      "files": ["frontend/src/pages/Explore.tsx"],
+      "risk_tags": [],
+      "test_tasks": [
+        "getEntries 失败显示错误提示",
+        "搜索失败显示错误提示",
+        "重试按钮可重新加载",
+        "正常加载无错误提示"
+      ]
+    },
+    {
+      "id": "F79",
+      "phase": 1,
+      "module": "frontend-ui",
+      "name": "TaskList 空状态增强",
+      "description": "TaskList 空状态仅文字消息，无图标无操作引导。添加图标 + 创建引导按钮。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "空状态显示图标（如 Inbox 或 CheckSquare）",
+        "提供创建引导按钮（如「创建第一个任务」）",
+        "操作按钮通过 onEmptyAction prop 传入（TaskList 是通用组件）",
+        "按钮点击触发 onEmptyAction 回调",
+        "空消息文案友好，不显示技术术语",
+        "不传 onEmptyAction 时仅显示图标和文案，向后兼容"
+      ],
+      "files": ["frontend/src/components/TaskList.tsx"],
+      "risk_tags": []
+    },
+    {
+      "id": "F80",
+      "phase": 1,
+      "module": "frontend-ui",
+      "name": "NotificationCenter 轮询 + 时间戳",
+      "description": "NotificationCenter 仅 mount 时加载一次，用户需手动刷新才能看到新通知。通知项未显示时间。添加 60s 定时轮询 + 相对时间显示。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "每 60 秒自动刷新通知列表",
+        "通知项显示相对时间（如「5 分钟前」「昨天」）",
+        "组件卸载时清理 setInterval",
+        "面板关闭状态不触发轮询"
+      ],
+      "files": ["frontend/src/components/NotificationCenter.tsx"],
+      "risk_tags": []
+    },
+    {
+      "id": "F81",
+      "phase": 1,
+      "module": "search",
+      "name": "搜索结果内容摘要",
+      "description": "POST /search 返回的 SearchResult 仅有 id/title/score/type/tags/file_path，无内容片段。需在 SearchResult 模型中添加 content_snippet 字段，后端从 Markdown 内容截断前 100 字，前端展示摘要。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "SearchResult 模型添加 content_snippet 字段（截断前 100 字）",
+        "前端搜索结果卡片展示摘要文字",
+        "无内容时 content_snippet 为空字符串",
+        "关键词在摘要中高亮显示（前端）"
+      ],
+      "files": ["backend/app/routers/search.py", "frontend/src/pages/Explore.tsx"],
+      "risk_tags": [],
+      "contract_refs": ["POST /search — SearchResult 新增 content_snippet 字段"]
+    },
+    {
+      "id": "B80",
+      "phase": 2,
+      "module": "search",
+      "name": "统一搜索入口 + 迁移到 HybridSearchService",
+      "description": "当前 POST /search 仍是纯 Qdrant 向量搜索（search.py），而 GET /entries/search/query 通过 HybridSearchService 已实现混合搜索。将 POST /search 迁移到 HybridSearchService，并添加 filter_type 参数支持。使其成为唯一权威搜索端点。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "POST /search 迁移到使用 HybridSearchService（复用已有混合搜索逻辑）",
+        "SearchRequest 新增 filter_type 可选参数",
+        "filter_type 传给 HybridSearchService 做结果过滤",
+        "Qdrant 不可用时返回 SQLite 全文搜索结果而非 503",
+        "返回结构新增 content_snippet 字段",
+        "向后兼容：现有搜索参数和返回结构不变（仅扩展）"
+      ],
+      "files": ["backend/app/routers/search.py", "backend/app/routers/deps.py"],
       "risk_tags": ["network"],
-      "files": ["e2e/tests/goals-ui.spec.ts", "e2e/tests/new-types-ui.spec.ts", "e2e/tests/page-context.spec.ts", "e2e/tests/export-ui.spec.ts", "e2e/tests/entries.spec.ts"]
-    },
-    {
-      "id": "F68",
-      "phase": 3,
-      "module": "code-quality",
-      "name": "Review.tsx API 调用风格统一",
-      "description": "将 Review.tsx 中直接使用 authFetch 的 daily/weekly/monthly 报告调用改为使用 api.ts 中封装的函数。统一 API 调用风格，减少维护负担。",
-      "verification": "Review 页面功能正常 + 前端测试通过",
-      "depends_on": ["S07"],
-      "status": "completed",
-      "priority": 2,
-      "acceptance_criteria": [
-        "Review.tsx 中 3 处 authFetch 调用替换为 api.ts 封装函数",
-        "api.ts 新增 getDailyReport/getWeeklyReport/getMonthlyReport 封装",
-        "Review.tsx 不再直接 import authFetch",
-        "Review 页面功能正常（日报/周报/月报数据展示）",
-        "前端构建通过"
-      ],
       "test_tasks": [
-        "正常: Review 页面正常加载数据",
-        "边界: API 返回空数据时无报错"
+        "正常搜索返回混合搜索结果（向量 + 全文融合）",
+        "filter_type 参数过滤结果类型",
+        "Qdrant 不可用时降级到纯 SQLite LIKE 搜索",
+        "精确关键词匹配（标签名、标题）能命中",
+        "两路结果去重正确（以 id 去重）",
+        "用户隔离：只返回当前用户的结果",
+        "空 query 返回 422",
+        "日志记录降级事件（WARNING 级别）"
       ],
-      "risk_tags": [],
-      "files": ["frontend/src/pages/Review.tsx", "frontend/src/services/api.ts"]
+      "planning_notes": "deps.py 需新增 get_hybrid_search_service() getter；HybridSearchService.search() 需扩展 filter_type 参数",
+      "contract_refs": [
+        "POST /search — SearchRequest 新增 filter_type:str|None",
+        "POST /search — SearchResult 新增 content_snippet:str",
+        "POST /search — Qdrant 不可用时返回 SQLite 结果而非 503"
+      ]
     },
     {
-      "id": "F69",
-      "phase": 3,
-      "module": "code-quality",
-      "name": "Review.tsx 组件拆分",
-      "description": "将 Review.tsx（1098 行）拆分为多个子组件：TrendChart、MorningDigestCard、AiSummaryCard、HeatmapCard、GrowthCurveCard。MorningDigestCard 复用 F70 提取的 useMorningDigest Hook，不独立持有晨报请求状态。",
-      "verification": "Review 页面功能正常 + 前端测试通过 + 组件文件 < 200 行",
-      "depends_on": ["F70"],
-      "status": "completed",
-      "priority": 2,
+      "id": "F83",
+      "phase": 2,
+      "module": "search",
+      "name": "前端搜索统一到 POST /search + Tab 过滤透传",
+      "description": "前端同时调用 POST /search 和 GET /entries/search/query，需统一到 POST /search。Explore Tab 切换时将 type 参数传给搜索 API 的 filter_type。",
+      "verification": "F2",
+      "depends_on": ["B80"],
+      "status": "pending",
+      "priority": "high",
       "acceptance_criteria": [
-        "Review.tsx 拆分后主文件 < 200 行",
-        "提取 TrendChart 组件（趋势折线图）",
-        "提取 MorningDigestCard 组件（晨报卡片）",
-        "提取 HeatmapCard 组件（知识热力图）",
-        "提取 GrowthCurveCard 组件（成长曲线）",
-        "MorningDigestCard 复用 useMorningDigest 共享 Hook（F70 产物）",
-        "其他子组件独立管理各自的 useState 和 useEffect",
-        "Review 页面功能与拆分前完全一致",
-        "前端构建通过 + 测试通过"
+        "前端搜索统一使用 POST /search 端点",
+        "移除对 GET /entries/search/query 的搜索调用",
+        "Tab 选择（全部/灵感/笔记/项目等）时 filter_type 参数传给搜索 API",
+        "搜索结果按 Tab 类型过滤",
+        "切换 Tab 后立即重新搜索",
+        "「全部」Tab 不传 filter_type"
       ],
-      "test_tasks": [
-        "正常: Review 页面所有卡片正常渲染",
-        "边界: 空数据时各卡片显示空状态"
-      ],
-      "risk_tags": [],
-      "files": ["frontend/src/pages/Review.tsx", "frontend/src/components/review/"]
+      "files": ["frontend/src/pages/Explore.tsx", "frontend/src/services/api.ts"],
+      "risk_tags": []
     },
     {
-      "id": "F70",
+      "id": "F84",
       "phase": 3,
-      "module": "code-quality",
-      "name": "getMorningDigest 共享 Hook 提取",
-      "description": "将 getMorningDigest() 从 Home.tsx 和 Review.tsx 中提取到共享自定义 Hook useMorningDigest，消除重复 API 调用和数据不一致。",
-      "verification": "Home 和 Review 页面晨报功能正常",
-      "depends_on": ["F68"],
-      "status": "completed",
-      "priority": 2,
+      "module": "offline",
+      "name": "离线更新/删除入口拦截 + 队列扩展",
+      "description": "当前只有 useStreamParse 在离线时入队 POST /entries。taskStore.updateEntry 和 deleteTask 仍直接打在线 API。需在 taskStore 中添加离线检测和队列入队逻辑，扩展 offlineQueue 支持 PUT/DELETE 操作。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "medium",
       "acceptance_criteria": [
-        "新增 useMorningDigest Hook（frontend/src/hooks/useMorningDigest.ts）",
-        "Hook 内部管理 morningDigest state + fetch 逻辑 + loading/error 状态",
-        "Home.tsx 改用 useMorningDigest 替代本地 state + getMorningDigest 调用",
-        "Review.tsx（或拆分后的 MorningDigestCard）改用 useMorningDigest",
-        "两个页面共享同一份数据，不重复请求",
-        "前端构建通过"
+        "taskStore.updateEntry 离线时拦截并写入队列（method=PUT）",
+        "taskStore.deleteTask 离线时拦截并写入队列（method=DELETE）",
+        "离线拦截后乐观更新本地状态（用户可看到变更）",
+        "offlineQueue 支持 PUT/DELETE 操作类型",
+        "offlineSync.ts sync() 扩展支持 PUT/DELETE 回放",
+        "上线后按队列顺序回放 PUT/DELETE 操作",
+        "回放失败时回滚乐观状态并提示用户",
+        "边界：离线创建→未同步→离线删除时直接从本地删除不入队（本地 ID 条目）"
       ],
-      "test_tasks": [
-        "正常: Home 和 Review 页面均显示晨报数据",
-        "边界: API 失败时 Hook 返回 error 状态"
-      ],
+      "files": ["frontend/src/stores/taskStore.ts", "frontend/src/lib/offlineQueue.ts", "frontend/src/lib/offlineSync.ts"],
       "risk_tags": [],
-      "files": ["frontend/src/hooks/useMorningDigest.ts", "frontend/src/pages/Home.tsx", "frontend/src/pages/Review.tsx"]
+      "test_tasks": [
+        "离线创建条目后上线同步成功",
+        "离线更新条目后上线同步成功",
+        "离线删除条目后上线同步成功",
+        "多条操作按顺序回放",
+        "回放失败时回滚乐观状态",
+        "离线操作后本地状态即时更新"
+      ]
     },
     {
-      "id": "F71",
+      "id": "F85",
       "phase": 3,
-      "module": "code-quality",
-      "name": "Explore.tsx 搜索类型安全 + 去重",
-      "description": "将 Explore.tsx 中 2 处重复的搜索结果映射（any 类型）提取为独立函数 normalizeSearchResult()，消除重复代码并引入正确的类型定义。",
-      "verification": "Explore 页面搜索功能正常 + 无 any 类型残留",
-      "depends_on": ["S07"],
-      "status": "completed",
-      "priority": 2,
+      "module": "frontend-ui",
+      "name": "批量操作 — 多选框架 + 选择状态",
+      "description": "为 Tasks 页添加多选模式入口和选择状态管理。进入编辑模式后 TaskCard 显示 checkbox，支持全选/取消全选，选中后底部显示操作栏。此任务仅负责多选 UI 框架，不含批量执行逻辑。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "medium",
       "acceptance_criteria": [
-        "提取 normalizeSearchResult() 函数，替换 2 处重复的 any 映射",
-        "函数入参和返回值有完整 TypeScript 类型（无 any）",
-        "防抖搜索 useEffect 和 handleSearch 共用同一函数",
-        "Explore 页面搜索功能与修改前完全一致",
-        "前端构建通过"
+        "Tasks 页顶部显示「编辑」按钮进入多选模式",
+        "多选模式下 TaskCard 左侧显示 checkbox（通过 selectable prop 控制）",
+        "点击 TaskCard 等同于勾选 checkbox（不跳详情，selectable=true 时切换 onClick 行为）",
+        "支持全选/取消全选按钮",
+        "底部显示操作栏（暂时为空占位）",
+        "点击「取消」退出多选模式",
+        "ESC 键退出多选模式",
+        "非 Tasks 页（如 Explore）TaskCard 不受影响（selectable=false）"
       ],
-      "test_tasks": [
-        "正常: 探索页搜索+Tab 筛选正常",
-        "边界: 空搜索/搜索无结果"
-      ],
-      "risk_tags": [],
-      "files": ["frontend/src/pages/Explore.tsx"]
+      "files": ["frontend/src/pages/Tasks.tsx", "frontend/src/components/TaskList.tsx", "frontend/src/components/TaskCard.tsx"],
+      "risk_tags": []
     },
     {
-      "id": "B79",
+      "id": "F86",
+      "phase": 3,
+      "module": "frontend-ui",
+      "name": "批量操作 — 批量删除/转分类执行",
+      "description": "在 F85 多选框架基础上实现批量动作：批量删除和批量转分类。包含 loading 状态、部分失败提示、操作后退出多选。",
+      "verification": "F2",
+      "depends_on": ["F85"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "底部操作栏显示「删除」和「转分类」按钮",
+        "批量删除调用 deleteEntry 逐个执行",
+        "批量转分类弹出选择器，确认后调用 updateEntry 更新 category",
+        "操作过程中显示 loading 状态并禁用操作栏",
+        "全部成功：toast 提示 + 退出多选 + 刷新列表",
+        "部分失败：toast 提示失败数量 + 保留选中状态",
+        "转分类目标：任务、笔记、灵感三种"
+      ],
+      "files": ["frontend/src/pages/Tasks.tsx", "frontend/src/components/TaskList.tsx"],
+      "risk_tags": [],
+      "test_tasks": [
+        "批量删除 3 条全部成功",
+        "批量删除中 1 条失败显示部分失败提示",
+        "批量转分类成功后列表更新",
+        "loading 状态中操作栏禁用",
+        "操作完成后自动退出多选模式"
+      ]
+    },
+    {
+      "id": "S09",
       "phase": 4,
-      "module": "perf-backend",
-      "name": "KnowledgeService 查询优化",
-      "description": "将 KnowledgeService 中 5 处 list_entries(limit=10000) 全量扫描替换为按需查询：tag 查询用 SQL GROUP BY、日期范围查询用 WHERE 过滤、掌握度分布用聚合查询。避免将大量数据加载到 Python 内存。验证方式：准备固定测试数据集（>= 100 条），对比优化前后 get_knowledge_map 响应时间。",
-      "verification": "知识图谱 API 功能正确 + 无 list_entries(limit=10000) 残留",
-      "depends_on": ["B78"],
-      "status": "completed",
-      "priority": 3,
+      "module": "quality",
+      "name": "质量收口验证",
+      "description": "全量测试 + 生产构建 + E2E 关键路径验证，确保所有改动不引入回归。",
+      "verification": "L4",
+      "depends_on": ["F73", "F74", "F75", "F76", "F77", "F78", "F79", "F80", "F81", "B80", "F83", "F84", "F85", "F86"],
+      "status": "pending",
+      "priority": "high",
       "acceptance_criteria": [
-        "knowledge_service.py 中不再有 list_entries(limit=10000) 调用",
-        "tag 统计改用 SQLite 聚合查询（如 json_each 解析 + GROUP BY）",
-        "日期范围查询改用 WHERE 过滤而非全量加载",
-        "掌握度分布计算改为批量查询或并行化",
-        "get_knowledge_map/search_concepts/get_concept_timeline/get_mastery_distribution/get_knowledge_stats 功能不变",
-        "get_knowledge_stats 的 _stats_from_sqlite（knowledge_service.py:708,752）也消除 list_entries(limit=10000)",
-        "后端测试全通过"
+        "所有后端测试通过（uv run pytest backend/tests/）",
+        "所有前端测试通过（npm run test:run --prefix frontend/）",
+        "生产构建通过（npm run build --prefix frontend/）",
+        "E2E 关键路径通过"
       ],
-      "test_tasks": [
-        "正常: 知识图谱 API 返回正确数据",
-        "边界: 空数据 / 大量数据场景",
-        "异常: Neo4j 不可用时 SQLite 降级路径正常"
-      ],
-      "risk_tags": [],
-      "files": ["backend/app/services/knowledge_service.py", "backend/app/infrastructure/storage/sqlite.py"]
-    },
-    {
-      "id": "F72",
-      "phase": 4,
-      "module": "code-quality",
-      "name": "api.ts openapi-fetch 统一",
-      "description": "将 api.ts 中使用原始 fetch 的搜索、知识图谱、反馈、通知、目标等 API 函数迁移到 openapi-fetch 类型安全客户端，消除 as unknown as 强转和 any 返回类型。sessionApi.ts 不在本次范围内。",
-      "verification": "前端构建通过 + API 功能正常",
-      "depends_on": ["F68"],
-      "status": "completed",
-      "started_at": "2026-04-20T20:37:00",
-      "completed_at": "2026-04-20T20:52:00",
-      "commit": "f2273e1",
-      "summary": "41 个原始 fetch 迁移到 openapi-fetch，消除 2 处 as unknown as 和 1 处 any 返回类型",
-      "priority": 3,
-      "acceptance_criteria": [
-        "api.ts 中搜索、知识图谱、反馈、通知、目标 API 函数迁移到 openapi-fetch",
-        "消除 api.ts 中的 as unknown as 强转（从 ~5 处减少到 0）",
-        "消除 linkGoalEntry 等函数的 any 返回类型",
-        "api.ts 内不再直接使用 authFetch 进行 API 调用（sessionApi.ts 不在范围）",
-        "前端构建通过 + 前端测试通过"
-      ],
-      "test_tasks": [
-        "正常: 所有 API 调用功能正常",
-        "边界: API 返回异常状态码时正确处理",
-        "异常: 网络错误时有正确错误提示"
-      ],
-      "risk_tags": [],
-      "files": ["frontend/src/services/api.ts"]
-    },
-    {
-      "id": "S08",
-      "phase": 5,
-      "module": "quality-gate",
-      "name": "质量收口 — 全量测试 + 构建验证",
-      "description": "全量后端测试 + 前端测试 + E2E 测试 + 构建验证。确认技术债清理未引入回归。",
-      "verification": "全量测试通过 + 构建通过",
-      "depends_on": ["S07", "B78", "F66", "F67", "F68", "F69", "F70", "F71", "B79", "F72"],
-      "status": "completed",
-      "started_at": "2026-04-20T20:52:00",
-      "completed_at": "2026-04-20T21:02:00",
-      "commit": "53e600b",
-      "summary": "857 后端 + 321 前端全通过，E2E 102/113，构建通过，无 waitForTimeout，死代码已清理",
-      "priority": 3,
-      "acceptance_criteria": [
-        "后端测试全通过（uv run pytest）",
-        "前端测试全通过（npm run test:run）",
-        "前端构建通过（npm run build）",
-        "E2E 全量测试通过（npx playwright test）",
-        "无 waitForTimeout 残留",
-        "死代码完全清理（grep 确认）"
-      ],
-      "test_tasks": [
-        "uv run pytest backend/tests/ 全通过",
-        "npm run test:run + npm run build 全通过",
-        "cd e2e && npx playwright test 全通过",
-        "grep -r waitForTimeout e2e/tests/ 无结果",
-        "grep -r 'Inbox\\|Projects\\|Notes\\|QuickCommandHints' frontend/src/ 无结果（已删除文件）"
-      ],
-      "risk_tags": ["startup"],
-      "files": []
+      "risk_tags": []
     }
-  ]
+  ],
+  "planning_notes": "Codex plan review (2026-04-21) findings 已修正：1) B80 从'实现混合搜索'改为'迁移 POST /search 到 HybridSearchService'，因为 hybrid_search.py 已存在；2) 删除 F82 离线同步进度展示（OfflineIndicator.tsx 已实现）；3) F84 拆分为离线入口拦截 + 队列扩展（含 taskStore 文件）；4) F85 拆为多选框架(F85) + 批量执行(F86)；5) B80 合并了原 B81 降级逻辑和 F81 content_snippet；6) 补充 B80/F77/F78/F84/F86 的 test_tasks"
 }

@@ -103,10 +103,45 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
   },
 
   updateEntry: async (id: string, data: EntryUpdate) => {
+    // 离线时写入队列，乐观更新本地状态
+    if (!navigator.onLine) {
+      // 离线创建的条目（local-* ID）尚未在服务端存在，合并修改到原始 POST 队列
+      if (id.startsWith("local-")) {
+        set((state) => ({
+          tasks: state.tasks.map((t) => t.id === id ? { ...t, ...data } : t),
+          _offlineEntries: state._offlineEntries.map((e) => e.id === id ? { ...e, ...data } : e),
+        }));
+        // 将修改合并到原始 POST 队列项，确保同步时发送最新数据
+        const { getAll, update } = await import("@/lib/offlineQueue");
+        const items = await getAll();
+        const postItem = items.find((i) => i.client_entry_id === id && i.method === "POST");
+        if (postItem) {
+          await update(postItem.id, { body: { ...postItem.body, ...data } });
+        }
+        return;
+      }
+      const { add } = await import("@/lib/offlineQueue");
+      const queueId = await add({
+        client_entry_id: id,
+        method: "PUT",
+        url: `/entries/${id}`,
+        body: data,
+      });
+      if (!queueId) {
+        // 入队失败（IndexedDB 不可用），回滚乐观更新
+        set({ error: "离线保存失败，请稍后重试" });
+        return;
+      }
+      // 乐观更新本地状态
+      set((state) => ({
+        tasks: state.tasks.map((t) => t.id === id ? { ...t, ...data } : t),
+      }));
+      return;
+    }
+
     set({ isLoading: true, error: null });
     try {
       await updateEntry(id, data);
-      // 更新成功后重新获取列表
       await get().fetchEntries();
     } catch (error) {
       set({
@@ -143,35 +178,64 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
   },
 
   updateTaskStatus: async (id: string, status: TaskStatus) => {
-    set({ isLoading: true, error: null });
+    const prev = get().tasks.find((t) => t.id === id);
+    const prevStatus = prev?.status;
+    // 乐观更新本地状态
+    set((state) => ({
+      tasks: state.tasks.map((t) => t.id === id ? { ...t, status } : t),
+      error: null,
+    }));
     try {
-      await updateEntry(id, { status });
-      // 更新成功后重新获取列表
-      await get().fetchEntries();
-    } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : "更新状态失败",
-        isLoading: false,
-      });
+      await get().updateEntry(id, { status });
+    } catch {
+      // 失败时回滚
+      if (prevStatus) {
+        set((state) => ({
+          tasks: state.tasks.map((t) => t.id === id ? { ...t, status: prevStatus } : t),
+        }));
+      }
     }
   },
 
   deleteTask: async (id: string) => {
     // 乐观更新：先从本地移除
     const previousTasks = get().tasks;
-    console.log('[乐观更新] 删除前任务数:', previousTasks.length, '删除ID:', id);
     set({ tasks: previousTasks.filter((t) => t.id !== id), error: null });
-    console.log('[乐观更新] 删除后任务数:', get().tasks.length);
+
+    // 离线时写入队列
+    if (!navigator.onLine) {
+      // 离线创建的条目（local-* ID）取消原始 POST 队列项并清理离线条目
+      if (id.startsWith("local-")) {
+        const { getAll, remove: queueRemove } = await import("@/lib/offlineQueue");
+        const items = await getAll();
+        const postItem = items.find((i) => i.client_entry_id === id && i.method === "POST");
+        if (postItem) {
+          await queueRemove(postItem.id);
+        }
+        set((state) => ({
+          _offlineEntries: state._offlineEntries.filter((e) => e.id !== id),
+        }));
+        return;
+      }
+      const { add } = await import("@/lib/offlineQueue");
+      const queueId = await add({
+        client_entry_id: id,
+        method: "DELETE",
+        url: `/entries/${id}`,
+        body: {},
+      });
+      if (!queueId) {
+        // 入队失败，回滚删除
+        set({ tasks: previousTasks, error: "离线保存失败，请稍后重试" });
+      }
+      return;
+    }
 
     try {
-      console.log('[API调用] 开始删除:', id);
-      const result = await apiDeleteEntry(id);
-      console.log('[API调用] 删除结果:', result);
-      // 删除成功后重新获取列表以确保后端数据一致
+      await apiDeleteEntry(id);
       await get().fetchEntries();
     } catch (error) {
       // 失败时回滚
-      console.log('[API调用] 删除失败:', error);
       set({
         tasks: previousTasks,
         error: error instanceof Error ? error.message : "删除失败",

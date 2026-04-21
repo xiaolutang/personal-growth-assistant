@@ -277,6 +277,11 @@ export function FloatingChat() {
     setIsDragging(true);
   }, []);
 
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault(); // 防止触摸+鼠标双触发
+    setIsDragging(true);
+  }, []);
+
   useEffect(() => {
     if (!isDragging) return;
 
@@ -285,14 +290,31 @@ export function FloatingChat() {
       setPanelHeight(Math.min(effectiveMaxHeight, Math.max(MIN_HEIGHT, newHeight)));
     };
 
-    const handleMouseUp = () => setIsDragging(false);
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 0) return;
+      const newHeight = window.innerHeight - e.touches[0].clientY;
+      setPanelHeight(Math.min(effectiveMaxHeight, Math.max(MIN_HEIGHT, newHeight)));
+    };
+
+    const handleEnd = () => {
+      setIsDragging(false);
+      document.body.style.overflow = "";
+    };
+
+    // 拖拽时禁止 body 滚动
+    document.body.style.overflow = "hidden";
 
     document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("mouseup", handleEnd);
+    document.addEventListener("touchmove", handleTouchMove, { passive: false });
+    document.addEventListener("touchend", handleEnd);
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("mouseup", handleEnd);
+      document.removeEventListener("touchmove", handleTouchMove);
+      document.removeEventListener("touchend", handleEnd);
+      document.body.style.overflow = "";
     };
   }, [isDragging, setPanelHeight, effectiveMaxHeight]);
 
@@ -313,6 +335,7 @@ export function FloatingChat() {
       <div
         className="flex items-center justify-center h-6 cursor-ns-resize hover:bg-muted/50 border-b shrink-0"
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
       >
         <GripHorizontal className="h-4 w-4 text-muted-foreground" />
       </div>

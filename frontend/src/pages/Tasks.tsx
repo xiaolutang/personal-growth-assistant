@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,9 +6,10 @@ import { TaskList } from "@/components/TaskList";
 import { Header } from "@/components/layout/Header";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { useTaskStore } from "@/stores/taskStore";
-import { Filter, X, Calendar, Loader2 } from "lucide-react";
-import type { TaskStatus } from "@/types/task";
+import { Filter, X, Calendar, Loader2, Pencil, Trash2, FolderInput } from "lucide-react";
+import type { TaskStatus, Category } from "@/types/task";
 import { statusConfig } from "@/config/constants";
+import { toast } from "sonner";
 
 // 所有可选状态
 const STATUS_OPTIONS: TaskStatus[] = ["waitStart", "doing", "complete", "paused", "cancelled"];
@@ -36,6 +37,13 @@ export function Tasks() {
   const [quickDate, setQuickDate] = useState<string>("all");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+
+  // 多选状态
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchLoading, setBatchLoading] = useState(false);
+  const deleteTask = useTaskStore((state) => state.deleteTask);
+  const storeUpdateEntry = useTaskStore((state) => state.updateEntry);
 
   // 首次挂载时加载数据（如果 store 为空且服务可用）
   // 使用 getState() 读取实时值，避免 deps=[] 导致闭包捕获初始值
@@ -127,6 +135,73 @@ export function Tasks() {
   // 计算是否激活了筛选
   const hasActiveFilters = selectedStatus || startDate || endDate;
 
+  // 多选操作
+  const enterSelectMode = useCallback(() => {
+    setSelectMode(true);
+    setSelectedIds(new Set());
+  }, []);
+
+  const exitSelectMode = useCallback(() => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const selectAll = useCallback(() => {
+    setSelectedIds(new Set(filteredTasks.map((t) => t.id)));
+  }, [filteredTasks]);
+
+  // ESC 键退出多选模式
+  useEffect(() => {
+    if (!selectMode) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") exitSelectMode();
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [selectMode, exitSelectMode]);
+
+  // 批量删除
+  const handleBatchDelete = async () => {
+    setBatchLoading(true);
+    let failed = 0;
+    for (const id of selectedIds) {
+      try { await deleteTask(id); } catch { failed++; }
+    }
+    setBatchLoading(false);
+    if (failed === 0) {
+      toast.success(`已删除 ${selectedIds.size} 条任务`);
+      exitSelectMode();
+    } else {
+      toast.error(`${failed} 条删除失败`);
+    }
+  };
+
+  // 批量转分类
+  const handleBatchCategory = async (category: Category) => {
+    setBatchLoading(true);
+    let failed = 0;
+    for (const id of selectedIds) {
+      try { await storeUpdateEntry(id, { category }); } catch { failed++; }
+    }
+    setBatchLoading(false);
+    const label = category === "task" ? "任务" : category === "note" ? "笔记" : "灵感";
+    if (failed === 0) {
+      toast.success(`已转为${label} ${selectedIds.size} 条`);
+      exitSelectMode();
+    } else {
+      toast.error(`${failed} 条转换失败`);
+    }
+  };
+
   return (
     <>
       <Header title="任务列表" />
@@ -138,6 +213,23 @@ export function Tasks() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">所有任务 ({filteredTasks.length})</CardTitle>
             <div className="flex gap-2">
+              {!selectMode ? (
+                <Button variant="outline" size="sm" onClick={enterSelectMode}>
+                  <Pencil className="h-4 w-4 mr-1" />
+                  编辑
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" onClick={selectAll}>
+                    全选
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={exitSelectMode}>
+                    取消
+                  </Button>
+                </>
+              )}
+              {!selectMode && (
+              <>
               <Button
                 variant={showFilters ? "secondary" : "outline"}
                 size="sm"
@@ -156,6 +248,8 @@ export function Tasks() {
                   <X className="h-4 w-4 mr-1" />
                   清除
                 </Button>
+              )}
+              </>
               )}
             </div>
           </CardHeader>
@@ -237,10 +331,49 @@ export function Tasks() {
               <TaskList
                 tasks={filteredTasks}
                 emptyMessage="还没有任务，去首页快速录入吧"
+                selectable={selectMode}
+                selectedIds={selectedIds}
+                onSelect={toggleSelect}
               />
             )}
           </CardContent>
         </Card>
+        )}
+
+        {/* 底部批量操作栏 */}
+        {selectMode && selectedIds.size > 0 && (
+          <div className="fixed bottom-16 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur px-4 py-3 flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">已选 {selectedIds.size} 项</span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleBatchCategory("note")}
+                disabled={batchLoading}
+              >
+                {batchLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <FolderInput className="h-4 w-4 mr-1" />}
+                转笔记
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleBatchCategory("inbox")}
+                disabled={batchLoading}
+              >
+                {batchLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <FolderInput className="h-4 w-4 mr-1" />}
+                转灵感
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBatchDelete}
+                disabled={batchLoading}
+              >
+                {batchLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
+                删除
+              </Button>
+            </div>
+          </div>
         )}
       </main>
     </>

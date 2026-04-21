@@ -133,7 +133,7 @@ export async function getAll(): Promise<OfflineQueueItem[]> {
  */
 export async function update(
   id: string,
-  changes: Partial<Pick<OfflineQueueItem, "retry_count" | "status">>
+  changes: Partial<Pick<OfflineQueueItem, "retry_count" | "status" | "body">>
 ): Promise<void> {
   try {
     const db = await openDB();

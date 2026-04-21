@@ -23,6 +23,7 @@ export interface Task {
   parent_id?: string;
   file_path: string;
   priority?: Priority;
+  content_snippet?: string;
   /** 离线创建的条目标识，同步完成后移除 */
   _offlinePending?: boolean;
 }
@@ -71,6 +72,7 @@ export interface SearchResult {
   tags: string[];
   created_at: string;     // 创建时间
   file_path: string;
+  content_snippet?: string; // 内容摘要
 }
 
 // 搜索响应

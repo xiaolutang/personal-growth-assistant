@@ -24,6 +24,7 @@ function normalizeSearchResult(r: SearchResult): Task {
     updated_at: "",
     file_path: r.file_path ?? "",
     parent_id: undefined,
+    content_snippet: r.content_snippet,
   };
 }
 
@@ -96,6 +97,7 @@ export function Explore() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Task[] | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [entriesError, setEntriesError] = useState<string | null>(null);
   const { setPageExtra } = useChatStore();
 
   // 同步 activeTab/searchQuery 到 chatStore.pageExtra
@@ -139,7 +141,7 @@ export function Explore() {
       setIsSearching(true);
       setSearchError(null);
       try {
-        const result = await searchEntries(searchQuery.trim(), 20);
+        const result = await searchEntries(searchQuery.trim(), 20, activeTab || undefined);
         if (!cancelled) {
           const mapped: Task[] = (result.results ?? []).map(normalizeSearchResult);
           setSearchResults(mapped);
@@ -165,6 +167,7 @@ export function Explore() {
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
+    setEntriesError(null);
     getEntries({ limit: 100 })
       .then((res) => {
         if (!cancelled) {
@@ -172,7 +175,7 @@ export function Explore() {
         }
       })
       .catch(() => {
-        // 获取失败时保持空列表，不影响页面渲染
+        if (!cancelled) setEntriesError("加载失败，请重试");
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -216,7 +219,7 @@ export function Explore() {
     setSearchError(null);
     setShowSuggestions(false);
     try {
-      const result = await searchEntries(searchQuery.trim(), 20);
+      const result = await searchEntries(searchQuery.trim(), 20, activeTab || undefined);
       const mapped: Task[] = (result.results ?? []).map(normalizeSearchResult);
       setSearchResults(mapped);
       addToSearchHistory(searchQuery.trim());
@@ -333,13 +336,14 @@ export function Explore() {
       </div>
 
       {/* 类型 Tab */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
           return (
             <button
               key={tab.key}
+              ref={isActive ? (el) => el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" }) : undefined}
               onClick={() => handleTabChange(tab.key)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 isActive
@@ -369,6 +373,16 @@ export function Explore() {
           <div className="flex items-center justify-center gap-2 p-4 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
             加载中...
+          </div>
+        ) : entriesError ? (
+          <div className="flex flex-col items-center justify-center gap-3 p-8 text-muted-foreground">
+            <p>{entriesError}</p>
+            <button
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm"
+              onClick={() => window.location.reload()}
+            >
+              重试
+            </button>
           </div>
         ) : isSearching ? (
           <div className="flex items-center justify-center gap-2 p-4 text-muted-foreground">

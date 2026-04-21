@@ -1074,7 +1074,7 @@ class SQLiteStorage:
             # 1. 尝试 FTS5 搜索（对英文更高效）
             try:
                 cursor = conn.execute("""
-                    SELECT e.id, e.type, e.title, e.status, e.file_path,
+                    SELECT e.id, e.type, e.title, e.content, e.status, e.file_path,
                            e.created_at, e.updated_at, e.parent_id
                     FROM entries e
                     JOIN entries_fts fts ON e.id = fts.id
@@ -1094,7 +1094,7 @@ class SQLiteStorage:
             if not entries:
                 like_pattern = f"%{query}%"
                 cursor = conn.execute("""
-                    SELECT id, type, title, status, file_path,
+                    SELECT id, type, title, content, status, file_path,
                            created_at, updated_at, parent_id
                     FROM entries
                     WHERE (title LIKE ? OR content LIKE ?) AND user_id = ?

@@ -46,6 +46,7 @@ class HybridSearchService:
         vector_weight: float = 0.7,
         text_weight: float = 0.3,
         min_score: float = 0.25,
+        filter_type: Optional[str] = None,
     ) -> List[EntryResponse]:
         """
         混合搜索流程：
@@ -60,6 +61,7 @@ class HybridSearchService:
             vector_weight: 向量搜索权重（默认 0.7）
             text_weight: 全文搜索权重（默认 0.3）
             min_score: 最低分数阈值（默认 0.25）
+            filter_type: 可选类型过滤（inbox/note/project/task 等）
 
         Returns:
             排序后的条目响应列表
@@ -74,7 +76,7 @@ class HybridSearchService:
             if not self.storage.qdrant:
                 return {}
             try:
-                results = await self.storage.qdrant.search(query, limit=search_limit, user_id=user_id)
+                results = await self.storage.qdrant.search(query, limit=search_limit, user_id=user_id, filter_type=filter_type)
                 return {r["id"]: r.get("score", 0) for r in results if r.get("id")}
             except Exception as e:
                 logger.warning(f"向量搜索失败: {e}")
@@ -85,6 +87,8 @@ class HybridSearchService:
                 return {}
             try:
                 results = self.storage.sqlite.search(query, limit=search_limit, user_id=user_id)
+                if filter_type:
+                    results = [r for r in results if r.get("type") == filter_type]
                 return {r["id"]: r for r in results if r.get("id")}
             except Exception as e:
                 logger.warning(f"全文搜索失败: {e}")

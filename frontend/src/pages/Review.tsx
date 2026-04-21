@@ -11,6 +11,8 @@ import {
   BarChart3,
   Calendar,
   Target,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import {
   getDailyReport,
@@ -36,6 +38,8 @@ type ReportType = "daily" | "weekly" | "monthly" | "trend";
 export function Review() {
   const [reportType, setReportType] = useState<ReportType>("daily");
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
   const [dailyReport, setDailyReport] = useState<DailyReport | null>(null);
   const [weeklyReport, setWeeklyReport] = useState<WeeklyReport | null>(null);
   const [monthlyReport, setMonthlyReport] = useState<MonthlyReport | null>(null);
@@ -48,6 +52,7 @@ export function Review() {
 
     const fetchReport = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         if (reportType === "daily") {
           const data = await getDailyReport();
@@ -60,7 +65,7 @@ export function Review() {
           if (!cancelled) setMonthlyReport(data);
         }
       } catch (err) {
-        if (!cancelled) console.error("获取报告失败:", err);
+        if (!cancelled) setError("加载失败，请重试");
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -73,7 +78,7 @@ export function Review() {
     }
 
     return () => { cancelled = true; };
-  }, [reportType]);
+  }, [reportType, retryKey]);
 
   // 目标进展概览
   useEffect(() => {
@@ -239,8 +244,19 @@ export function Review() {
             )}
 
             {isLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="text-muted-foreground">加载中...</div>
+              <div className="flex items-center justify-center h-64 text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center h-64 gap-3 text-muted-foreground">
+                <AlertCircle className="h-8 w-8" />
+                <p>{error}</p>
+                <button
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm"
+                  onClick={() => setRetryKey((k) => k + 1)}
+                >
+                  重试
+                </button>
               </div>
             ) : (
               <div className="space-y-6">

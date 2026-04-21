@@ -6,8 +6,9 @@
  */
 
 import * as queue from "@/lib/offlineQueue";
-import { createEntry } from "@/services/api";
-import type { TaskStatus } from "@/types/task";
+import { createEntry, updateEntry, deleteEntry } from "@/services/api";
+import type { TaskStatus, EntryUpdate } from "@/types/task";
+import { toast } from "sonner";
 
 // ─── 同步进度订阅 ────────────────────────────────────
 
@@ -63,28 +64,40 @@ export async function sync(): Promise<void> {
 
     let synced = 0;
     let authFailed = false;
+    let hasPostSync = false;
+    let hasTerminalFailure = false;
 
     for (const item of pending) {
-      // 目前仅支持 POST /entries，跳过不支持的 mutation
-      if (!(item.method === "POST" && item.url === "/entries")) {
-        continue;
-      }
-
       notifyProgress({ type: "progress", progress: { current: synced + 1, total: pending.length } });
 
       try {
-        const body = item.body as Record<string, unknown>;
-        await createEntry({
-          type: (body.type as string) || "inbox",
-          title: (body.title as string) || "",
-          content: body.content as string | undefined,
-          status: body.status as TaskStatus | undefined,
-        });
+        if (item.method === "POST" && item.url === "/entries") {
+          const body = item.body as Record<string, unknown>;
+          await createEntry({
+            type: (body.category as string) || (body.type as string) || "inbox",
+            title: (body.title as string) || "",
+            content: body.content as string | undefined,
+            status: body.status as TaskStatus | undefined,
+          });
+          hasPostSync = true;
+        } else if (item.method === "PUT" && item.url.startsWith("/entries/")) {
+          const entryId = item.url.replace("/entries/", "");
+          await updateEntry(entryId, item.body as EntryUpdate);
+        } else if (item.method === "DELETE" && item.url.startsWith("/entries/")) {
+          const entryId = item.url.replace("/entries/", "");
+          await deleteEntry(entryId);
+        } else {
+          // 不支持的 mutation，跳过
+          continue;
+        }
 
-        // 同步成功：从队列移除 + 移除离线条目
+        // 同步成功：从队列移除
         await queue.remove(item.id);
-        const { useTaskStore } = await import("@/stores/taskStore");
-        useTaskStore.getState().removeOfflineEntry(item.client_entry_id);
+        // POST 对应离线创建的 local-* 条目，需要移除离线占位
+        if (item.method === "POST") {
+          const { useTaskStore } = await import("@/stores/taskStore");
+          useTaskStore.getState().removeOfflineEntry(item.client_entry_id);
+        }
         synced++;
       } catch (err: unknown) {
         const status =
@@ -101,18 +114,21 @@ export async function sync(): Promise<void> {
           const newRetry = item.retry_count + 1;
           if (newRetry > 3) {
             await queue.update(item.id, { status: "failed", retry_count: newRetry });
+            hasTerminalFailure = true;
           } else {
             await queue.update(item.id, { retry_count: newRetry });
           }
         } else {
           // 其他错误（4xx 等）：标记 failed
           await queue.update(item.id, { status: "failed" });
+          hasTerminalFailure = true;
+          toast.error("同步失败", { description: "部分离线操作未能同步，请检查后重试" });
         }
       }
     }
 
-    // 同步完成后刷新服务端数据
-    if (synced > 0) {
+    // POST 同步后需要刷新获取服务端真实 ID；终态失败也需要刷新回滚乐观状态
+    if (hasPostSync || hasTerminalFailure) {
       const { useTaskStore } = await import("@/stores/taskStore");
       await useTaskStore.getState().fetchEntries();
     }

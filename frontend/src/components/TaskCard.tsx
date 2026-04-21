@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Circle, CheckCircle, Clock, Trash2, Pause, XCircle, Folder, MoreHorizontal, Loader2, ArrowRightCircle, FileText } from "lucide-react";
+import { Circle, CheckCircle, Clock, Trash2, Pause, XCircle, Folder, MoreHorizontal, Loader2, ArrowRightCircle, FileText, CheckSquare, Square } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,9 @@ interface TaskCardProps {
   task: Task;
   showParent?: boolean;
   highlightKeyword?: string;
+  selectable?: boolean;
+  selected?: boolean;
+  onSelect?: (id: string) => void;
 }
 
 /** 高亮文本中所有匹配的关键词（大小写不敏感，索引安全） */
@@ -38,7 +41,7 @@ function HighlightText({ text, keyword }: { text: string; keyword: string }) {
   return <>{parts}</>;
 }
 
-export function TaskCard({ task, showParent = true, highlightKeyword }: TaskCardProps) {
+export function TaskCard({ task, showParent = true, highlightKeyword, selectable = false, selected = false, onSelect }: TaskCardProps) {
   const navigate = useNavigate();
   const updateTaskStatus = useTaskStore((state) => state.updateTaskStatus);
   const deleteTask = useTaskStore((state) => state.deleteTask);
@@ -79,6 +82,10 @@ export function TaskCard({ task, showParent = true, highlightKeyword }: TaskCard
   };
 
   const handleCardClick = () => {
+    if (selectable) {
+      onSelect?.(task.id);
+      return;
+    }
     navigate(`/entries/${task.id}`);
   };
 
@@ -136,32 +143,52 @@ export function TaskCard({ task, showParent = true, highlightKeyword }: TaskCard
 
   return (
     <Card
-      className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-accent/50 transition-colors"
+      className={cn(
+        "flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-accent/50 transition-colors",
+        selectable && selected && "bg-accent/30"
+      )}
       onClick={handleCardClick}
     >
+      {/* Selection checkbox (only in selectable mode) */}
+      {selectable && (
+        <div className="flex-shrink-0 flex items-center justify-center min-h-[44px] min-w-[32px]">
+          {selected ? (
+            <CheckSquare className="h-5 w-5 text-primary" />
+          ) : (
+            <Square className="h-5 w-5 text-muted-foreground" />
+          )}
+        </div>
+      )}
+
       {/* Status Toggle */}
       <button
         onClick={handleStatusChange}
-        className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors"
+        className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center -m-1 p-1"
         aria-label="切换状态"
       >
         {renderStatusIcon()}
       </button>
 
       {/* Content */}
-      <div className="flex-1 min-w-0 flex items-center gap-2">
-        {/* Title */}
-        <p
-          className={cn(
-            "text-sm truncate flex-shrink-0 max-w-[200px]",
-            (task.status === "complete" || task.status === "cancelled") && "line-through text-muted-foreground"
-          )}
-        >
-          {highlightKeyword
-            ? <HighlightText text={task.title} keyword={highlightKeyword} />
-            : task.title
-          }
-        </p>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          {/* Title */}
+          <p
+            className={cn(
+              "text-sm truncate flex-shrink-0 max-w-[200px]",
+              (task.status === "complete" || task.status === "cancelled") && "line-through text-muted-foreground"
+            )}
+          >
+            {highlightKeyword
+              ? <HighlightText text={task.title} keyword={highlightKeyword} />
+              : task.title
+            }
+          </p>
+        </div>
+        {/* Content snippet (search results) */}
+        {task.content_snippet && (
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">{task.content_snippet}</p>
+        )}
 
         {/* Meta Info: parent, date, tags */}
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
@@ -229,7 +256,7 @@ export function TaskCard({ task, showParent = true, highlightKeyword }: TaskCard
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+          className="h-6 w-6 min-h-[44px] min-w-[44px] text-muted-foreground hover:text-destructive"
           onClick={handleDelete}
         >
           <Trash2 className="h-3 w-3" />

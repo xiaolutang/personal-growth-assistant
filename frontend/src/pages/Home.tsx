@@ -194,7 +194,7 @@ export function Home() {
                         <div className="h-4 bg-primary/10 rounded animate-pulse flex-1" />
                       </div>
                       <div className="h-4 bg-primary/10 rounded animate-pulse w-full" />
-                      <div className="grid grid-cols-4 gap-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {Array.from({ length: 4 }).map((_, i) => (
                           <div key={i} className="h-10 bg-primary/10 rounded animate-pulse" />
                         ))}
@@ -224,7 +224,7 @@ export function Home() {
                       <p className="text-sm text-foreground/80 leading-relaxed">
                         {digest.ai_suggestion}
                       </p>
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <DigestStat
                           icon={<Clock className="h-3.5 w-3.5" />}
                           label="待办"

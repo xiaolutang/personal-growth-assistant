@@ -329,7 +329,22 @@ describe("updateTaskStatus", () => {
     });
 
     const state = useTaskStore.getState();
-    expect(state.error).toBe("更新状态失败");
+    expect(state.error).toBe("更新条目失败");
+  });
+
+  it("更新失败时回滚任务状态", async () => {
+    useTaskStore.setState({
+      tasks: [createMockTask({ id: "1", status: "waitStart" })],
+    });
+    mockUpdateEntry.mockRejectedValueOnce(new Error("网络错误"));
+
+    await act(async () => {
+      await useTaskStore.getState().updateTaskStatus("1", "doing");
+    });
+
+    const state = useTaskStore.getState();
+    expect(state.error).toBe("网络错误");
+    expect(state.tasks[0].status).toBe("waitStart");
   });
 });
 

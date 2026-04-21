@@ -10,6 +10,12 @@ vi.mock("@/lib/offlineQueue", () => ({
 
 vi.mock("@/services/api", () => ({
   createEntry: vi.fn(),
+  updateEntry: vi.fn(),
+  deleteEntry: vi.fn(),
+}));
+
+vi.mock("sonner", () => ({
+  toast: { error: vi.fn() },
 }));
 
 vi.mock("@/stores/taskStore", () => {
@@ -27,11 +33,13 @@ vi.mock("@/stores/taskStore", () => {
 
 import { sync, initSync, subscribeSyncProgress, isSyncing } from "../offlineSync";
 import * as queue from "@/lib/offlineQueue";
-import { createEntry } from "@/services/api";
+import { createEntry, updateEntry, deleteEntry } from "@/services/api";
 import { useTaskStore } from "@/stores/taskStore";
 
 const mockQueue = vi.mocked(queue);
 const mockCreateEntry = vi.mocked(createEntry);
+const mockUpdateEntry = vi.mocked(updateEntry);
+const mockDeleteEntry = vi.mocked(deleteEntry);
 const mockTaskStore = vi.mocked(useTaskStore);
 
 // Extract stable references to the mock functions
@@ -61,7 +69,7 @@ describe("offlineSync", () => {
     vi.restoreAllMocks();
   });
 
-  it("syncs 3 pending items — all succeed", async () => {
+  it("syncs 3 pending POST items — all succeed", async () => {
     const items = [makeItem({ id: "q-1", client_entry_id: "local-1" }), makeItem({ id: "q-2", client_entry_id: "local-2" }), makeItem({ id: "q-3", client_entry_id: "local-3" })];
     mockQueue.getAll.mockResolvedValue(items);
     mockCreateEntry.mockResolvedValue({} as any);
@@ -121,6 +129,8 @@ describe("offlineSync", () => {
     await sync();
 
     expect(mockCreateEntry).not.toHaveBeenCalled();
+    expect(mockUpdateEntry).not.toHaveBeenCalled();
+    expect(mockDeleteEntry).not.toHaveBeenCalled();
   });
 
   it("prevents reentry (boolean lock)", async () => {
@@ -168,11 +178,110 @@ describe("offlineSync", () => {
     unsub();
   });
 
-  it("skips unsupported method/url without deleting", async () => {
+  it("replays PUT mutation successfully", async () => {
     const items = [
-      makeItem({ id: "q-1", method: "PUT", url: "/entries/123", body: { title: "update" } }),
-      makeItem({ id: "q-2", method: "DELETE", url: "/entries/456", body: {} }),
-      makeItem({ id: "q-3", method: "POST", url: "/entries", body: { type: "inbox", title: "valid" } }),
+      makeItem({ id: "q-1", method: "PUT", url: "/entries/entry-123", body: { title: "updated title" }, client_entry_id: "entry-123" }),
+    ];
+    mockQueue.getAll.mockResolvedValue(items);
+    mockUpdateEntry.mockResolvedValue({} as any);
+    mockQueue.remove.mockResolvedValue();
+
+    await sync();
+
+    expect(mockUpdateEntry).toHaveBeenCalledWith("entry-123", { title: "updated title" });
+    expect(mockQueue.remove).toHaveBeenCalledWith("q-1");
+    // PUT should NOT call removeOfflineEntry (only POST does)
+    expect(removeOfflineEntry()).not.toHaveBeenCalled();
+    // PUT-only sync does not trigger fetchEntries (preserves page-level filters)
+    expect(fetchEntries()).not.toHaveBeenCalled();
+  });
+
+  it("replays DELETE mutation successfully", async () => {
+    const items = [
+      makeItem({ id: "q-1", method: "DELETE", url: "/entries/entry-456", body: {}, client_entry_id: "entry-456" }),
+    ];
+    mockQueue.getAll.mockResolvedValue(items);
+    mockDeleteEntry.mockResolvedValue({} as any);
+    mockQueue.remove.mockResolvedValue();
+
+    await sync();
+
+    expect(mockDeleteEntry).toHaveBeenCalledWith("entry-456");
+    expect(mockQueue.remove).toHaveBeenCalledWith("q-1");
+    // DELETE should NOT call removeOfflineEntry
+    expect(removeOfflineEntry()).not.toHaveBeenCalled();
+    // DELETE-only sync does not trigger fetchEntries
+    expect(fetchEntries()).not.toHaveBeenCalled();
+  });
+
+  it("replays mixed POST, PUT, DELETE mutations", async () => {
+    const items = [
+      makeItem({ id: "q-1", method: "POST", url: "/entries", body: { type: "inbox", title: "new" } }),
+      makeItem({ id: "q-2", method: "PUT", url: "/entries/e1", body: { title: "update" }, client_entry_id: "e1" }),
+      makeItem({ id: "q-3", method: "DELETE", url: "/entries/e2", body: {}, client_entry_id: "e2" }),
+    ];
+    mockQueue.getAll.mockResolvedValue(items);
+    mockCreateEntry.mockResolvedValue({} as any);
+    mockUpdateEntry.mockResolvedValue({} as any);
+    mockDeleteEntry.mockResolvedValue({} as any);
+    mockQueue.remove.mockResolvedValue();
+
+    await sync();
+
+    expect(mockCreateEntry).toHaveBeenCalledTimes(1);
+    expect(mockUpdateEntry).toHaveBeenCalledWith("e1", { title: "update" });
+    expect(mockDeleteEntry).toHaveBeenCalledWith("e2");
+    expect(mockQueue.remove).toHaveBeenCalledTimes(3);
+    // Only POST calls removeOfflineEntry
+    expect(removeOfflineEntry()).toHaveBeenCalledTimes(1);
+  });
+
+  it("replays POST with category from merged update", async () => {
+    // Simulates: offline create (type=inbox) → offline update (category=task) → sync
+    const items = [
+      makeItem({
+        id: "q-1",
+        method: "POST",
+        url: "/entries",
+        body: { type: "inbox", title: "my idea", content: "desc", category: "task" },
+      }),
+    ];
+    mockQueue.getAll.mockResolvedValue(items);
+    mockCreateEntry.mockResolvedValue({} as any);
+    mockQueue.remove.mockResolvedValue();
+
+    await sync();
+
+    // Should use category (task) over type (inbox)
+    expect(mockCreateEntry).toHaveBeenCalledWith({
+      type: "task",
+      title: "my idea",
+      content: "desc",
+      status: undefined,
+    });
+  });
+
+  it("4xx replay marks failed and toasts", async () => {
+    const { toast } = await import("sonner");
+    const items = [makeItem({ id: "q-1", method: "PUT", url: "/entries/e1", body: { title: "x" } })];
+    mockQueue.getAll.mockResolvedValue(items);
+
+    const err: any = new Error("Bad Request");
+    err.status = 400;
+    mockUpdateEntry.mockRejectedValue(err);
+
+    await sync();
+
+    expect(mockQueue.update).toHaveBeenCalledWith("q-1", { status: "failed" });
+    expect(toast.error).toHaveBeenCalledWith("同步失败", { description: "部分离线操作未能同步，请检查后重试" });
+    // Terminal failure triggers fetchEntries to rollback optimistic state
+    expect(fetchEntries()).toHaveBeenCalled();
+  });
+
+  it("skips unknown method/url without deleting", async () => {
+    const items = [
+      makeItem({ id: "q-1", method: "PATCH", url: "/entries/123", body: {} }),
+      makeItem({ id: "q-2", method: "POST", url: "/entries", body: { type: "inbox", title: "valid" } }),
     ];
     mockQueue.getAll.mockResolvedValue(items);
     mockCreateEntry.mockResolvedValue({} as any);
@@ -182,9 +291,8 @@ describe("offlineSync", () => {
 
     // Only POST /entries is processed
     expect(mockCreateEntry).toHaveBeenCalledTimes(1);
-    // PUT and DELETE are not deleted from queue
     expect(mockQueue.remove).toHaveBeenCalledTimes(1);
-    expect(mockQueue.remove).toHaveBeenCalledWith("q-3");
+    expect(mockQueue.remove).toHaveBeenCalledWith("q-2");
   });
 
   it("initSync triggers sync when online + queue has items", async () => {

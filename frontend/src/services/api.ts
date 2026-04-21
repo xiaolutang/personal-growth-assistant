@@ -183,7 +183,7 @@ type SearchResultItem = SearchResult;
 /**
  * 归一化搜索结果项
  */
-function normalizeSearchItem(e: { id?: string; title?: string; score?: number; type?: string; category?: string; status?: string; tags?: string[]; created_at?: string; file_path?: string }, defaultScore = 1): SearchResultItem {
+function normalizeSearchItem(e: { id?: string; title?: string; score?: number; type?: string; category?: string; status?: string; tags?: string[]; created_at?: string; file_path?: string; content_snippet?: string }, defaultScore = 1): SearchResultItem {
   return {
     id: e.id ?? "",
     title: e.title ?? "",
@@ -194,117 +194,24 @@ function normalizeSearchItem(e: { id?: string; title?: string; score?: number; t
     tags: e.tags || [],
     created_at: e.created_at ?? "",
     file_path: e.file_path || "",
+    content_snippet: e.content_snippet || "",
   };
 }
 
 /**
- * 向量搜索（Qdrant）
+ * 统一搜索入口：后端已实现混合搜索（向量 + 全文）+ 自动降级
  */
-async function vectorSearch(query: string, limit: number): Promise<SearchResponse> {
+export async function searchEntries(query: string, limit: number = 10, filterType?: string): Promise<SearchResponse> {
+  const body: { query: string; limit: number; filter_type?: string } = { query, limit };
+  if (filterType) body.filter_type = filterType;
+
   const { data, error, response } = await client.POST("/search", {
-    body: { query, limit },
+    body,
   });
   handleOpenApiResponse(data, error, response);
   return {
     results: ((data as { results?: unknown[] })?.results ?? []).map((e: unknown) => normalizeSearchItem(e as Record<string, unknown>)),
   };
-}
-
-/**
- * SQLite 全文搜索（FTS5）
- */
-async function sqliteSearch(query: string, limit: number): Promise<SearchResponse> {
-  const { data, error, response } = await client.GET("/entries/search/query", {
-    params: { query: { q: query, limit } },
-  });
-  handleOpenApiResponse(data, error, response);
-  return {
-    results: ((data as { entries?: unknown[] })?.entries ?? []).map((e: unknown) => normalizeSearchItem(e as Record<string, unknown>)),
-  };
-}
-
-/**
- * SQLite 分数归一化
- */
-function normalizeSqliteScore(score: number): number {
-  return Math.min(1, Math.max(0, score));
-}
-
-/**
- * 合并向量搜索和全文搜索结果
- * 权重：向量 70% + BM25 30%
- */
-function mergeSearchResults(
-  vecResults: SearchResultItem[],
-  sqlResults: SearchResultItem[],
-  limit: number
-): SearchResponse {
-  const VECTOR_WEIGHT = 0.7;
-  const SQLITE_WEIGHT = 0.3;
-
-  // 用 Map 存储合并后的结果（按 id 去重）
-  const merged = new Map<string, SearchResultItem>();
-
-  // 添加向量搜索结果
-  for (const item of vecResults) {
-    merged.set(item.id, { ...item, score: item.score * VECTOR_WEIGHT });
-  }
-
-  // 合并 SQL 搜索结果
-  for (const item of sqlResults) {
-    if (merged.has(item.id)) {
-      // 已存在，累加分数
-      const existing = merged.get(item.id)!;
-      existing.score += normalizeSqliteScore(item.score) * SQLITE_WEIGHT;
-    } else {
-      // 新增
-      merged.set(item.id, {
-        ...item,
-        score: normalizeSqliteScore(item.score) * SQLITE_WEIGHT,
-      });
-    }
-  }
-
-  // 按分数排序，返回 top N
-  const results = Array.from(merged.values())
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit);
-
-  return { results };
-}
-
-/**
- * 混合搜索：并行执行向量搜索和全文搜索，合并结果
- * 权重：向量 70% + BM25 30%
- *
- * 优势：
- * - 向量搜索擅长语义理解（如 "mcp" 能找到相关概念）
- * - 全文搜索擅长精确匹配（如专有名词、代码）
- * - 并行执行 + 结果融合，取长补短
- */
-export async function searchEntries(query: string, limit: number = 5): Promise<SearchResponse> {
-  // 并行执行两个搜索
-  const [vectorResults, sqliteResults] = await Promise.allSettled([
-    vectorSearch(query, limit * 2), // 多取一些用于合并
-    sqliteSearch(query, limit * 2),
-  ]);
-
-  // 提取成功的结果
-  const vecHits = vectorResults.status === 'fulfilled' ? vectorResults.value.results : [];
-  const sqlHits = sqliteResults.status === 'fulfilled' ? sqliteResults.value.results : [];
-
-  // 如果两个都失败，抛出错误
-  if (vecHits.length === 0 && sqlHits.length === 0) {
-    // 尝试获取具体的错误信息
-    const vecError = vectorResults.status === 'rejected' ? vectorResults.reason : null;
-    const sqlError = sqliteResults.status === 'rejected' ? sqliteResults.reason : null;
-
-    console.warn("Both search methods failed:", { vecError, sqlError });
-    throw new Error("搜索服务暂时不可用，请稍后重试");
-  }
-
-  // 合并结果
-  return mergeSearchResults(vecHits, sqlHits, limit);
 }
 
 // === 知识图谱 API ===
