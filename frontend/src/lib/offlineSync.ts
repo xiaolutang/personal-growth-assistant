@@ -115,6 +115,7 @@ export async function sync(): Promise<void> {
           if (newRetry > 3) {
             await queue.update(item.id, { status: "failed", retry_count: newRetry });
             hasTerminalFailure = true;
+            toast.error("同步失败", { description: "离线操作重试次数已用尽，请检查网络后重试" });
           } else {
             await queue.update(item.id, { retry_count: newRetry });
           }

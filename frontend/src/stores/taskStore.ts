@@ -128,9 +128,10 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
         body: data,
       });
       if (!queueId) {
-        // 入队失败（IndexedDB 不可用），回滚乐观更新
-        set({ error: "离线保存失败，请稍后重试" });
-        return;
+        // 入队失败（IndexedDB 不可用），设置错误并抛出，让调用方（如 updateTaskStatus）能回滚乐观更新
+        const msg = "离线保存失败，请稍后重试";
+        set({ error: msg });
+        throw new Error(msg);
       }
       // 乐观更新本地状态
       set((state) => ({

@@ -110,7 +110,8 @@ describe("offlineSync", () => {
     expect(mockQueue.update).toHaveBeenCalledWith("q-2", { retry_count: 1 });
   });
 
-  it("retry_count > 3 marks as failed", async () => {
+  it("retry_count > 3 marks as failed and toasts", async () => {
+    const { toast } = await import("sonner");
     const items = [makeItem({ id: "q-1", retry_count: 3 })];
     mockQueue.getAll.mockResolvedValue(items);
 
@@ -121,6 +122,9 @@ describe("offlineSync", () => {
     await sync();
 
     expect(mockQueue.update).toHaveBeenCalledWith("q-1", { status: "failed", retry_count: 4 });
+    expect(toast.error).toHaveBeenCalledWith("同步失败", { description: "离线操作重试次数已用尽，请检查网络后重试" });
+    // Terminal failure triggers fetchEntries to rollback optimistic state
+    expect(fetchEntries()).toHaveBeenCalled();
   });
 
   it("empty queue — no API calls", async () => {

@@ -14,6 +14,14 @@ vi.mock("@/services/api", () => ({
   getKnowledgeGraph: vi.fn(),
 }));
 
+// Mock offlineQueue for offline path tests
+vi.mock("@/lib/offlineQueue", () => ({
+  add: vi.fn(),
+  getAll: vi.fn().mockResolvedValue([]),
+  update: vi.fn(),
+  remove: vi.fn(),
+}));
+
 import {
   getEntries,
   createEntry as apiCreateEntry,
@@ -345,6 +353,30 @@ describe("updateTaskStatus", () => {
     const state = useTaskStore.getState();
     expect(state.error).toBe("网络错误");
     expect(state.tasks[0].status).toBe("waitStart");
+  });
+
+  it("离线入队失败时回滚乐观状态", async () => {
+    const { add: mockAdd } = await import("@/lib/offlineQueue");
+    vi.mocked(mockAdd).mockResolvedValueOnce(""); // 空字符串 = 入队失败
+
+    useTaskStore.setState({
+      tasks: [createMockTask({ id: "1", status: "waitStart" })],
+    });
+
+    // 模拟离线
+    Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
+
+    await act(async () => {
+      await useTaskStore.getState().updateTaskStatus("1", "doing");
+    });
+
+    // 乐观更新应被回滚
+    const state = useTaskStore.getState();
+    expect(state.tasks[0].status).toBe("waitStart");
+    expect(state.error).toBe("离线保存失败，请稍后重试");
+
+    // 恢复 online
+    Object.defineProperty(navigator, "onLine", { value: true, configurable: true });
   });
 });
 
