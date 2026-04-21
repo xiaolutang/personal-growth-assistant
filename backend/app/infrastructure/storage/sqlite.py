@@ -440,6 +440,8 @@ class SQLiteStorage:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_user_created ON entries(user_id, created_at)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_user_parent ON entries(user_id, parent_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_user_planned ON entries(user_id, planned_date)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_user_status_updated ON entries(user_id, status, updated_at DESC)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_user_type_updated ON entries(user_id, type, updated_at DESC)")
 
             # 标签表
             conn.execute("""
@@ -459,6 +461,7 @@ class SQLiteStorage:
                     FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
                 )
             """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_entry_tags_tag_id ON entry_tags(tag_id, entry_id)")
 
             # 全文搜索（FTS5）
             conn.execute("""
@@ -572,6 +575,7 @@ class SQLiteStorage:
             """)
             conn.execute("CREATE INDEX IF NOT EXISTS idx_goals_user_id ON goals(user_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_goals_status ON goals(status)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_goals_user_status_created ON goals(user_id, status, created_at DESC)")
 
             # 目标-条目关联表
             conn.execute("""

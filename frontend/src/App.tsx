@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, lazy, Suspense } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense, Component, type ErrorInfo, type ReactNode } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -33,6 +33,34 @@ const OfflineFallback = lazy(() => import("@/pages/OfflineFallback").then(m => (
 // Suspense fallback
 function PageSpinner() {
   return <div className="flex items-center justify-center h-64 text-muted-foreground">加载中...</div>;
+}
+
+// ErrorBoundary — 捕获 lazy chunk 加载失败
+interface ErrorBoundaryState { hasError: boolean }
+class ChunkErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false };
+  static getDerivedStateFromError(): ErrorBoundaryState {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("Chunk load error:", error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen gap-3 text-muted-foreground">
+          <p>页面加载失败，请刷新重试</p>
+          <button
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
+            onClick={() => window.location.reload()}
+          >
+            刷新页面
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 // 在首次渲染前初始化 fetch 拦截器，确保所有请求都带 auth header
@@ -157,6 +185,8 @@ function App() {
 
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <ChunkErrorBoundary>
+      <Suspense fallback={<PageSpinner />}>
       <Routes>
         {/* 公开路由 */}
         <Route path="/login" element={<Login />} />
@@ -181,6 +211,8 @@ function App() {
           }
         />
       </Routes>
+      </Suspense>
+      </ChunkErrorBoundary>
     </BrowserRouter>
   );
 }
