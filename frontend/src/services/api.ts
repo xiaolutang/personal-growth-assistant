@@ -1119,13 +1119,12 @@ export async function deleteGoal(goalId: string): Promise<void> {
   handleOpenApiResponse(undefined, error, response);
 }
 
-export async function linkGoalEntry(goalId: string, entryId: string): Promise<EntryLinkCreateResponse> {
+export async function linkGoalEntry(goalId: string, entryId: string): Promise<components["schemas"]["GoalEntryLinkResponse"]> {
   const { data, error, response } = await client.POST("/goals/{goal_id}/entries", {
     params: { path: { goal_id: goalId } },
     body: { entry_id: entryId },
   });
-  // API 返回 unknown 类型，转换为具体类型
-  return handleOpenApiResponse<EntryLinkCreateResponse>(data as EntryLinkCreateResponse | undefined, error, response);
+  return handleOpenApiResponse(data, error, response);
 }
 
 export async function unlinkGoalEntry(goalId: string, entryId: string): Promise<void> {

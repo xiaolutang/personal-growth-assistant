@@ -9,6 +9,7 @@ from app.api.schemas.goal import (
     GoalListResponse,
     GoalDetailResponse,
     GoalEntryCreate,
+    GoalEntryLinkResponse,
     GoalEntryListResponse,
     ChecklistItemToggle,
     ProgressSummaryResponse,
@@ -98,7 +99,7 @@ async def delete_goal(
 
 # === 条目关联 ===
 
-@router.post("/{goal_id}/entries", status_code=201)
+@router.post("/{goal_id}/entries", response_model=GoalEntryLinkResponse, status_code=201)
 async def link_entry(
     goal_id: str,
     request: GoalEntryCreate,

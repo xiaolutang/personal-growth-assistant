@@ -103,6 +103,16 @@ class GoalEntryResponse(BaseModel):
     entry: EntryInfo
 
 
+class GoalEntryLinkResponse(BaseModel):
+    """目标-条目关联创建响应（含更新后的目标）"""
+    id: str
+    goal_id: str
+    entry_id: str
+    created_at: str
+    entry: EntryInfo
+    goal: GoalDetailResponse
+
+
 class GoalEntryListResponse(BaseModel):
     """目标-条目关联列表响应"""
     entries: List[GoalEntryResponse]
