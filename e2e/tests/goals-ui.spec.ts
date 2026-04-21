@@ -180,17 +180,14 @@ test.describe('Goals 页面 E2E', () => {
 
     // 切换"已完成"
     await page.getByText('已完成', { exact: true }).click();
-    await page.waitForTimeout(500);
     await expect(page.getByText('筛选-已完成目标')).toBeVisible({ timeout: 10000 });
 
     // 切换"已归档"
     await page.getByText('已归档', { exact: true }).click();
-    await page.waitForTimeout(500);
     await expect(page.getByText('筛选-已归档目标')).toBeVisible({ timeout: 10000 });
 
     // 切回"进行中"
     await page.getByText('进行中', { exact: true }).click();
-    await page.waitForTimeout(500);
     await expect(page.getByText('筛选-活跃目标')).toBeVisible({ timeout: 10000 });
   });
 
@@ -339,7 +336,6 @@ test.describe('Goals 页面 E2E', () => {
 
     // 切换到"已归档"筛选
     await page.getByText('已归档', { exact: true }).click();
-    await page.waitForTimeout(500);
 
     // 验证目标出现在已归档列表
     await expect(page.getByText('归档测试目标')).toBeVisible({ timeout: 10000 });
@@ -366,7 +362,6 @@ test.describe('Goals 页面 E2E', () => {
     // 通过客户端路由导航到已完成目标详情
     await goToGoals(page);
     await page.getByText('已完成', { exact: true }).click();
-    await page.waitForTimeout(500);
     await expect(page.getByText('重新激活测试目标')).toBeVisible({ timeout: 10000 });
     await page.getByText('重新激活测试目标').click();
     await expect(page.getByRole('heading', { name: /目标详情/ })).toBeVisible({ timeout: 15000 });
@@ -387,7 +382,6 @@ test.describe('Goals 页面 E2E', () => {
 
     // 切换到"进行中"
     await page.getByText('进行中', { exact: true }).click();
-    await page.waitForTimeout(500);
 
     // 验证出现在进行中列表
     await expect(page.getByText('重新激活测试目标')).toBeVisible({ timeout: 10000 });

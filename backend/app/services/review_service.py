@@ -224,12 +224,11 @@ class ReviewService:
             target_date = date.today()
 
         date_str = target_date.isoformat()
-        next_day = (target_date + timedelta(days=1)).isoformat()
 
         tasks = self._sqlite.list_entries(
             type="task",
             start_date=date_str,
-            end_date=next_day,
+            end_date=date_str,
             limit=1000,
             user_id=user_id,
         )
@@ -237,7 +236,7 @@ class ReviewService:
         notes = self._sqlite.list_entries(
             type="note",
             start_date=date_str,
-            end_date=next_day,
+            end_date=date_str,
             limit=1000,
             user_id=user_id,
         )
@@ -280,7 +279,7 @@ class ReviewService:
         week_end = week_start + timedelta(days=6)
 
         start_str = week_start.isoformat()
-        end_str = (week_end + timedelta(days=1)).isoformat()
+        end_str = week_end.isoformat()
 
         tasks = self._sqlite.list_entries(
             type="task",
@@ -305,12 +304,10 @@ class ReviewService:
         for i in range(7):
             day = week_start + timedelta(days=i)
             day_str = day.isoformat()
-            next_day_str = (day + timedelta(days=1)).isoformat()
-
             day_tasks = self._sqlite.list_entries(
                 type="task",
                 start_date=day_str,
-                end_date=next_day_str,
+                end_date=day_str,
                 limit=1000,
                 user_id=user_id,
             )
@@ -358,7 +355,7 @@ class ReviewService:
         last_tasks = self._sqlite.list_entries(
             type="task",
             start_date=last_week_start.isoformat(),
-            end_date=(last_week_end + timedelta(days=1)).isoformat(),
+            end_date=last_week_end.isoformat(),
             limit=1000,
             user_id=user_id,
         )
@@ -392,7 +389,7 @@ class ReviewService:
         last_tasks = self._sqlite.list_entries(
             type="task",
             start_date=last_month_start.isoformat(),
-            end_date=(last_month_end + timedelta(days=1)).isoformat(),
+            end_date=last_month_end.isoformat(),
             limit=1000,
             user_id=user_id,
         )
@@ -424,7 +421,7 @@ class ReviewService:
             month_end = date(month_start.year, month_start.month + 1, 1) - timedelta(days=1)
 
         start_str = month_start.isoformat()
-        end_str = (month_end + timedelta(days=1)).isoformat()
+        end_str = month_end.isoformat()
 
         tasks = self._sqlite.list_entries(
             type="task",
@@ -455,7 +452,7 @@ class ReviewService:
             week_tasks = self._sqlite.list_entries(
                 type="task",
                 start_date=current_week_start.isoformat(),
-                end_date=(week_end + timedelta(days=1)).isoformat(),
+                end_date=week_end.isoformat(),
                 limit=1000,
                 user_id=user_id,
             )
@@ -857,12 +854,11 @@ class ReviewService:
         for i in range(count):
             week_start = current_week_start - timedelta(weeks=i)
             week_end = week_start + timedelta(days=6)
-            next_day_after_week = week_end + timedelta(days=1)
 
             # 获取该周的条目
             week_entries = self._sqlite.list_entries(
                 start_date=week_start.isoformat(),
-                end_date=next_day_after_week.isoformat(),
+                end_date=week_end.isoformat(),
                 limit=1000,
                 user_id=user_id,
             )
@@ -987,7 +983,7 @@ class ReviewService:
         # 最近 30 天条目
         recent_entries = self._sqlite.list_entries(
             start_date=thirty_days_ago.isoformat(),
-            end_date=(today + timedelta(days=1)).isoformat(),
+            end_date=today.isoformat(),
             limit=1000,
             user_id=user_id,
         )
@@ -1263,7 +1259,7 @@ class ReviewService:
 
         # 4. 本周学习摘要
         week_start = today - timedelta(days=today.weekday())
-        week_end_str = (week_start + timedelta(days=7)).isoformat()
+        week_end_str = (week_start + timedelta(days=6)).isoformat()
         week_start_str = week_start.isoformat()
 
         week_entries = self._sqlite.list_entries(

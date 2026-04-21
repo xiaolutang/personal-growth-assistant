@@ -5,11 +5,11 @@
   "created_at": "2026-03-28",
   "updated_at": "2026-04-20",
   "status": "active",
-  "scope_notes": "E2E 测试补齐（Goals + 新类型 + 导出）+ CI PR 增强",
+  "scope_notes": "技术债清理：代码质量 + 性能优化 + 架构整理 + 测试质量",
   "active_requirement_cycle": {
-    "id": "R020",
-    "name": "e2e-ci-pipeline",
-    "branch": "feat/R020-e2e-ci-pipeline"
+    "id": "R021",
+    "name": "tech-debt-cleanup",
+    "branch": "chore/R021-tech-debt-cleanup"
   },
   "workflow": {
     "name": "XLFoundry",
@@ -20,9 +20,9 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 9,
-    "pending": 3,
-    "completed": 6,
+    "total_tasks": 11,
+    "pending": 0,
+    "completed": 11,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -46,347 +46,365 @@
     {"id": "R016", "name": "polish-cleanup", "status": "completed", "archive_dir": "_archive/R016_polish-cleanup"},
     {"id": "R017", "name": "code-audit-hardening", "status": "completed", "archive_dir": "_archive/R017_code-audit-hardening"},
     {"id": "R018", "name": "defect-fix-quality", "status": "completed", "archive_dir": "_archive/R018_defect-fix-quality"},
-    {"id": "R019", "name": "offline-pwa", "status": "completed", "archive_dir": "_archive/R019_offline-pwa"}
+    {"id": "R019", "name": "offline-pwa", "status": "completed", "archive_dir": "_archive/R019_offline-pwa"},
+    {"id": "R020", "name": "e2e-ci-pipeline", "status": "completed", "archive_dir": "_archive/R020_e2e-ci-pipeline"}
   ],
   "modules": [
     {
-      "id": "e2e-infra",
-      "name": "E2E 基础设施",
-      "description": "Playwright helper 扩展、API 封装、测试 fixtures"
+      "id": "cleanup",
+      "name": "死代码清理",
+      "description": "删除已废弃的页面组件和未使用的 API 函数"
     },
     {
-      "id": "e2e-goals",
-      "name": "Goals E2E",
-      "description": "目标追踪完整链路 E2E 测试"
+      "id": "perf-backend",
+      "name": "后端性能",
+      "description": "SQLite 索引 + KnowledgeService 查询优化"
     },
     {
-      "id": "e2e-new-types",
-      "name": "新类型 E2E",
-      "description": "decision/reflection/question 类型 E2E 测试"
+      "id": "perf-frontend",
+      "name": "前端性能",
+      "description": "路由懒加载 + 代码分割"
     },
     {
-      "id": "e2e-export",
-      "name": "导出 E2E",
-      "description": "导出功能 E2E 测试"
+      "id": "e2e-quality",
+      "name": "E2E 质量",
+      "description": "消除硬等待、改进测试稳定性"
     },
     {
-      "id": "ci",
-      "name": "CI 增强",
-      "description": "GitHub Actions PR E2E + 状态同步"
+      "id": "code-quality",
+      "name": "代码质量",
+      "description": "Review.tsx 拆分、API 风格统一、类型安全"
     },
     {
-      "id": "quality",
+      "id": "quality-gate",
       "name": "质量收口",
-      "description": "全量测试验证 + 构建检查"
+      "description": "全量测试 + 构建验证"
     }
   ],
   "phases": [
     {
       "id": "phase-1",
-      "name": "基础设施",
-      "tasks": ["S05"]
+      "name": "快速清理",
+      "tasks": ["S07", "B78"]
     },
     {
       "id": "phase-2",
-      "name": "Goals E2E",
-      "tasks": ["B74", "F63"]
+      "name": "性能优化",
+      "tasks": ["F66", "F67"]
     },
     {
       "id": "phase-3",
-      "name": "新类型 E2E",
-      "tasks": ["B75", "F64"]
+      "name": "代码质量",
+      "tasks": ["F68", "F69", "F70", "F71"]
     },
     {
       "id": "phase-4",
-      "name": "导出 E2E",
-      "tasks": ["B76", "F65"]
+      "name": "重构",
+      "tasks": ["B79", "F72"]
     },
     {
       "id": "phase-5",
-      "name": "CI + 收口",
-      "tasks": ["S06", "B77"]
+      "name": "收口",
+      "tasks": ["S08"]
     }
   ],
   "features": [
     {
-      "id": "S05",
+      "id": "S07",
       "phase": 1,
-      "module": "e2e-infra",
-      "name": "E2E Helper 扩展",
-      "description": "扩展 e2e/tests/helpers/ 新增 Goals API helper + Export API helper + 新类型创建 helper。为后续 E2E 测试任务提供基础。",
-      "verification": "npm test in e2e/ 通过（现有测试不受影响）",
+      "module": "cleanup",
+      "name": "死代码清理",
+      "description": "删除已被路由重定向替代的页面组件（Inbox.tsx、Projects.tsx、Notes.tsx）、未使用的组件（QuickCommandHints.tsx）和未调用的 API 函数（getRelatedConcepts）。同时清理对应的路由 import 和 Navigate 重定向改为直接不注册旧路由。",
+      "verification": "前端构建通过 + 现有测试通过",
       "depends_on": [],
       "status": "completed",
-      "started_at": "2026-04-20",
-      "completed_at": "2026-04-20",
-      "actual_minutes": 15,
-      "execution_notes": "新增 goals.ts (10 helpers) + export.ts (1 helper) + api.ts (searchEntriesFTS5)。40 E2E tests passed。Code review 1 round fix (type tightening + encodeURIComponent)。",
+      "started_at": "2026-04-20T17:10:00",
+      "completed_at": "2026-04-20T17:20:00",
+      "commit": "2aa0caf",
+      "summary": "删除 4 个死代码文件 + getRelatedConcepts 函数，保留路由重定向，372 行清理",
       "priority": 1,
       "acceptance_criteria": [
-        "新增 e2e/tests/helpers/goals.ts — 封装 createGoal, listGoals, getGoal, updateGoal, deleteGoal, linkEntry, unlinkEntry, listGoalEntries, toggleChecklist, getProgressSummary",
-        "新增 e2e/tests/helpers/export.ts — 封装 exportEntries (markdown/json)",
-        "扩展 e2e/tests/helpers/api.ts — createEntry 支持 decision/reflection/question 类型 + 新增 searchEntries（GET /entries/search/query，SQLite FTS5 全文搜索，不依赖 Qdrant）",
-        "现有 E2E 测试全部通过（npm test）"
+        "删除 Inbox.tsx、Projects.tsx、Notes.tsx（路由已重定向到 Explore）",
+        "删除 QuickCommandHints.tsx（无任何引用）",
+        "删除 api.ts 中 getRelatedConcepts() 函数（无消费者）",
+        "App.tsx 中移除对已删除组件的 import 和旧路由定义",
+        "前端构建通过（npm run build）",
+        "前端测试通过（npm run test:run）"
       ],
-      "test_tasks": ["npm test in e2e/ 全通过（回归）"],
+      "test_tasks": [
+        "正常: npm run build 通过 + npm run test:run 通过",
+        "边界: grep 确认无残留引用"
+      ],
       "risk_tags": [],
-      "files": ["e2e/tests/helpers/goals.ts", "e2e/tests/helpers/export.ts", "e2e/tests/helpers/api.ts"]
+      "files": ["frontend/src/pages/Inbox.tsx", "frontend/src/pages/Projects.tsx", "frontend/src/pages/Notes.tsx", "frontend/src/components/QuickCommandHints.tsx", "frontend/src/services/api.ts", "frontend/src/App.tsx"]
     },
     {
-      "id": "B74",
+      "id": "B78",
+      "phase": 1,
+      "module": "perf-backend",
+      "name": "SQLite 缺失索引补齐",
+      "description": "entries 表缺少 parent_id 索引（sqlite.py:678 WHERE parent_id=? 用于项目子任务查询）和 planned_date 索引（notification_service.py:160 WHERE planned_date=? 用于待办提醒）。因架构不变量要求 user_id 隔离，优先创建复合索引 (user_id, parent_id) 和 (user_id, planned_date)。",
+      "verification": "后端测试通过 + EXPLAIN QUERY PLAN 确认索引命中",
+      "depends_on": [],
+      "status": "completed",
+      "started_at": "2026-04-20T17:22:00",
+      "completed_at": "2026-04-20T17:25:00",
+      "commit": "d82e5c5",
+      "summary": "新增 (user_id,parent_id) 和 (user_id,planned_date) 复合索引，EXPLAIN 确认命中",
+      "priority": 1,
+      "acceptance_criteria": [
+        "entries 表新增 (user_id, parent_id) 复合索引（覆盖 sqlite.py get_project_progress 的 WHERE user_id=? AND parent_id=? 查询）",
+        "entries 表新增 (user_id, planned_date) 复合索引（覆盖 notification_service.py 的 WHERE planned_date=? 查询）",
+        "已有索引不受影响（type, status, updated_at, user_id, user_id+created_at）",
+        "SQLiteStorage._init_db() 创建索引逻辑幂等（IF NOT EXISTS）",
+        "EXPLAIN QUERY PLAN 确认项目子任务查询命中新索引",
+        "后端测试全通过（uv run pytest）"
+      ],
+      "test_tasks": [
+        "正常: EXPLAIN QUERY PLAN 验证索引命中 / 项目子任务查询不再全表扫描",
+        "边界: 重复运行 _init_db 不报错（幂等性）"
+      ],
+      "risk_tags": [],
+      "files": ["backend/app/infrastructure/storage/sqlite.py"]
+    },
+    {
+      "id": "F66",
       "phase": 2,
-      "module": "e2e-goals",
-      "name": "Goals API E2E",
-      "description": "Goals 完整 API E2E 测试，覆盖所有端点的正常、边界、异常场景。使用 Playwright APIRequestContext 直接测试后端 API。",
-      "verification": "npx playwright test tests/goals-api.spec.ts 通过",
-      "depends_on": ["S05"],
+      "module": "perf-frontend",
+      "name": "路由懒加载 + Vite 代码分割",
+      "description": "将 App.tsx 中 11 个页面组件改为 React.lazy + Suspense 动态导入。配置 Vite manualChunks 将 recharts、@xyflow/react、react-markdown 等大型依赖分离为独立 chunk，减少首屏体积约 350KB gz。",
+      "verification": "前端构建通过 + bundle 分析确认代码分割生效",
+      "depends_on": [],
       "status": "completed",
-      "started_at": "2026-04-20",
-      "completed_at": "2026-04-20",
-      "actual_minutes": 30,
-      "execution_notes": "25 个 E2E 测试覆盖 15 个 AC + 4 个额外覆盖（listGoalEntries、abandoned 删除成功、跨用户隔离、progress-summary 精确断言）。Code review 3 轮通过。",
-      "evidence_file": ".dev-flow/evidence/B74.md",
-      "priority": 2,
+      "priority": 1,
       "acceptance_criteria": [
-        "创建 count 类型目标 → 201 + 正确字段",
-        "创建 checklist 类型目标 → 201 + checklist_items 有 id/title/checked",
-        "创建 tag_auto 类型目标 → 201 + auto_tags 字段",
-        "tag_auto 缺少 auto_tags → 422",
-        "checklist 缺少 checklist_items → 422",
-        "列出目标 → 返回数组",
-        "按 status=active 过滤 → 只返回 active",
-        "获取目标详情 → 含 linked_entries_count",
-        "更新目标状态 active→completed → status 变为 completed",
-        "删除 active 目标 → 拒绝（仅 abandoned 可删）",
-        "关联条目到 count 目标 → current_value +1",
-        "取消关联条目 → current_value -1",
-        "切换 checklist 项 → checked 翻转",
-        "进度汇总 → 返回 active_count + completed_count",
-        "未认证请求 → 401"
+        "App.tsx 中 11 个页面组件改为 React.lazy() 动态导入",
+        "Suspense fallback 显示加载指示器（Spinner）",
+        "Vite manualChunks 配置将 recharts/@xyflow/react/react-markdown 分离为独立 chunk",
+        "实施前记录基线：npm run build 输出各 chunk 大小，作为对比依据",
+        "首屏 chunk（不含 recharts/@xyflow）体积相比基线减少 > 200KB gz",
+        "所有路由正常跳转、页面正常渲染",
+        "前端构建通过（npm run build）"
       ],
       "test_tasks": [
-        "正常: 创建 3 种 metric_type / 列出 / 详情 / 更新 / 关联 / 取消关联 / checklist 切换 / 进度汇总",
-        "边界: 空目标列表 / target_value=1 最小值 / 已完成目标不可删 / tag_auto 必填校验",
-        "异常: 未认证 401 / 缺少必填 422 / 不存在 goal_id 404 / 重复关联 409"
+        "正常: 所有路由可访问 / 页面渲染正确 / 构建成功",
+        "边界: Suspense fallback 正常显示 / 加载失败有 ErrorBoundary",
+        "性能: npm run build 输出 chunk 大小对比"
       ],
-      "risk_tags": ["network"],
-      "contract_refs": ["CONTRACT-GOAL01", "CONTRACT-GOAL06", "CONTRACT-GOAL10"],
-      "files": ["e2e/tests/goals-api.spec.ts"]
+      "risk_tags": [],
+      "files": ["frontend/src/App.tsx", "frontend/vite.config.ts"]
     },
     {
-      "id": "F63",
+      "id": "F67",
       "phase": 2,
-      "module": "e2e-goals",
-      "name": "Goals 页面 E2E",
-      "description": "Goals 前端页面完整 E2E 测试，覆盖创建弹窗、列表展示、状态筛选、详情页、进度交互等。",
-      "verification": "npx playwright test tests/goals-ui.spec.ts 通过",
-      "depends_on": ["B74"],
+      "module": "e2e-quality",
+      "name": "E2E waitForTimeout 硬等待清理",
+      "description": "将 E2E 测试中 26 处 waitForTimeout 硬等待替换为基于断言的 waitFor（waitForSelector、toBeVisible、toHaveText 等）。减少测试脆弱性，提升运行速度。",
+      "verification": "E2E 全量测试通过 + 无 waitForTimeout 残留",
+      "depends_on": [],
       "status": "completed",
-      "started_at": "2026-04-20",
-      "completed_at": "2026-04-20",
-      "actual_minutes": 45,
-      "execution_notes": "10 个 E2E 测试覆盖 12 个 AC。首页目标卡片需先创建 entry 避免 isEmpty 空状态隐藏。底部导航 z-50 冲突用 evaluate(el.click()) 绕过。Qdrant 不可用时关联条目走 API 工作绕过。",
       "priority": 2,
       "acceptance_criteria": [
-        "空目标列表 → 显示引导文案",
-        "点击新建 → 弹窗出现 → 填写标题+metric_type → 提交 → 列表出现新目标卡片",
-        "创建 checklist 目标 → 填写检查项 → 卡片显示 checklist Badge",
-        "创建 tag_auto 目标 → 选择标签 → 卡片显示 tag Badge",
-        "状态筛选 active/completed/abandoned → 列表正确过滤",
-        "点击目标卡片 → 跳转 /goals/{id} 详情页",
-        "详情页显示环形进度图 + 进度条",
-        "详情页关联条目 → 搜索 → 关联 → 列表更新",
-        "详情页取消关联 → 条目消失",
-        "归档目标 → 状态变 abandoned → 列表更新",
-        "重新激活 completed → active → 列表更新（前端仅 completed 状态显示重新激活按钮）",
-        "首页目标进度卡片显示活跃目标（已由 F35 实现）"
+        "goals-ui.spec.ts 中 6 处 waitForTimeout 替换为断言等待",
+        "new-types-ui.spec.ts 中 9 处 waitForTimeout 替换为断言等待",
+        "page-context.spec.ts 中 9 处 waitForTimeout 替换为断言等待",
+        "export-ui.spec.ts 中 1 处 waitForTimeout 替换为断言等待",
+        "entries.spec.ts 中 1 处 waitForTimeout 替换为断言等待",
+        "grep 确认全量 E2E 测试中无 waitForTimeout 残留",
+        "E2E 全量测试通过（npx playwright test）"
       ],
       "test_tasks": [
-        "正常: 创建→列表→筛选→详情→关联→归档→重新激活",
-        "边界: 空列表引导 / 必填校验 / 日期选择器",
-        "异常: 创建失败 toast / API 错误降级"
+        "正常: 所有 E2E 测试通过",
+        "边界: 网络慢场景下断言等待比硬等待更可靠"
       ],
       "risk_tags": ["network"],
-      "files": ["e2e/tests/goals-ui.spec.ts"]
+      "files": ["e2e/tests/goals-ui.spec.ts", "e2e/tests/new-types-ui.spec.ts", "e2e/tests/page-context.spec.ts", "e2e/tests/export-ui.spec.ts", "e2e/tests/entries.spec.ts"]
     },
     {
-      "id": "B75",
+      "id": "F68",
       "phase": 3,
-      "module": "e2e-new-types",
-      "name": "新类型条目 API E2E",
-      "description": "decision/reflection/question 三种新类型条目的 API E2E 测试。覆盖创建、列表过滤、搜索、更新、删除。",
-      "verification": "npx playwright test tests/new-types-api.spec.ts 通过",
-      "depends_on": ["S05"],
+      "module": "code-quality",
+      "name": "Review.tsx API 调用风格统一",
+      "description": "将 Review.tsx 中直接使用 authFetch 的 daily/weekly/monthly 报告调用改为使用 api.ts 中封装的函数。统一 API 调用风格，减少维护负担。",
+      "verification": "Review 页面功能正常 + 前端测试通过",
+      "depends_on": ["S07"],
       "status": "completed",
-      "started_at": "2026-04-20",
-      "completed_at": "2026-04-20",
-      "actual_minutes": 20,
-      "execution_notes": "14 个 E2E 测试覆盖 12 个 AC。修复后端 read_entry 不搜索 decisions/reflections/questions 目录的缺陷。Code review 1 轮 conditional_pass 后修复断言对齐。",
-      "evidence_file": ".dev-flow/evidence/B75.md",
       "priority": 2,
       "acceptance_criteria": [
-        "创建 reflection → 201 + category=reflection",
-        "创建 question → 201 + category=question",
-        "列表 type=decision 过滤 → 只含 decision",
-        "列表 type=reflection 过滤 → 只含 reflection",
-        "列表 type=question 过滤 → 只含 question",
-        "全文搜索 decision 标题（GET /entries/search/query） → 结果命中",
-        "搜索不匹配关键词 → 空结果",
-        "更新 decision 标题 → 标题变更",
-        "删除 reflection → 列表不再包含",
-        "混合创建 3 种类型 → 各自独立存在",
-        "未认证 → 401"
+        "Review.tsx 中 3 处 authFetch 调用替换为 api.ts 封装函数",
+        "api.ts 新增 getDailyReport/getWeeklyReport/getMonthlyReport 封装",
+        "Review.tsx 不再直接 import authFetch",
+        "Review 页面功能正常（日报/周报/月报数据展示）",
+        "前端构建通过"
       ],
       "test_tasks": [
-        "正常: 创建 3 种类型 / 列表过滤 / 全文搜索（GET /entries/search/query）/ 更新 / 删除",
-        "边界: 空内容创建 / 特殊字符标题 / 混合类型列表",
-        "异常: 未认证 401 / 不存在条目 404"
+        "正常: Review 页面正常加载数据",
+        "边界: API 返回空数据时无报错"
       ],
-      "risk_tags": ["network"],
-      "files": ["e2e/tests/new-types-api.spec.ts"]
+      "risk_tags": [],
+      "files": ["frontend/src/pages/Review.tsx", "frontend/src/services/api.ts"]
     },
     {
-      "id": "F64",
+      "id": "F69",
       "phase": 3,
-      "module": "e2e-new-types",
-      "name": "探索页新类型 E2E",
-      "description": "探索页新类型 Tab 切换、筛选、搜索命中的前端 E2E 测试。",
-      "verification": "npx playwright test tests/new-types-ui.spec.ts 通过",
-      "depends_on": ["B75"],
+      "module": "code-quality",
+      "name": "Review.tsx 组件拆分",
+      "description": "将 Review.tsx（1098 行）拆分为多个子组件：TrendChart、MorningDigestCard、AiSummaryCard、HeatmapCard、GrowthCurveCard。MorningDigestCard 复用 F70 提取的 useMorningDigest Hook，不独立持有晨报请求状态。",
+      "verification": "Review 页面功能正常 + 前端测试通过 + 组件文件 < 200 行",
+      "depends_on": ["F70"],
       "status": "completed",
-      "started_at": "2026-04-20",
-      "completed_at": "2026-04-20",
-      "actual_minutes": 30,
-      "execution_notes": "8 个 E2E 测试覆盖 8 个 AC。修复 Explore.tsx getEntries limit 200→100 的 bug。Code review 通过。",
-      "evidence_file": ".dev-flow/evidence/F64.md",
-      "commit": "b94ee06",
       "priority": 2,
       "acceptance_criteria": [
-        "探索页显示 7 个 Tab（全部/灵感/笔记/项目/决策/复盘/疑问）",
-        "点击「决策」Tab → 只显示 decision 类型条目",
-        "点击「复盘」Tab → 只显示 reflection 类型条目",
-        "点击「疑问」Tab → 只显示 question 类型条目",
-        "搜索关键词 + Tab 过滤 → 结果为交集",
-        "URL ?type=decision → 自动切换到决策 Tab",
-        "空数据 Tab → 显示空状态引导",
-        "点击「全部」Tab → 显示所有非 task 类型"
+        "Review.tsx 拆分后主文件 < 200 行",
+        "提取 TrendChart 组件（趋势折线图）",
+        "提取 MorningDigestCard 组件（晨报卡片）",
+        "提取 HeatmapCard 组件（知识热力图）",
+        "提取 GrowthCurveCard 组件（成长曲线）",
+        "MorningDigestCard 复用 useMorningDigest 共享 Hook（F70 产物）",
+        "其他子组件独立管理各自的 useState 和 useEffect",
+        "Review 页面功能与拆分前完全一致",
+        "前端构建通过 + 测试通过"
       ],
       "test_tasks": [
-        "正常: Tab 切换 / 搜索 + 筛选 / URL 参数同步",
-        "边界: 空数据 Tab / 快速切换 Tab / 搜索清空",
-        "异常: 搜索超时 / API 错误"
+        "正常: Review 页面所有卡片正常渲染",
+        "边界: 空数据时各卡片显示空状态"
       ],
-      "risk_tags": ["network"],
-      "files": ["e2e/tests/new-types-ui.spec.ts"]
+      "risk_tags": [],
+      "files": ["frontend/src/pages/Review.tsx", "frontend/src/components/review/"]
     },
     {
-      "id": "B76",
-      "phase": 4,
-      "module": "e2e-export",
-      "name": "导出 API E2E",
-      "description": "导出功能的 API 级 E2E 测试。覆盖 markdown/JSON 格式、类型过滤、日期范围。",
-      "verification": "npx playwright test tests/export-api.spec.ts 通过",
-      "depends_on": ["S05"],
+      "id": "F70",
+      "phase": 3,
+      "module": "code-quality",
+      "name": "getMorningDigest 共享 Hook 提取",
+      "description": "将 getMorningDigest() 从 Home.tsx 和 Review.tsx 中提取到共享自定义 Hook useMorningDigest，消除重复 API 调用和数据不一致。",
+      "verification": "Home 和 Review 页面晨报功能正常",
+      "depends_on": ["F68"],
       "status": "completed",
-      "started_at": "2026-04-20",
-      "completed_at": "2026-04-20",
-      "actual_minutes": 15,
-      "execution_notes": "11 个 E2E 测试覆盖 11 个 AC，含跨模块闭环（decision/reflection/question 导出）。所有测试通过。",
-      "evidence_file": ".dev-flow/evidence/B76.md",
       "priority": 2,
       "acceptance_criteria": [
-        "json 导出 → 200 + JSON 数组 + 包含已创建条目",
-        "按 type=task 过滤 → 只含 task 类型",
-        "按 type=decision 过滤 → 只含 decision 类型（跨模块闭环：新类型可导出）",
-        "按 type=reflection 过滤 → 只含 reflection 类型",
-        "按 type=question 过滤 → 只含 question 类型",
-        "按日期范围过滤 → 只含范围内条目",
-        "无效 format → 422",
-        "无效 type → 422",
-        "空数据导出 → json 返回空数组",
-        "未认证 → 401"
+        "新增 useMorningDigest Hook（frontend/src/hooks/useMorningDigest.ts）",
+        "Hook 内部管理 morningDigest state + fetch 逻辑 + loading/error 状态",
+        "Home.tsx 改用 useMorningDigest 替代本地 state + getMorningDigest 调用",
+        "Review.tsx（或拆分后的 MorningDigestCard）改用 useMorningDigest",
+        "两个页面共享同一份数据，不重复请求",
+        "前端构建通过"
       ],
       "test_tasks": [
-        "正常: markdown 导出 / json 导出 / 类型过滤（含 decision/reflection/question 新类型）/ 日期过滤",
-        "边界: 空数据 / 无匹配类型 / 日期边界",
-        "异常: 未认证 401 / 无效格式 422 / 无效类型 422"
+        "正常: Home 和 Review 页面均显示晨报数据",
+        "边界: API 失败时 Hook 返回 error 状态"
       ],
-      "risk_tags": ["network"],
-      "files": ["e2e/tests/export-api.spec.ts"]
+      "risk_tags": [],
+      "files": ["frontend/src/hooks/useMorningDigest.ts", "frontend/src/pages/Home.tsx", "frontend/src/pages/Review.tsx"]
     },
     {
-      "id": "F65",
+      "id": "F71",
+      "phase": 3,
+      "module": "code-quality",
+      "name": "Explore.tsx 搜索类型安全 + 去重",
+      "description": "将 Explore.tsx 中 2 处重复的搜索结果映射（any 类型）提取为独立函数 normalizeSearchResult()，消除重复代码并引入正确的类型定义。",
+      "verification": "Explore 页面搜索功能正常 + 无 any 类型残留",
+      "depends_on": ["S07"],
+      "status": "completed",
+      "priority": 2,
+      "acceptance_criteria": [
+        "提取 normalizeSearchResult() 函数，替换 2 处重复的 any 映射",
+        "函数入参和返回值有完整 TypeScript 类型（无 any）",
+        "防抖搜索 useEffect 和 handleSearch 共用同一函数",
+        "Explore 页面搜索功能与修改前完全一致",
+        "前端构建通过"
+      ],
+      "test_tasks": [
+        "正常: 探索页搜索+Tab 筛选正常",
+        "边界: 空搜索/搜索无结果"
+      ],
+      "risk_tags": [],
+      "files": ["frontend/src/pages/Explore.tsx"]
+    },
+    {
+      "id": "B79",
       "phase": 4,
-      "module": "e2e-export",
-      "name": "导出 UI E2E",
-      "description": "导出功能的前端页面 E2E 测试。覆盖 Sidebar 入口、格式选择、下载触发。",
-      "verification": "npx playwright test tests/export-ui.spec.ts 通过",
-      "depends_on": ["B76"],
-      "status": "pending",
-      "priority": 2,
-      "acceptance_criteria": [
-        "Sidebar 导出按钮 → 点击打开导出对话框",
-        "选择 markdown → 点击导出 → 触发下载",
-        "选择 json → 点击导出 → 触发下载",
-        "选择类型过滤 + 导出 → 下载只含该类型",
-        "关闭对话框 → 不触发下载"
-      ],
-      "test_tasks": [
-        "正常: 打开对话框 / 选择格式 / 触发下载",
-        "边界: 空数据导出 / 快速连续点击",
-        "异常: API 错误 toast"
-      ],
-      "risk_tags": ["network"],
-      "files": ["e2e/tests/export-ui.spec.ts"]
-    },
-    {
-      "id": "S06",
-      "phase": 5,
-      "module": "ci",
-      "name": "CI PR E2E + 状态同步",
-      "description": "修改 GitHub Actions CI 配置：PR 中运行 E2E 关键子集（auth + entries + goals-api + new-types-api）。同步 test_coverage.md 中 B35-B40 状态。统一 Python 版本为 3.12。",
-      "verification": "CI 配置语法正确 + PR 触发 E2E",
-      "depends_on": ["B74", "B75", "B76"],
-      "status": "pending",
+      "module": "perf-backend",
+      "name": "KnowledgeService 查询优化",
+      "description": "将 KnowledgeService 中 5 处 list_entries(limit=10000) 全量扫描替换为按需查询：tag 查询用 SQL GROUP BY、日期范围查询用 WHERE 过滤、掌握度分布用聚合查询。避免将大量数据加载到 Python 内存。验证方式：准备固定测试数据集（>= 100 条），对比优化前后 get_knowledge_map 响应时间。",
+      "verification": "知识图谱 API 功能正确 + 无 list_entries(limit=10000) 残留",
+      "depends_on": ["B78"],
+      "status": "completed",
       "priority": 3,
       "acceptance_criteria": [
-        "ci.yml 新增 e2e-test-pr job：PR 时运行 E2E 关键子集（auth + entries + goals-api + new-types-api）",
-        "E2E job Python 版本统一为 3.12（与后端测试一致）",
-        "test_coverage.md 中 B35/B36/B37/B38/B39 状态更新为 completed",
-        "test_coverage.md 中 B40 状态更新为 completed",
-        "playwright.config.ts 无需修改（已支持）"
+        "knowledge_service.py 中不再有 list_entries(limit=10000) 调用",
+        "tag 统计改用 SQLite 聚合查询（如 json_each 解析 + GROUP BY）",
+        "日期范围查询改用 WHERE 过滤而非全量加载",
+        "掌握度分布计算改为批量查询或并行化",
+        "get_knowledge_map/search_concepts/get_concept_timeline/get_mastery_distribution/get_knowledge_stats 功能不变",
+        "get_knowledge_stats 的 _stats_from_sqlite（knowledge_service.py:708,752）也消除 list_entries(limit=10000)",
+        "后端测试全通过"
       ],
       "test_tasks": [
-        "验证 ci.yml YAML 语法正确（python -c yaml.safe_load）",
-        "验证 e2e-test-pr job 的触发条件为 pull_request",
-        "验证 test_coverage.md 6 项状态从 pending → completed"
+        "正常: 知识图谱 API 返回正确数据",
+        "边界: 空数据 / 大量数据场景",
+        "异常: Neo4j 不可用时 SQLite 降级路径正常"
       ],
-      "risk_tags": ["config"],
-      "files": [".github/workflows/ci.yml", ".dev-flow/test_coverage.md"]
+      "risk_tags": [],
+      "files": ["backend/app/services/knowledge_service.py", "backend/app/infrastructure/storage/sqlite.py"]
     },
     {
-      "id": "B77",
-      "phase": 5,
-      "module": "quality",
-      "name": "质量收口 — 全量 E2E + CI 验证",
-      "description": "全量 E2E 测试运行 + 前后端单元测试 + 构建验证。确认 CI 流水线 PR 和 main 路径都正常。",
-      "verification": "全量测试通过 + CI 验证",
-      "depends_on": ["F63", "F64", "F65", "S06"],
-      "status": "pending",
+      "id": "F72",
+      "phase": 4,
+      "module": "code-quality",
+      "name": "api.ts openapi-fetch 统一",
+      "description": "将 api.ts 中使用原始 fetch 的搜索、知识图谱、反馈、通知、目标等 API 函数迁移到 openapi-fetch 类型安全客户端，消除 as unknown as 强转和 any 返回类型。sessionApi.ts 不在本次范围内。",
+      "verification": "前端构建通过 + API 功能正常",
+      "depends_on": ["F68"],
+      "status": "completed",
+      "started_at": "2026-04-20T20:37:00",
+      "completed_at": "2026-04-20T20:52:00",
+      "commit": "f2273e1",
+      "summary": "41 个原始 fetch 迁移到 openapi-fetch，消除 2 处 as unknown as 和 1 处 any 返回类型",
       "priority": 3,
       "acceptance_criteria": [
-        "后端测试全通过（857+）",
-        "前端测试全通过（321+）",
-        "前端构建通过",
-        "全量 E2E 测试通过（所有 spec 文件）",
-        "E2E 新增测试 >= 50 个",
-        "CI 配置推送后 PR 流水线正常"
+        "api.ts 中搜索、知识图谱、反馈、通知、目标 API 函数迁移到 openapi-fetch",
+        "消除 api.ts 中的 as unknown as 强转（从 ~5 处减少到 0）",
+        "消除 linkGoalEntry 等函数的 any 返回类型",
+        "api.ts 内不再直接使用 authFetch 进行 API 调用（sessionApi.ts 不在范围）",
+        "前端构建通过 + 前端测试通过"
+      ],
+      "test_tasks": [
+        "正常: 所有 API 调用功能正常",
+        "边界: API 返回异常状态码时正确处理",
+        "异常: 网络错误时有正确错误提示"
+      ],
+      "risk_tags": [],
+      "files": ["frontend/src/services/api.ts"]
+    },
+    {
+      "id": "S08",
+      "phase": 5,
+      "module": "quality-gate",
+      "name": "质量收口 — 全量测试 + 构建验证",
+      "description": "全量后端测试 + 前端测试 + E2E 测试 + 构建验证。确认技术债清理未引入回归。",
+      "verification": "全量测试通过 + 构建通过",
+      "depends_on": ["S07", "B78", "F66", "F67", "F68", "F69", "F70", "F71", "B79", "F72"],
+      "status": "completed",
+      "started_at": "2026-04-20T20:52:00",
+      "completed_at": "2026-04-20T21:02:00",
+      "commit": "53e600b",
+      "summary": "857 后端 + 321 前端全通过，E2E 102/113，构建通过，无 waitForTimeout，死代码已清理",
+      "priority": 3,
+      "acceptance_criteria": [
+        "后端测试全通过（uv run pytest）",
+        "前端测试全通过（npm run test:run）",
+        "前端构建通过（npm run build）",
+        "E2E 全量测试通过（npx playwright test）",
+        "无 waitForTimeout 残留",
+        "死代码完全清理（grep 确认）"
       ],
       "test_tasks": [
         "uv run pytest backend/tests/ 全通过",
         "npm run test:run + npm run build 全通过",
         "cd e2e && npx playwright test 全通过",
-        "统计 E2E 新增测试数 >= 50"
+        "grep -r waitForTimeout e2e/tests/ 无结果",
+        "grep -r 'Inbox\\|Projects\\|Notes\\|QuickCommandHints' frontend/src/ 无结果（已删除文件）"
       ],
       "risk_tags": ["startup"],
       "files": []

@@ -27,11 +27,10 @@ import { Link, useNavigate } from "react-router-dom";
 import type { TaskStatus } from "@/types/task";
 import { nextStatusMap } from "@/config/constants";
 import {
-  getMorningDigest,
-  type MorningDigestResponse,
   getGoals,
   type Goal,
 } from "@/services/api";
+import { useMorningDigest } from "@/hooks/useMorningDigest";
 
 export function Home() {
   const tasks = useTaskStore((state) => state.tasks);
@@ -110,10 +109,8 @@ export function Home() {
   // 是否完全无数据
   const isEmpty = tasks.length === 0;
 
-  // AI 晨报状态
-  const [digest, setDigest] = useState<MorningDigestResponse | null>(null);
-  const [digestLoading, setDigestLoading] = useState(true);
-  const [digestError, setDigestError] = useState(false);
+  // AI 晨报状态（共享 Hook）
+  const { data: digest, loading: digestLoading, error: digestError } = useMorningDigest();
   const [digestCollapsed, setDigestCollapsed] = useState(() => {
     const dismissedDate = localStorage.getItem("morning_digest_dismissed");
     return dismissedDate === new Date().toISOString().split("T")[0];
@@ -122,13 +119,6 @@ export function Home() {
   // 活跃目标（最近 3 个）
   const [activeGoals, setActiveGoals] = useState<Goal[]>([]);
   const [goalsLoading, setGoalsLoading] = useState(true);
-
-  useEffect(() => {
-    getMorningDigest()
-      .then((data) => setDigest(data))
-      .catch(() => setDigestError(true))
-      .finally(() => setDigestLoading(false));
-  }, []);
 
   useEffect(() => {
     getGoals("active")

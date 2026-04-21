@@ -240,7 +240,7 @@ class TestWeeklyVsLastWeek:
 
         # 精确验证 delta 值
         # delta 应为负数（本周 3 任务 vs 上周 5 任务）
-        assert vs["delta_total"] == -3
+        assert vs["delta_total"] == -2
         # 本周完成率高于上周 → delta > 0
         assert vs["delta_completion_rate"] > 0
 

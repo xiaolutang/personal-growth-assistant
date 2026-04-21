@@ -579,71 +579,31 @@ class KnowledgeService:
         return "new"
 
     def _build_map_from_sqlite(self, user_id: str) -> tuple:
-        """从 SQLite 构建图谱数据（Neo4j 不可用时的降级方案）"""
-        all_entries = self._sqlite.list_entries(limit=10000, user_id=user_id)
-        now = datetime.now()
-        thirty_days_ago = now - timedelta(days=30)
+        """从 SQLite 构建图谱数据（Neo4j 不可用时的降级方案）
 
-        # 从所有条目的 tags 中提取概念
-        concept_map: Dict[str, Dict] = {}
-        concept_pairs: set = set()
-
-        for entry in all_entries:
-            tags = entry.get("tags", [])
-            entry_type = entry.get("type", "task")
-
-            for tag in tags:
-                if tag not in concept_map:
-                    concept_map[tag] = {
-                        "name": tag,
-                        "category": "tag",
-                        "entry_count": 0,
-                        "recent_count": 0,
-                        "note_count": 0,
-                    }
-                concept_map[tag]["entry_count"] += 1
-
-                if entry_type == "note":
-                    concept_map[tag]["note_count"] += 1
-
-                # 检查是否在 30 天内更新
-                updated_str = entry.get("updated_at", "")
-                try:
-                    if updated_str:
-                        if isinstance(updated_str, str):
-                            updated_at = datetime.fromisoformat(updated_str.replace("Z", "").replace("+00:00", ""))
-                        else:
-                            updated_at = updated_at if updated_at.tzinfo is None else updated_at.replace(tzinfo=None)
-                        if updated_at >= thirty_days_ago:
-                            concept_map[tag]["recent_count"] += 1
-                except (ValueError, TypeError):
-                    pass
-
-            # 构建概念之间的关联边（共同出现在同一条目中的 tags）
-            for i in range(len(tags)):
-                for j in range(i + 1, len(tags)):
-                    pair = tuple(sorted([tags[i], tags[j]]))
-                    concept_pairs.add(pair)
+        使用 SQL 聚合查询替代 list_entries(limit=10000) 全表扫描。
+        """
+        result = self._sqlite.get_tag_stats_for_knowledge_map(user_id=user_id)
 
         # 构建 nodes
         nodes = []
-        for name, info in concept_map.items():
+        for tag_info in result["tags"]:
             mastery = self._calculate_mastery_from_stats(
-                entry_count=info["entry_count"],
-                recent_count=info["recent_count"],
-                note_count=info["note_count"],
+                entry_count=tag_info["entry_count"],
+                recent_count=tag_info["recent_count"],
+                note_count=tag_info["note_count"],
             )
             nodes.append(MapNode(
-                id=name,
-                name=name,
-                category=info.get("category"),
+                id=tag_info["name"],
+                name=tag_info["name"],
+                category="tag",
                 mastery=mastery,
-                entry_count=info["entry_count"],
+                entry_count=tag_info["entry_count"],
             ))
 
         # 构建 edges
         edges = []
-        for source, target in concept_pairs:
+        for source, target in result["co_occurrence_pairs"]:
             edges.append(MapEdge(
                 source=source,
                 target=target,
@@ -750,41 +710,23 @@ class KnowledgeService:
         )
 
     def _stats_from_sqlite(self, user_id: str) -> ConceptStatsResponse:
-        """从 SQLite 获取统计"""
-        all_entries = self._sqlite.list_entries(limit=10000, user_id=user_id)
+        """从 SQLite 获取统计
 
-        concept_map: Dict[str, Dict] = {}
+        使用 SQL 聚合查询替代 list_entries(limit=10000) 全表扫描。
+        """
+        result = self._sqlite.get_tag_stats_for_concept_stats(user_id=user_id)
 
-        for entry in all_entries:
-            tags = entry.get("tags", [])
-            for tag in tags:
-                if tag not in concept_map:
-                    concept_map[tag] = {"name": tag, "entry_count": 0, "category": "tag"}
-                concept_map[tag]["entry_count"] += 1
-
+        # 所有标签的 category 统一为 "tag"
         category_dist: Dict[str, int] = {}
-        for info in concept_map.values():
-            cat = info.get("category") or "tag"
+        for tag_info in result["tags"]:
+            cat = tag_info.get("category") or "tag"
             category_dist[cat] = category_dist.get(cat, 0) + 1
 
-        # 计算共现边数（co-occur pairs）
-        edge_count = 0
-        pair_set: set = set()
-        for entry in all_entries:
-            tags = entry.get("tags", [])
-            for i in range(len(tags)):
-                for j in range(i + 1, len(tags)):
-                    pair = tuple(sorted([tags[i], tags[j]]))
-                    if pair not in pair_set:
-                        pair_set.add(pair)
-                        edge_count += 1
-
-        sorted_concepts = sorted(concept_map.values(), key=lambda x: x["entry_count"], reverse=True)
-        top_concepts = sorted_concepts[:10]
+        top_concepts = result["tags"][:10]
 
         return ConceptStatsResponse(
-            concept_count=len(concept_map),
-            relation_count=edge_count,
+            concept_count=result["concept_count"],
+            relation_count=result["edge_count"],
             category_distribution=category_dist,
             top_concepts=top_concepts,
         )
@@ -826,20 +768,14 @@ class KnowledgeService:
     def _search_from_sqlite(
         self, query: str, limit: int, user_id: str
     ) -> ConceptSearchResponse:
-        """从 SQLite tags 搜索概念（降级，mastery=null）"""
-        all_entries = self._sqlite.list_entries(limit=10000, user_id=user_id)
-        q_lower = query.lower()
-        concept_map: Dict[str, int] = {}
+        """从 SQLite tags 搜索概念（降级，mastery=null）
 
-        for entry in all_entries:
-            for tag in entry.get("tags", []):
-                if q_lower in tag.lower():
-                    concept_map[tag] = concept_map.get(tag, 0) + 1
-
-        sorted_items = sorted(concept_map.items(), key=lambda x: x[1], reverse=True)[:limit]
+        使用 SQL 聚合查询替代 list_entries(limit=10000) 全表扫描。
+        """
+        matched_tags = self._sqlite.search_tags_by_keyword(query, limit=limit, user_id=user_id)
         items = [
-            ConceptSearchItem(name=name, entry_count=count, mastery=None)
-            for name, count in sorted_items
+            ConceptSearchItem(name=t["name"], entry_count=t["entry_count"], mastery=None)
+            for t in matched_tags
         ]
         return ConceptSearchResponse(items=items)
 
@@ -870,15 +806,11 @@ class KnowledgeService:
     def _timeline_from_sqlite(
         self, concept: str, days: int, user_id: str
     ) -> ConceptTimelineResponse:
-        """从 SQLite 获取时间线（基于 tags + title/content 搜索）"""
-        # 同时搜索 tags 和全文，避免标签概念被遗漏
-        tag_results = self._sqlite.list_entries(limit=10000, user_id=user_id)
-        results = [
-            e for e in tag_results
-            if concept.lower() in [t.lower() for t in e.get("tags", [])]
-            or concept.lower() in (e.get("title", "") or "").lower()
-            or concept.lower() in (e.get("content", "") or "").lower()
-        ]
+        """从 SQLite 获取时间线（基于 tags + title/content 搜索）
+
+        使用 SQL 聚合查询替代 list_entries(limit=10000) 全表扫描。
+        """
+        results = self._sqlite.find_entries_by_concept(concept, days=days, user_id=user_id)
         return self._build_timeline(concept, results, days)
 
     def _build_timeline(
@@ -1111,88 +1043,43 @@ class KnowledgeService:
     def _build_subgraph_from_sqlite(
         self, seed_concepts: List[str], user_id: str
     ) -> tuple:
-        """从 SQLite 构建种子概念的 tag 共现子图"""
+        """从 SQLite 构建种子概念的 tag 共现子图
+
+        使用 SQL 聚合查询替代 list_entries(limit=10000) 全表扫描。
+        """
         if not self._sqlite:
             return [], []
-
-        all_entries = self._sqlite.list_entries(limit=10000, user_id=user_id)
-        now = datetime.now()
-        thirty_days_ago = now - timedelta(days=30)
-
-        # 收集包含种子概念的条目中的所有 tags
-        concept_map: Dict[str, Dict] = {}
-        concept_pairs: set = set()
 
         # 标准化种子概念用于匹配
         seed_set_lower = {c.lower() for c in seed_concepts}
 
-        for entry in all_entries:
-            tags = entry.get("tags", [])
-            tags_lower = [t.lower() for t in tags]
+        result = self._sqlite.get_tag_stats_for_subgraph(seed_concepts, user_id=user_id)
 
-            # 只处理包含至少一个种子概念的条目
-            if not any(tl in seed_set_lower for tl in tags_lower):
-                continue
-
-            entry_type = entry.get("type", "task")
-
-            for tag in tags:
-                if tag not in concept_map:
-                    concept_map[tag] = {
-                        "name": tag,
-                        "category": "tag",
-                        "entry_count": 0,
-                        "recent_count": 0,
-                        "note_count": 0,
-                    }
-                concept_map[tag]["entry_count"] += 1
-
-                if entry_type == "note":
-                    concept_map[tag]["note_count"] += 1
-
-                updated_str = entry.get("updated_at", "")
-                try:
-                    if updated_str:
-                        if isinstance(updated_str, str):
-                            updated_at = datetime.fromisoformat(updated_str.replace("Z", "").replace("+00:00", ""))
-                        else:
-                            updated_at = updated_str if updated_str.tzinfo is None else updated_str.replace(tzinfo=None)
-                        if updated_at >= thirty_days_ago:
-                            concept_map[tag]["recent_count"] += 1
-                except (ValueError, TypeError):
-                    pass
-
-            # 共现边
-            for i in range(len(tags)):
-                for j in range(i + 1, len(tags)):
-                    pair = tuple(sorted([tags[i], tags[j]]))
-                    concept_pairs.add(pair)
-
-        # 构建节点，限制 20 个
+        # 构建节点，限制 20 个（种子概念优先）
         nodes = []
-        sorted_concepts = sorted(
-            concept_map.items(),
-            key=lambda x: (x[0].lower() in seed_set_lower, x[1]["entry_count"]),
+        sorted_tags = sorted(
+            result["tags"],
+            key=lambda x: (x["name"].lower() in seed_set_lower, x["entry_count"]),
             reverse=True,
         )
-        for name, info in sorted_concepts[:20]:
+        for tag_info in sorted_tags[:20]:
             mastery = self._calculate_mastery_from_stats(
-                entry_count=info["entry_count"],
-                recent_count=info["recent_count"],
-                note_count=info["note_count"],
+                entry_count=tag_info["entry_count"],
+                recent_count=tag_info["recent_count"],
+                note_count=tag_info["note_count"],
             )
             nodes.append(MapNode(
-                id=name,
-                name=name,
-                category=info.get("category"),
+                id=tag_info["name"],
+                name=tag_info["name"],
+                category="tag",
                 mastery=mastery,
-                entry_count=info["entry_count"],
+                entry_count=tag_info["entry_count"],
             ))
 
         # 构建边（只保留在节点集合内的边）
         node_ids = {n.id for n in nodes}
         edges = []
-        for source, target in concept_pairs:
+        for source, target in result["co_occurrence_pairs"]:
             if source in node_ids and target in node_ids:
                 edges.append(MapEdge(
                     source=source,

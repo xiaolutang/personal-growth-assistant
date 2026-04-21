@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense, Component, type ErrorInfo, type ReactNode } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -11,22 +11,57 @@ import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ThemeProvider } from "@/lib/theme";
-import { Home } from "@/pages/Home";
-import { Tasks } from "@/pages/Tasks";
-import { EntryDetail } from "@/pages/EntryDetail";
-import { Review } from "@/pages/Review";
-import { Explore } from "@/pages/Explore";
-import { GraphPage } from "@/pages/GraphPage";
-import { GoalsPage } from "@/pages/GoalsPage";
-import { GoalDetail } from "@/pages/GoalDetail";
-import { Login } from "@/pages/Login";
-import { Register } from "@/pages/Register";
-import { OfflineFallback } from "@/pages/OfflineFallback";
 import { useChatStore } from "@/stores/chatStore";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUserStore } from "@/stores/userStore";
 import { initFetchInterceptor } from "@/lib/uid";
 import { initSync } from "@/lib/offlineSync";
+
+// 路由懒加载
+const Home = lazy(() => import("@/pages/Home").then(m => ({ default: m.Home })));
+const Tasks = lazy(() => import("@/pages/Tasks").then(m => ({ default: m.Tasks })));
+const EntryDetail = lazy(() => import("@/pages/EntryDetail").then(m => ({ default: m.EntryDetail })));
+const Review = lazy(() => import("@/pages/Review").then(m => ({ default: m.Review })));
+const Explore = lazy(() => import("@/pages/Explore").then(m => ({ default: m.Explore })));
+const GraphPage = lazy(() => import("@/pages/GraphPage").then(m => ({ default: m.GraphPage })));
+const GoalsPage = lazy(() => import("@/pages/GoalsPage").then(m => ({ default: m.GoalsPage })));
+const GoalDetail = lazy(() => import("@/pages/GoalDetail").then(m => ({ default: m.GoalDetail })));
+const Login = lazy(() => import("@/pages/Login").then(m => ({ default: m.Login })));
+const Register = lazy(() => import("@/pages/Register").then(m => ({ default: m.Register })));
+const OfflineFallback = lazy(() => import("@/pages/OfflineFallback").then(m => ({ default: m.OfflineFallback })));
+
+// Suspense fallback
+function PageSpinner() {
+  return <div className="flex items-center justify-center h-64 text-muted-foreground">加载中...</div>;
+}
+
+// ErrorBoundary — 捕获 lazy chunk 加载失败
+interface ErrorBoundaryState { hasError: boolean }
+class ChunkErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false };
+  static getDerivedStateFromError(): ErrorBoundaryState {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("Chunk load error:", error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen gap-3 text-muted-foreground">
+          <p>页面加载失败，请刷新重试</p>
+          <button
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
+            onClick={() => window.location.reload()}
+          >
+            刷新页面
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // 在首次渲染前初始化 fetch 拦截器，确保所有请求都带 auth header
 initFetchInterceptor();
@@ -85,6 +120,7 @@ function AppLayout() {
       >
         {/* 大屏内容区最大宽度限制 */}
         <div className="mx-auto w-full max-w-[1280px]">
+          <Suspense fallback={<PageSpinner />}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/explore" element={<Explore />} />
@@ -99,6 +135,7 @@ function AppLayout() {
             <Route path="/entries/:id" element={<EntryDetail />} />
             <Route path="/offline" element={<OfflineFallback />} />
           </Routes>
+          </Suspense>
         </div>
       </div>
       <FeedbackButton />
@@ -148,6 +185,8 @@ function App() {
 
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <ChunkErrorBoundary>
+      <Suspense fallback={<PageSpinner />}>
       <Routes>
         {/* 公开路由 */}
         <Route path="/login" element={<Login />} />
@@ -172,6 +211,8 @@ function App() {
           }
         />
       </Routes>
+      </Suspense>
+      </ChunkErrorBoundary>
     </BrowserRouter>
   );
 }

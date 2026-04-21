@@ -104,7 +104,6 @@ test.describe('探索页新类型 E2E', () => {
 
     // 切换到决策 Tab
     await page.getByRole('button', { name: '决策', exact: true }).click();
-    await page.waitForTimeout(500);
 
     // 验证决策条目可见，笔记条目不可见
     await expect(page.getByText('决策条目-E2E')).toBeVisible({ timeout: 10000 });
@@ -124,7 +123,6 @@ test.describe('探索页新类型 E2E', () => {
     await goToExplore(page);
 
     await page.getByRole('button', { name: '复盘', exact: true }).click();
-    await page.waitForTimeout(500);
 
     await expect(page.getByText('复盘条目-E2E')).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('笔记干扰')).not.toBeVisible();
@@ -143,7 +141,6 @@ test.describe('探索页新类型 E2E', () => {
     await goToExplore(page);
 
     await page.getByRole('button', { name: '疑问', exact: true }).click();
-    await page.waitForTimeout(500);
 
     await expect(page.getByText('疑问条目-E2E')).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('决策条目干扰')).not.toBeVisible();
@@ -171,7 +168,6 @@ test.describe('探索页新类型 E2E', () => {
 
     // 切换到决策 Tab → 应只显示"架构"匹配的 decision 条目，排除 reflection 和 note
     await page.getByRole('button', { name: '决策', exact: true }).click();
-    await page.waitForTimeout(500);
 
     await expect(page.getByText('搜索决策-架构选型')).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('搜索复盘-架构优化')).not.toBeVisible();
@@ -179,7 +175,6 @@ test.describe('探索页新类型 E2E', () => {
 
     // 切换到复盘 Tab → 应只显示"架构"匹配的 reflection 条目
     await page.getByRole('button', { name: '复盘', exact: true }).click();
-    await page.waitForTimeout(500);
 
     await expect(page.getByText('搜索复盘-架构优化')).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('搜索决策-架构选型')).not.toBeVisible();
@@ -209,10 +204,7 @@ test.describe('探索页新类型 E2E', () => {
       window.dispatchEvent(new PopStateEvent('popstate'));
     }, `${BASE}/explore?type=decision`);
 
-    // 等待 Tab 切换生效
-    await page.waitForTimeout(500);
-
-    // 验证 URL 参数已生效
+    // 等待 Tab 切换生效 — 通过 URL 断言自动等待
     await expect(page).toHaveURL(/type=decision/);
 
     // 验证决策 Tab 被激活 → 决策条目可见，笔记条目不可见
@@ -221,7 +213,6 @@ test.describe('探索页新类型 E2E', () => {
 
     // 切换到全部 Tab → URL 清空 type 参数
     await page.getByRole('button', { name: '全部', exact: true }).click();
-    await page.waitForTimeout(500);
     await expect(page).not.toHaveURL(/type=decision/);
   });
 
@@ -239,12 +230,10 @@ test.describe('探索页新类型 E2E', () => {
 
     // 切换到决策 Tab → 空状态
     await page.getByRole('button', { name: '决策', exact: true }).click();
-    await page.waitForTimeout(500);
     await expect(page.getByText('暂无决策内容，快去记录吧')).toBeVisible({ timeout: 10000 });
 
     // 切换到复盘 Tab → 空状态
     await page.getByRole('button', { name: '复盘', exact: true }).click();
-    await page.waitForTimeout(500);
     await expect(page.getByText('暂无复盘内容，快去记录吧')).toBeVisible({ timeout: 10000 });
   });
 

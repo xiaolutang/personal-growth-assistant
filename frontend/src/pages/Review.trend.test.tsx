@@ -24,38 +24,38 @@ vi.mock("recharts", () => ({
   Legend: () => null,
 }));
 
-// Mock authFetch — Review 主报告用到，返回空日报让它不报错
+// Mock authFetch — 返回空日报让它不报错
 const mockAuthFetch = vi.fn();
 vi.mock("@/lib/authFetch", () => ({
   authFetch: (...args: unknown[]) => mockAuthFetch(...args),
   buildAuthHeaders: () => new Headers(),
 }));
 
+const emptyReport = {
+  date: "2026-04-14",
+  task_stats: { total: 0, completed: 0, doing: 0, wait_start: 0, completion_rate: 0 },
+  note_stats: { total: 0, recent_titles: [] },
+  completed_tasks: [],
+};
+
 // Mock getReviewTrend — 趋势 API
 const mockGetReviewTrend = vi.fn();
 vi.mock("@/services/api", () => ({
   getReviewTrend: (...args: unknown[]) => mockGetReviewTrend(...args),
+  getDailyReport: () => Promise.resolve(emptyReport),
+  getWeeklyReport: () => Promise.resolve({ ...emptyReport, start_date: "2026-04-14", end_date: "2026-04-20", daily_breakdown: [] }),
+  getMonthlyReport: () => Promise.resolve({ ...emptyReport, month: "2026-04", weekly_breakdown: [] }),
   getActivityHeatmap: () => Promise.resolve({ year: 2026, items: [] }),
   getKnowledgeHeatmap: () => Promise.resolve({ year: 2026, items: [] }),
-  getGrowthCurve: () => Promise.resolve([]),
+  getGrowthCurve: () => Promise.resolve({ points: [] }),
   getProgressSummary: () =>
     Promise.resolve({ active_count: 0, completed_count: 0, goals: [] }),
-  getMorningDigest: () => Promise.reject(new Error("not available")),
 }));
 
-// 辅助：创建空日报 Response（主报告默认不报错）
-function emptyDailyReportResponse() {
-  return Promise.resolve({
-    ok: true,
-    json: () =>
-      Promise.resolve({
-        date: "2026-04-14",
-        task_stats: { total: 0, completed: 0, doing: 0, wait_start: 0, completion_rate: 0 },
-        note_stats: { total: 0, recent_titles: [] },
-        completed_tasks: [],
-      }),
-  } as unknown as Response);
-}
+// Mock useMorningDigest hook
+vi.mock("@/hooks/useMorningDigest", () => ({
+  useMorningDigest: () => ({ data: null, loading: false, error: false }),
+}));
 
 // 辅助：测试用趋势数据
 function makeTrendPeriods(count: number) {
@@ -83,8 +83,6 @@ function renderReview() {
 describe("Review — 趋势折线图", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // 默认：主报告返回空日报
-    mockAuthFetch.mockImplementation(emptyDailyReportResponse);
     // 默认：趋势 API 返回空数据
     mockGetReviewTrend.mockResolvedValue({ periods: [] });
   });

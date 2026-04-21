@@ -48,6 +48,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/entries/search/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Entries
+         * @description 全文搜索条目（使用 SQLite FTS5）
+         */
+        get: operations["search_entries_entries_search_query_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/entries/{entry_id}/related": {
         parameters: {
             query?: never;
@@ -96,26 +116,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/entries/search/query": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Search Entries
-         * @description 全文搜索条目（使用 SQLite FTS5）
-         */
-        get: operations["search_entries_entries_search_query_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/entries/{entry_id}/progress": {
         parameters: {
             query?: never;
@@ -130,26 +130,6 @@ export interface paths {
         get: operations["get_project_progress_entries__entry_id__progress_get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/entries/admin/sync-vectors": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Sync Vectors
-         * @description 同步所有条目到向量数据库（Qdrant）
-         */
-        post: operations["sync_vectors_entries_admin_sync_vectors_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1854,6 +1834,22 @@ export interface components {
             entry_id: string;
         };
         /**
+         * GoalEntryLinkResponse
+         * @description 目标-条目关联创建响应（含更新后的目标）
+         */
+        GoalEntryLinkResponse: {
+            /** Id */
+            id: string;
+            /** Goal Id */
+            goal_id: string;
+            /** Entry Id */
+            entry_id: string;
+            /** Created At */
+            created_at: string;
+            entry: components["schemas"]["EntryInfo"];
+            goal: components["schemas"]["GoalDetailResponse"];
+        };
+        /**
          * GoalEntryListResponse
          * @description 目标-条目关联列表响应
          */
@@ -2038,6 +2034,11 @@ export interface components {
             entry_count: number;
             /** Category */
             category?: string | null;
+            /**
+             * Mention Count
+             * @default 0
+             */
+            mention_count: number;
         };
         /**
          * HeatmapResponse
@@ -2345,6 +2346,8 @@ export interface components {
             }[];
             /** Ai Summary */
             ai_summary?: string | null;
+            /** @description 环比上月 */
+            vs_last_month?: components["schemas"]["VsLastPeriod"] | null;
         };
         /**
          * MorningDigestOverdue
@@ -2783,6 +2786,18 @@ export interface components {
              * @default 0
              */
             notes_count: number;
+            /**
+             * Task Count
+             * @description 任务数
+             * @default 0
+             */
+            task_count: number;
+            /**
+             * Inbox Count
+             * @description 灵感数
+             * @default 0
+             */
+            inbox_count: number;
         };
         /**
          * TrendResponse
@@ -2863,6 +2878,22 @@ export interface components {
             ctx?: Record<string, never>;
         };
         /**
+         * VsLastPeriod
+         * @description 环比差值
+         */
+        VsLastPeriod: {
+            /**
+             * Delta Completion Rate
+             * @description 完成率差值（百分比）
+             */
+            delta_completion_rate?: number | null;
+            /**
+             * Delta Total
+             * @description 总任务数差值
+             */
+            delta_total?: number | null;
+        };
+        /**
          * WeeklyReport
          * @description 周报响应
          */
@@ -2879,6 +2910,8 @@ export interface components {
             }[];
             /** Ai Summary */
             ai_summary?: string | null;
+            /** @description 环比上周 */
+            vs_last_week?: components["schemas"]["VsLastPeriod"] | null;
         };
         /**
          * SearchResult
@@ -3034,6 +3067,40 @@ export interface operations {
             };
         };
     };
+    search_entries_entries_search_query_get: {
+        parameters: {
+            query: {
+                /** @description 搜索关键词 */
+                q: string;
+                /** @description 返回数量限制 */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__api__schemas__entry__SearchResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_related_entries_entries__entry_id__related_get: {
         parameters: {
             query?: never;
@@ -3162,40 +3229,6 @@ export interface operations {
             };
         };
     };
-    search_entries_entries_search_query_get: {
-        parameters: {
-            query: {
-                /** @description 搜索关键词 */
-                q: string;
-                /** @description 返回数量限制 */
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["app__api__schemas__entry__SearchResult"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     get_project_progress_entries__entry_id__progress_get: {
         parameters: {
             query?: never;
@@ -3223,26 +3256,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    sync_vectors_entries_admin_sync_vectors_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SuccessResponse"];
                 };
             };
         };
@@ -4810,7 +4823,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["GoalEntryLinkResponse"];
                 };
             };
             /** @description Validation Error */

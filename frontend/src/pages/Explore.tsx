@@ -3,10 +3,29 @@ import { useSearchParams } from "react-router-dom";
 import { Search, Lightbulb, FileText, Folder, Layers, Clock, X, TrendingUp, Scale, RotateCcw, HelpCircle, Loader2 } from "lucide-react";
 import { getEntries, searchEntries } from "../services/api";
 import { TaskList } from "../components/TaskList";
-import type { Task } from "../types/task";
+import type { Task, Category, TaskStatus, Priority, SearchResult } from "../types/task";
 import { Card, CardHeader, CardTitle } from "../components/ui/card";
 import { Header } from "../components/layout/Header";
 import { useChatStore } from "@/stores/chatStore";
+
+/**
+ * 将搜索结果归一化为 Task 类型，补齐缺失字段
+ */
+function normalizeSearchResult(r: SearchResult): Task {
+  return {
+    id: r.id ?? "",
+    title: r.title ?? "",
+    content: "",
+    category: (r.category ?? "note") as Category,
+    status: (r.status ?? "doing") as TaskStatus,
+    priority: (r.priority ?? "medium") as Priority,
+    tags: r.tags ?? [],
+    created_at: r.created_at ?? "",
+    updated_at: "",
+    file_path: r.file_path ?? "",
+    parent_id: undefined,
+  };
+}
 
 const TABS = [
   { key: "", label: "全部", icon: Layers },
@@ -122,19 +141,7 @@ export function Explore() {
       try {
         const result = await searchEntries(searchQuery.trim(), 20);
         if (!cancelled) {
-          const mapped: Task[] = (result.results ?? []).map((r: any) => ({
-            id: r.id ?? "",
-            title: r.title ?? "",
-            content: r.content ?? "",
-            category: r.category ?? "note",
-            status: r.status ?? "doing",
-            priority: r.priority ?? "medium",
-            tags: r.tags ?? [],
-            created_at: r.created_at ?? "",
-            updated_at: r.updated_at ?? "",
-            file_path: r.file_path ?? "",
-            parent_id: r.parent_id ?? null,
-          }));
+          const mapped: Task[] = (result.results ?? []).map(normalizeSearchResult);
           setSearchResults(mapped);
           addToSearchHistory(searchQuery.trim());
           setSearchHistory(getSearchHistory());
@@ -210,19 +217,7 @@ export function Explore() {
     setShowSuggestions(false);
     try {
       const result = await searchEntries(searchQuery.trim(), 20);
-      const mapped: Task[] = (result.results ?? []).map((r: any) => ({
-        id: r.id ?? "",
-        title: r.title ?? "",
-        content: r.content ?? "",
-        category: r.category ?? "note",
-        status: r.status ?? "doing",
-        priority: r.priority ?? "medium",
-        tags: r.tags ?? [],
-        created_at: r.created_at ?? "",
-        updated_at: r.updated_at ?? "",
-        file_path: r.file_path ?? "",
-        parent_id: r.parent_id ?? null,
-      }));
+      const mapped: Task[] = (result.results ?? []).map(normalizeSearchResult);
       setSearchResults(mapped);
       addToSearchHistory(searchQuery.trim());
       setSearchHistory(getSearchHistory());
