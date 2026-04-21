@@ -106,22 +106,22 @@ export async function sync(): Promise<void> {
 
         if (status === 401) {
           // 认证错误：标记 failed，停止同步
-          await queue.update(item.id, { status: "failed" });
+          try { await queue.update(item.id, { status: "failed" }); } catch { /* 队列不可用时忽略 */ }
           authFailed = true;
           break;
         } else if (!status || status >= 500) {
           // 网络错误 / 5xx：递增重试计数
           const newRetry = item.retry_count + 1;
           if (newRetry > 3) {
-            await queue.update(item.id, { status: "failed", retry_count: newRetry });
+            try { await queue.update(item.id, { status: "failed", retry_count: newRetry }); } catch { /* 队列不可用时忽略 */ }
             hasTerminalFailure = true;
             toast.error("同步失败", { description: "离线操作重试次数已用尽，请检查网络后重试" });
           } else {
-            await queue.update(item.id, { retry_count: newRetry });
+            try { await queue.update(item.id, { retry_count: newRetry }); } catch { /* 队列不可用时忽略 */ }
           }
         } else {
           // 其他错误（4xx 等）：标记 failed
-          await queue.update(item.id, { status: "failed" });
+          try { await queue.update(item.id, { status: "failed" }); } catch { /* 队列不可用时忽略 */ }
           hasTerminalFailure = true;
           toast.error("同步失败", { description: "部分离线操作未能同步，请检查后重试" });
         }

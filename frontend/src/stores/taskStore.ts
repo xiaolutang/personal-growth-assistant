@@ -109,17 +109,30 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
       if (id.startsWith("local-")) {
         // 先持久化到队列，成功后再更新本地状态
         const { getAll, update } = await import("@/lib/offlineQueue");
-        const items = await getAll();
-        const postItem = items.find((i) => i.client_entry_id === id && i.method === "POST");
+        let postItem: { id: string; body: object } | undefined;
+        try {
+          const items = await getAll();
+          postItem = items.find((i) => i.client_entry_id === id && i.method === "POST");
+        } catch {
+          const msg = "离线保存失败，请稍后重试";
+          set({ error: msg });
+          throw new Error(msg);
+        }
         if (!postItem) {
           const msg = "离线保存失败：未找到原始队列项";
           set({ error: msg });
           throw new Error(msg);
         }
+        let updated: boolean;
         try {
-          await update(postItem.id, { body: { ...postItem.body, ...data } });
+          updated = await update(postItem.id, { body: { ...postItem.body, ...data } });
         } catch {
           const msg = "离线保存失败，请稍后重试";
+          set({ error: msg });
+          throw new Error(msg);
+        }
+        if (!updated) {
+          const msg = "离线保存失败：队列项已被移除";
           set({ error: msg });
           throw new Error(msg);
         }
@@ -218,16 +231,19 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
       // 离线创建的条目（local-* ID）取消原始 POST 队列项并清理离线条目
       if (id.startsWith("local-")) {
         const { getAll, remove: queueRemove } = await import("@/lib/offlineQueue");
-        const items = await getAll();
-        const postItem = items.find((i) => i.client_entry_id === id && i.method === "POST");
-        if (postItem) {
-          try {
-            await queueRemove(postItem.id);
-          } catch {
-            // 队列删除失败，回滚乐观更新
-            set({ tasks: previousTasks, error: "离线删除失败，请稍后重试" });
+        try {
+          const items = await getAll();
+          const postItem = items.find((i) => i.client_entry_id === id && i.method === "POST");
+          if (!postItem) {
+            // local-* 条目必须有对应的 POST 队列项；找不到说明队列异常
+            set({ tasks: previousTasks, error: "离线删除失败：未找到原始队列项" });
             return;
           }
+          await queueRemove(postItem.id);
+        } catch {
+          // 队列读取/删除失败，回滚乐观更新
+          set({ tasks: previousTasks, error: "离线删除失败，请稍后重试" });
+          return;
         }
         set((state) => ({
           _offlineEntries: state._offlineEntries.filter((e) => e.id !== id),

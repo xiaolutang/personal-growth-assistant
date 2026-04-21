@@ -129,56 +129,51 @@ export async function getAll(): Promise<OfflineQueueItem[]> {
 
 /**
  * 更新指定队列项的字段（如 retry_count、status）。
- * IndexedDB 不可用时静默忽略。
+ * 返回 true 表示成功更新，false 表示未找到记录。
+ * IndexedDB 错误时抛出异常，让调用方能感知并回滚。
  */
 export async function update(
   id: string,
   changes: Partial<Pick<OfflineQueueItem, "retry_count" | "status" | "body">>
-): Promise<void> {
-  try {
-    const db = await openDB();
+): Promise<boolean> {
+  const db = await openDB();
 
-    return new Promise((resolve) => {
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      const store = tx.objectStore(STORE_NAME);
-      const req = store.get(id);
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.get(id);
 
-      req.onsuccess = () => {
-        const record = req.result as OfflineQueueItem | undefined;
-        if (record) {
-          Object.assign(record, changes);
-          store.put(record);
-        }
-        resolve();
-      };
-      req.onerror = () => resolve();
-      tx.oncomplete = () => db.close();
-    });
-  } catch {
-    // 静默
-  }
+    req.onsuccess = () => {
+      const record = req.result as OfflineQueueItem | undefined;
+      if (record) {
+        Object.assign(record, changes);
+        store.put(record);
+        resolve(true);
+      } else {
+        resolve(false);
+      }
+    };
+    req.onerror = () => reject(req.error);
+    tx.oncomplete = () => db.close();
+  });
 }
 
 /**
  * 删除指定队列项。
- * IndexedDB 不可用时静默忽略。
+ * IndexedDB 错误时抛出异常，让调用方能感知并回滚。
  */
 export async function remove(id: string): Promise<void> {
-  try {
-    const db = await openDB();
+  const db = await openDB();
 
-    return new Promise((resolve) => {
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      const store = tx.objectStore(STORE_NAME);
-      const req = store.delete(id);
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.delete(id);
 
-      req.onsuccess = () => resolve();
-      req.onerror = () => resolve();
-      tx.oncomplete = () => db.close();
-    });
-  } catch {
-    // 静默
-  }
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+    tx.oncomplete = () => db.close();
+  });
 }
 
 /**
