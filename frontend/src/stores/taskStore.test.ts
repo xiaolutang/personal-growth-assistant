@@ -378,6 +378,33 @@ describe("updateTaskStatus", () => {
     // 恢复 online
     Object.defineProperty(navigator, "onLine", { value: true, configurable: true });
   });
+
+  it("local-* 离线更新持久化失败时不更新本地状态", async () => {
+    const { getAll: mockGetAll } = await import("@/lib/offlineQueue");
+
+    // 模拟队列中无对应的 POST 项
+    vi.mocked(mockGetAll).mockResolvedValueOnce([]);
+
+    useTaskStore.setState({
+      tasks: [createMockTask({ id: "local-1", status: "waitStart", title: "原始标题" })],
+    });
+
+    Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
+
+    await act(async () => {
+      try {
+        await useTaskStore.getState().updateTaskStatus("local-1", "doing");
+      } catch {}
+    });
+
+    // 状态应保持不变
+    const state = useTaskStore.getState();
+    expect(state.tasks[0].status).toBe("waitStart");
+    expect(state.tasks[0].title).toBe("原始标题");
+    expect(state.error).toBe("离线保存失败：未找到原始队列项");
+
+    Object.defineProperty(navigator, "onLine", { value: true, configurable: true });
+  });
 });
 
 // ============================================================
@@ -459,6 +486,43 @@ describe("deleteTask", () => {
     const state = useTaskStore.getState();
     expect(state.error).toBe("删除失败");
     expect(state.tasks).toHaveLength(1);
+  });
+
+  it("local-* 离线删除队列失败时回滚", async () => {
+    const { getAll: mockGetAll, remove: mockQueueRemove } = await import("@/lib/offlineQueue");
+
+    const task = createMockTask({ id: "local-1", title: "离线条目" });
+    useTaskStore.setState({ tasks: [task] });
+
+    // 队列中有对应的 POST 项
+    vi.mocked(mockGetAll).mockResolvedValueOnce([{
+      id: "q-1",
+      user_id: "user-1",
+      client_entry_id: "local-1",
+      method: "POST",
+      url: "/entries",
+      body: {},
+      timestamp: Date.now(),
+      status: "pending",
+      retry_count: 0,
+    }] as any);
+
+    // 队列删除失败
+    vi.mocked(mockQueueRemove).mockRejectedValueOnce(new Error("IndexedDB error"));
+
+    Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
+
+    await act(async () => {
+      await useTaskStore.getState().deleteTask("local-1");
+    });
+
+    // 任务应恢复（回滚乐观删除）
+    const state = useTaskStore.getState();
+    expect(state.tasks).toHaveLength(1);
+    expect(state.tasks[0].id).toBe("local-1");
+    expect(state.error).toBe("离线删除失败，请稍后重试");
+
+    Object.defineProperty(navigator, "onLine", { value: true, configurable: true });
   });
 });
 

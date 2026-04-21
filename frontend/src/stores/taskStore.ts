@@ -107,17 +107,27 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
     if (!navigator.onLine) {
       // 离线创建的条目（local-* ID）尚未在服务端存在，合并修改到原始 POST 队列
       if (id.startsWith("local-")) {
+        // 先持久化到队列，成功后再更新本地状态
+        const { getAll, update } = await import("@/lib/offlineQueue");
+        const items = await getAll();
+        const postItem = items.find((i) => i.client_entry_id === id && i.method === "POST");
+        if (!postItem) {
+          const msg = "离线保存失败：未找到原始队列项";
+          set({ error: msg });
+          throw new Error(msg);
+        }
+        try {
+          await update(postItem.id, { body: { ...postItem.body, ...data } });
+        } catch {
+          const msg = "离线保存失败，请稍后重试";
+          set({ error: msg });
+          throw new Error(msg);
+        }
+        // 持久化成功，更新本地状态
         set((state) => ({
           tasks: state.tasks.map((t) => t.id === id ? { ...t, ...data } : t),
           _offlineEntries: state._offlineEntries.map((e) => e.id === id ? { ...e, ...data } : e),
         }));
-        // 将修改合并到原始 POST 队列项，确保同步时发送最新数据
-        const { getAll, update } = await import("@/lib/offlineQueue");
-        const items = await getAll();
-        const postItem = items.find((i) => i.client_entry_id === id && i.method === "POST");
-        if (postItem) {
-          await update(postItem.id, { body: { ...postItem.body, ...data } });
-        }
         return;
       }
       const { add } = await import("@/lib/offlineQueue");
@@ -211,7 +221,13 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
         const items = await getAll();
         const postItem = items.find((i) => i.client_entry_id === id && i.method === "POST");
         if (postItem) {
-          await queueRemove(postItem.id);
+          try {
+            await queueRemove(postItem.id);
+          } catch {
+            // 队列删除失败，回滚乐观更新
+            set({ tasks: previousTasks, error: "离线删除失败，请稍后重试" });
+            return;
+          }
         }
         set((state) => ({
           _offlineEntries: state._offlineEntries.filter((e) => e.id !== id),
