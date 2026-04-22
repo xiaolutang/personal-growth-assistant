@@ -58,6 +58,12 @@ export async function sync(): Promise<void> {
     const items = await queue.getAll();
     const pending = items.filter((i) => i.status === "pending");
 
+    // 清理上次 sync 已标记 synced 但 remove 失败的残留项
+    const syncedItems = items.filter((i) => i.status === "synced");
+    for (const si of syncedItems) {
+      try { await queue.remove(si.id); } catch { /* 忽略 */ }
+    }
+
     if (pending.length === 0) {
       return;
     }
@@ -119,11 +125,18 @@ export async function sync(): Promise<void> {
         continue;
       }
 
-      // API 调用成功：从队列移除（IDB 失败不影响已成功的远程调用）
+      // API 调用成功：先标记 synced 防止 remove 失败后重复执行远程调用
+      try {
+        await queue.update(item.id, { status: "synced" });
+      } catch {
+        // 标记失败时继续尝试移除
+      }
+
+      // 从队列移除（IDB 失败不影响已成功的远程调用，下次同步会清理 synced 项）
       try {
         await queue.remove(item.id);
       } catch {
-        // 队列移除失败不影响已成功的远程操作，下次同步会再次尝试移除
+        // 队列移除失败不影响已成功的远程操作，synced 状态确保不会被重复执行
       }
       // POST 对应离线创建的 local-* 条目，需要移除离线占位
       if (item.method === "POST") {

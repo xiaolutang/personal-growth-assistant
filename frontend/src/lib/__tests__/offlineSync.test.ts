@@ -316,4 +316,38 @@ describe("offlineSync", () => {
 
     expect(mockQueue.count).not.toHaveBeenCalled();
   });
+
+  it("API succeeds but queue.remove fails — marks synced, next sync cleans up without re-executing API", async () => {
+    // First sync: API succeeds, queue.remove fails
+    const items = [makeItem({ id: "q-1" })];
+    mockQueue.getAll.mockResolvedValueOnce(items);
+    mockCreateEntry.mockResolvedValueOnce({} as any);
+    // queue.update for synced status succeeds
+    mockQueue.update.mockResolvedValueOnce(true as any);
+    // queue.remove fails
+    mockQueue.remove.mockRejectedValueOnce(new Error("IDB error"));
+
+    await sync();
+
+    // Should have marked as synced
+    expect(mockQueue.update).toHaveBeenCalledWith("q-1", { status: "synced" });
+    // remove was attempted
+    expect(mockQueue.remove).toHaveBeenCalledWith("q-1");
+    // API was called once
+    expect(mockCreateEntry).toHaveBeenCalledTimes(1);
+
+    vi.clearAllMocks();
+
+    // Second sync: item is synced, should be cleaned up without API call
+    const syncedItem = makeItem({ id: "q-1", status: "synced" as any });
+    mockQueue.getAll.mockResolvedValueOnce([syncedItem]);
+    mockQueue.remove.mockResolvedValueOnce();
+
+    await sync();
+
+    // Should have removed the synced item
+    expect(mockQueue.remove).toHaveBeenCalledWith("q-1");
+    // API should NOT be called again
+    expect(mockCreateEntry).not.toHaveBeenCalled();
+  });
 });
