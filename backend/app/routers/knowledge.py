@@ -1,5 +1,5 @@
 """知识图谱 API 路由"""
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -16,6 +16,7 @@ from app.services.knowledge_service import (
     ConceptSearchResponse,
     ConceptTimelineResponse,
     MasteryDistributionResponse,
+    CapabilityMapResponse,
 )
 
 router = APIRouter(tags=["knowledge"])
@@ -139,5 +140,24 @@ async def get_mastery_distribution(user: User = Depends(get_current_user)):
 
     try:
         return await knowledge_service.get_mastery_distribution(user_id=user.id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+
+
+@router.get("/knowledge/capability-map", response_model=CapabilityMapResponse)
+async def get_capability_map(
+    mastery_level: Optional[str] = Query(None, description="按掌握度过滤: new/beginner/intermediate/advanced"),
+    user: User = Depends(get_current_user),
+):
+    """获取能力地图数据（按领域聚合的概念+掌握度）"""
+    if mastery_level and mastery_level not in ("new", "beginner", "intermediate", "advanced"):
+        raise HTTPException(status_code=422, detail="mastery_level 参数必须是 new/beginner/intermediate/advanced")
+
+    knowledge_service = get_knowledge_service()
+
+    try:
+        return await knowledge_service.get_capability_map(mastery_level=mastery_level, user_id=user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")

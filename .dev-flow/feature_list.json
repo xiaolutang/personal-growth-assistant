@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 8,
-    "pending": 6,
-    "completed": 1,
+    "pending": 5,
+    "completed": 2,
     "in_progress": 1,
     "blocked": 0,
     "cancelled": 0
@@ -131,8 +131,11 @@
       "description": "新增能力地图 API，基于 Neo4j 概念和掌握度数据，按能力领域聚合为能力地图视图。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
+      "started_at": "2026-04-22T18:20:00",
+      "completed_at": "2026-04-22T18:40:00",
+      "evidence_file": ".dev-flow/evidence/B81.md",
       "acceptance_criteria": [
         "GET /knowledge/capability-map 返回能力地图数据（按领域聚合的概念+掌握度）",
         "每个领域包含：name、concepts（概念列表）、average_mastery、concept_count",

@@ -3,7 +3,7 @@ import json
 import re
 import logging
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any, TYPE_CHECKING
+from typing import List, Optional, Dict, Any, Literal, TYPE_CHECKING
 
 from pydantic import BaseModel, Field
 
@@ -119,6 +119,28 @@ class MasteryDistributionResponse(BaseModel):
     intermediate: int = 0
     advanced: int = 0
     total: int = 0
+
+
+class CapabilityConcept(BaseModel):
+    """能力地图中的概念项"""
+    name: str
+    mastery_level: Literal["new", "beginner", "intermediate", "advanced"] = "new"
+    mastery_score: float = Field(0.0, ge=0.0, le=1.0)
+    entry_count: int = 0
+
+
+class CapabilityDomain(BaseModel):
+    """能力领域"""
+    name: str
+    concepts: List[CapabilityConcept] = []
+    average_mastery: float = Field(0.0, ge=0.0, le=1.0)
+    concept_count: int = 0
+
+
+class CapabilityMapResponse(BaseModel):
+    """能力地图响应"""
+    domains: List[CapabilityDomain] = []
+    source: Literal["neo4j", "sqlite"] = "sqlite"
 
 
 class KnowledgeService:
@@ -882,6 +904,126 @@ class KnowledgeService:
             advanced=dist["advanced"],
             total=sum(dist.values()),
         )
+
+    # ==================== B81: 能力地图 ====================
+
+    def _mastery_to_score(self, mastery_level: str) -> float:
+        """将掌握度级别映射为 0-1 分数"""
+        return {"new": 0.0, "beginner": 0.25, "intermediate": 0.5, "advanced": 0.75}.get(
+            mastery_level, 0.0
+        )
+
+    async def get_capability_map(
+        self,
+        mastery_level: Optional[str] = None,
+        user_id: str = "_default",
+    ) -> CapabilityMapResponse:
+        """
+        获取能力地图数据
+
+        按领域聚合概念和掌握度。Neo4j 优先，不可用时降级为 SQLite tags 聚合。
+
+        Args:
+            mastery_level: 按掌握度过滤（new/beginner/intermediate/advanced）
+            user_id: 用户 ID
+
+        Returns:
+            CapabilityMapResponse 能力地图
+        """
+        valid_levels = ("new", "beginner", "intermediate", "advanced")
+        if mastery_level and mastery_level not in valid_levels:
+            raise ValueError(f"mastery_level 参数必须是 {'/'.join(valid_levels)}")
+
+        if self.is_neo4j_available():
+            try:
+                return await self._build_capability_map_from_neo4j(mastery_level, user_id)
+            except Exception as e:
+                logger.warning(f"Neo4j capability map failed, falling back to SQLite: {e}")
+
+        if self._sqlite:
+            return self._build_capability_map_from_sqlite(mastery_level, user_id)
+
+        return CapabilityMapResponse(domains=[], source="sqlite")
+
+    async def _build_capability_map_from_neo4j(
+        self, mastery_level: Optional[str], user_id: str
+    ) -> CapabilityMapResponse:
+        """从 Neo4j 构建能力地图
+
+        Note: 掌握度计算依赖 _calculate_mastery_with_neo4j，其底层
+        neo4j_client.get_entries_by_concept 的 user_id 隔离依赖 Neo4j
+        MENTIONS 关系上的 user_id 属性完整性。
+        """
+        concepts = await self._neo4j.get_all_concepts_with_stats(user_id=user_id)
+
+        # 按领域（category）聚合
+        domain_map: Dict[str, List[CapabilityConcept]] = {}
+        for c in concepts:
+            name = c.get("name", "")
+            entry_count = c.get("entry_count", 0)
+            category = c.get("category") or "未分类"
+
+            mastery = await self._calculate_mastery_with_neo4j(name, entry_count, user_id)
+
+            if mastery_level and mastery != mastery_level:
+                continue
+
+            score = self._mastery_to_score(mastery)
+            concept_item = CapabilityConcept(
+                name=name,
+                mastery_level=mastery,
+                mastery_score=score,
+                entry_count=entry_count,
+            )
+            domain_map.setdefault(category, []).append(concept_item)
+
+        domains = self._aggregate_domains(domain_map)
+        return CapabilityMapResponse(domains=domains, source="neo4j")
+
+    def _build_capability_map_from_sqlite(
+        self, mastery_level: Optional[str], user_id: str
+    ) -> CapabilityMapResponse:
+        """从 SQLite 构建能力地图（降级方案）"""
+        result = self._sqlite.get_tag_stats_for_knowledge_map(user_id=user_id)
+
+        domain_map: Dict[str, List[CapabilityConcept]] = {}
+        for tag_info in result["tags"]:
+            mastery = self._calculate_mastery_from_stats(
+                entry_count=tag_info["entry_count"],
+                recent_count=tag_info["recent_count"],
+                note_count=tag_info["note_count"],
+            )
+
+            if mastery_level and mastery != mastery_level:
+                continue
+
+            score = self._mastery_to_score(mastery)
+            concept_item = CapabilityConcept(
+                name=tag_info["name"],
+                mastery_level=mastery,
+                mastery_score=score,
+                entry_count=tag_info["entry_count"],
+            )
+            domain_map.setdefault("tag", []).append(concept_item)
+
+        domains = self._aggregate_domains(domain_map)
+        return CapabilityMapResponse(domains=domains, source="sqlite")
+
+    def _aggregate_domains(
+        self, domain_map: Dict[str, List[CapabilityConcept]]
+    ) -> List[CapabilityDomain]:
+        """聚合领域数据"""
+        domains = []
+        for domain_name, concepts in sorted(domain_map.items()):
+            scores = [c.mastery_score for c in concepts]
+            avg_mastery = sum(scores) / len(scores) if scores else 0.0
+            domains.append(CapabilityDomain(
+                name=domain_name,
+                concepts=concepts,
+                average_mastery=round(avg_mastery, 2),
+                concept_count=len(concepts),
+            ))
+        return domains
 
     # ==================== B43: 条目知识上下文 ====================
 

@@ -1080,7 +1080,7 @@ export interface Task {
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| mastery_level | string | 否 | 按掌握度过滤：`beginner/intermediate/advanced/expert` |
+| mastery_level | string | 否 | 按掌握度过滤：`new/beginner/intermediate/advanced` |
 
 **响应 200**：
 
@@ -1092,7 +1092,7 @@ export interface Task {
       "concepts": [
         {
           "name": "string",
-          "mastery_level": "beginner|intermediate|advanced|expert",
+          "mastery_level": "new|beginner|intermediate|advanced",
           "mastery_score": 0.0,
           "entry_count": 0
         }

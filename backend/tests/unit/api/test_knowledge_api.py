@@ -521,3 +521,128 @@ class TestKnowledgeMapAPI:
             assert (await c.get("/knowledge/search?q=test")).status_code == 401
             assert (await c.get("/knowledge/concepts/test/timeline")).status_code == 401
             assert (await c.get("/knowledge/mastery-distribution")).status_code == 401
+            assert (await c.get("/knowledge/capability-map")).status_code == 401
+
+
+class TestCapabilityMapAPI:
+    """B81 能力地图 API 测试"""
+
+    @pytest.fixture(autouse=True)
+    async def setup_data(self, storage, client):
+        """每个测试前准备数据"""
+        if storage.sqlite:
+            storage.sqlite.clear_all()
+
+        user_id = _make_test_user_id(client)
+        now = datetime.now()
+
+        # 创建足够多的条目以触发不同掌握度
+        for i in range(7):
+            entry = Task(
+                id=f"cmap-task-{i}",
+                title=f"Python学习-{i}",
+                content="",
+                category=Category.TASK if i < 5 else Category.NOTE,
+                status=TaskStatus.COMPLETE if i < 4 else TaskStatus.DOING,
+                priority=Priority.MEDIUM,
+                tags=["Python", "编程"] if i % 2 == 0 else ["Python"],
+                created_at=now,
+                updated_at=now,
+                file_path=f"tasks/cmap-task-{i}.md",
+            )
+            storage.sqlite.upsert_entry(entry, user_id=user_id)
+
+        # 创建不同领域标签
+        entry2 = Task(
+            id="cmap-react-1",
+            title="React 学习",
+            content="",
+            category=Category.NOTE,
+            status=TaskStatus.DOING,
+            priority=Priority.MEDIUM,
+            tags=["React", "前端"],
+            created_at=now,
+            updated_at=now,
+            file_path="notes/cmap-react-1.md",
+        )
+        storage.sqlite.upsert_entry(entry2, user_id=user_id)
+
+    async def test_capability_map_normal(self, client: AsyncClient):
+        """测试正常返回能力地图"""
+        response = await client.get("/knowledge/capability-map")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "domains" in data
+        assert "source" in data
+        assert data["source"] == "sqlite"
+
+        # 应该有 tag 域（SQLite 降级走 tags 聚合）
+        assert len(data["domains"]) >= 1
+
+        domain = data["domains"][0]
+        assert "name" in domain
+        assert "concepts" in domain
+        assert "average_mastery" in domain
+        assert "concept_count" in domain
+
+        for concept in domain["concepts"]:
+            assert "name" in concept
+            assert "mastery_level" in concept
+            assert concept["mastery_level"] in ("new", "beginner", "intermediate", "advanced")
+            assert 0.0 <= concept["mastery_score"] <= 1.0
+
+    async def test_capability_map_empty_data(self, storage, client: AsyncClient):
+        """测试空数据返回空列表"""
+        storage.sqlite.clear_all()
+
+        response = await client.get("/knowledge/capability-map")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["domains"] == []
+
+    async def test_capability_map_mastery_filter(self, client: AsyncClient):
+        """测试按掌握度过滤"""
+        response = await client.get("/knowledge/capability-map?mastery_level=beginner")
+        assert response.status_code == 200
+
+        data = response.json()
+        # 所有返回的概念都应该是 beginner
+        for domain in data["domains"]:
+            for concept in domain["concepts"]:
+                assert concept["mastery_level"] == "beginner"
+
+    async def test_capability_map_invalid_mastery(self, client: AsyncClient):
+        """测试非法 mastery_level 返回 422"""
+        response = await client.get("/knowledge/capability-map?mastery_level=invalid")
+        assert response.status_code == 422
+
+    async def test_capability_map_user_isolation(self, storage, client: AsyncClient):
+        """测试不同 user_id 返回不同能力地图"""
+        other_user_id = "other-cmap-user"
+
+        # 其他用户创建特定标签
+        entry = Task(
+            id="cmap-exclusive",
+            title="专属技能",
+            content="",
+            category=Category.TASK,
+            status=TaskStatus.COMPLETE,
+            priority=Priority.HIGH,
+            tags=["ExclusiveSkillTag"],
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+            file_path="tasks/cmap-exclusive.md",
+        )
+        storage.sqlite.upsert_entry(entry, user_id=other_user_id)
+
+        response = await client.get("/knowledge/capability-map")
+        assert response.status_code == 200
+
+        data = response.json()
+        all_concepts = []
+        for domain in data["domains"]:
+            all_concepts.extend(domain["concepts"])
+
+        assert all(c["name"] != "ExclusiveSkillTag" for c in all_concepts)
