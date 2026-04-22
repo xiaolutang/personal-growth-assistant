@@ -10,8 +10,11 @@ fi
 
 cd "$(dirname "$0")/.."
 
-docker build ${CACHE_FLAG} \
+docker buildx build \
   -f deploy/Dockerfile \
   -t personal-growth-assistant:latest \
   --build-arg FRONTEND_BASE_PATH="${FRONTEND_BASE_PATH:-/growth/}" \
+  --build-arg RUN_USER=root \
+  $CACHE_FLAG \
+  --load \
   .
