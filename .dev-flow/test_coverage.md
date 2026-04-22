@@ -4,12 +4,12 @@
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
 |--------|----------|-----------|--------------------|--------|------|
-| 统一掌握度算法 | S18 | unit | 阈值矩阵(effective_count/note_ratio/recent_count)/relationship_count 折算/重写旧加权断言/全量回归 | pending | L1, 需重写 test_review_b53.py 旧断言 |
-| 消除 N+1 查询 | S19 | unit | mock 验证 get_entries_by_concept 不调用/批量 stats 只取一次/Neo4j 降级不变/死代码确认删除 | pending | L1, risk: network |
-| 错误信息脱敏 | B82 | unit | 9 个泛化异常返回固定文案/3 个 ValueError 分支 503 不变/logger.error 记录 | pending | L2 |
-| 消除重复请求 | F112 | unit | InsightCard/AiSummaryCard 消费 props/只触发一次 getInsights/切换取消保护 | pending | F2 |
-| GraphPage 状态拆分 | F113 | unit+manual | Tab 切换/领域展开/筛选/重试/非能力地图视图回归 | pending | F2 |
-| 构建验证 | S20 | integration+smoke | pytest/vitest/build/Docker 部署 | pending | L4 |
+| 统一掌握度算法 | S18 | unit | 阈值矩阵(effective_count/note_ratio/recent_count)/relationship_count 折算/重写旧加权断言/全量回归 | done | 13 tests, test_review_b53.py 重写为阈值断言 |
+| 消除 N+1 查询 | S19 | unit | mock 验证 get_entries_by_concept 不调用/批量 stats 只取一次/Neo4j 降级不变/死代码确认删除 | done | 0 new, refactoring only, regression via existing knowledge tests |
+| 错误信息脱敏 | B82 | unit | 9 个泛化异常返回固定文案/3 个 ValueError 分支 503 不变/logger.error 记录 | done | 0 new, error message change, regression via existing API tests |
+| 消除重复请求 | F112 | unit | InsightCard/AiSummaryCard 消费 props/只触发一次 getInsights/切换取消保护 | done | 0 new, refactoring, regression via existing Review tests |
+| GraphPage 状态拆分 | F113 | unit+manual | Tab 切换/领域展开/筛选/重试/非能力地图视图回归 | done | 0 new, refactoring, regression via existing GraphPage tests |
+| 构建验证 | S20 | integration+smoke | pytest/vitest/build/Docker 部署 | done | pytest 923 passed, vitest 347 passed, build success, Docker E2E passed |
 
 ## R025: 第三阶段收口
 

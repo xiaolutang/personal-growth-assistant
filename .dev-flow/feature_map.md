@@ -1,10 +1,41 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：R022 体验打磨 + 遗留项
+> 活跃需求包：R026 收敛修复
 > 最后更新：2026-04-22
 
 ## 活跃需求包
+
+### R026 收敛修复
+
+- 分支：feat/R026-convergence-fixes
+- 状态：completed
+
+#### Review 模块
+
+| 任务 | 模块 | 状态 | ~Tests |
+|------|------|------|--------|
+| S18 | 统一掌握度算法（阈值式） | completed | 13 |
+| F112 | 消除 InsightCard/AiSummaryCard 重复请求 | completed | 0 |
+
+#### Knowledge 模块
+
+| 任务 | 模块 | 状态 | ~Tests |
+|------|------|------|--------|
+| S19 | 消除 N+1 查询 + 删除死方法 | completed | 0 |
+| B82 | 错误信息脱敏 | completed | 0 |
+
+#### Frontend 模块
+
+| 任务 | 模块 | 状态 | ~Tests |
+|------|------|------|--------|
+| F113 | GraphPage 状态拆分重构 | completed | 0 |
+
+#### Quality 模块
+
+| 任务 | 模块 | 状态 | ~Tests |
+|------|------|------|--------|
+| S20 | 构建验证（pytest 923 + vitest 347 + build + Docker E2E） | completed | — |
 
 ### R022 体验打磨 + 遗留项
 - 分支：feat/R022-polish-deferred
@@ -51,11 +82,12 @@
 | R019 离线增强 + PWA | _archive/R019_offline-pwa | completed |
 | R020 E2E 测试补齐 + CI PR 增强 | _archive/R020_e2e-ci-pipeline | completed |
 | R021 技术债清理 | _archive/R021_tech-debt-cleanup | completed |
+| R022 体验打磨 + 遗留项 | _archive/R022_polish-deferred | completed |
 
 ## 测试汇总
 
 | 项目 | 测试数 | 状态 |
 |------|--------|------|
-| 后端测试 | 857 passed | 全绿 |
-| 前端测试 | 337 passed | 全绿 |
+| 后端测试 | 923 passed | 全绿 |
+| 前端测试 | 347 passed | 全绿 |
 | E2E 测试 | 113 passed | 全绿 |
