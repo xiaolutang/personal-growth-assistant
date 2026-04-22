@@ -11,7 +11,7 @@
 
 | 任务 | 模块 | 状态 | ~Tests |
 |------|------|------|--------|
-| B83 | 导出 API 增强（单条目 + 成长报告） | pending | 10 |
+| B83 | 导出 API 增强（单条目 + 成长报告） | completed | 10 |
 | B84 | 反馈状态同步（log-service 同步） | completed | 20 |
 | F114 | 条目详情页导出按钮 | pending | 3 |
 | F115 | Review 页导出入口 | pending | 3 |

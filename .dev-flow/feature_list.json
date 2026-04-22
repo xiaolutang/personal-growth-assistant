@@ -13,9 +13,9 @@
     "status": "planning",
     "created_at": "2026-04-22",
     "total_tasks": 6,
-    "completed": 1,
+    "completed": 2,
     "in_progress": 0,
-    "pending": 5,
+    "pending": 4,
     "blocked": 0
   },
   "workflow": {
@@ -28,8 +28,8 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 5,
-    "completed": 1,
+    "pending": 4,
+    "completed": 2,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -53,7 +53,9 @@
       "description": "新增单条目 Markdown 文件下载和成长报告导出两个端点。单条目导出复用 Markdown 存储的源文件，通过 FileResponse 直接返回。成长报告调用 review_service 获取统计数据，生成格式化 Markdown 文档后下载。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-23T15:10:00",
+      "completed_at": "2026-04-23T16:00:00",
       "priority": "high",
       "acceptance_criteria": [
         "GET /entries/{id}/export 返回 .md 文件下载，Content-Type: text/markdown",

@@ -2,9 +2,10 @@
 
 import re
 from datetime import date
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 from app.api.schemas import (
     EntryCreate,
@@ -148,6 +149,43 @@ async def get_entry(entry_id: str, user: User = Depends(get_current_user)):
     if not entry:
         raise HTTPException(status_code=404, detail=f"条目不存在: {entry_id}")
     return entry
+
+
+@router.get("/{entry_id}/export")
+async def export_single_entry(entry_id: str, user: User = Depends(get_current_user)):
+    """导出单条目 Markdown 文件"""
+    service = get_entry_service()
+
+    # 验证条目存在且属于当前用户
+    entry = await service.get_entry(entry_id, user_id=user.id)
+    if not entry:
+        raise HTTPException(status_code=404, detail=f"条目不存在: {entry_id}")
+
+    # 获取 Markdown 文件路径
+    md_storage = service._get_markdown_storage(user.id)
+    file_path = None
+    from app.models import Category
+    for cat in [Category.NOTE, Category.PROJECT, Category.TASK, Category.INBOX,
+                Category.DECISION, Category.REFLECTION, Category.QUESTION]:
+        fp = md_storage._get_file_path(entry_id, cat)
+        if fp.exists():
+            file_path = fp
+            break
+
+    if not file_path or not file_path.exists():
+        raise HTTPException(status_code=404, detail=f"条目文件不存在: {entry_id}")
+
+    # 文件名：标题中的特殊字符替换为 _
+    safe_title = re.sub(r'[^\w\s-]', '_', entry.title or "entry").strip()
+    filename = f"{safe_title}.md"
+    encoded_filename = quote(filename)
+
+    return FileResponse(
+        path=str(file_path),
+        media_type="text/markdown; charset=utf-8",
+        filename=filename,
+        headers={"Content-Disposition": f"attachment; filename=\"{encoded_filename}\"; filename*=UTF-8''{encoded_filename}"},
+    )
 
 
 @router.post("", response_model=EntryResponse)
