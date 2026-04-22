@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 12,
-    "pending": 9,
-    "completed": 3,
+    "pending": 6,
+    "completed": 6,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -185,8 +185,11 @@
       "description": "创建 Dio HTTP 客户端，JWT token 拦截器，flutter_secure_storage 持久化，BaseURL 可配置。统一错误处理和响应解析。",
       "verification": "L1",
       "depends_on": ["S11"],
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
+      "started_at": "2026-04-22T15:10:00",
+      "completed_at": "2026-04-22T16:00:00",
+      "evidence_file": ".dev-flow/evidence/S12_S13_F101.md",
       "acceptance_criteria": [
         "ApiClient 类封装 Dio 实例，BaseURL 可配置（默认 localhost:8001）",
         "JWT 拦截器自动在请求头注入 Authorization: Bearer {token}",
@@ -218,7 +221,9 @@
       "description": "实现 SSE (Server-Sent Events) 客户端，用于 AI 对话的流式响应。连接 POST /chat（parse router，带意图识别+CRUD），解析完整 SSE 事件类型。支持重连、流式数据输出到 UI。",
       "verification": "L1",
       "depends_on": ["S12"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-22T16:00:00",
+      "completed_at": "2026-04-22T16:30:00",
       "priority": "high",
       "acceptance_criteria": [
         "SSE 客户端连接 POST /chat（parse router）端点，携带 JWT token 和 session_id",
@@ -250,7 +255,9 @@
       "description": "实现登录页面，包括用户名/密码表单、JWT 存储到 secure storage、认证状态管理、登录成功后跳转首页、路由守卫。",
       "verification": "F2",
       "depends_on": ["S12", "F99"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-22T16:30:00",
+      "completed_at": "2026-04-22T17:00:00",
       "priority": "high",
       "acceptance_criteria": [
         "登录页显示用户名/密码输入框和登录按钮",

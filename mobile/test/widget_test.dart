@@ -1,34 +1,26 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:growth_assistant/main.dart';
 
 void main() {
-  testWidgets('App renders bottom navigation', (WidgetTester tester) async {
+  testWidgets('App redirects to login when unauthenticated',
+      (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: GrowthApp()));
     await tester.pumpAndSettle();
 
-    // 底部导航栏应包含三个标签
-    expect(find.text('今天'), findsWidgets);
-    expect(find.text('日知'), findsWidgets);
-    expect(find.text('任务'), findsWidgets);
+    // 未认证时应重定向到登录页
+    expect(find.text('个人成长助手'), findsOneWidget);
+    expect(find.text('登录'), findsOneWidget);
   });
 
-  testWidgets('Tab switching works', (WidgetTester tester) async {
+  testWidgets('Login page has username and password fields',
+      (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: GrowthApp()));
     await tester.pumpAndSettle();
 
-    // 初始页面应显示 "今天"
-    expect(find.text('今天'), findsWidgets);
-
-    // 点击日知 tab
-    await tester.tap(find.text('日知'));
-    await tester.pumpAndSettle();
-    expect(find.text('日知'), findsWidgets);
-
-    // 点击任务 tab
-    await tester.tap(find.text('任务'));
-    await tester.pumpAndSettle();
-    expect(find.text('任务'), findsWidgets);
+    // 登录页应包含用户名和密码输入框
+    expect(find.byType(TextField), findsNWidgets(2));
   });
 }
