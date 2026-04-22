@@ -1,5 +1,18 @@
 # 测试覆盖清单
 
+## R025: 第三阶段收口
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| AI 深度洞察 API | S15 | unit | 有数据返回结构化洞察/空数据降级/LLM 不可用走规则/用户隔离 | pending | risk: network |
+| AI 深度洞察卡片 | F108 | unit+manual | 3 维度渲染/skeleton/降级标签/日报隐藏/API 失败错误态 | pending | F2 验证 |
+| 能力地图数据 API | B81 | unit | Neo4j 正常/SQLite 降级/空数据/mastery_level 过滤/用户隔离 | pending | risk: network |
+| 能力地图视图 | F109 | unit+manual | 4 Tab 切换/领域卡片/展开概念/空数据引导/筛选传参/API 失败 | pending | F2 验证 |
+| 图谱 AI 助手 | F110 | unit+manual | PageChatPanel 内嵌/SSE 失败错误/空上下文/视图切换同步 | pending | F2 验证 |
+| AI 总结深度增强 | F111 | unit+manual | 展开 Markdown/折叠概要/消费 /review/insights 数据源 | pending | F2 验证 |
+| 后端测试收口 | S16 | unit | /review/insights 端点 + _generate_deep_insights 方法覆盖 | pending | L1 |
+| 构建验证 | S17 | integration+smoke | 后端 pytest 全通过/前端 vitest 全通过/前端 build 成功 | pending | L4 |
+
 ## R022: 体验打磨 + 遗留项
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |

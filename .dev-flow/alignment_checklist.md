@@ -1,5 +1,44 @@
 # 对齐清单
 
+## R025: 第三阶段收口
+
+### 契约对齐
+
+- [ ] S15: CONTRACT-R025-01 (GET /review/insights) 已定义 → behavior_patterns + growth_suggestions + capability_changes
+- [ ] B81: CONTRACT-R025-02 (GET /knowledge/capability-map) 已定义 → domains 聚合 + mastery_level 过滤 + Neo4j/SQLite 降级
+- [ ] F108 依赖 CONTRACT-R025-01 ✓
+- [ ] F109 依赖 CONTRACT-R025-02 ✓
+- [ ] F111 消费 CONTRACT-R025-01 数据源，前端拼装 Markdown ✓
+
+### 依赖对齐
+
+- [ ] S15 无外部依赖 ✓
+- [ ] B81 无外部依赖 ✓
+- [ ] F108 depends_on S15 ✓
+- [ ] F109 depends_on B81 ✓
+- [ ] F110 depends_on F109 ✓
+- [ ] F111 depends_on S15, F108 ✓
+- [ ] S16 depends_on S15 ✓
+- [ ] S17 depends_on F108, F109, F110, F111, S16 ✓
+
+### 架构对齐
+
+- [ ] 后端增强 review_service 和 knowledge_service，不新建服务 ✓
+- [ ] 前端增强 GraphPage 和 Review 页面，复用 PageChatPanel ✓
+- [ ] F110 使用 PageChatPanel pageContext=graph（匹配现有 PageContext schema page_type 枚举值），AI 服务对已有 page_type 做通用处理 ✓
+- [ ] F111 数据来源为 /review/insights（S15），前端将结构化洞察拼装为 Markdown ✓
+- [ ] Neo4j 不可用时降级为 SQLite tags 聚合 ✓
+- [ ] 所有新 API 通过 Depends(get_current_user) 认证 ✓
+
+### 验收对齐
+
+- [ ] 每个任务有 acceptance_criteria ✓
+- [ ] 每个任务有 test_tasks ✓
+- [ ] S15 risk_tags: network ✓
+- [ ] B81 risk_tags: network ✓
+- [ ] F110 test_tasks 包含 SSE 失败 + 空上下文 ✓
+- [ ] 前端任务都要求 npm run build 通过 ✓
+
 ## R022: 体验打磨 + 遗留项
 
 ### 契约对齐

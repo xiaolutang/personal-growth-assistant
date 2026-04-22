@@ -1008,3 +1008,101 @@ export interface Task {
 | manifest.lang | 无 | `'zh-CN'` |
 
 不涉及新端点，仅修改 `vite.config.ts` manifest 配置。
+
+---
+
+## R025: 第三阶段收口
+
+### CONTRACT-R025-01: GET /review/insights
+
+**新增端点** — AI 深度洞察
+
+| 字段 | 值 |
+|------|-----|
+| 路径 | `GET /review/insights` |
+| 认证 | Bearer JWT（用户隔离） |
+| 任务 | S15 |
+
+**Query 参数**：
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| period | string | 是 | `weekly` 或 `monthly` |
+
+**响应 200**：
+
+```json
+{
+  "period": "weekly",
+  "start_date": "2026-04-14",
+  "end_date": "2026-04-20",
+  "insights": {
+    "behavior_patterns": [
+      {
+        "pattern": "string",
+        "frequency": "number",
+        "trend": "improving|stable|declining"
+      }
+    ],
+    "growth_suggestions": [
+      {
+        "suggestion": "string",
+        "priority": "high|medium|low",
+        "related_area": "string"
+      }
+    ],
+    "capability_changes": [
+      {
+        "capability": "string",
+        "previous_level": "number",
+        "current_level": "number",
+        "change": "number"
+      }
+    ]
+  },
+  "source": "llm|rule_based"
+}
+```
+
+**降级**：LLM 不可用时 `source=rule_based`，复用 `_generate_pattern_insights` 规则分析。
+
+### CONTRACT-R025-02: GET /knowledge/capability-map
+
+**新增端点** — 能力地图数据
+
+| 字段 | 值 |
+|------|-----|
+| 路径 | `GET /knowledge/capability-map` |
+| 认证 | Bearer JWT（用户隔离） |
+| 任务 | B81 |
+
+**Query 参数**：
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| mastery_level | string | 否 | 按掌握度过滤：`beginner/intermediate/advanced/expert` |
+
+**响应 200**：
+
+```json
+{
+  "domains": [
+    {
+      "name": "string",
+      "concepts": [
+        {
+          "name": "string",
+          "mastery_level": "beginner|intermediate|advanced|expert",
+          "mastery_score": 0.0,
+          "entry_count": 0
+        }
+      ],
+      "average_mastery": 0.0,
+      "concept_count": 0
+    }
+  ],
+  "source": "neo4j|sqlite"
+}
+```
+
+**降级**：Neo4j 不可用时 `source=sqlite`，基于 tags 聚合。
