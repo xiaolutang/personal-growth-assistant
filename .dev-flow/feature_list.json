@@ -13,9 +13,9 @@
     "status": "planning",
     "created_at": "2026-04-22",
     "total_tasks": 6,
-    "completed": 2,
+    "completed": 6,
     "in_progress": 0,
-    "pending": 4,
+    "pending": 0,
     "blocked": 0
   },
   "workflow": {
@@ -28,8 +28,8 @@
   },
   "summary": {
     "total_tasks": 6,
-    "pending": 4,
-    "completed": 2,
+    "pending": 0,
+    "completed": 6,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -144,7 +144,7 @@
       "description": "在 EntryDetail 页面顶部操作区添加导出按钮，点击触发单条目 .md 文件下载。前置步骤：npm run gen:types 同步 OpenAPI 类型。复用现有 exportEntries 模式，新增单条目导出 API 调用。",
       "verification": "F2",
       "depends_on": ["B83"],
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
       "acceptance_criteria": [
         "EntryDetail 页面 header 区域有导出按钮（Download 图标）",
@@ -173,7 +173,7 @@
       "description": "在 Review 页面添加导出功能区：全量数据导出（ZIP）和成长报告导出（Markdown）。前置步骤：npm run gen:types 同步 OpenAPI 类型。放置在页面顶部或统计概览区域，用户可一键导出。两个导出动作独立可验证。",
       "verification": "F2",
       "depends_on": ["B83"],
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
       "acceptance_criteria": [
         "Review 页面有导出入口（按钮或下拉菜单）",
@@ -202,7 +202,7 @@
       "description": "增强 FeedbackButton 的「我的反馈」Tab。前置步骤：npm run gen:types 同步 OpenAPI 类型。1) 打开时自动触发 POST /feedback/sync 同步远程状态；2) 显示 4 种状态标签（pending=待处理, reported=已上报, in_progress=处理中, resolved=已解决）；3) 每条反馈显示 updated_at（本地最近同步时间）。",
       "verification": "F2",
       "depends_on": ["B84"],
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
       "acceptance_criteria": [
         "打开「我的反馈」Tab 时自动调用 POST /feedback/sync",
@@ -234,7 +234,7 @@
       "description": "全量测试 + 构建验证 + Docker E2E 验证，确保导出和反馈追踪功能完整可用。",
       "verification": "L4",
       "depends_on": ["B83", "B84", "F114", "F115", "F116"],
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "acceptance_criteria": [
         "pytest 全部通过（含新增测试）",
