@@ -54,8 +54,9 @@ export interface FeedbackItem {
   title: string;
   severity: string;
   status: string;
-  log_service_issue_id: number | null;
+  log_service_issue_id?: number | null;
   created_at: string;
+  updated_at: string | null;
 }
 
 export interface FeedbackListResponse {
@@ -686,6 +687,37 @@ export async function exportEntries(options: ExportOptions): Promise<Blob> {
     throw new Error(`导出失败: ${response.status}`);
   }
   return response.blob();
+}
+
+/** 导出单条目 Markdown 文件 */
+export async function exportSingleEntry(entryId: string): Promise<Blob> {
+  const response = await authFetch(`${API_BASE}/entries/${entryId}/export`);
+  if (!response.ok) {
+    throw new Error(`导出失败: ${response.status}`);
+  }
+  return response.blob();
+}
+
+/** 导出成长报告 Markdown */
+export async function exportGrowthReport(): Promise<Blob> {
+  const response = await authFetch(`${API_BASE}/review/growth-report`);
+  if (!response.ok) {
+    throw new Error(`导出成长报告失败: ${response.status}`);
+  }
+  return response.blob();
+}
+
+/** 同步反馈状态 */
+export interface FeedbackSyncResponse {
+  synced_count: number;
+  updated_count: number;
+  items: FeedbackItem[];
+  total: number;
+}
+
+export async function syncFeedback(): Promise<FeedbackSyncResponse> {
+  const { data, error, response } = await client.POST("/feedback/sync");
+  return handleOpenApiResponse(data, error, response) as FeedbackSyncResponse;
 }
 
 /**

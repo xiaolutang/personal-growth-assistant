@@ -30,13 +30,14 @@ import {
   Scale,
   RotateCcw,
   HelpCircle,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { getEntry, getEntries, getProjectProgress, getRelatedEntries, generateEntrySummary, getKnowledgeContext, getEntryLinks, deleteEntryLink } from "@/services/api";
+import { getEntry, getEntries, getProjectProgress, getRelatedEntries, generateEntrySummary, getKnowledgeContext, getEntryLinks, deleteEntryLink, exportSingleEntry } from "@/services/api";
 import type { RelatedEntry, EntrySummaryResponse, KnowledgeContextResponse, EntryLinkItem } from "@/services/api";
 import { useTaskStore } from "@/stores/taskStore";
 import type { Task, TaskStatus, Priority } from "@/types/task";
@@ -159,6 +160,7 @@ export function EntryDetail() {
 
   // 编辑模式状态
   const [isEditing, setIsEditing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [editContent, setEditContent] = useState("");
   const [editTitle, setEditTitle] = useState("");
   const [editTags, setEditTags] = useState<string[]>([]);
@@ -547,6 +549,36 @@ export function EntryDetail() {
               <ArrowLeft className="h-4 w-4 mr-2" />
               返回
             </Button>
+            {!isEditing && entry && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isExporting}
+                onClick={async () => {
+                  setIsExporting(true);
+                  try {
+                    const blob = await exportSingleEntry(id!);
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `${entry?.title ?? "entry"}.md`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  } catch {
+                    /* toast not available, silent fail */
+                  } finally {
+                    setIsExporting(false);
+                  }
+                }}
+              >
+                {isExporting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                导出
+              </Button>
+            )}
             {!isEditing ? (
               <Button variant="outline" size="sm" onClick={handleStartEdit}>
                 <Edit2 className="h-4 w-4 mr-2" />

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
 import { ActivityHeatmap } from "@/components/ActivityHeatmap";
 import {
@@ -13,6 +14,8 @@ import {
   Target,
   Loader2,
   AlertCircle,
+  Download,
+  Archive,
 } from "lucide-react";
 import {
   getDailyReport,
@@ -20,6 +23,8 @@ import {
   getMonthlyReport,
   getProgressSummary,
   getInsights,
+  exportEntries,
+  exportGrowthReport,
   type DailyReport,
   type WeeklyReport,
   type MonthlyReport,
@@ -42,6 +47,7 @@ type ReportType = "daily" | "weekly" | "monthly" | "trend";
 export function Review() {
   const [reportType, setReportType] = useState<ReportType>("daily");
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
   const [dailyReport, setDailyReport] = useState<DailyReport | null>(null);
@@ -161,7 +167,7 @@ export function Review() {
       <Header title="成长回顾" />
       <main className="flex-1 p-4 md:p-6 pb-32 overflow-y-auto">
         {/* 报告类型选择 */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 items-center">
           {(["daily", "weekly", "monthly", "trend"] as ReportType[]).map((type) => (
             <Badge
               key={type}
@@ -172,6 +178,49 @@ export function Review() {
               {type === "daily" ? "日报" : type === "weekly" ? "周报" : type === "monthly" ? "月报" : "趋势"}
             </Badge>
           ))}
+          <div className="ml-auto flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isExporting}
+              onClick={async () => {
+                setIsExporting(true);
+                try {
+                  const blob = await exportEntries({ format: "markdown" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "entries_export.zip";
+                  a.click();
+                  URL.revokeObjectURL(url);
+                } catch { /* silent */ } finally { setIsExporting(false); }
+              }}
+            >
+              {isExporting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Archive className="h-4 w-4 mr-1" />}
+              全量导出
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isExporting}
+              onClick={async () => {
+                setIsExporting(true);
+                try {
+                  const blob = await exportGrowthReport();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  const today = new Date().toISOString().split("T")[0];
+                  a.download = `growth_report_${today}.md`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                } catch { /* silent */ } finally { setIsExporting(false); }
+              }}
+            >
+              {isExporting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />}
+              成长报告
+            </Button>
+          </div>
         </div>
 
         {/* 活动热力图 */}
