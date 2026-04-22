@@ -46,10 +46,14 @@ export function NotificationCenter() {
 
   useEffect(() => {
     loadNotifications();
-    // 每 60 秒轮询刷新通知
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    // 面板打开时每 60 秒轮询刷新通知
     const interval = setInterval(loadNotifications, 60_000);
     return () => clearInterval(interval);
-  }, []);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;

@@ -46,7 +46,7 @@ async def search_entries(request: SearchRequest, user: User = Depends(get_curren
     """混合搜索条目（向量 + 全文），Qdrant 不可用时自动降级为纯全文"""
     storage = get_storage()
 
-    def _snippet(content: str, max_len: int = 120) -> str:
+    def _snippet(content: str, max_len: int = 100) -> str:
         """截取内容前 max_len 字符作为摘要"""
         if not content:
             return ""
