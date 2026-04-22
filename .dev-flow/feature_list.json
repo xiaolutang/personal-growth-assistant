@@ -3,10 +3,21 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-22T23:10:00",
-  "status": "idle",
-  "scope_notes": "",
-  "active_requirement_cycle": null,
+  "updated_at": "2026-04-23T15:00:00",
+  "status": "planning",
+  "scope_notes": "数据导出（Phase 6）+ 反馈追踪闭环（Phase 3 补全），产品演进规划第三阶段最后缺口",
+  "active_requirement_cycle": {
+    "id": "R027",
+    "name": "export-feedback-tracking",
+    "branch": "feat/R027-export-feedback-tracking",
+    "status": "planning",
+    "created_at": "2026-04-22",
+    "total_tasks": 6,
+    "completed": 1,
+    "in_progress": 0,
+    "pending": 5,
+    "blocked": 0
+  },
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -16,13 +27,233 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 0,
-    "pending": 0,
-    "completed": 0,
+    "total_tasks": 6,
+    "pending": 5,
+    "completed": 1,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
   },
+  "modules": [
+    {
+      "name": "export",
+      "description": "数据导出：单条目 Markdown 下载 + 成长报告生成"
+    },
+    {
+      "name": "feedback",
+      "description": "反馈追踪：从 log-service 同步 issue 状态，本地状态扩展"
+    }
+  ],
+  "features": [
+    {
+      "id": "B83",
+      "phase": 1,
+      "module": "export",
+      "name": "导出 API 增强",
+      "description": "新增单条目 Markdown 文件下载和成长报告导出两个端点。单条目导出复用 Markdown 存储的源文件，通过 FileResponse 直接返回。成长报告调用 review_service 获取统计数据，生成格式化 Markdown 文档后下载。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "GET /entries/{id}/export 返回 .md 文件下载，Content-Type: text/markdown",
+        "GET /review/growth-report 返回格式化成长报告 .md 文件下载",
+        "两个端点都需要认证，只能导出自己用户的条目",
+        "条目不存在返回 404",
+        "单条目导出文件名含条目标题（特殊字符替换为 _）",
+        "成长报告固定包含 4 个 section：概览（总条目数+7分类计数，来源：sqlite.count_entries 逐类调用）、学习趋势（近4周周计数，来源：review_service.get_trend_data(days=28) 按周聚合）、学习连续天数（来源：review_service._calculate_learning_streak）、知识图谱概览（概念数+关联数+掌握度分布，来源：knowledge_service._stats_from_sqlite，Neo4j 不可用时降级为'暂无数据'）",
+        "review_service 新增 public 方法 generate_growth_report_data(user_id) 封装 4 个 section 的数据收集"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常: 导出存在的条目，验证 Content-Disposition 和文件内容",
+        "正常: 导出成长报告，验证报告包含 4 个 section（概览/趋势/连续天数/图谱）",
+        "正常: 成长报告数据完整，每个 section 有具体数值",
+        "边界: 导出长标题条目，文件名特殊字符替换为 _",
+        "边界: 空用户数据时报告各 section 为 0 或'暂无数据'",
+        "异常: 导出不存在的条目 404",
+        "异常: 导出其他用户的条目 404",
+        "异常: 未认证访问 /entries/{entry_id}/export 返回 401",
+        "异常: 未认证访问 /review/growth-report 返回 401",
+        "降级: Neo4j 不可用时知识图谱 section 显示'暂无数据'，报告其余部分正常"
+      ],
+      "contract_refs": ["CONTRACT-EXPORT01", "CONTRACT-EXPORT02"],
+      "files": [
+        "backend/app/routers/entries.py",
+        "backend/app/routers/review.py",
+        "backend/app/services/entry_service.py",
+        "backend/app/services/review_service.py",
+        "backend/app/services/knowledge_service.py"
+      ]
+    },
+    {
+      "id": "B84",
+      "phase": 1,
+      "module": "feedback",
+      "name": "反馈状态同步",
+      "description": "增强反馈状态追踪：1) 从 log-service 同步 issue 状态到本地（通过 httpx 调 GET /api/issues/{id}）；2) 扩展本地 status 枚举为 pending/reported/in_progress/resolved；3) 新增 POST /feedback/sync 端点触发同步；4) FeedbackItem 增加 updated_at 字段（语义：本地最近同步时间，仅在远程状态变更时更新）。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "started_at": "2026-04-23T01:30:00",
+      "completed_at": "2026-04-23T15:00:00",
+      "priority": "high",
+      "acceptance_criteria": [
+        "POST /feedback/sync 同步所有已上报反馈的远程状态",
+        "本地 status 支持 4 种值：pending, reported, in_progress, resolved",
+        "log-service issue pending/in_progress/resolved 正确映射到本地状态",
+        "log-service 不可用时跳过同步，不改变任何本地状态，synced_count=0",
+        "FeedbackItem.updated_at：首次同步成功时写入当前时间（无论状态是否变更）；此后仅当远程状态实际变更时才更新",
+        "远程 issue 404/超时/未知 status：该条本地 status 和 updated_at 均不变，其他条继续",
+        "同步响应返回 synced_count（尝试同步数）、updated_count（状态实际变更数）",
+        "同步后 GET /feedback 返回最新状态"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        "正常: 有 log_service_issue_id 的反馈同步成功",
+        "正常: 远程 pending → 本地更新为 reported",
+        "正常: 远程 in_progress → 本地更新为 in_progress + updated_at 刷新",
+        "正常: 远程 resolved → 本地更新为 resolved",
+        "正常: 远程状态未变更 → updated_at 不变（非首次）",
+        "正常: 首次同步成功但状态未变 → updated_at 首次写入",
+        "正常: synced_count/updated_count 精确断言",
+        "正常: 同步后 GET /feedback 回读验证最新状态",
+        "异常: log-service 不可用 → sync 不抛错，synced_count=0，本地状态不变",
+        "异常: 远程 issue 404 → 该条 status 和 updated_at 均不变，其他条继续",
+        "异常: 单条超时 → 该条跳过，其他继续",
+        "异常: 远程返回未知 status 值 → 保持原状态不更新",
+        "边界: 无 log_service_issue_id 的反馈跳过同步",
+        "边界: 本地已是 in_progress/resolved 的反馈遇到远程 404 时保持当前状态不变",
+        "边界: 大量反馈批量同步（20+）",
+        "幂等: 重复同步不产生副作用",
+        "回归: POST/GET /feedback 行为不变 + 认证和用户隔离"
+      ],
+      "contract_refs": ["CONTRACT-FEEDBACK-SYNC01"],
+      "files": [
+        "backend/app/routers/feedback.py",
+        "backend/app/infrastructure/storage/sqlite.py"
+      ]
+    },
+    {
+      "id": "F114",
+      "phase": 2,
+      "module": "export",
+      "name": "条目详情页导出按钮",
+      "description": "在 EntryDetail 页面顶部操作区添加导出按钮，点击触发单条目 .md 文件下载。前置步骤：npm run gen:types 同步 OpenAPI 类型。复用现有 exportEntries 模式，新增单条目导出 API 调用。",
+      "verification": "F2",
+      "depends_on": ["B83"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "EntryDetail 页面 header 区域有导出按钮（Download 图标）",
+        "点击后触发 GET /entries/{id}/export 下载",
+        "下载中显示 loading 状态",
+        "下载完成/失败有 toast 提示",
+        "导出按钮与现有编辑/保存按钮不冲突"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常: 点击导出按钮触发文件下载",
+        "正常: 导出中按钮显示 loading",
+        "异常: 网络错误显示错误提示"
+      ],
+      "contract_refs": ["CONTRACT-EXPORT01"],
+      "files": [
+        "frontend/src/pages/EntryDetail.tsx",
+        "frontend/src/services/api.ts"
+      ]
+    },
+    {
+      "id": "F115",
+      "phase": 2,
+      "module": "export",
+      "name": "Review 页导出入口",
+      "description": "在 Review 页面添加导出功能区：全量数据导出（ZIP）和成长报告导出（Markdown）。前置步骤：npm run gen:types 同步 OpenAPI 类型。放置在页面顶部或统计概览区域，用户可一键导出。两个导出动作独立可验证。",
+      "verification": "F2",
+      "depends_on": ["B83"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Review 页面有导出入口（按钮或下拉菜单）",
+        "支持全量 ZIP 导出（复用现有 /entries/export）",
+        "支持成长报告 .md 导出（新增 /review/growth-report）",
+        "导出中显示 loading 状态",
+        "导出完成有 toast 提示"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常: 全量导出触发 ZIP 下载",
+        "正常: 成长报告导出触发 .md 下载",
+        "异常: 网络错误显示错误提示"
+      ],
+      "contract_refs": ["CONTRACT-EXPORT02"],
+      "files": [
+        "frontend/src/pages/Review.tsx",
+        "frontend/src/services/api.ts"
+      ]
+    },
+    {
+      "id": "F116",
+      "phase": 2,
+      "module": "feedback",
+      "name": "FeedbackButton 状态增强",
+      "description": "增强 FeedbackButton 的「我的反馈」Tab。前置步骤：npm run gen:types 同步 OpenAPI 类型。1) 打开时自动触发 POST /feedback/sync 同步远程状态；2) 显示 4 种状态标签（pending=待处理, reported=已上报, in_progress=处理中, resolved=已解决）；3) 每条反馈显示 updated_at（本地最近同步时间）。",
+      "verification": "F2",
+      "depends_on": ["B84"],
+      "status": "pending",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "打开「我的反馈」Tab 时自动调用 POST /feedback/sync",
+        "4 种状态有不同颜色标签（pending=琥珀, reported=蓝, in_progress=黄, resolved=绿）",
+        "updated_at 非 null 时显示相对时间（如'3天前'），null 时不显示时间",
+        "同步中显示 loading 指示器",
+        "log-service 不可用但接口返回 synced_count=0 时：显示现有本地状态，不报错，不显示 error toast"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常: 打开反馈面板触发同步",
+        "正常: 4 种状态标签正确渲染",
+        "正常: updated_at=null 时不显示时间",
+        "正常: updated_at 非 null 时显示相对时间",
+        "正常: synced_count=0 降级路径不报错",
+        "异常: 同步请求本身失败（网络错误）时显示本地缓存数据"
+      ],
+      "contract_refs": ["CONTRACT-FEEDBACK-SYNC01"],
+      "files": [
+        "frontend/src/components/FeedbackButton.tsx",
+        "frontend/src/services/api.ts"
+      ]
+    },
+    {
+      "id": "S21",
+      "phase": 3,
+      "module": "quality",
+      "name": "质量收口验证",
+      "description": "全量测试 + 构建验证 + Docker E2E 验证，确保导出和反馈追踪功能完整可用。",
+      "verification": "L4",
+      "depends_on": ["B83", "B84", "F114", "F115", "F116"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "pytest 全部通过（含新增测试）",
+        "vitest 全部通过",
+        "npm run gen:types 成功（OpenAPI 类型同步）",
+        "npm run build 成功",
+        "Docker E2E 验证：导出端点返回正确文件",
+        "Docker E2E 验证：反馈同步端点正常工作"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "后端: pytest tests/ -q",
+        "前端: npm run gen:types --prefix frontend/",
+        "前端: npm run test:run --prefix frontend/",
+        "构建: npm run build --prefix frontend/",
+        "Docker: ./deploy/deploy.sh + 手动验证导出和反馈"
+      ],
+      "contract_refs": [],
+      "files": []
+    }
+  ],
   "archived_requirement_cycles": [
     {
       "id": "R003",
@@ -180,7 +411,5 @@
       "status": "completed",
       "archive_dir": "_archive/R026_convergence-fixes"
     }
-  ],
-  "modules": [],
-  "features": []
+  ]
 }

@@ -1,30 +1,22 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：无（空闲）
+> 活跃需求包：R027 数据导出 + 反馈追踪
 > 最后更新：2026-04-22
 
-## 归档需求包
-- 分支：feat/R022-polish-deferred
-- 状态：completed
+## R027: 数据导出 + 反馈追踪
+
+- 分支：feat/R027-export-feedback-tracking
+- 状态：planning
 
 | 任务 | 模块 | 状态 | ~Tests |
 |------|------|------|--------|
-| F73 | FloatingChat 触摸拖拽 | completed | 0 |
-| F74 | Home 统计卡片响应式 | completed | 0 |
-| F75 | Explore Tab 栏横向滚动 | completed | 0 |
-| F76 | TaskCard 触摸目标增大 | completed | 0 |
-| F77 | Review 加载态 spinner | completed | 4 |
-| F78 | Explore 错误状态处理 | completed | 4 |
-| F79 | TaskList 空状态增强 | completed | 0 |
-| F80 | NotificationCenter 轮询 | completed | 0 |
-| F81 | 搜索结果内容摘要 | completed | 5 |
-| B80 | 统一搜索入口 | completed | 8 |
-| F83 | 前端搜索统一 | completed | 0 |
-| F84 | 离线更新/删除拦截 | completed | 16 |
-| F85 | 批量操作多选框架 | completed | 0 |
-| F86 | 批量操作执行 | completed | 5 |
-| S09 | 质量收口验证 | completed | 0 |
+| B83 | 导出 API 增强（单条目 + 成长报告） | pending | 10 |
+| B84 | 反馈状态同步（log-service 同步） | completed | 20 |
+| F114 | 条目详情页导出按钮 | pending | 3 |
+| F115 | Review 页导出入口 | pending | 3 |
+| F116 | FeedbackButton 状态增强 | pending | 3 |
+| S21 | 质量收口验证 | pending | 0 |
 
 ## 归档需求包
 
