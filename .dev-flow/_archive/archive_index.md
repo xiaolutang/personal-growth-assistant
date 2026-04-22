@@ -2,19 +2,31 @@
 
 ## 进行中需求包
 
-### R022: 体验打磨 + 遗留项
+### R024: Flutter 移动端 MVP
 
 - 状态: 规划中
-- 分支: `feat/R022-polish-deferred`
-- 主题: 移动端响应式 + 错误状态 + 搜索增强 + 离线同步扩展 + 批量操作
-- 目录: `R022_polish-deferred/`
-- 创建时间: 2026-04-21
-- 任务数: 16 (Phase 1 ×10 + Phase 2 ×3 + Phase 3 ×2 + 收口 ×1)
-- 关键改动: FloatingChat 触摸支持、混合搜索、离线同步 PUT/DELETE、批量操作 UI
+- 分支: `feat/R024-flutter-mobile-mvp`
+- 主题: 录入优先的独立 Flutter 移动端应用
+- 目录: `R024_flutter-mobile-mvp/`
+- 任务数: 12 (S11-S14, F99-F107)
+- Phase: Foundation → Infrastructure+Auth → Today → Chat → Tasks+Detail → Quality
 
 ## 已完成需求包
 
-### R021: 技术债清理
+### R023: AI 页面内嵌 + 交互模式升级
+
+- 状态: 已完成
+- 分支: `feat/R023-ai-page-embedded`
+- 主题: AI 交互从全局浮动面板改为各页面内嵌，每个页面有独立 AI 角色
+- 目录: `R023_ai-page-embedded/`
+- 完成时间: 2026-04-22
+- 任务数: 8 (B87, F93-F98, S10)
+- 关键改动: PageChatPanel 通用组件、4 页面 AI 内嵌、PageAIAssistant 移除
+- Codex 审核: 首轮 fail 3 项 → 修复后通过
+- 新增测试: 9 后端 + 10 前端
+- 验证: 866 后端 + 347 前端测试通过
+
+### R022: 体验打磨 + 遗留项
 
 - 状态: 已完成
 - 分支: `feat/R021-tech-debt-cleanup`
