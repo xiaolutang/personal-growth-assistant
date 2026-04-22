@@ -3,15 +3,10 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-22T22:30:00",
-  "status": "completed",
-  "scope_notes": "R026 收敛修复 — simplify 发现的 5 个残留问题（掌握度算法统一、N+1 消除、重复请求、状态拆分、错误脱敏）",
-  "active_requirement_cycle": {
-    "id": "R026",
-    "name": "convergence-fixes",
-    "branch": "feat/R026-convergence-fixes",
-    "status": "completed"
-  },
+  "updated_at": "2026-04-22T23:10:00",
+  "status": "idle",
+  "scope_notes": "",
+  "active_requirement_cycle": null,
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -21,9 +16,9 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 6,
+    "total_tasks": 0,
     "pending": 0,
-    "completed": 6,
+    "completed": 0,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -178,214 +173,14 @@
       "name": "stage3-completion",
       "status": "completed",
       "archive_dir": "_archive/R025_stage3-completion"
+    },
+    {
+      "id": "R026",
+      "name": "convergence-fixes",
+      "status": "completed",
+      "archive_dir": "_archive/R026_convergence-fixes"
     }
   ],
-  "modules": [
-    "review",
-    "knowledge",
-    "frontend"
-  ],
-  "features": [
-    {
-      "id": "S18",
-      "phase": 1,
-      "module": "review",
-      "name": "统一掌握度算法",
-      "description": "将 review_service 的加权评分式掌握度算法改为与 knowledge_service 相同的阈值式算法。保留 relationship_count 参数，将其折算为等价 entry_count（每 2 个关系 ≈ 1 个条目）。",
-      "verification": "L1",
-      "depends_on": [],
-      "status": "completed",
-      "priority": 1,
-      "acceptance_criteria": [
-        "review_service._calculate_mastery_from_stats 使用阈值式算法（effective_count + note_ratio）",
-        "relationship_count 折算为 entry_count（relationship_count // 2）",
-        "算法结果与 knowledge_service._calculate_mastery_from_stats 一致",
-        "旧加权公式断言已重写为阈值矩阵断言",
-        "全部单元测试通过（含重写后的测试）"
-      ],
-      "test_tasks": [
-        "正常：effective_count>=6, note_ratio>0.3 → advanced",
-        "正常：effective_count>=3, recent_count>0 → intermediate",
-        "正常：effective_count>=1 → beginner",
-        "边界：relationship_count=4 折算为 effective_count+2",
-        "边界：note_ratio=0.3 精确边界",
-        "边界：recent_count=0 时 intermediate 条件不满足",
-        "迁移：重写 test_review_b53.py 中的旧加权公式断言为阈值矩阵",
-        "回归：review_service 全量测试通过"
-      ],
-      "risk_tags": [],
-      "files": [
-        "backend/app/services/review_service.py"
-      ],
-      "planning_notes": "knowledge_service 的阈值式算法作为标准不动，只改 review_service",
-      "completed_at": "2026-04-22T22:30:00",
-      "actual_minutes": 30,
-      "execution_notes": "Completed and verified"
-    },
-    {
-      "id": "S19",
-      "phase": 1,
-      "module": "knowledge",
-      "name": "消除 N+1 查询 + 清理死代码",
-      "description": "knowledge_service 中 4 个方法改为使用 get_all_concepts_with_stats 批量获取 + _calculate_mastery_from_stats 内存计算，消除逐概念调用 get_entries_by_concept 的 N+1 查询。删除 2 个死代码方法。",
-      "verification": "L1",
-      "depends_on": [],
-      "status": "completed",
-      "priority": 1,
-      "acceptance_criteria": [
-        "_build_map_from_neo4j 不再调用 _calculate_mastery_with_neo4j",
-        "_search_from_neo4j 不再调用 _calculate_mastery_with_neo4j",
-        "get_mastery_distribution 不再调用 _calculate_mastery_with_neo4j",
-        "_build_capability_map_from_neo4j 不再调用 _calculate_mastery_with_neo4j",
-        "get_entries_by_concept 在以上 4 个方法中调用次数为 0",
-        "批量 stats 只获取一次（get_all_concepts_with_stats）",
-        "删除 _calculate_mastery_with_neo4j 方法",
-        "删除 _calculate_mastery 方法（已无调用者）",
-        "Neo4j 异常时仍保留现有降级行为和响应结构",
-        "全部单元测试通过"
-      ],
-      "test_tasks": [
-        "证明：mock 验证 get_entries_by_concept 不被调用",
-        "证明：get_all_concepts_with_stats 只调用一次",
-        "回归：knowledge_service 现有测试全部通过",
-        "回归：图谱相关 API 测试通过",
-        "降级：Neo4j 异常时降级行为不变",
-        "确认：_calculate_mastery_with_neo4j 和 _calculate_mastery 无任何调用者"
-      ],
-      "risk_tags": [
-        "network"
-      ],
-      "files": [
-        "backend/app/services/knowledge_service.py"
-      ],
-      "planning_notes": "N+1 查询在概念数量大时严重影响性能",
-      "completed_at": "2026-04-22T22:30:00",
-      "actual_minutes": 30,
-      "execution_notes": "Completed and verified"
-    },
-    {
-      "id": "B82",
-      "phase": 1,
-      "module": "knowledge",
-      "name": "knowledge.py 错误信息脱敏",
-      "description": "knowledge.py 路由中 9 个 except Exception 块的 str(e) 错误信息替换为固定消息 + logger.error 记录，防止内部实现细节泄露。",
-      "verification": "L2",
-      "depends_on": [],
-      "status": "completed",
-      "priority": 2,
-      "acceptance_criteria": [
-        "9 个 except Exception 块不再包含 str(e) 或 f-string 拼接异常信息",
-        "每个块使用 logger.error 记录完整异常（含 exc_info）",
-        "返回给客户端的消息为固定文案（如「查询失败，请稍后重试」）",
-        "已有的 except ValueError 块（503）保持不变"
-      ],
-      "test_tasks": [
-        "回归：knowledge API 测试全部通过",
-        "脱敏：9 个泛化异常返回固定文案，不包含 str(e)",
-        "日志：异常触发 logger.error(..., exc_info=True)",
-        "保留：3 个 ValueError 分支返回 503 语义不变"
-      ],
-      "files": [
-        "backend/app/routers/knowledge.py"
-      ],
-      "planning_notes": "项目已有全局 ErrorHandlerMiddleware 处理未捕获异常，路由层也应遵循同样的脱敏原则",
-      "completed_at": "2026-04-22T22:30:00",
-      "actual_minutes": 30,
-      "execution_notes": "Completed and verified"
-    },
-    {
-      "id": "F112",
-      "phase": 2,
-      "module": "frontend",
-      "name": "消除回顾页重复 API 请求",
-      "description": "Review.tsx 统一管理 insightsData/insightsLoading 状态，InsightCard 和 AiSummaryCard 改为接收 props 消费数据，消除两个组件各自独立调用 getInsights 的重复请求。",
-      "verification": "F2",
-      "depends_on": [],
-      "status": "completed",
-      "priority": 1,
-      "acceptance_criteria": [
-        "Review.tsx 新增 insightsData + insightsLoading 状态 + useEffect 获取",
-        "InsightCard 移除内部 getInsights 调用，改为接收 insightsData/insightsLoading props",
-        "AiSummaryCard 移除内部 getInsights 调用，改为接收 insightsData/insightsLoading props",
-        "周报/月报视图只发一次 getInsights 请求",
-        "报表类型切换时旧请求不覆盖新状态（迁移子组件的 cancelled 保护逻辑到父组件）",
-        "前端测试通过，构建成功"
-      ],
-      "test_tasks": [
-        "渲染：InsightCard 正确展示 props 传入的数据",
-        "渲染：AiSummaryCard 正确使用 props",
-        "请求：周报/月报视图只触发一次 getInsights",
-        "切换：weekly→monthly 切换时旧请求被取消、新请求正确触发",
-        "回归：Review 页面功能正常"
-      ],
-      "files": [
-        "frontend/src/pages/Review.tsx",
-        "frontend/src/components/review/InsightCard.tsx",
-        "frontend/src/components/review/AiSummaryCard.tsx"
-      ],
-      "planning_notes": "需要同步修改组件接口定义（Props 类型）",
-      "completed_at": "2026-04-22T22:30:00",
-      "actual_minutes": 30,
-      "execution_notes": "Completed and verified"
-    },
-    {
-      "id": "F113",
-      "phase": 2,
-      "module": "frontend",
-      "name": "GraphPage 状态拆分",
-      "description": "在 GraphPage.tsx 文件内提取 CapabilityMapView 组件，封装能力地图相关的 6 个 state + useEffect + JSX。GraphPage state 从 18 个降到 12 个。",
-      "verification": "F2",
-      "depends_on": [],
-      "status": "completed",
-      "priority": 2,
-      "acceptance_criteria": [
-        "CapabilityMapView 作为同文件组件提取成功",
-        "CapabilityMapView 独占能力地图的 6 个 state + useEffect + JSX",
-        "GraphPage 不再直接管理能力地图相关状态（通过 CapabilityMapView 封装）",
-        "能力地图功能不变（Tab 切换、领域展开、筛选）",
-        "前端测试通过，构建成功"
-      ],
-      "test_tasks": [
-        "渲染：能力地图 Tab 切换正常",
-        "渲染：领域卡片展示和展开正常",
-        "回归：GraphPage 其他视图（图谱、搜索）功能正常",
-        "重试：能力地图加载失败后重试正常",
-        "构建：npm run build 成功"
-      ],
-      "files": [
-        "frontend/src/pages/GraphPage.tsx"
-      ],
-      "planning_notes": "不新建文件，在 GraphPage.tsx 内部提取组件。pageData.domain_count 暂写 0。",
-      "completed_at": "2026-04-22T22:30:00",
-      "actual_minutes": 30,
-      "execution_notes": "Completed and verified"
-    },
-    {
-      "id": "S20",
-      "phase": 3,
-      "module": "quality",
-      "name": "构建验证",
-      "description": "R026 全量构建验证：后端 pytest + 前端 vitest + 前端 build + Docker 部署验证。",
-      "verification": "L4",
-      "depends_on": [
-        "S18",
-        "S19",
-        "B82",
-        "F112",
-        "F113"
-      ],
-      "status": "completed",
-      "priority": 2,
-      "acceptance_criteria": [
-        "uv run pytest backend/tests/ 全部通过",
-        "npm run test:run --prefix frontend/ 全部通过",
-        "npm run build --prefix frontend/ 构建成功",
-        "Docker 部署验证通过（./deploy/deploy.sh）"
-      ],
-      "planning_notes": "用户要求必须走标准 Docker 发布流程验证",
-      "completed_at": "2026-04-22T22:30:00",
-      "actual_minutes": 30,
-      "execution_notes": "All tests pass + Docker E2E verified. Also fixed trailing slash routing issue in static_app.py."
-    }
-  ]
+  "modules": [],
+  "features": []
 }

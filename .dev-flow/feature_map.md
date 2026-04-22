@@ -1,43 +1,10 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：R026 收敛修复
+> 活跃需求包：无（空闲）
 > 最后更新：2026-04-22
 
-## 活跃需求包
-
-### R026 收敛修复
-
-- 分支：feat/R026-convergence-fixes
-- 状态：completed
-
-#### Review 模块
-
-| 任务 | 模块 | 状态 | ~Tests |
-|------|------|------|--------|
-| S18 | 统一掌握度算法（阈值式） | completed | 13 |
-| F112 | 消除 InsightCard/AiSummaryCard 重复请求 | completed | 0 |
-
-#### Knowledge 模块
-
-| 任务 | 模块 | 状态 | ~Tests |
-|------|------|------|--------|
-| S19 | 消除 N+1 查询 + 删除死方法 | completed | 0 |
-| B82 | 错误信息脱敏 | completed | 0 |
-
-#### Frontend 模块
-
-| 任务 | 模块 | 状态 | ~Tests |
-|------|------|------|--------|
-| F113 | GraphPage 状态拆分重构 | completed | 0 |
-
-#### Quality 模块
-
-| 任务 | 模块 | 状态 | ~Tests |
-|------|------|------|--------|
-| S20 | 构建验证（pytest 923 + vitest 347 + build + Docker E2E） | completed | — |
-
-### R022 体验打磨 + 遗留项
+## 归档需求包
 - 分支：feat/R022-polish-deferred
 - 状态：completed
 
@@ -83,6 +50,8 @@
 | R020 E2E 测试补齐 + CI PR 增强 | _archive/R020_e2e-ci-pipeline | completed |
 | R021 技术债清理 | _archive/R021_tech-debt-cleanup | completed |
 | R022 体验打磨 + 遗留项 | _archive/R022_polish-deferred | completed |
+| R025 第三阶段收口 | _archive/R025_stage3-completion | completed |
+| R026 收敛修复 | _archive/R026_convergence-fixes | completed |
 
 ## 测试汇总
 

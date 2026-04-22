@@ -1,17 +1,29 @@
 # 归档索引
 
-## 进行中需求包
+## 已完成需求包
+
+### R026: 收敛修复
+
+- 状态: 已完成
+- 分支: `feat/R026-convergence-fixes`
+- 主题: Simplify 发现的 5 个残留收敛问题
+- 目录: `R026_convergence-fixes/`
+- 完成时间: 2026-04-22
+- 任务数: 6 (S18, S19, B82, F112, F113, S20)
+- 关键改动: 掌握度算法统一、N+1 查询消除、错误脱敏、重复请求消除、状态拆分
+- Codex 审核: partial → 证据补齐后通过
+- 额外修复: static_app.py trailing slash 路由中间件
+- 验证: 923 后端 + 347 前端测试通过, Docker E2E 验证通过
 
 ### R025: 第三阶段收口
 
-- 状态: 规划中
+- 状态: 已完成
 - 分支: `feat/R025-stage3-completion`
 - 主题: Phase 8 图谱增强 + Phase 10 回顾 AI 总结增强
 - 目录: `R025_stage3-completion/`
+- 完成时间: 2026-04-22
 - 任务数: 8 (S15-S17, B81, F108-F111)
 - Phase: 洞察API → 洞察卡片 → 能力地图API → 能力地图视图 → 图谱AI → 总结增强 → 测试收口
-
-## 已完成需求包
 
 ### R024: Flutter 移动端 MVP
 
