@@ -4,7 +4,7 @@
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
   "updated_at": "2026-04-22T14:00:00",
-  "status": "planning",
+  "status": "completed",
   "scope_notes": "R024 Flutter 移动端 MVP — 录入优先的独立移动端应用",
   "active_requirement_cycle": {
     "id": "R024",
@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 12,
-    "pending": 1,
-    "completed": 11,
+    "pending": 0,
+    "completed": 12,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -483,7 +483,9 @@
       "description": "iOS + Android debug 构建、集成测试、启动冒烟验证。确保 App 可安装运行。",
       "verification": "L3",
       "depends_on": ["F102", "F103", "F104", "F105", "F106", "F107"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-22T21:10:00",
+      "completed_at": "2026-04-22T21:40:00",
       "priority": "high",
       "acceptance_criteria": [
         "flutter analyze 无 error",
