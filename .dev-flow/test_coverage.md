@@ -1,5 +1,25 @@
 # 测试覆盖清单
 
+## R022: 体验打磨 + 遗留项
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| FloatingChat 触摸拖拽 | F73 | manual | onTouchStart/onTouchMove/onTouchEnd/桌面端不受影响 | completed | F1 验证 |
+| Home 统计卡片响应式 | F74 | manual | grid-cols-2 sm:grid-cols-4/桌面端 4 列 | completed | F1 验证 |
+| Explore Tab 横向滚动 | F75 | manual | overflow-x-auto/scrollIntoView | completed | F1 验证 |
+| TaskCard 触摸目标 | F76 | manual | padding 扩大热区 ≥ 44px | completed | F1 验证 |
+| Review spinner+错误态 | F77 | unit | 正常加载 spinner/失败错误提示+重试/加载完 spinner 消失 | completed | 4 tests in Review.test.tsx |
+| Explore 错误状态 | F78 | unit | getEntries 失败显示错误/搜索失败显示错误/重试可加载 | completed | 4 tests in Explore.test.tsx |
+| TaskList 空状态 | F79 | manual | 图标+引导按钮/onEmptyAction 回调 | completed | F1 验证 |
+| NotificationCenter 轮询 | F80 | manual | 60s 轮询/相对时间/卸载清理 | completed | F1 验证 |
+| 搜索内容摘要 | F81 | unit+integration | content_snippet 截断 100 字/前端展示/关键词高亮 | completed | 5 tests |
+| 统一搜索入口 | B80 | unit | 混合搜索结果/filter_type 过滤/Qdrant 不可用降级/去重/用户隔离/空 query 422 | completed | 8 tests, risk: network |
+| 前端搜索统一 | F83 | manual | 统一 POST /search/Tab filter_type 透传 | completed | F2 验证 |
+| 离线更新/删除拦截 | F84 | unit+integration | 离线 POST/PUT/DELETE 同步成功/5xx 重试+标记失败/4xx 标记失败/401 停止/synced-before-remove/initSync 清理 synced 残留/防重入/local-* 持久化优先+回滚 | completed | 16 tests offlineSync + 7 integration, risk: offline |
+| 批量操作多选 | F85 | manual | 编辑模式/checkbox/全选/ESC 退出 | completed | F2 验证 |
+| 批量操作执行 | F86 | unit | 批量删除成功/部分失败/批量转分类/loading 禁用/退出多选 | completed | 5 tests |
+| 质量收口 | S09 | integration+smoke | 后端 857 通过/前端 337 通过/构建通过/14 轮 codex code review PASS | completed | 857 backend + 337 frontend + build pass |
+
 ## R020: E2E 测试补齐 + CI PR 增强
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |

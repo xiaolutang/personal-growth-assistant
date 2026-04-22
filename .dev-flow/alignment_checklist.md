@@ -1,5 +1,28 @@
 # 对齐清单
 
+## R022: 体验打磨 + 遗留项
+
+### 契约对齐
+
+- [x] F73-F80: 前端 UI 改动，无 API 契约变更
+- [x] F81/B80: POST /search — SearchResult 新增 content_snippet、filter_type 参数 ✓
+- [x] F83: 前端统一到 POST /search，移除 GET /entries/search/query 调用 ✓
+- [x] F84: offlineQueue 支持 PUT/DELETE + offlineSync 扩展回放 ✓
+- [x] F84: initSync 契约更新 — 直接调 sync()，不再依赖 count() ✓
+- [x] S09: 质量收口 — 857 后端 + 337 前端 + build pass ✓
+
+### 测试对齐
+
+- [x] F77: Review spinner 测试覆盖 ✓
+- [x] F78: Explore 错误态测试覆盖 ✓
+- [x] F84: 离线同步 16 个单元测试 + 7 个集成测试 ✓
+- [x] B80: 统一搜索 8 个单元测试 ✓
+- [x] F86: 批量操作 5 个测试 ✓
+
+### Code Review 对齐
+
+- [x] 14 轮 codex code review，最终 PASS ✓
+
 ## R020: E2E 测试补齐 + CI PR 增强
 
 ### 契约对齐

@@ -1,26 +1,32 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：R020 E2E 测试补齐 + CI PR 增强
-> 最后更新：2026-04-20
+> 活跃需求包：R022 体验打磨 + 遗留项
+> 最后更新：2026-04-22
 
 ## 活跃需求包
 
-### R020 E2E 测试补齐 + CI PR 增强
-- 分支：feat/R020-e2e-ci-pipeline
+### R022 体验打磨 + 遗留项
+- 分支：feat/R022-polish-deferred
 - 状态：completed
 
 | 任务 | 模块 | 状态 | ~Tests |
 |------|------|------|--------|
-| S05 | E2E 基础设施 | completed | 0（helper） |
-| B74 | Goals API E2E | completed | 25 |
-| F63 | Goals 页面 E2E | completed | 10 |
-| B75 | 新类型 API E2E | completed | 14 |
-| F64 | 探索页新类型 E2E | completed | 8 |
-| B76 | 导出 API E2E | completed | 11 |
-| F65 | 导出 UI E2E | completed | 5 |
-| S06 | CI PR 增强 | completed | 0（配置） |
-| B77 | 质量收口 | completed | 0（验证） |
+| F73 | FloatingChat 触摸拖拽 | completed | 0 |
+| F74 | Home 统计卡片响应式 | completed | 0 |
+| F75 | Explore Tab 栏横向滚动 | completed | 0 |
+| F76 | TaskCard 触摸目标增大 | completed | 0 |
+| F77 | Review 加载态 spinner | completed | 4 |
+| F78 | Explore 错误状态处理 | completed | 4 |
+| F79 | TaskList 空状态增强 | completed | 0 |
+| F80 | NotificationCenter 轮询 | completed | 0 |
+| F81 | 搜索结果内容摘要 | completed | 5 |
+| B80 | 统一搜索入口 | completed | 8 |
+| F83 | 前端搜索统一 | completed | 0 |
+| F84 | 离线更新/删除拦截 | completed | 16 |
+| F85 | 批量操作多选框架 | completed | 0 |
+| F86 | 批量操作执行 | completed | 5 |
+| S09 | 质量收口验证 | completed | 0 |
 
 ## 归档需求包
 
@@ -43,11 +49,13 @@
 | R014 Page Context AI | _archive/R014_page-context-ai | completed |
 | R015 Review Enhancement | _archive/R015_review-enhancement | completed |
 | R019 离线增强 + PWA | _archive/R019_offline-pwa | completed |
+| R020 E2E 测试补齐 + CI PR 增强 | _archive/R020_e2e-ci-pipeline | completed |
+| R021 技术债清理 | _archive/R021_tech-debt-cleanup | completed |
 
 ## 测试汇总
 
 | 项目 | 测试数 | 状态 |
 |------|--------|------|
-| 后端测试 | 955 passed | 全绿（1 已知遗留） |
-| 前端测试 | 321 passed | 全绿 |
-| E2E 测试 | 113 passed | 全绿（R020 新增 73） |
+| 后端测试 | 857 passed | 全绿 |
+| 前端测试 | 337 passed | 全绿 |
+| E2E 测试 | 113 passed | 全绿 |
