@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../pages/chat_page.dart';
+import '../pages/entry_detail_page.dart';
 import '../pages/login_page.dart';
-import '../pages/placeholder_page.dart';
+import '../pages/tasks_page.dart';
 import '../pages/today_page.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
@@ -70,7 +71,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/tasks',
             name: 'tasks',
-            builder: (context, state) => const PlaceholderPage(title: '任务'),
+            builder: (context, state) => const TasksPage(),
           ),
         ],
       ),
@@ -78,7 +79,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/entries/:id',
         builder: (context, state) {
           final id = state.pathParameters['id']!;
-          return PlaceholderPage(title: '条目详情 $id');
+          return EntryDetailPage(entryId: id);
         },
       ),
     ],

@@ -80,4 +80,37 @@ class Entry {
       'status': status ?? 'todo',
     };
   }
+
+  /// 复制并修改部分字段
+  Entry copyWith({
+    String? id,
+    String? title,
+    String? content,
+    String? category,
+    String? status,
+    String? priority,
+    List<String>? tags,
+    String? createdAt,
+    String? updatedAt,
+    String? plannedDate,
+    String? completedAt,
+    String? parentId,
+    String? filePath,
+  }) {
+    return Entry(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      category: category ?? this.category,
+      status: status ?? this.status,
+      priority: priority ?? this.priority,
+      tags: tags ?? this.tags,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      plannedDate: plannedDate ?? this.plannedDate,
+      completedAt: completedAt ?? this.completedAt,
+      parentId: parentId ?? this.parentId,
+      filePath: filePath ?? this.filePath,
+    );
+  }
 }

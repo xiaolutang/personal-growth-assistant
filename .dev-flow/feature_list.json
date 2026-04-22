@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 12,
-    "pending": 2,
-    "completed": 10,
+    "pending": 1,
+    "completed": 11,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -416,7 +416,9 @@
       "description": "任务 Tab 页面：按状态分组显示任务（进行中/待开始/已完成），支持点击切换任务状态，简单筛选。",
       "verification": "F2",
       "depends_on": ["F101", "F100"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-22T19:50:00",
+      "completed_at": "2026-04-22T20:30:00",
       "priority": "medium",
       "acceptance_criteria": [
         "任务按状态分组：进行中、待开始、已完成",
@@ -449,7 +451,9 @@
       "description": "条目详情页：只读展示条目内容（Markdown 渲染）、元信息（标题、分类、标签、状态、优先级、创建时间）。",
       "verification": "F2",
       "depends_on": ["F101", "F100", "F106"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-22T20:30:00",
+      "completed_at": "2026-04-22T21:00:00",
       "priority": "medium",
       "acceptance_criteria": [
         "通过路由 /entries/:id 进入详情页（复用 F106 定义的 Entry 模型）",
