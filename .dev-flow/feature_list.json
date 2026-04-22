@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 8,
-    "pending": 5,
-    "completed": 2,
-    "in_progress": 1,
+    "pending": 4,
+    "completed": 3,
+    "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
   },
@@ -255,8 +255,11 @@
       "description": "补充 review 模块新增 API 和增强方法的测试覆盖。",
       "verification": "L1",
       "depends_on": ["S15"],
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
+      "started_at": "2026-04-22T19:00:00",
+      "completed_at": "2026-04-22T19:20:00",
+      "evidence_file": ".dev-flow/evidence/S16.md",
       "acceptance_criteria": [
         "新增测试覆盖 /review/insights 端点",
         "新增测试覆盖 _generate_deep_insights 方法",
