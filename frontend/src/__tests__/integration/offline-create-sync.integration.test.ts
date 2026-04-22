@@ -19,7 +19,6 @@ vi.mock("@/lib/offlineQueue", () => ({
   getAll: vi.fn(),
   remove: vi.fn(),
   update: vi.fn(),
-  count: vi.fn(),
   clear: vi.fn(),
 }));
 

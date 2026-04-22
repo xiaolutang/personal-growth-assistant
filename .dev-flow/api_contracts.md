@@ -935,9 +935,10 @@ progress_delta = 本周期进度 - 上周期末进度（正数表示进步）。
 **初始化同步**：
 
 - offlineSync 导出 `initSync()` 方法
-- App.tsx useEffect 中调用：检查 `navigator.onLine === true` 且 `queue.count() > 0` 时立即触发同步
-- 覆盖「app 重启时已在线但有 pending 队列」场景
-- 内部复用同步核心逻辑，受布尔锁保护
+- App.tsx useEffect 中调用：检查 `navigator.onLine === true` 时直接调用 `sync()`
+- `sync()` 内部先清理 `synced` 残留（上次 API 成功但 remove 失败的项），再处理 `pending` 项
+- 覆盖「app 重启时已在线，有 pending 或 synced 残留队列」场景
+- 受布尔锁保护，防止重入
 
 ### CONTRACT-OFFLINE03: POST /chat（离线拦截）
 

@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 // Mock dependencies before importing
 vi.mock("@/lib/offlineQueue", () => ({
   getAll: vi.fn(),
-  count: vi.fn(),
   remove: vi.fn(),
   update: vi.fn(),
 }));
