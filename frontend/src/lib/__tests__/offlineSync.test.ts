@@ -299,14 +299,13 @@ describe("offlineSync", () => {
     expect(mockQueue.remove).toHaveBeenCalledWith("q-2");
   });
 
-  it("initSync triggers sync when online + queue has items", async () => {
+  it("initSync triggers sync when online", async () => {
     Object.defineProperty(navigator, "onLine", { value: true, configurable: true });
-    mockQueue.count.mockResolvedValue(2);
     mockQueue.getAll.mockResolvedValue([]);
 
     await initSync();
 
-    expect(mockQueue.count).toHaveBeenCalled();
+    expect(mockQueue.getAll).toHaveBeenCalled();
   });
 
   it("initSync does not trigger when offline", async () => {
@@ -314,7 +313,24 @@ describe("offlineSync", () => {
 
     await initSync();
 
-    expect(mockQueue.count).not.toHaveBeenCalled();
+    expect(mockQueue.getAll).not.toHaveBeenCalled();
+  });
+
+  it("initSync cleans up synced residuals on startup (no pending, no API call)", async () => {
+    Object.defineProperty(navigator, "onLine", { value: true, configurable: true });
+    // Queue has only synced residuals from previous session (remove had failed)
+    const syncedItem = makeItem({ id: "q-1", status: "synced" as any });
+    mockQueue.getAll.mockResolvedValue([syncedItem]);
+    mockQueue.remove.mockResolvedValue();
+
+    await initSync();
+
+    // Should clean up synced item
+    expect(mockQueue.remove).toHaveBeenCalledWith("q-1");
+    // Should NOT call any API
+    expect(mockCreateEntry).not.toHaveBeenCalled();
+    expect(mockUpdateEntry).not.toHaveBeenCalled();
+    expect(mockDeleteEntry).not.toHaveBeenCalled();
   });
 
   it("API succeeds but queue.remove fails — marks synced, next sync cleans up without re-executing API", async () => {

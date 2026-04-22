@@ -164,15 +164,14 @@ export async function sync(): Promise<void> {
 }
 
 /**
- * 初始化同步：在线 + 队列有 pending 项时立即触发。
- * 在 App.tsx useEffect 中调用，覆盖「app 重启时已在线但有 pending 队列」场景。
+ * 初始化同步：在线时触发 sync()，覆盖以下场景：
+ * - app 重启时有 pending 队列（正常离线重放）
+ * - app 重启时有 synced 残留（上次 API 成功但 remove 失败）
+ * sync() 内部会先清理 synced 残留，再处理 pending 项。
  */
 export async function initSync(): Promise<void> {
   if (!navigator.onLine) return;
-  const n = await queue.count();
-  if (n > 0) {
-    sync();
-  }
+  sync();
 }
 
 // ─── 自动监听 online 事件 ────────────────────────────
