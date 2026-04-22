@@ -32,6 +32,7 @@ import {
   type MasteryDistributionResponse,
   type CapabilityMapResponse,
 } from "@/services/api";
+import { PageChatPanel } from "@/components/PageChatPanel";
 
 // === 掌握度颜色映射 ===
 const masteryColors: Record<string, string> = {
@@ -985,6 +986,26 @@ export function GraphPage() {
         </>
         )}
       </div>
+
+      {/* F110: 图谱 AI 助手 */}
+      <PageChatPanel
+        title="图谱助手"
+        welcomeMessage="想了解图谱中的知识关系？我可以帮你分析"
+        suggestions={[
+          { label: "擅长领域", message: "我最擅长的领域是什么？" },
+          { label: "薄弱方向", message: "哪些领域需要加强？" },
+          { label: "学习建议", message: "基于我的知识图谱，有什么学习建议？" },
+        ]}
+        pageContext={{ page: "graph" }}
+        pageData={{
+          current_view: activeView,
+          selected_concept: selectedNode?.name ?? "",
+          total_concepts: stats?.concept_count ?? 0,
+          total_relations: stats?.relation_count ?? 0,
+          domain_count: capabilityMap?.domains.length ?? 0,
+        }}
+        defaultCollapsed
+      />
     </div>
   );
 }
