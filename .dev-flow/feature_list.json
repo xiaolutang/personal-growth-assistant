@@ -3,7 +3,7 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-22T16:30:00",
+  "updated_at": "2026-04-22T18:20:00",
   "status": "in_progress",
   "scope_notes": "R025 第三阶段收口 — Phase 8 图谱增强 + Phase 10 回顾 AI 总结增强",
   "active_requirement_cycle": {
@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 8,
-    "pending": 8,
-    "completed": 0,
-    "in_progress": 0,
+    "pending": 6,
+    "completed": 1,
+    "in_progress": 1,
     "blocked": 0,
     "cancelled": 0
   },
@@ -64,8 +64,11 @@
       "description": "新增 AI 深度洞察接口，支持周报/月报的结构化洞察生成。扩展现有 _generate_ai_summary 方法，输出行为模式分析、成长建议、能力变化趋势。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
+      "started_at": "2026-04-22T17:00:00",
+      "completed_at": "2026-04-22T18:20:00",
+      "evidence_file": ".dev-flow/evidence/S15.md",
       "acceptance_criteria": [
         "GET /review/insights?period=weekly 返回结构化洞察（行为模式+成长建议+能力变化）",
         "GET /review/insights?period=monthly 返回月度洞察",

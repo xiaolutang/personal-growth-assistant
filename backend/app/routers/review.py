@@ -18,6 +18,7 @@ from app.services.review_service import (
     MorningDigestResponse,
     ActivityHeatmapResponse,
     VsLastPeriod,
+    InsightsResponse,
 )
 
 router = APIRouter(prefix="/review", tags=["review"])
@@ -155,3 +156,20 @@ async def get_activity_heatmap(
     """获取年度每日活动热力图"""
     review_service = get_review_service()
     return review_service.get_activity_heatmap(year=year, user_id=user.id)
+
+
+@router.get("/insights", response_model=InsightsResponse)
+async def get_insights(
+    period: str = Query(..., description="统计周期: weekly 或 monthly"),
+    user: User = Depends(get_current_user),
+):
+    """获取 AI 深度洞察"""
+    if period not in ("weekly", "monthly"):
+        raise HTTPException(status_code=422, detail="period 参数必须是 weekly 或 monthly")
+
+    review_service = get_review_service()
+
+    try:
+        return await review_service.get_insights(period=period, user_id=user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))

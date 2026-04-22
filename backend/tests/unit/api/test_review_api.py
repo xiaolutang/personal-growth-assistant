@@ -934,3 +934,397 @@ class TestMorningDigestAPI:
 
         # 清理
         review_svc.set_llm_caller(None)
+
+
+class TestInsightsAPI:
+    """S15 AI 深度洞察 API 测试"""
+
+    @pytest.fixture(autouse=True)
+    async def setup_data(self, storage, client):
+        """每个测试前准备数据"""
+        if storage.sqlite:
+            storage.sqlite.clear_all()
+
+        user_id = _make_test_user_id(client)
+        today = datetime.now()
+
+        # 创建本周任务（足够多以触发行为模式分析）
+        for i in range(5):
+            entry = Task(
+                id=f"insight-task-{i}",
+                title=f"洞察任务-{i}",
+                content="",
+                category=Category.TASK,
+                status=TaskStatus.COMPLETE if i < 3 else TaskStatus.DOING,
+                priority=Priority.MEDIUM,
+                tags=["python", "fastapi"] if i < 3 else ["python"],
+                created_at=today,
+                updated_at=today,
+                file_path=f"tasks/insight-task-{i}.md",
+            )
+            storage.sqlite.upsert_entry(entry, user_id=user_id)
+
+        # 创建笔记
+        note = Task(
+            id="insight-note-1",
+            title="洞察笔记",
+            content="学习 python",
+            category=Category.NOTE,
+            status=TaskStatus.DOING,
+            priority=Priority.MEDIUM,
+            tags=["python", "学习笔记"],
+            created_at=today,
+            updated_at=today,
+            file_path="notes/insight-note-1.md",
+        )
+        storage.sqlite.upsert_entry(note, user_id=user_id)
+
+        # 创建上周期数据（用于对比）
+        prev_week = today - timedelta(days=10)
+        for i in range(3):
+            entry = Task(
+                id=f"insight-prev-task-{i}",
+                title=f"上周任务-{i}",
+                content="",
+                category=Category.TASK,
+                status=TaskStatus.COMPLETE if i == 0 else TaskStatus.DOING,
+                priority=Priority.MEDIUM,
+                tags=["python"],
+                created_at=prev_week,
+                updated_at=prev_week,
+                file_path=f"tasks/insight-prev-task-{i}.md",
+            )
+            storage.sqlite.upsert_entry(entry, user_id=user_id)
+
+    async def test_insights_weekly_normal(self, client: AsyncClient):
+        """测试正常 weekly 洞察返回"""
+        response = await client.get("/review/insights?period=weekly")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["period"] == "weekly"
+        assert "start_date" in data
+        assert "end_date" in data
+        assert "insights" in data
+        assert "source" in data
+
+        insights = data["insights"]
+        assert "behavior_patterns" in insights
+        assert "growth_suggestions" in insights
+        assert "capability_changes" in insights
+
+        # 验证结构
+        for bp in insights["behavior_patterns"]:
+            assert "pattern" in bp
+            assert "frequency" in bp
+            assert "trend" in bp
+            assert bp["trend"] in ("improving", "stable", "declining")
+
+        for gs in insights["growth_suggestions"]:
+            assert "suggestion" in gs
+            assert "priority" in gs
+            assert "related_area" in gs
+            assert gs["priority"] in ("high", "medium", "low")
+
+        for cc in insights["capability_changes"]:
+            assert "capability" in cc
+            assert "previous_level" in cc
+            assert "current_level" in cc
+            assert "change" in cc
+
+    async def test_insights_monthly_normal(self, client: AsyncClient):
+        """测试 monthly 洞察返回"""
+        response = await client.get("/review/insights?period=monthly")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["period"] == "monthly"
+        assert "start_date" in data
+        assert "end_date" in data
+
+    async def test_insights_empty_data(self, storage, client: AsyncClient):
+        """测试空数据时返回降级洞察"""
+        storage.sqlite.clear_all()
+
+        response = await client.get("/review/insights?period=weekly")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["source"] == "rule_based"
+        insights = data["insights"]
+        assert isinstance(insights["behavior_patterns"], list)
+        assert isinstance(insights["growth_suggestions"], list)
+        assert isinstance(insights["capability_changes"], list)
+
+    async def test_insights_invalid_period(self, client: AsyncClient):
+        """测试非法 period 参数返回 422"""
+        response = await client.get("/review/insights?period=daily")
+        assert response.status_code == 422
+
+        response = await client.get("/review/insights?period=yearly")
+        assert response.status_code == 422
+
+    async def test_insights_missing_period(self, client: AsyncClient):
+        """测试缺少 period 参数"""
+        response = await client.get("/review/insights")
+        # FastAPI 对必填 Query 参数缺失返回 422
+        assert response.status_code == 422
+
+    async def test_insights_llm_degradation(self, storage, client: AsyncClient):
+        """测试 LLM 不可用时走规则分析"""
+        from app.routers import deps
+        from unittest.mock import AsyncMock
+
+        # 创建会抛出异常的 mock caller
+        mock_llm = AsyncMock()
+        mock_llm.call = AsyncMock(side_effect=Exception("LLM 服务不可用"))
+
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(mock_llm)
+
+        response = await client.get("/review/insights?period=weekly")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["source"] == "rule_based"
+        assert len(data["insights"]["behavior_patterns"]) >= 0
+
+        # 清理
+        review_svc.set_llm_caller(None)
+
+    async def test_insights_llm_success(self, storage, client: AsyncClient):
+        """测试 LLM 可用时返回 llm 来源洞察"""
+        import json
+        from app.routers import deps
+        from app.infrastructure.llm.mock_caller import MockCaller
+
+        llm_response = json.dumps({
+            "behavior_patterns": [
+                {"pattern": "本周集中学习 python", "frequency": 5, "trend": "improving"}
+            ],
+            "growth_suggestions": [
+                {"suggestion": "继续深入学习 fastapi", "priority": "high", "related_area": "技术"}
+            ],
+            "capability_changes": [
+                {"capability": "python", "previous_level": 0.4, "current_level": 0.8, "change": 0.4}
+            ],
+        })
+        mock_llm = MockCaller(response=llm_response)
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(mock_llm)
+
+        response = await client.get("/review/insights?period=weekly")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["source"] == "llm"
+        assert len(data["insights"]["behavior_patterns"]) == 1
+        assert data["insights"]["behavior_patterns"][0]["pattern"] == "本周集中学习 python"
+        assert len(data["insights"]["growth_suggestions"]) == 1
+        assert len(data["insights"]["capability_changes"]) == 1
+
+        # 清理
+        review_svc.set_llm_caller(None)
+
+    async def test_insights_user_isolation(self, storage, client: AsyncClient):
+        """测试不同 user_id 返回不同洞察"""
+        other_user_id = "other-insight-user"
+        today = datetime.now()
+
+        # 创建大量其他用户的任务（会触发行为模式）
+        for i in range(10):
+            entry = Task(
+                id=f"insight-other-{i}",
+                title=f"其他用户洞察任务-{i}",
+                content="",
+                category=Category.TASK,
+                status=TaskStatus.COMPLETE,
+                priority=Priority.HIGH,
+                tags=["unique-other-tag-xyz"],
+                created_at=today,
+                updated_at=today,
+                file_path=f"tasks/insight-other-{i}.md",
+            )
+            storage.sqlite.upsert_entry(entry, user_id=other_user_id)
+
+        # 当前用户请求洞察
+        response = await client.get("/review/insights?period=weekly")
+        assert response.status_code == 200
+
+        data = response.json()
+        # 确保能力变化中不包含其他用户的标签
+        for cc in data["insights"]["capability_changes"]:
+            assert cc["capability"] != "unique-other-tag-xyz"
+
+    async def test_insights_no_auth(self, storage):
+        """测试无 token 返回 401"""
+        from httpx import ASGITransport, AsyncClient
+        from app.main import app
+        from app.routers import deps
+
+        deps.storage = storage
+        deps.reset_all_services()
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as c:
+            response = await c.get("/review/insights?period=weekly")
+            assert response.status_code == 401
+
+    async def test_insights_llm_timeout(self, storage, client: AsyncClient):
+        """测试 LLM 超时时降级为规则分析"""
+        from app.routers import deps
+        from unittest.mock import AsyncMock
+        import asyncio
+
+        mock_llm = AsyncMock()
+        mock_llm.call = AsyncMock(side_effect=asyncio.TimeoutError())
+
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(mock_llm)
+
+        response = await client.get("/review/insights?period=weekly")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["source"] == "rule_based"
+
+        review_svc.set_llm_caller(None)
+
+    async def test_insights_llm_invalid_json(self, storage, client: AsyncClient):
+        """测试 LLM 返回无效 JSON 时降级"""
+        from app.routers import deps
+        from app.infrastructure.llm.mock_caller import MockCaller
+
+        mock_llm = MockCaller(response="这不是 JSON 内容 <<>>")
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(mock_llm)
+
+        response = await client.get("/review/insights?period=weekly")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["source"] == "rule_based"
+
+        review_svc.set_llm_caller(None)
+
+    async def test_insights_llm_overlong_arrays(self, storage, client: AsyncClient):
+        """测试 LLM 返回超长数组时截断为 3"""
+        import json
+        from app.routers import deps
+        from app.infrastructure.llm.mock_caller import MockCaller
+
+        # 生成超过 3 项的数组
+        overlong_patterns = [
+            {"pattern": f"模式{i}", "frequency": i, "trend": "stable"}
+            for i in range(10)
+        ]
+        overlong_suggestions = [
+            {"suggestion": f"建议{i}", "priority": "medium", "related_area": "测试"}
+            for i in range(10)
+        ]
+        overlong_changes = [
+            {"capability": f"能力{i}", "previous_level": 0.1, "current_level": 0.2, "change": 0.1}
+            for i in range(10)
+        ]
+
+        llm_response = json.dumps({
+            "behavior_patterns": overlong_patterns,
+            "growth_suggestions": overlong_suggestions,
+            "capability_changes": overlong_changes,
+        })
+        mock_llm = MockCaller(response=llm_response)
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(mock_llm)
+
+        response = await client.get("/review/insights?period=weekly")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["source"] == "llm"
+        assert len(data["insights"]["behavior_patterns"]) <= 3
+        assert len(data["insights"]["growth_suggestions"]) <= 3
+        assert len(data["insights"]["capability_changes"]) <= 3
+
+        review_svc.set_llm_caller(None)
+
+    async def test_insights_llm_invalid_schema_fields(self, storage, client: AsyncClient):
+        """测试 LLM 返回 JSON 有效但 schema 字段无效时降级"""
+        import json
+        from app.routers import deps
+        from app.infrastructure.llm.mock_caller import MockCaller
+
+        # trend 使用无效值 "super" — Literal 校验会失败
+        llm_response = json.dumps({
+            "behavior_patterns": [
+                {"pattern": "测试", "frequency": 1, "trend": "super"}
+            ],
+            "growth_suggestions": [],
+            "capability_changes": [],
+        })
+        mock_llm = MockCaller(response=llm_response)
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(mock_llm)
+
+        response = await client.get("/review/insights?period=weekly")
+        assert response.status_code == 200
+        data = response.json()
+        # 无效 trend 导致 Pydantic 校验失败，降级为 rule_based
+        assert data["source"] == "rule_based"
+
+        review_svc.set_llm_caller(None)
+
+    async def test_insights_user_isolation_all_sections(self, storage, client: AsyncClient):
+        """测试用户隔离覆盖所有洞察维度"""
+        other_user_id = "isolation-check-user"
+        today = datetime.now()
+
+        # 其他用户创建大量特定标签条目
+        for i in range(10):
+            entry = Task(
+                id=f"iso-other-{i}",
+                title=f"隔离用户任务-{i}",
+                content="",
+                category=Category.TASK,
+                status=TaskStatus.COMPLETE,
+                priority=Priority.HIGH,
+                tags=["iso-exclusive-tag"],
+                created_at=today,
+                updated_at=today,
+                file_path=f"tasks/iso-other-{i}.md",
+            )
+            storage.sqlite.upsert_entry(entry, user_id=other_user_id)
+
+        # 当前用户请求洞察
+        response = await client.get("/review/insights?period=weekly")
+        assert response.status_code == 200
+
+        data = response.json()
+        # 检查所有维度不包含其他用户数据
+        for bp in data["insights"]["behavior_patterns"]:
+            assert "iso-exclusive-tag" not in bp.get("pattern", "")
+        for gs in data["insights"]["growth_suggestions"]:
+            assert "iso-exclusive-tag" not in gs.get("suggestion", "")
+        for cc in data["insights"]["capability_changes"]:
+            assert cc["capability"] != "iso-exclusive-tag"
+
+    async def test_insights_monthly_degradation(self, storage, client: AsyncClient):
+        """测试 monthly 降级时内容语义正确（不包含'本周'文案）"""
+        from app.routers import deps
+        from unittest.mock import AsyncMock
+
+        # 强制走降级
+        mock_llm = AsyncMock()
+        mock_llm.call = AsyncMock(side_effect=Exception("LLM down"))
+        review_svc = deps.get_review_service()
+        review_svc.set_llm_caller(mock_llm)
+
+        response = await client.get("/review/insights?period=monthly")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["source"] == "rule_based"
+        # 降级内容不应包含"本周"文案
+        for bp in data["insights"]["behavior_patterns"]:
+            assert "本周" not in bp.get("pattern", "")
+        for gs in data["insights"]["growth_suggestions"]:
+            assert "本周" not in gs.get("suggestion", "")
+
+        review_svc.set_llm_caller(None)
