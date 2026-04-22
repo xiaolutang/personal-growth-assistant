@@ -11,7 +11,7 @@ void main() {
         id: 'task-1',
         title: '学习 Flutter',
         category: AppConstants.categoryTask,
-        status: AppConstants.statusTodo,
+        status: AppConstants.statusWaitStart,
       );
 
       await tester.pumpWidget(
@@ -25,13 +25,13 @@ void main() {
       expect(find.text('学习 Flutter'), findsOneWidget);
     });
 
-    testWidgets('renders todo status with radio icon',
+    testWidgets('renders todo status with schedule icon',
         (WidgetTester tester) async {
       const entry = Entry(
         id: 'task-1',
         title: 'Todo task',
         category: AppConstants.categoryTask,
-        status: AppConstants.statusTodo,
+        status: AppConstants.statusWaitStart,
       );
 
       await tester.pumpWidget(
@@ -42,7 +42,8 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget);
+      // statusTodo = 'waitStart', maps to schedule icon
+      expect(find.byIcon(Icons.schedule), findsOneWidget);
     });
 
     testWidgets('renders done status with check icon',
@@ -51,7 +52,7 @@ void main() {
         id: 'task-2',
         title: 'Done task',
         category: AppConstants.categoryTask,
-        status: AppConstants.statusDone,
+        status: AppConstants.statusComplete,
       );
 
       await tester.pumpWidget(
@@ -110,7 +111,7 @@ void main() {
         id: 'task-1',
         title: 'High priority task',
         category: AppConstants.categoryTask,
-        status: AppConstants.statusTodo,
+        status: AppConstants.statusWaitStart,
         priority: 'high',
       );
 
@@ -130,7 +131,7 @@ void main() {
         id: 'task-1',
         title: 'Medium priority task',
         category: AppConstants.categoryTask,
-        status: AppConstants.statusTodo,
+        status: AppConstants.statusWaitStart,
         priority: 'medium',
       );
 
@@ -150,7 +151,7 @@ void main() {
         id: 'task-1',
         title: 'Low priority task',
         category: AppConstants.categoryTask,
-        status: AppConstants.statusTodo,
+        status: AppConstants.statusWaitStart,
         priority: 'low',
       );
 
@@ -171,7 +172,7 @@ void main() {
         id: 'task-1',
         title: 'No priority task',
         category: AppConstants.categoryTask,
-        status: AppConstants.statusTodo,
+        status: AppConstants.statusWaitStart,
         priority: null,
       );
 
@@ -193,7 +194,7 @@ void main() {
         id: 'task-1',
         title: 'Tagged task',
         category: AppConstants.categoryTask,
-        status: AppConstants.statusTodo,
+        status: AppConstants.statusWaitStart,
         tags: ['flutter', 'test'],
       );
 
@@ -215,7 +216,7 @@ void main() {
         id: 'task-done',
         title: 'Completed',
         category: AppConstants.categoryTask,
-        status: AppConstants.statusDone,
+        status: AppConstants.statusComplete,
       );
 
       await tester.pumpWidget(
@@ -260,7 +261,7 @@ void main() {
         id: 'task-1',
         title: 'Status cycle',
         category: AppConstants.categoryTask,
-        status: AppConstants.statusTodo,
+        status: AppConstants.statusWaitStart,
       );
 
       await tester.pumpWidget(
@@ -274,8 +275,8 @@ void main() {
         ),
       );
 
-      // Tap the status icon area (the GestureDetector wrapping the icon)
-      await tester.tap(find.byIcon(Icons.radio_button_unchecked));
+      // statusTodo = 'waitStart', shows schedule icon
+      await tester.tap(find.byIcon(Icons.schedule));
       expect(changedStatus, AppConstants.statusDoing);
     });
 
@@ -301,7 +302,7 @@ void main() {
       );
 
       await tester.tap(find.byIcon(Icons.pending));
-      expect(changedStatus, AppConstants.statusDone);
+      expect(changedStatus, AppConstants.statusComplete);
     });
 
     testWidgets('cycles status from done to todo on icon tap',
@@ -311,7 +312,7 @@ void main() {
         id: 'task-1',
         title: 'Status cycle',
         category: AppConstants.categoryTask,
-        status: AppConstants.statusDone,
+        status: AppConstants.statusComplete,
       );
 
       await tester.pumpWidget(
@@ -326,7 +327,7 @@ void main() {
       );
 
       await tester.tap(find.byIcon(Icons.check_circle));
-      expect(changedStatus, AppConstants.statusTodo);
+      expect(changedStatus, AppConstants.statusWaitStart);
     });
   });
 }

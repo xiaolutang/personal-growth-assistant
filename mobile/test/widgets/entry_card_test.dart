@@ -11,7 +11,7 @@ void main() {
         id: 'task-1',
         title: '学习 Flutter',
         category: AppConstants.categoryTask,
-        status: AppConstants.statusTodo,
+        status: AppConstants.statusWaitStart,
       );
 
       await tester.pumpWidget(
@@ -25,12 +25,12 @@ void main() {
       expect(find.text('学习 Flutter'), findsOneWidget);
     });
 
-    testWidgets('renders todo status with radio icon', (WidgetTester tester) async {
+    testWidgets('renders todo status with schedule icon', (WidgetTester tester) async {
       const entry = Entry(
         id: 'task-1',
         title: 'Todo task',
         category: AppConstants.categoryTask,
-        status: AppConstants.statusTodo,
+        status: AppConstants.statusWaitStart,
       );
 
       await tester.pumpWidget(
@@ -41,7 +41,8 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget);
+      // statusTodo = 'waitStart', maps to schedule icon
+      expect(find.byIcon(Icons.schedule), findsOneWidget);
     });
 
     testWidgets('renders done status with check icon', (WidgetTester tester) async {
@@ -49,7 +50,7 @@ void main() {
         id: 'task-2',
         title: 'Done task',
         category: AppConstants.categoryTask,
-        status: AppConstants.statusDone,
+        status: AppConstants.statusComplete,
       );
 
       await tester.pumpWidget(
@@ -144,7 +145,7 @@ void main() {
         id: 'task-1',
         title: 'Tagged task',
         category: AppConstants.categoryTask,
-        status: AppConstants.statusTodo,
+        status: AppConstants.statusWaitStart,
         tags: ['flutter', 'test'],
       );
 
@@ -165,7 +166,7 @@ void main() {
         id: 'task-done',
         title: 'Completed',
         category: AppConstants.categoryTask,
-        status: AppConstants.statusDone,
+        status: AppConstants.statusComplete,
       );
 
       await tester.pumpWidget(

@@ -20,6 +20,10 @@ class ApiClient {
   late final Dio _dio;
   final FlutterSecureStorage _storage;
 
+  /// 401 未授权回调，由 auth_provider 注册
+  /// 用于正确重置内存中的认证状态（而非仅清除 storage）
+  static void Function()? onUnauthorized;
+
   ApiClient({
     FlutterSecureStorage? storage,
     String? baseUrl,
@@ -124,13 +128,16 @@ class ApiClient {
     ErrorInterceptorHandler handler,
   ) async {
     if (err.response?.statusCode == 401) {
-      // 清除 token
-      await _storage.delete(key: ApiConfig.keyJwtToken);
-      await _storage.delete(key: ApiConfig.keyUserId);
-      await _storage.delete(key: ApiConfig.keyUsername);
-
-      // 重定向到登录页
-      _navigateToLogin();
+      // 优先通过回调通知 auth_provider 正确登出
+      if (onUnauthorized != null) {
+        onUnauthorized!();
+      } else {
+        // 回调未注册时 fallback 到直接清除 storage + 导航
+        await _storage.delete(key: ApiConfig.keyJwtToken);
+        await _storage.delete(key: ApiConfig.keyUserId);
+        await _storage.delete(key: ApiConfig.keyUsername);
+        _navigateToLogin();
+      }
     }
     handler.next(err);
   }

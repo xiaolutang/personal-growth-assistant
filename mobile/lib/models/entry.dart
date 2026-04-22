@@ -77,7 +77,7 @@ class Entry {
       'category': category,
       'title': title,
       'content': content ?? '',
-      'status': status ?? 'todo',
+      'status': status ?? 'waitStart',
     };
   }
 

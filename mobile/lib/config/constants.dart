@@ -13,9 +13,11 @@ class AppConstants {
   static const String categoryInbox = 'inbox';
   static const String categoryProject = 'project';
 
-  // Status
-  static const String statusTodo = 'todo';
+  // Status - 与后端 entry_mapper.py 保持一致
+  static const String statusWaitStart = 'waitStart';
   static const String statusDoing = 'doing';
-  static const String statusDone = 'done';
-  static const String statusWaitStart = 'wait_start';
+  static const String statusComplete = 'complete';
+  static const String statusPaused = 'paused';
+  static const String statusCancelled = 'cancelled';
+
 }

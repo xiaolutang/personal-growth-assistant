@@ -25,7 +25,7 @@ class TodayState {
   double get completionRate {
     if (todayTasks.isEmpty) return 0.0;
     final done = todayTasks.where(
-      (e) => e.status == AppConstants.statusDone,
+      (e) => e.status == AppConstants.statusComplete,
     ).length;
     return done / todayTasks.length;
   }
@@ -71,7 +71,7 @@ class TodayNotifier extends Notifier<TodayState> {
         // 最近 10 条动态（跨类型）
         apiClient.get<Map<String, dynamic>>(
           '/entries',
-          queryParameters: {'page_size': 10},
+          queryParameters: {'limit': 10},
         ),
       ]);
 
@@ -109,7 +109,7 @@ class TodayNotifier extends Notifier<TodayState> {
           'category': AppConstants.categoryTask,
           'title': title,
           'content': '',
-          'status': AppConstants.statusTodo,
+          'status': AppConstants.statusWaitStart,
         },
       );
 

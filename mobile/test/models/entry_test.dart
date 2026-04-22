@@ -9,7 +9,7 @@ void main() {
         'title': '学习 Flutter',
         'content': '学习 Flutter 框架基础知识',
         'category': 'task',
-        'status': 'todo',
+        'status': 'waitStart',
         'priority': 'high',
         'tags': ['flutter', 'mobile'],
         'created_at': '2026-04-22T10:00:00',
@@ -26,7 +26,7 @@ void main() {
       expect(entry.title, '学习 Flutter');
       expect(entry.content, '学习 Flutter 框架基础知识');
       expect(entry.category, 'task');
-      expect(entry.status, 'todo');
+      expect(entry.status, 'waitStart');
       expect(entry.priority, 'high');
       expect(entry.tags, ['flutter', 'mobile']);
       expect(entry.createdAt, '2026-04-22T10:00:00');
@@ -110,7 +110,7 @@ void main() {
         title: 'New Task',
         content: 'Task details',
         category: 'task',
-        status: 'todo',
+        status: 'waitStart',
       );
 
       final json = entry.toCreateJson();
@@ -118,7 +118,7 @@ void main() {
       expect(json['category'], 'task');
       expect(json['title'], 'New Task');
       expect(json['content'], 'Task details');
-      expect(json['status'], 'todo');
+      expect(json['status'], 'waitStart');
     });
 
     test('toCreateJson defaults status to todo', () {
@@ -130,7 +130,7 @@ void main() {
 
       final json = entry.toCreateJson();
 
-      expect(json['status'], 'todo');
+      expect(json['status'], 'waitStart');
       expect(json['content'], '');
     });
   });

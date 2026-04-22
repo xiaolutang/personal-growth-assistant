@@ -45,10 +45,10 @@ class EntryCard extends StatelessWidget {
                       entry.title,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w500,
-                        decoration: entry.status == AppConstants.statusDone
+                        decoration: entry.status == AppConstants.statusComplete
                             ? TextDecoration.lineThrough
                             : null,
-                        color: entry.status == AppConstants.statusDone
+                        color: entry.status == AppConstants.statusComplete
                             ? theme.colorScheme.onSurfaceVariant
                             : theme.colorScheme.onSurface,
                       ),
@@ -98,7 +98,7 @@ class EntryCard extends StatelessWidget {
     Color color;
 
     switch (status) {
-      case AppConstants.statusDone:
+      case AppConstants.statusComplete:
         icon = Icons.check_circle;
         color = AppColors.completed;
       case AppConstants.statusDoing:

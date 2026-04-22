@@ -16,7 +16,7 @@ import 'api_client.dart';
 // - 解析 SSE 格式: event: xxx\ndata: {json}\n\n
 // - 自动重连（最多 3 次）
 // - JWT token 注入
-// - 支持取消订阅
+// - 支持取消订阅（cancel 方法）
 // ============================================================
 
 class SseService {
@@ -28,6 +28,15 @@ class SseService {
 
   /// 重连间隔基数（毫秒）
   static const int _retryBaseDelay = 1000;
+
+  /// 当前活跃的 ResponseBody 订阅
+  StreamSubscription<List<int>>? _responseSubscription;
+
+  /// 重连定时器
+  Timer? _retryTimer;
+
+  /// 是否已取消
+  bool _cancelled = false;
 
   SseService({
     required ApiClient apiClient,
@@ -51,6 +60,7 @@ class SseService {
     Map<String, dynamic>? confirm,
     Map<String, dynamic>? pageContext,
   }) {
+    _cancelled = false;
     final controller = StreamController<SseEvent>();
 
     _startStream(
@@ -66,6 +76,15 @@ class SseService {
     return controller.stream;
   }
 
+  /// 取消当前 SSE 连接
+  void cancel() {
+    _cancelled = true;
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    _responseSubscription?.cancel();
+    _responseSubscription = null;
+  }
+
   void _startStream({
     required StreamController<SseEvent> controller,
     required String message,
@@ -75,6 +94,8 @@ class SseService {
     Map<String, dynamic>? pageContext,
     required int retryCount,
   }) async {
+    if (_cancelled || controller.isClosed) return;
+
     try {
       final token = await _storage.read(key: ApiConfig.keyJwtToken);
 
@@ -99,13 +120,15 @@ class SseService {
         ),
       );
 
+      if (_cancelled || controller.isClosed) return;
+
       final responseStream = response.data as ResponseBody; // ignore: unnecessary_cast
 
       // SSE 解析缓冲区
       final buffer = StringBuffer();
       const String currentEvent = 'message';
 
-      responseStream.stream.listen(
+      _responseSubscription = responseStream.stream.listen(
         (data) {
           final chunk = utf8.decode(data);
           buffer.write(chunk);
@@ -209,13 +232,13 @@ class SseService {
     Map<String, dynamic>? pageContext,
     required int retryCount,
   }) {
-    if (controller.isClosed) return;
+    if (controller.isClosed || _cancelled) return;
 
     if (retryCount < maxRetries) {
       // 指数退避重连
       final delay = _retryBaseDelay * (1 << retryCount);
-      Future.delayed(Duration(milliseconds: delay), () {
-        if (!controller.isClosed) {
+      _retryTimer = Timer(Duration(milliseconds: delay), () {
+        if (!controller.isClosed && !_cancelled) {
           _startStream(
             controller: controller,
             message: message,

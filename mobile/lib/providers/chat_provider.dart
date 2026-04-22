@@ -42,12 +42,16 @@ class ChatState {
 // ============================================================
 class ChatNotifier extends Notifier<ChatState> {
   StreamSubscription<SseEvent>? _currentSubscription;
+  SseService? _currentSseService;
 
   @override
   ChatState build() {
-    // 清理旧的订阅
+    // 清理旧的 SSE 连接和订阅
     ref.onDispose(() {
+      _currentSseService?.cancel();
       _currentSubscription?.cancel();
+      _currentSseService = null;
+      _currentSubscription = null;
     });
     return const ChatState();
   }
@@ -88,14 +92,18 @@ class ChatNotifier extends Notifier<ChatState> {
     final sessionId = await _getOrCreateSessionId();
 
     // 4. 调用 SseService
+    // 取消之前的 SSE 连接
+    _currentSseService?.cancel();
+    _currentSubscription?.cancel();
+
     final sseService = _createSseService();
+    _currentSseService = sseService;
     final stream = sseService.connect(
       message: text.trim(),
       sessionId: sessionId,
     );
 
     // 5. 监听 SSE 事件流
-    _currentSubscription?.cancel();
     final messages = List<ChatMessage>.from(state.messages);
     final aiIndex = messages.length - 1;
 
@@ -136,17 +144,54 @@ class ChatNotifier extends Notifier<ChatState> {
 
       case SseEventType.created:
         // F105: 创建确认卡片
+        // 后端可能发送两种格式：
+        // 1. {ids: [...], count: N} — chat_service 批量创建
+        // 2. 单个 entry 对象（含 id 字段） — 其他来源
         final entryData = event.data;
-        final entry = Entry.fromJson(entryData);
-        final cardMessage = ChatMessage(
-          id: const Uuid().v4(),
-          role: ChatMessageRole.system,
-          text: '',
-          createdAt: DateTime.now(),
-          createdEntry: entry,
-        );
-        messages.add(cardMessage);
-        state = state.copyWith(messages: List.from(messages));
+        if (entryData.containsKey('ids')) {
+          // 批量创建：显示简洁确认消息
+          final count = entryData['count'] as int? ?? 1;
+          final cardMessage = ChatMessage(
+            id: const Uuid().v4(),
+            role: ChatMessageRole.system,
+            text: '创建了 $count 条记录',
+            createdAt: DateTime.now(),
+          );
+          messages.add(cardMessage);
+          state = state.copyWith(messages: List.from(messages));
+        } else if (entryData.containsKey('id')) {
+          // 单个完整 entry 对象
+          try {
+            final entry = Entry.fromJson(entryData);
+            final cardMessage = ChatMessage(
+              id: const Uuid().v4(),
+              role: ChatMessageRole.system,
+              text: '',
+              createdAt: DateTime.now(),
+              createdEntry: entry,
+            );
+            messages.add(cardMessage);
+            state = state.copyWith(messages: List.from(messages));
+          } catch (_) {
+            // JSON 解析失败，降级为文本消息
+            messages.add(ChatMessage(
+              id: const Uuid().v4(),
+              role: ChatMessageRole.system,
+              text: '创建成功',
+              createdAt: DateTime.now(),
+            ),);
+            state = state.copyWith(messages: List.from(messages));
+          }
+        } else {
+          // 未知格式，降级为文本消息
+          messages.add(ChatMessage(
+            id: const Uuid().v4(),
+            role: ChatMessageRole.system,
+            text: '创建成功',
+            createdAt: DateTime.now(),
+          ),);
+          state = state.copyWith(messages: List.from(messages));
+        }
         break;
 
       case SseEventType.error:

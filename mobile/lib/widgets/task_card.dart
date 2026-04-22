@@ -56,10 +56,10 @@ class TaskCard extends StatelessWidget {
                       entry.title,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w500,
-                        decoration: entry.status == AppConstants.statusDone
+                        decoration: entry.status == AppConstants.statusComplete
                             ? TextDecoration.lineThrough
                             : null,
-                        color: entry.status == AppConstants.statusDone
+                        color: entry.status == AppConstants.statusComplete
                             ? theme.colorScheme.onSurfaceVariant
                             : theme.colorScheme.onSurface,
                       ),
@@ -85,18 +85,17 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  /// 状态循环切换：todo → doing → done → todo
+  /// 状态循环切换：waitStart → doing → complete → waitStart
   void _cycleStatus() {
-    final currentStatus = entry.status ?? AppConstants.statusTodo;
+    final currentStatus = entry.status ?? AppConstants.statusWaitStart;
     String nextStatus;
     switch (currentStatus) {
-      case AppConstants.statusTodo:
       case AppConstants.statusWaitStart:
         nextStatus = AppConstants.statusDoing;
       case AppConstants.statusDoing:
-        nextStatus = AppConstants.statusDone;
-      case AppConstants.statusDone:
-        nextStatus = AppConstants.statusTodo;
+        nextStatus = AppConstants.statusComplete;
+      case AppConstants.statusComplete:
+        nextStatus = AppConstants.statusWaitStart;
       default:
         nextStatus = AppConstants.statusDoing;
     }
@@ -109,7 +108,7 @@ class TaskCard extends StatelessWidget {
     Color color;
 
     switch (status) {
-      case AppConstants.statusDone:
+      case AppConstants.statusComplete:
         icon = Icons.check_circle;
         color = AppColors.completed;
       case AppConstants.statusDoing:

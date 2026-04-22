@@ -22,22 +22,22 @@ void main() {
     test('completionRate calculates done/total', () {
       final state = TodayState(
         todayTasks: [
-          _makeEntry('1', status: 'done'),
-          _makeEntry('2', status: 'todo'),
-          _makeEntry('3', status: 'done'),
+          _makeEntry('1', status: 'complete'),
+          _makeEntry('2', status: 'waitStart'),
+          _makeEntry('3', status: 'complete'),
           _makeEntry('4', status: 'doing'),
         ],
       );
 
-      // 2 done / 4 total = 0.5
+      // 2 complete / 4 total = 0.5
       expect(state.completionRate, 0.5);
     });
 
     test('completionRate is 1.0 when all done', () {
       final state = TodayState(
         todayTasks: [
-          _makeEntry('1', status: 'done'),
-          _makeEntry('2', status: 'done'),
+          _makeEntry('1', status: 'complete'),
+          _makeEntry('2', status: 'complete'),
         ],
       );
 
@@ -63,7 +63,7 @@ void main() {
 
     test('copyWith can update todayTasks', () {
       const state = TodayState();
-      final tasks = [_makeEntry('1', status: 'done')];
+      final tasks = [_makeEntry('1', status: 'complete')];
       final copied = state.copyWith(todayTasks: tasks);
 
       expect(copied.todayTasks, hasLength(1));

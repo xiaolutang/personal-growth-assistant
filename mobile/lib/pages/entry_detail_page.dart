@@ -273,14 +273,16 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
 
   String _statusLabel(String? status) {
     switch (status) {
-      case AppConstants.statusTodo:
+      case AppConstants.statusWaitStart:
         return '待开始';
       case AppConstants.statusDoing:
         return '进行中';
-      case AppConstants.statusDone:
+      case AppConstants.statusComplete:
         return '已完成';
-      case AppConstants.statusWaitStart:
-        return '等待开始';
+      case AppConstants.statusPaused:
+        return '已暂停';
+      case AppConstants.statusCancelled:
+        return '已取消';
       default:
         return status ?? '未知';
     }

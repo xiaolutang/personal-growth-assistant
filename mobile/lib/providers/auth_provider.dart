@@ -58,6 +58,9 @@ final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
 class AuthNotifier extends AsyncNotifier<AuthState> {
   @override
   Future<AuthState> build() async {
+    // 注册 401 回调，使 api_client 能正确触发 logout
+    ApiClient.onUnauthorized = _onApiUnauthorized;
+
     final authService = ref.watch(authServiceProvider);
     final storage = ref.watch(secureStorageProvider);
 
@@ -133,6 +136,12 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       // 登出失败不影响本地状态清除
     }
 
+    state = const AsyncData<AuthState>(AuthUnauthenticated());
+  }
+
+  /// 401 回调：清除内存状态 + storage，不调用后端 logout 接口
+  void _onApiUnauthorized() {
+    // 直接重置内存状态
     state = const AsyncData<AuthState>(AuthUnauthenticated());
   }
 

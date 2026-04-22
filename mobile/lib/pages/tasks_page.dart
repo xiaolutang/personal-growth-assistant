@@ -21,7 +21,7 @@ import '../widgets/task_card.dart';
 // ============================================================
 
 /// 筛选 Tab 枚举
-enum TaskFilter { all, doing, done }
+enum TaskFilter { all, doing, waitStart, complete }
 
 class TasksPage extends ConsumerStatefulWidget {
   const TasksPage({super.key});
@@ -55,8 +55,10 @@ class _TasksPageState extends ConsumerState<TasksPage> {
         return null;
       case TaskFilter.doing:
         return AppConstants.statusDoing;
-      case TaskFilter.done:
-        return AppConstants.statusDone;
+      case TaskFilter.waitStart:
+        return AppConstants.statusWaitStart;
+      case TaskFilter.complete:
+        return AppConstants.statusComplete;
     }
   }
 
@@ -164,14 +166,14 @@ class _TasksPageState extends ConsumerState<TasksPage> {
           if (grouped['doing'] != null && grouped['doing']!.isNotEmpty)
             _buildGroup('进行中', grouped['doing']!),
           // 待开始
-          if (grouped['todo'] != null && grouped['todo']!.isNotEmpty)
-            _buildGroup('待开始', grouped['todo']!),
-          // 等待开始
-          if (grouped['wait_start'] != null && grouped['wait_start']!.isNotEmpty)
-            _buildGroup('待开始', grouped['wait_start']!),
+          if (grouped['waitStart'] != null && grouped['waitStart']!.isNotEmpty)
+            _buildGroup('待开始', grouped['waitStart']!),
+          // 已暂停
+          if (grouped['paused'] != null && grouped['paused']!.isNotEmpty)
+            _buildGroup('已暂停', grouped['paused']!),
           // 已完成
-          if (grouped['done'] != null && grouped['done']!.isNotEmpty)
-            _buildGroup('已完成', grouped['done']!),
+          if (grouped['complete'] != null && grouped['complete']!.isNotEmpty)
+            _buildGroup('已完成', grouped['complete']!),
         ],
       ),
     );
@@ -279,7 +281,9 @@ class _TasksPageState extends ConsumerState<TasksPage> {
         return '全部';
       case TaskFilter.doing:
         return '进行中';
-      case TaskFilter.done:
+      case TaskFilter.waitStart:
+        return '待开始';
+      case TaskFilter.complete:
         return '已完成';
     }
   }
@@ -287,7 +291,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   Map<String, List<Entry>> _groupByStatus(List<Entry> entries) {
     final result = <String, List<Entry>>{};
     for (final entry in entries) {
-      final status = entry.status ?? 'todo';
+      final status = entry.status ?? 'waitStart';
       result.putIfAbsent(status, () => []).add(entry);
     }
     return result;
