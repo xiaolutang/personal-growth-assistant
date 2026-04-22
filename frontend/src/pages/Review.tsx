@@ -32,6 +32,7 @@ import { MorningDigestCard } from "@/components/review/MorningDigestCard";
 import { HeatmapCard } from "@/components/review/HeatmapCard";
 import { GrowthCurveCard } from "@/components/review/GrowthCurveCard";
 import { AiSummaryCard } from "@/components/review/AiSummaryCard";
+import { PageChatPanel } from "@/components/PageChatPanel";
 
 type ReportType = "daily" | "weekly" | "monthly" | "trend";
 
@@ -200,6 +201,26 @@ export function Review() {
 
             {/* AI 总结卡片 */}
             <AiSummaryCard reportType={reportType} isLoading={isLoading} aiSummary={aiSummary} />
+
+            {/* 分析助手 AI */}
+            <PageChatPanel
+              title="分析助手"
+              welcomeMessage="想深入了解哪些数据？我可以帮你分析"
+              suggestions={[
+                { label: "分析趋势", message: "帮我分析最近的任务完成趋势" },
+                { label: "比较环比", message: "这周和上周相比有什么变化？" },
+                { label: "学习模式", message: "从数据中能看到什么学习模式？" },
+              ]}
+              pageContext={{ page: "review" }}
+              pageData={{
+                report_type: reportType,
+                total_tasks: taskStats?.total ?? 0,
+                completed: taskStats?.completed ?? 0,
+                completion_rate: taskStats?.completion_rate ?? 0,
+                note_count: noteStats?.total ?? 0,
+              }}
+              defaultCollapsed
+            />
 
             {/* 目标进展概览（仅周报/月报） */}
             {(reportType === "weekly" || reportType === "monthly") && goalSummary && (goalSummary.active_count + goalSummary.completed_count > 0) && (

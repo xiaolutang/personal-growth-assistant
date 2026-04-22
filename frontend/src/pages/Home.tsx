@@ -31,6 +31,7 @@ import {
   type Goal,
 } from "@/services/api";
 import { useMorningDigest } from "@/hooks/useMorningDigest";
+import { PageChatPanel } from "@/components/PageChatPanel";
 
 export function Home() {
   const tasks = useTaskStore((state) => state.tasks);
@@ -557,6 +558,25 @@ export function Home() {
                 />
               </div>
             </div>
+
+            {/* ====== 晨报助手 AI ====== */}
+            <PageChatPanel
+              title="晨报助手"
+              welcomeMessage="有什么想聊的？我可以帮你规划今天"
+              suggestions={[
+                { label: "今日复盘", message: "帮我复盘一下今天的任务完成情况" },
+                { label: "查看进度", message: "本周的学习进度怎么样？" },
+                { label: "推荐优先级", message: "帮我看看今天哪些任务最该优先做" },
+              ]}
+              pageContext={{ page: "home" }}
+              pageData={{
+                todo_count: todayTasks.length,
+                completed_today: todayStats.completed,
+                total_tasks: todayStats.total,
+                inbox_count: unprocessedInbox.length,
+              }}
+              defaultCollapsed
+            />
           </>
         )}
       </main>

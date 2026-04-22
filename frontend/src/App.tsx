@@ -6,7 +6,6 @@ import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext"
 import { MobileNavBar } from "@/components/layout/MobileNavBar";
 import { FloatingChat } from "@/components/FloatingChat";
 import { FeedbackButton } from "@/components/FeedbackButton";
-import { PageAIAssistant } from "@/components/PageAIAssistant";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -140,7 +139,6 @@ function AppLayout() {
       </div>
       <FeedbackButton />
       <FloatingChat />
-      <PageAIAssistant pageContext={{ page: "global" }} />
       <MobileNavBar />
     </div>
   );
