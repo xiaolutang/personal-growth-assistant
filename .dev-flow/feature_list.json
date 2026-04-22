@@ -3,7 +3,7 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-22T19:50:00",
+  "updated_at": "2026-04-22T19:56:00",
   "status": "in_progress",
   "scope_notes": "R025 第三阶段收口 — Phase 8 图谱增强 + Phase 10 回顾 AI 总结增强",
   "active_requirement_cycle": {
@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 8,
-    "pending": 1,
-    "completed": 6,
+    "pending": 0,
+    "completed": 7,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -236,8 +236,11 @@
       "description": "增强回顾页周报/月报的 AI 总结展示，从 2-3 句扩展为多段落结构化总结。",
       "verification": "F2",
       "depends_on": ["S15", "F108"],
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
+      "started_at": "2026-04-22T19:53:00",
+      "completed_at": "2026-04-22T19:56:00",
+      "evidence_file": ".dev-flow/evidence/F111.md",
       "acceptance_criteria": [
         "周报/月报 AI 总结扩展为多段落结构（成就回顾、待改进、下周/月建议）",
         "AiSummaryCard 支持展开/折叠长文本",

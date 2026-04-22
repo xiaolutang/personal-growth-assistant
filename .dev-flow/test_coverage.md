@@ -9,7 +9,7 @@
 | 能力地图数据 API | B81 | unit | Neo4j 正常/SQLite 降级/空数据/mastery_level 过滤/用户隔离 | completed | risk: network |
 | 能力地图视图 | F109 | unit+manual | 4 Tab 切换/领域卡片/展开概念/空数据引导/筛选传参/API 失败 | completed | F2 验证, 347 frontend tests + build pass, codex code review 1 round fix |
 | 图谱 AI 助手 | F110 | unit+manual | PageChatPanel 内嵌/SSE 失败错误/空上下文/视图切换同步 | completed | F2 验证, 347 frontend tests + build pass |
-| AI 总结深度增强 | F111 | unit+manual | 展开 Markdown/折叠概要/消费 /review/insights 数据源 | pending | F2 验证 |
+| AI 总结深度增强 | F111 | unit+manual | 展开 Markdown/折叠概要/消费 /review/insights 数据源 | completed | F2 验证, 347 frontend tests + build pass |
 | 后端测试收口 | S16 | unit | /review/insights 端点 + _generate_deep_insights 方法覆盖 | completed | L1, 34 service tests |
 | 构建验证 | S17 | integration+smoke | 后端 pytest 全通过/前端 vitest 全通过/前端 build 成功 | pending | L4 |
 
