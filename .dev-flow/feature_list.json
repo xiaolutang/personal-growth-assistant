@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 8,
-    "pending": 4,
-    "completed": 3,
+    "pending": 3,
+    "completed": 4,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -100,8 +100,11 @@
       "description": "回顾页新增 AI 深度洞察卡片，展示周报/月报的结构化洞察（行为模式、成长建议、能力变化）。",
       "verification": "F2",
       "depends_on": ["S15"],
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
+      "started_at": "2026-04-22T19:10:00",
+      "completed_at": "2026-04-22T19:25:00",
+      "evidence_file": ".dev-flow/evidence/F108.md",
       "acceptance_criteria": [
         "周报/月报视图新增「AI 洞察」卡片",
         "卡片展示 3 个维度：行为模式、成长建议、能力变化",
@@ -118,7 +121,7 @@
       ],
       "files": [
         "frontend/src/pages/Review.tsx",
-        "frontend/src/components/InsightCard.tsx",
+        "frontend/src/components/review/InsightCard.tsx",
         "frontend/src/services/api.ts"
       ],
       "contract_refs": ["GET /review/insights"]

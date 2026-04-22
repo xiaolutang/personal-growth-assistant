@@ -530,6 +530,48 @@ export async function getReviewTrend(
   return handleOpenApiResponse<ReviewTrendResponse>(data as ReviewTrendResponse | undefined, error, response);
 }
 
+// === AI 深度洞察 API ===
+
+export interface BehaviorPattern {
+  pattern: string;
+  frequency: number;
+  trend: "improving" | "stable" | "declining";
+}
+
+export interface GrowthSuggestion {
+  suggestion: string;
+  priority: "high" | "medium" | "low";
+  related_area: string;
+}
+
+export interface CapabilityChange {
+  capability: string;
+  previous_level: number;
+  current_level: number;
+  change: number;
+}
+
+export interface DeepInsights {
+  behavior_patterns: BehaviorPattern[];
+  growth_suggestions: GrowthSuggestion[];
+  capability_changes: CapabilityChange[];
+}
+
+export interface InsightsResponse {
+  period: "weekly" | "monthly";
+  start_date: string;
+  end_date: string;
+  insights: DeepInsights;
+  source: "llm" | "rule_based";
+}
+
+export async function getInsights(period: "weekly" | "monthly"): Promise<InsightsResponse> {
+  const { data, error, response } = await client.GET("/review/insights", {
+    params: { query: { period } },
+  });
+  return handleOpenApiResponse<InsightsResponse>(data as InsightsResponse | undefined, error, response);
+}
+
 // === 知识热力图 API ===
 
 export interface HeatmapItem {
@@ -795,6 +837,34 @@ export async function getConceptTimeline(concept: string, days?: number): Promis
 export async function getMasteryDistribution(): Promise<MasteryDistributionResponse> {
   const { data, error, response } = await client.GET("/knowledge/mastery-distribution");
   return handleOpenApiResponse<MasteryDistributionResponse>(data as MasteryDistributionResponse | undefined, error, response);
+}
+
+// === 能力地图 API ===
+
+export interface CapabilityConcept {
+  name: string;
+  mastery_level: "new" | "beginner" | "intermediate" | "advanced";
+  mastery_score: number;
+  entry_count: number;
+}
+
+export interface CapabilityDomain {
+  name: string;
+  concepts: CapabilityConcept[];
+  average_mastery: number;
+  concept_count: number;
+}
+
+export interface CapabilityMapResponse {
+  domains: CapabilityDomain[];
+  source: "neo4j" | "sqlite";
+}
+
+export async function getCapabilityMap(masteryLevel?: string): Promise<CapabilityMapResponse> {
+  const { data, error, response } = await client.GET("/knowledge/capability-map", {
+    params: { query: masteryLevel ? { mastery_level: masteryLevel } : undefined },
+  });
+  return handleOpenApiResponse<CapabilityMapResponse>(data as CapabilityMapResponse | undefined, error, response);
 }
 
 // === 条目手动关联 API (F32) ===

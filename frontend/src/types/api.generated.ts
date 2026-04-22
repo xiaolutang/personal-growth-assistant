@@ -231,7 +231,7 @@ export interface paths {
         put?: never;
         /**
          * Search Entries
-         * @description 语义搜索条目
+         * @description 混合搜索条目（向量 + 全文），Qdrant 不可用时自动降级为纯全文
          */
         post: operations["search_entries_search_post"];
         delete?: never;
@@ -411,6 +411,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/knowledge/capability-map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Capability Map
+         * @description 获取能力地图数据（按领域聚合的概念+掌握度）
+         */
+        get: operations["get_capability_map_knowledge_capability_map_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/review/daily": {
         parameters: {
             query?: never;
@@ -563,6 +583,26 @@ export interface paths {
          * @description 获取年度每日活动热力图
          */
         get: operations["get_activity_heatmap_review_activity_heatmap_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review/insights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Insights
+         * @description 获取 AI 深度洞察
+         */
+        get: operations["get_insights_review_insights_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1185,6 +1225,123 @@ export interface components {
              */
             items: components["schemas"]["ActivityHeatmapItem"][];
         };
+        /**
+         * BehaviorPattern
+         * @description 行为模式
+         */
+        BehaviorPattern: {
+            /**
+             * Pattern
+             * @description 模式描述
+             */
+            pattern: string;
+            /**
+             * Frequency
+             * @description 出现频率
+             * @default 0
+             */
+            frequency: number;
+            /**
+             * Trend
+             * @description 趋势
+             * @default stable
+             * @enum {string}
+             */
+            trend: "improving" | "stable" | "declining";
+        };
+        /**
+         * CapabilityChange
+         * @description 能力变化
+         */
+        CapabilityChange: {
+            /**
+             * Capability
+             * @description 能力名称
+             */
+            capability: string;
+            /**
+             * Previous Level
+             * @description 前水平 (0-1)
+             * @default 0
+             */
+            previous_level: number;
+            /**
+             * Current Level
+             * @description 当前水平 (0-1)
+             * @default 0
+             */
+            current_level: number;
+            /**
+             * Change
+             * @description 变化值
+             * @default 0
+             */
+            change: number;
+        };
+        /**
+         * CapabilityConcept
+         * @description 能力地图中的概念项
+         */
+        CapabilityConcept: {
+            /** Name */
+            name: string;
+            /**
+             * Mastery Level
+             * @default new
+             * @enum {string}
+             */
+            mastery_level: "new" | "beginner" | "intermediate" | "advanced";
+            /**
+             * Mastery Score
+             * @default 0
+             */
+            mastery_score: number;
+            /**
+             * Entry Count
+             * @default 0
+             */
+            entry_count: number;
+        };
+        /**
+         * CapabilityDomain
+         * @description 能力领域
+         */
+        CapabilityDomain: {
+            /** Name */
+            name: string;
+            /**
+             * Concepts
+             * @default []
+             */
+            concepts: components["schemas"]["CapabilityConcept"][];
+            /**
+             * Average Mastery
+             * @default 0
+             */
+            average_mastery: number;
+            /**
+             * Concept Count
+             * @default 0
+             */
+            concept_count: number;
+        };
+        /**
+         * CapabilityMapResponse
+         * @description 能力地图响应
+         */
+        CapabilityMapResponse: {
+            /**
+             * Domains
+             * @default []
+             */
+            domains: components["schemas"]["CapabilityDomain"][];
+            /**
+             * Source
+             * @default sqlite
+             * @enum {string}
+             */
+            source: "neo4j" | "sqlite";
+        };
         /** ChatMessage */
         ChatMessage: {
             /** Message */
@@ -1379,6 +1536,27 @@ export interface components {
             }[];
             /** Ai Summary */
             ai_summary?: string | null;
+        };
+        /**
+         * DeepInsights
+         * @description 深度洞察内容
+         */
+        DeepInsights: {
+            /**
+             * Behavior Patterns
+             * @description 行为模式
+             */
+            behavior_patterns?: components["schemas"]["BehaviorPattern"][];
+            /**
+             * Growth Suggestions
+             * @description 成长建议
+             */
+            growth_suggestions?: components["schemas"]["GrowthSuggestion"][];
+            /**
+             * Capability Changes
+             * @description 能力变化
+             */
+            capability_changes?: components["schemas"]["CapabilityChange"][];
         };
         /**
          * DefaultDataClaimResult
@@ -1998,6 +2176,30 @@ export interface components {
              */
             points: components["schemas"]["GrowthCurvePoint"][];
         };
+        /**
+         * GrowthSuggestion
+         * @description 成长建议
+         */
+        GrowthSuggestion: {
+            /**
+             * Suggestion
+             * @description 建议内容
+             */
+            suggestion: string;
+            /**
+             * Priority
+             * @description 优先级
+             * @default medium
+             * @enum {string}
+             */
+            priority: "high" | "medium" | "low";
+            /**
+             * Related Area
+             * @description 相关领域
+             * @default
+             */
+            related_area: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -2050,6 +2252,37 @@ export interface components {
              * @default []
              */
             items: components["schemas"]["HeatmapItem"][];
+        };
+        /**
+         * InsightsResponse
+         * @description 深度洞察响应
+         */
+        InsightsResponse: {
+            /**
+             * Period
+             * @description 周期
+             * @enum {string}
+             */
+            period: "weekly" | "monthly";
+            /**
+             * Start Date
+             * @description 开始日期
+             */
+            start_date: string;
+            /**
+             * End Date
+             * @description 结束日期
+             */
+            end_date: string;
+            /** @description 洞察内容 */
+            insights?: components["schemas"]["DeepInsights"];
+            /**
+             * Source
+             * @description 来源
+             * @default rule_based
+             * @enum {string}
+             */
+            source: "llm" | "rule_based";
         };
         /**
          * IntentRequest
@@ -2611,9 +2844,14 @@ export interface components {
             /**
              * Limit
              * @description 返回数量
-             * @default 5
+             * @default 10
              */
             limit: number;
+            /**
+             * Filter Type
+             * @description 按类型过滤
+             */
+            filter_type?: string | null;
         };
         /**
          * SearchResponse
@@ -2622,6 +2860,8 @@ export interface components {
         SearchResponse: {
             /** Results */
             results: components["schemas"]["app__routers__search__SearchResult"][];
+            /** Query */
+            query: string;
         };
         /**
          * SessionInfo
@@ -2932,14 +3172,18 @@ export interface components {
             id: string;
             /** Title */
             title: string;
-            /** Score */
-            score: number;
-            /** Type */
-            type: string;
+            /** Content Snippet */
+            content_snippet: string;
+            /** Category */
+            category: string;
+            /** Status */
+            status: string;
             /** Tags */
             tags: string[];
             /** File Path */
             file_path: string;
+            /** Score */
+            score: number;
         };
     };
     responses: never;
@@ -3692,6 +3936,38 @@ export interface operations {
             };
         };
     };
+    get_capability_map_knowledge_capability_map_get: {
+        parameters: {
+            query?: {
+                /** @description 按掌握度过滤: new/beginner/intermediate/advanced */
+                mastery_level?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapabilityMapResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_daily_report_review_daily_get: {
         parameters: {
             query?: {
@@ -3915,6 +4191,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActivityHeatmapResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_insights_review_insights_get: {
+        parameters: {
+            query: {
+                /** @description 统计周期: weekly 或 monthly */
+                period: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InsightsResponse"];
                 };
             };
             /** @description Validation Error */

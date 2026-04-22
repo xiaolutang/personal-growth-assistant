@@ -32,6 +32,7 @@ import { MorningDigestCard } from "@/components/review/MorningDigestCard";
 import { HeatmapCard } from "@/components/review/HeatmapCard";
 import { GrowthCurveCard } from "@/components/review/GrowthCurveCard";
 import { AiSummaryCard } from "@/components/review/AiSummaryCard";
+import { InsightCard } from "@/components/review/InsightCard";
 import { PageChatPanel } from "@/components/PageChatPanel";
 
 type ReportType = "daily" | "weekly" | "monthly" | "trend";
@@ -201,6 +202,9 @@ export function Review() {
 
             {/* AI 总结卡片 */}
             <AiSummaryCard reportType={reportType} isLoading={isLoading} aiSummary={aiSummary} />
+
+            {/* AI 深度洞察卡片 — 仅周报/月报 */}
+            <InsightCard reportType={reportType} />
 
             {/* 分析助手 AI */}
             <PageChatPanel
