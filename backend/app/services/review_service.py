@@ -207,6 +207,8 @@ class InsightsResponse(BaseModel):
 class ReviewService:
     """成长回顾统计服务"""
 
+    CATEGORY_LABELS = {"task": "任务", "note": "笔记", "inbox": "灵感", "project": "项目"}
+
     def __init__(self, sqlite_storage=None, neo4j_client=None):
         """
         初始化服务
@@ -1039,13 +1041,7 @@ class ReviewService:
             top_category = max(category_counts, key=category_counts.get)
             top_ratio = category_counts[top_category] / total_count
 
-            category_labels = {
-                "task": "任务",
-                "note": "笔记",
-                "inbox": "灵感",
-                "project": "项目",
-            }
-            top_label = category_labels.get(top_category, top_category)
+            top_label = self.CATEGORY_LABELS.get(top_category, top_category)
 
             if top_ratio > 0.6 and total_count >= 5:
                 insights.append(
@@ -1428,29 +1424,28 @@ class ReviewService:
         relationship_count: int = 0,
     ) -> str:
         """
-        根据统计数据计算掌握度
+        根据统计数据计算掌握度（阈值式，与 knowledge_service 一致）
 
-        规则（综合评分 = entry_count*2 + recent_count*3 + note_count*2 + relationship_count*1）：
-        - score >= 10 → advanced
-        - score >= 5 → intermediate
-        - score >= 2 → beginner
+        规则：
+        - relationship_count 折算为等价 entry_count（每 2 个关系 ≈ 1 个条目）
+        - effective_count = entry_count + relationship_count // 2
+        - effective_count >= 6 且 note_ratio > 0.3 → advanced
+        - effective_count >= 3 且 recent_count > 0 → intermediate
+        - effective_count >= 1 → beginner
         - 其他 → new
         """
-        if entry_count == 0 and relationship_count == 0:
+        effective_count = entry_count + max(0, relationship_count // 2)
+
+        if effective_count == 0:
             return "new"
 
-        score = (
-            entry_count * 2
-            + recent_count * 3
-            + note_count * 2
-            + relationship_count * 1
-        )
+        note_ratio = note_count / effective_count if effective_count > 0 else 0
 
-        if score >= 10:
+        if effective_count >= 6 and note_ratio > 0.3:
             return "advanced"
-        elif score >= 5:
+        elif effective_count >= 3 and recent_count > 0:
             return "intermediate"
-        elif score >= 2:
+        elif effective_count >= 1:
             return "beginner"
         return "new"
 
@@ -1491,9 +1486,6 @@ class ReviewService:
         """
         if not self._sqlite:
             raise ValueError("SQLite 存储未初始化")
-
-        if period not in ("weekly", "monthly"):
-            raise ValueError("period 参数必须是 weekly 或 monthly")
 
         today = date.today()
 
@@ -1586,15 +1578,13 @@ class ReviewService:
             try:
                 import json
 
-                # 统计当前周期数据
-                curr_tasks = [e for e in entries if e.get("type") == "task"]
-                curr_notes = [e for e in entries if e.get("type") == "note"]
-                curr_inbox = [e for e in entries if e.get("type") == "inbox"]
+                # 统计当前周期数据（复用共享 helper）
+                _, _, curr_tasks, curr_notes, curr_inbox = self._analyze_category_distribution(entries)
                 curr_completed = sum(1 for t in curr_tasks if t.get("status") == "complete")
                 curr_completion_rate = (curr_completed / len(curr_tasks) * 100) if curr_tasks else 0
 
                 # 统计上一周期数据
-                prev_tasks = [e for e in prev_entries if e.get("type") == "task"]
+                _, _, prev_tasks, _, _ = self._analyze_category_distribution(prev_entries)
                 prev_completed = sum(1 for t in prev_tasks if t.get("status") == "complete")
                 prev_completion_rate = (prev_completed / len(prev_tasks) * 100) if prev_tasks else 0
 
@@ -1733,17 +1723,11 @@ class ReviewService:
 
         # --- 行为模式：分类分布（与 _generate_pattern_insights 共享模式） ---
         if total > 0:
-            category_labels = {
-                "task": "任务",
-                "note": "笔记",
-                "inbox": "灵感",
-                "project": "项目",
-            }
             for cat_type, count in category_counts.items():
                 ratio = count / total
                 if ratio > 0.6 and total >= 5:
                     behavior_patterns.append(BehaviorPattern(
-                        pattern=f"{period_label}更倾向于创建{category_labels.get(cat_type, cat_type)}，占比{int(ratio * 100)}%",
+                        pattern=f"{period_label}更倾向于创建{self.CATEGORY_LABELS.get(cat_type, cat_type)}，占比{int(ratio * 100)}%",
                         frequency=count,
                         trend="stable",
                     ))

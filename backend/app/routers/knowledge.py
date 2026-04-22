@@ -1,4 +1,5 @@
 """知识图谱 API 路由"""
+import logging
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -21,6 +22,8 @@ from app.services.knowledge_service import (
 
 router = APIRouter(tags=["knowledge"])
 
+logger = logging.getLogger(__name__)
+
 
 @router.get("/knowledge-graph/{concept}", response_model=KnowledgeGraphResponse)
 async def get_knowledge_graph(
@@ -36,7 +39,8 @@ async def get_knowledge_graph(
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+        logger.error("查询失败", exc_info=True)
+        raise HTTPException(status_code=500, detail="查询失败，请稍后重试")
 
 
 @router.get("/related-concepts/{concept}", response_model=RelatedConceptsResponse)
@@ -49,7 +53,8 @@ async def get_related_concepts(concept: str, user: User = Depends(get_current_us
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+        logger.error("查询失败", exc_info=True)
+        raise HTTPException(status_code=500, detail="查询失败，请稍后重试")
 
 
 @router.get("/learning-path/{concept}", response_model=LearningPathResponse)
@@ -68,7 +73,8 @@ async def get_learning_path(concept: str, user: User = Depends(get_current_user)
     try:
         return await knowledge_service.get_learning_path(concept, user_id=user.id)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+        logger.error("查询失败", exc_info=True)
+        raise HTTPException(status_code=500, detail="查询失败，请稍后重试")
 
 
 @router.get("/knowledge-map", response_model=KnowledgeMapResponse)
@@ -86,7 +92,8 @@ async def get_knowledge_map(
     try:
         return await knowledge_service.get_knowledge_map(depth=depth, view=view, user_id=user.id)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+        logger.error("查询失败", exc_info=True)
+        raise HTTPException(status_code=500, detail="查询失败，请稍后重试")
 
 
 @router.get("/knowledge/stats", response_model=ConceptStatsResponse)
@@ -100,7 +107,8 @@ async def get_knowledge_stats(user: User = Depends(get_current_user)):
     try:
         return await knowledge_service.get_knowledge_stats(user_id=user.id)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+        logger.error("查询失败", exc_info=True)
+        raise HTTPException(status_code=500, detail="查询失败，请稍后重试")
 
 
 @router.get("/knowledge/search", response_model=ConceptSearchResponse)
@@ -115,7 +123,8 @@ async def search_concepts(
     try:
         return await knowledge_service.search_concepts(q, limit=limit, user_id=user.id)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"搜索失败: {str(e)}")
+        logger.error("搜索失败", exc_info=True)
+        raise HTTPException(status_code=500, detail="搜索失败，请稍后重试")
 
 
 @router.get("/knowledge/concepts/{name}/timeline", response_model=ConceptTimelineResponse)
@@ -130,7 +139,8 @@ async def get_concept_timeline(
     try:
         return await knowledge_service.get_concept_timeline(name, days=days, user_id=user.id)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+        logger.error("查询失败", exc_info=True)
+        raise HTTPException(status_code=500, detail="查询失败，请稍后重试")
 
 
 @router.get("/knowledge/mastery-distribution", response_model=MasteryDistributionResponse)
@@ -141,7 +151,8 @@ async def get_mastery_distribution(user: User = Depends(get_current_user)):
     try:
         return await knowledge_service.get_mastery_distribution(user_id=user.id)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+        logger.error("查询失败", exc_info=True)
+        raise HTTPException(status_code=500, detail="查询失败，请稍后重试")
 
 
 @router.get("/knowledge/capability-map", response_model=CapabilityMapResponse)
@@ -160,4 +171,5 @@ async def get_capability_map(
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+        logger.error("查询失败", exc_info=True)
+        raise HTTPException(status_code=500, detail="查询失败，请稍后重试")

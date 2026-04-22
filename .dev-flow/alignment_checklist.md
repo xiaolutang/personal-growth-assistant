@@ -1,5 +1,29 @@
 # 对齐清单
 
+## R026: 收敛修复
+
+### 契约对齐
+
+- [ ] S18: 不涉及新契约，修改 review_service._calculate_mastery_from_stats 算法
+- [ ] S19: 不涉及新契约，修改 knowledge_service 内部实现（删除 2 个死方法）
+- [ ] B82: 不涉及新契约，修改 knowledge.py 路由错误处理
+
+### 依赖对齐
+
+- [ ] S18 无外部依赖 ✓
+- [ ] S19 无外部依赖 ✓
+- [ ] B82 无外部依赖 ✓
+- [ ] F112 无外部依赖 ✓
+- [ ] F113 无外部依赖 ✓
+- [ ] S20 depends_on S18, S19, B82, F112, F113 ✓
+
+### 架构对齐
+
+- [ ] 不新建服务文件，在现有 review_service/knowledge_service/knowledge.py 内修改 ✓
+- [ ] 前端组件拆分在文件内完成，不新建文件 ✓
+- [ ] review_service 掌握度算法收敛到 knowledge_service 同一套阈值式 ✓
+- [ ] 路由层错误处理收敛到与全局 ErrorHandlerMiddleware 一致的脱敏原则 ✓
+
 ## R025: 第三阶段收口
 
 ### 契约对齐

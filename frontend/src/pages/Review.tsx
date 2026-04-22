@@ -19,6 +19,7 @@ import {
   getWeeklyReport,
   getMonthlyReport,
   getProgressSummary,
+  getInsights,
   type DailyReport,
   type WeeklyReport,
   type MonthlyReport,
@@ -26,6 +27,7 @@ import {
   type NoteStats,
   type VsLastPeriod,
   type ProgressSummaryResponse,
+  type InsightsResponse,
 } from "@/services/api";
 import { TrendChart } from "@/components/review/TrendChart";
 import { MorningDigestCard } from "@/components/review/MorningDigestCard";
@@ -88,6 +90,25 @@ export function Review() {
     getProgressSummary(reportType === "monthly" ? "monthly" : "weekly")
       .then((data) => { if (!cancelled) setGoalSummary(data); })
       .catch(() => { if (!cancelled) setGoalSummary(null); });
+    return () => { cancelled = true; };
+  }, [reportType]);
+
+  // 统一获取 insights 数据（InsightCard + AiSummaryCard 共享）
+  const [insightsData, setInsightsData] = useState<InsightsResponse | null>(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+
+  useEffect(() => {
+    if (reportType !== "weekly" && reportType !== "monthly") {
+      setInsightsData(null);
+      return;
+    }
+    let cancelled = false;
+    setInsightsLoading(true);
+    const period = reportType === "monthly" ? "monthly" : "weekly";
+    getInsights(period)
+      .then((data) => { if (!cancelled) setInsightsData(data); })
+      .catch(() => { if (!cancelled) setInsightsData(null); })
+      .finally(() => { if (!cancelled) setInsightsLoading(false); });
     return () => { cancelled = true; };
   }, [reportType]);
 
@@ -201,10 +222,10 @@ export function Review() {
             </Card>
 
             {/* AI 总结卡片 */}
-            <AiSummaryCard reportType={reportType} isLoading={isLoading} aiSummary={aiSummary} />
+            <AiSummaryCard reportType={reportType} isLoading={isLoading} aiSummary={aiSummary} insightsData={insightsData} insightsLoading={insightsLoading} />
 
             {/* AI 深度洞察卡片 — 仅周报/月报 */}
-            <InsightCard reportType={reportType} />
+            <InsightCard reportType={reportType} insightsData={insightsData} insightsLoading={insightsLoading} />
 
             {/* 分析助手 AI */}
             <PageChatPanel

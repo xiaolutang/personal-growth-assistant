@@ -531,7 +531,7 @@ class KnowledgeService:
         for c in concepts:
             name = c.get("name", "")
             entry_count = c.get("entry_count", 0)
-            mastery = await self._calculate_mastery_with_neo4j(name, entry_count, user_id)
+            mastery = self._calculate_mastery_from_stats(entry_count, 0, 0)
             nodes.append(MapNode(
                 id=name,
                 name=name,
@@ -550,55 +550,6 @@ class KnowledgeService:
 
         return nodes, edges
 
-    async def _calculate_mastery_with_neo4j(
-        self, concept_name: str, entry_count: int, user_id: str
-    ) -> str:
-        """基于 Neo4j 数据计算掌握度"""
-        if entry_count == 0:
-            return "new"
-
-        # 获取提及该概念的条目详情
-        try:
-            entries = await self._neo4j.get_entries_by_concept(concept_name, user_id=user_id)
-        except Exception:
-            entries = []
-
-        if not entries:
-            return "new" if entry_count == 0 else "beginner"
-
-        recent_count = 0
-        note_count = 0
-        now = datetime.now()
-        thirty_days_ago = now - timedelta(days=30)
-
-        for e in entries:
-            entry_type = e.get("type", "task")
-            updated_str = e.get("updated_at", "")
-
-            if entry_type == "note":
-                note_count += 1
-
-            # 检查是否在最近 30 天内更新
-            try:
-                if updated_str:
-                    if isinstance(updated_str, str):
-                        updated_at = datetime.fromisoformat(updated_str.replace("Z", "").replace("+00:00", ""))
-                    else:
-                        updated_at = updated_str if updated_str.tzinfo is None else updated_str.replace(tzinfo=None)
-                    if updated_at >= thirty_days_ago:
-                        recent_count += 1
-            except (ValueError, TypeError):
-                pass
-
-        note_ratio = note_count / len(entries) if entries else 0
-
-        if entry_count >= 6 and note_ratio > 0.3:
-            return "advanced"
-        elif entry_count >= 3 and recent_count > 0:
-            return "intermediate"
-        elif entry_count >= 1:
-            return "beginner"
-        return "new"
 
     def _build_map_from_sqlite(self, user_id: str) -> tuple:
         """从 SQLite 构建图谱数据（Neo4j 不可用时的降级方案）
@@ -650,42 +601,6 @@ class KnowledgeService:
         elif entry_count >= 1:
             return "beginner"
         return "new"
-
-    def _calculate_mastery(self, concept_name: str, user_id: str = "_default") -> str:
-        """计算概念的掌握度（基于 SQLite 数据）"""
-        if not self._sqlite:
-            return "new"
-
-        # 搜索提及该概念的条目
-        results = self._sqlite.search(concept_name, limit=50, user_id=user_id)
-
-        if not results:
-            return "new"
-
-        entry_count = len(results)
-        recent_count = 0
-        note_count = 0
-        now = datetime.now()
-        thirty_days_ago = now - timedelta(days=30)
-
-        for entry in results:
-            entry_type = entry.get("type", "task")
-            if entry_type == "note":
-                note_count += 1
-
-            updated_str = entry.get("updated_at", "")
-            try:
-                if updated_str:
-                    if isinstance(updated_str, str):
-                        updated_at = datetime.fromisoformat(updated_str.replace("Z", "").replace("+00:00", ""))
-                    else:
-                        updated_at = updated_str if updated_str.tzinfo is None else updated_str.replace(tzinfo=None)
-                    if updated_at >= thirty_days_ago:
-                        recent_count += 1
-            except (ValueError, TypeError):
-                pass
-
-        return self._calculate_mastery_from_stats(entry_count, recent_count, note_count)
 
     async def get_knowledge_stats(self, user_id: str = "_default") -> ConceptStatsResponse:
         """
@@ -782,7 +697,7 @@ class KnowledgeService:
         for c in matched:
             name = c.get("name", "")
             entry_count = c.get("entry_count", 0)
-            mastery = await self._calculate_mastery_with_neo4j(name, entry_count, user_id)
+            mastery = self._calculate_mastery_from_stats(entry_count, 0, 0)
             items.append(ConceptSearchItem(name=name, entry_count=entry_count, mastery=mastery))
 
         return ConceptSearchResponse(items=items)
@@ -883,7 +798,7 @@ class KnowledgeService:
                 for c in concepts:
                     name = c.get("name", "")
                     entry_count = c.get("entry_count", 0)
-                    mastery = await self._calculate_mastery_with_neo4j(name, entry_count, user_id)
+                    mastery = self._calculate_mastery_from_stats(entry_count, 0, 0)
                     dist[mastery] = dist.get(mastery, 0) + 1
             except Exception as e:
                 logger.warning(f"Neo4j mastery distribution failed, falling back to SQLite: {e}")
@@ -930,10 +845,6 @@ class KnowledgeService:
         Returns:
             CapabilityMapResponse 能力地图
         """
-        valid_levels = ("new", "beginner", "intermediate", "advanced")
-        if mastery_level and mastery_level not in valid_levels:
-            raise ValueError(f"mastery_level 参数必须是 {'/'.join(valid_levels)}")
-
         if self.is_neo4j_available():
             try:
                 return await self._build_capability_map_from_neo4j(mastery_level, user_id)
@@ -950,9 +861,8 @@ class KnowledgeService:
     ) -> CapabilityMapResponse:
         """从 Neo4j 构建能力地图
 
-        Note: 掌握度计算依赖 _calculate_mastery_with_neo4j，其底层
-        neo4j_client.get_entries_by_concept 的 user_id 隔离依赖 Neo4j
-        MENTIONS 关系上的 user_id 属性完整性。
+        Note: 掌握度计算使用 _calculate_mastery_from_stats 内存计算，
+        避免逐概念 N+1 查询。
         """
         concepts = await self._neo4j.get_all_concepts_with_stats(user_id=user_id)
 
@@ -963,7 +873,7 @@ class KnowledgeService:
             entry_count = c.get("entry_count", 0)
             category = c.get("category") or "未分类"
 
-            mastery = await self._calculate_mastery_with_neo4j(name, entry_count, user_id)
+            mastery = self._calculate_mastery_from_stats(entry_count, 0, 0)
 
             if mastery_level and mastery != mastery_level:
                 continue

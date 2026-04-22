@@ -3,14 +3,14 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-22T19:56:00",
-  "status": "in_progress",
-  "scope_notes": "R025 第三阶段收口 — Phase 8 图谱增强 + Phase 10 回顾 AI 总结增强",
+  "updated_at": "2026-04-22T22:30:00",
+  "status": "completed",
+  "scope_notes": "R026 收敛修复 — simplify 发现的 5 个残留问题（掌握度算法统一、N+1 消除、重复请求、状态拆分、错误脱敏）",
   "active_requirement_cycle": {
-    "id": "R025",
-    "name": "stage3-completion",
-    "branch": "feat/R025-stage3-completion",
-    "status": "planning"
+    "id": "R026",
+    "name": "convergence-fixes",
+    "branch": "feat/R026-convergence-fixes",
+    "status": "completed"
   },
   "workflow": {
     "name": "XLFoundry",
@@ -21,283 +21,371 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 8,
+    "total_tasks": 6,
     "pending": 0,
-    "completed": 7,
+    "completed": 6,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
   },
   "archived_requirement_cycles": [
-    {"id": "R003", "name": "production-content-recovery", "status": "completed", "archive_dir": "_archive/R003_production-content-recovery"},
-    {"id": "R004", "name": "product-evolution-phase1a", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase1a"},
-    {"id": "R004", "name": "product-evolution-phase1b", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase1b"},
-    {"id": "R004", "name": "product-evolution-phase2", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase2"},
-    {"id": "R005", "name": "product-evolution-phase3", "status": "completed", "archive_dir": "_archive/R005_product-evolution-phase3"},
-    {"id": "R006", "name": "product-polish", "status": "completed", "archive_dir": "_archive/R006_product-polish"},
-    {"id": "R007", "name": "engagement-experience", "status": "completed", "archive_dir": "_archive/R007_engagement-experience"},
-    {"id": "R008", "name": "intelligence-omni", "status": "completed", "archive_dir": "_archive/R008_intelligence-omni"},
-    {"id": "R009", "name": "chat-user-id-threading", "status": "completed", "archive_dir": "_archive/R009_chat-user-id-threading"},
-    {"id": "R010", "name": "engineering-foundation", "status": "completed", "archive_dir": "_archive/R010_engineering-foundation"},
-    {"id": "R011", "name": "entry-context-and-morning-report", "status": "completed", "archive_dir": "_archive/R011_entry-context-and-morning-report"},
-    {"id": "R012", "name": "goal-tracking", "status": "completed", "archive_dir": "_archive/R012_goal-tracking"},
-    {"id": "R013", "name": "decision-reflection-entries", "status": "completed", "archive_dir": "_archive/R013_decision-reflection-entries"},
-    {"id": "R014", "name": "page-context-ai", "status": "completed", "archive_dir": "_archive/R014_page-context-ai"},
-    {"id": "R015", "name": "review-enhancement", "status": "completed", "archive_dir": "_archive/R015_review-enhancement"},
-    {"id": "R016", "name": "polish-cleanup", "status": "completed", "archive_dir": "_archive/R016_polish-cleanup"},
-    {"id": "R017", "name": "code-audit-hardening", "status": "completed", "archive_dir": "_archive/R017_code-audit-hardening"},
-    {"id": "R018", "name": "defect-fix-quality", "status": "completed", "archive_dir": "_archive/R018_defect-fix-quality"},
-    {"id": "R019", "name": "offline-pwa", "status": "completed", "archive_dir": "_archive/R019_offline-pwa"},
-    {"id": "R020", "name": "e2e-ci-pipeline", "status": "completed", "archive_dir": "_archive/R020_e2e-ci-pipeline"},
-    {"id": "R021", "name": "tech-debt-cleanup", "status": "completed", "archive_dir": "_archive/R021_tech-debt-cleanup"},
-    {"id": "R022", "name": "polish-deferred", "status": "completed", "archive_dir": "_archive/R022_polish-deferred"},
-    {"id": "R023", "name": "ai-page-embedded", "status": "completed", "archive_dir": "_archive/R023_ai-page-embedded"},
-    {"id": "R024", "name": "flutter-mobile-mvp", "status": "completed", "archive_dir": "_archive/R024_flutter-mobile-mvp"}
+    {
+      "id": "R003",
+      "name": "production-content-recovery",
+      "status": "completed",
+      "archive_dir": "_archive/R003_production-content-recovery"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase1a",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase1a"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase1b",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase1b"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase2",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase2"
+    },
+    {
+      "id": "R005",
+      "name": "product-evolution-phase3",
+      "status": "completed",
+      "archive_dir": "_archive/R005_product-evolution-phase3"
+    },
+    {
+      "id": "R006",
+      "name": "product-polish",
+      "status": "completed",
+      "archive_dir": "_archive/R006_product-polish"
+    },
+    {
+      "id": "R007",
+      "name": "engagement-experience",
+      "status": "completed",
+      "archive_dir": "_archive/R007_engagement-experience"
+    },
+    {
+      "id": "R008",
+      "name": "intelligence-omni",
+      "status": "completed",
+      "archive_dir": "_archive/R008_intelligence-omni"
+    },
+    {
+      "id": "R009",
+      "name": "chat-user-id-threading",
+      "status": "completed",
+      "archive_dir": "_archive/R009_chat-user-id-threading"
+    },
+    {
+      "id": "R010",
+      "name": "engineering-foundation",
+      "status": "completed",
+      "archive_dir": "_archive/R010_engineering-foundation"
+    },
+    {
+      "id": "R011",
+      "name": "entry-context-and-morning-report",
+      "status": "completed",
+      "archive_dir": "_archive/R011_entry-context-and-morning-report"
+    },
+    {
+      "id": "R012",
+      "name": "goal-tracking",
+      "status": "completed",
+      "archive_dir": "_archive/R012_goal-tracking"
+    },
+    {
+      "id": "R013",
+      "name": "decision-reflection-entries",
+      "status": "completed",
+      "archive_dir": "_archive/R013_decision-reflection-entries"
+    },
+    {
+      "id": "R014",
+      "name": "page-context-ai",
+      "status": "completed",
+      "archive_dir": "_archive/R014_page-context-ai"
+    },
+    {
+      "id": "R015",
+      "name": "review-enhancement",
+      "status": "completed",
+      "archive_dir": "_archive/R015_review-enhancement"
+    },
+    {
+      "id": "R016",
+      "name": "polish-cleanup",
+      "status": "completed",
+      "archive_dir": "_archive/R016_polish-cleanup"
+    },
+    {
+      "id": "R017",
+      "name": "code-audit-hardening",
+      "status": "completed",
+      "archive_dir": "_archive/R017_code-audit-hardening"
+    },
+    {
+      "id": "R018",
+      "name": "defect-fix-quality",
+      "status": "completed",
+      "archive_dir": "_archive/R018_defect-fix-quality"
+    },
+    {
+      "id": "R019",
+      "name": "offline-pwa",
+      "status": "completed",
+      "archive_dir": "_archive/R019_offline-pwa"
+    },
+    {
+      "id": "R020",
+      "name": "e2e-ci-pipeline",
+      "status": "completed",
+      "archive_dir": "_archive/R020_e2e-ci-pipeline"
+    },
+    {
+      "id": "R021",
+      "name": "tech-debt-cleanup",
+      "status": "completed",
+      "archive_dir": "_archive/R021_tech-debt-cleanup"
+    },
+    {
+      "id": "R022",
+      "name": "polish-deferred",
+      "status": "completed",
+      "archive_dir": "_archive/R022_polish-deferred"
+    },
+    {
+      "id": "R023",
+      "name": "ai-page-embedded",
+      "status": "completed",
+      "archive_dir": "_archive/R023_ai-page-embedded"
+    },
+    {
+      "id": "R024",
+      "name": "flutter-mobile-mvp",
+      "status": "completed",
+      "archive_dir": "_archive/R024_flutter-mobile-mvp"
+    },
+    {
+      "id": "R025",
+      "name": "stage3-completion",
+      "status": "completed",
+      "archive_dir": "_archive/R025_stage3-completion"
+    }
   ],
-  "modules": ["knowledge", "review", "ai"],
+  "modules": [
+    "review",
+    "knowledge",
+    "frontend"
+  ],
   "features": [
     {
-      "id": "S15",
+      "id": "S18",
       "phase": 1,
       "module": "review",
-      "name": "AI 深度洞察 API",
-      "description": "新增 AI 深度洞察接口，支持周报/月报的结构化洞察生成。扩展现有 _generate_ai_summary 方法，输出行为模式分析、成长建议、能力变化趋势。",
-      "verification": "L2",
+      "name": "统一掌握度算法",
+      "description": "将 review_service 的加权评分式掌握度算法改为与 knowledge_service 相同的阈值式算法。保留 relationship_count 参数，将其折算为等价 entry_count（每 2 个关系 ≈ 1 个条目）。",
+      "verification": "L1",
       "depends_on": [],
       "status": "completed",
       "priority": 1,
-      "started_at": "2026-04-22T17:00:00",
-      "completed_at": "2026-04-22T18:20:00",
-      "evidence_file": ".dev-flow/evidence/S15.md",
       "acceptance_criteria": [
-        "GET /review/insights?period=weekly 返回结构化洞察（行为模式+成长建议+能力变化）",
-        "GET /review/insights?period=monthly 返回月度洞察",
-        "洞察包含：behavior_patterns（行为模式）、growth_suggestions（成长建议）、capability_changes（能力变化）",
-        "LLM 不可用时降级为规则分析（复用 _generate_pattern_insights）",
-        "用户隔离正确",
-        "单元测试覆盖正常/边界/降级场景"
+        "review_service._calculate_mastery_from_stats 使用阈值式算法（effective_count + note_ratio）",
+        "relationship_count 折算为 entry_count（relationship_count // 2）",
+        "算法结果与 knowledge_service._calculate_mastery_from_stats 一致",
+        "旧加权公式断言已重写为阈值矩阵断言",
+        "全部单元测试通过（含重写后的测试）"
       ],
       "test_tasks": [
-        "正常：有足够数据时返回结构化洞察",
-        "边界：空数据时返回降级洞察",
-        "边界：非法 period 参数返回 422",
-        "降级：LLM 不可用时走规则分析",
-        "隔离：不同 user_id 返回不同洞察"
+        "正常：effective_count>=6, note_ratio>0.3 → advanced",
+        "正常：effective_count>=3, recent_count>0 → intermediate",
+        "正常：effective_count>=1 → beginner",
+        "边界：relationship_count=4 折算为 effective_count+2",
+        "边界：note_ratio=0.3 精确边界",
+        "边界：recent_count=0 时 intermediate 条件不满足",
+        "迁移：重写 test_review_b53.py 中的旧加权公式断言为阈值矩阵",
+        "回归：review_service 全量测试通过"
       ],
-      "risk_tags": ["network"],
+      "risk_tags": [],
       "files": [
-        "backend/app/routers/review.py",
-        "backend/app/services/review_service.py",
-        "backend/tests/unit/api/test_review_api.py"
+        "backend/app/services/review_service.py"
       ],
-      "contract_refs": ["GET /review/insights"]
+      "planning_notes": "knowledge_service 的阈值式算法作为标准不动，只改 review_service",
+      "completed_at": "2026-04-22T22:30:00",
+      "actual_minutes": 30,
+      "execution_notes": "Completed and verified"
     },
     {
-      "id": "F108",
-      "phase": 2,
-      "module": "review",
-      "name": "AI 深度洞察卡片",
-      "description": "回顾页新增 AI 深度洞察卡片，展示周报/月报的结构化洞察（行为模式、成长建议、能力变化）。",
-      "verification": "F2",
-      "depends_on": ["S15"],
+      "id": "S19",
+      "phase": 1,
+      "module": "knowledge",
+      "name": "消除 N+1 查询 + 清理死代码",
+      "description": "knowledge_service 中 4 个方法改为使用 get_all_concepts_with_stats 批量获取 + _calculate_mastery_from_stats 内存计算，消除逐概念调用 get_entries_by_concept 的 N+1 查询。删除 2 个死代码方法。",
+      "verification": "L1",
+      "depends_on": [],
       "status": "completed",
       "priority": 1,
-      "started_at": "2026-04-22T19:10:00",
-      "completed_at": "2026-04-22T19:25:00",
-      "evidence_file": ".dev-flow/evidence/F108.md",
       "acceptance_criteria": [
-        "周报/月报视图新增「AI 洞察」卡片",
-        "卡片展示 3 个维度：行为模式、成长建议、能力变化",
-        "加载中显示 skeleton",
-        "LLM 降级时显示「基于数据分析」标签",
-        "日报视图不显示洞察卡片"
+        "_build_map_from_neo4j 不再调用 _calculate_mastery_with_neo4j",
+        "_search_from_neo4j 不再调用 _calculate_mastery_with_neo4j",
+        "get_mastery_distribution 不再调用 _calculate_mastery_with_neo4j",
+        "_build_capability_map_from_neo4j 不再调用 _calculate_mastery_with_neo4j",
+        "get_entries_by_concept 在以上 4 个方法中调用次数为 0",
+        "批量 stats 只获取一次（get_all_concepts_with_stats）",
+        "删除 _calculate_mastery_with_neo4j 方法",
+        "删除 _calculate_mastery 方法（已无调用者）",
+        "Neo4j 异常时仍保留现有降级行为和响应结构",
+        "全部单元测试通过"
       ],
       "test_tasks": [
-        "渲染：卡片正确展示 3 个维度",
-        "加载态：skeleton 显示",
-        "降级：显示降级标签",
-        "日报隐藏：日报视图不渲染洞察卡片",
-        "失败：/review/insights 返回错误时显示错误态"
+        "证明：mock 验证 get_entries_by_concept 不被调用",
+        "证明：get_all_concepts_with_stats 只调用一次",
+        "回归：knowledge_service 现有测试全部通过",
+        "回归：图谱相关 API 测试通过",
+        "降级：Neo4j 异常时降级行为不变",
+        "确认：_calculate_mastery_with_neo4j 和 _calculate_mastery 无任何调用者"
+      ],
+      "risk_tags": [
+        "network"
+      ],
+      "files": [
+        "backend/app/services/knowledge_service.py"
+      ],
+      "planning_notes": "N+1 查询在概念数量大时严重影响性能",
+      "completed_at": "2026-04-22T22:30:00",
+      "actual_minutes": 30,
+      "execution_notes": "Completed and verified"
+    },
+    {
+      "id": "B82",
+      "phase": 1,
+      "module": "knowledge",
+      "name": "knowledge.py 错误信息脱敏",
+      "description": "knowledge.py 路由中 9 个 except Exception 块的 str(e) 错误信息替换为固定消息 + logger.error 记录，防止内部实现细节泄露。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": 2,
+      "acceptance_criteria": [
+        "9 个 except Exception 块不再包含 str(e) 或 f-string 拼接异常信息",
+        "每个块使用 logger.error 记录完整异常（含 exc_info）",
+        "返回给客户端的消息为固定文案（如「查询失败，请稍后重试」）",
+        "已有的 except ValueError 块（503）保持不变"
+      ],
+      "test_tasks": [
+        "回归：knowledge API 测试全部通过",
+        "脱敏：9 个泛化异常返回固定文案，不包含 str(e)",
+        "日志：异常触发 logger.error(..., exc_info=True)",
+        "保留：3 个 ValueError 分支返回 503 语义不变"
+      ],
+      "files": [
+        "backend/app/routers/knowledge.py"
+      ],
+      "planning_notes": "项目已有全局 ErrorHandlerMiddleware 处理未捕获异常，路由层也应遵循同样的脱敏原则",
+      "completed_at": "2026-04-22T22:30:00",
+      "actual_minutes": 30,
+      "execution_notes": "Completed and verified"
+    },
+    {
+      "id": "F112",
+      "phase": 2,
+      "module": "frontend",
+      "name": "消除回顾页重复 API 请求",
+      "description": "Review.tsx 统一管理 insightsData/insightsLoading 状态，InsightCard 和 AiSummaryCard 改为接收 props 消费数据，消除两个组件各自独立调用 getInsights 的重复请求。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": 1,
+      "acceptance_criteria": [
+        "Review.tsx 新增 insightsData + insightsLoading 状态 + useEffect 获取",
+        "InsightCard 移除内部 getInsights 调用，改为接收 insightsData/insightsLoading props",
+        "AiSummaryCard 移除内部 getInsights 调用，改为接收 insightsData/insightsLoading props",
+        "周报/月报视图只发一次 getInsights 请求",
+        "报表类型切换时旧请求不覆盖新状态（迁移子组件的 cancelled 保护逻辑到父组件）",
+        "前端测试通过，构建成功"
+      ],
+      "test_tasks": [
+        "渲染：InsightCard 正确展示 props 传入的数据",
+        "渲染：AiSummaryCard 正确使用 props",
+        "请求：周报/月报视图只触发一次 getInsights",
+        "切换：weekly→monthly 切换时旧请求被取消、新请求正确触发",
+        "回归：Review 页面功能正常"
       ],
       "files": [
         "frontend/src/pages/Review.tsx",
         "frontend/src/components/review/InsightCard.tsx",
-        "frontend/src/services/api.ts"
+        "frontend/src/components/review/AiSummaryCard.tsx"
       ],
-      "contract_refs": ["GET /review/insights"]
+      "planning_notes": "需要同步修改组件接口定义（Props 类型）",
+      "completed_at": "2026-04-22T22:30:00",
+      "actual_minutes": 30,
+      "execution_notes": "Completed and verified"
     },
     {
-      "id": "B81",
-      "phase": 3,
-      "module": "knowledge",
-      "name": "能力地图数据 API",
-      "description": "新增能力地图 API，基于 Neo4j 概念和掌握度数据，按能力领域聚合为能力地图视图。",
-      "verification": "L2",
+      "id": "F113",
+      "phase": 2,
+      "module": "frontend",
+      "name": "GraphPage 状态拆分",
+      "description": "在 GraphPage.tsx 文件内提取 CapabilityMapView 组件，封装能力地图相关的 6 个 state + useEffect + JSX。GraphPage state 从 18 个降到 12 个。",
+      "verification": "F2",
       "depends_on": [],
       "status": "completed",
-      "priority": 1,
-      "started_at": "2026-04-22T18:20:00",
-      "completed_at": "2026-04-22T18:40:00",
-      "evidence_file": ".dev-flow/evidence/B81.md",
-      "acceptance_criteria": [
-        "GET /knowledge/capability-map 返回能力地图数据（按领域聚合的概念+掌握度）",
-        "每个领域包含：name、concepts（概念列表）、average_mastery、concept_count",
-        "支持按掌握度过滤（mastery_level 参数）",
-        "Neo4j 不可用时降级为 SQLite tags 聚合",
-        "用户隔离正确",
-        "单元测试覆盖正常/降级/空数据"
-      ],
-      "test_tasks": [
-        "正常：Neo4j 有数据时返回能力地图",
-        "降级：Neo4j 不可用时走 SQLite",
-        "空数据：无概念时返回空列表",
-        "过滤：mastery_level 参数筛选正确",
-        "边界：非法 mastery_level 参数返回 422",
-        "隔离：不同 user_id 返回不同能力地图"
-      ],
-      "risk_tags": ["network"],
-      "files": [
-        "backend/app/routers/knowledge.py",
-        "backend/app/services/knowledge_service.py",
-        "backend/tests/unit/api/test_knowledge_api.py"
-      ],
-      "contract_refs": ["GET /knowledge/capability-map"]
-    },
-    {
-      "id": "F109",
-      "phase": 4,
-      "module": "knowledge",
-      "name": "能力地图视图",
-      "description": "GraphPage 新增「能力地图」视图 Tab，按领域聚合展示能力概览，支持点击展开查看领域下概念详情。",
-      "verification": "F2",
-      "depends_on": ["B81"],
-      "status": "completed",
-      "priority": 1,
-      "started_at": "2026-04-22T19:10:00",
-      "completed_at": "2026-04-22T19:30:00",
-      "evidence_file": ".dev-flow/evidence/F109.md",
-      "acceptance_criteria": [
-        "GraphPage 新增第 4 个 Tab「能力地图」",
-        "能力地图按领域分组展示（卡片式）",
-        "每个领域卡片显示：名称、概念数、平均掌握度进度条",
-        "点击领域卡片展开概念列表（含掌握度标签）",
-        "空数据时显示引导文案",
-        "支持掌握度筛选"
-      ],
-      "test_tasks": [
-        "渲染：4 个 Tab 显示，能力地图 Tab 可切换",
-        "领域卡片：正确展示名称/概念数/掌握度",
-        "展开：点击后显示概念列表",
-        "空数据：显示引导文案",
-        "筛选：掌握度过滤参数传递正确",
-        "失败：API 返回错误时显示错误态"
-      ],
-      "files": [
-        "frontend/src/pages/GraphPage.tsx",
-        "frontend/src/services/api.ts"
-      ],
-      "contract_refs": ["GET /knowledge/capability-map"]
-    },
-    {
-      "id": "F110",
-      "phase": 5,
-      "module": "knowledge",
-      "name": "图谱 AI 助手",
-      "description": "GraphPage 内嵌 AI 对话面板，支持针对当前图谱上下文的智能问答。",
-      "verification": "F2",
-      "depends_on": ["F109"],
-      "status": "completed",
       "priority": 2,
-      "started_at": "2026-04-22T19:48:00",
-      "completed_at": "2026-04-22T19:50:00",
-      "evidence_file": ".dev-flow/evidence/F110.md",
       "acceptance_criteria": [
-        "图谱页内嵌 PageChatPanel，pageContext=graph（匹配现有 PageContext schema 的 page_type 枚举值）",
-        "pageData 包含当前视图类型、选中概念、领域统计",
-        "AI 对话可针对图谱内容回答问题（如「我最擅长的领域是什么」「哪些领域需要加强」）",
-        "对话 SSE 流式输出正常"
+        "CapabilityMapView 作为同文件组件提取成功",
+        "CapabilityMapView 独占能力地图的 6 个 state + useEffect + JSX",
+        "GraphPage 不再直接管理能力地图相关状态（通过 CapabilityMapView 封装）",
+        "能力地图功能不变（Tab 切换、领域展开、筛选）",
+        "前端测试通过，构建成功"
       ],
       "test_tasks": [
-        "渲染：PageChatPanel 正确内嵌到 GraphPage",
-        "主链路：在图谱页发起提问并收到基于图谱上下文的 SSE 流式回答",
-        "SSE 失败：流式连接中断时显示错误提示",
-        "空上下文：无图谱数据时 AI 助手仍可正常对话",
-        "上下文切换：切换视图 Tab 后 pageData 同步更新"
+        "渲染：能力地图 Tab 切换正常",
+        "渲染：领域卡片展示和展开正常",
+        "回归：GraphPage 其他视图（图谱、搜索）功能正常",
+        "重试：能力地图加载失败后重试正常",
+        "构建：npm run build 成功"
       ],
       "files": [
         "frontend/src/pages/GraphPage.tsx"
-      ]
+      ],
+      "planning_notes": "不新建文件，在 GraphPage.tsx 内部提取组件。pageData.domain_count 暂写 0。",
+      "completed_at": "2026-04-22T22:30:00",
+      "actual_minutes": 30,
+      "execution_notes": "Completed and verified"
     },
     {
-      "id": "F111",
-      "phase": 6,
-      "module": "review",
-      "name": "AI 总结深度增强",
-      "description": "增强回顾页周报/月报的 AI 总结展示，从 2-3 句扩展为多段落结构化总结。",
-      "verification": "F2",
-      "depends_on": ["S15", "F108"],
-      "status": "completed",
-      "priority": 1,
-      "started_at": "2026-04-22T19:53:00",
-      "completed_at": "2026-04-22T19:56:00",
-      "evidence_file": ".dev-flow/evidence/F111.md",
-      "acceptance_criteria": [
-        "周报/月报 AI 总结扩展为多段落结构（成就回顾、待改进、下周/月建议）",
-        "AiSummaryCard 支持展开/折叠长文本",
-        "保留原有 2-3 句短总结作为概要，新增基于 /review/insights 数据的详细洞察段落",
-        "Markdown 格式渲染",
-        "洞察段落数据来源于 GET /review/insights（S15），前端将结构化洞察拼装为 Markdown"
-      ],
-      "test_tasks": [
-        "渲染：展开时显示多段落 Markdown 内容",
-        "折叠：默认显示概要，点击展开详细洞察",
-        "数据源：正确消费 /review/insights 返回的 behavior_patterns/growth_suggestions/capability_changes"
-      ],
-      "files": [
-        "frontend/src/pages/Review.tsx",
-        "frontend/src/components/review/AiSummaryCard.tsx"
-      ],
-      "contract_refs": ["GET /review/insights"]
-    },
-    {
-      "id": "S16",
-      "phase": 7,
-      "module": "review",
-      "name": "回顾增强后端测试收口",
-      "description": "补充 review 模块新增 API 和增强方法的测试覆盖。",
-      "verification": "L1",
-      "depends_on": ["S15"],
-      "status": "completed",
-      "priority": 2,
-      "started_at": "2026-04-22T19:00:00",
-      "completed_at": "2026-04-22T19:20:00",
-      "evidence_file": ".dev-flow/evidence/S16.md",
-      "acceptance_criteria": [
-        "新增测试覆盖 /review/insights 端点",
-        "新增测试覆盖 _generate_deep_insights 方法",
-        "所有测试通过",
-        "测试覆盖正常/边界/降级 3 类场景"
-      ],
-      "files": [
-        "backend/tests/unit/api/test_review_api.py",
-        "backend/tests/unit/services/test_review_service.py"
-      ]
-    },
-    {
-      "id": "S17",
-      "phase": 7,
+      "id": "S20",
+      "phase": 3,
       "module": "quality",
       "name": "构建验证",
-      "description": "R025 全量构建验证：后端 pytest + 前端 vitest + 前端 build。",
+      "description": "R026 全量构建验证：后端 pytest + 前端 vitest + 前端 build + Docker 部署验证。",
       "verification": "L4",
-      "depends_on": ["F108", "F109", "F110", "F111", "S16"],
-      "status": "pending",
+      "depends_on": [
+        "S18",
+        "S19",
+        "B82",
+        "F112",
+        "F113"
+      ],
+      "status": "completed",
       "priority": 2,
       "acceptance_criteria": [
         "uv run pytest backend/tests/ 全部通过",
         "npm run test:run --prefix frontend/ 全部通过",
-        "npm run build --prefix frontend/ 构建成功"
-      ]
+        "npm run build --prefix frontend/ 构建成功",
+        "Docker 部署验证通过（./deploy/deploy.sh）"
+      ],
+      "planning_notes": "用户要求必须走标准 Docker 发布流程验证",
+      "completed_at": "2026-04-22T22:30:00",
+      "actual_minutes": 30,
+      "execution_notes": "All tests pass + Docker E2E verified. Also fixed trailing slash routing issue in static_app.py."
     }
   ]
 }

@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { getInsights, type InsightsResponse } from "@/services/api";
+import type { InsightsResponse } from "@/services/api";
 
 type ReportType = "daily" | "weekly" | "monthly" | "trend";
 
@@ -10,6 +10,8 @@ interface AiSummaryCardProps {
   reportType: ReportType;
   isLoading: boolean;
   aiSummary: string | null;
+  insightsData: InsightsResponse | null;
+  insightsLoading: boolean;
 }
 
 function buildInsightMarkdown(data: InsightsResponse): string {
@@ -46,26 +48,8 @@ function buildInsightMarkdown(data: InsightsResponse): string {
   return lines.join("\n");
 }
 
-export function AiSummaryCard({ reportType, isLoading, aiSummary }: AiSummaryCardProps) {
+export function AiSummaryCard({ reportType, isLoading, aiSummary, insightsData, insightsLoading }: AiSummaryCardProps) {
   const [aiSummaryExpanded, setAiSummaryExpanded] = useState(false);
-  const [insightsData, setInsightsData] = useState<InsightsResponse | null>(null);
-  const [insightsLoading, setInsightsLoading] = useState(false);
-
-  // 周报/月报时获取 insights 数据
-  useEffect(() => {
-    if (reportType !== "weekly" && reportType !== "monthly") {
-      setInsightsData(null);
-      return;
-    }
-    let cancelled = false;
-    setInsightsLoading(true);
-    const period = reportType === "monthly" ? "monthly" : "weekly";
-    getInsights(period)
-      .then((data) => { if (!cancelled) setInsightsData(data); })
-      .catch(() => { if (!cancelled) setInsightsData(null); })
-      .finally(() => { if (!cancelled) setInsightsLoading(false); });
-    return () => { cancelled = true; };
-  }, [reportType]);
 
   if (reportType === "trend") return null;
 

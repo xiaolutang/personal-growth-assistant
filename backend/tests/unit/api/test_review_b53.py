@@ -49,61 +49,82 @@ class TestReviewServiceInit:
 
 
 class TestCalculateMasteryEnhanced:
-    """_calculate_mastery_from_stats 增强算法测试"""
+    """_calculate_mastery_from_stats 阈值式算法测试（与 knowledge_service 一致）"""
 
     def test_new_zero_everything(self):
-        """entry_count=0, relationship_count=0 → new"""
+        """effective_count=0 → new"""
         assert ReviewService._calculate_mastery_from_stats(
             entry_count=0, relationship_count=0
         ) == "new"
 
     def test_beginner_entry_count_1(self):
-        """entry_count=1 → score=2 → beginner"""
+        """effective_count=1 → beginner"""
         assert ReviewService._calculate_mastery_from_stats(
             entry_count=1, recent_count=0, note_count=0, relationship_count=0
         ) == "beginner"
 
-    def test_beginner_only_relationship(self):
-        """entry_count=0 但 relationship_count=1 → score=1 → new (不够 beginner)"""
+    def test_new_relationship_count_1(self):
+        """relationship_count=1 → 1//2=0, effective=0, new"""
         assert ReviewService._calculate_mastery_from_stats(
             entry_count=0, recent_count=0, note_count=0, relationship_count=1
         ) == "new"
 
     def test_beginner_relationship_boost(self):
-        """entry_count=0, relationship_count=2 → score=2 → beginner"""
+        """relationship_count=2 → +1 effective, effective=1, beginner"""
         assert ReviewService._calculate_mastery_from_stats(
             entry_count=0, recent_count=0, note_count=0, relationship_count=2
         ) == "beginner"
 
-    def test_intermediate_entry_count_2_recent_1(self):
-        """entry_count=2, recent_count=1 → score=7 → intermediate"""
+    def test_intermediate_effective_3_recent_1(self):
+        """effective_count=3, recent_count=1 → intermediate"""
         assert ReviewService._calculate_mastery_from_stats(
-            entry_count=2, recent_count=1, note_count=0, relationship_count=0
+            entry_count=3, recent_count=1, note_count=0, relationship_count=0
         ) == "intermediate"
 
-    def test_intermediate_with_relationship(self):
-        """entry_count=1, relationship_count=3 → score=5 → intermediate"""
+    def test_beginner_effective_3_no_recent(self):
+        """effective_count=3, recent_count=0 → beginner (不满足 intermediate)"""
         assert ReviewService._calculate_mastery_from_stats(
-            entry_count=1, recent_count=0, note_count=0, relationship_count=3
+            entry_count=3, recent_count=0, note_count=0, relationship_count=0
+        ) == "beginner"
+
+    def test_advanced_effective_6_note_ratio_above(self):
+        """effective_count=6, note_ratio=2/6≈0.33 > 0.3 → advanced"""
+        assert ReviewService._calculate_mastery_from_stats(
+            entry_count=6, recent_count=0, note_count=2, relationship_count=0
+        ) == "advanced"
+
+    def test_beginner_effective_6_note_ratio_below(self):
+        """effective_count=6, note_ratio=1/6≈0.17 < 0.3, recent=0 → beginner"""
+        assert ReviewService._calculate_mastery_from_stats(
+            entry_count=6, recent_count=0, note_count=1, relationship_count=0
+        ) == "beginner"
+
+    def test_note_ratio_exact_boundary(self):
+        """note_ratio=0.3 精确边界 → 不满足 > 0.3, 不是 advanced"""
+        # entry=10, note=3 → note_ratio=0.3 exactly, not > 0.3
+        assert ReviewService._calculate_mastery_from_stats(
+            entry_count=10, recent_count=0, note_count=3, relationship_count=0
+        ) == "beginner"
+
+    def test_relationship_count_conversion(self):
+        """relationship_count=4 → +2 effective_count"""
+        # entry=0, rel=4 → effective=2, beginner
+        assert ReviewService._calculate_mastery_from_stats(
+            entry_count=0, recent_count=0, note_count=0, relationship_count=4
+        ) == "beginner"
+
+    def test_relationship_boosts_to_intermediate(self):
+        """relationship_count 补足 effective_count 到 3 + recent"""
+        # entry=1, rel=4 → effective=3, recent=1 → intermediate
+        assert ReviewService._calculate_mastery_from_stats(
+            entry_count=1, recent_count=1, note_count=0, relationship_count=4
         ) == "intermediate"
 
-    def test_advanced_entry_count_5_recent_1(self):
-        """entry_count=5, recent_count=1 → score=13 → advanced"""
+    def test_relationship_boosts_to_advanced(self):
+        """relationship_count 补足 effective_count 到 6 + 高 note_ratio"""
+        # entry=4, rel=4 → effective=6, note=2 → note_ratio=2/6≈0.33 → advanced
         assert ReviewService._calculate_mastery_from_stats(
-            entry_count=5, recent_count=1, note_count=0, relationship_count=0
-        ) == "advanced"
-
-    def test_advanced_with_notes_and_relationships(self):
-        """entry_count=3, note_count=2, relationship_count=2 → score=12 → advanced"""
-        assert ReviewService._calculate_mastery_from_stats(
-            entry_count=3, recent_count=0, note_count=2, relationship_count=2
-        ) == "advanced"
-
-    def test_score_formula(self):
-        """验证公式: entry_count*2 + recent_count*3 + note_count*2 + relationship_count*1"""
-        # entry=2, recent=1, note=1, rel=1 → 4+3+2+1 = 10 → advanced
-        assert ReviewService._calculate_mastery_from_stats(
-            entry_count=2, recent_count=1, note_count=1, relationship_count=1
+            entry_count=4, recent_count=0, note_count=2, relationship_count=4
         ) == "advanced"
 
 
@@ -176,19 +197,19 @@ class TestNeo4jPath:
         assert python_item.entry_count == 5
 
     async def test_neo4j_relationship_contribution(self, mock_neo4j):
-        """关系数量影响掌握度计算"""
+        """关系数量影响掌握度计算（阈值式：Neo4j 路径无 recent/note 数据）"""
         svc = ReviewService(sqlite_storage=MagicMock(), neo4j_client=mock_neo4j)
         result = await svc.get_knowledge_heatmap(user_id="user1")
 
-        # Python: entry=5, rel=1 → score=5*2+1=11 → advanced
+        # Python: entry=5, rel=1 → effective=5+0=5, recent=0 → beginner
         python_item = next(i for i in result.items if i.concept == "Python")
-        assert python_item.mastery == "advanced"
+        assert python_item.mastery == "beginner"
 
-        # FastAPI: entry=3, rel=1 → score=3*2+1=7 → intermediate
+        # FastAPI: entry=3, rel=1 → effective=3+0=3, recent=0 → beginner
         fastapi_item = next(i for i in result.items if i.concept == "FastAPI")
-        assert fastapi_item.mastery == "intermediate"
+        assert fastapi_item.mastery == "beginner"
 
-        # React: entry=1, rel=0 → score=1*2=2 → beginner
+        # React: entry=1, rel=0 → effective=1 → beginner
         react_item = next(i for i in result.items if i.concept == "React")
         assert react_item.mastery == "beginner"
 

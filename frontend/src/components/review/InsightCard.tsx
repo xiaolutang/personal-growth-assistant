@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Brain, TrendingUp, TrendingDown, Minus, Lightbulb, BarChart3 } from "lucide-react";
-import { getInsights, type InsightsResponse } from "@/services/api";
+import type { InsightsResponse } from "@/services/api";
 
 type ReportType = "daily" | "weekly" | "monthly" | "trend";
 
 interface InsightCardProps {
   reportType: ReportType;
+  insightsData: InsightsResponse | null;
+  insightsLoading: boolean;
 }
 
 const trendIcon = (trend: string) => {
@@ -26,34 +27,9 @@ const priorityBadge = (priority: string) => {
   return colors[priority] || colors.medium;
 };
 
-export function InsightCard({ reportType }: InsightCardProps) {
-  const [data, setData] = useState<InsightsResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
+export function InsightCard({ reportType, insightsData: data, insightsLoading: loading }: InsightCardProps) {
   // 日报不显示洞察卡片
   if (reportType === "daily" || reportType === "trend") return null;
-
-  const period = reportType === "monthly" ? "monthly" : "weekly";
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    getInsights(period)
-      .then((res) => {
-        if (!cancelled) setData(res);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err.message || "加载失败");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => { cancelled = true; };
-  }, [period]);
 
   return (
     <Card className="border-l-4 border-l-purple-500 dark:border-l-purple-400">
@@ -78,8 +54,6 @@ export function InsightCard({ reportType }: InsightCardProps) {
               </div>
             ))}
           </div>
-        ) : error ? (
-          <p className="text-sm text-destructive">{error}</p>
         ) : data ? (
           <div className="space-y-4">
             {/* 行为模式 */}
