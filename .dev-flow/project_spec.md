@@ -1,76 +1,77 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.18.0
+> 版本：v0.24.0
 
 ## 目标
 
-- R022 体验打磨 + 遗留项 — 移动端响应式、错误状态、搜索统一、离线同步扩展、批量操作，共 15 项任务
+- R024 Flutter 移动端 MVP — 录入优先的独立移动端应用，补齐「随时记录」核心体验
 
-## 前置依赖（R001-R021 已完成）
+## 前置依赖（R001-R023 已完成）
 
+- 完整 REST API + JWT 认证体系（R002, R009）
 - 条目 CRUD + 7 种类型（R001-R004, R013）
+- AI 对话 SSE 流式接口 + 页面感知角色（R014, R023）
 - 知识图谱 + 向量搜索（R005-R008）
-- 认证隔离（R002, R009）
 - 目标追踪闭环（R012）
-- 页面级上下文 AI + Cmd+K 搜索（R014, R016）
 - 离线 PWA（R019）
-- E2E 测试补齐 + CI PR 增强（R020，113 个 E2E 用例）
-- 技术债清理（R021，api.ts 统一、路由懒加载、索引补齐等 11 项）
-- 混合搜索服务已有（R008 hybrid_search.py，向量 0.7 + 全文 0.3 融合）
+- E2E 测试 + CI（R020）
 
-## 基线分析（Codex plan review 修正后）
+## 基线分析
 
-**搜索现状**：
-- `HybridSearchService`（hybrid_search.py）已实现向量+全文混合搜索，被 `GET /entries/search/query` 使用
-- `POST /search`（search.py）仍为纯 Qdrant 向量搜索，不支持 filter_type，Qdrant 不可用时返回 503
-- 前端同时调用两个搜索端点（api.ts searchEntries + searchEntriesByKeyword）
-- SearchResult 仅有 id/title/score/type/tags/file_path，无内容摘要
+**后端 API 现状**：
+- 完整 REST API：entries CRUD, auth JWT, chat SSE, search, goals, review reports
+- 认证：POST /auth/login + JWT Bearer token
+- AI 对话：POST /chat SSE 流式，支持 page_context 和 page_data
+- 搜索：POST /search 语义搜索 + GET /entries?keyword 全文搜索
+- 后端完全不需要改动，Flutter 端是纯消费层
 
-**移动端响应式**：FloatingChat 无触摸事件、Home grid-cols-4 小屏挤压、Explore Tab 溢出、TaskCard 触摸目标偏小
-
-**错误状态**：Review 加载态无 spinner、Review 无错误提示、Explore 失败静默吞错、TaskList 空状态无引导
-
-**离线同步现状**：
-- OfflineIndicator.tsx 已有同步进度 UI（"正在同步 1/3..."）✅ 无需重复实现
-- useStreamParse 离线时入队 POST /entries ✅ 创建已覆盖
-- taskStore.updateEntry/deleteTask 仍直接打在线 API ❌ 更新/删除未拦截
-- offlineSync 仅回放 POST /entries ❌ PUT/DELETE 未扩展
-
-**批量操作**：前端无多选和批量操作能力
+**移动端产品设计**：
+- 3 Tab 底栏导航：今天 / 日知 / 任务
+- P0：登录、AI 对话 SSE、灵感快记、今日任务、最近动态
+- P1：任务状态切换、搜索、条目详情
+- 不做：探索页、知识图谱、回顾报告、条目编辑、离线模式（V2+）
 
 ## 范围
 
-### 包含（15 个任务）
+### 包含（12 个任务）
 
-**Phase 1 快速赢**（9 项）：F73-F81 移动端响应式 + 错误状态 + 搜索摘要
-**Phase 2 搜索统一**（2 项）：B80 统一搜索入口 + F83 前端统一+过滤透传
-**Phase 3 体验增强**（3 项）：F84 离线同步扩展 + F85 多选框架 + F86 批量执行
-**Phase 4 收口**（1 项）：S09 质量验证
+**Phase 1 Foundation**（3 项）：S11 项目脚手架 + F99 主题 + F100 路由导航
+**Phase 2 Infrastructure + Auth**（3 项）：S12 API 客户端 + S13 SSE 客户端 + F101 登录页
+**Phase 3 Today**（2 项）：F102 今天页布局 + F103 快速操作
+**Phase 4 Chat**（2 项）：F104 AI 对话界面 + F105 灵感快记
+**Phase 5 Tasks + Detail**（2 项）：F106 任务列表 + F107 条目详情
+**Phase 6 Quality**（1 项）：S14 构建验证
 
 ### 不包含
 
-- logout Token 黑名单（D1，需要 Redis/DB 支撑，留后续专项）
-- 移动端下拉刷新手势（需要全局手势管理，复杂度高）
-- 同步失败项重试 UI（需要独立管理页面，留后续）
-- 通知偏好改用 Switch 组件（纯 UI 细节，低优先级）
-- Flutter 移动端 MVP（独立代码库，需单独规划）
-- F82 离线同步进度展示（已由 OfflineIndicator.tsx 实现，无需重复）
+- 注册（通过 Web 端完成，移动端仅登录）
+- 语音输入（P2，需要语音识别 SDK 集成）
+- 离线模式（V2，需要本地 SQLite 缓存策略）
+- 条目编辑（V2，如果用户反馈强烈再加）
+- 灵感转化操作（V2）
+- 全局搜索（P1 但 MVP 排除，V2 考虑）
+- 探索页、知识图谱、回顾报告（V3+）
+- 推送通知（V2）
 
 ## 用户路径
 
-本轮改进的现有路径：
-- 移动端使用：拖拽面板、查看统计卡片、浏览 Tab、操作任务卡片
-- 搜索：关键词搜索 → POST /search（统一后）→ 结果列表 → Tab 过滤
-- 离线使用：创建/更新/删除条目 → 队列入队 → 上线后回放
-- 批量管理：进入编辑模式 → 多选条目 → 批量删除或转分类
+**核心路径：快速记录**
+- 打开 App → 日知 Tab → 输入灵感 → AI 解析 → 自动创建 inbox 条目 → 关掉 App
+
+**浏览路径：**
+- 今天 Tab → 查看今日进度 + 任务列表 + 最近动态
+- 任务 Tab → 按状态筛选 → 点击任务查看详情
+
+**登录路径：**
+- 首次打开 → 登录页 → 输入用户名密码 → JWT 存储 → 进入今天页
 
 ## 技术约束
 
-- B80 迁移 POST /search 到 HybridSearchService，不新建搜索服务
-- 搜索返回结构仅扩展（content_snippet、filter_type），不破坏现有契约
-- 移动端响应式使用 Tailwind 断点（sm/md/lg）
-- 触摸事件使用原生 DOM API（onTouchStart 等），不引入手势库
-- 离线拦截在 taskStore 层实现，乐观更新 + 回滚
-- 批量操作仅限 Tasks 页，操作通过逐个调用现有 API 执行
+- Flutter 代码位于 mobile/ 目录，不修改 backend/ 和 frontend/
+- 后端 API 完全复用，不做改动
+- JWT token 与 Web 端共享认证体系
+- 状态管理使用 Riverpod
+- 网络层使用 Dio + 自定义 SSE 客户端
+- 移动端只做 P0+P1 功能，不做全功能移植
 - workflow: B/codex_plugin/skill_orchestrated
