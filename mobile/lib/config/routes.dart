@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../pages/login_page.dart';
 import '../pages/placeholder_page.dart';
+import '../pages/today_page.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
 import '../widgets/bottom_nav.dart';
@@ -58,7 +59,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/',
             name: 'today',
-            builder: (context, state) => const PlaceholderPage(title: '今天'),
+            builder: (context, state) => const TodayPage(),
           ),
           GoRoute(
             path: '/chat',

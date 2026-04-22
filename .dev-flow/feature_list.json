@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 12,
-    "pending": 6,
-    "completed": 6,
+    "pending": 4,
+    "completed": 8,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -290,7 +290,9 @@
       "description": "实现今天 Tab 页面：顶部今日进度环 + 今日任务列表 + 最近动态流（跨类型条目）。数据源：GET /entries?type=task&status=doing,completed 获取今日任务计算进度，GET /entries?page_size=10 获取最近动态。",
       "verification": "F2",
       "depends_on": ["F101", "F100"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-22T17:10:00",
+      "completed_at": "2026-04-22T18:00:00",
       "priority": "high",
       "acceptance_criteria": [
         "顶部显示今日进度（完成率环形图 + 数字），数据来自 GET /entries?type=task 过滤今日任务后计算",
@@ -321,7 +323,9 @@
       "description": "今天页底部浮动操作按钮，支持「记灵感」（跳转日知对话）和「建任务」（直接输入创建）两个快捷入口。",
       "verification": "F2",
       "depends_on": ["F102", "S12"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-22T18:00:00",
+      "completed_at": "2026-04-22T18:30:00",
       "priority": "medium",
       "acceptance_criteria": [
         "右下角浮动操作按钮，点击展开两个选项",
