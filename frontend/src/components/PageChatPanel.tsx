@@ -35,6 +35,11 @@ export function PageChatPanel({
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
+
+  // 当外部 defaultCollapsed 变化时同步内部状态（支持父组件驱动展开/收起）
+  useEffect(() => {
+    setCollapsed(defaultCollapsed);
+  }, [defaultCollapsed]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 

@@ -192,6 +192,9 @@ export function Explore() {
     return filterByCategory(source, activeTab);
   }, [entries, searchResults, activeTab]);
 
+  // 空结果时自动展开搜索助手
+  const autoExpandAssistant = !isLoading && !isSearching && filteredTasks.length === 0;
+
   const handleTabChange = useCallback(
     (key: string) => {
       setActiveTab(key);
@@ -413,7 +416,7 @@ export function Explore() {
           result_count: filteredTasks.length,
           total_entries: entries.length,
         }}
-        defaultCollapsed
+        defaultCollapsed={!autoExpandAssistant}
       />
     </main>
   );

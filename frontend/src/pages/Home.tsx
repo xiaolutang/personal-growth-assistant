@@ -574,6 +574,13 @@ export function Home() {
                 completed_today: todayStats.completed,
                 total_tasks: todayStats.total,
                 inbox_count: unprocessedInbox.length,
+                doing_count: todayStats.doing,
+                wait_start_count: todayStats.waitStart,
+                completion_rate: todayCompletionRate,
+                overdue_count: digest?.overdue?.length ?? 0,
+                stale_inbox_count: digest?.stale_inbox?.length ?? 0,
+                learning_streak: digest?.learning_streak ?? 0,
+                active_goals_count: activeGoals.length,
               }}
               defaultCollapsed
             />

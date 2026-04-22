@@ -1155,6 +1155,9 @@ export function EntryDetail() {
               entry_title: entry.title,
               category: entry.category,
               tags: (entry.tags || []).join(", "),
+              status: entry.status,
+              priority: entry.priority ?? "",
+              content_preview: (entry.content || "").slice(0, 500),
             }}
             className="mt-6"
             defaultCollapsed
