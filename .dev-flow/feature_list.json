@@ -22,8 +22,8 @@
   },
   "summary": {
     "total_tasks": 12,
-    "pending": 4,
-    "completed": 8,
+    "pending": 2,
+    "completed": 10,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -352,7 +352,9 @@
       "description": "日知 Tab 的 AI 对话界面：消息气泡列表、SSE 流式输出、打字动画、发送消息。调用 POST /chat SSE 端点。",
       "verification": "F2",
       "depends_on": ["S13", "F99", "F101"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-22T18:40:00",
+      "completed_at": "2026-04-22T19:30:00",
       "priority": "high",
       "acceptance_criteria": [
         "消息气泡列表：用户消息右对齐蓝色、AI 回复左对齐灰色",
@@ -386,7 +388,9 @@
       "description": "在日知对话中支持灵感快记：用户输入自然语言 → AI 对话自动解析意图 → 创建 inbox 条目。对话内显示创建确认卡片。",
       "verification": "F2",
       "depends_on": ["F104", "S12"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-22T19:30:00",
+      "completed_at": "2026-04-22T19:45:00",
       "priority": "medium",
       "acceptance_criteria": [
         "用户在日知对话输入灵感内容（如「记个灵感：xxx」）",

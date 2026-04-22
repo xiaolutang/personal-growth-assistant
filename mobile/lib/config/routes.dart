@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../pages/chat_page.dart';
 import '../pages/login_page.dart';
 import '../pages/placeholder_page.dart';
 import '../pages/today_page.dart';
@@ -64,7 +65,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/chat',
             name: 'chat',
-            builder: (context, state) => const PlaceholderPage(title: '日知'),
+            builder: (context, state) => const ChatPage(),
           ),
           GoRoute(
             path: '/tasks',
