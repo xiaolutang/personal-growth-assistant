@@ -6,12 +6,7 @@
   "updated_at": "2026-04-22T14:00:00",
   "status": "completed",
   "scope_notes": "R024 Flutter 移动端 MVP — 录入优先的独立移动端应用",
-  "active_requirement_cycle": {
-    "id": "R024",
-    "name": "flutter-mobile-mvp",
-    "branch": "feat/R024-flutter-mobile-mvp",
-    "status": "planning"
-  },
+  "active_requirement_cycle": null,
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -51,7 +46,8 @@
     {"id": "R020", "name": "e2e-ci-pipeline", "status": "completed", "archive_dir": "_archive/R020_e2e-ci-pipeline"},
     {"id": "R021", "name": "tech-debt-cleanup", "status": "completed", "archive_dir": "_archive/R021_tech-debt-cleanup"},
     {"id": "R022", "name": "polish-deferred", "status": "completed", "archive_dir": "_archive/R022_polish-deferred"},
-    {"id": "R023", "name": "ai-page-embedded", "status": "completed", "archive_dir": "_archive/R023_ai-page-embedded"}
+    {"id": "R023", "name": "ai-page-embedded", "status": "completed", "archive_dir": "_archive/R023_ai-page-embedded"},
+    {"id": "R024", "name": "flutter-mobile-mvp", "status": "completed", "archive_dir": "_archive/R024_flutter-mobile-mvp"}
   ],
   "modules": [
     "foundation",

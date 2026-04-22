@@ -2,16 +2,22 @@
 
 ## 进行中需求包
 
+（当前无进行中需求包）
+
+## 已完成需求包
+
 ### R024: Flutter 移动端 MVP
 
-- 状态: 规划中
+- 状态: 已完成
 - 分支: `feat/R024-flutter-mobile-mvp`
 - 主题: 录入优先的独立 Flutter 移动端应用
 - 目录: `R024_flutter-mobile-mvp/`
+- 完成时间: 2026-04-22
 - 任务数: 12 (S11-S14, F99-F107)
 - Phase: Foundation → Infrastructure+Auth → Today → Chat → Tasks+Detail → Quality
-
-## 已完成需求包
+- Codex 审核: code-review 6 项 finding 全部修复
+- 新增测试: 158 Flutter 测试
+- 验证: 866 后端 + 347 前端 + 158 Flutter 测试通过
 
 ### R023: AI 页面内嵌 + 交互模式升级
 
