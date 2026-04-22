@@ -142,19 +142,19 @@ export async function update(
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
     const req = store.get(id);
+    let found = false;
 
     req.onsuccess = () => {
       const record = req.result as OfflineQueueItem | undefined;
       if (record) {
         Object.assign(record, changes);
         store.put(record);
-        resolve(true);
-      } else {
-        resolve(false);
+        found = true;
       }
     };
     req.onerror = () => reject(req.error);
-    tx.oncomplete = () => db.close();
+    tx.oncomplete = () => { db.close(); resolve(found); };
+    tx.onerror = () => reject(tx.error);
   });
 }
 
@@ -168,11 +168,10 @@ export async function remove(id: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
-    const req = store.delete(id);
+    store.delete(id);
 
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-    tx.oncomplete = () => db.close();
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => reject(tx.error);
   });
 }
 

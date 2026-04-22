@@ -90,15 +90,6 @@ export async function sync(): Promise<void> {
           // 不支持的 mutation，跳过
           continue;
         }
-
-        // 同步成功：从队列移除
-        await queue.remove(item.id);
-        // POST 对应离线创建的 local-* 条目，需要移除离线占位
-        if (item.method === "POST") {
-          const { useTaskStore } = await import("@/stores/taskStore");
-          useTaskStore.getState().removeOfflineEntry(item.client_entry_id);
-        }
-        synced++;
       } catch (err: unknown) {
         const status =
           (err as { status?: number })?.status ??
@@ -125,7 +116,21 @@ export async function sync(): Promise<void> {
           hasTerminalFailure = true;
           toast.error("同步失败", { description: "部分离线操作未能同步，请检查后重试" });
         }
+        continue;
       }
+
+      // API 调用成功：从队列移除（IDB 失败不影响已成功的远程调用）
+      try {
+        await queue.remove(item.id);
+      } catch {
+        // 队列移除失败不影响已成功的远程操作，下次同步会再次尝试移除
+      }
+      // POST 对应离线创建的 local-* 条目，需要移除离线占位
+      if (item.method === "POST") {
+        const { useTaskStore } = await import("@/stores/taskStore");
+        useTaskStore.getState().removeOfflineEntry(item.client_entry_id);
+      }
+      synced++;
     }
 
     // POST 同步后需要刷新获取服务端真实 ID；终态失败也需要刷新回滚乐观状态
