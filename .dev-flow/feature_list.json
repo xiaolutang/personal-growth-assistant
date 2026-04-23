@@ -3,7 +3,7 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-23T19:00:00",
+  "updated_at": "2026-04-23T20:30:00",
   "status": "idle",
   "active_requirement_cycle": null,
   "workflow": {
@@ -186,6 +186,12 @@
       "name": "export-feedback-tracking",
       "status": "completed",
       "archive_dir": "_archive/R027_export-feedback-tracking"
+    },
+    {
+      "id": "R028",
+      "name": "engineering-cleanup",
+      "status": "completed",
+      "archive_dir": "_archive/R028_engineering-cleanup"
     }
   ]
 }

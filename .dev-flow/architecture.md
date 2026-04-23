@@ -175,7 +175,7 @@ backend/app/
 ├── infrastructure/      # 基础设施（storage/, llm/）
 ├── graphs/              # LangGraph 图（task_parser_graph）
 ├── models/              # 数据模型（Task, Category, Status）
-└── mcp/                 # MCP Server（9 个 Tools）
+└── mcp/                 # MCP Server（14 个 Tools）
 ```
 
 ## 关键设计模式

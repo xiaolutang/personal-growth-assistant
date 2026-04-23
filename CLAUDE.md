@@ -93,7 +93,7 @@ backend/app/
 ├── graphs/              # LangGraph 图
 │   └── task_parser_graph.py  # 任务解析图
 ├── models/              # 数据模型 (Task, Category, Status)
-└── mcp/                 # MCP Server (9 个 Tools)
+└── mcp/                 # MCP Server (14 个 Tools)
 ```
 
 ### 前端目录结构
@@ -173,7 +173,7 @@ entry_service = deps.get_entry_service()
 
 ## MCP Tools
 
-项目提供 MCP Server，支持 Claude Code 直接调用：
+项目提供 MCP Server（14 个 Tools），支持 Claude Code 直接调用：
 
 | Tool | 说明 |
 |------|------|
@@ -186,3 +186,8 @@ entry_service = deps.get_entry_service()
 | `get_knowledge_graph` | 获取知识图谱 |
 | `get_related_concepts` | 获取相关概念 |
 | `get_project_progress` | 获取项目进度 |
+| `get_review_summary` | 获取成长回顾统计（日报或周报） |
+| `get_knowledge_stats` | 获取知识概念统计数据 |
+| `batch_create_entries` | 批量创建条目（一次最多 10 条） |
+| `batch_update_status` | 批量更新条目状态（一次最多 10 条） |
+| `get_learning_path` | 获取概念学习路径 |
