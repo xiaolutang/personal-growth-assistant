@@ -141,3 +141,8 @@
 - 目录: `R001_personal-growth-assistant-v1/`
 - 完成时间: 2026-04-13
 - 任务数: 36 (P1 → P11)
+
+## R029: Simplify 收敛检查
+- 归档目录: _archive/R029_simplify-convergence
+- 状态: completed (2026-04-23)
+- 任务: S26a(审查报告), S26b(收敛修复+全量验证)
