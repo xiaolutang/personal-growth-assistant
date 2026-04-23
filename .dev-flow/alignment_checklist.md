@@ -4,22 +4,22 @@
 
 ### 契约对齐
 
-- [ ] S26a: 不涉及新契约，只做代码审查和报告输出
-- [ ] S26b: 不涉及新契约，修改范围限定在 S26a files 列表及直接协作者
+- [x] S26a: 不涉及新契约，只做代码审查和报告输出
+- [x] S26b: 不涉及新契约，修改范围限定在 S26a files 列表及直接协作者（新增 frontend/src/types/review.ts 为共享类型文件）
 
 ### 依赖对齐
 
-- [ ] S26a 无外部依赖 ✓
-- [ ] S26b depends_on S26a ✓
-- [ ] R030 entry_conditions: S26b must_fix 全部关闭 + residual 不涉及主链路 + 全量测试通过
+- [x] S26a 无外部依赖
+- [x] S26b depends_on S26a
+- [x] R030 entry_conditions: S26b must_fix 9/10 关闭(F-004 partial) + residual 不涉及主链路 + 全量测试通过
 
 ### 架构对齐
 
-- [ ] 不新建服务文件，在现有 router/service/page 内修改
-- [ ] 前端组件拆分在文件内完成，不新建文件
-- [ ] 修改不违反 architecture.md 不变量: user_id 隔离、JWT 认证守卫、存储工厂模式
-- [ ] 错误处理收敛到与全局 ErrorHandlerMiddleware 一致的脱敏原则
-- [ ] JWT 守卫 / Authorization 注入回归已纳入验证（auth risk_tag）
+- [x] 不新建服务文件，在现有 router/service/page 内修改
+- [x] 前端新增 types/review.ts 为共享类型文件（非组件/页面），合理
+- [x] 修改不违反 architecture.md 不变量: user_id 隔离、JWT 认证守卫、存储工厂模式
+- [x] 错误处理收敛到与全局 ErrorHandlerMiddleware 一致的脱敏原则
+- [x] JWT 守卫 / Authorization 注入回归已纳入验证（auth risk_tag）
 
 ## R027: 数据导出 + 反馈追踪
 
