@@ -1,20 +1,20 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.28.0
-> 状态：空闲（R028 已归档）
-> 活跃分支：无
+> 版本：v0.29.0
+> 状态：规划中（R029）
+> 活跃分支：chore/R029-simplify-convergence
 
 ## 当前范围
 
-R028 工程整理：文档同步 + Flutter 导航修复。
+R029 Simplify 收敛检查：对 R025~R028 新增/修改代码运行四视角审查并修复收敛问题。
 
-1. **文档同步**：CLAUDE.md MCP 工具表 9→14、architecture.md 工具数、product-design-analysis.md 功能评分
-2. **Flutter 修复**：today_page.dart 两处 TODO 替换为实际导航代码
-3. **版本更新**：project_spec.md 版本号和范围描述
+1. **S26a 审查报告**：对 8 个重点文件运行四视角审查（复用/质量/效率/架构），输出结构化报告
+2. **S26b 收敛修复**：按优先级修复 critical/major 级问题，minor/info 记录为 residual_risks
+3. **全量验证**：pytest + vitest + build 三重验证
 
 ## 技术约束
 
-- 纯文档和配置改动，不涉及业务逻辑
-- Flutter 改动仅补充已有导航模式（context.go）
+- 收敛起止范围：R025~R028 变更文件
+- 不引入新功能，只做代码质量收敛
 - workflow: B/codex_plugin/skill_orchestrated

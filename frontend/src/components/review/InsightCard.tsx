@@ -1,8 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Brain, TrendingUp, TrendingDown, Minus, Lightbulb, BarChart3 } from "lucide-react";
 import type { InsightsResponse } from "@/services/api";
-
-type ReportType = "daily" | "weekly" | "monthly" | "trend";
+import type { ReportType } from "@/types/review";
 
 interface InsightCardProps {
   reportType: ReportType;

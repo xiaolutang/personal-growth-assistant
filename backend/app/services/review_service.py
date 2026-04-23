@@ -1,7 +1,7 @@
 """成长回顾统计服务"""
 import asyncio
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional, Literal, TYPE_CHECKING
 
 from pydantic import BaseModel, Field
@@ -341,17 +341,11 @@ class ReviewService:
         note_stats = self.calculate_note_stats(notes)
 
         daily_breakdown = []
+        # 从已获取的 tasks 中按日聚合，避免 N+1 查询
         for i in range(7):
             day = week_start + timedelta(days=i)
             day_str = day.isoformat()
-            day_tasks = self._sqlite.list_entries(
-                type="task",
-                start_date=day_str,
-                end_date=day_str,
-                limit=1000,
-                user_id=user_id,
-            )
-
+            day_tasks = [t for t in tasks if t.get("created_at", "")[:10] == day_str or t.get("updated_at", "")[:10] == day_str]
             completed = sum(1 for t in day_tasks if t.get("status") == "complete")
             daily_breakdown.append({
                 "date": day_str,
@@ -486,22 +480,23 @@ class ReviewService:
         current_week_start = month_start
         week_num = 1
 
+        # 从已获取的 tasks 中按周聚合，避免 N+1 查询
         while current_week_start <= month_end:
             week_end = min(current_week_start + timedelta(days=6), month_end)
+            ws_str = current_week_start.isoformat()
+            we_str = week_end.isoformat()
 
-            week_tasks = self._sqlite.list_entries(
-                type="task",
-                start_date=current_week_start.isoformat(),
-                end_date=week_end.isoformat(),
-                limit=1000,
-                user_id=user_id,
-            )
+            week_tasks = [
+                t for t in tasks
+                if ws_str <= (t.get("created_at", "")[:10]) <= we_str
+                or ws_str <= (t.get("updated_at", "")[:10]) <= we_str
+            ]
 
             completed = sum(1 for t in week_tasks if t.get("status") == "complete")
             weekly_breakdown.append({
                 "week": f"第{week_num}周",
-                "start_date": current_week_start.isoformat(),
-                "end_date": week_end.isoformat(),
+                "start_date": ws_str,
+                "end_date": we_str,
                 "total": len(week_tasks),
                 "completed": completed,
             })
@@ -889,19 +884,29 @@ class ReviewService:
         today = date.today()
         current_week_start = today - timedelta(days=today.weekday())
 
+        # 一次查询获取所有周的条目，避免 N+1
+        earliest_week_start = current_week_start - timedelta(weeks=count - 1)
+        all_entries = self._sqlite.list_entries(
+            start_date=earliest_week_start.isoformat(),
+            end_date=today.isoformat(),
+            limit=10000,
+            user_id=user_id,
+        )
+
         points: List[GrowthCurvePoint] = []
 
         for i in range(count):
             week_start = current_week_start - timedelta(weeks=i)
             week_end = week_start + timedelta(days=6)
+            ws_str = week_start.isoformat()
+            we_str = week_end.isoformat()
 
-            # 获取该周的条目
-            week_entries = self._sqlite.list_entries(
-                start_date=week_start.isoformat(),
-                end_date=week_end.isoformat(),
-                limit=1000,
-                user_id=user_id,
-            )
+            # 从内存中过滤该周条目
+            week_entries = [
+                e for e in all_entries
+                if ws_str <= (e.get("created_at", "")[:10]) <= we_str
+                or ws_str <= (e.get("updated_at", "")[:10]) <= we_str
+            ]
 
             # 提取概念并计算掌握度分布
             concept_map: Dict[str, Dict] = {}
@@ -1101,6 +1106,20 @@ class ReviewService:
             except (ValueError, TypeError):
                 return None
 
+    @staticmethod
+    def _parse_llm_json(text: str) -> Optional[dict]:
+        """解析 LLM 返回的 JSON（可能包含在 markdown 代码块中）"""
+        import json
+        text = text.strip()
+        if "```json" in text:
+            text = text.split("```json")[1].split("```")[0].strip()
+        elif "```" in text:
+            text = text.split("```")[1].split("```")[0].strip()
+        try:
+            return json.loads(text)
+        except (json.JSONDecodeError, ValueError):
+            return None
+
     async def _generate_daily_focus(
         self,
         user_id: str,
@@ -1153,16 +1172,9 @@ class ReviewService:
                 ]
                 result = await asyncio.wait_for(self._llm_caller.call(messages), timeout=10.0)
                 if result:
-                    # 尝试解析 JSON
                     try:
-                        # 提取 JSON 部分（可能包含在 markdown 代码块中）
-                        text = result.strip()
-                        if "```json" in text:
-                            text = text.split("```json")[1].split("```")[0].strip()
-                        elif "```" in text:
-                            text = text.split("```")[1].split("```")[0].strip()
-                        parsed = json.loads(text)
-                        if isinstance(parsed, dict) and "title" in parsed:
+                        parsed = self._parse_llm_json(result)
+                        if parsed and isinstance(parsed, dict) and "title" in parsed:
                             return DailyFocus(
                                 title=str(parsed["title"]),
                                 description=str(parsed.get("description", "")),
@@ -1236,23 +1248,9 @@ class ReviewService:
         )
         active_tasks = all_active_tasks + all_wait_tasks
 
-        def _parse_date_str(val):
-            """解析 planned_date 字段为 date 对象"""
-            if not val:
-                return None
-            if isinstance(val, date):
-                return val
-            try:
-                return datetime.fromisoformat(str(val).replace("Z", "+00:00")).date()
-            except (ValueError, TypeError):
-                try:
-                    return datetime.strptime(str(val)[:10], "%Y-%m-%d").date()
-                except (ValueError, TypeError):
-                    return None
-
         today_todos = [
             t for t in active_tasks
-            if _parse_date_str(t.get("planned_date")) == today
+            if self._parse_entry_date(t.get("planned_date")) == today
         ]
 
         priority_order = {"high": 0, "medium": 1, "low": 2}
@@ -1269,8 +1267,8 @@ class ReviewService:
             t for t in past_tasks
             if t.get("status") in ("waitStart", "doing")
             and t.get("planned_date")
-            and _parse_date_str(t.get("planned_date")) is not None
-            and _parse_date_str(t.get("planned_date")) < today
+            and self._parse_entry_date(t.get("planned_date")) is not None
+            and self._parse_entry_date(t.get("planned_date")) < today
         ]
         overdue.sort(key=lambda t: priority_order.get(t.get("priority", "medium"), 1))
 
@@ -1471,6 +1469,94 @@ class ReviewService:
 
         return ActivityHeatmapResponse(year=year, items=items)
 
+    async def export_growth_report(self, user_id: str) -> str:
+        """生成成长报告 Markdown 内容"""
+        if not self._sqlite:
+            raise ValueError("SQLite 存储未初始化")
+
+        now = datetime.now(timezone.utc)
+        date_str = now.strftime("%Y-%m-%d")
+
+        # Section 1: 概览
+        categories = ["task", "note", "inbox", "project", "decision", "reflection", "question"]
+        category_labels = {
+            "task": "任务", "note": "笔记", "inbox": "灵感", "project": "项目",
+            "decision": "决策", "reflection": "复盘", "question": "待解问题",
+        }
+        counts = {cat: self._sqlite.count_entries(type=cat, user_id=user_id) for cat in categories}
+        total = sum(counts.values())
+
+        overview_lines = [
+            "| 指标 | 数值 |",
+            "|------|------|",
+            f"| 总条目数 | {total} |",
+        ]
+        for cat in categories:
+            overview_lines.append(f"| {category_labels[cat]} | {counts[cat]} |")
+
+        # Section 2: 学习趋势
+        trend_data = self.get_trend_data(period="weekly", weeks=4, user_id=user_id)
+        trend_lines = []
+        if trend_data and hasattr(trend_data, "daily_data") and trend_data.daily_data:
+            from collections import defaultdict
+            weekly_buckets = defaultdict(int)
+            for item in trend_data.daily_data:
+                d = item.date if hasattr(item, "date") else str(item.get("date", ""))
+                cnt = item.total if hasattr(item, "total") else item.get("total", 0)
+                try:
+                    dt = date.fromisoformat(str(d))
+                    ws = dt - timedelta(days=dt.weekday())
+                    weekly_buckets[ws.isoformat()] += cnt
+                except (ValueError, TypeError):
+                    pass
+            for ws in sorted(weekly_buckets.keys()):
+                trend_lines.append(f"- {ws}: {weekly_buckets[ws]} 条")
+        if not trend_lines:
+            trend_lines = ["暂无数据"]
+
+        # Section 3: 学习连续天数
+        streak = self._calculate_learning_streak(user_id)
+
+        # Section 4: 知识图谱概览
+        knowledge_lines = []
+        try:
+            from app.routers.deps import get_knowledge_service
+            ks = get_knowledge_service()
+            stats = await ks.get_knowledge_stats(user_id)
+            knowledge_lines = [
+                f"| 指标 | 数值 |",
+                f"|------|------|",
+                f"| 概念数 | {stats.concept_count} |",
+                f"| 关联数 | {stats.relation_count} |",
+            ]
+            if hasattr(stats, "category_distribution") and stats.category_distribution:
+                dist_str = " / ".join(f"{k} {v}" for k, v in stats.category_distribution.items())
+                knowledge_lines.append(f"| 掌握度分布 | {dist_str} |")
+        except Exception:
+            knowledge_lines = ["暂无数据"]
+
+        return f"""# 📊 成长报告
+
+> 生成时间：{date_str}
+> 报告周期：全部数据
+
+## 概览
+
+{chr(10).join(overview_lines)}
+
+## 学习趋势
+
+{chr(10).join(trend_lines)}
+
+## 学习连续天数
+
+{streak} 天
+
+## 知识图谱概览
+
+{chr(10).join(knowledge_lines)}
+"""
+
     async def get_insights(
         self, period: str = "weekly", user_id: Optional[str] = None
     ) -> InsightsResponse:
@@ -1639,15 +1725,8 @@ class ReviewService:
                 )
 
                 if result:
-                    # 解析 JSON（可能包含在 markdown 代码块中）
-                    text = result.strip()
-                    if "```json" in text:
-                        text = text.split("```json")[1].split("```")[0].strip()
-                    elif "```" in text:
-                        text = text.split("```")[1].split("```")[0].strip()
-
-                    parsed = json.loads(text)
-                    if isinstance(parsed, dict):
+                    parsed = self._parse_llm_json(result)
+                    if parsed and isinstance(parsed, dict):
                         insights = DeepInsights(
                             behavior_patterns=[
                                 BehaviorPattern(**bp)

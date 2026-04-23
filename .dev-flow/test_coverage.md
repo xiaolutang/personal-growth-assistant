@@ -1,5 +1,12 @@
 # 测试覆盖清单
 
+## R029: Simplify 收敛检查
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| 四视角审查报告 | S26a | 四视角审查 | 复用/质量/效率/架构各一份报告，结构化发现列表含 finding_id/dimension/severity/affected_files/reason/recommended_action/disposition | done | L1, 16 findings |
+| 收敛修复+全量验证 | S26b | unit+integration+smoke | 按finding_id逐条闭环must_fix/can_residual, pytest全量, vitest全量, build, smoke(首页晨报首屏/回顾页异步链路/GraphPage能力地图Tab切换+加载+重试), auth(未登录或失效token访问晨报/回顾接口返回401, 前端正确处理登录态失效) | done | L4, pytest 953, vitest 347, build success, Docker runtime smoke passed, F-004 全部 7 处迁移 |
+
 ## R027: 数据导出 + 反馈追踪
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |

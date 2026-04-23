@@ -4,7 +4,7 @@ import os
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import FastAPI
@@ -224,36 +224,24 @@ class TestSingleEntryExport:
 
 
 class TestGrowthReportExport:
-    """GET /review/growth-report"""
+    """GET /review/growth-report — 路由层薄包装，逻辑在 ReviewService.export_growth_report"""
+
+    def _make_mock_service(self, md_content: str):
+        """创建 mock review_service，export_growth_report 返回指定 markdown"""
+        mock_review = MagicMock()
+        mock_review.export_growth_report = AsyncMock(return_value=md_content)
+        return mock_review
 
     async def test_growth_report_contains_4_sections(self):
         """正常: 成长报告包含 4 个 section"""
-        mock_storage = _MockSyncService()
-
-        # Mock review_service
-        mock_review = MagicMock()
-        mock_review._sqlite = mock_storage.sqlite
-        mock_review._calculate_learning_streak.return_value = 5
-
-        # Mock trend data
-        mock_trend = MagicMock()
-        mock_trend.daily_data = []
-        mock_review.get_trend_data.return_value = mock_trend
-
-        # Mock knowledge_service
-        mock_ks = MagicMock()
-        mock_stats = MagicMock()
-        mock_stats.concept_count = 10
-        mock_stats.relation_count = 20
-        mock_stats.category_distribution = {"tag": 10}
-        mock_ks._stats_from_sqlite.return_value = mock_stats
+        md = "# 📊 成长报告\n## 概览\n总条目数 | 10\n## 学习趋势\n暂无数据\n## 学习连续天数\n5 天\n## 知识图谱概览\n概念数 | 10"
+        mock_review = self._make_mock_service(md)
 
         app = FastAPI()
         from app.routers.deps import get_current_user
         app.dependency_overrides[get_current_user] = lambda: _mock_user
 
-        with patch.object(review_module, "get_review_service", return_value=mock_review), \
-             patch.object(review_module, "get_knowledge_service", return_value=mock_ks):
+        with patch.object(review_module, "get_review_service", return_value=mock_review):
             app.include_router(review_router)
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -267,72 +255,37 @@ class TestGrowthReportExport:
         assert "学习连续天数" in content
         assert "知识图谱概览" in content
         assert "5 天" in content
-        mock_storage.cleanup()
 
     async def test_growth_report_data_complete(self):
         """正常: 成长报告数据完整，每个 section 有具体数值"""
-        mock_storage = _MockSyncService()
-
-        # 创建条目来产生 count
-        _insert_entry_index(mock_storage.sqlite, "t1", "test-user", "task", "T1")
-
-        mock_review = MagicMock()
-        mock_review._sqlite = mock_storage.sqlite
-        mock_review._calculate_learning_streak.return_value = 3
-
-        mock_trend = MagicMock()
-        mock_trend.daily_data = []
-        mock_review.get_trend_data.return_value = mock_trend
-
-        mock_ks = MagicMock()
-        mock_stats = MagicMock()
-        mock_stats.concept_count = 5
-        mock_stats.relation_count = 8
-        mock_stats.category_distribution = {"tag": 5}
-        mock_ks._stats_from_sqlite.return_value = mock_stats
+        md = "# 📊 成长报告\n## 概览\n总条目数 | 1\n## 学习趋势\n暂无数据\n## 学习连续天数\n3 天\n## 知识图谱概览\n概念数 | 5"
+        mock_review = self._make_mock_service(md)
 
         app = FastAPI()
         from app.routers.deps import get_current_user
         app.dependency_overrides[get_current_user] = lambda: _mock_user
 
-        with patch.object(review_module, "get_review_service", return_value=mock_review), \
-             patch.object(review_module, "get_knowledge_service", return_value=mock_ks):
+        with patch.object(review_module, "get_review_service", return_value=mock_review):
             app.include_router(review_router)
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get("/review/growth-report")
 
         content = response.text
-        # 总条目数有具体数值
         assert "总条目数" in content
-        # 连续天数
         assert "3 天" in content
-        # 图谱有概念数
         assert "5" in content
-        mock_storage.cleanup()
 
     async def test_growth_report_empty_data(self):
         """边界: 空用户数据时报告各 section 为 0 或'暂无数据'"""
-        mock_storage = _MockSyncService()
-
-        mock_review = MagicMock()
-        mock_review._sqlite = mock_storage.sqlite
-        mock_review._calculate_learning_streak.return_value = 0
-
-        mock_trend = MagicMock()
-        mock_trend.daily_data = []
-        mock_review.get_trend_data.return_value = mock_trend
-
-        mock_ks = MagicMock()
-        mock_ks._stats_from_sqlite.side_effect = Exception("no data")
-        mock_ks._sqlite = None
+        md = "# 📊 成长报告\n## 概览\n总条目数 | 0\n## 学习趋势\n暂无数据\n## 学习连续天数\n0 天\n## 知识图谱概览\n暂无数据"
+        mock_review = self._make_mock_service(md)
 
         app = FastAPI()
         from app.routers.deps import get_current_user
         app.dependency_overrides[get_current_user] = lambda: _mock_user
 
-        with patch.object(review_module, "get_review_service", return_value=mock_review), \
-             patch.object(review_module, "get_knowledge_service", return_value=mock_ks):
+        with patch.object(review_module, "get_review_service", return_value=mock_review):
             app.include_router(review_router)
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -342,9 +295,7 @@ class TestGrowthReportExport:
         content = response.text
         assert "0 天" in content
         assert "总条目数 | 0" in content
-        # Neo4j 不可用时知识图谱 section 显示'暂无数据'
         assert "暂无数据" in content
-        mock_storage.cleanup()
 
     async def test_growth_report_requires_auth(self):
         """异常: 未认证访问 /review/growth-report 返回 401"""
@@ -357,26 +308,14 @@ class TestGrowthReportExport:
 
     async def test_growth_report_neo4j_degradation(self):
         """降级: Neo4j 不可用时知识图谱 section 显示'暂无数据'，报告其余部分正常"""
-        mock_storage = _MockSyncService()
-
-        mock_review = MagicMock()
-        mock_review._sqlite = mock_storage.sqlite
-        mock_review._calculate_learning_streak.return_value = 7
-
-        mock_trend = MagicMock()
-        mock_trend.daily_data = []
-        mock_review.get_trend_data.return_value = mock_trend
-
-        # Neo4j 不可用
-        mock_ks = MagicMock()
-        mock_ks._stats_from_sqlite.side_effect = Exception("Neo4j connection failed")
+        md = "# 📊 成长报告\n## 概览\n总条目数 | 0\n## 学习趋势\n暂无数据\n## 学习连续天数\n7 天\n## 知识图谱概览\n暂无数据"
+        mock_review = self._make_mock_service(md)
 
         app = FastAPI()
         from app.routers.deps import get_current_user
         app.dependency_overrides[get_current_user] = lambda: _mock_user
 
-        with patch.object(review_module, "get_review_service", return_value=mock_review), \
-             patch.object(review_module, "get_knowledge_service", return_value=mock_ks):
+        with patch.object(review_module, "get_review_service", return_value=mock_review):
             app.include_router(review_router)
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -386,4 +325,3 @@ class TestGrowthReportExport:
         content = response.text
         assert "7 天" in content
         assert "暂无数据" in content
-        mock_storage.cleanup()
