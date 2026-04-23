@@ -2,8 +2,8 @@
 
 > 项目：personal-growth-assistant
 > 版本：v0.28.0
-> 状态：执行中（R028）
-> 活跃分支：chore/R028-engineering-cleanup
+> 状态：空闲（R028 已归档）
+> 活跃分支：无
 
 ## 当前范围
 

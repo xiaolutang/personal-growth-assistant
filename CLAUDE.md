@@ -187,7 +187,7 @@ entry_service = deps.get_entry_service()
 | `get_related_concepts` | 获取相关概念 |
 | `get_project_progress` | 获取项目进度 |
 | `get_review_summary` | 获取成长回顾统计（日报或周报） |
-| `get_knowledge_stats` | 获取知识概念统计数据 |
+| `get_knowledge_stats` | 获取知识概念统计数据（概念数量、关系数量、分类分布等） |
 | `batch_create_entries` | 批量创建条目（一次最多 10 条） |
 | `batch_update_status` | 批量更新条目状态（一次最多 10 条） |
-| `get_learning_path` | 获取概念学习路径 |
+| `get_learning_path` | 获取概念学习路径（前置知识、掌握程度、下一步建议、相关项目和笔记） |

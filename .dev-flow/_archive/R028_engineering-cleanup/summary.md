@@ -16,7 +16,7 @@
 
 ## 提交记录
 
-- `xxx` chore(cleanup): R028 工程整理（文档同步 + Flutter 导航修复）
+- `e68b1e8` chore(cleanup): R028 工程整理（文档同步 + Flutter 导航修复）
 
 ## 验证结果
 
