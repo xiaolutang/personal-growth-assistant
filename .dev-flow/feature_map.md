@@ -1,22 +1,18 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：R027 数据导出 + 反馈追踪
-> 最后更新：2026-04-22
+> 活跃需求包：R029 Simplify 收敛检查
+> 最后更新：2026-04-23
 
-## R027: 数据导出 + 反馈追踪
+## R029: Simplify 收敛检查
 
-- 分支：feat/R027-export-feedback-tracking
-- 状态：planning
+- 分支：chore/R029-simplify-convergence
+- 状态：completed
 
 | 任务 | 模块 | 状态 | ~Tests |
 |------|------|------|--------|
-| B83 | 导出 API 增强（单条目 + 成长报告） | completed | 10 |
-| B84 | 反馈状态同步（log-service 同步） | completed | 20 |
-| F114 | 条目详情页导出按钮 | pending | 3 |
-| F115 | Review 页导出入口 | pending | 3 |
-| F116 | FeedbackButton 状态增强 | pending | 3 |
-| S21 | 质量收口验证 | pending | 0 |
+| S26a | 四视角审查报告 | completed | L1 审查 |
+| S26b | 收敛修复 + 全量验证 | completed | 953 pytest + 347 vitest |
 
 ## 归档需求包
 
@@ -44,11 +40,13 @@
 | R022 体验打磨 + 遗留项 | _archive/R022_polish-deferred | completed |
 | R025 第三阶段收口 | _archive/R025_stage3-completion | completed |
 | R026 收敛修复 | _archive/R026_convergence-fixes | completed |
+| R027 数据导出 + 反馈追踪 | _archive/R027_export-feedback-tracking | completed |
+| R028 工程清理 | _archive/R028_engineering-cleanup | completed |
 
 ## 测试汇总
 
 | 项目 | 测试数 | 状态 |
 |------|--------|------|
-| 后端测试 | 923 passed | 全绿 |
+| 后端测试 | 953 passed | 全绿 |
 | 前端测试 | 347 passed | 全绿 |
 | E2E 测试 | 113 passed | 全绿 |
