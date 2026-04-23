@@ -180,11 +180,17 @@ class KnowledgeService:
         """检查 Neo4j 是否可用"""
         return self._neo4j is not None and self._neo4j._driver is not None
 
-    async def _with_neo4j_fallback(self, neo4j_coro, sqlite_func, *args, **kwargs):
-        """尝试 Neo4j 操作，失败则降级到 SQLite"""
+    async def _with_neo4j_fallback(self, neo4j_func, sqlite_func, *args, **kwargs):
+        """尝试 Neo4j 操作，失败则降级到 SQLite
+
+        Args:
+            neo4j_func: async callable，仅在 Neo4j 可用时调用
+            sqlite_func: 同步 callable，作为降级方案
+            *args, **kwargs: 传给两个函数的参数
+        """
         if self.is_neo4j_available():
             try:
-                return await neo4j_coro
+                return await neo4j_func(*args, **kwargs)
             except Exception as e:
                 logger.warning(f"Neo4j 操作失败，降级到 SQLite: {e}")
         if self._sqlite:
@@ -617,11 +623,11 @@ class KnowledgeService:
         Returns:
             ConceptStatsResponse: 统计数据
         """
-        if self.is_neo4j_available():
-            return await self._stats_from_neo4j(user_id)
-        elif self._sqlite:
-            return self._stats_from_sqlite(user_id)
-        return ConceptStatsResponse()
+        return await self._with_neo4j_fallback(
+            self._stats_from_neo4j,
+            self._stats_from_sqlite,
+            user_id,
+        ) or ConceptStatsResponse()
 
     async def _stats_from_neo4j(self, user_id: str) -> ConceptStatsResponse:
         """从 Neo4j 获取统计"""
@@ -679,14 +685,11 @@ class KnowledgeService:
         self, query: str, limit: int = 20, user_id: str = "_default"
     ) -> ConceptSearchResponse:
         """搜索概念（Neo4j 优先，SQLite tags 降级）"""
-        if self.is_neo4j_available():
-            try:
-                return await self._search_from_neo4j(query, limit, user_id)
-            except Exception as e:
-                logger.warning(f"Neo4j search failed, falling back to SQLite: {e}")
-        if self._sqlite:
-            return self._search_from_sqlite(query, limit, user_id)
-        return ConceptSearchResponse()
+        return await self._with_neo4j_fallback(
+            self._search_from_neo4j,
+            self._search_from_sqlite,
+            query, limit, user_id,
+        ) or ConceptSearchResponse()
 
     async def _search_from_neo4j(
         self, query: str, limit: int, user_id: str
@@ -725,14 +728,11 @@ class KnowledgeService:
         self, concept: str, days: int = 90, user_id: str = "_default"
     ) -> ConceptTimelineResponse:
         """获取概念学习时间线"""
-        if self.is_neo4j_available():
-            try:
-                return await self._timeline_from_neo4j(concept, days, user_id)
-            except Exception as e:
-                logger.warning(f"Neo4j timeline failed, falling back to SQLite: {e}")
-        if self._sqlite:
-            return self._timeline_from_sqlite(concept, days, user_id)
-        return ConceptTimelineResponse(concept=concept)
+        return await self._with_neo4j_fallback(
+            self._timeline_from_neo4j,
+            self._timeline_from_sqlite,
+            concept, days, user_id,
+        ) or ConceptTimelineResponse(concept=concept)
 
     async def _timeline_from_neo4j(
         self, concept: str, days: int, user_id: str
@@ -850,16 +850,11 @@ class KnowledgeService:
         Returns:
             CapabilityMapResponse 能力地图
         """
-        if self.is_neo4j_available():
-            try:
-                return await self._build_capability_map_from_neo4j(mastery_level, user_id)
-            except Exception as e:
-                logger.warning(f"Neo4j capability map failed, falling back to SQLite: {e}")
-
-        if self._sqlite:
-            return self._build_capability_map_from_sqlite(mastery_level, user_id)
-
-        return CapabilityMapResponse(domains=[], source="sqlite")
+        return await self._with_neo4j_fallback(
+            self._build_capability_map_from_neo4j,
+            self._build_capability_map_from_sqlite,
+            mastery_level, user_id,
+        ) or CapabilityMapResponse(domains=[], source="sqlite")
 
     async def _build_capability_map_from_neo4j(
         self, mastery_level: Optional[str], user_id: str
