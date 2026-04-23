@@ -1522,7 +1522,7 @@ class ReviewService:
         try:
             from app.routers.deps import get_knowledge_service
             ks = get_knowledge_service()
-            stats = ks.get_knowledge_stats(user_id)
+            stats = await ks.get_knowledge_stats(user_id)
             knowledge_lines = [
                 f"| 指标 | 数值 |",
                 f"|------|------|",

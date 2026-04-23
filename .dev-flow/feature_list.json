@@ -22,9 +22,9 @@
   },
   "summary": {
     "total_tasks": 2,
-    "pending": 1,
+    "pending": 0,
     "completed": 1,
-    "in_progress": 0,
+    "in_progress": 1,
     "blocked": 0,
     "cancelled": 0
   },
@@ -72,8 +72,16 @@
       "description": "根据 S26a 审查报告，按 finding_id 逐条闭环修复 critical/major 级收敛问题。每条 must_fix 发现必须有 resolution=fixed 和验证证据。minor/info 级 disposition=can_residual 的记录为 residual_risks 允许不修复。修复后运行全量测试验证无回归。允许扩展修改 S26a files 列表中的直接协作者文件。",
       "verification": "L4",
       "depends_on": ["S26a"],
-      "status": "pending",
+      "status": "in_progress",
       "priority": "high",
+      "started_at": "2026-04-23T12:00:00",
+      "commit": "2f37b9d",
+      "execution_notes": "10 must_fix 全部修复：N+1 查询消除(3处)、路由瘦身(export_growth_report 下沉)、_parse_llm_json 去重、_parse_entry_date 统一、ReportType 类型共享、测试重写。全量测试通过：pytest 953, vitest 347, build 成功。",
+      "evidence_file": "evidence/S26b.md",
+      "execution_state": {
+        "current_step": "audit_rework",
+        "resume_hint": "审计发现 async bug 已修复，等待重新审计"
+      },
       "acceptance_criteria": [
         "S26a 报告中每条 must_fix(critical/major) 发现按 finding_id 逐条闭环: resolution=fixed + 代码 diff 验证证据",
         "S26a 报告中每条 can_residual(minor/info) 发现记录到 residual_risks 列表（含 finding_id + reason）",
