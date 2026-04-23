@@ -1,7 +1,7 @@
 """成长回顾统计服务"""
 import asyncio
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional, Literal, TYPE_CHECKING
 
 from pydantic import BaseModel, Field
