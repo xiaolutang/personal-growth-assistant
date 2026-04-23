@@ -180,21 +180,20 @@ class KnowledgeService:
         """检查 Neo4j 是否可用"""
         return self._neo4j is not None and self._neo4j._driver is not None
 
-    async def _with_neo4j_fallback(self, neo4j_func, sqlite_func, *args, **kwargs):
+    async def _with_neo4j_fallback(self, neo4j_fn, sqlite_fn):
         """尝试 Neo4j 操作，失败则降级到 SQLite
 
         Args:
-            neo4j_func: async callable，仅在 Neo4j 可用时调用
-            sqlite_func: 同步 callable，作为降级方案
-            *args, **kwargs: 传给两个函数的参数
+            neo4j_fn: async 零参 callable（调用方用 lambda/partial 绑定参数）
+            sqlite_fn: 同步零参 callable（调用方用 lambda/partial 绑定参数）
         """
         if self.is_neo4j_available():
             try:
-                return await neo4j_func(*args, **kwargs)
+                return await neo4j_fn()
             except Exception as e:
                 logger.warning(f"Neo4j 操作失败，降级到 SQLite: {e}")
         if self._sqlite:
-            return sqlite_func(*args, **kwargs)
+            return sqlite_fn()
         return None
 
     # ==================== 知识提取 ====================
@@ -519,13 +518,10 @@ class KnowledgeService:
         Returns:
             KnowledgeMapResponse: 全局图谱数据
         """
-        nodes: List[MapNode] = []
-        edges: List[MapEdge] = []
-
-        if self.is_neo4j_available():
-            nodes, edges = await self._build_map_from_neo4j(depth, user_id)
-        elif self._sqlite:
-            nodes, edges = self._build_map_from_sqlite(user_id)
+        nodes, edges = await self._with_neo4j_fallback(
+            lambda: self._build_map_from_neo4j(depth, user_id),
+            lambda: self._build_map_from_sqlite(user_id),
+        ) or ([], [])
 
         # 按 view 参数排序/分组（不影响数据内容，仅影响排序）
         if view == "mastery":
@@ -624,9 +620,8 @@ class KnowledgeService:
             ConceptStatsResponse: 统计数据
         """
         return await self._with_neo4j_fallback(
-            self._stats_from_neo4j,
-            self._stats_from_sqlite,
-            user_id,
+            lambda: self._stats_from_neo4j(user_id),
+            lambda: self._stats_from_sqlite(user_id),
         ) or ConceptStatsResponse()
 
     async def _stats_from_neo4j(self, user_id: str) -> ConceptStatsResponse:
@@ -686,9 +681,8 @@ class KnowledgeService:
     ) -> ConceptSearchResponse:
         """搜索概念（Neo4j 优先，SQLite tags 降级）"""
         return await self._with_neo4j_fallback(
-            self._search_from_neo4j,
-            self._search_from_sqlite,
-            query, limit, user_id,
+            lambda: self._search_from_neo4j(query, limit, user_id),
+            lambda: self._search_from_sqlite(query, limit, user_id),
         ) or ConceptSearchResponse()
 
     async def _search_from_neo4j(
@@ -729,9 +723,8 @@ class KnowledgeService:
     ) -> ConceptTimelineResponse:
         """获取概念学习时间线"""
         return await self._with_neo4j_fallback(
-            self._timeline_from_neo4j,
-            self._timeline_from_sqlite,
-            concept, days, user_id,
+            lambda: self._timeline_from_neo4j(concept, days, user_id),
+            lambda: self._timeline_from_sqlite(concept, days, user_id),
         ) or ConceptTimelineResponse(concept=concept)
 
     async def _timeline_from_neo4j(
@@ -795,27 +788,10 @@ class KnowledgeService:
 
     async def get_mastery_distribution(self, user_id: str = "_default") -> MasteryDistributionResponse:
         """获取掌握度分布统计"""
-        dist = {"new": 0, "beginner": 0, "intermediate": 0, "advanced": 0}
-
-        if self.is_neo4j_available():
-            try:
-                concepts = await self._neo4j.get_all_concepts_with_stats(user_id=user_id)
-                for c in concepts:
-                    name = c.get("name", "")
-                    entry_count = c.get("entry_count", 0)
-                    mastery = self._calculate_mastery_from_stats(entry_count, 0, 0)
-                    dist[mastery] = dist.get(mastery, 0) + 1
-            except Exception as e:
-                logger.warning(f"Neo4j mastery distribution failed, falling back to SQLite: {e}")
-                dist = {"new": 0, "beginner": 0, "intermediate": 0, "advanced": 0}
-                if self._sqlite:
-                    nodes, _ = self._build_map_from_sqlite(user_id)
-                    for node in nodes:
-                        dist[node.mastery] = dist.get(node.mastery, 0) + 1
-        elif self._sqlite:
-            nodes, _ = self._build_map_from_sqlite(user_id)
-            for node in nodes:
-                dist[node.mastery] = dist.get(node.mastery, 0) + 1
+        dist = await self._with_neo4j_fallback(
+            lambda: self._mastery_dist_from_neo4j(user_id),
+            lambda: self._mastery_dist_from_sqlite(user_id),
+        ) or {"new": 0, "beginner": 0, "intermediate": 0, "advanced": 0}
 
         return MasteryDistributionResponse(
             new=dist["new"],
@@ -824,6 +800,24 @@ class KnowledgeService:
             advanced=dist["advanced"],
             total=sum(dist.values()),
         )
+
+    async def _mastery_dist_from_neo4j(self, user_id: str) -> dict:
+        """从 Neo4j 计算掌握度分布"""
+        dist = {"new": 0, "beginner": 0, "intermediate": 0, "advanced": 0}
+        concepts = await self._neo4j.get_all_concepts_with_stats(user_id=user_id)
+        for c in concepts:
+            entry_count = c.get("entry_count", 0)
+            mastery = self._calculate_mastery_from_stats(entry_count, 0, 0)
+            dist[mastery] = dist.get(mastery, 0) + 1
+        return dist
+
+    def _mastery_dist_from_sqlite(self, user_id: str) -> dict:
+        """从 SQLite 计算掌握度分布"""
+        dist = {"new": 0, "beginner": 0, "intermediate": 0, "advanced": 0}
+        nodes, _ = self._build_map_from_sqlite(user_id)
+        for node in nodes:
+            dist[node.mastery] = dist.get(node.mastery, 0) + 1
+        return dist
 
     # ==================== B81: 能力地图 ====================
 
@@ -851,9 +845,8 @@ class KnowledgeService:
             CapabilityMapResponse 能力地图
         """
         return await self._with_neo4j_fallback(
-            self._build_capability_map_from_neo4j,
-            self._build_capability_map_from_sqlite,
-            mastery_level, user_id,
+            lambda: self._build_capability_map_from_neo4j(mastery_level, user_id),
+            lambda: self._build_capability_map_from_sqlite(mastery_level, user_id),
         ) or CapabilityMapResponse(domains=[], source="sqlite")
 
     async def _build_capability_map_from_neo4j(
@@ -959,29 +952,18 @@ class KnowledgeService:
         if not tags:
             return {"nodes": [], "edges": [], "center_concepts": []}
 
-        # 3. 尝试 Neo4j，失败降级到 SQLite
-        if self.is_neo4j_available():
-            try:
-                nodes, edges = await self._build_subgraph_from_neo4j(tags, user_id)
-                return {
-                    "nodes": [n.dict() for n in nodes],
-                    "edges": [e.dict() for e in edges],
-                    "center_concepts": tags,
-                }
-            except Exception as e:
-                logger.warning(f"Neo4j subgraph failed, falling back to SQLite: {e}")
+        # 3. Neo4j 优先，降级到 SQLite
+        result = await self._with_neo4j_fallback(
+            lambda: self._build_subgraph_from_neo4j(tags, user_id),
+            lambda: self._build_subgraph_from_sqlite(tags, user_id),
+        ) or ([], [])
 
-        # SQLite 降级
-        if self._sqlite:
-            nodes, edges = self._build_subgraph_from_sqlite(tags, user_id)
-            return {
-                "nodes": [n.dict() for n in nodes],
-                "edges": [e.dict() for e in edges],
-                "center_concepts": tags,
-            }
-
-        # 无可用存储
-        return {"nodes": [], "edges": [], "center_concepts": tags}
+        nodes, edges = result
+        return {
+            "nodes": [n.dict() for n in nodes],
+            "edges": [e.dict() for e in edges],
+            "center_concepts": tags,
+        }
 
     def _get_entry_tags(self, entry_id: str, user_id: str) -> List[str]:
         """从 SQLite 获取条目的 tags"""

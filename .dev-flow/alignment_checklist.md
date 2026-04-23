@@ -11,7 +11,7 @@
 
 - [x] S26a 无外部依赖
 - [x] S26b depends_on S26a
-- [x] R030 entry_conditions: S26b must_fix 9/10 关闭(F-004 partial) + residual 不涉及主链路 + 全量测试通过
+- [x] R030 entry_conditions: S26b must_fix 10/10 全部关闭 + residual 不涉及主链路 + 全量测试通过
 
 ### 架构对齐
 
