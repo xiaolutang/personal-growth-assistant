@@ -6,9 +6,10 @@ import { FeedbackButton } from "./FeedbackButton";
 import { useChatStore } from "@/stores/chatStore";
 import { ApiError } from "@/services/api";
 
-const { submitFeedbackMock, getFeedbackListMock } = vi.hoisted(() => ({
+const { submitFeedbackMock, getFeedbackListMock, syncFeedbackMock } = vi.hoisted(() => ({
   submitFeedbackMock: vi.fn(),
   getFeedbackListMock: vi.fn(),
+  syncFeedbackMock: vi.fn(),
 }));
 
 vi.mock("@/services/api", async () => {
@@ -17,6 +18,7 @@ vi.mock("@/services/api", async () => {
     ...actual,
     submitFeedback: submitFeedbackMock,
     getFeedbackList: getFeedbackListMock,
+    syncFeedback: syncFeedbackMock,
   };
 });
 
@@ -24,6 +26,7 @@ describe("FeedbackButton", () => {
   afterEach(() => {
     submitFeedbackMock.mockReset();
     getFeedbackListMock.mockReset();
+    syncFeedbackMock.mockReset();
     useChatStore.setState({ panelHeight: 300 });
     vi.useRealTimers();
   });
@@ -51,6 +54,7 @@ describe("FeedbackButton", () => {
       success: true,
       feedback: { id: 1, title: "搜索慢", severity: "medium", status: "pending", log_service_issue_id: null, created_at: "2026-04-12T10:00:00Z" },
     });
+    syncFeedbackMock.mockRejectedValue(new Error("sync unavailable"));
     getFeedbackListMock.mockResolvedValue({
       items: [
         { id: 1, title: "搜索慢", severity: "medium", status: "pending", log_service_issue_id: null, created_at: "2026-04-12T10:00:00Z" },
@@ -100,6 +104,7 @@ describe("FeedbackButton", () => {
 
   it("点击「我的反馈」Tab 展示反馈列表", async () => {
     const user = userEvent.setup();
+    syncFeedbackMock.mockRejectedValue(new Error("sync unavailable"));
     getFeedbackListMock.mockResolvedValue({
       items: [
         { id: 1, title: "Bug A", severity: "high", status: "pending", log_service_issue_id: null, created_at: "2026-04-12T10:00:00Z" },
@@ -117,11 +122,12 @@ describe("FeedbackButton", () => {
     expect(screen.getByText("Bug B")).toBeInTheDocument();
     // status colors
     expect(screen.getByText("待处理")).toHaveClass("text-amber-500");
-    expect(screen.getByText("已上报")).toHaveClass("text-emerald-600");
+    expect(screen.getByText("已上报")).toHaveClass("text-blue-600");
   });
 
   it("反馈列表为空时显示引导文案", async () => {
     const user = userEvent.setup();
+    syncFeedbackMock.mockRejectedValue(new Error("sync unavailable"));
     getFeedbackListMock.mockResolvedValue({ items: [], total: 0 });
 
     render(<FeedbackButton />);
@@ -134,6 +140,7 @@ describe("FeedbackButton", () => {
 
   it("反馈列表加载失败时显示错误提示和重试按钮", async () => {
     const user = userEvent.setup();
+    syncFeedbackMock.mockRejectedValue(new Error("sync unavailable"));
     getFeedbackListMock.mockRejectedValue(new Error("Network error"));
 
     render(<FeedbackButton />);

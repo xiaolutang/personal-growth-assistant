@@ -116,6 +116,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/entries/{entry_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Single Entry
+         * @description 导出单条目 Markdown 文件
+         */
+        get: operations["export_single_entry_entries__entry_id__export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/entries/{entry_id}/progress": {
         parameters: {
             query?: never;
@@ -611,6 +631,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/review/growth-report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Growth Report
+         * @description 导出成长报告 Markdown 文件
+         */
+        get: operations["export_growth_report_review_growth_report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/intent": {
         parameters: {
             query?: never;
@@ -851,6 +891,26 @@ export interface paths {
         get: operations["get_feedback_feedback__feedback_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/feedback/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Feedbacks
+         * @description 同步反馈状态：从 log-service 拉取远程 issue 状态并更新本地
+         */
+        post: operations["sync_feedbacks_feedback_sync_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1866,6 +1926,8 @@ export interface components {
             status: string;
             /** Created At */
             created_at: string;
+            /** Updated At */
+            updated_at?: string | null;
         };
         /**
          * FeedbackListResponse
@@ -1904,6 +1966,20 @@ export interface components {
             feedback: {
                 [key: string]: unknown;
             };
+        };
+        /**
+         * FeedbackSyncResponse
+         * @description 反馈同步响应
+         */
+        FeedbackSyncResponse: {
+            /** Synced Count */
+            synced_count: number;
+            /** Updated Count */
+            updated_count: number;
+            /** Items */
+            items: components["schemas"]["FeedbackItem"][];
+            /** Total */
+            total: number;
         };
         /**
          * GoalCreate
@@ -3473,6 +3549,37 @@ export interface operations {
             };
         };
     };
+    export_single_entry_entries__entry_id__export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_project_progress_entries__entry_id__progress_get: {
         parameters: {
             query?: never;
@@ -4236,6 +4343,26 @@ export interface operations {
             };
         };
     };
+    export_growth_report_review_growth_report_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     detect_intent_intent_post: {
         parameters: {
             query?: never;
@@ -4583,6 +4710,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_feedbacks_feedback_sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackSyncResponse"];
                 };
             };
         };

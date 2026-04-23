@@ -4,6 +4,7 @@ import { Loader2, MessageSquare, Send } from "lucide-react";
 import {
   submitFeedback,
   getFeedbackList,
+  syncFeedback,
   type FeedbackSeverity,
   type FeedbackItem,
   ApiError,
@@ -34,7 +35,16 @@ const initialForm = {
 
 const statusColors: Record<string, string> = {
   pending: "text-amber-500 dark:text-amber-400",
-  reported: "text-emerald-600 dark:text-emerald-400",
+  reported: "text-blue-600 dark:text-blue-400",
+  in_progress: "text-yellow-500 dark:text-yellow-400",
+  resolved: "text-emerald-600 dark:text-emerald-400",
+};
+
+const statusLabels: Record<string, string> = {
+  pending: "待处理",
+  reported: "已上报",
+  in_progress: "处理中",
+  resolved: "已解决",
 };
 
 function formatTime(iso: string): string {
@@ -87,6 +97,8 @@ export function FeedbackButton() {
     return () => window.clearTimeout(timer);
   }, [isSuccess]);
 
+  const [isSyncing, setIsSyncing] = useState(false);
+
   const loadFeedbackList = useCallback(async () => {
     setIsLoadingList(true);
     setListError(false);
@@ -100,11 +112,32 @@ export function FeedbackButton() {
     }
   }, []);
 
-  // load list when switching to list tab
+  // sync + load list when switching to list tab
   useEffect(() => {
-    if (isOpen && activeTab === "list") {
-      loadFeedbackList();
-    }
+    if (!isOpen || activeTab !== "list") return;
+    let cancelled = false;
+
+    const syncAndLoad = async () => {
+      // try sync first (non-blocking on failure)
+      setIsSyncing(true);
+      try {
+        const syncResult = await syncFeedback();
+        if (!cancelled && syncResult.items.length > 0) {
+          setFeedbackList(syncResult.items);
+          setIsSyncing(false);
+          return; // sync data is freshest, skip loading
+        }
+      } catch {
+        // sync failed, fall through to loading from local
+      }
+      if (!cancelled) setIsSyncing(false);
+
+      // load from local as fallback
+      await loadFeedbackList();
+    };
+
+    syncAndLoad();
+    return () => { cancelled = true; };
   }, [isOpen, activeTab, loadFeedbackList]);
 
   const isTitleEmpty = form.title.trim().length === 0;
@@ -242,7 +275,13 @@ export function FeedbackButton() {
           {/* List tab */}
           {activeTab === "list" && (
             <div className="p-4 max-h-[360px] overflow-y-auto">
-              {isLoadingList ? (
+              {isSyncing ? (
+                <div className="flex items-center justify-center gap-2 py-4 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  同步中…
+                </div>
+              ) : null}
+              {!isSyncing && isLoadingList ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
@@ -271,11 +310,16 @@ export function FeedbackButton() {
                         <span
                           className={`shrink-0 text-xs font-medium ${statusColors[item.status] ?? "text-muted-foreground"}`}
                         >
-                          {item.status === "pending" ? "待处理" : "已上报"}
+                          {statusLabels[item.status] ?? item.status}
                         </span>
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {formatTime(item.created_at)}
+                        {item.updated_at && (
+                          <span className="ml-2">
+                            · 更新于 {formatTime(item.updated_at)}
+                          </span>
+                        )}
                       </p>
                     </li>
                   ))}

@@ -58,6 +58,16 @@ class SQLiteStorage:
                 except Exception as e:
                     print(f"迁移失败 {col_name}: {e}")
 
+        # feedback 表 updated_at 列迁移
+        fb_cursor = conn.execute("PRAGMA table_info(feedback)")
+        fb_columns = {row[1] for row in fb_cursor.fetchall()}
+        if "updated_at" not in fb_columns:
+            try:
+                conn.execute("ALTER TABLE feedback ADD COLUMN updated_at TEXT")
+                print("数据库迁移: feedback 表添加 updated_at 列")
+            except Exception as e:
+                print(f"迁移失败 feedback.updated_at: {e}")
+
     def _get_conn(self) -> sqlite3.Connection:
         """获取数据库连接"""
         conn = sqlite3.connect(self.db_path)
@@ -510,7 +520,8 @@ class SQLiteStorage:
                     severity TEXT DEFAULT 'medium',
                     log_service_issue_id INTEGER,
                     status TEXT DEFAULT 'pending',
-                    created_at TEXT NOT NULL
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT
                 )
             """)
             conn.execute("CREATE INDEX IF NOT EXISTS idx_feedback_user_id ON feedback(user_id)")
@@ -1272,6 +1283,39 @@ class SQLiteStorage:
             return True
         except Exception as e:
             print(f"更新反馈状态失败: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def list_feedbacks_with_issue_id(self, user_id: str) -> list[dict[str, Any]]:
+        """列出有 log_service_issue_id 的反馈（用于同步）"""
+        conn = self._get_conn()
+        try:
+            cursor = conn.execute(
+                "SELECT * FROM feedback WHERE user_id = ? AND log_service_issue_id IS NOT NULL",
+                (user_id,),
+            )
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    def sync_feedback_status(
+        self,
+        feedback_id: int,
+        status: str,
+        updated_at: str | None = None,
+    ) -> bool:
+        """同步远程状态到本地反馈记录（status + updated_at 同时写入）"""
+        conn = self._get_conn()
+        try:
+            conn.execute(
+                "UPDATE feedback SET status = ?, updated_at = ? WHERE id = ?",
+                (status, updated_at, feedback_id),
+            )
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"同步反馈状态失败: {e}")
             return False
         finally:
             conn.close()
