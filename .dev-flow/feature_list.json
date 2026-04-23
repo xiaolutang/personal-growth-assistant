@@ -3,9 +3,15 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-23T20:30:00",
-  "status": "idle",
-  "active_requirement_cycle": null,
+  "updated_at": "2026-04-23T21:00:00",
+  "status": "planning",
+  "active_requirement_cycle": {
+    "id": "R029",
+    "name": "simplify-convergence",
+    "branch": "chore/R029-simplify-convergence",
+    "status": "planning",
+    "started_at": "2026-04-23T21:00:00"
+  },
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -15,15 +21,97 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 0,
-    "pending": 0,
-    "completed": 0,
+    "total_tasks": 2,
+    "pending": 1,
+    "completed": 1,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
   },
-  "modules": [],
-  "features": [],
+  "modules": [
+    {
+      "name": "quality",
+      "description": "代码收敛与质量"
+    }
+  ],
+  "features": [
+    {
+      "id": "S26a",
+      "phase": 1,
+      "module": "quality",
+      "name": "Simplify 四视角审查报告",
+      "description": "对 R025~R028 新增/修改代码运行 xlfoundry-simplify 四视角审查（复用、质量、效率、架构），输出结构化审查报告。每个发现标注 [视角×等级]：视角=复用/质量/效率/架构，等级=critical/major/minor/info。重点审查文件：review_service.py、knowledge_service.py、Review.tsx、GraphPage.tsx、Home.tsx。",
+      "verification": "L1",
+      "depends_on": [],
+      "status": "completed",
+      "started_at": "2026-04-23T11:12:00",
+      "completed_at": "2026-04-23T11:30:00",
+      "priority": "high",
+      "evidence_file": "evidence/S26a.md",
+      "execution_notes": "四视角审查完成，发现 16 条问题：2 critical + 7 major + 6 minor + 1 info。must_fix 9 条，can_residual 7 条。",
+      "files": [
+        "backend/app/services/review_service.py",
+        "backend/app/services/knowledge_service.py",
+        "backend/app/routers/knowledge.py",
+        "backend/app/routers/review.py",
+        "frontend/src/pages/Review.tsx",
+        "frontend/src/pages/GraphPage.tsx",
+        "frontend/src/pages/Home.tsx",
+        "frontend/src/components/review/InsightCard.tsx",
+        "frontend/src/components/review/AiSummaryCard.tsx",
+        "frontend/src/hooks/useMorningDigest.ts",
+        "frontend/src/services/api.ts"
+      ],
+      "risk_tags": ["regression", "cross-cutting", "network", "first_use", "auth"]
+    },
+    {
+      "id": "S26b",
+      "phase": 2,
+      "module": "quality",
+      "name": "收敛问题修复 + 全量验证",
+      "description": "根据 S26a 审查报告，按 finding_id 逐条闭环修复 critical/major 级收敛问题。每条 must_fix 发现必须有 resolution=fixed 和验证证据。minor/info 级 disposition=can_residual 的记录为 residual_risks 允许不修复。修复后运行全量测试验证无回归。允许扩展修改 S26a files 列表中的直接协作者文件。",
+      "verification": "L4",
+      "depends_on": ["S26a"],
+      "status": "pending",
+      "priority": "high",
+      "acceptance_criteria": [
+        "S26a 报告中每条 must_fix(critical/major) 发现按 finding_id 逐条闭环: resolution=fixed + 代码 diff 验证证据",
+        "S26a 报告中每条 can_residual(minor/info) 发现记录到 residual_risks 列表（含 finding_id + reason）",
+        "pytest 后端全量测试通过",
+        "vitest 前端全量测试通过",
+        "npm run build 构建成功",
+        "smoke: 首页晨报首屏正常加载（first_use）",
+        "smoke: 回顾页洞察/导出异步链路无报错（network）",
+        "regression: GraphPage 能力地图 Tab 切换 + 加载 + 重试正常",
+        "auth: 未登录或失效 token 访问晨报/回顾相关受保护接口返回 401，前端正确处理登录态失效"
+      ],
+      "files": [
+        "backend/app/services/review_service.py",
+        "backend/app/services/knowledge_service.py",
+        "backend/app/routers/knowledge.py",
+        "backend/app/routers/review.py",
+        "frontend/src/pages/Review.tsx",
+        "frontend/src/pages/GraphPage.tsx",
+        "frontend/src/pages/Home.tsx",
+        "frontend/src/components/review/InsightCard.tsx",
+        "frontend/src/components/review/AiSummaryCard.tsx",
+        "frontend/src/hooks/useMorningDigest.ts",
+        "frontend/src/services/api.ts"
+      ],
+      "risk_tags": ["regression", "cross-cutting", "network", "first_use", "auth"]
+    }
+  ],
+  "next_cycle_preview": {
+    "id": "R030",
+    "name": "ai-morning-report",
+    "branch": "feat/R030-ai-morning-report",
+    "description": "Phase 13 AI 晨报增强：缓存、AI 建议个性化、模式洞察 LLM 增强",
+    "entry_conditions": [
+      "S26b 全部 must_fix 发现已关闭(resolution=fixed)",
+      "residual_risks 不涉及晨报/洞察/知识图谱主链路",
+      "R029 全量测试(pytest+vitest+build)通过"
+    ]
+  },
   "archived_requirement_cycles": [
     {
       "id": "R003",

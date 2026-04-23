@@ -180,6 +180,17 @@ class KnowledgeService:
         """检查 Neo4j 是否可用"""
         return self._neo4j is not None and self._neo4j._driver is not None
 
+    async def _with_neo4j_fallback(self, neo4j_coro, sqlite_func, *args, **kwargs):
+        """尝试 Neo4j 操作，失败则降级到 SQLite"""
+        if self.is_neo4j_available():
+            try:
+                return await neo4j_coro
+            except Exception as e:
+                logger.warning(f"Neo4j 操作失败，降级到 SQLite: {e}")
+        if self._sqlite:
+            return sqlite_func(*args, **kwargs)
+        return None
+
     # ==================== 知识提取 ====================
 
     async def extract_knowledge(self, entry: Task) -> ExtractedKnowledge:
@@ -588,19 +599,13 @@ class KnowledgeService:
     def _calculate_mastery_from_stats(
         self, entry_count: int, recent_count: int, note_count: int
     ) -> str:
-        """根据统计数据计算掌握度"""
-        if entry_count == 0:
-            return "new"
-
-        note_ratio = note_count / entry_count if entry_count > 0 else 0
-
-        if entry_count >= 6 and note_ratio > 0.3:
-            return "advanced"
-        elif entry_count >= 3 and recent_count > 0:
-            return "intermediate"
-        elif entry_count >= 1:
-            return "beginner"
-        return "new"
+        """根据统计数据计算掌握度（委托到 ReviewService 统一实现）"""
+        from app.services.review_service import ReviewService
+        return ReviewService._calculate_mastery_from_stats(
+            entry_count=entry_count,
+            recent_count=recent_count,
+            note_count=note_count,
+        )
 
     async def get_knowledge_stats(self, user_id: str = "_default") -> ConceptStatsResponse:
         """

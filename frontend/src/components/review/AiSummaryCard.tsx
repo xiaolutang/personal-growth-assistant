@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import type { InsightsResponse } from "@/services/api";
-
-type ReportType = "daily" | "weekly" | "monthly" | "trend";
+import type { ReportType } from "@/types/review";
 
 interface AiSummaryCardProps {
   reportType: ReportType;

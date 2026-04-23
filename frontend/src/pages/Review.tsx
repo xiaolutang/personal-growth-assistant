@@ -41,8 +41,7 @@ import { GrowthCurveCard } from "@/components/review/GrowthCurveCard";
 import { AiSummaryCard } from "@/components/review/AiSummaryCard";
 import { InsightCard } from "@/components/review/InsightCard";
 import { PageChatPanel } from "@/components/PageChatPanel";
-
-type ReportType = "daily" | "weekly" | "monthly" | "trend";
+import type { ReportType } from "@/types/review";
 
 export function Review() {
   const [reportType, setReportType] = useState<ReportType>("daily");
