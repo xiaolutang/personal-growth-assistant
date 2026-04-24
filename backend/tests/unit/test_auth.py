@@ -11,6 +11,8 @@ from app.models.user import UserCreate
 from app.services.auth_service import (
     create_access_token,
     get_current_user_from_token,
+    token_blacklist,
+    TokenBlacklist,
 )
 from app.infrastructure.storage.user_storage import verify_password, get_password_hash, check_user_markdown_data
 
@@ -465,3 +467,128 @@ class TestCheckUserMarkdownData:
     def test_nonexistent_dir(self):
         """不存在的目录应返回 False"""
         assert check_user_markdown_data("/nonexistent/path") is False
+
+
+class TestTokenBlacklist:
+    """B90: TokenBlacklist 内存黑名单测试"""
+
+    def test_add_and_check(self):
+        """加入黑名单后能检测到"""
+        bl = TokenBlacklist()
+        bl.add("jti-1", exp=9999999999)
+        assert bl.is_blacklisted("jti-1") is True
+
+    def test_not_in_blacklist(self):
+        """未加入黑名单的 jti 返回 False"""
+        bl = TokenBlacklist()
+        assert bl.is_blacklisted("jti-unknown") is False
+
+    def test_cleanup_expired_removes_old(self):
+        """cleanup_expired 移除已过期记录"""
+        import time
+        bl = TokenBlacklist()
+        bl.add("jti-expired", exp=int(time.time()) - 100)  # 已过期
+        bl.add("jti-valid", exp=int(time.time()) + 3600)    # 仍有效
+        removed = bl.cleanup_expired()
+        assert removed == 1
+        assert bl.is_blacklisted("jti-expired") is False
+        assert bl.is_blacklisted("jti-valid") is True
+
+    def test_cleanup_empty_blacklist(self):
+        """空黑名单 cleanup 开销接近零"""
+        bl = TokenBlacklist()
+        removed = bl.cleanup_expired()
+        assert removed == 0
+
+    def test_start_and_stop_cleanup_task(self):
+        """启动和停止定时清理任务"""
+        import asyncio
+        bl = TokenBlacklist()
+        loop = asyncio.new_event_loop()
+        try:
+            loop.run_until_complete(bl.start_cleanup_task())
+            assert bl._cleanup_task is not None
+            bl.stop_cleanup_task()
+            # stop 后任务应被取消
+            assert bl._cleanup_task is None or bl._cleanup_task.cancelled()
+        finally:
+            loop.close()
+
+    def test_add_idempotent(self):
+        """重复 add 同一个 jti 不报错"""
+        bl = TokenBlacklist()
+        bl.add("jti-1", exp=9999999999)
+        bl.add("jti-1", exp=9999999999)
+        assert bl.is_blacklisted("jti-1") is True
+
+    def test_cleanup_all_expired(self):
+        """全部过期时 cleanup 清空"""
+        import time
+        bl = TokenBlacklist()
+        bl.add("jti-a", exp=int(time.time()) - 10)
+        bl.add("jti-b", exp=int(time.time()) - 5)
+        removed = bl.cleanup_expired()
+        assert removed == 2
+        assert bl.is_blacklisted("jti-a") is False
+        assert bl.is_blacklisted("jti-b") is False
+
+
+class TestJTIInToken:
+    """B90: JWT payload 包含 jti"""
+
+    def test_create_token_has_jti(self):
+        """create_access_token 生成的 token 包含 jti"""
+        import jwt as pyjwt
+        from app.core.config import get_settings
+        settings = get_settings()
+        token = create_access_token("user-123")
+        payload = pyjwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        assert "jti" in payload
+        assert isinstance(payload["jti"], str)
+        assert len(payload["jti"]) > 0
+
+    def test_decode_token_returns_jti(self):
+        """decode_access_token 返回包含 jti 的 TokenData"""
+        from app.models.user import TokenData
+        token = create_access_token("user-456")
+        token_data = None
+        # 直接 import decode
+        from app.services.auth_service import decode_access_token
+        token_data = decode_access_token(token)
+        assert token_data.jti is not None
+        assert isinstance(token_data.jti, str)
+
+
+class TestBlacklistCheck:
+    """B90: get_current_user_from_token 检查黑名单"""
+
+    def test_blacklisted_token_returns_401(self, user_db):
+        """被加入黑名单的 token 返回 401"""
+        from app.services.auth_service import decode_access_token
+        user = user_db.create_user(UserCreate(
+            username="bltest",
+            email="bl@example.com",
+            password="password123",
+        ))
+        token = create_access_token(user.id)
+        token_data = decode_access_token(token)
+        # 加入黑名单
+        token_blacklist.add(token_data.jti, token_data.exp)
+        try:
+            with pytest.raises(Exception) as exc_info:
+                get_current_user_from_token(token, user_db)
+            assert exc_info.value.status_code == 401
+            assert "Token 已失效" in str(exc_info.value.detail)
+        finally:
+            token_blacklist._entries.clear()
+
+    def test_non_blacklisted_token_works(self, user_db):
+        """未被加入黑名单的 token 正常工作"""
+        user = user_db.create_user(UserCreate(
+            username="noblstest",
+            email="nobl@example.com",
+            password="password123",
+        ))
+        token = create_access_token(user.id)
+        result = get_current_user_from_token(token, user_db)
+        assert result.id == user.id

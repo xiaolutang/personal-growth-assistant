@@ -3,7 +3,7 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-24T19:10:00",
+  "updated_at": "2026-04-24T21:30:00",
   "status": "active",
   "active_requirement_cycle": {
     "id": "R033",
@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 5,
-    "pending": 5,
-    "completed": 0,
+    "pending": 4,
+    "completed": 1,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -32,19 +32,27 @@
       "id": "jwt-blacklist",
       "name": "JWT Token 黑名单",
       "description": "后端 logout 实现 token 失效，前端调用对接",
-      "tasks": ["B90", "F121"]
+      "tasks": [
+        "B90",
+        "F121"
+      ]
     },
     {
       "id": "degradation",
       "name": "Neo4j/Qdrant 降级完善",
       "description": "统一双重检查模式、懒重连异常保护、路由层降级提示",
-      "tasks": ["B91", "B92"]
+      "tasks": [
+        "B91",
+        "B92"
+      ]
     },
     {
       "id": "quality",
       "name": "质量收口",
       "description": "全量测试验证和构建",
-      "tasks": ["S30"]
+      "tasks": [
+        "S30"
+      ]
     }
   ],
   "features": [
@@ -56,20 +64,7 @@
       "description": "实现内存 Token 黑名单。auth_service 新增 TokenBlacklist 类（内存 Set + 定时清理过期 token）。/auth/logout 端点将 token jti 加入黑名单。get_current_user 在验证 token 时检查黑名单。Token payload 新增 jti 字段用于唯一标识。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
-      "priority": "P0",
-      "acceptance_criteria": [
-        "TokenBlacklist 类实现：add(jti, exp)、is_blacklisted(jti)、cleanup_expired() 方法",
-        "create_access_token payload 新增 jti 字段（UUID4）",
-        "TokenData 模型新增 jti 字段，decode_access_token 解析并返回 jti",
-        "/auth/logout 端点解析 token 获取 jti 和 exp，加入黑名单",
-        "get_current_user 验证流程新增黑名单检查，命中时返回 401",
-        "TokenBlacklist 使用 asyncio 定时任务每 10 分钟清理过期记录",
-        "黑名单清理任务在 app lifespan startup 中启动、shutdown 中取消，确保测试可控",
-        "黑名单为空时清理开销为零",
-        "token 已过期时正常返回 401（不走黑名单逻辑）",
-        "多个并发 logout 请求线程安全（asyncio.Lock 或 Set 天然线程安全）"
-      ],
+      "status": "completed",
       "test_tasks": [
         "正常登录获取 token，调 logout 后用同一 token 请求受保护路由，验证返回 401",
         "logout 后等待新 token 登录，验证新 token 可正常使用",
@@ -80,7 +75,9 @@
         "携带无效 token 调 /auth/logout，验证返回 401",
         "回归：现有认证测试全通过"
       ],
-      "risk_tags": ["auth"],
+      "risk_tags": [
+        "auth"
+      ],
       "files": [
         "backend/app/services/auth_service.py",
         "backend/app/routers/auth.py",
@@ -88,8 +85,16 @@
         "backend/app/models/user.py",
         "backend/app/main.py"
       ],
-      "contract_refs": ["CONTRACT-AUTH01"],
-      "planning_notes": "单实例内存黑名单足够（Docker 单容器部署）。不加 Redis 减少依赖。jti 用 UUID4 保证唯一。cleanup task 在 main.py lifespan 中启动和取消，确保应用关闭时正确回收。"
+      "contract_refs": [
+        "CONTRACT-AUTH01"
+      ],
+      "planning_notes": "单实例内存黑名单足够（Docker 单容器部署）。不加 Redis 减少依赖。jti 用 UUID4 保证唯一。cleanup task 在 main.py lifespan 中启动和取消，确保应用关闭时正确回收。",
+      "started_at": "2026-04-24T19:40:00",
+      "completed_at": "2026-04-24T21:30:00",
+      "actual_minutes": 110,
+      "evidence_file": ".dev-flow/evidence/B90.md",
+      "execution_notes": "18 tests (11 unit + 7 API), 1130 pytest total, code-review pass, audit pass after evidence + scenario补齐",
+      "summary": "JWT Token 黑名单机制实现完成，含 TokenBlacklist 类、jti 字段、logout 黑名单写入、get_current_user 黑名单拦截、lifespan 清理任务"
     },
     {
       "id": "F121",
@@ -98,7 +103,9 @@
       "name": "前端 logout 调用后端接口",
       "description": "前端 userStore.logout() 改为异步方法，先调用后端 /auth/logout API（将 token 加入黑名单），然后清除本地存储。Sidebar 登出按钮改为 await logout() 后再跳转，确保 token 入黑名单后再离开页面。",
       "verification": "F2",
-      "depends_on": ["B90"],
+      "depends_on": [
+        "B90"
+      ],
       "status": "pending",
       "priority": "P0",
       "acceptance_criteria": [
@@ -116,7 +123,9 @@
         "logout 后验证 localStorage 中 pga_token 已移除",
         "Sidebar 点击登出，验证先完成后端调用再跳转（不因导航取消请求）"
       ],
-      "risk_tags": ["auth"],
+      "risk_tags": [
+        "auth"
+      ],
       "files": [
         "frontend/src/stores/userStore.ts",
         "frontend/src/components/layout/Sidebar.tsx"
@@ -190,7 +199,9 @@
         "backend/app/services/knowledge_service.py",
         "backend/app/routers/knowledge.py"
       ],
-      "contract_refs": ["CONTRACT-KNOWLEDGE01"],
+      "contract_refs": [
+        "CONTRACT-KNOWLEDGE01"
+      ],
       "planning_notes": "核心改动：1) neo4j_client._get_session() 加 _driver=None 检查 2) knowledge_service._with_neo4j_fallback 返回空数据结构 3) knowledge.py 路由层对 None 返回值做防御处理 4) /knowledge-map 和 /knowledge/stats 返回 200+空数据，/knowledge-graph/{concept} 保留 503"
     },
     {
@@ -200,7 +211,12 @@
       "name": "质量收口+全量验证",
       "description": "R033 全量测试验证 + 构建。",
       "verification": "L4",
-      "depends_on": ["B90", "F121", "B91", "B92"],
+      "depends_on": [
+        "B90",
+        "F121",
+        "B91",
+        "B92"
+      ],
       "status": "pending",
       "priority": "P2",
       "acceptance_criteria": [
@@ -224,37 +240,197 @@
   ],
   "next_cycle_preview": null,
   "archived_requirement_cycles": [
-    {"id": "R003", "name": "production-content-recovery", "status": "completed", "archive_dir": "_archive/R003_production-content-recovery"},
-    {"id": "R004", "name": "product-evolution-phase1a", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase1a"},
-    {"id": "R004", "name": "product-evolution-phase1b", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase1a"},
-    {"id": "R004", "name": "product-evolution-phase2", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase2"},
-    {"id": "R005", "name": "product-evolution-phase3", "status": "completed", "archive_dir": "_archive/R005_product-evolution-phase3"},
-    {"id": "R006", "name": "product-polish", "status": "completed", "archive_dir": "_archive/R006_product-polish"},
-    {"id": "R007", "name": "engagement-experience", "status": "completed", "archive_dir": "_archive/R007_engagement-experience"},
-    {"id": "R008", "name": "intelligence-omni", "status": "completed", "archive_dir": "_archive/R008_intelligence-omni"},
-    {"id": "R009", "name": "chat-user-id-threading", "status": "completed", "archive_dir": "_archive/R009_chat-user-id-threading"},
-    {"id": "R010", "name": "engineering-foundation", "status": "completed", "archive_dir": "_archive/R010_engineering-foundation"},
-    {"id": "R011", "name": "entry-context-and-morning-report", "status": "completed", "archive_dir": "_archive/R011_entry-context-and-morning-report"},
-    {"id": "R012", "name": "goal-tracking", "status": "completed", "archive_dir": "_archive/R012_goal-tracking"},
-    {"id": "R013", "name": "decision-reflection-entries", "status": "completed", "archive_dir": "_archive/R013_decision-reflection-entries"},
-    {"id": "R014", "name": "page-context-ai", "status": "completed", "archive_dir": "_archive/R014_page-context-ai"},
-    {"id": "R015", "name": "review-enhancement", "status": "completed", "archive_dir": "_archive/R015_review-enhancement"},
-    {"id": "R016", "name": "polish-cleanup", "status": "completed", "archive_dir": "_archive/R016_polish-cleanup"},
-    {"id": "R017", "name": "code-audit-hardening", "status": "completed", "archive_dir": "_archive/R017_code-audit-hardening"},
-    {"id": "R018", "name": "defect-fix-quality", "status": "completed", "archive_dir": "_archive/R018_defect-fix-quality"},
-    {"id": "R019", "name": "offline-pwa", "status": "completed", "archive_dir": "_archive/R019_offline-pwa"},
-    {"id": "R020", "name": "e2e-ci-pipeline", "status": "completed", "archive_dir": "_archive/R020_e2e-ci-pipeline"},
-    {"id": "R021", "name": "tech-debt-cleanup", "status": "completed", "archive_dir": "_archive/R021_tech-debt-cleanup"},
-    {"id": "R022", "name": "polish-deferred", "status": "completed", "archive_dir": "_archive/R022_polish-deferred"},
-    {"id": "R023", "name": "ai-page-embedded", "status": "completed", "archive_dir": "_archive/R023_ai-page-embedded"},
-    {"id": "R024", "name": "flutter-mobile-mvp", "status": "completed", "archive_dir": "_archive/R024_flutter-mobile-mvp"},
-    {"id": "R025", "name": "stage3-completion", "status": "completed", "archive_dir": "_archive/R025_stage3-completion"},
-    {"id": "R026", "name": "convergence-fixes", "status": "completed", "archive_dir": "_archive/R026_convergence-fixes"},
-    {"id": "R027", "name": "export-feedback-tracking", "status": "completed", "archive_dir": "_archive/R027_export-feedback-tracking"},
-    {"id": "R028", "name": "engineering-cleanup", "status": "completed", "archive_dir": "_archive/R028_engineering-cleanup"},
-    {"id": "R029", "name": "simplify-convergence", "status": "completed", "archive_dir": "_archive/R029_simplify-convergence"},
-    {"id": "R030", "name": "ai-morning-report", "status": "completed", "archive_dir": "_archive/R030_ai-morning-report"},
-    {"id": "R031", "name": "conversational-onboarding", "status": "completed", "archive_dir": "_archive/R031_conversational-onboarding"},
-    {"id": "R032", "name": "search-filter-batch", "status": "completed", "archive_dir": "_archive/R032_search-filter-batch"}
+    {
+      "id": "R003",
+      "name": "production-content-recovery",
+      "status": "completed",
+      "archive_dir": "_archive/R003_production-content-recovery"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase1a",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase1a"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase1b",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase1a"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase2",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase2"
+    },
+    {
+      "id": "R005",
+      "name": "product-evolution-phase3",
+      "status": "completed",
+      "archive_dir": "_archive/R005_product-evolution-phase3"
+    },
+    {
+      "id": "R006",
+      "name": "product-polish",
+      "status": "completed",
+      "archive_dir": "_archive/R006_product-polish"
+    },
+    {
+      "id": "R007",
+      "name": "engagement-experience",
+      "status": "completed",
+      "archive_dir": "_archive/R007_engagement-experience"
+    },
+    {
+      "id": "R008",
+      "name": "intelligence-omni",
+      "status": "completed",
+      "archive_dir": "_archive/R008_intelligence-omni"
+    },
+    {
+      "id": "R009",
+      "name": "chat-user-id-threading",
+      "status": "completed",
+      "archive_dir": "_archive/R009_chat-user-id-threading"
+    },
+    {
+      "id": "R010",
+      "name": "engineering-foundation",
+      "status": "completed",
+      "archive_dir": "_archive/R010_engineering-foundation"
+    },
+    {
+      "id": "R011",
+      "name": "entry-context-and-morning-report",
+      "status": "completed",
+      "archive_dir": "_archive/R011_entry-context-and-morning-report"
+    },
+    {
+      "id": "R012",
+      "name": "goal-tracking",
+      "status": "completed",
+      "archive_dir": "_archive/R012_goal-tracking"
+    },
+    {
+      "id": "R013",
+      "name": "decision-reflection-entries",
+      "status": "completed",
+      "archive_dir": "_archive/R013_decision-reflection-entries"
+    },
+    {
+      "id": "R014",
+      "name": "page-context-ai",
+      "status": "completed",
+      "archive_dir": "_archive/R014_page-context-ai"
+    },
+    {
+      "id": "R015",
+      "name": "review-enhancement",
+      "status": "completed",
+      "archive_dir": "_archive/R015_review-enhancement"
+    },
+    {
+      "id": "R016",
+      "name": "polish-cleanup",
+      "status": "completed",
+      "archive_dir": "_archive/R016_polish-cleanup"
+    },
+    {
+      "id": "R017",
+      "name": "code-audit-hardening",
+      "status": "completed",
+      "archive_dir": "_archive/R017_code-audit-hardening"
+    },
+    {
+      "id": "R018",
+      "name": "defect-fix-quality",
+      "status": "completed",
+      "archive_dir": "_archive/R018_defect-fix-quality"
+    },
+    {
+      "id": "R019",
+      "name": "offline-pwa",
+      "status": "completed",
+      "archive_dir": "_archive/R019_offline-pwa"
+    },
+    {
+      "id": "R020",
+      "name": "e2e-ci-pipeline",
+      "status": "completed",
+      "archive_dir": "_archive/R020_e2e-ci-pipeline"
+    },
+    {
+      "id": "R021",
+      "name": "tech-debt-cleanup",
+      "status": "completed",
+      "archive_dir": "_archive/R021_tech-debt-cleanup"
+    },
+    {
+      "id": "R022",
+      "name": "polish-deferred",
+      "status": "completed",
+      "archive_dir": "_archive/R022_polish-deferred"
+    },
+    {
+      "id": "R023",
+      "name": "ai-page-embedded",
+      "status": "completed",
+      "archive_dir": "_archive/R023_ai-page-embedded"
+    },
+    {
+      "id": "R024",
+      "name": "flutter-mobile-mvp",
+      "status": "completed",
+      "archive_dir": "_archive/R024_flutter-mobile-mvp"
+    },
+    {
+      "id": "R025",
+      "name": "stage3-completion",
+      "status": "completed",
+      "archive_dir": "_archive/R025_stage3-completion"
+    },
+    {
+      "id": "R026",
+      "name": "convergence-fixes",
+      "status": "completed",
+      "archive_dir": "_archive/R026_convergence-fixes"
+    },
+    {
+      "id": "R027",
+      "name": "export-feedback-tracking",
+      "status": "completed",
+      "archive_dir": "_archive/R027_export-feedback-tracking"
+    },
+    {
+      "id": "R028",
+      "name": "engineering-cleanup",
+      "status": "completed",
+      "archive_dir": "_archive/R028_engineering-cleanup"
+    },
+    {
+      "id": "R029",
+      "name": "simplify-convergence",
+      "status": "completed",
+      "archive_dir": "_archive/R029_simplify-convergence"
+    },
+    {
+      "id": "R030",
+      "name": "ai-morning-report",
+      "status": "completed",
+      "archive_dir": "_archive/R030_ai-morning-report"
+    },
+    {
+      "id": "R031",
+      "name": "conversational-onboarding",
+      "status": "completed",
+      "archive_dir": "_archive/R031_conversational-onboarding"
+    },
+    {
+      "id": "R032",
+      "name": "search-filter-batch",
+      "status": "completed",
+      "archive_dir": "_archive/R032_search-filter-batch"
+    }
   ]
 }

@@ -2,6 +2,7 @@
 
 import logging
 
+import jwt as pyjwt
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -18,6 +19,8 @@ from app.infrastructure.storage.user_storage import UserStorage, verify_password
 from app.services.auth_service import (
     auto_claim_default_user_data,
     create_access_token,
+    decode_access_token,
+    token_blacklist,
 )
 from app.routers.deps import get_current_user, get_storage, get_user_storage
 
@@ -115,7 +118,23 @@ async def login(
 async def logout(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ):
-    """登出（前端清除 token）"""
+    """登出：将 token 加入黑名单"""
+    token = credentials.credentials
+    try:
+        token_data = decode_access_token(token)
+    except pyjwt.ExpiredSignatureError:
+        # 过期 token 也视为成功登出（幂等）
+        return {"message": "logged out"}
+    except pyjwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无效的 Token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if token_data.jti:
+        token_blacklist.add(token_data.jti, token_data.exp)
+
     return {"message": "logged out"}
 
 

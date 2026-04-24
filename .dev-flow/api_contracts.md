@@ -6,7 +6,7 @@
 
 | 契约 ID | 方法 | 端点 | 任务 | 状态 |
 |---------|------|------|------|------|
-| CONTRACT-AUTH01 | POST | /auth/logout (行为变更) | B90, F121 | planned |
+| CONTRACT-AUTH01 | POST | /auth/logout (行为变更) | B90, F121 | done |
 | CONTRACT-KNOWLEDGE01 | GET | /knowledge-map, /knowledge/stats (降级行为) | B92 | planned |
 
 ### R033 契约详情

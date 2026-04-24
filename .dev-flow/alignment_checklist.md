@@ -4,12 +4,12 @@
 
 ### 契约对齐
 
-- [ ] B90: CONTRACT-AUTH01 — /auth/logout 行为变更 + Token payload 新增 jti
+- [x] B90: CONTRACT-AUTH01 — /auth/logout 行为变更 + Token payload 新增 jti
 - [ ] F121: CONTRACT-AUTH01 — 前端 logout 改 async，先调后端再跳转
 
 ### 依赖对齐
 
-- [ ] B90 无外部依赖
+- [x] B90 无外部依赖
 - [ ] F121 depends_on B90 ✓（前端依赖后端黑名单就绪）
 - [ ] B91 无外部依赖
 - [ ] B92 无外部依赖
@@ -17,9 +17,9 @@
 
 ### 架构对齐
 
-- [ ] Token 黑名单为内存 Set，不引入 Redis ✓
-- [ ] 黑名单清理任务生命周期挂在 app lifespan ✓
-- [ ] TokenData 模型新增 jti 字段 ✓
+- [x] Token 黑名单为内存 Set，不引入 Redis ✓
+- [x] 黑名单清理任务生命周期挂在 app lifespan ✓
+- [x] TokenData 模型新增 jti 字段 ✓
 - [ ] F121 logout 改 async，Sidebar 改为 await 后再跳转 ✓
 - [ ] B91 sync_service 双重检查覆盖 sync_entry/sync_to_graph_and_vector/delete_entry
 - [ ] B92 路由名对齐实际代码：/knowledge-map, /knowledge/stats, /knowledge-graph/{concept}

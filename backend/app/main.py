@@ -27,6 +27,7 @@ from app.routers import (
 )
 from app.routers import deps
 from app.services import init_storage
+from app.services.auth_service import token_blacklist
 from app.middleware import setup_middlewares
 from log_service_sdk import setup_remote_logging
 
@@ -52,6 +53,9 @@ async def lifespan(app: FastAPI):
     except ValueError as e:
         logger.error("JWT 配置校验失败: %s，应用无法启动", e)
         raise
+
+    # 启动 Token 黑名单定时清理
+    await token_blacklist.start_cleanup_task()
 
     # 初始化远程日志（log-service SDK，非阻塞，即使服务不可达也不影响启动）
     try:
@@ -135,6 +139,9 @@ async def lifespan(app: FastAPI):
         logger.error("存储服务初始化失败（部分功能不可用）: %s", e)
 
     yield
+
+    # 停止 Token 黑名单定时清理
+    token_blacklist.stop_cleanup_task()
 
     # 关闭远程日志 handler，flush 剩余日志
     if _log_handler is not None:

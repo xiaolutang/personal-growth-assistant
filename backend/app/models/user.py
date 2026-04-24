@@ -82,3 +82,4 @@ class TokenData(BaseModel):
 
     sub: str  # user_id
     exp: int  # 过期时间戳
+    jti: Optional[str] = None  # token 唯一标识，用于黑名单
