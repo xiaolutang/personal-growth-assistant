@@ -1,38 +1,12 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：R034 技术债收敛
+> 活跃需求包：无
 > 最后更新：2026-04-25
 
 ## 活跃需求包
 
-### R034 技术债收敛 (R029 Residual Risks)
-
-**Phase 1 快速修复**
-| 任务 | 模块 | 状态 |
-|------|------|------|
-| F122 useMorningDigest error 增强 | hooks | done |
-| F123 Review 组件统一导出 | review-components | done |
-| B93 export_growth_report 依赖注入 | review | done |
-
-**Phase 2 效率优化**
-| 任务 | 模块 | 状态 |
-|------|------|------|
-| F124 Home.tsx 合并遍历 | home | done |
-| B94 _recommend_from_tags 优化 | knowledge | done |
-
-**Phase 3 大型重构**
-| 任务 | 模块 | 状态 |
-|------|------|------|
-| F125 GraphPage 拆分 | graph | done |
-| B95 review_service 模型拆分 | review | done |
-| F126 api.ts 类型迁移 | api | done |
-
-**Phase 4 测试补齐 + 质量收口**
-| 任务 | 模块 | 状态 |
-|------|------|------|
-| F127 GraphPage Tab 测试 | graph | done |
-| S31 质量收口 | quality | pending |
+暂无活跃需求包。
 
 ## 归档需求包
 
@@ -66,6 +40,7 @@
 | R030 AI 晨报增强 | _archive/R030_ai-morning-report | completed |
 | R031 对话式 Onboarding | _archive/R031_conversational-onboarding | completed |
 | R033 安全增强收口 | _archive/R033_security-hardening | completed |
+| R034 技术债收敛 | _archive/R034_tech-debt-residual | completed |
 
 ## 测试汇总
 

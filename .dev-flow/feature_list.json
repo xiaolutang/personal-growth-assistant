@@ -3,14 +3,9 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-25T01:05:00",
+  "updated_at": "2026-04-25T20:00:00",
   "status": "active",
-  "active_requirement_cycle": {
-    "id": "R034",
-    "name": "tech-debt-residual",
-    "status": "completed",
-    "branch": "feat/R034-tech-debt-residual"
-  },
+  "active_requirement_cycle": null,
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
