@@ -251,7 +251,7 @@ export interface paths {
         put?: never;
         /**
          * Search Entries
-         * @description 混合搜索条目（向量 + 全文），Qdrant 不可用时自动降级为纯全文
+         * @description 混合搜索条目（向量 + 全文），支持时间和标签过滤，空 query 走列表+过滤模式
          */
         post: operations["search_entries_search_post"];
         delete?: never;
@@ -2916,9 +2916,10 @@ export interface components {
         SearchRequest: {
             /**
              * Query
-             * @description 搜索查询
+             * @description 搜索查询（空时走列表+过滤模式）
+             * @default
              */
-            query: string;
+            query: string | null;
             /**
              * Limit
              * @description 返回数量
@@ -2930,6 +2931,21 @@ export interface components {
              * @description 按类型过滤
              */
             filter_type?: string | null;
+            /**
+             * Start Time
+             * @description ISO 格式起始时间
+             */
+            start_time?: string | null;
+            /**
+             * End Time
+             * @description ISO 格式结束时间
+             */
+            end_time?: string | null;
+            /**
+             * Tags
+             * @description 标签数组筛选
+             */
+            tags?: string[] | null;
         };
         /**
          * SearchResponse

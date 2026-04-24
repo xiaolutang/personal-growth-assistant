@@ -1,11 +1,15 @@
 """搜索 API 路由"""
 import logging
+from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
-from app.routers.deps import get_hybrid_search_service, get_storage, get_current_user
+from app.api.schemas.entry import EntryResponse
+from app.routers.deps import (
+    get_entry_service, get_hybrid_search_service, get_storage, get_current_user,
+)
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -16,9 +20,12 @@ router = APIRouter(tags=["search"])
 
 class SearchRequest(BaseModel):
     """搜索请求"""
-    query: str = Field(..., min_length=1, description="搜索查询")
+    query: Optional[str] = Field("", description="搜索查询（空时走列表+过滤模式）")
     limit: int = Field(10, ge=1, le=20, description="返回数量")
     filter_type: Optional[str] = Field(None, description="按类型过滤")
+    start_time: Optional[datetime] = Field(None, description="ISO 格式起始时间")
+    end_time: Optional[datetime] = Field(None, description="ISO 格式结束时间")
+    tags: Optional[List[str]] = Field(None, description="标签数组筛选")
 
 
 class SearchResult(BaseModel):
@@ -39,62 +46,163 @@ class SearchResponse(BaseModel):
     query: str
 
 
+# === 辅助函数 ===
+
+def _snippet(content: str, max_len: int = 100) -> str:
+    """截取内容前 max_len 字符作为摘要"""
+    if not content:
+        return ""
+    text = content.replace("\n", " ").strip()
+    return text[:max_len] + ("..." if len(text) > max_len else "")
+
+
+def _entry_matches_filters(
+    entry: EntryResponse,
+    start_time: Optional[datetime],
+    end_time: Optional[datetime],
+    tags: Optional[List[str]],
+) -> bool:
+    """检查 EntryResponse 是否匹配时间和标签过滤条件"""
+    # 时间过滤：created_at 在 [start_time, end_time] 闭区间内
+    if start_time or end_time:
+        try:
+            created = datetime.fromisoformat(entry.created_at)
+        except (ValueError, TypeError):
+            return True  # 无法解析时间时不过滤
+        if start_time and created < start_time:
+            return False
+        if end_time and created > end_time:
+            return False
+
+    # 标签过滤：entry 的 tags 与请求 tags 有交集
+    if tags:  # tags 为空列表 [] 时 if 不成立，等价于不筛选
+        if not set(entry.tags) & set(tags):
+            return False
+
+    return True
+
+
+def _filter_entries(
+    entries: List[EntryResponse],
+    start_time: Optional[datetime],
+    end_time: Optional[datetime],
+    tags: Optional[List[str]],
+) -> List[EntryResponse]:
+    """对 EntryResponse 列表应用时间和标签后过滤"""
+    if not start_time and not end_time and not tags:
+        return entries
+    return [e for e in entries if _entry_matches_filters(e, start_time, end_time, tags)]
+
+
+def _raw_matches_filters(
+    raw: dict,
+    start_time: Optional[datetime],
+    end_time: Optional[datetime],
+    tags: Optional[List[str]],
+) -> bool:
+    """检查原始 dict 结果是否匹配过滤条件（SQLite 降级路径）"""
+    if start_time or end_time:
+        created_at = raw.get("created_at", "")
+        try:
+            created = datetime.fromisoformat(created_at)
+        except (ValueError, TypeError):
+            return True
+        if start_time and created < start_time:
+            return False
+        if end_time and created > end_time:
+            return False
+
+    if tags:
+        entry_tags = raw.get("tags", [])
+        if isinstance(entry_tags, str):
+            entry_tags = [t.strip() for t in entry_tags.split(",") if t.strip()]
+        if not set(entry_tags) & set(tags):
+            return False
+
+    return True
+
+
 # === API 端点 ===
 
 @router.post("/search", response_model=SearchResponse)
 async def search_entries(request: SearchRequest, user: User = Depends(get_current_user)):
-    """混合搜索条目（向量 + 全文），Qdrant 不可用时自动降级为纯全文"""
+    """混合搜索条目（向量 + 全文），支持时间和标签过滤，空 query 走列表+过滤模式"""
     storage = get_storage()
+    query = request.query or ""
 
-    def _snippet(content: str, max_len: int = 100) -> str:
-        """截取内容前 max_len 字符作为摘要"""
-        if not content:
-            return ""
-        text = content.replace("\n", " ").strip()
-        return text[:max_len] + ("..." if len(text) > max_len else "")
+    # === 空 query 路径：getEntries + 后过滤 ===
+    if not query:
+        entry_service = get_entry_service()
+        list_response = await entry_service.list_entries(
+            type=request.filter_type,
+            limit=100,
+            offset=0,
+            user_id=user.id,
+        )
+        filtered = _filter_entries(
+            list_response.entries, request.start_time, request.end_time, request.tags,
+        )
+        filtered = filtered[:request.limit]
+        results = [
+            SearchResult(
+                id=e.id, title=e.title, content_snippet=_snippet(e.content),
+                category=e.category, status=e.status, tags=e.tags or [],
+                file_path=e.file_path, score=1.0,
+            )
+            for e in filtered
+        ]
+        return SearchResponse(results=results, query=query)
 
-    # 尝试混合搜索
+    # === 非空 query：混合搜索 + 后过滤 ===
     if storage.qdrant or storage.sqlite:
         try:
             hybrid = get_hybrid_search_service()
             entries = await hybrid.search(
-                request.query, user_id=user.id, limit=request.limit, filter_type=request.filter_type,
+                query, user_id=user.id, limit=request.limit * 2,
+                filter_type=request.filter_type,
+                start_time=request.start_time, end_time=request.end_time,
+                tags=request.tags,
             )
-            results = []
-            for e in entries:
-                results.append(SearchResult(
-                    id=e.id,
-                    title=e.title,
-                    content_snippet=_snippet(e.content),
-                    category=e.category,
-                    status=e.status,
-                    tags=e.tags or [],
-                    file_path=e.file_path,
-                    score=1.0,
-                ))
-            return SearchResponse(results=results, query=request.query)
+            # 路由层后过滤（兜底，确保过滤总是生效）
+            if request.filter_type:
+                entries = [e for e in entries if e.category == request.filter_type]
+            entries = _filter_entries(
+                entries, request.start_time, request.end_time, request.tags,
+            )
+            entries = entries[:request.limit]
+            results = [
+                SearchResult(
+                    id=e.id, title=e.title, content_snippet=_snippet(e.content),
+                    category=e.category, status=e.status, tags=e.tags or [],
+                    file_path=e.file_path, score=1.0,
+                )
+                for e in entries
+            ]
+            return SearchResponse(results=results, query=query)
         except Exception as exc:
             logger.warning(f"混合搜索失败，降级到纯全文: {exc}")
 
-    # 降级：仅 SQLite 全文搜索
+    # === SQLite 降级 ===
     if storage.sqlite:
-        raw = storage.sqlite.search(request.query, limit=request.limit, user_id=user.id)
+        raw = storage.sqlite.search(query, limit=request.limit * 2, user_id=user.id)
         if request.filter_type:
             raw = [r for r in raw if r.get("type") == request.filter_type]
+        if request.start_time or request.end_time or request.tags:
+            raw = [r for r in raw if _raw_matches_filters(
+                r, request.start_time, request.end_time, request.tags,
+            )]
+        raw = raw[:request.limit]
         results = [
             SearchResult(
-                id=r.get("id", ""),
-                title=r.get("title", ""),
+                id=r.get("id", ""), title=r.get("title", ""),
                 content_snippet=_snippet(r.get("content", "")),
-                category=r.get("type", "note"),
-                status=r.get("status", "doing"),
-                tags=r.get("tags", []),
-                file_path=r.get("file_path", ""),
+                category=r.get("type", "note"), status=r.get("status", "doing"),
+                tags=r.get("tags", []), file_path=r.get("file_path", ""),
                 score=1.0,
             )
             for r in raw
         ]
-        return SearchResponse(results=results, query=request.query)
+        return SearchResponse(results=results, query=query)
 
     # 无任何搜索后端可用
-    return SearchResponse(results=[], query=request.query)
+    return SearchResponse(results=[], query=query)

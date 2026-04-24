@@ -3,6 +3,7 @@
 import asyncio
 import logging
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
 
 from app.api.schemas.entry import EntryResponse
@@ -47,6 +48,9 @@ class HybridSearchService:
         text_weight: float = 0.3,
         min_score: float = 0.25,
         filter_type: Optional[str] = None,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+        tags: Optional[List[str]] = None,
     ) -> List[EntryResponse]:
         """
         混合搜索流程：
@@ -142,7 +146,39 @@ class HybridSearchService:
                 if entry:
                     responses.append(EntryResponse(**EntryMapper.task_to_response(entry)))
 
+        # 合并分数后、返回前：应用时间和标签后过滤
+        if start_time or end_time or tags:
+            responses = self._apply_filters(responses, start_time, end_time, tags)
+
         return responses
+
+    def _apply_filters(
+        self,
+        entries: List[EntryResponse],
+        start_time: Optional[datetime],
+        end_time: Optional[datetime],
+        tags: Optional[List[str]],
+    ) -> List[EntryResponse]:
+        """对搜索结果应用时间和标签后过滤"""
+        filtered = entries
+        if start_time or end_time:
+            result = []
+            for e in filtered:
+                try:
+                    created = datetime.fromisoformat(e.created_at)
+                except (ValueError, TypeError):
+                    result.append(e)
+                    continue
+                if start_time and created < start_time:
+                    continue
+                if end_time and created > end_time:
+                    continue
+                result.append(e)
+            filtered = result
+        if tags:  # tags 为空列表 [] 时等价于不筛选
+            tag_set = set(tags)
+            filtered = [e for e in filtered if set(e.tags) & tag_set]
+        return filtered
 
     def _normalize_dict_scores(self, scores: Dict[str, float]) -> Dict[str, float]:
         """归一化字典分数到 0-1 范围"""
