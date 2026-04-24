@@ -47,8 +47,8 @@ async def test_llm_returns_insights():
     """LLM 正常返回洞察列表"""
     svc = _make_service()
     svc._sqlite.list_entries.return_value = [
-        {"type": "task", "status": "complete", "tags": ["Python"]},
-        {"type": "note", "status": "", "tags": ["Rust"]},
+        {"type": "task", "status": "complete", "tags": ["Python"], "created_at": "2026-04-20"},
+        {"type": "note", "status": "", "tags": ["Rust"], "created_at": "2026-04-21"},
     ]
 
     mock_caller = AsyncMock()
@@ -59,6 +59,43 @@ async def test_llm_returns_insights():
 
     assert len(result) == 2
     assert "Python" in result[0]
+
+
+# ---------------------------------------------------------------------------
+# 1b. 时间模式：weekday_activity 出现在 LLM 输入数据中
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_llm_stats_include_weekday_activity():
+    """B87 AC3: stats 应包含 weekday_activity 时间模式"""
+    svc = _make_service()
+    svc._sqlite.list_entries.return_value = [
+        {"type": "task", "status": "complete", "tags": [], "created_at": "2026-04-20"},  # Monday
+        {"type": "note", "status": "", "tags": [], "created_at": "2026-04-22"},  # Wednesday
+        {"type": "inbox", "status": "", "tags": [], "created_at": "2026-04-22"},  # Wednesday
+    ]
+
+    captured_stats = {}
+
+    async def _capture_call(messages):
+        user_msg = messages[1]["content"]
+        # 提取 JSON 部分
+        import re
+        match = re.search(r'用户近 30 天数据：\n(.*)', user_msg, re.DOTALL)
+        if match:
+            captured_stats.update(json.loads(match.group(1)))
+        return json.dumps(["你在周三最活跃"])
+
+    mock_caller = AsyncMock()
+    mock_caller.call.side_effect = _capture_call
+    svc._llm_caller = mock_caller
+
+    result = await svc._generate_pattern_insights_llm("u1")
+
+    # 验证 weekday_activity 存在且包含时间分布
+    assert "weekday_activity" in captured_stats
+    assert captured_stats["weekday_activity"]["Wednesday"] == 2
+    assert captured_stats["weekday_activity"]["Monday"] == 1
 
 
 # ---------------------------------------------------------------------------

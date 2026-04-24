@@ -5,33 +5,33 @@
 ### 契约对齐
 
 - [x] B85: CONTRACT-MORNING-CACHE01 — MorningDigestResponse 添加可选 cached_at 字段 ✓
-- [ ] B86: 不涉及新契约，只改 prompt 构造
-- [ ] B87: 不涉及新契约，只改内部实现（pattern_insights 最多 5 条，现有 schema 已支持 list）
+- [x] B86: 不涉及新契约，只改 prompt 构造 ✓
+- [x] B87: 不涉及新契约，只改内部实现（pattern_insights 最多 5 条，现有 schema 已支持 list） ✓
 
 ### 依赖对齐
 
-- [ ] B85 无外部依赖 ✓
-- [ ] B86 depends_on B85 ✓（缓存先就绪，个性化建议写入缓存）
-- [ ] B87 depends_on B86 ✓（串行，共享 review_service.py 避免冲突）
-- [ ] F117 depends_on B87 ✓（前端展示依赖后端全部完成）
-- [ ] S27 depends_on F117 ✓
+- [x] B85 无外部依赖 ✓
+- [x] B86 depends_on B85 ✓（缓存先就绪，个性化建议写入缓存）
+- [x] B87 depends_on B86 ✓（串行，共享 review_service.py 避免冲突）
+- [x] F117 depends_on B87 ✓（前端展示依赖后端全部完成）
+- [x] S27 depends_on F117 ✓
 
 ### 类型同步对齐
 
-- [ ] B85 完成后执行 npm run gen:types 更新 api.generated.ts（新增 cached_at 字段）
-- [ ] F117 开始前确认类型已同步
+- [x] B85 完成后执行 npm run gen:types 更新 api.generated.ts（新增 cached_at 字段） ✓
+- [x] F117 开始前确认类型已同步 ✓
 
 ### 架构对齐
 
-- [ ] 不新建服务文件，在现有 review_service.py 内修改缓存逻辑
-- [ ] 不新建前端文件，在现有 Home.tsx + useMorningDigest.ts 内修改
-- [ ] 缓存使用模块级 dict，不引入 Redis 等外部依赖
-- [ ] LLM 改动保留现有降级机制（超时 + 模板兜底）
-- [ ] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫
+- [x] 不新建服务文件，在现有 review_service.py 内修改缓存逻辑 ✓
+- [x] 不新建前端文件，在现有 Home.tsx + useMorningDigest.ts 内修改 ✓
+- [x] 缓存使用模块级 dict，不引入 Redis 等外部依赖 ✓
+- [x] LLM 改动保留现有降级机制（超时 + 模板兜底） ✓
+- [x] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫 ✓
 
 ### 执行顺序
 
-- [ ] 推荐：B85 → B86 → B87 → npm run gen:types → F117 → S27（串行，避免 review_service.py 冲突）
+- [x] 推荐：B85 → B86 → B87 → npm run gen:types → F117 → S27（串行，避免 review_service.py 冲突） ✓
 
 ## R029: Simplify 收敛检查
 

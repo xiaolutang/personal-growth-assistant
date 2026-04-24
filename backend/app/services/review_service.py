@@ -1040,6 +1040,7 @@ class ReviewService:
         tag_freq: dict[str, int] = {}
         task_completed = 0
         task_total = 0
+        weekday_counts: dict[str, int] = {}
         for entry in recent_entries:
             cat = entry.get("type", entry.get("category", "unknown"))
             cat_counts[cat] = cat_counts.get(cat, 0) + 1
@@ -1049,12 +1050,22 @@ class ReviewService:
                 task_total += 1
                 if entry.get("status") == "complete":
                     task_completed += 1
+            # B87 AC3: 时间模式 — 按星期几统计活动分布
+            created = entry.get("created_at", "")
+            if created:
+                try:
+                    from datetime import datetime as _dt
+                    wd = _dt.fromisoformat(created).strftime("%A")
+                    weekday_counts[wd] = weekday_counts.get(wd, 0) + 1
+                except (ValueError, TypeError):
+                    pass
 
         stats = {
             "total_entries": total,
             "category_distribution": cat_counts,
             "task_completion_rate": round(task_completed / task_total * 100, 1) if task_total > 0 else 0,
             "top_tags": sorted(tag_freq.items(), key=lambda x: x[1], reverse=True)[:10],
+            "weekday_activity": weekday_counts,
         }
 
         system_prompt = (
