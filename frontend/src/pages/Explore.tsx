@@ -1,11 +1,14 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, Lightbulb, FileText, Folder, Layers, Clock, X, TrendingUp, Scale, RotateCcw, HelpCircle, Loader2, Calendar, Tag } from "lucide-react";
+import { Search, Lightbulb, FileText, Folder, Layers, Clock, X, TrendingUp, Scale, RotateCcw, HelpCircle, Loader2, Calendar, Tag, Pencil, Trash2, FolderInput } from "lucide-react";
 import { getEntries, searchEntries } from "../services/api";
 import type { SearchFilterOptions } from "../services/api";
+import { useTaskStore } from "@/stores/taskStore";
+import { toast } from "sonner";
 import { PageChatPanel } from "@/components/PageChatPanel";
 import { TaskList } from "../components/TaskList";
 import type { Task, Category, TaskStatus, Priority, SearchResult } from "../types/task";
+import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "../components/ui/card";
 import { Header } from "../components/layout/Header";
 import { useChatStore } from "@/stores/chatStore";
@@ -154,6 +157,13 @@ export function Explore() {
   const [timeRange, setTimeRange] = useState<TimeRange>("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
+  // 多选状态
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchLoading, setBatchLoading] = useState(false);
+  const deleteTask = useTaskStore((state) => state.deleteTask);
+  const storeUpdateEntry = useTaskStore((state) => state.updateEntry);
+
   // 监听 AppLayout 派发的聚焦事件（由全局 Cmd+K 触发）
   useEffect(() => {
     const handleFocusSearch = () => searchInputRef.current?.focus();
@@ -259,6 +269,96 @@ export function Explore() {
 
   // 空结果时自动展开搜索助手
   const autoExpandAssistant = !isLoading && !isSearching && filteredTasks.length === 0;
+
+  // 多选操作
+  const enterSelectMode = useCallback(() => {
+    setSelectMode(true);
+    setSelectedIds(new Set());
+  }, []);
+
+  const exitSelectMode = useCallback(() => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const selectAll = useCallback(() => {
+    setSelectedIds(new Set(filteredTasks.map((t) => t.id)));
+  }, [filteredTasks]);
+
+  // ESC 键退出多选模式
+  useEffect(() => {
+    if (!selectMode) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") exitSelectMode();
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [selectMode, exitSelectMode]);
+
+  // 批量删除
+  const handleBatchDelete = async () => {
+    if (!confirm(`确定要删除选中的 ${selectedIds.size} 条内容吗？`)) return;
+    setBatchLoading(true);
+    let failed = 0;
+    const deletedIds: string[] = [];
+    for (const id of selectedIds) {
+      await deleteTask(id);
+      if (useTaskStore.getState().error) {
+        failed++;
+        useTaskStore.setState({ error: null });
+      } else {
+        deletedIds.push(id);
+      }
+    }
+    setBatchLoading(false);
+    if (deletedIds.length > 0) {
+      setEntries((prev) => prev.filter((e) => !deletedIds.includes(e.id)));
+      setSearchResults((prev) => prev ? prev.filter((e) => !deletedIds.includes(e.id)) : null);
+    }
+    if (failed === 0) {
+      toast.success(`已删除 ${deletedIds.length} 条内容`);
+      exitSelectMode();
+    } else {
+      toast.error(`${failed} 条删除失败`);
+    }
+  };
+
+  // 批量转分类
+  const handleBatchCategory = async (category: Category) => {
+    setBatchLoading(true);
+    let failed = 0;
+    const updatedIds: string[] = [];
+    for (const id of selectedIds) {
+      await storeUpdateEntry(id, { category });
+      if (useTaskStore.getState().error) {
+        failed++;
+        useTaskStore.setState({ error: null });
+      } else {
+        updatedIds.push(id);
+      }
+    }
+    setBatchLoading(false);
+    if (updatedIds.length > 0) {
+      setEntries((prev) => prev.map((e) => updatedIds.includes(e.id) ? { ...e, category } : e));
+      setSearchResults((prev) => prev ? prev.map((e) => updatedIds.includes(e.id) ? { ...e, category } : e) : null);
+    }
+    const label = category === "task" ? "任务" : category === "note" ? "笔记" : "灵感";
+    if (failed === 0) {
+      toast.success(`已转为${label} ${updatedIds.length} 条`);
+      exitSelectMode();
+    } else {
+      toast.error(`${failed} 条转换失败`);
+    }
+  };
 
   const handleTabChange = useCallback(
     (key: string) => {
@@ -505,7 +605,7 @@ export function Explore() {
 
       {/* 内容区域 */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>
             {searchResults !== null
               ? `搜索结果 (${filteredTasks.length})`
@@ -513,6 +613,23 @@ export function Explore() {
                 ? `${TABS.find((t) => t.key === activeTab)?.label} (${filteredTasks.length})`
                 : `全部 (${filteredTasks.length})`}
           </CardTitle>
+          {!isLoading && !entriesError && filteredTasks.length > 0 && (
+            !selectMode ? (
+              <Button variant="outline" size="sm" onClick={enterSelectMode}>
+                <Pencil className="h-4 w-4 mr-1" />
+                编辑
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={selectAll}>
+                  全选
+                </Button>
+                <Button variant="ghost" size="sm" onClick={exitSelectMode}>
+                  取消
+                </Button>
+              </div>
+            )
+          )}
         </CardHeader>
         {isLoading ? (
           <div className="flex items-center justify-center gap-2 p-4 text-muted-foreground">
@@ -537,9 +654,57 @@ export function Explore() {
         ) : searchError ? (
           <div className="p-4 text-center text-red-500 dark:text-red-400">{searchError}</div>
         ) : (
-          <TaskList tasks={filteredTasks} emptyMessage={emptyMessage} highlightKeyword={searchQuery.trim()} />
+          <div
+            onTouchStart={selectMode ? undefined : undefined}
+          >
+            <TaskList
+              tasks={filteredTasks}
+              emptyMessage={emptyMessage}
+              highlightKeyword={searchQuery.trim()}
+              selectable={selectMode}
+              selectedIds={selectedIds}
+              onSelect={toggleSelect}
+              disableActions={selectMode}
+            />
+          </div>
         )}
       </Card>
+
+      {/* 底部批量操作栏 */}
+      {selectMode && selectedIds.size > 0 && (
+        <div className="fixed bottom-16 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur px-4 py-3 flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">已选 {selectedIds.size} 项</span>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleBatchCategory("note")}
+              disabled={batchLoading}
+            >
+              {batchLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <FolderInput className="h-4 w-4 mr-1" />}
+              转笔记
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleBatchCategory("inbox")}
+              disabled={batchLoading}
+            >
+              {batchLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <FolderInput className="h-4 w-4 mr-1" />}
+              转灵感
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleBatchDelete}
+              disabled={batchLoading}
+            >
+              {batchLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
+              删除
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* 搜索助手 AI */}
       <PageChatPanel

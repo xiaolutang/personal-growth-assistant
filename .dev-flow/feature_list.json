@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 4,
-    "pending": 4,
-    "completed": 0,
+    "pending": 0,
+    "completed": 4,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -62,7 +62,7 @@
       "description": "搜索 API 新增 start_time、end_time、tags 参数，query 改为可选（支持纯过滤浏览模式）。HybridSearchService.search() 在合并分数后、返回前应用时间和标签过滤。SQLite 降级路径同步支持。时间过滤基于 entry 的 created_at 字段，标签过滤基于 entry 的 tags 字段（数组交集匹配）。query 为空时走 getEntries + 后过滤而非向量/全文搜索。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "acceptance_criteria": [
         "SearchRequest 新增 start_time: Optional[str]（ISO 格式）、end_time: Optional[str]、tags: Optional[List[str]] 三个参数",
@@ -111,7 +111,7 @@
       "description": "Explore 页搜索体验增强。新增时间范围快选（今天/本周/本月/全部），热门标签点击改为真正的标签筛选器（传 tags 参数到后端）。搜索栏下方显示当前激活的过滤条件，可一键清除。",
       "verification": "F2",
       "depends_on": ["B89"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "acceptance_criteria": [
         "搜索面板新增时间范围快选按钮组：今天/本周/本月/全部（默认全部）",
@@ -148,7 +148,7 @@
       "description": "Explore 页增加多选模式和批量操作。复用 Tasks 页已有的多选模式（selectMode/selectedIds/toggleSelect）和批量操作模式（批量删除、批量转分类）。在条目卡片长按或右上角编辑按钮进入多选模式。选择模式下禁用 TaskCard 内的状态切换和删除按钮。批量操作通过 taskStore 执行（deleteTask/updateEntry），操作完成后从 Explore 本地 entries/searchResults 中移除已删除条目或更新已转分类条目。",
       "verification": "F2",
       "depends_on": ["F119"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
       "acceptance_criteria": [
         "Explore 页右上角新增'编辑'按钮，点击进入多选模式",
@@ -191,7 +191,7 @@
       "description": "R032 全量测试验证 + 构建。",
       "verification": "L4",
       "depends_on": ["F119", "F120"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P2",
       "acceptance_criteria": [
         "pytest 全量通过",

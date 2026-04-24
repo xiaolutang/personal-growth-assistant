@@ -17,6 +17,7 @@ interface TaskCardProps {
   selectable?: boolean;
   selected?: boolean;
   onSelect?: (id: string) => void;
+  disableActions?: boolean;
 }
 
 /** 高亮文本中所有匹配的关键词（大小写不敏感，索引安全） */
@@ -41,7 +42,7 @@ function HighlightText({ text, keyword }: { text: string; keyword: string }) {
   return <>{parts}</>;
 }
 
-export function TaskCard({ task, showParent = true, highlightKeyword, selectable = false, selected = false, onSelect }: TaskCardProps) {
+export function TaskCard({ task, showParent = true, highlightKeyword, selectable = false, selected = false, onSelect, disableActions = false }: TaskCardProps) {
   const navigate = useNavigate();
   const updateTaskStatus = useTaskStore((state) => state.updateTaskStatus);
   const deleteTask = useTaskStore((state) => state.deleteTask);
@@ -165,6 +166,7 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
         onClick={handleStatusChange}
         className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center -m-1 p-1"
         aria-label="切换状态"
+        disabled={disableActions}
       >
         {renderStatusIcon()}
       </button>
@@ -218,7 +220,7 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
           </Badge>
         )}
         {/* Inbox 转化菜单 */}
-        {task.category === "inbox" && (
+        {!disableActions && task.category === "inbox" && (
           <div className="relative" ref={menuRef}>
             <Button
               variant="ghost"
@@ -253,14 +255,16 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
             )}
           </div>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 min-h-[44px] min-w-[44px] text-muted-foreground hover:text-destructive"
-          onClick={handleDelete}
-        >
-          <Trash2 className="h-3 w-3" />
-        </Button>
+        {!disableActions && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 min-h-[44px] min-w-[44px] text-muted-foreground hover:text-destructive"
+            onClick={handleDelete}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        )}
       </div>
     </Card>
   );

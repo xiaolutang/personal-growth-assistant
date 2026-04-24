@@ -11,9 +11,10 @@ interface TaskListProps {
   selectable?: boolean;
   selectedIds?: Set<string>;
   onSelect?: (id: string) => void;
+  disableActions?: boolean;
 }
 
-export function TaskList({ tasks, emptyMessage = "暂无任务", emptyIcon, emptyAction, highlightKeyword, selectable = false, selectedIds, onSelect }: TaskListProps) {
+export function TaskList({ tasks, emptyMessage = "暂无任务", emptyIcon, emptyAction, highlightKeyword, selectable = false, selectedIds, onSelect, disableActions = false }: TaskListProps) {
   if (tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-3">
@@ -34,7 +35,7 @@ export function TaskList({ tasks, emptyMessage = "暂无任务", emptyIcon, empt
   return (
     <div className="space-y-2">
       {tasks.map((task) => (
-        <TaskCard key={task.id} task={task} highlightKeyword={highlightKeyword} selectable={selectable} selected={selectedIds?.has(task.id)} onSelect={onSelect} />
+        <TaskCard key={task.id} task={task} highlightKeyword={highlightKeyword} selectable={selectable} selected={selectedIds?.has(task.id)} onSelect={onSelect} disableActions={disableActions} />
       ))}
     </div>
   );
