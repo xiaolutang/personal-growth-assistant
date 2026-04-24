@@ -1,5 +1,38 @@
 # 对齐清单
 
+## R032: 搜索增强 + Explore 批量操作
+
+### 契约对齐
+
+- [x] B89: CONTRACT-SEARCH01 — SearchRequest 新增 start_time/end_time/tags，query 改为 Optional ✓
+- [x] F119: CONTRACT-SEARCH01 — 前端 searchEntries 扩展参数 ✓
+- [x] F120: 不涉及新契约，复用现有条目更新/删除 API ✓
+
+### 依赖对齐
+
+- [x] B89 无外部依赖 ✓
+- [x] F119 depends_on B89 ✓（前端依赖后端过滤参数就绪）
+- [x] F120 depends_on F119 ✓（两者都修改 Explore.tsx，串行避免写冲突）
+- [x] S29 depends_on F119, F120 ✓
+
+### 类型同步对齐
+
+- [x] B89 完成后执行 npm run gen:types 更新 api.generated.ts（SearchRequest 新增字段） ✓
+- [x] F119 开始前确认类型已同步 ✓
+
+### 架构对齐
+
+- [x] 不新建后端服务文件，在现有 search.py + hybrid_search.py 内修改 ✓
+- [x] 不新建前端页面，在现有 Explore.tsx 内修改 ✓
+- [x] 搜索过滤采用后过滤模式，不改变 Qdrant/SQLite 搜索接口 ✓
+- [x] 批量操作通过现有 taskStore.deleteTask/updateEntry 执行，不新建 API ✓
+- [x] TaskCard 可能需要新增 disableActions prop（选择模式下禁用单卡动作） ✓
+- [x] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫 ✓
+
+### 执行顺序
+
+- [x] 推荐：B89 → npm run gen:types → F119 → F120 → S29（串行，避免 Explore.tsx 写冲突）✓
+
 ## R031: 对话式 Onboarding
 
 ### 契约对齐

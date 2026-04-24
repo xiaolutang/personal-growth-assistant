@@ -2,6 +2,37 @@
 
 ## 契约索引
 
+### R032 新增/变更契约
+
+| 契约 ID | 方法 | 端点 | 任务 | 状态 |
+|---------|------|------|------|------|
+| CONTRACT-SEARCH01 | POST | /search (新增过滤参数) | B89, F119 | planned |
+
+### R032 契约详情
+
+#### CONTRACT-SEARCH01: POST /search (新增过滤参数)
+
+现有端点，`SearchRequest` 模型新增可选过滤参数，`query` 改为可选。
+
+| 新增参数 | 类型 | 必填 | 说明 |
+|---------|------|------|------|
+| query | string \| null | 否 | 搜索查询（改为可选，默认空字符串）。空时跳过向量/全文搜索，走列表+过滤 |
+| start_time | string \| null | 否 | ISO 格式起始时间，如 `2026-04-20T00:00:00` |
+| end_time | string \| null | 否 | ISO 格式结束时间，如 `2026-04-24T23:59:59` |
+| tags | string[] \| null | 否 | 标签数组，结果需至少匹配其中一个标签 |
+
+过滤规则：
+- query 非空时：走混合搜索（向量+全文）+ 后过滤
+- query 为空时：走 getEntries 列表 + 后过滤（跳过向量/全文搜索）
+- 时间过滤：entry 的 `created_at` 在 `[start_time, end_time]` 闭区间内
+- start_time 缺失时下界不限，end_time 缺失时上界不限
+- start_time > end_time 时返回空结果
+- 标签过滤：entry 的 `tags` 与请求 `tags` 有交集（至少匹配一个）
+- tags 为空数组 `[]` 等价于不筛选
+- 所有参数为可选，不传时行为与现有完全一致
+
+响应格式不变（`SearchResponse`）。
+
 ### R030 新增/变更契约
 
 | 契约 ID | 方法 | 端点 | 任务 | 状态 |

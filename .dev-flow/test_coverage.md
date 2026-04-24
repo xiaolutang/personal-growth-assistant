@@ -1,5 +1,14 @@
 # 测试覆盖清单
 
+## R032: 搜索增强 + Explore 批量操作
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| 搜索过滤增强 | B89 | unit | 时间过滤(start+end/只start/只end/不传/闭区间边界/start>end返回空)/标签过滤(有交集/无交集/不传/空数组)/组合过滤(时间+标签+filter_type)/空query+过滤/空query+无过滤/SQLite降级过滤/422非法日期/回归 | planned | L2, ~16 tests |
+| 搜索过滤 UI | F119 | unit | 时间快选本周/全部/标签筛选/过滤chip显示/移除chip/清除全部/无过滤一致 | planned | F2, ~7 tests |
+| Explore 批量操作 | F120 | unit | 编辑按钮进多选/checkbox可见+禁用单卡动作/批量删除+本地列表更新/删除取消确认/批量转分类+本地刷新/部分失败提示/ESC退出/Tab不清空/空列表禁用编辑 | planned | F2, ~10 tests |
+| 质量收口 | S29 | integration+smoke | pytest全量/vitest全量/build/Explore搜索+时间+标签+批量操作smoke | planned | L4 |
+
 ## R031: 对话式 Onboarding
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |

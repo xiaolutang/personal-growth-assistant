@@ -1,39 +1,44 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.31.0
-> 状态：规划中（R031）
-> 活跃分支：feat/R031-conversational-onboarding
+> 版本：v0.32.0
+> 状态：规划中（R032）
+> 活跃分支：feat/R032-search-filter-batch
 
 ## 当前范围
 
-R031 对话式 Onboarding（Phase 0）：用日知对话引导代替静态弹窗，新用户首次进入时通过真实对话完成首个条目创建。
+R032 搜索增强 + Explore 批量操作（R022 收尾 + 产品 P0 功能）：
 
-1. **B88 Onboarding AI Prompt**：AI chat 注入 is_new_user 上下文，新用户对话时使用引导性系统提示
-2. **F118 对话式 Onboarding 前端**：移除静态弹窗，PageChatPanel 自动展开 + 日知欢迎消息 + 引导建议
-3. **S28 质量收口**：全量测试 + 构建
+1. **B89 搜索过滤增强（后端）**：搜索 API 新增 start_time/end_time/tags 参数，后过滤逻辑
+2. **F119 搜索过滤 UI（前端）**：时间范围快选 + 标签筛选 chip + 过滤条件管理
+3. **F120 Explore 批量操作（前端）**：多选模式 + 批量删除/转分类
+4. **S29 质量收口**：全量测试 + 构建
 
 ## 技术约束
 
-- 不新增 API 端点，is_new_user 通过现有 chat context 透传
-- 不改 User 模型（已有 onboarding_completed 字段）
-- 不改 PageChatPanel 核心架构，只增加 greetingMessage prop
+- 搜索过滤采用后过滤模式（合并分数后过滤），不改变搜索相关性计算
+- 时间过滤基于 entry 的 created_at 字段
+- 标签过滤基于 entry 的 tags 数组交集
+- Explore 批量操作复用 Tasks.tsx 已有的多选模式实现
+- TaskCard 组件已支持 selectable/selected/onSelect props
 - workflow: B/codex_plugin/skill_orchestrated
 
 ## 用户路径
 
 ```
-新用户注册 → 登录 → 进入首页
-         → 无静态弹窗
-         → PageChatPanel 自动展开，日知打招呼：
-           "你好，我是日知。帮你把每天的想法记下来..."
-         → 显示建议：记灵感 / 做任务 / 记笔记
-         → 用户点击建议或输入内容
-         → AI 创建条目并回应
-         → 自动标记 onboarding 完成
-         → 后续访问恢复正常模式
+搜索增强：
+用户打开 Explore 页 → 输入搜索词 → 点击"本周"时间快选
+         → 搜索结果自动过滤为本周条目
+         → 点击热门标签 "python"
+         → 搜索结果进一步过滤为本周含 python 标签的条目
+         → 搜索栏下方显示 "本周 ×" "#python ×" 过滤条件
+         → 点击 × 移除某个条件，重新搜索
 
-老用户（onboarding_completed=true）：
-         → 进入首页，PageChatPanel 默认折叠
-         → 正常使用，无任何变化
+批量操作：
+用户打开 Explore 页 → 点击右上角"编辑"按钮
+         → 条目卡片出现 checkbox
+         → 勾选多个条目
+         → 底部操作栏：已选 3 项 | 转笔记 | 转灵感 | 删除
+         → 点击"删除" → 确认弹窗 → 批量删除
+         → ESC 退出多选模式
 ```
