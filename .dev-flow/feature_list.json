@@ -3,7 +3,7 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-25T01:10:00",
+  "updated_at": "2026-04-25T01:05:00",
   "status": "active",
   "active_requirement_cycle": {
     "id": "R034",
@@ -390,6 +390,8 @@
         "搜索输入防抖后触发请求",
         "showAll 聚合/展开切换正常",
         "能力地图筛选条件变更触发重新加载",
+        "能力地图加载失败时展示重试入口",
+        "点击重试后重新加载成功、状态恢复",
         "详情面板打开/关闭正常",
         "时间线数据加载和显示"
       ],
