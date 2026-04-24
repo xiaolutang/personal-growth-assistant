@@ -1,7 +1,8 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, Lightbulb, FileText, Folder, Layers, Clock, X, TrendingUp, Scale, RotateCcw, HelpCircle, Loader2 } from "lucide-react";
+import { Search, Lightbulb, FileText, Folder, Layers, Clock, X, TrendingUp, Scale, RotateCcw, HelpCircle, Loader2, Calendar, Tag } from "lucide-react";
 import { getEntries, searchEntries } from "../services/api";
+import type { SearchFilterOptions } from "../services/api";
 import { PageChatPanel } from "@/components/PageChatPanel";
 import { TaskList } from "../components/TaskList";
 import type { Task, Category, TaskStatus, Priority, SearchResult } from "../types/task";
@@ -41,6 +42,43 @@ const TABS = [
 
 // 探索页只展示 inbox/note/project/decision/reflection/question，不含 task
 const EXPLORE_CATEGORIES = new Set(["inbox", "note", "project", "decision", "reflection", "question"]);
+
+// === 时间范围快选 ===
+type TimeRange = "today" | "week" | "month" | "";
+
+const TIME_RANGE_LABELS: Record<TimeRange, string> = {
+  today: "今天",
+  week: "本周",
+  month: "本月",
+  "": "全部",
+};
+
+function computeTimeRange(range: TimeRange): { startTime?: string; endTime?: string } {
+  const now = new Date();
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
+
+  if (range === "today") {
+    const s = startOfDay(now);
+    const e = endOfDay(now);
+    return { startTime: s.toISOString(), endTime: e.toISOString() };
+  }
+  if (range === "week") {
+    // 本周一到周日
+    const day = now.getDay() || 7; // 周日=7
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - day + 1);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return { startTime: startOfDay(monday).toISOString(), endTime: endOfDay(sunday).toISOString() };
+  }
+  if (range === "month") {
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return { startTime: startOfDay(firstDay).toISOString(), endTime: endOfDay(lastDay).toISOString() };
+  }
+  return {};
+}
 
 // === 搜索历史管理 ===
 const SEARCH_HISTORY_KEY = "search_history";
@@ -113,6 +151,8 @@ export function Explore() {
   const [isSearching, setIsSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchHistory, setSearchHistory] = useState<string[]>(getSearchHistory());
+  const [timeRange, setTimeRange] = useState<TimeRange>("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   // 监听 AppLayout 派发的聚焦事件（由全局 Cmd+K 触发）
   useEffect(() => {
@@ -128,26 +168,51 @@ export function Explore() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // 防抖搜索：输入 300ms 后自动触发
+  // 构造搜索过滤器
+  const searchFilters = useMemo<SearchFilterOptions>(() => {
+    const range = computeTimeRange(timeRange);
+    const filters: SearchFilterOptions = {};
+    if (range.startTime) filters.startTime = range.startTime;
+    if (range.endTime) filters.endTime = range.endTime;
+    if (selectedTags.length > 0) filters.tags = selectedTags;
+    return filters;
+  }, [timeRange, selectedTags]);
+
+  const hasActiveFilters = timeRange !== "" || selectedTags.length > 0;
+
+  // 防抖搜索：输入 300ms 后自动触发（含过滤参数）
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(null);
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    if (!searchQuery.trim()) {
+
+    // 空查询 + 无过滤器：清空搜索结果
+    if (!searchQuery.trim() && !hasActiveFilters) {
       setSearchResults(null);
       setSearchError(null);
       return;
     }
+
+    // 有查询或有过滤器时触发搜索
+    if (!searchQuery.trim() && !hasActiveFilters) return;
+
     let cancelled = false;
     debounceTimer.current = setTimeout(async () => {
       setIsSearching(true);
       setSearchError(null);
       try {
-        const result = await searchEntries(searchQuery.trim(), 20, activeTab || undefined);
+        const result = await searchEntries(
+          searchQuery.trim() || "",
+          20,
+          activeTab || undefined,
+          searchFilters,
+        );
         if (!cancelled) {
           const mapped: Task[] = (result.results ?? []).map(normalizeSearchResult);
           setSearchResults(mapped);
-          addToSearchHistory(searchQuery.trim());
-          setSearchHistory(getSearchHistory());
+          if (searchQuery.trim()) {
+            addToSearchHistory(searchQuery.trim());
+            setSearchHistory(getSearchHistory());
+          }
         }
       } catch {
         if (!cancelled) {
@@ -162,7 +227,7 @@ export function Explore() {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
       cancelled = true;
     };
-  }, [searchQuery]);
+  }, [searchQuery, searchFilters, activeTab, hasActiveFilters]);
 
   // 独立获取探索页数据（不复用全局 taskStore）
   useEffect(() => {
@@ -200,7 +265,7 @@ export function Explore() {
       setActiveTab(key);
       setSearchResults(null);
       setSearchError(null);
-      setSearchQuery("");
+      // 切换 Tab 保留过滤器，不清除
       setShowSuggestions(false);
       if (key) {
         setSearchParams({ type: key });
@@ -212,7 +277,7 @@ export function Explore() {
   );
 
   const handleSearch = useCallback(async () => {
-    if (!searchQuery.trim()) {
+    if (!searchQuery.trim() && !hasActiveFilters) {
       setSearchResults(null);
       setSearchError(null);
       return;
@@ -223,18 +288,25 @@ export function Explore() {
     setSearchError(null);
     setShowSuggestions(false);
     try {
-      const result = await searchEntries(searchQuery.trim(), 20, activeTab || undefined);
+      const result = await searchEntries(
+        searchQuery.trim() || "",
+        20,
+        activeTab || undefined,
+        searchFilters,
+      );
       const mapped: Task[] = (result.results ?? []).map(normalizeSearchResult);
       setSearchResults(mapped);
-      addToSearchHistory(searchQuery.trim());
-      setSearchHistory(getSearchHistory());
+      if (searchQuery.trim()) {
+        addToSearchHistory(searchQuery.trim());
+        setSearchHistory(getSearchHistory());
+      }
     } catch {
       setSearchResults(null);
       setSearchError("搜索失败，请稍后重试");
     } finally {
       setIsSearching(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, activeTab, searchFilters, hasActiveFilters]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -252,6 +324,17 @@ export function Explore() {
     e.stopPropagation();
     removeFromSearchHistory(query);
     setSearchHistory(getSearchHistory());
+  }, []);
+
+  const handleTagFilter = useCallback((tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+    );
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setTimeRange("");
+    setSelectedTags([]);
   }, []);
 
   const emptyMessage = searchError
@@ -326,15 +409,73 @@ export function Explore() {
                   {popularTags.map((tag) => (
                     <button
                       key={tag}
-                      onMouseDown={() => handleSuggestionClick(tag)}
-                      className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+                      onMouseDown={() => handleTagFilter(tag)}
+                      className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                        selectedTags.includes(tag)
+                          ? "bg-indigo-500 text-white"
+                          : "bg-primary/10 text-primary hover:bg-primary/20"
+                      }`}
                     >
-                      {tag}
+                      #{tag}
                     </button>
                   ))}
                 </div>
               </div>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* 时间快选 + 标签筛选 + 过滤 chip */}
+      <div className="mb-4 space-y-2">
+        {/* 时间快选按钮组 */}
+        <div className="flex items-center gap-1.5">
+          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+          {(["", "today", "week", "month"] as TimeRange[]).map((range) => (
+            <button
+              key={range}
+              onClick={() => setTimeRange(range)}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                timeRange === range
+                  ? "bg-indigo-500 text-white"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+              }`}
+            >
+              {TIME_RANGE_LABELS[range]}
+            </button>
+          ))}
+        </div>
+
+        {/* 过滤条件 chip */}
+        {hasActiveFilters && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {timeRange && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-medium">
+                <Calendar className="h-3 w-3" />
+                {TIME_RANGE_LABELS[timeRange]}
+                <button onClick={() => setTimeRange("")} className="hover:text-indigo-800 dark:hover:text-indigo-200">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+            {selectedTags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-medium"
+              >
+                <Tag className="h-3 w-3" />
+                #{tag}
+                <button onClick={() => handleTagFilter(tag)} className="hover:text-emerald-800 dark:hover:text-emerald-200">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+            <button
+              onClick={handleClearFilters}
+              className="px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              全部清除
+            </button>
           </div>
         )}
       </div>

@@ -199,12 +199,33 @@ function normalizeSearchItem(e: { id?: string; title?: string; score?: number; t
   };
 }
 
+export interface SearchFilterOptions {
+  startTime?: string;
+  endTime?: string;
+  tags?: string[];
+}
+
 /**
  * 统一搜索入口：后端已实现混合搜索（向量 + 全文）+ 自动降级
  */
-export async function searchEntries(query: string, limit: number = 10, filterType?: string): Promise<SearchResponse> {
-  const body: { query: string; limit: number; filter_type?: string } = { query, limit };
+export async function searchEntries(
+  query: string,
+  limit: number = 10,
+  filterType?: string,
+  filters?: SearchFilterOptions,
+): Promise<SearchResponse> {
+  const body: {
+    query: string | null;
+    limit: number;
+    filter_type?: string | null;
+    start_time?: string | null;
+    end_time?: string | null;
+    tags?: string[] | null;
+  } = { query: query || null, limit };
   if (filterType) body.filter_type = filterType;
+  if (filters?.startTime) body.start_time = filters.startTime;
+  if (filters?.endTime) body.end_time = filters.endTime;
+  if (filters?.tags && filters.tags.length > 0) body.tags = filters.tags;
 
   const { data, error, response } = await client.POST("/search", {
     body,
