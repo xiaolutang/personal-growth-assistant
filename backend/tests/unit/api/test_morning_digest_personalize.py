@@ -64,17 +64,16 @@ async def test_suggestion_with_goals_includes_goals_in_stats():
     svc._llm_caller = MagicMock()
 
     with patch("app.services.review_service.ReviewService._generate_ai_summary", side_effect=mock_ai_summary):
-        with patch("app.routers.deps.get_goal_service") as mock_gs:
-            goal_svc = AsyncMock()
-            goal_svc.list_goals.return_value = (
-                [{"title": "学 Rust", "progress_percentage": 30}], 1, ""
-            )
-            mock_gs.return_value = goal_svc
+        goal_svc = AsyncMock()
+        goal_svc.list_goals.return_value = (
+            [{"title": "学 Rust", "progress_percentage": 30}], 1, ""
+        )
+        svc._goal_service = goal_svc
 
-            result = await svc._generate_morning_suggestion(
-                today_todos=[], overdue=[], stale_inbox=[],
-                weekly_summary=_mock_weekly_summary(), user_id="u1",
-            )
+        result = await svc._generate_morning_suggestion(
+            today_todos=[], overdue=[], stale_inbox=[],
+            weekly_summary=_mock_weekly_summary(), user_id="u1",
+        )
 
     assert result == "个性化建议"
     assert "active_goals" in captured_stats
@@ -99,15 +98,10 @@ async def test_suggestion_without_goals_no_goals_in_stats():
     svc._llm_caller = MagicMock()
 
     with patch("app.services.review_service.ReviewService._generate_ai_summary", side_effect=mock_ai_summary):
-        with patch("app.routers.deps.get_goal_service") as mock_gs:
-            goal_svc = AsyncMock()
-            goal_svc.list_goals.return_value = ([], 0, "")
-            mock_gs.return_value = goal_svc
-
-            result = await svc._generate_morning_suggestion(
-                today_todos=[], overdue=[], stale_inbox=[],
-                weekly_summary=_mock_weekly_summary(), user_id="u1",
-            )
+        result = await svc._generate_morning_suggestion(
+            today_todos=[], overdue=[], stale_inbox=[],
+            weekly_summary=_mock_weekly_summary(), user_id="u1",
+        )
 
     assert result == "通用建议"
     assert "active_goals" not in captured_stats
@@ -142,15 +136,10 @@ async def test_top_tags_in_stats():
     svc._llm_caller = MagicMock()
 
     with patch("app.services.review_service.ReviewService._generate_ai_summary", side_effect=mock_ai_summary):
-        with patch("app.routers.deps.get_goal_service") as mock_gs:
-            goal_svc = AsyncMock()
-            goal_svc.list_goals.return_value = ([], 0, "")
-            mock_gs.return_value = goal_svc
-
-            await svc._generate_morning_suggestion(
-                today_todos=[], overdue=[], stale_inbox=[],
-                weekly_summary=_mock_weekly_summary(), user_id="u1",
-            )
+        await svc._generate_morning_suggestion(
+            today_todos=[], overdue=[], stale_inbox=[],
+            weekly_summary=_mock_weekly_summary(), user_id="u1",
+        )
 
     assert "top_tags_30d" in captured_stats
     tags = captured_stats["top_tags_30d"]
@@ -196,16 +185,11 @@ async def test_llm_timeout_fallback():
     svc._llm_caller = MagicMock()
 
     with patch("app.services.review_service.ReviewService._generate_ai_summary", side_effect=mock_ai_summary_timeout):
-        with patch("app.routers.deps.get_goal_service") as mock_gs:
-            goal_svc = AsyncMock()
-            goal_svc.list_goals.return_value = ([], 0, "")
-            mock_gs.return_value = goal_svc
-
-            result = await svc._generate_morning_suggestion(
-                today_todos=[{"title": "任务1"}],
-                overdue=[], stale_inbox=[],
-                weekly_summary=_mock_weekly_summary(), user_id="u1",
-            )
+        result = await svc._generate_morning_suggestion(
+            today_todos=[{"title": "任务1"}],
+            overdue=[], stale_inbox=[],
+            weekly_summary=_mock_weekly_summary(), user_id="u1",
+        )
 
     assert "1个任务待完成" in result
 
@@ -225,16 +209,11 @@ async def test_llm_5xx_fallback():
     svc._llm_caller = MagicMock()
 
     with patch("app.services.review_service.ReviewService._generate_ai_summary", side_effect=mock_ai_summary_error):
-        with patch("app.routers.deps.get_goal_service") as mock_gs:
-            goal_svc = AsyncMock()
-            goal_svc.list_goals.return_value = ([], 0, "")
-            mock_gs.return_value = goal_svc
-
-            result = await svc._generate_morning_suggestion(
-                today_todos=[{"title": "任务1"}],
-                overdue=[], stale_inbox=[],
-                weekly_summary=_mock_weekly_summary(), user_id="u1",
-            )
+        result = await svc._generate_morning_suggestion(
+            today_todos=[{"title": "任务1"}],
+            overdue=[], stale_inbox=[],
+            weekly_summary=_mock_weekly_summary(), user_id="u1",
+        )
 
     assert "1个任务待完成" in result
 
@@ -254,16 +233,11 @@ async def test_llm_non_string_response_fallback():
     svc._llm_caller = MagicMock()
 
     with patch("app.services.review_service.ReviewService._generate_ai_summary", side_effect=mock_ai_summary_non_string):
-        with patch("app.routers.deps.get_goal_service") as mock_gs:
-            goal_svc = AsyncMock()
-            goal_svc.list_goals.return_value = ([], 0, "")
-            mock_gs.return_value = goal_svc
-
-            result = await svc._generate_morning_suggestion(
-                today_todos=[{"title": "任务1"}],
-                overdue=[], stale_inbox=[],
-                weekly_summary=_mock_weekly_summary(), user_id="u1",
-            )
+        result = await svc._generate_morning_suggestion(
+            today_todos=[{"title": "任务1"}],
+            overdue=[], stale_inbox=[],
+            weekly_summary=_mock_weekly_summary(), user_id="u1",
+        )
 
     # 空字符串被视为 falsy，降级到模板
     assert "1个任务待完成" in result
@@ -289,27 +263,25 @@ async def test_prompt_diff_with_and_without_goals():
 
     # 场景 1：有目标
     with patch("app.services.review_service.ReviewService._generate_ai_summary", side_effect=mock_ai_summary):
-        with patch("app.routers.deps.get_goal_service") as mock_gs:
-            goal_svc = AsyncMock()
-            goal_svc.list_goals.return_value = ([{"title": "G1", "progress_percentage": 50}], 1, "")
-            mock_gs.return_value = goal_svc
+        goal_svc = AsyncMock()
+        goal_svc.list_goals.return_value = ([{"title": "G1", "progress_percentage": 50}], 1, "")
+        svc._goal_service = goal_svc
 
-            await svc._generate_morning_suggestion(
-                today_todos=[], overdue=[], stale_inbox=[],
-                weekly_summary=_mock_weekly_summary(), user_id="u1",
-            )
+        await svc._generate_morning_suggestion(
+            today_todos=[], overdue=[], stale_inbox=[],
+            weekly_summary=_mock_weekly_summary(), user_id="u1",
+        )
 
     # 场景 2：无目标
     with patch("app.services.review_service.ReviewService._generate_ai_summary", side_effect=mock_ai_summary):
-        with patch("app.routers.deps.get_goal_service") as mock_gs:
-            goal_svc = AsyncMock()
-            goal_svc.list_goals.return_value = ([], 0, "")
-            mock_gs.return_value = goal_svc
+        goal_svc = AsyncMock()
+        goal_svc.list_goals.return_value = ([], 0, "")
+        svc._goal_service = goal_svc
 
-            await svc._generate_morning_suggestion(
-                today_todos=[], overdue=[], stale_inbox=[],
-                weekly_summary=_mock_weekly_summary(), user_id="u1",
-            )
+        await svc._generate_morning_suggestion(
+            today_todos=[], overdue=[], stale_inbox=[],
+            weekly_summary=_mock_weekly_summary(), user_id="u1",
+        )
 
     assert len(captured_prompts) == 2
     prompt_with_goals = captured_prompts[0]
@@ -334,12 +306,13 @@ async def test_goal_service_error_does_not_break():
     svc._sqlite.list_entries.return_value = [{"tags": ["Python"]}]
 
     with patch("app.services.review_service.ReviewService._generate_ai_summary", side_effect=mock_ai_summary):
-        with patch("app.routers.deps.get_goal_service") as mock_gs:
-            mock_gs.side_effect = Exception("GoalService 不可用")
+        goal_svc = AsyncMock()
+        goal_svc.list_goals.side_effect = Exception("GoalService 不可用")
+        svc._goal_service = goal_svc
 
-            result = await svc._generate_morning_suggestion(
-                today_todos=[], overdue=[], stale_inbox=[],
-                weekly_summary=_mock_weekly_summary(), user_id="u1",
-            )
+        result = await svc._generate_morning_suggestion(
+            today_todos=[], overdue=[], stale_inbox=[],
+            weekly_summary=_mock_weekly_summary(), user_id="u1",
+        )
 
     assert result == "正常建议"

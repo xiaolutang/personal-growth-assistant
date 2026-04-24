@@ -1,5 +1,6 @@
 """成长回顾统计服务"""
 import asyncio
+import json
 import logging
 from datetime import date, datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional, Literal, TYPE_CHECKING
@@ -229,6 +230,7 @@ class ReviewService:
         self._sqlite = sqlite_storage
         self._neo4j_client = neo4j_client
         self._llm_caller: Optional["APICaller"] = None
+        self._goal_service = None  # 通过 set_goal_service 注入
 
     def set_sqlite_storage(self, storage):
         """设置 SQLite 存储"""
@@ -237,6 +239,10 @@ class ReviewService:
     def set_llm_caller(self, caller: "APICaller"):
         """设置 LLM 调用器"""
         self._llm_caller = caller
+
+    def set_goal_service(self, goal_service):
+        """设置目标服务（由 deps.py 注入）"""
+        self._goal_service = goal_service
 
     @staticmethod
     def calculate_task_stats(tasks: List[dict]) -> TaskStats:
@@ -1015,12 +1021,25 @@ class ReviewService:
 
         return streak
 
-    async def _generate_pattern_insights_llm(self, user_id: str) -> List[str]:
-        """B87: 使用 LLM 生成模式洞察，失败时返回空列表（由调用方降级到规则引擎）"""
-        if not self._sqlite or not self._llm_caller:
+    def _compute_30d_tag_stats(self, user_id: str, days: int = 30, top_n: int = 10) -> list[tuple[str, int]]:
+        """统计近 N 天条目的标签频次 top N，供 B86/B87 共享"""
+        if not self._sqlite:
             return []
+        today = date.today()
+        start = (today - timedelta(days=days)).isoformat()
+        entries = self._sqlite.list_entries(
+            start_date=start, end_date=today.isoformat(), limit=5000, user_id=user_id,
+        )
+        tag_freq: dict[str, int] = {}
+        for entry in entries:
+            for tag in entry.get("tags", []):
+                tag_freq[tag] = tag_freq.get(tag, 0) + 1
+        return sorted(tag_freq.items(), key=lambda x: x[1], reverse=True)[:top_n]
 
-        import json as _json
+    async def _generate_pattern_insights_llm(self, user_id: str) -> Optional[List[str]]:
+        """B87: 使用 LLM 生成模式洞察。返回 None 表示 LLM 不可用/失败（需降级），返回列表表示 LLM 成功。"""
+        if not self._sqlite or not self._llm_caller:
+            return None
 
         today = date.today()
         start_30 = (today - timedelta(days=30)).isoformat()
@@ -1032,39 +1051,35 @@ class ReviewService:
         )
 
         if not recent_entries:
-            return []
+            return []  # 无数据，LLM 无需处理，也不需要降级到规则引擎
 
         # 构建统计数据供 LLM 分析
         total = len(recent_entries)
         cat_counts: dict[str, int] = {}
-        tag_freq: dict[str, int] = {}
         task_completed = 0
         task_total = 0
         weekday_counts: dict[str, int] = {}
         for entry in recent_entries:
             cat = entry.get("type", entry.get("category", "unknown"))
             cat_counts[cat] = cat_counts.get(cat, 0) + 1
-            for tag in entry.get("tags", []):
-                tag_freq[tag] = tag_freq.get(tag, 0) + 1
             if cat == "task":
                 task_total += 1
                 if entry.get("status") == "complete":
                     task_completed += 1
-            # B87 AC3: 时间模式 — 按星期几统计活动分布
             created = entry.get("created_at", "")
             if created:
                 try:
-                    from datetime import datetime as _dt
-                    wd = _dt.fromisoformat(created).strftime("%A")
+                    wd = datetime.fromisoformat(created).strftime("%A")
                     weekday_counts[wd] = weekday_counts.get(wd, 0) + 1
                 except (ValueError, TypeError):
                     pass
 
+        top_tags = self._compute_30d_tag_stats(user_id, days=30, top_n=10)
         stats = {
             "total_entries": total,
             "category_distribution": cat_counts,
             "task_completion_rate": round(task_completed / task_total * 100, 1) if task_total > 0 else 0,
-            "top_tags": sorted(tag_freq.items(), key=lambda x: x[1], reverse=True)[:10],
+            "top_tags": top_tags,
             "weekday_activity": weekday_counts,
         }
 
@@ -1075,7 +1090,7 @@ class ReviewService:
             "不要返回其他内容。如果数据不足以生成洞察，返回空数组 []。"
         )
 
-        user_message = f"用户近 30 天数据：\n{_json.dumps(stats, ensure_ascii=False, indent=2)}"
+        user_message = f"用户近 30 天数据：\n{json.dumps(stats, ensure_ascii=False, indent=2)}"
 
         try:
             messages = [
@@ -1087,22 +1102,21 @@ class ReviewService:
                 timeout=10.0,
             )
             if not result:
-                return []
+                return []  # LLM 返回空，视为成功但无洞察
             result = result.strip()
-            # 解析 LLM 输出为 string[]
-            parsed = _json.loads(result)
+            parsed = json.loads(result)
             if isinstance(parsed, list):
                 return [str(item) for item in parsed if isinstance(item, (str, int, float))][:5]
-            return []
+            return []  # 非列表结构，视为成功但无洞察
         except asyncio.TimeoutError:
-            logger.warning("B87: 模式洞察 LLM 超时")
-            return []
-        except (_json.JSONDecodeError, ValueError):
-            logger.warning("B87: 模式洞察 LLM 返回非预期结构")
-            return []
+            logger.warning("B87: 模式洞察 LLM 超时，将降级到规则引擎")
+            return None
+        except (json.JSONDecodeError, ValueError):
+            logger.warning("B87: 模式洞察 LLM 返回非预期结构，将降级到规则引擎")
+            return None
         except Exception as e:
-            logger.warning(f"B87: 模式洞察 LLM 失败: {e}")
-            return []
+            logger.warning("B87: 模式洞察 LLM 失败: %s，将降级到规则引擎", e)
+            return None
 
     def _generate_pattern_insights(self, user_id: str) -> List[str]:
         """
@@ -1444,9 +1458,9 @@ class ReviewService:
 
             # 6. 新增增强字段
             learning_streak = self._calculate_learning_streak(user_id)
-            # B87: 先尝试 LLM 生成模式洞察，失败时降级到规则引擎
+            # B87: 先尝试 LLM 生成模式洞察，LLM 失败时降级到规则引擎
             pattern_insights = await self._generate_pattern_insights_llm(user_id)
-            if not pattern_insights:
+            if pattern_insights is None:
                 pattern_insights = self._generate_pattern_insights(user_id)
             daily_focus = await self._generate_daily_focus(
                 user_id=user_id,
@@ -1548,38 +1562,23 @@ class ReviewService:
 
                 # B86: 注入活跃目标
                 try:
-                    from app.routers import deps
-                    goal_service = deps.get_goal_service()
-                    goals, _, _ = await goal_service.list_goals(user_id, status="active")
-                    if goals:
-                        stats_data["active_goals"] = [
-                            {"title": g.get("title", ""), "progress": g.get("progress_percentage", 0)}
-                            for g in goals[:5]
-                        ]
+                    if self._goal_service:
+                        goals, _, _ = await self._goal_service.list_goals(user_id, status="active")
+                        if goals:
+                            stats_data["active_goals"] = [
+                                {"title": g.get("title", ""), "progress": g.get("progress_percentage", 0)}
+                                for g in goals[:5]
+                            ]
                 except Exception:
-                    pass  # GoalService 不可用时不影响主流程
+                    logger.debug("B86: GoalService 不可用，跳过目标注入", exc_info=True)
 
                 # B86: 注入近 30 天高频标签 top 5
                 try:
-                    from datetime import timedelta as _td
-                    from datetime import date as _date
-                    today = _date.today()
-                    start_30 = (today - _td(days=30)).isoformat()
-                    entries_30 = self._sqlite.list_entries(
-                        start_date=start_30,
-                        end_date=today.isoformat(),
-                        limit=5000,
-                        user_id=user_id,
-                    )
-                    tag_freq: dict[str, int] = {}
-                    for entry in entries_30:
-                        for tag in entry.get("tags", []):
-                            tag_freq[tag] = tag_freq.get(tag, 0) + 1
-                    top_tags = sorted(tag_freq.items(), key=lambda x: x[1], reverse=True)[:5]
+                    top_tags = self._compute_30d_tag_stats(user_id, days=30, top_n=5)
                     if top_tags:
                         stats_data["top_tags_30d"] = [t[0] for t in top_tags]
                 except Exception:
-                    pass  # 标签统计失败不影响主流程
+                    logger.debug("B86: 标签统计失败，跳过标签注入", exc_info=True)
 
                 # B86: 个性化晨报 prompt
                 has_goals = "active_goals" in stats_data
@@ -1600,7 +1599,7 @@ class ReviewService:
                 if suggestion:
                     return suggestion
             except Exception:
-                pass
+                logger.debug("B86: LLM 晨报建议生成失败，降级为模板", exc_info=True)
 
         # 降级为模板文本
         parts = []

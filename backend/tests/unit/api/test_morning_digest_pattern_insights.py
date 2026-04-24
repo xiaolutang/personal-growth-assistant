@@ -104,12 +104,12 @@ async def test_llm_stats_include_weekday_activity():
 
 @pytest.mark.asyncio
 async def test_llm_unavailable_returns_empty():
-    """LLM 不可用时返回空列表"""
+    """LLM 不可用时返回 None（由调用方降级到规则引擎）"""
     svc = _make_service()
     svc._llm_caller = None
 
     result = await svc._generate_pattern_insights_llm("u1")
-    assert result == []
+    assert result is None
 
 
 # ---------------------------------------------------------------------------
@@ -118,7 +118,7 @@ async def test_llm_unavailable_returns_empty():
 
 @pytest.mark.asyncio
 async def test_llm_timeout_returns_empty():
-    """LLM 超时时返回空列表"""
+    """LLM 超时时返回 None（由调用方降级到规则引擎）"""
     svc = _make_service()
     svc._sqlite.list_entries.return_value = [{"type": "task", "status": "doing", "tags": []}]
 
@@ -127,7 +127,7 @@ async def test_llm_timeout_returns_empty():
     svc._llm_caller = mock_caller
 
     result = await svc._generate_pattern_insights_llm("u1")
-    assert result == []
+    assert result is None
 
 
 # ---------------------------------------------------------------------------
@@ -136,9 +136,10 @@ async def test_llm_timeout_returns_empty():
 
 @pytest.mark.asyncio
 async def test_empty_data_returns_empty():
-    """30 天无条目时返回空列表"""
+    """30 天无条目时返回空列表（LLM 成功但无需处理）"""
     svc = _make_service()
     svc._sqlite.list_entries.return_value = []
+    svc._llm_caller = AsyncMock()
 
     result = await svc._generate_pattern_insights_llm("u1")
     assert result == []
@@ -150,7 +151,7 @@ async def test_empty_data_returns_empty():
 
 @pytest.mark.asyncio
 async def test_llm_5xx_returns_empty():
-    """LLM 抛出异常时返回空列表"""
+    """LLM 抛出异常时返回 None（由调用方降级到规则引擎）"""
     svc = _make_service()
     svc._sqlite.list_entries.return_value = [{"type": "task", "status": "doing", "tags": []}]
 
@@ -159,7 +160,7 @@ async def test_llm_5xx_returns_empty():
     svc._llm_caller = mock_caller
 
     result = await svc._generate_pattern_insights_llm("u1")
-    assert result == []
+    assert result is None
 
 
 # ---------------------------------------------------------------------------

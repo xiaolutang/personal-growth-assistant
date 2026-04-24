@@ -77,6 +77,13 @@ def get_review_service() -> "ReviewService":
         )
         if hasattr(storage, "llm_caller") and storage.llm_caller:
             _review_service.set_llm_caller(storage.llm_caller)
+        # 注入 GoalService（避免 ReviewService 反向依赖路由层 deps）
+        if _goal_service:
+            _review_service.set_goal_service(_goal_service)
+    else:
+        # 延迟注入：ReviewService 先创建，GoalService 后初始化的情况
+        if _goal_service and _review_service._goal_service is None:
+            _review_service.set_goal_service(_goal_service)
     return _review_service
 
 
