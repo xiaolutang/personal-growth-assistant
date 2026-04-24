@@ -125,7 +125,7 @@
       "description": "将模式洞察从纯规则引擎增强为 LLM 驱动的行为分析。保留规则引擎作为 LLM 不可用时的降级方案。输出格式保持 string[] 不变。",
       "verification": "L2",
       "depends_on": ["B86"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
       "acceptance_criteria": [
         "LLM 可用时生成最多 5 条模式洞察（string[]，每条为中文描述）",

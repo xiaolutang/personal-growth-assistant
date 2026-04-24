@@ -13,7 +13,7 @@ R030 (feat/R030-ai-morning-report)
 ├── P1: 后端增强
 │   ├── B85 晨报缓存机制 [completed]
 │   ├── B86 AI 建议个性化 [completed]
-│   └── B87 模式洞察 LLM 增强 [pending] → depends: B86
+│   └── B87 模式洞察 LLM 增强 [completed]
 ├── P2: 前端优化
 │   └── F117 晨报展示优化 [pending] → depends: B86, B87
 └── P3: 质量收口

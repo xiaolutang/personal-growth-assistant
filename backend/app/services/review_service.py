@@ -1015,6 +1015,84 @@ class ReviewService:
 
         return streak
 
+    async def _generate_pattern_insights_llm(self, user_id: str) -> List[str]:
+        """B87: 使用 LLM 生成模式洞察，失败时返回空列表（由调用方降级到规则引擎）"""
+        if not self._sqlite or not self._llm_caller:
+            return []
+
+        import json as _json
+
+        today = date.today()
+        start_30 = (today - timedelta(days=30)).isoformat()
+        recent_entries = self._sqlite.list_entries(
+            start_date=start_30,
+            end_date=today.isoformat(),
+            limit=1000,
+            user_id=user_id,
+        )
+
+        if not recent_entries:
+            return []
+
+        # 构建统计数据供 LLM 分析
+        total = len(recent_entries)
+        cat_counts: dict[str, int] = {}
+        tag_freq: dict[str, int] = {}
+        task_completed = 0
+        task_total = 0
+        for entry in recent_entries:
+            cat = entry.get("type", entry.get("category", "unknown"))
+            cat_counts[cat] = cat_counts.get(cat, 0) + 1
+            for tag in entry.get("tags", []):
+                tag_freq[tag] = tag_freq.get(tag, 0) + 1
+            if cat == "task":
+                task_total += 1
+                if entry.get("status") == "complete":
+                    task_completed += 1
+
+        stats = {
+            "total_entries": total,
+            "category_distribution": cat_counts,
+            "task_completion_rate": round(task_completed / task_total * 100, 1) if task_total > 0 else 0,
+            "top_tags": sorted(tag_freq.items(), key=lambda x: x[1], reverse=True)[:10],
+        }
+
+        system_prompt = (
+            "你是个人成长助手「日知」，请分析用户近 30 天的行为数据，"
+            "生成最多 5 条有价值的中文洞察。每条洞察为一句简洁的描述。"
+            "请直接返回一个 JSON 数组，例如 [\"洞察1\", \"洞察2\"]。"
+            "不要返回其他内容。如果数据不足以生成洞察，返回空数组 []。"
+        )
+
+        user_message = f"用户近 30 天数据：\n{_json.dumps(stats, ensure_ascii=False, indent=2)}"
+
+        try:
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message},
+            ]
+            result = await asyncio.wait_for(
+                self._llm_caller.call(messages),
+                timeout=10.0,
+            )
+            if not result:
+                return []
+            result = result.strip()
+            # 解析 LLM 输出为 string[]
+            parsed = _json.loads(result)
+            if isinstance(parsed, list):
+                return [str(item) for item in parsed if isinstance(item, (str, int, float))][:5]
+            return []
+        except asyncio.TimeoutError:
+            logger.warning("B87: 模式洞察 LLM 超时")
+            return []
+        except (_json.JSONDecodeError, ValueError):
+            logger.warning("B87: 模式洞察 LLM 返回非预期结构")
+            return []
+        except Exception as e:
+            logger.warning(f"B87: 模式洞察 LLM 失败: {e}")
+            return []
+
     def _generate_pattern_insights(self, user_id: str) -> List[str]:
         """
         分析最近 30 天的行为模式，生成洞察
@@ -1355,7 +1433,10 @@ class ReviewService:
 
             # 6. 新增增强字段
             learning_streak = self._calculate_learning_streak(user_id)
-            pattern_insights = self._generate_pattern_insights(user_id)
+            # B87: 先尝试 LLM 生成模式洞察，失败时降级到规则引擎
+            pattern_insights = await self._generate_pattern_insights_llm(user_id)
+            if not pattern_insights:
+                pattern_insights = self._generate_pattern_insights(user_id)
             daily_focus = await self._generate_daily_focus(
                 user_id=user_id,
                 overdue=overdue,
