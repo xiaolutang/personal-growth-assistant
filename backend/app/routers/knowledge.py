@@ -38,6 +38,8 @@ async def get_knowledge_graph(
         return await knowledge_service.get_knowledge_graph(concept, depth, user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
+    except ConnectionError as e:
+        raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         logger.error("查询失败", exc_info=True)
         raise HTTPException(status_code=500, detail="查询失败，请稍后重试")
@@ -51,6 +53,8 @@ async def get_related_concepts(concept: str, user: User = Depends(get_current_us
     try:
         return await knowledge_service.get_related_concepts(concept, user_id=user.id)
     except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except ConnectionError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         logger.error("查询失败", exc_info=True)
@@ -86,14 +90,15 @@ async def get_knowledge_map(
     """获取全局知识图谱
 
     返回所有概念节点及其关系，支持按掌握度/领域/项目分组查看。
+    Neo4j 不可用时返回 200 + 空图谱（降级到 SQLite）。
     """
     knowledge_service = get_knowledge_service()
 
     try:
         return await knowledge_service.get_knowledge_map(depth=depth, view=view, user_id=user.id)
-    except Exception as e:
-        logger.error("查询失败", exc_info=True)
-        raise HTTPException(status_code=500, detail="查询失败，请稍后重试")
+    except (ConnectionError, ValueError) as e:
+        logger.warning(f"知识图谱查询降级返回空数据: {e}")
+        return KnowledgeMapResponse()
 
 
 @router.get("/knowledge/stats", response_model=ConceptStatsResponse)
@@ -101,14 +106,15 @@ async def get_knowledge_stats(user: User = Depends(get_current_user)):
     """获取知识概念统计
 
     返回概念总数、关系总数、类别分布和热门概念。
+    Neo4j 不可用时返回 200 + 零值统计（降级到 SQLite）。
     """
     knowledge_service = get_knowledge_service()
 
     try:
         return await knowledge_service.get_knowledge_stats(user_id=user.id)
-    except Exception as e:
-        logger.error("查询失败", exc_info=True)
-        raise HTTPException(status_code=500, detail="查询失败，请稍后重试")
+    except (ConnectionError, ValueError) as e:
+        logger.warning(f"知识统计查询降级返回空数据: {e}")
+        return ConceptStatsResponse()
 
 
 @router.get("/knowledge/search", response_model=ConceptSearchResponse)

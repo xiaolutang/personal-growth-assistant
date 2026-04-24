@@ -137,7 +137,7 @@ class SyncService:
         if self.neo4j and self.neo4j._driver:
             tasks.append(self._sync_to_neo4j(entry, knowledge, user_id))
 
-        if self.qdrant:
+        if self.qdrant and self.qdrant._client:
             try:
                 tasks.append(self.qdrant.upsert_entry(entry, user_id=user_id))
             except Exception as e:
@@ -167,7 +167,7 @@ class SyncService:
             if self.neo4j and self.neo4j._driver:
                 tasks.append(self._sync_to_neo4j(entry, knowledge, user_id))
 
-            if self.qdrant:
+            if self.qdrant and self.qdrant._client:
                 try:
                     tasks.append(self.qdrant.upsert_entry(entry, user_id=user_id))
                 except Exception as e:
@@ -240,7 +240,7 @@ class SyncService:
             except Exception as e:
                 logger.warning(f"Neo4j 删除任务创建失败，忽略: {e}")
 
-        if self.qdrant:
+        if self.qdrant and self.qdrant._client:
             try:
                 tasks.append(self.qdrant.delete_entry(entry_id))
             except Exception as e:

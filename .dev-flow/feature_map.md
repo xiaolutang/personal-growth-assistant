@@ -1,29 +1,12 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：R032 搜索增强 + Explore 批量操作
-> 最后更新：2026-04-24
+> 活跃需求包：无
+> 最后更新：2026-04-25
 
 ## 活跃需求包
 
-### R032: 搜索增强 + Explore 批量操作
-
-```
-R032 (feat/R032-search-filter-batch)
-├── P1: 后端
-│   └── B89 搜索过滤增强（时间 + 标签） [pending]
-├── P1: 前端
-│   └── F119 搜索过滤 UI [pending]
-├── P2: 前端
-│   └── F120 Explore 批量操作 [pending]
-└── P3: 质量收口
-    └── S29 全量验证 [pending]
-```
-
-**依赖图：**
-```
-B89 → F119 → F120 → S29
-```
+无活跃需求包。
 
 ## 归档需求包
 
@@ -56,11 +39,12 @@ B89 → F119 → F120 → S29
 | R029 Simplify 收敛检查 | _archive/R029_simplify-convergence | completed |
 | R030 AI 晨报增强 | _archive/R030_ai-morning-report | completed |
 | R031 对话式 Onboarding | _archive/R031_conversational-onboarding | completed |
+| R033 安全增强收口 | _archive/R033_security-hardening | completed |
 
 ## 测试汇总
 
 | 项目 | 测试数 | 状态 |
 |------|--------|------|
-| 后端测试 | 998 passed | 全绿 |
-| 前端测试 | 360 passed | 全绿 |
+| 后端测试 | 1074 passed | 全绿 |
+| 前端测试 | 363 passed | 全绿 |
 | E2E 测试 | 113 passed | 全绿 |

@@ -45,13 +45,28 @@ class QdrantClient:
         self.vector_size = vector_size
 
     async def connect(self):
-        """连接数据库"""
+        """连接数据库，失败时设 _client=None 并抛 ConnectionError"""
         if not self._client:
-            self._client = AsyncQdrantClient(
-                url=self.url,
-                api_key=self.api_key,
-            )
-            await self._ensure_collection()
+            new_client = None
+            try:
+                new_client = AsyncQdrantClient(
+                    url=self.url,
+                    api_key=self.api_key,
+                )
+                await new_client.get_collection(self.COLLECTION_NAME)
+                # 连接和 collection 检查成功后才赋值
+                self._client = new_client
+                await self._ensure_collection()
+            except Exception as e:
+                # 清理未成功的 client
+                if new_client:
+                    try:
+                        await new_client.close()
+                    except Exception:
+                        pass
+                logger.warning(f"Qdrant 连接失败: {e}")
+                self._client = None
+                raise ConnectionError(f"Qdrant 连接失败: {e}") from e
 
     async def close(self):
         """关闭连接"""
@@ -119,28 +134,39 @@ class QdrantClient:
     async def upsert_entry(self, entry: Task, user_id: str = "_default") -> bool:
         """创建或更新条目向量"""
         if not self._client:
-            await self.connect()
+            try:
+                await self.connect()
+            except ConnectionError:
+                return False
 
-        # 获取向量
-        vector = await self._get_embedding(f"{entry.title}\n\n{entry.content}")
+        try:
+            # 获取向量
+            vector = await self._get_embedding(f"{entry.title}\n\n{entry.content}")
 
-        # 存储向量（ID 转换为 UUID）
-        await self._client.upsert(
-            collection_name=self.COLLECTION_NAME,
-            points=[
-                models.PointStruct(
-                    id=str_to_uuid(entry.id),
-                    vector=vector,
-                    payload=self._build_payload(entry, user_id),
-                )
-            ],
-        )
-        return True
+            # 存储向量（ID 转换为 UUID）
+            await self._client.upsert(
+                collection_name=self.COLLECTION_NAME,
+                points=[
+                    models.PointStruct(
+                        id=str_to_uuid(entry.id),
+                        vector=vector,
+                        payload=self._build_payload(entry, user_id),
+                    )
+                ],
+            )
+            return True
+        except (OSError, ConnectionError) as e:
+            # 连接/IO 类异常：降级
+            logger.warning(f"Qdrant upsert 失败: {e}")
+            return False
 
     async def delete_entry(self, entry_id: str) -> bool:
         """删除条目向量"""
         if not self._client:
-            await self.connect()
+            try:
+                await self.connect()
+            except ConnectionError:
+                return False
 
         try:
             await self._client.delete(
@@ -150,13 +176,17 @@ class QdrantClient:
                 ),
             )
             return True
-        except UnexpectedResponse:
+        except (OSError, ConnectionError) as e:
+            logger.warning(f"Qdrant delete 失败: {e}")
             return False
 
     async def get_entry(self, entry_id: str) -> Optional[Dict[str, Any]]:
         """获取单个条目向量"""
         if not self._client:
-            await self.connect()
+            try:
+                await self.connect()
+            except ConnectionError:
+                return None
 
         try:
             result = await self._client.retrieve(
@@ -172,7 +202,8 @@ class QdrantClient:
                     "payload": point.payload,
                 }
             return None
-        except UnexpectedResponse:
+        except (OSError, ConnectionError) as e:
+            logger.warning(f"Qdrant get_entry 失败: {e}")
             return None
 
     async def search(
@@ -185,53 +216,60 @@ class QdrantClient:
     ) -> List[Dict[str, Any]]:
         """语义搜索"""
         if not self._client:
-            await self.connect()
+            try:
+                await self.connect()
+            except ConnectionError:
+                return []
 
-        # 获取查询向量
-        query_vector = await self._get_embedding(query)
+        try:
+            # 获取查询向量
+            query_vector = await self._get_embedding(query)
 
-        # 构建过滤条件
-        must_conditions = [
-            models.FieldCondition(
-                key="user_id",
-                match=models.MatchValue(value=user_id),
-            )
-        ]
-        if filter_type:
-            must_conditions.append(
+            # 构建过滤条件
+            must_conditions = [
                 models.FieldCondition(
-                    key="type",
-                    match=models.MatchValue(value=filter_type),
+                    key="user_id",
+                    match=models.MatchValue(value=user_id),
                 )
-            )
-        if filter_status:
-            must_conditions.append(
-                models.FieldCondition(
-                    key="status",
-                    match=models.MatchValue(value=filter_status),
+            ]
+            if filter_type:
+                must_conditions.append(
+                    models.FieldCondition(
+                        key="type",
+                        match=models.MatchValue(value=filter_type),
+                    )
                 )
+            if filter_status:
+                must_conditions.append(
+                    models.FieldCondition(
+                        key="status",
+                        match=models.MatchValue(value=filter_status),
+                    )
+                )
+
+            filter_obj = None
+            if must_conditions:
+                filter_obj = models.Filter(must=must_conditions)
+
+            # 搜索 (使用新版 query_points API)
+            response = await self._client.query_points(
+                collection_name=self.COLLECTION_NAME,
+                query=query_vector,
+                limit=limit,
+                query_filter=filter_obj,
             )
 
-        filter_obj = None
-        if must_conditions:
-            filter_obj = models.Filter(must=must_conditions)
-
-        # 搜索 (使用新版 query_points API)
-        response = await self._client.query_points(
-            collection_name=self.COLLECTION_NAME,
-            query=query_vector,
-            limit=limit,
-            query_filter=filter_obj,
-        )
-
-        return [
-            {
-                "id": result.payload.get("original_id", str(result.id)),
-                "score": result.score,
-                "payload": result.payload,
-            }
-            for result in response.points
-        ]
+            return [
+                {
+                    "id": result.payload.get("original_id", str(result.id)),
+                    "score": result.score,
+                    "payload": result.payload,
+                }
+                for result in response.points
+            ]
+        except (OSError, ConnectionError) as e:
+            logger.warning(f"Qdrant search 失败: {e}")
+            return []
 
     async def search_by_vector(
         self,
@@ -240,22 +278,29 @@ class QdrantClient:
     ) -> List[Dict[str, Any]]:
         """按向量搜索"""
         if not self._client:
-            await self.connect()
+            try:
+                await self.connect()
+            except ConnectionError:
+                return []
 
-        response = await self._client.query_points(
-            collection_name=self.COLLECTION_NAME,
-            query=vector,
-            limit=limit,
-        )
+        try:
+            response = await self._client.query_points(
+                collection_name=self.COLLECTION_NAME,
+                query=vector,
+                limit=limit,
+            )
 
-        return [
-            {
-                "id": result.payload.get("original_id", str(result.id)),
-                "score": result.score,
-                "payload": result.payload,
-            }
-            for result in response.points
-        ]
+            return [
+                {
+                    "id": result.payload.get("original_id", str(result.id)),
+                    "score": result.score,
+                    "payload": result.payload,
+                }
+                for result in response.points
+            ]
+        except (OSError, ConnectionError) as e:
+            logger.warning(f"Qdrant search_by_vector 失败: {e}")
+            return []
 
     # ==================== 批量操作 ====================
 
@@ -265,26 +310,33 @@ class QdrantClient:
             return 0
 
         if not self._client:
-            await self.connect()
+            try:
+                await self.connect()
+            except ConnectionError:
+                return 0
 
-        # 并行获取所有 embedding
-        texts = [f"{e.title}\n\n{e.content}" for e in entries]
-        vectors = await asyncio.gather(*[self._get_embedding(t) for t in texts])
+        try:
+            # 并行获取所有 embedding
+            texts = [f"{e.title}\n\n{e.content}" for e in entries]
+            vectors = await asyncio.gather(*[self._get_embedding(t) for t in texts])
 
-        points = [
-            models.PointStruct(
-                id=str_to_uuid(entry.id),
-                vector=vector,
-                payload=self._build_payload(entry, user_id),
+            points = [
+                models.PointStruct(
+                    id=str_to_uuid(entry.id),
+                    vector=vector,
+                    payload=self._build_payload(entry, user_id),
+                )
+                for entry, vector in zip(entries, vectors)
+            ]
+
+            await self._client.upsert(
+                collection_name=self.COLLECTION_NAME,
+                points=points,
             )
-            for entry, vector in zip(entries, vectors)
-        ]
-
-        await self._client.upsert(
-            collection_name=self.COLLECTION_NAME,
-            points=points,
-        )
-        return len(points)
+            return len(points)
+        except (OSError, ConnectionError) as e:
+            logger.warning(f"Qdrant batch_upsert 失败: {e}")
+            return 0
 
     async def batch_delete(self, entry_ids: List[str]) -> int:
         """批量删除向量"""
@@ -292,25 +344,39 @@ class QdrantClient:
             return 0
 
         if not self._client:
-            await self.connect()
+            try:
+                await self.connect()
+            except ConnectionError:
+                return 0
 
-        await self._client.delete(
-            collection_name=self.COLLECTION_NAME,
-            points_selector=models.PointIdsList(
-                points=[str_to_uuid(eid) for eid in entry_ids],
-            ),
-        )
-        return len(entry_ids)
+        try:
+            await self._client.delete(
+                collection_name=self.COLLECTION_NAME,
+                points_selector=models.PointIdsList(
+                    points=[str_to_uuid(eid) for eid in entry_ids],
+                ),
+            )
+            return len(entry_ids)
+        except (OSError, ConnectionError) as e:
+            logger.warning(f"Qdrant batch_delete 失败: {e}")
+            return 0
 
     # ==================== 统计信息 ====================
 
     async def get_stats(self) -> Dict[str, Any]:
         """获取统计信息"""
         if not self._client:
-            await self.connect()
+            try:
+                await self.connect()
+            except ConnectionError:
+                return {"points_count": 0, "status": "unavailable"}
 
-        info = await self._client.get_collection(self.COLLECTION_NAME)
-        return {
-            "points_count": info.points_count,
-            "status": info.status.value,
-        }
+        try:
+            info = await self._client.get_collection(self.COLLECTION_NAME)
+            return {
+                "points_count": info.points_count,
+                "status": info.status.value,
+            }
+        except (OSError, ConnectionError) as e:
+            logger.warning(f"Qdrant get_stats 失败: {e}")
+            return {"points_count": 0, "status": "unavailable"}

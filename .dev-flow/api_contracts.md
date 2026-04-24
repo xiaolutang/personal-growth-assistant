@@ -2,6 +2,48 @@
 
 ## 契约索引
 
+### R033 新增/变更契约
+
+| 契约 ID | 方法 | 端点 | 任务 | 状态 |
+|---------|------|------|------|------|
+| CONTRACT-AUTH01 | POST | /auth/logout (行为变更) | B90, F121 | done |
+| CONTRACT-KNOWLEDGE01 | GET | /knowledge-map, /knowledge/stats (降级行为) | B92 | planned |
+
+### R033 契约详情
+
+#### CONTRACT-AUTH01: POST /auth/logout (行为变更)
+
+现有端点，从空操作变更为将 token jti 加入黑名单。
+
+请求：与现有相同（HTTPBearer credentials）
+
+响应变更：
+- 成功（200）：`{"message": "logged out"}`（不变），token jti 已加入黑名单
+- 无 token（403）：无 credentials 时（不变）
+- 无效 token（401）：token 解码失败时（不变）
+- 过期 token（200）：过期 token 调 logout 仍成功（幂等），不报错
+
+Token payload 变更：
+- 新增 `jti` 字段（UUID4 字符串），用于唯一标识 token
+- 现有 `sub`、`exp`、`type` 字段不变
+
+生命周期约束：
+- TokenBlacklist 在 app lifespan startup 启动清理任务、shutdown 取消
+- 清理间隔 10 分钟，仅清理过期记录
+- 黑名单为内存 Set，不引入 Redis
+
+#### CONTRACT-KNOWLEDGE01: GET /knowledge-map, /knowledge/stats (降级行为)
+
+现有端点，B92 修改降级时的返回行为。
+
+| 端点 | Neo4j 不可用时 | Neo4j+SQLite 都不可用时 |
+|------|--------------|----------------------|
+| GET /knowledge-map | 200 + 空 KnowledgeMapResponse（空节点/关系列表） | 200 + 空 KnowledgeMapResponse |
+| GET /knowledge/stats | 200 + 空 ConceptStatsResponse（零值字段） | 200 + 空 ConceptStatsResponse |
+| GET /knowledge-graph/{concept} | 503 (ValueError，保留现有行为) | 503 |
+
+不变：正常路径（Neo4j 可用）行为完全不变。
+
 ### R032 新增/变更契约
 
 | 契约 ID | 方法 | 端点 | 任务 | 状态 |

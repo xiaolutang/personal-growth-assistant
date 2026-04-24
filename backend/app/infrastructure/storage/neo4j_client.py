@@ -44,6 +44,8 @@ class Neo4jClient:
                     self.uri,
                     auth=(self.username, self.password)
                 )
+                # 验证连接是否真的可用（driver 创建是惰性的）
+                await self._driver.verify_connectivity()
             except Exception as e:
                 # 连接失败时记录日志，将 _driver 设为 None
                 import logging
@@ -58,9 +60,15 @@ class Neo4jClient:
             self._driver = None
 
     async def _get_session(self):
-        """获取会话"""
+        """获取会话
+
+        当 _driver 为 None 时（连接失败或未初始化），抛出 ConnectionError
+        而非让后续代码触发 AttributeError。
+        """
         if not self._driver:
             await self.connect()
+        if not self._driver:
+            raise ConnectionError("Neo4j 驱动未初始化或连接失败")
         return self._driver.session()
 
     # ==================== Entry 节点操作 ====================

@@ -239,10 +239,12 @@ class TestLogin:
 
 
 class TestLogout:
-    """POST /auth/logout"""
+    """POST /auth/logout — B90 JWT 黑名单集成测试"""
 
     def test_logout_success(self, client, sample_user):
-        """登出返回确认消息"""
+        """登出返回确认消息，token 被加入黑名单"""
+        from app.services.auth_service import token_blacklist
+
         client.post("/auth/register", json=sample_user)
         login_resp = client.post("/auth/login", json={
             "username": "testuser",
@@ -257,10 +259,113 @@ class TestLogout:
         assert resp.status_code == 200
         assert resp.json()["message"] == "logged out"
 
+        # 验证黑名单中确实有记录
+        from app.services.auth_service import decode_access_token
+        token_data = decode_access_token(token)
+        assert token_blacklist.is_blacklisted(token_data.jti)
+        # 清理
+        token_blacklist._entries.clear()
+
+    def test_logout_blacklists_old_token(self, client, sample_user):
+        """B90: logout 后旧 token 请求受保护路由返回 401"""
+        from app.services.auth_service import token_blacklist
+
+        client.post("/auth/register", json=sample_user)
+        login_resp = client.post("/auth/login", json={
+            "username": "testuser",
+            "password": "secret123",
+        })
+        token = login_resp.json()["access_token"]
+
+        # logout
+        client.post("/auth/logout", headers={"Authorization": f"Bearer {token}"})
+
+        # 旧 token 请求 /me 应返回 401
+        me_resp = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+        assert me_resp.status_code == 401
+        assert "Token 已失效" in me_resp.json()["detail"]
+        # 清理
+        token_blacklist._entries.clear()
+
+    def test_new_token_works_after_logout(self, client, sample_user):
+        """B90: logout 后重新登录，新 token 可正常使用"""
+        from app.services.auth_service import token_blacklist
+
+        client.post("/auth/register", json=sample_user)
+        login_resp = client.post("/auth/login", json={
+            "username": "testuser",
+            "password": "secret123",
+        })
+        old_token = login_resp.json()["access_token"]
+
+        # logout 旧 token
+        client.post("/auth/logout", headers={"Authorization": f"Bearer {old_token}"})
+
+        # 重新登录获取新 token
+        relogin_resp = client.post("/auth/login", json={
+            "username": "testuser",
+            "password": "secret123",
+        })
+        new_token = relogin_resp.json()["access_token"]
+
+        # 新 token 应能正常访问
+        me_resp = client.get("/auth/me", headers={"Authorization": f"Bearer {new_token}"})
+        assert me_resp.status_code == 200
+        assert me_resp.json()["username"] == "testuser"
+        # 清理
+        token_blacklist._entries.clear()
+
+    def test_logout_expired_token_idempotent(self, client):
+        """B90: 过期 token 调 logout 仍返回 200（幂等）"""
+        import jwt as pyjwt
+        from datetime import datetime, timedelta, timezone
+
+        expired_payload = {
+            "sub": "usr_test",
+            "exp": datetime.now(timezone.utc) - timedelta(hours=1),
+            "type": "access",
+        }
+        expired_token = pyjwt.encode(expired_payload, "test-secret-key-for-testing", algorithm="HS256")
+
+        resp = client.post(
+            "/auth/logout",
+            headers={"Authorization": f"Bearer {expired_token}"},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["message"] == "logged out"
+
+    def test_logout_invalid_token_returns_401(self, client):
+        """B90: 无效 token 调 logout 返回 401"""
+        resp = client.post(
+            "/auth/logout",
+            headers={"Authorization": "Bearer not-a-valid-token"},
+        )
+        assert resp.status_code == 401
+
     def test_logout_no_token(self, client):
         """无 token 请求 logout 返回 401"""
         resp = client.post("/auth/logout")
         assert resp.status_code == 401
+
+    def test_concurrent_logouts_same_token(self, client, sample_user):
+        """B90: 并发 logout 同一个 token 不报错（协程安全）"""
+        from app.services.auth_service import token_blacklist
+
+        client.post("/auth/register", json=sample_user)
+        login_resp = client.post("/auth/login", json={
+            "username": "testuser",
+            "password": "secret123",
+        })
+        token = login_resp.json()["access_token"]
+
+        # 连续两次 logout 同一个 token
+        resp1 = client.post("/auth/logout", headers={"Authorization": f"Bearer {token}"})
+        resp2 = client.post("/auth/logout", headers={"Authorization": f"Bearer {token}"})
+
+        assert resp1.status_code == 200
+        assert resp2.status_code == 200
+        # 清理
+        token_blacklist._entries.clear()
 
 
 # --- Me Tests ---

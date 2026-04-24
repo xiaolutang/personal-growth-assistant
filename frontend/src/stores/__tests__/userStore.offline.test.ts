@@ -5,6 +5,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useUserStore } from "../userStore";
 
+// Mock fetch for logout API call
+const mockFetch = vi.fn();
+Object.defineProperty(globalThis, "fetch", { value: mockFetch, writable: true });
+
 // Mock authFetch
 vi.mock("@/lib/authFetch", () => ({
   authFetch: vi.fn(),
@@ -83,7 +87,18 @@ describe("userStore 离线启动恢复", () => {
       json: async () => ({ detail: "Unauthorized" }),
     } as Response);
 
+    // logout 会调 fetch POST /auth/logout
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ message: "logged out" }),
+    });
+
     await useUserStore.getState().fetchMe();
+
+    // 等待 async logout 完成
+    await vi.waitFor(() => {
+      expect(useUserStore.getState().token).toBeNull();
+    }, { timeout: 2000 });
 
     // 验证：logout 被调用
     const state = useUserStore.getState();

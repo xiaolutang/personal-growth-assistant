@@ -1,5 +1,15 @@
 # 测试覆盖清单
 
+## R033: 安全增强收口
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| JWT 黑名单 | B90 | unit | logout后旧token返回401/新token正常/过期token幂等/cleanup清理/并发logout/无token→403/无效token→401/lifecycle启动+取消/回归 | done | L2, 11 new tests, 1125 pytest total |
+| 前端 logout | F121 | unit | 有token调logout/无token跳过/500仍清理/pga_token移除/Sidebar await后跳转 | done | F2, 4 new + 2 fixed tests, 363 vitest total |
+| Qdrant 懒重连 | B91 | unit | URL未配置启动/断连降级/可用回归/delete跳过/sync_entry断连/sync_to_graph_and_vector跳过/delete_entry双重检查 | done | L2, 23 new tests (16 qdrant + 7 sync), 1169 pytest total after code-review fix |
+| Neo4j 降级+路由 | B92 | unit | _get_session ConnectionError/_with_neo4j_fallback空结构/knowledge-map空图200/knowledge-stats空统计200/knowledge-graph 503保留/ConnectionError传播/API层503/回归 | done | L2, 19 new + 4 补测 (2 service + 2 API), 1173 pytest total |
+| 质量收口 | S30 | integration+smoke | pytest全量/vitest全量/build/logout+黑名单smoke/Neo4j+Qdrant降级smoke/Sidebar登出smoke/sync断连smoke | done | L4, 1070 pytest, 363 vitest, build success |
+
 ## R032: 搜索增强 + Explore 批量操作
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
