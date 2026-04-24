@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 5,
-    "pending": 5,
-    "completed": 0,
+    "pending": 0,
+    "completed": 5,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -193,7 +193,7 @@
       "description": "R030 全量测试验证 + 构建 + Docker smoke 测试。",
       "verification": "L4",
       "depends_on": ["F117"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P2",
       "acceptance_criteria": [
         "pytest 全量通过",
