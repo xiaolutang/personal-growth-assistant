@@ -10,10 +10,10 @@
 | 合并遍历 | F124 | unit | todayTasks/unprocessedInbox/recentInbox/todayStats等价 | done | F1, 366 vitest passed, build success |
 | 定向查询 | B94 | unit | 匹配tag/无匹配/大小写不敏感/部分匹配/去重/最多5条/空tag/异常tag | done | L1, 1176 pytest passed |
 | GraphPage 拆分 | F125 | unit+manual | 4 Tab功能不变/build无TS错误 | done | F2, 366 vitest, build success, 1016→304 行 |
-| 模型拆分 | B95 | unit | 模型import正确(review_service+review.py)/pytest | pending | L1 |
-| api.ts 类型迁移 | F126 | unit | API调用类型正确/gen:types无冲突/build | pending | F2 |
-| GraphPage Tab 测试 | F127 | unit | 4 Tab切换/focus高亮/搜索防抖/showAll/能力地图筛选+重试/详情面板/时间线 | pending | F2 |
-| 质量收口 | S31 | integration+smoke | pytest全量/vitest全量/build/Docker smoke | pending | L4 |
+| 模型拆分 | B95 | unit | 模型import正确(review_service+review.py)/pytest | done | L1, 1176 pytest passed, 2096→1900 行 |
+| api.ts 类型迁移 | F126 | unit | API调用类型正确/gen:types无冲突/build | done | F2, 366 vitest, build success, 1189→500 行 |
+| GraphPage Tab 测试 | F127 | unit | 4 Tab切换/focus高亮/搜索防抖/showAll/能力地图筛选+重试/详情面板/时间线 | done | F2, 20 new tests, 386 vitest total |
+| 质量收口 | S31 | integration+smoke | pytest全量/vitest全量/build/Docker smoke | done | L4, 1176 pytest, 386 vitest, build success |
 
 ## R033: 安全增强收口
 

@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 
 from app.routers.deps import get_review_service, get_current_user
 from app.models.user import User
-from app.services.review_service import (
+from app.models.review import (
     TaskStats,
     NoteStats,
     DailyReport,

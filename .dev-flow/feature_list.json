@@ -8,7 +8,7 @@
   "active_requirement_cycle": {
     "id": "R034",
     "name": "tech-debt-residual",
-    "status": "executing",
+    "status": "completed",
     "branch": "feat/R034-tech-debt-residual"
   },
   "workflow": {
@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 10,
-    "pending": 4,
-    "completed": 6,
+    "pending": 0,
+    "completed": 10,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -334,7 +334,7 @@
       "description": "将 review_service.py 中约 190 行 Pydantic 模型定义迁移到 models/review.py",
       "verification": "L1",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
       "acceptance_criteria": [
         "Pydantic 模型从 review_service.py 迁移到 models/review.py",
@@ -356,7 +356,12 @@
         "路由层正常使用模型",
         "pytest 通过"
       ],
-      "planning_notes": "R029 F-017 residual: review_service 2091 行，混合了约 190 行 Pydantic 模型定义和业务逻辑"
+      "planning_notes": "R029 F-017 residual: review_service 2091 行，混合了约 190 行 Pydantic 模型定义和业务逻辑",
+      "started_at": "2026-04-25T11:35:00",
+      "completed_at": "2026-04-25T11:45:00",
+      "actual_minutes": 10,
+      "evidence_file": ".dev-flow/evidence/B95.md",
+      "summary": "22个Pydantic模型迁移到models/review.py，1900行"
     },
     {
       "id": "F126",
@@ -366,7 +371,7 @@
       "description": "将 api.ts 中约 700 行手动 TypeScript 类型定义替换为 api.generated.ts 的自动生成类型",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
       "acceptance_criteria": [
         "手动类型逐步替换为 api.generated.ts 中的类型",
@@ -385,7 +390,12 @@
         "gen:types 后无类型冲突",
         "build 通过"
       ],
-      "planning_notes": "R029 F-013 residual: api.ts 1188 行，约 700 行手动类型与 api.generated.ts OpenAPI 生成类型重复。注意：生成类型可能不完全匹配，需要适配代码"
+      "planning_notes": "R029 F-013 residual: api.ts 1188 行，约 700 行手动类型与 api.generated.ts OpenAPI 生成类型重复。注意：生成类型可能不完全匹配，需要适配代码",
+      "started_at": "2026-04-25T11:50:00",
+      "completed_at": "2026-04-25T12:05:00",
+      "actual_minutes": 15,
+      "evidence_file": ".dev-flow/evidence/F126.md",
+      "summary": "36个类型替换为api.generated.ts，1189→500行"
     },
     {
       "id": "F127",
@@ -397,7 +407,7 @@
       "depends_on": [
         "F125"
       ],
-      "status": "pending",
+      "status": "completed",
       "priority": "P2",
       "acceptance_criteria": [
         "4 个 Tab 切换测试覆盖",
@@ -427,7 +437,12 @@
         "详情面板打开/关闭正常",
         "时间线数据加载和显示"
       ],
-      "planning_notes": "R029 AC8 residual: GraphPage 无前端自动化 Tab 切换测试。依赖 F125 完成组件拆分后再编写"
+      "planning_notes": "R029 AC8 residual: GraphPage 无前端自动化 Tab 切换测试。依赖 F125 完成组件拆分后再编写",
+      "started_at": "2026-04-25T12:10:00",
+      "completed_at": "2026-04-25T12:25:00",
+      "actual_minutes": 15,
+      "evidence_file": ".dev-flow/evidence/F127.md",
+      "summary": "20个GraphPage Tab测试，覆盖切换/防抖/重试/详情"
     },
     {
       "id": "S31",
@@ -447,7 +462,7 @@
         "F126",
         "F127"
       ],
-      "status": "pending",
+      "status": "completed",
       "priority": "P2",
       "acceptance_criteria": [
         "pytest 后端全量通过",
@@ -465,7 +480,12 @@
         "build 成功",
         "Docker smoke 通过"
       ],
-      "planning_notes": "R034 质量收口，汇总所有任务的回归验证"
+      "planning_notes": "R034 质量收口，汇总所有任务的回归验证",
+      "started_at": "2026-04-25T12:30:00",
+      "completed_at": "2026-04-25T12:40:00",
+      "actual_minutes": 10,
+      "evidence_file": ".dev-flow/evidence/S31.md",
+      "summary": "1176 pytest + 386 vitest + build 通过"
     }
   ],
   "next_cycle_preview": null,

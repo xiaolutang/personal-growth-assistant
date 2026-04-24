@@ -25,13 +25,13 @@
 | 任务 | 模块 | 状态 |
 |------|------|------|
 | F125 GraphPage 拆分 | graph | done |
-| B95 review_service 模型拆分 | review | pending |
-| F126 api.ts 类型迁移 | api | pending |
+| B95 review_service 模型拆分 | review | done |
+| F126 api.ts 类型迁移 | api | done |
 
 **Phase 4 测试补齐 + 质量收口**
 | 任务 | 模块 | 状态 |
 |------|------|------|
-| F127 GraphPage Tab 测试 | graph | pending |
+| F127 GraphPage Tab 测试 | graph | done |
 | S31 质量收口 | quality | pending |
 
 ## 归档需求包
@@ -71,6 +71,6 @@
 
 | 项目 | 测试数 | 状态 |
 |------|--------|------|
-| 后端测试 | 1074 passed | 全绿 |
-| 前端测试 | 363 passed | 全绿 |
+| 后端测试 | 1176 passed | 全绿 |
+| 前端测试 | 386 passed | 全绿 |
 | E2E 测试 | 113 passed | 全绿 |
