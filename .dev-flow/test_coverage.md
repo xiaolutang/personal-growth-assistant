@@ -1,5 +1,13 @@
 # 测试覆盖清单
 
+## R031: 对话式 Onboarding
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| Onboarding AI Prompt | B88 | unit | is_new_user=true/false/缺失/prompt长度≤500字/page=home+is_new_user=true组合/内容关键词断言/回归 | done | L2, 15 tests, 1097 regression 0 failed |
+| 对话式 Onboarding 前端 | F118 | unit | 新用户自动展开+欢迎消息/发送消息后updateMe调用一次/updateMe失败不阻塞/AI流失败不标记完成/老用户正常模式/完成后key重挂载消息清空/FloatingChat隐藏/is_new_user透传/收起展开/移动端<640px | planned | F2, ~12 tests |
+| 质量收口 | S28 | integration+smoke | pytest全量/vitest全量/build/首用smoke(注册→登录→欢迎消息可见) | planned | L4 |
+
 ## R030: AI 晨报增强
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |

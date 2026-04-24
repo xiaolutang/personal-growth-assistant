@@ -31,6 +31,16 @@ PAGE_ROLE_PROMPTS = {
     "你的职责：帮助整理和优化内容、拆解大任务为子任务、生成摘要总结、关联相关知识。",
 }
 
+ONBOARDING_PROMPT = (
+    "这是新用户首次使用，请主动做简短自我介绍："
+    "「你好！我是日知，你的个人成长助手。」"
+    "然后给出示例引导："
+    "「你可以试试：记灵感（如'想到一个有趣的想法'）、"
+    "做任务（如'今天要完成阅读'）、"
+    "记笔记（如'读了《xxx》的体会'）。"
+    "随意聊就好！」"
+)
+
 
 class HistoryMessage(BaseModel):
     role: str
@@ -61,6 +71,9 @@ class AIChatService:
                     parts.append(role_prompt)
                 else:
                     parts.append(f"\n用户当前在「{page}」页面。")
+            # 新用户 onboarding 引导
+            if context.get("is_new_user"):
+                parts.append(ONBOARDING_PROMPT)
             page_data = context.get("page_data", {})
             if page_data:
                 data_lines = [f"  - {k}: {v}" for k, v in page_data.items()]
