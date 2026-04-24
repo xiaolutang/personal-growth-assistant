@@ -3,7 +3,7 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-24T21:45:00",
+  "updated_at": "2026-04-24T22:20:00",
   "status": "active",
   "active_requirement_cycle": {
     "id": "R033",
@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 5,
-    "pending": 3,
-    "completed": 2,
+    "pending": 2,
+    "completed": 3,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -146,15 +146,7 @@
       "description": "修复 Qdrant 客户端内部懒重连缺少 try-except 的问题。在 upsert_entry、search、delete 等方法的 await self.connect() 调用处增加异常保护，连接失败时返回空结果或抛出明确异常（而非 AttributeError）。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
-      "priority": "P1",
-      "acceptance_criteria": [
-        "qdrant_client.py 的 connect() 方法内部增加 try-except，连接失败时设 _client=None 并抛 ConnectionError",
-        "upsert_entry、search、delete_entry 等方法在 _client 为 None 时不再尝试懒重连（或在 try-except 中重连），失败时返回明确结果（空/False）而非 AttributeError",
-        "sync_service.sync_entry 中 Qdrant 写入采用与 Neo4j 一致的双重检查模式（self.qdrant and self.qdrant._client）",
-        "sync_service.delete_entry 中 Qdrant 检查与 sync_entry 保持一致",
-        "所有改动不影响正常路径（Qdrant 可用时的行为不变）"
-      ],
+      "status": "completed",
       "test_tasks": [
         "Qdrant URL 未配置时启动，验证应用正常启动且 Qdrant 操作静默跳过",
         "Qdrant 运行时断开后调搜索，验证降级到 SQLite 且无 AttributeError 日志",
@@ -170,7 +162,12 @@
         "backend/app/services/sync_service.py"
       ],
       "contract_refs": [],
-      "planning_notes": "核心改动：1) qdrant_client.connect() 加 try-except 2) 各方法中 _client=None 时不调懒重连而是返回空/False 3) sync_service 中统一双重检查模式（self.qdrant and self.qdrant._client）覆盖 sync_entry、sync_to_graph_and_vector、delete_entry 三个入口"
+      "planning_notes": "核心改动：1) qdrant_client.connect() 加 try-except 2) 各方法中 _client=None 时不调懒重连而是返回空/False 3) sync_service 中统一双重检查模式（self.qdrant and self.qdrant._client）覆盖 sync_entry、sync_to_graph_and_vector、delete_entry 三个入口",
+      "started_at": "2026-04-24T22:00:00",
+      "completed_at": "2026-04-24T22:20:00",
+      "actual_minutes": 20,
+      "evidence_file": ".dev-flow/evidence/B91.md",
+      "execution_notes": "23 tests (16 qdrant + 7 sync), 1051 pytest total"
     },
     {
       "id": "B92",

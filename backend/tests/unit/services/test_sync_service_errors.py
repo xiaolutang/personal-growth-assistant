@@ -568,3 +568,170 @@ class TestSyncServiceWriteDeleteOrder:
         # Markdown 应在 SQLite 之前被调用
         assert call_order[0] == "markdown"
         assert call_order[1] == "sqlite"
+
+
+class TestSyncServiceQdrantDoubleCheck:
+    """B91: SyncService Qdrant 双重检查模式测试"""
+
+    @pytest.fixture
+    def sample_entry(self):
+        return Task(
+            id="b91-entry-1",
+            title="B91双重检查",
+            content="双重检查测试内容",
+            category=Category.TASK,
+            status=TaskStatus.DOING,
+            priority=Priority.MEDIUM,
+            tags=["test"],
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+            file_path="tasks/b91-entry-1.md",
+        )
+
+    @pytest.fixture
+    def mock_markdown_storage(self, temp_data_dir):
+        return MarkdownStorage(data_dir=temp_data_dir)
+
+    @pytest.fixture
+    def mock_sqlite_storage(self):
+        storage = MagicMock()
+        storage.upsert_entry = MagicMock(return_value=True)
+        storage.delete_entry = MagicMock(return_value=True)
+        return storage
+
+    async def test_sync_entry_qdrant_no_client_skips_silently(
+        self, mock_markdown_storage, mock_sqlite_storage, sample_entry
+    ):
+        """B91: sync_entry 中 Qdrant _client=None 时静默跳过（无 AttributeError）"""
+        # Qdrant 实例存在但 _client=None（模拟连接失败后状态）
+        mock_qdrant = MagicMock()
+        mock_qdrant._client = None  # 关键：_client 为 None
+        mock_qdrant.upsert_entry = AsyncMock(return_value=True)
+
+        sync_service = SyncService(
+            markdown_storage=mock_markdown_storage,
+            sqlite_storage=mock_sqlite_storage,
+            neo4j_client=None,
+            qdrant_client=mock_qdrant,
+            llm_caller=None,
+        )
+
+        result = await sync_service.sync_entry(sample_entry)
+
+        # 应该成功（Markdown 写入成功）
+        assert result is True
+        # Qdrant 的 upsert_entry 不应该被调用（双重检查跳过）
+        mock_qdrant.upsert_entry.assert_not_called()
+
+    async def test_sync_entry_qdrant_with_client_calls_upsert(
+        self, mock_markdown_storage, mock_sqlite_storage, sample_entry
+    ):
+        """B91: sync_entry 中 Qdrant _client 非空时正常调用 upsert"""
+        mock_qdrant = MagicMock()
+        mock_qdrant._client = MagicMock()  # _client 不为 None
+        mock_qdrant.upsert_entry = AsyncMock(return_value=True)
+
+        sync_service = SyncService(
+            markdown_storage=mock_markdown_storage,
+            sqlite_storage=mock_sqlite_storage,
+            neo4j_client=None,
+            qdrant_client=mock_qdrant,
+            llm_caller=None,
+        )
+
+        result = await sync_service.sync_entry(sample_entry)
+
+        assert result is True
+        mock_qdrant.upsert_entry.assert_called_once()
+
+    async def test_delete_entry_qdrant_no_client_skips_silently(
+        self, mock_markdown_storage, mock_sqlite_storage, sample_entry
+    ):
+        """B91: delete_entry 中 Qdrant _client=None 时静默跳过（无 AttributeError）"""
+        mock_markdown_storage.write_entry(sample_entry)
+
+        mock_qdrant = MagicMock()
+        mock_qdrant._client = None
+        mock_qdrant.delete_entry = AsyncMock(return_value=True)
+
+        sync_service = SyncService(
+            markdown_storage=mock_markdown_storage,
+            sqlite_storage=mock_sqlite_storage,
+            neo4j_client=None,
+            qdrant_client=mock_qdrant,
+            llm_caller=None,
+        )
+
+        result = await sync_service.delete_entry("b91-entry-1")
+
+        assert result is True
+        mock_qdrant.delete_entry.assert_not_called()
+
+    async def test_delete_entry_qdrant_with_client_calls_delete(
+        self, mock_markdown_storage, mock_sqlite_storage, sample_entry
+    ):
+        """B91: delete_entry 中 Qdrant _client 非空时正常调用 delete"""
+        mock_markdown_storage.write_entry(sample_entry)
+
+        mock_qdrant = MagicMock()
+        mock_qdrant._client = MagicMock()
+        mock_qdrant.delete_entry = AsyncMock(return_value=True)
+
+        sync_service = SyncService(
+            markdown_storage=mock_markdown_storage,
+            sqlite_storage=mock_sqlite_storage,
+            neo4j_client=None,
+            qdrant_client=mock_qdrant,
+            llm_caller=None,
+        )
+
+        result = await sync_service.delete_entry("b91-entry-1")
+
+        assert result is True
+        mock_qdrant.delete_entry.assert_called_once()
+
+    async def test_sync_to_graph_and_vector_qdrant_no_client_skips(
+        self, mock_markdown_storage, mock_sqlite_storage, sample_entry
+    ):
+        """B91: sync_to_graph_and_vector 中 Qdrant _client=None 时静默跳过"""
+        mock_qdrant = MagicMock()
+        mock_qdrant._client = None
+        mock_qdrant.upsert_entry = AsyncMock(return_value=True)
+
+        sync_service = SyncService(
+            markdown_storage=mock_markdown_storage,
+            sqlite_storage=mock_sqlite_storage,
+            neo4j_client=None,
+            qdrant_client=mock_qdrant,
+            llm_caller=None,
+        )
+
+        result = await sync_service.sync_to_graph_and_vector(sample_entry)
+
+        assert result is True
+        mock_qdrant.upsert_entry.assert_not_called()
+
+    async def test_sync_entry_qdrant_runtime_disconnect_no_attribute_error(
+        self, mock_markdown_storage, mock_sqlite_storage, sample_entry
+    ):
+        """B91: sync_entry 中 Qdrant 运行时断连不抛 AttributeError"""
+        # _client 非空但 upsert 操作失败
+        mock_qdrant = MagicMock()
+        mock_qdrant._client = MagicMock()
+        mock_qdrant.upsert_entry = AsyncMock(side_effect=ConnectionError("Connection lost"))
+
+        sync_service = SyncService(
+            markdown_storage=mock_markdown_storage,
+            sqlite_storage=mock_sqlite_storage,
+            neo4j_client=None,
+            qdrant_client=mock_qdrant,
+            llm_caller=None,
+        )
+
+        # 不应该抛出异常
+        result = await sync_service.sync_entry(sample_entry)
+
+        # Markdown 写入成功，主流程不受影响
+        assert result is True
+        # SQLite 也应该被调用
+        mock_sqlite_storage.upsert_entry.assert_called_once()
