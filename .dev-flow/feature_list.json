@@ -3,7 +3,7 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-24T21:30:00",
+  "updated_at": "2026-04-24T21:45:00",
   "status": "active",
   "active_requirement_cycle": {
     "id": "R033",
@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 5,
-    "pending": 4,
-    "completed": 1,
+    "pending": 3,
+    "completed": 2,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -106,7 +106,7 @@
       "depends_on": [
         "B90"
       ],
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "acceptance_criteria": [
         "userStore.logout() 改为 async，先 await POST /auth/logout（带 Authorization header）",
@@ -131,7 +131,12 @@
         "frontend/src/components/layout/Sidebar.tsx"
       ],
       "contract_refs": [],
-      "planning_notes": "核心改动：1) userStore.logout() 改 async，在清理本地前先 await POST /auth/logout 2) Sidebar 登出按钮改为 onClick={async () => { await logout(); window.location.href=... }} 3) 后端调用失败不影响前端清理（try-catch 包裹）4) userStore 中 401 拦截（fetchMe 失败时 logout）兼容 async"
+      "planning_notes": "核心改动：1) userStore.logout() 改 async，在清理本地前先 await POST /auth/logout 2) Sidebar 登出按钮改为 onClick={async () => { await logout(); window.location.href=... }} 3) 后端调用失败不影响前端清理（try-catch 包裹）4) userStore 中 401 拦截（fetchMe 失败时 logout）兼容 async",
+      "started_at": "2026-04-24T21:30:00",
+      "completed_at": "2026-04-24T21:45:00",
+      "actual_minutes": 15,
+      "evidence_file": ".dev-flow/evidence/F121.md",
+      "execution_notes": "4 new tests, 2 test fixes, 363 vitest total, build success"
     },
     {
       "id": "B91",

@@ -153,8 +153,8 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onToggleCo
                     <Download className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => {
-                      logout();
+                    onClick={async () => {
+                      await logout();
                       window.location.href = `${import.meta.env.BASE_URL}login`;
                     }}
                     className="text-muted-foreground hover:text-foreground transition-colors"

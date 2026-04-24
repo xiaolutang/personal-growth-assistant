@@ -72,6 +72,10 @@ describe("userStore logout 离线数据清理", () => {
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ id: "user-123", username: "testuser" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ message: "logged out" }),
       });
 
     const store = useUserStore.getState();
@@ -82,7 +86,7 @@ describe("userStore logout 离线数据清理", () => {
     expect(afterLogin.user!.id).toBe("user-123");
 
     // Logout
-    useUserStore.getState().logout();
+    await useUserStore.getState().logout();
 
     // Wait for dynamic imports to resolve
     await vi.waitFor(() => {
@@ -93,15 +97,24 @@ describe("userStore logout 离线数据清理", () => {
   });
 
   it("logout 时清除 token 和 user", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ access_token: "test-token", username: "testuser" }),
-    });
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ access_token: "test-token", username: "testuser" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ id: "user-1", username: "testuser", email: "t@t.com", is_active: true, onboarding_completed: false }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ message: "logged out" }),
+      });
 
     await useUserStore.getState().login("testuser", "password123");
     expect(useUserStore.getState().isAuthenticated).toBe(true);
 
-    useUserStore.getState().logout();
+    await useUserStore.getState().logout();
 
     const after = useUserStore.getState();
     expect(after.token).toBeNull();

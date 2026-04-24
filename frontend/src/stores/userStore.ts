@@ -21,7 +21,7 @@ interface UserState {
 
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   loadFromStorage: () => void;
   fetchMe: () => Promise<void>;
   updateMe: (data: { onboarding_completed?: boolean }) => Promise<UserInfo>;
@@ -65,9 +65,22 @@ export const useUserStore = create<UserState>((set, get) => ({
     await get().login(username, password);
   },
 
-  logout: () => {
-    // 先捕获当前 user_id，再异步清理（避免清理时 user 已被置空）
+  logout: async () => {
+    // 先捕获当前数据，再异步清理（避免清理时已置空）
+    const { token } = get();
     const userId = get().user?.id;
+
+    // 先调后端 logout 将 token 加入黑名单
+    if (token) {
+      try {
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch {
+        // 后端调用失败不阻塞前端清理
+      }
+    }
 
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
@@ -105,7 +118,8 @@ export const useUserStore = create<UserState>((set, get) => ({
     try {
       const res = await authFetch(`${API_BASE}/auth/me`);
       if (res.status === 401) {
-        // 401 明确表示 token 无效，执行 logout
+        // 401 明确表示 token 无效，执行 logout 清理本地状态
+        // 不 await：401 场景下后端已判定 token 无效，无需再调 logout API
         get().logout();
         return;
       }

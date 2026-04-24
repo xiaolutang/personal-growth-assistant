@@ -106,7 +106,12 @@ describe("useUserStore", () => {
   });
 
   describe("logout", () => {
-    it("登出应清除所有状态和 localStorage", () => {
+    it("有 token 时应先调后端 logout 再清除状态", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ message: "logged out" }),
+      });
+
       useUserStore.setState({
         token: "some-token",
         user: {
@@ -119,14 +124,87 @@ describe("useUserStore", () => {
         isAuthenticated: true,
       });
 
-      useUserStore.getState().logout();
+      await useUserStore.getState().logout();
 
+      // 验证调用了 POST /auth/logout
+      expect(mockFetch).toHaveBeenCalledWith(
+        "http://localhost:8000/auth/logout",
+        expect.objectContaining({
+          method: "POST",
+          headers: { Authorization: "Bearer some-token" },
+        })
+      );
+      // 验证清除了状态
       const state = useUserStore.getState();
       expect(state.token).toBeNull();
       expect(state.user).toBeNull();
       expect(state.isAuthenticated).toBe(false);
       expect(localStorageMock.removeItem).toHaveBeenCalledWith("pga_token");
       expect(localStorageMock.removeItem).toHaveBeenCalledWith("pga_user");
+    });
+
+    it("无 token 时应跳过后端调用直接清理", async () => {
+      useUserStore.setState({
+        token: null,
+        user: null,
+        isAuthenticated: false,
+      });
+
+      await useUserStore.getState().logout();
+
+      // 不应调用 fetch
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it("后端 logout 返回 500 时仍清理本地状态", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+      });
+
+      useUserStore.setState({
+        token: "bad-backend-token",
+        user: {
+          id: "1",
+          username: "u",
+          email: "e@t.com",
+          is_active: true,
+          onboarding_completed: true,
+        },
+        isAuthenticated: true,
+      });
+
+      await useUserStore.getState().logout();
+
+      const state = useUserStore.getState();
+      expect(state.token).toBeNull();
+      expect(state.user).toBeNull();
+      expect(state.isAuthenticated).toBe(false);
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith("pga_token");
+    });
+
+    it("后端 logout 网络错误时仍清理本地状态", async () => {
+      mockFetch.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+
+      useUserStore.setState({
+        token: "network-error-token",
+        user: {
+          id: "1",
+          username: "u",
+          email: "e@t.com",
+          is_active: true,
+          onboarding_completed: true,
+        },
+        isAuthenticated: true,
+      });
+
+      await useUserStore.getState().logout();
+
+      const state = useUserStore.getState();
+      expect(state.token).toBeNull();
+      expect(state.user).toBeNull();
+      expect(state.isAuthenticated).toBe(false);
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith("pga_token");
     });
   });
 
