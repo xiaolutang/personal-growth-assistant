@@ -12,13 +12,13 @@
 | 任务 | 模块 | 状态 |
 |------|------|------|
 | F122 useMorningDigest error 增强 | hooks | done |
-| F123 Review 组件统一导出 | review-components | pending |
-| B93 export_growth_report 依赖注入 | review | pending |
+| F123 Review 组件统一导出 | review-components | done |
+| B93 export_growth_report 依赖注入 | review | done |
 
 **Phase 2 效率优化**
 | 任务 | 模块 | 状态 |
 |------|------|------|
-| F124 Home.tsx 合并遍历 | home | pending |
+| F124 Home.tsx 合并遍历 | home | done |
 | B94 _recommend_from_tags 优化 | knowledge | pending |
 
 **Phase 3 大型重构**

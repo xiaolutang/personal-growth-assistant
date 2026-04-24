@@ -231,6 +231,7 @@ class ReviewService:
         self._neo4j_client = neo4j_client
         self._llm_caller: Optional["APICaller"] = None
         self._goal_service = None  # 通过 set_goal_service 注入
+        self._knowledge_service = None  # 通过 set_knowledge_service 注入
 
     def set_sqlite_storage(self, storage):
         """设置 SQLite 存储"""
@@ -243,6 +244,10 @@ class ReviewService:
     def set_goal_service(self, goal_service):
         """设置目标服务（由 deps.py 注入）"""
         self._goal_service = goal_service
+
+    def set_knowledge_service(self, knowledge_service):
+        """设置知识图谱服务（由 deps.py 注入）"""
+        self._knowledge_service = knowledge_service
 
     @staticmethod
     def calculate_task_stats(tasks: List[dict]) -> TaskStats:
@@ -1726,9 +1731,9 @@ class ReviewService:
         # Section 4: 知识图谱概览
         knowledge_lines = []
         try:
-            from app.routers.deps import get_knowledge_service
-            ks = get_knowledge_service()
-            stats = await ks.get_knowledge_stats(user_id)
+            if self._knowledge_service:
+                ks = self._knowledge_service
+                stats = await ks.get_knowledge_stats(user_id)
             knowledge_lines = [
                 f"| 指标 | 数值 |",
                 f"|------|------|",

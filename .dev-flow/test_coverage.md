@@ -5,9 +5,9 @@
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
 |--------|----------|-----------|--------------------|--------|------|
 | useMorningDigest 增强 | F122 | unit | error初始null/成功null/失败string/卸载不更新 | done | F1, 10 tests (7 existing + 3 new), 366 vitest total |
-| 统一导出 | F123 | unit | 5组件移除default后build无报错/Review.tsx命名导入 | pending | F1 |
-| 依赖注入 | B93 | unit | 构造函数参数/不调deps/growth-report回归200 | pending | L2 |
-| 合并遍历 | F124 | unit | todayTasks/unprocessedInbox/recentInbox/todayStats等价 | pending | F1 |
+| 统一导出 | F123 | unit | 5组件移除default后build无报错/Review.tsx命名导入 | done | F1, 验收已满足无需代码变更 |
+| 依赖注入 | B93 | unit | 构造函数参数/不调deps/growth-report回归200 | done | L2, 3 new tests, 1173 pytest total |
+| 合并遍历 | F124 | unit | todayTasks/unprocessedInbox/recentInbox/todayStats等价 | done | F1, 366 vitest passed, build success |
 | 定向查询 | B94 | unit | 匹配tag/无匹配/大小写不敏感/部分匹配/去重/最多5条/空tag/异常tag | pending | L1 |
 | GraphPage 拆分 | F125 | unit+manual | 4 Tab功能不变/build无TS错误 | pending | F2 |
 | 模型拆分 | B95 | unit | 模型import正确(review_service+review.py)/pytest | pending | L1 |

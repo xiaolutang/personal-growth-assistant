@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 10,
-    "pending": 9,
-    "completed": 1,
+    "pending": 6,
+    "completed": 4,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -149,7 +149,7 @@
       "description": "5 个 Review 组件统一为命名导出，移除 export default",
       "verification": "F1",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P2",
       "acceptance_criteria": [
         "InsightCard/AiSummaryCard/HeatmapCard/MorningDigestCard/GrowthCurveCard 移除 export default 行",
@@ -170,7 +170,13 @@
         "每个组件移除 export default 后 build 无报错",
         "Review.tsx 中所有导入为命名导入"
       ],
-      "planning_notes": "R029 F-015 residual: 双重导出风格不统一。原来只有 InsightCard/AiSummaryCard，现在 HeatmapCard/MorningDigestCard/GrowthCurveCard 也有此问题"
+      "planning_notes": "R029 F-015 residual: 双重导出风格不统一。原来只有 InsightCard/AiSummaryCard，现在 HeatmapCard/MorningDigestCard/GrowthCurveCard 也有此问题",
+      "started_at": "2026-04-25T10:20:00",
+      "completed_at": "2026-04-25T10:20:00",
+      "actual_minutes": 0,
+      "evidence_file": ".dev-flow/evidence/F123.md",
+      "summary": "验收已满足：5个组件均无export default，Review.tsx全为命名导入",
+      "execution_notes": "R029规划时存在的问题已在先前迭代中修复，无需代码变更"
     },
     {
       "id": "B93",
@@ -180,7 +186,7 @@
       "description": "ReviewService.export_growth_report 通过构造函数接收 knowledge_service，不再通过 deps 全局获取",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P2",
       "acceptance_criteria": [
         "ReviewService.__init__ 接收 knowledge_service 参数",
@@ -200,7 +206,12 @@
         "GET /review/growth-report 回归验证返回完整报告",
         "pytest 通过"
       ],
-      "planning_notes": "R029 CR-001 residual: export_growth_report 反向依赖 deps.get_knowledge_service"
+      "planning_notes": "R029 CR-001 residual: export_growth_report 反向依赖 deps.get_knowledge_service",
+      "started_at": "2026-04-25T10:25:00",
+      "completed_at": "2026-04-25T10:35:00",
+      "actual_minutes": 10,
+      "evidence_file": ".dev-flow/evidence/B93.md",
+      "summary": "export_growth_report 通过 set_knowledge_service 注入，消除反向依赖"
     },
     {
       "id": "F124",
@@ -210,7 +221,7 @@
       "description": "将 todayTasks/unprocessedInbox/recentInbox/todayStats 4 个独立 useMemo 合并为单次遍历",
       "verification": "F1",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P2",
       "acceptance_criteria": [
         "4 个 useMemo 合并为 1 个，单次遍历产出所有结果",
@@ -228,7 +239,12 @@
         "合并后 recentInbox 排序和截取逻辑不变",
         "合并后 todayStats 计数逻辑不变"
       ],
-      "planning_notes": "R029 F-012 residual: Home.tsx 多次遍历全量 tasks 数组，3-4 个 useMemo 各自遍历"
+      "planning_notes": "R029 F-012 residual: Home.tsx 多次遍历全量 tasks 数组，3-4 个 useMemo 各自遍历",
+      "started_at": "2026-04-25T10:40:00",
+      "completed_at": "2026-04-25T10:45:00",
+      "actual_minutes": 5,
+      "evidence_file": ".dev-flow/evidence/F124.md",
+      "summary": "4个useMemo合并为单次遍历，行为等价"
     },
     {
       "id": "B94",

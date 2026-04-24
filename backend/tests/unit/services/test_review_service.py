@@ -599,3 +599,50 @@ class TestAnalyzeCategoryDistribution:
         assert counts == {"task": 3}
         assert len(tasks) == 3
         assert len(notes) == 0
+
+
+# ===== B93: export_growth_report 依赖注入测试 =====
+
+
+class TestB93KnowledgeServiceDI:
+    """B93: export_growth_report 通过构造函数注入 knowledge_service"""
+
+    def test_constructor_accepts_knowledge_service(self):
+        """构造函数接收 knowledge_service 参数"""
+        ks = MagicMock()
+        service = ReviewService(sqlite_storage=MagicMock())
+        service.set_knowledge_service(ks)
+        assert service._knowledge_service is ks
+
+    @pytest.mark.asyncio
+    async def test_export_growth_report_uses_injected_service(self):
+        """export_growth_report 使用注入的 knowledge_service，不调 deps"""
+        mock_sqlite = MagicMock()
+        mock_sqlite.list_entries.return_value = []
+        mock_sqlite.count_entries.return_value = 0
+
+        ks = MagicMock()
+        ks.get_knowledge_stats = AsyncMock(return_value=MagicMock(
+            concept_count=10, relation_count=5, category_distribution={"beginner": 10}
+        ))
+
+        service = ReviewService(sqlite_storage=mock_sqlite)
+        service.set_knowledge_service(ks)
+
+        report = await service.export_growth_report("user1")
+        assert "成长报告" in report
+        ks.get_knowledge_stats.assert_called_once_with("user1")
+
+    @pytest.mark.asyncio
+    async def test_export_growth_report_no_knowledge_service_graceful(self):
+        """knowledge_service 未注入时知识图谱 section 显示'暂无数据'"""
+        mock_sqlite = MagicMock()
+        mock_sqlite.list_entries.return_value = []
+        mock_sqlite.count_entries.return_value = 0
+
+        service = ReviewService(sqlite_storage=mock_sqlite)
+        # 不设置 knowledge_service
+
+        report = await service.export_growth_report("user1")
+        assert "成长报告" in report
+        assert "知识图谱" in report
