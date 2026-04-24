@@ -15,7 +15,7 @@ R031 (feat/R031-conversational-onboarding)
 ├── P1: 前端
 │   └── F118 对话式 Onboarding 前端 [completed]
 └── P3: 质量收口
-    └── S28 全量验证 [pending]
+    └── S28 全量验证 [completed]
 ```
 
 **依赖图：**

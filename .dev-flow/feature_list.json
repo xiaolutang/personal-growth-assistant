@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 3,
-    "pending": 1,
-    "completed": 2,
+    "pending": 0,
+    "completed": 3,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -148,8 +148,12 @@
       "description": "R031 全量测试验证 + 构建。",
       "verification": "L4",
       "depends_on": ["F118"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P2",
+      "started_at": "2026-04-24T15:05:00",
+      "completed_at": "2026-04-24T15:10:00",
+      "evidence_file": ".dev-flow/evidence/S28.md",
+      "execution_notes": "pytest 998 passed, vitest 360 passed, build success",
       "acceptance_criteria": [
         "pytest 全量通过",
         "vitest 全量通过",
