@@ -3,14 +3,9 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-24T14:00:00",
+  "updated_at": "2026-04-24T16:00:00",
   "status": "active",
-  "active_requirement_cycle": {
-    "id": "R031",
-    "name": "conversational-onboarding",
-    "branch": "feat/R031-conversational-onboarding",
-    "started_at": "2026-04-24"
-  },
+  "active_requirement_cycle": null,
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -20,156 +15,15 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 3,
+    "total_tasks": 0,
     "pending": 0,
-    "completed": 3,
+    "completed": 0,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
   },
-  "modules": [
-    {
-      "id": "onboarding-backend",
-      "name": "Onboarding 后端 Prompt",
-      "description": "AI chat 增加 is_new_user 上下文，注入 onboarding 引导 prompt",
-      "tasks": ["B88"]
-    },
-    {
-      "id": "onboarding-frontend",
-      "name": "对话式 Onboarding 前端",
-      "description": "移除静态弹窗，改为 PageChatPanel 自动展开 + 专属欢迎消息和引导建议",
-      "tasks": ["F118"]
-    },
-    {
-      "id": "quality",
-      "name": "质量收口",
-      "description": "全量测试验证和构建",
-      "tasks": ["S28"]
-    }
-  ],
-  "features": [
-    {
-      "id": "B88",
-      "phase": "P1",
-      "module": "onboarding-backend",
-      "name": "Onboarding AI Prompt",
-      "description": "AI chat 服务新增 onboarding 模式。当 context 包含 is_new_user=true 时，注入引导性系统提示，指导日知主动打招呼、提供示例短语、引导创建首个条目、并在首次成功创建后自然过渡到正常模式。",
-      "verification": "L2",
-      "depends_on": [],
-      "status": "completed",
-      "priority": "P0",
-      "started_at": "2026-04-24T12:15:00",
-      "completed_at": "2026-04-24T14:30:00",
-      "evidence_file": ".dev-flow/evidence/B88.md",
-      "execution_notes": "15 unit tests + 1097 regression passed, code-review pass, audit done",
-      "acceptance_criteria": [
-        "context 包含 is_new_user=true 时，系统提示追加 onboarding 引导段落",
-        "onboarding prompt 包含：自我介绍、示例短语（灵感/任务/笔记）、鼓励用户尝试",
-        "is_new_user=false 或缺失时，行为与现有完全一致（回归通过）",
-        "onboarding prompt 不影响正常对话能力（不限制只做 entry 创建）",
-        "onboarding prompt 总长度（SYSTEM_PROMPT + PAGE_ROLE_PROMPT + onboarding 段）不超过 500 字",
-        "page=home + is_new_user=true 组合：两个 prompt 段落都正确注入，顺序为 SYSTEM → home role → onboarding"
-      ],
-      "test_tasks": [
-        "is_new_user=true：验证 _build_system_prompt 返回包含 onboarding 引导文本",
-        "is_new_user=false：验证 prompt 不包含 onboarding 文本",
-        "is_new_user 缺失：验证行为与 false 一致",
-        "onboarding + page=home 组合：验证 SYSTEM_PROMPT、home role prompt、onboarding 段三者都注入且顺序正确",
-        "prompt 长度断言：is_new_user=true + page=home 时完整 prompt 不超过 500 字",
-        "onboarding prompt 内容断言：包含'灵感'或'任务'或'笔记'等示例关键词",
-        "回归：现有 chat 测试全通过"
-      ],
-      "risk_tags": [],
-      "files": [
-        "backend/app/services/ai_chat_service.py"
-      ],
-      "contract_refs": [],
-      "planning_notes": "只改 _build_system_prompt，在 is_new_user 存在时追加引导段落。不改 API 接口，context 字段由前端透传。参考 PAGE_ROLE_PROMPTS 的注入方式。"
-    },
-    {
-      "id": "F118",
-      "phase": "P1",
-      "module": "onboarding-frontend",
-      "name": "对话式 Onboarding 前端",
-      "description": "移除静态 OnboardingFlow 弹窗，改为在 Home 页通过 PageChatPanel 实现对话式引导。新用户首次进入时，日知自动打招呼并提供引导建议，用户首次对话后自动标记 onboarding 完成。",
-      "verification": "F2",
-      "depends_on": ["B88"],
-      "status": "completed",
-      "priority": "P0",
-      "started_at": "2026-04-24T14:45:00",
-      "completed_at": "2026-04-24T15:00:00",
-      "evidence_file": ".dev-flow/evidence/F118.md",
-      "execution_notes": "vitest 360 passed, build success, code-review fix round done",
-      "acceptance_criteria": [
-        "onboarding_completed=false 时，不显示静态弹窗 OnboardingFlow",
-        "onboarding_completed=false 时，Home 页 PageChatPanel 自动展开（非折叠）",
-        "PageChatPanel 显示日知欢迎消息作为初始 assistant 消息（无需用户触发）",
-        "欢迎消息内容：日知自我介绍 + 示例短语",
-        "suggestions 显示 onboarding 专属建议：记灵感、做任务、记笔记",
-        "pageContext 包含 is_new_user: true",
-        "onboarding_completed=false 时，FloatingChat 在首页隐藏（避免双入口混淆）",
-        "用户首次对话完成状态机：用户发送消息 → SSE 流式响应开始 → 流式响应结束 → 调用 updateMe({ onboarding_completed: true }) → userStore 更新 → PageChatPanel 通过 key 变化重挂载，清空 onboarding 消息，恢复正常模式",
-        "updateMe 失败时不阻塞用户使用，仅静默记录错误，下次进入仍为 onboarding 模式",
-        "updateMe 防重复：使用 boolean flag 保证只调用一次",
-        "onboarding_completed=true 后，PageChatPanel 恢复正常模式（默认折叠、普通欢迎语、普通 suggestions、无初始消息）",
-        "窗口宽度 < 640px 时不溢出",
-        "用户可关闭/收起 chat panel 不影响使用其他页面功能"
-      ],
-      "test_tasks": [
-        "新用户首次进入：验证 PageChatPanel 自动展开 + 欢迎消息可见 + onboarding suggestions",
-        "新用户发送消息后：验证 updateMe 被调用且只调用一次",
-        "updateMe 失败：模拟 updateMe reject，验证不阻塞 UI，下次仍为 onboarding 模式",
-        "AI 流失败：模拟 SSE 流错误，验证 onboarding 不被标记完成",
-        "老用户（onboarding_completed=true）：验证 PageChatPanel 正常模式（折叠、无初始消息、普通 suggestions）",
-        "onboarding 完成后重挂载：验证 PageChatPanel key 变化导致重挂载，消息清空",
-        "FloatingChat 隐藏：新用户首页验证 FloatingChat 不渲染",
-        "欢迎消息内容：验证包含日知自我介绍关键词",
-        "is_new_user 透传：验证 sendAIChat 的 context 包含 is_new_user: true",
-        "收起/展开：验证新用户可收起 chat panel",
-        "移动端布局：窗口 < 640px 验证不溢出",
-        "现有 OnboardingFlow 测试更新或移除"
-      ],
-      "risk_tags": ["first_use", "network"],
-      "files": [
-        "frontend/src/pages/Home.tsx",
-        "frontend/src/components/PageChatPanel.tsx",
-        "frontend/src/components/OnboardingFlow.tsx",
-        "frontend/src/components/FloatingChat.tsx",
-        "frontend/src/App.tsx"
-      ],
-      "contract_refs": [],
-      "planning_notes": "核心改动：1) App.tsx 移除 OnboardingFlow 弹窗逻辑 2) Home.tsx 从 userStore 读取 onboarding_completed 3) PageChatPanel 新增 greetingMessage prop（显示为初始 assistant 消息）4) PageChatPanel 新增 onFirstResponse 回调（SSE 流结束后触发）5) Home.tsx 维护 onboardingCompleted flag，完成后通过 key 变化重挂载 PageChatPanel 6) FloatingChat 新用户首页隐藏（通过 userStore.onboarding_completed 控制）7) OnboardingFlow.tsx 删除（不再被引用）\n\n状态机：showOnboardingChat=true → user sends message → stream completes → onFirstResponse callback → updateMe({onboarding_completed:true}) → userStore 更新 → key 变化 → PageChatPanel 重挂载为正常模式"
-    },
-    {
-      "id": "S28",
-      "phase": "P3",
-      "module": "quality",
-      "name": "质量收口+全量验证",
-      "description": "R031 全量测试验证 + 构建。",
-      "verification": "L4",
-      "depends_on": ["F118"],
-      "status": "completed",
-      "priority": "P2",
-      "started_at": "2026-04-24T15:05:00",
-      "completed_at": "2026-04-24T15:10:00",
-      "evidence_file": ".dev-flow/evidence/S28.md",
-      "execution_notes": "pytest 998 passed, vitest 360 passed, build success",
-      "acceptance_criteria": [
-        "pytest 全量通过",
-        "vitest 全量通过",
-        "frontend build 成功"
-      ],
-      "test_tasks": [
-        "pytest 全量运行",
-        "vitest 全量运行",
-        "npm run build",
-        "首用 smoke：新用户注册 → 登录 → 首页 PageChatPanel 自动展开 + 欢迎消息可见"
-      ],
-      "risk_tags": [],
-      "files": [],
-      "planning_notes": "验证 R031 所有改动不影响现有功能"
-    }
-  ],
+  "modules": [],
+  "features": [],
   "next_cycle_preview": null,
   "archived_requirement_cycles": [
     {"id": "R003", "name": "production-content-recovery", "status": "completed", "archive_dir": "_archive/R003_production-content-recovery"},
@@ -201,6 +55,7 @@
     {"id": "R027", "name": "export-feedback-tracking", "status": "completed", "archive_dir": "_archive/R027_export-feedback-tracking"},
     {"id": "R028", "name": "engineering-cleanup", "status": "completed", "archive_dir": "_archive/R028_engineering-cleanup"},
     {"id": "R029", "name": "simplify-convergence", "status": "completed", "archive_dir": "_archive/R029_simplify-convergence"},
-    {"id": "R030", "name": "ai-morning-report", "status": "completed", "archive_dir": "_archive/R030_ai-morning-report"}
+    {"id": "R030", "name": "ai-morning-report", "status": "completed", "archive_dir": "_archive/R030_ai-morning-report"},
+    {"id": "R031", "name": "conversational-onboarding", "status": "completed", "archive_dir": "_archive/R031_conversational-onboarding"}
   ]
 }
