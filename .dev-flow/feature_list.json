@@ -3,14 +3,9 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-24T17:00:00",
+  "updated_at": "2026-04-24T18:50:00",
   "status": "active",
-  "active_requirement_cycle": {
-    "id": "R032",
-    "name": "search-filter-batch",
-    "branch": "feat/R032-search-filter-batch",
-    "started_at": "2026-04-24"
-  },
+  "active_requirement_cycle": null,
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -20,195 +15,15 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 4,
+    "total_tasks": 0,
     "pending": 0,
-    "completed": 4,
+    "completed": 0,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
   },
-  "modules": [
-    {
-      "id": "search-backend",
-      "name": "搜索过滤增强后端",
-      "description": "搜索 API 新增时间和标签过滤参数，HybridSearchService 支持过滤",
-      "tasks": ["B89"]
-    },
-    {
-      "id": "search-frontend",
-      "name": "搜索过滤前端 UI",
-      "description": "Explore 页增加时间范围选择和标签筛选 UI",
-      "tasks": ["F119"]
-    },
-    {
-      "id": "explore-batch",
-      "name": "Explore 批量操作",
-      "description": "Explore 页增加多选模式和批量删除/转分类操作",
-      "tasks": ["F120"]
-    },
-    {
-      "id": "quality",
-      "name": "质量收口",
-      "description": "全量测试验证和构建",
-      "tasks": ["S29"]
-    }
-  ],
-  "features": [
-    {
-      "id": "B89",
-      "phase": "P1",
-      "module": "search-backend",
-      "name": "搜索过滤增强（时间 + 标签）",
-      "description": "搜索 API 新增 start_time、end_time、tags 参数，query 改为可选（支持纯过滤浏览模式）。HybridSearchService.search() 在合并分数后、返回前应用时间和标签过滤。SQLite 降级路径同步支持。时间过滤基于 entry 的 created_at 字段，标签过滤基于 entry 的 tags 字段（数组交集匹配）。query 为空时走 getEntries + 后过滤而非向量/全文搜索。",
-      "verification": "L2",
-      "depends_on": [],
-      "status": "completed",
-      "priority": "P0",
-      "acceptance_criteria": [
-        "SearchRequest 新增 start_time: Optional[str]（ISO 格式）、end_time: Optional[str]、tags: Optional[List[str]] 三个参数",
-        "SearchRequest.query 改为 Optional[str]，默认空字符串（支持纯过滤浏览模式）",
-        "query 非空时：走 HybridSearchService 混合搜索 + 后过滤（时间 + 标签 + filter_type）",
-        "query 为空时：走 getEntries 列表 + 后过滤（时间 + 标签 + filter_type），跳过向量/全文搜索",
-        "时间过滤：结果 entry 的 created_at 在 [start_time, end_time] 范围内（闭区间），start_time 或 end_time 缺失时为开区间",
-        "标签过滤：结果 entry 的 tags 与请求 tags 有交集（至少匹配一个）",
-        "SQLite 降级路径同步应用时间和标签过滤",
-        "不传时间/标签参数时，行为与现有完全一致（回归通过）",
-        "tags 为空数组时等价于不筛选",
-        "start_time/end_time 格式非法时返回 422（Pydantic 校验）",
-        "start_time > end_time 时返回空结果（不报错）"
-      ],
-      "test_tasks": [
-        "时间过滤：start_time + end_time 都传，验证结果都在范围内",
-        "时间过滤：只传 start_time，验证结果 >= start_time",
-        "时间过滤：只传 end_time，验证结果 <= end_time",
-        "时间过滤：不传时间参数，验证结果不过滤",
-        "时间过滤：闭区间边界，验证 start_time 当天 00:00 和 end_time 当天 23:59:59 的条目包含在内",
-        "时间过滤：start_time > end_time，验证返回空结果",
-        "标签过滤：传 tags=['python']，验证结果至少有一个匹配标签",
-        "标签过滤：传 tags=['不存在标签']，验证返回空",
-        "标签过滤：不传 tags，验证结果不过滤",
-        "标签过滤：传 tags=[]（空数组），验证等价于不筛选",
-        "组合过滤：时间 + 标签 + filter_type 同时传入",
-        "空 query + 过滤：query 为空字符串，传 start_time，验证走 getEntries + 过滤",
-        "空 query + 无过滤：query 为空，无其他参数，验证返回全部条目（limit 内）",
-        "SQLite 降级路径：mock HybridSearchService 失败，验证降级后过滤仍生效",
-        "start_time 格式非法：验证返回 422",
-        "回归：现有搜索测试全通过"
-      ],
-      "risk_tags": [],
-      "files": [
-        "backend/app/routers/search.py",
-        "backend/app/services/hybrid_search.py"
-      ],
-      "contract_refs": ["CONTRACT-SEARCH01"],
-      "planning_notes": "过滤逻辑放在合并分数之后（后过滤），不改变搜索相关性计算。时间过滤用 entry 的 created_at，标签过滤用 tags 数组交集。不改 Qdrant 和 SQLite 搜索接口本身，只在结果层过滤。"
-    },
-    {
-      "id": "F119",
-      "phase": "P1",
-      "module": "search-frontend",
-      "name": "搜索过滤 UI",
-      "description": "Explore 页搜索体验增强。新增时间范围快选（今天/本周/本月/全部），热门标签点击改为真正的标签筛选器（传 tags 参数到后端）。搜索栏下方显示当前激活的过滤条件，可一键清除。",
-      "verification": "F2",
-      "depends_on": ["B89"],
-      "status": "completed",
-      "priority": "P0",
-      "acceptance_criteria": [
-        "搜索面板新增时间范围快选按钮组：今天/本周/本月/全部（默认全部）",
-        "选择时间范围后，searchEntries 调用传入 start_time 和 end_time 参数",
-        "热门标签点击后，searchEntries 调用传入 tags 参数（而非仅填入搜索框文本）",
-        "搜索栏下方显示当前激活的过滤条件 chip（如 '本周'、'#python'），点击可移除",
-        "全部清除按钮一键重置所有过滤条件",
-        "过滤条件变更后自动触发搜索（防抖 300ms）",
-        "不选择任何过滤条件时，行为与现有完全一致",
-        "searchEntries 函数签名扩展，接受可选 start_time、end_time、tags 参数"
-      ],
-      "test_tasks": [
-        "时间快选：点击'本周'后验证 searchEntries 调用包含 start_time 和 end_time",
-        "时间快选：点击'全部'后验证 searchEntries 调用不含时间参数",
-        "标签筛选：点击热门标签后验证 searchEntries 调用包含 tags 参数",
-        "过滤条件 chip：验证激活的过滤条件显示为 chip",
-        "移除 chip：点击 chip 的 x 后验证该过滤条件被移除",
-        "全部清除：点击清除按钮后验证所有过滤条件重置",
-        "无过滤条件：不选择过滤时行为与现有一致"
-      ],
-      "risk_tags": [],
-      "files": [
-        "frontend/src/pages/Explore.tsx",
-        "frontend/src/services/api.ts"
-      ],
-      "contract_refs": ["CONTRACT-SEARCH01"],
-      "planning_notes": "核心改动：1) api.ts 的 searchEntries 函数扩展参数 2) Explore.tsx 新增时间快选按钮组 3) 热门标签点击改为 setTagFilter(tag) 而非 setSearchQuery(tag) 4) 新增 activeFilters 状态管理（timeRange + selectedTags）5) 过滤条件 chip 展示区。时间范围计算：今天=当天0点-23:59:59，本周=周一0点-周日23:59:59，本月=1号0点-月末23:59:59。"
-    },
-    {
-      "id": "F120",
-      "phase": "P2",
-      "module": "explore-batch",
-      "name": "Explore 批量操作",
-      "description": "Explore 页增加多选模式和批量操作。复用 Tasks 页已有的多选模式（selectMode/selectedIds/toggleSelect）和批量操作模式（批量删除、批量转分类）。在条目卡片长按或右上角编辑按钮进入多选模式。选择模式下禁用 TaskCard 内的状态切换和删除按钮。批量操作通过 taskStore 执行（deleteTask/updateEntry），操作完成后从 Explore 本地 entries/searchResults 中移除已删除条目或更新已转分类条目。",
-      "verification": "F2",
-      "depends_on": ["F119"],
-      "status": "completed",
-      "priority": "P1",
-      "acceptance_criteria": [
-        "Explore 页右上角新增'编辑'按钮，点击进入多选模式",
-        "多选模式下，每个条目卡片显示 checkbox，禁用状态切换和删除按钮",
-        "支持全选/取消全选",
-        "底部固定批量操作栏：显示'已选 N 项' + '转笔记' + '转灵感' + '删除'",
-        "批量删除：确认弹窗后逐个调用 taskStore.deleteTask，从本地 entries/searchResults 中移除已删除条目",
-        "批量转分类：逐个调用 taskStore.updateEntry(id, { category })，更新本地条目的 category",
-        "ESC 键退出多选模式",
-        "多选模式下 Tab 切换不清空选择",
-        "移动端：长按条目卡片进入多选模式（由 Explore 层 onContextMenu/触摸长按处理，不依赖 TaskCard 内部）",
-        "取消删除确认弹窗：不执行任何操作，保持选择状态",
-        "批量操作部分失败：逐个执行 deleteTask 后检查 taskStore.error，显示错误提示（toast），已成功的条目正常更新/移除"
-      ],
-      "test_tasks": [
-        "点击编辑按钮进入多选模式，验证 checkbox 可见且状态切换/删除按钮被禁用",
-        "选择多个条目后验证批量操作栏显示'已选 N 项'",
-        "批量删除：选中 2 个条目，点击删除，确认后验证条目被删除且本地列表更新",
-        "批量删除：点击删除后取消确认，验证不执行任何操作",
-        "批量转分类：选中条目，点击'转笔记'，验证 category 更新且本地列表刷新",
-        "批量操作部分失败：mock 部分条目删除后 taskStore.error 非空，验证成功的已移除 + 错误提示",
-        "ESC 键退出多选模式，验证 UI 恢复正常",
-        "Tab 切换时验证选择不清空",
-        "退出多选模式后验证 UI 恢复正常",
-        "无条目时编辑按钮不显示或禁用"
-      ],
-      "risk_tags": [],
-      "files": [
-        "frontend/src/pages/Explore.tsx",
-        "frontend/src/components/TaskCard.tsx"
-      ],
-      "contract_refs": [],
-      "planning_notes": "实现边界：1) Explore 维护本地 entries/searchResults 状态，不共享 taskStore.tasks 2) 批量操作通过 taskStore.deleteTask/updateEntry 执行（现有 API），操作完成后从 Explore 本地状态中移除/更新 3) TaskCard 的 selectable 模式下：checkbox 可点，状态切换按钮和删除按钮通过 TaskCard 新增 disableActions prop 禁用 4) 移动端长按由 Explore 页面层处理（onTouchStart + setTimeout 500ms），不修改 TaskCard 组件内部 5) 删除确认弹窗复用 Tasks.tsx 已有的模式 6) 批量删除逐个调用 taskStore.deleteTask，通过检查 taskStore.error 状态判断单项失败（taskStore 不 throw，而是设置内部 error），不依赖 Promise.allSettled 7) 复用 Tasks.tsx 的多选模式：selectMode + selectedIds + toggleSelect/selectAll/exitSelectMode + ESC + 底部固定操作栏"
-    },
-    {
-      "id": "S29",
-      "phase": "P3",
-      "module": "quality",
-      "name": "质量收口+全量验证",
-      "description": "R032 全量测试验证 + 构建。",
-      "verification": "L4",
-      "depends_on": ["F119", "F120"],
-      "status": "completed",
-      "priority": "P2",
-      "acceptance_criteria": [
-        "pytest 全量通过",
-        "vitest 全量通过",
-        "frontend build 成功"
-      ],
-      "test_tasks": [
-        "pytest 全量运行",
-        "vitest 全量运行",
-        "npm run build",
-        "smoke：Explore 页搜索 + 时间筛选 + 标签筛选 + 批量操作"
-      ],
-      "risk_tags": [],
-      "files": [],
-      "planning_notes": "验证 R032 所有改动不影响现有功能"
-    }
-  ],
+  "modules": [],
+  "features": [],
   "next_cycle_preview": null,
   "archived_requirement_cycles": [
     {"id": "R003", "name": "production-content-recovery", "status": "completed", "archive_dir": "_archive/R003_production-content-recovery"},
@@ -241,6 +56,7 @@
     {"id": "R028", "name": "engineering-cleanup", "status": "completed", "archive_dir": "_archive/R028_engineering-cleanup"},
     {"id": "R029", "name": "simplify-convergence", "status": "completed", "archive_dir": "_archive/R029_simplify-convergence"},
     {"id": "R030", "name": "ai-morning-report", "status": "completed", "archive_dir": "_archive/R030_ai-morning-report"},
-    {"id": "R031", "name": "conversational-onboarding", "status": "completed", "archive_dir": "_archive/R031_conversational-onboarding"}
+    {"id": "R031", "name": "conversational-onboarding", "status": "completed", "archive_dir": "_archive/R031_conversational-onboarding"},
+    {"id": "R032", "name": "search-filter-batch", "status": "completed", "archive_dir": "_archive/R032_search-filter-batch"}
   ]
 }
