@@ -8,7 +8,7 @@
 | AI 建议个性化 | B86 | unit | 有目标/无目标/高频标签/LLM降级/超时/5xx/异常结构 | done | L2, 9 tests |
 | 模式洞察 LLM 增强 | B87 | unit | LLM正常(最多5条string[])/LLM降级(规则引擎)/超时/空数据/5xx/异常结构/回归/时间模式(weekday_activity) | done | L2, 10 tests |
 | 晨报展示优化 | F117 | unit+manual | cached_at非null/null/缺失(旧后端)/5条洞察/空洞察/加载态 | done | F2, vitest 347 passed, build success |
-| 质量收口 | S27 | integration+smoke | pytest全量/vitest全量/build/Docker smoke | done | L4, pytest 982, vitest 347, build success |
+| 质量收口 | S27 | integration+smoke | pytest全量/vitest全量/build/Docker smoke | done | L4, pytest 1082, vitest 347, build success |
 
 ## R029: Simplify 收敛检查
 
