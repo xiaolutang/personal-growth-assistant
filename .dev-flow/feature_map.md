@@ -19,12 +19,12 @@
 | 任务 | 模块 | 状态 |
 |------|------|------|
 | F124 Home.tsx 合并遍历 | home | done |
-| B94 _recommend_from_tags 优化 | knowledge | pending |
+| B94 _recommend_from_tags 优化 | knowledge | done |
 
 **Phase 3 大型重构**
 | 任务 | 模块 | 状态 |
 |------|------|------|
-| F125 GraphPage 拆分 | graph | pending |
+| F125 GraphPage 拆分 | graph | done |
 | B95 review_service 模型拆分 | review | pending |
 | F126 api.ts 类型迁移 | api | pending |
 

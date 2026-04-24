@@ -8,8 +8,8 @@
 | 统一导出 | F123 | unit | 5组件移除default后build无报错/Review.tsx命名导入 | done | F1, 验收已满足无需代码变更 |
 | 依赖注入 | B93 | unit | 构造函数参数/不调deps/growth-report回归200 | done | L2, 3 new tests, 1173 pytest total |
 | 合并遍历 | F124 | unit | todayTasks/unprocessedInbox/recentInbox/todayStats等价 | done | F1, 366 vitest passed, build success |
-| 定向查询 | B94 | unit | 匹配tag/无匹配/大小写不敏感/部分匹配/去重/最多5条/空tag/异常tag | pending | L1 |
-| GraphPage 拆分 | F125 | unit+manual | 4 Tab功能不变/build无TS错误 | pending | F2 |
+| 定向查询 | B94 | unit | 匹配tag/无匹配/大小写不敏感/部分匹配/去重/最多5条/空tag/异常tag | done | L1, 1176 pytest passed |
+| GraphPage 拆分 | F125 | unit+manual | 4 Tab功能不变/build无TS错误 | done | F2, 366 vitest, build success, 1016→304 行 |
 | 模型拆分 | B95 | unit | 模型import正确(review_service+review.py)/pytest | pending | L1 |
 | api.ts 类型迁移 | F126 | unit | API调用类型正确/gen:types无冲突/build | pending | F2 |
 | GraphPage Tab 测试 | F127 | unit | 4 Tab切换/focus高亮/搜索防抖/showAll/能力地图筛选+重试/详情面板/时间线 | pending | F2 |

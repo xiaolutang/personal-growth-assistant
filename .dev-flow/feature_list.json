@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 10,
-    "pending": 6,
-    "completed": 4,
+    "pending": 4,
+    "completed": 6,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -254,7 +254,7 @@
       "description": "将 list_entries(limit=100) + 内存标签匹配改为基于 tag 的定向查询",
       "verification": "L1",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P2",
       "acceptance_criteria": [
         "_recommend_from_tags 改为基于 tag 的定向查询",
@@ -278,7 +278,12 @@
         "空标签输入返回空列表",
         "异常标签（特殊字符）不报错"
       ],
-      "planning_notes": "R029 F-016 residual: _recommend_from_tags 全量遍历条目，效率低下"
+      "planning_notes": "R029 F-016 residual: _recommend_from_tags 全量遍历条目，效率低下",
+      "started_at": "2026-04-25T10:50:00",
+      "completed_at": "2026-04-25T10:55:00",
+      "actual_minutes": 5,
+      "evidence_file": ".dev-flow/evidence/B94.md",
+      "summary": "全量遍历改为 search_tags_by_keyword 定向查询"
     },
     {
       "id": "F125",
@@ -288,7 +293,7 @@
       "description": "将 GraphPage.tsx(1016行) 的 6 个组件和 4 个辅助函数拆分为独立文件，提取 useGraphState hook",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
       "acceptance_criteria": [
         "DetailPanel + DetailPanelContent 拆为 graph/DetailPanel.tsx",
@@ -314,7 +319,12 @@
         "掌握度分布功能正常",
         "build 通过无 TypeScript 错误"
       ],
-      "planning_notes": "R029 F-014 residual: GraphPage.tsx 1016 行，含 6 组件 + 4 辅助函数，15+ useState"
+      "planning_notes": "R029 F-014 residual: GraphPage.tsx 1016 行，含 6 组件 + 4 辅助函数，15+ useState",
+      "started_at": "2026-04-25T11:00:00",
+      "completed_at": "2026-04-25T11:30:00",
+      "actual_minutes": 30,
+      "evidence_file": ".dev-flow/evidence/F125.md",
+      "summary": "GraphPage 1016行拆为 7 个文件，主文件 304 行"
     },
     {
       "id": "B95",
