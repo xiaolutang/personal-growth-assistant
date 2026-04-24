@@ -3,9 +3,14 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-25T00:30:00",
+  "updated_at": "2026-04-25T01:10:00",
   "status": "active",
-  "active_requirement_cycle": null,
+  "active_requirement_cycle": {
+    "id": "R034",
+    "name": "tech-debt-residual",
+    "status": "planning",
+    "branch": "feat/R034-tech-debt-residual"
+  },
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -15,15 +20,420 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 0,
-    "pending": 0,
+    "total_tasks": 10,
+    "pending": 10,
     "completed": 0,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
   },
-  "modules": [],
-  "features": [],
+  "modules": [
+    {
+      "name": "hooks",
+      "description": "前端自定义 Hooks"
+    },
+    {
+      "name": "review-components",
+      "description": "Review 页子组件"
+    },
+    {
+      "name": "review",
+      "description": "回顾系统后端"
+    },
+    {
+      "name": "home",
+      "description": "首页"
+    },
+    {
+      "name": "knowledge",
+      "description": "知识图谱后端"
+    },
+    {
+      "name": "graph",
+      "description": "图谱页前端"
+    },
+    {
+      "name": "api",
+      "description": "前端 API 层"
+    },
+    {
+      "name": "quality",
+      "description": "质量收口"
+    }
+  ],
+  "features": [
+    {
+      "id": "R034",
+      "name": "技术债收敛 (R029 Residual Risks)",
+      "description": "处理 R029 Simplify 收敛审查发现的 9 项 residual risks + 1 项测试缺口",
+      "phases": [
+        {
+          "id": "P1",
+          "name": "快速修复",
+          "tasks": [
+            "F122",
+            "F123",
+            "B93"
+          ]
+        },
+        {
+          "id": "P2",
+          "name": "效率优化",
+          "tasks": [
+            "F124",
+            "B94"
+          ]
+        },
+        {
+          "id": "P3",
+          "name": "大型重构",
+          "tasks": [
+            "F125",
+            "B95",
+            "F126"
+          ]
+        },
+        {
+          "id": "P4",
+          "name": "测试补齐 + 质量收口",
+          "tasks": [
+            "F127",
+            "S31"
+          ]
+        }
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "F122",
+      "phase": "P1",
+      "module": "hooks",
+      "name": "useMorningDigest error 状态增强",
+      "description": "将 error 从 useState(false) 改为 useState<string | null>(null)，存储错误消息而非 boolean",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "error 状态类型从 boolean 改为 string | null",
+        "catch 中捕获错误消息存入 error（优先 message，fallback 为 '加载失败'",
+        "调用者 Home.tsx 适配新 error 类型（digestError 为 string | null | false）",
+        "vitest 通过",
+        "build 通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "frontend/src/hooks/useMorningDigest.ts",
+        "frontend/src/pages/Home.tsx"
+      ],
+      "test_tasks": [
+        "error 初始值为 null",
+        "成功加载后 error 仍为 null",
+        "加载失败后 error 为错误消息字符串",
+        "组件卸载后不更新状态"
+      ],
+      "planning_notes": "R029 F-011 residual: useMorningDigest error 只存 boolean，丢失错误详情"
+    },
+    {
+      "id": "F123",
+      "phase": "P1",
+      "module": "review-components",
+      "name": "Review 组件统一导出风格",
+      "description": "5 个 Review 组件统一为命名导出，移除 export default",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "InsightCard/AiSummaryCard/HeatmapCard/MorningDigestCard/GrowthCurveCard 移除 export default 行",
+        "所有导入这些组件的文件改为命名导入",
+        "vitest 通过",
+        "build 通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "frontend/src/components/review/InsightCard.tsx",
+        "frontend/src/components/review/AiSummaryCard.tsx",
+        "frontend/src/components/review/HeatmapCard.tsx",
+        "frontend/src/components/review/MorningDigestCard.tsx",
+        "frontend/src/components/review/GrowthCurveCard.tsx",
+        "frontend/src/pages/Review.tsx"
+      ],
+      "test_tasks": [
+        "每个组件移除 export default 后 build 无报错",
+        "Review.tsx 中所有导入为命名导入"
+      ],
+      "planning_notes": "R029 F-015 residual: 双重导出风格不统一。原来只有 InsightCard/AiSummaryCard，现在 HeatmapCard/MorningDigestCard/GrowthCurveCard 也有此问题"
+    },
+    {
+      "id": "B93",
+      "phase": "P1",
+      "module": "review",
+      "name": "export_growth_report 消除反向依赖",
+      "description": "ReviewService.export_growth_report 通过构造函数接收 knowledge_service，不再通过 deps 全局获取",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "ReviewService.__init__ 接收 knowledge_service 参数",
+        "export_growth_report 使用 self._knowledge_service 而非 deps.get_knowledge_service()",
+        "deps.py 初始化 ReviewService 时传入 knowledge_service",
+        "成长报告导出链路回归验证：GET /review/growth-report 返回 200 + 完整 Markdown",
+        "现有测试通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "backend/app/services/review_service.py",
+        "backend/app/routers/deps.py"
+      ],
+      "test_tasks": [
+        "ReviewService 构造函数接收 knowledge_service 参数",
+        "export_growth_report 不调用 deps.get_knowledge_service",
+        "GET /review/growth-report 回归验证返回完整报告",
+        "pytest 通过"
+      ],
+      "planning_notes": "R029 CR-001 residual: export_growth_report 反向依赖 deps.get_knowledge_service"
+    },
+    {
+      "id": "F124",
+      "phase": "P2",
+      "module": "home",
+      "name": "Home.tsx 合并 tasks 遍历",
+      "description": "将 todayTasks/unprocessedInbox/recentInbox/todayStats 4 个独立 useMemo 合并为单次遍历",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "4 个 useMemo 合并为 1 个，单次遍历产出所有结果",
+        "行为完全等价（todayTasks/unprocessedInbox/recentInbox/todayStats 值不变）",
+        "vitest 通过",
+        "build 通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "frontend/src/pages/Home.tsx"
+      ],
+      "test_tasks": [
+        "合并后 todayTasks 过滤逻辑不变",
+        "合并后 unprocessedInbox 过滤逻辑不变",
+        "合并后 recentInbox 排序和截取逻辑不变",
+        "合并后 todayStats 计数逻辑不变"
+      ],
+      "planning_notes": "R029 F-012 residual: Home.tsx 多次遍历全量 tasks 数组，3-4 个 useMemo 各自遍历"
+    },
+    {
+      "id": "B94",
+      "phase": "P2",
+      "module": "knowledge",
+      "name": "_recommend_from_tags 定向查询优化",
+      "description": "将 list_entries(limit=100) + 内存标签匹配改为基于 tag 的定向查询",
+      "verification": "L1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "_recommend_from_tags 改为基于 tag 的定向查询",
+        "大小写不敏感的部分匹配行为保持不变",
+        "去重逻辑保持不变",
+        "最多 5 条推荐限制保持不变",
+        "空标签或异常标签优雅处理",
+        "现有测试通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "backend/app/services/knowledge_service.py"
+      ],
+      "test_tasks": [
+        "有匹配 tag 时返回正确条目",
+        "无匹配 tag 时返回空列表",
+        "大小写不敏感匹配",
+        "部分匹配（tag 包含搜索词）",
+        "结果去重",
+        "最多返回 5 条",
+        "空标签输入返回空列表",
+        "异常标签（特殊字符）不报错"
+      ],
+      "planning_notes": "R029 F-016 residual: _recommend_from_tags 全量遍历条目，效率低下"
+    },
+    {
+      "id": "F125",
+      "phase": "P3",
+      "module": "graph",
+      "name": "GraphPage.tsx 组件拆分 + useGraphState",
+      "description": "将 GraphPage.tsx(1016行) 的 6 个组件和 4 个辅助函数拆分为独立文件，提取 useGraphState hook",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "DetailPanel + DetailPanelContent 拆为 graph/DetailPanel.tsx",
+        "CapabilityMapView 拆为 graph/CapabilityMapView.tsx",
+        "状态管理(15+ useState)提取为 useGraphState hook",
+        "GraphPage.tsx 主文件降至 400 行以内",
+        "所有 4 个 Tab 功能不变",
+        "vitest 通过",
+        "build 通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "frontend/src/pages/GraphPage.tsx",
+        "frontend/src/pages/graph/DetailPanel.tsx",
+        "frontend/src/pages/graph/CapabilityMapView.tsx",
+        "frontend/src/pages/graph/useGraphState.ts",
+        "frontend/src/pages/graph/index.ts"
+      ],
+      "test_tasks": [
+        "知识地图 Tab 加载正常",
+        "能力地图 Tab 加载正常",
+        "概念搜索功能正常",
+        "掌握度分布功能正常",
+        "build 通过无 TypeScript 错误"
+      ],
+      "planning_notes": "R029 F-014 residual: GraphPage.tsx 1016 行，含 6 组件 + 4 辅助函数，15+ useState"
+    },
+    {
+      "id": "B95",
+      "phase": "P3",
+      "module": "review",
+      "name": "review_service 模型定义独立拆分",
+      "description": "将 review_service.py 中约 190 行 Pydantic 模型定义迁移到 models/review.py",
+      "verification": "L1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Pydantic 模型从 review_service.py 迁移到 models/review.py",
+        "review_service.py 中 import from models.review",
+        "review.py 路由层 import 切换到 models.review",
+        "review_service.py 降至 1900 行以内",
+        "所有 import 更新正确",
+        "现有测试通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "backend/app/services/review_service.py",
+        "backend/app/models/review.py",
+        "backend/app/routers/review.py"
+      ],
+      "test_tasks": [
+        "所有模型 import 正确（review_service + review.py 路由）",
+        "review_service 正常使用模型",
+        "路由层正常使用模型",
+        "pytest 通过"
+      ],
+      "planning_notes": "R029 F-017 residual: review_service 2091 行，混合了约 190 行 Pydantic 模型定义和业务逻辑"
+    },
+    {
+      "id": "F126",
+      "phase": "P3",
+      "module": "api",
+      "name": "api.ts 手动类型迁移到 api.generated.ts",
+      "description": "将 api.ts 中约 700 行手动 TypeScript 类型定义替换为 api.generated.ts 的自动生成类型",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "手动类型逐步替换为 api.generated.ts 中的类型",
+        "api.ts 降至 500 行以内（仅保留 API 调用逻辑和少量适配代码）",
+        "所有调用者无感知变更",
+        "vitest 通过",
+        "build 通过",
+        "npm run gen:types 后类型仍一致"
+      ],
+      "risk_tags": [],
+      "files": [
+        "frontend/src/services/api.ts"
+      ],
+      "test_tasks": [
+        "替换后所有 API 调用类型正确",
+        "gen:types 后无类型冲突",
+        "build 通过"
+      ],
+      "planning_notes": "R029 F-013 residual: api.ts 1188 行，约 700 行手动类型与 api.generated.ts OpenAPI 生成类型重复。注意：生成类型可能不完全匹配，需要适配代码"
+    },
+    {
+      "id": "F127",
+      "phase": "P4",
+      "module": "graph",
+      "name": "GraphPage Tab 切换自动化测试",
+      "description": "为 GraphPage 4 个 Tab（知识地图/能力地图/搜索/掌握度）添加切换和基本渲染自动化测试",
+      "verification": "F2",
+      "depends_on": [
+        "F125"
+      ],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "4 个 Tab 切换测试覆盖",
+        "每个 Tab 基本渲染验证",
+        "?focus= 参数高亮功能验证",
+        "搜索防抖功能验证",
+        "聚合/展开全部 (showAll) 功能验证",
+        "能力地图筛选与重试验证",
+        "详情面板/时间线显示验证",
+        "vitest 通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "frontend/src/pages/GraphPage.test.tsx"
+      ],
+      "test_tasks": [
+        "默认 Tab 为知识地图",
+        "切换到能力地图 Tab 正常渲染",
+        "切换到搜索 Tab 正常渲染",
+        "切换到掌握度 Tab 正常渲染",
+        "?focus= 参数自动定位并高亮节点",
+        "搜索输入防抖后触发请求",
+        "showAll 聚合/展开切换正常",
+        "能力地图筛选条件变更触发重新加载",
+        "详情面板打开/关闭正常",
+        "时间线数据加载和显示"
+      ],
+      "planning_notes": "R029 AC8 residual: GraphPage 无前端自动化 Tab 切换测试。依赖 F125 完成组件拆分后再编写"
+    },
+    {
+      "id": "S31",
+      "phase": "P4",
+      "module": "quality",
+      "name": "质量收口",
+      "description": "全量测试 + 构建 + Docker smoke 验证",
+      "verification": "L4",
+      "depends_on": [
+        "F122",
+        "F123",
+        "B93",
+        "F124",
+        "B94",
+        "F125",
+        "B95",
+        "F126",
+        "F127"
+      ],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "pytest 后端全量通过",
+        "vitest 前端全量通过",
+        "npm run build 成功",
+        "Docker smoke 验证：首页/回顾页/图谱页正常"
+      ],
+      "risk_tags": [
+        "regression",
+        "cross-cutting"
+      ],
+      "test_tasks": [
+        "pytest 全量通过",
+        "vitest 全量通过",
+        "build 成功",
+        "Docker smoke 通过"
+      ],
+      "planning_notes": "R034 质量收口，汇总所有任务的回归验证"
+    }
+  ],
   "next_cycle_preview": null,
   "archived_requirement_cycles": [
     {
@@ -157,18 +567,6 @@
       "name": "polish-deferred",
       "status": "completed",
       "archive_dir": "_archive/R022_polish-deferred"
-    },
-    {
-      "id": "R023",
-      "name": "ai-page-embedded",
-      "status": "completed",
-      "archive_dir": "_archive/R023_ai-page-embedded"
-    },
-    {
-      "id": "R024",
-      "name": "flutter-mobile-mvp",
-      "status": "completed",
-      "archive_dir": "_archive/R024_flutter-mobile-mvp"
     },
     {
       "id": "R025",

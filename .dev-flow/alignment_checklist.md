@@ -1,5 +1,40 @@
 # 对齐清单
 
+## R034: 技术债收敛 (R029 Residual Risks)
+
+### 契约对齐
+
+- [ ] 不涉及新契约，所有改动为内部代码质量提升
+
+### 依赖对齐
+
+- [ ] F122 无外部依赖 ✓
+- [ ] F123 无外部依赖 ✓
+- [ ] B93 无外部依赖 ✓
+- [ ] F124 无外部依赖 ✓
+- [ ] B94 无外部依赖 ✓
+- [ ] F125 无外部依赖 ✓
+- [ ] B95 无外部依赖 ✓（需同步更新 review.py 路由层 import）
+- [ ] F126 无外部依赖 ✓
+- [ ] F127 depends_on F125 ✓（GraphPage 拆分完成后再写测试）
+- [ ] S31 depends_on F122-F127 全部 ✓
+
+### 架构对齐
+
+- [ ] 所有改动不改变用户可见行为 ✓
+- [ ] B93: ReviewService 构造函数注入 knowledge_service，不新增全局状态 ✓
+- [ ] B95: Pydantic 模型迁移到 models/review.py，路由层 import 同步更新 ✓
+- [ ] F125: GraphPage 拆分为独立文件，不引入新依赖 ✓
+- [ ] F126: api.ts 类型迁移到 api.generated.ts，保持类型兼容 ✓
+- [ ] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫 ✓
+
+### 执行顺序
+
+- [ ] Phase 1: F122, F123, B93（可并行）
+- [ ] Phase 2: F124, B94（可并行）
+- [ ] Phase 3: F125, B95, F126（串行推荐，避免共享文件冲突）
+- [ ] Phase 4: F127（依赖 F125）→ S31
+
 ## R033: 安全增强收口（R017 deferred 项）
 
 ### 契约对齐

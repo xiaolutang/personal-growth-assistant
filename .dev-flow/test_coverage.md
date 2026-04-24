@@ -1,5 +1,20 @@
 # 测试覆盖清单
 
+## R034: 技术债收敛 (R029 Residual Risks)
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| useMorningDigest 增强 | F122 | unit | error初始null/成功null/失败string/卸载不更新 | pending | F1 |
+| 统一导出 | F123 | unit | 5组件移除default后build无报错/Review.tsx命名导入 | pending | F1 |
+| 依赖注入 | B93 | unit | 构造函数参数/不调deps/growth-report回归200 | pending | L2 |
+| 合并遍历 | F124 | unit | todayTasks/unprocessedInbox/recentInbox/todayStats等价 | pending | F1 |
+| 定向查询 | B94 | unit | 匹配tag/无匹配/大小写不敏感/部分匹配/去重/最多5条/空tag/异常tag | pending | L1 |
+| GraphPage 拆分 | F125 | unit+manual | 4 Tab功能不变/build无TS错误 | pending | F2 |
+| 模型拆分 | B95 | unit | 模型import正确(review_service+review.py)/pytest | pending | L1 |
+| api.ts 类型迁移 | F126 | unit | API调用类型正确/gen:types无冲突/build | pending | F2 |
+| GraphPage Tab 测试 | F127 | unit | 4 Tab切换/focus高亮/搜索防抖/showAll/能力地图筛选+重试/详情面板/时间线 | pending | F2 |
+| 质量收口 | S31 | integration+smoke | pytest全量/vitest全量/build/Docker smoke | pending | L4 |
+
 ## R033: 安全增强收口
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
