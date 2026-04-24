@@ -144,9 +144,11 @@
 
 ## R030: AI 晨报增强
 - 归档目录: _archive/R030_ai-morning-report
-- 状态: planning (2026-04-24)
-- 分支: feat/R030-ai-morning-report
+- 状态: completed (2026-04-24)
+- 分支: feat/R030-ai-morning-report → main
 - 任务: B85(缓存), B86(AI个性化), B87(模式洞察LLM), F117(前端优化), S27(质量收口)
+- 测试: pytest 1082 + vitest 354 + build success
+- Simplify: 5 项收敛修复（反向依赖消除、tag 统计去重、LLM 降级逻辑修正、日志补充、导入清理）
 
 ## R029: Simplify 收敛检查
 - 归档目录: _archive/R029_simplify-convergence
