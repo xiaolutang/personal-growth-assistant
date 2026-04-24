@@ -159,7 +159,7 @@
       "description": "优化晨报展示，利用缓存提升加载体验，增强 AI 建议和模式洞察的展示效果。",
       "verification": "F2",
       "depends_on": ["B86", "B87"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P2",
       "acceptance_criteria": [
         "缓存命中时（cached_at 非 null）晨报卡片显示'上次更新于 HH:mm'",

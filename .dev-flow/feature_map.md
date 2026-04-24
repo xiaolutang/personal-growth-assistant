@@ -15,7 +15,7 @@ R030 (feat/R030-ai-morning-report)
 │   ├── B86 AI 建议个性化 [completed]
 │   └── B87 模式洞察 LLM 增强 [completed]
 ├── P2: 前端优化
-│   └── F117 晨报展示优化 [pending] → depends: B86, B87
+│   └── F117 晨报展示优化 [completed]
 └── P3: 质量收口
     └── S27 全量验证 [pending] → depends: F117
 ```

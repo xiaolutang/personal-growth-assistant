@@ -215,16 +215,26 @@ export function Home() {
                             日知晨报
                           </span>
                         </div>
-                        <button
-                          onClick={handleDismissDigest}
-                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          收起
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {digest.cached_at && (
+                            <span className="text-[10px] text-muted-foreground">
+                              上次更新于 {new Date(digest.cached_at).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          )}
+                          <button
+                            onClick={handleDismissDigest}
+                            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            收起
+                          </button>
+                        </div>
                       </div>
-                      <p className="text-sm text-foreground/80 leading-relaxed">
-                        {digest.ai_suggestion}
-                      </p>
+                      <div className="flex items-start gap-2 p-2.5 rounded-lg bg-indigo-100/50 dark:bg-indigo-900/20 border border-indigo-200/50 dark:border-indigo-800/30">
+                        <Sparkles className="h-3.5 w-3.5 text-indigo-500 mt-0.5 shrink-0" />
+                        <p className="text-sm text-indigo-900 dark:text-indigo-100 leading-relaxed">
+                          {digest.ai_suggestion}
+                        </p>
+                      </div>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <DigestStat
                           icon={<Clock className="h-3.5 w-3.5" />}
