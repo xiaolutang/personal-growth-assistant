@@ -11,6 +11,14 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# B85: 晨报缓存 — 单进程 best-effort
+# ---------------------------------------------------------------------------
+_MORNING_DIGEST_CACHE_MAX = 1000
+_morning_digest_cache: dict[str, tuple[dict, str]] = {}  # key -> (response_dict, cached_at)
+_morning_digest_lock = asyncio.Lock()
+_morning_digest_pending: set[str] = set()  # single-flight: 正在计算的 key
+
 
 class TrendPeriod(BaseModel):
     """趋势统计周期"""
@@ -103,6 +111,7 @@ class MorningDigestResponse(BaseModel):
     learning_streak: int = 0
     daily_focus: Optional[DailyFocus] = None
     pattern_insights: List[str] = []
+    cached_at: Optional[str] = None
 
 
 class TaskStats(BaseModel):
@@ -1229,138 +1238,191 @@ class ReviewService:
 
         today = date.today()
         today_str = today.isoformat()
-        tomorrow_str = (today + timedelta(days=1)).isoformat()
+        cache_key = f"{user_id}:{today_str}"
 
-        # 1. 今日待办（状态非 complete，planned_date=today）
-        # 注意：list_entries 按 created_at 过滤，不能完全依赖它来筛选 planned_date
-        # 需要查询更宽的时间范围，再按 planned_date 精确过滤
-        all_active_tasks = self._sqlite.list_entries(
-            type="task",
-            status="doing",
-            limit=200,
-            user_id=user_id,
-        )
-        all_wait_tasks = self._sqlite.list_entries(
-            type="task",
-            status="waitStart",
-            limit=200,
-            user_id=user_id,
-        )
-        active_tasks = all_active_tasks + all_wait_tasks
+        # --- B85: 缓存检查 + single-flight ---
+        while True:
+            async with _morning_digest_lock:
+                if cache_key in _morning_digest_cache:
+                    # LRU: 命中时 pop + re-insert 刷新 recency
+                    cached_data = _morning_digest_cache.pop(cache_key)
+                    _morning_digest_cache[cache_key] = cached_data
+                    cached_dict, cached_at = cached_data
+                    response = MorningDigestResponse(**cached_dict)
+                    response.cached_at = cached_at
+                    logger.debug("晨报缓存命中: %s", cache_key)
+                    return response
+                if cache_key in _morning_digest_pending:
+                    # 另一个协程正在计算，等待后重试
+                    pass
+                else:
+                    # 当前协程负责计算
+                    _morning_digest_pending.add(cache_key)
+                    break
+            # pending 中已有其他协程在算，短暂等待后重试
+            await asyncio.sleep(0.01)
 
-        today_todos = [
-            t for t in active_tasks
-            if self._parse_entry_date(t.get("planned_date")) == today
-        ]
+        try:
+            tomorrow_str = (today + timedelta(days=1)).isoformat()
 
-        priority_order = {"high": 0, "medium": 1, "low": 2}
-        today_todos.sort(key=lambda t: priority_order.get(t.get("priority", "medium"), 1))
+            # 1. 今日待办（状态非 complete，planned_date=today）
+            # 注意：list_entries 按 created_at 过滤，不能完全依赖它来筛选 planned_date
+            # 需要查询更宽的时间范围，再按 planned_date 精确过滤
+            all_active_tasks = self._sqlite.list_entries(
+                type="task",
+                status="doing",
+                limit=200,
+                user_id=user_id,
+            )
+            all_wait_tasks = self._sqlite.list_entries(
+                type="task",
+                status="waitStart",
+                limit=200,
+                user_id=user_id,
+            )
+            active_tasks = all_active_tasks + all_wait_tasks
 
-        # 2. 拖延任务（planned_date 已过，状态非 complete）
-        past_tasks = self._sqlite.list_entries(
-            type="task",
-            end_date=today_str,
-            limit=200,
-            user_id=user_id,
-        )
-        overdue = [
-            t for t in past_tasks
-            if t.get("status") in ("waitStart", "doing")
-            and t.get("planned_date")
-            and self._parse_entry_date(t.get("planned_date")) is not None
-            and self._parse_entry_date(t.get("planned_date")) < today
-        ]
-        overdue.sort(key=lambda t: priority_order.get(t.get("priority", "medium"), 1))
+            today_todos = [
+                t for t in active_tasks
+                if self._parse_entry_date(t.get("planned_date")) == today
+            ]
 
-        # 3. 未跟进灵感（>3天未转化的 inbox 条目）
-        three_days_ago = today - timedelta(days=3)
-        old_inbox = self._sqlite.list_entries(
-            type="inbox",
-            end_date=three_days_ago.isoformat(),
-            limit=200,
-            user_id=user_id,
-        )
-        stale_inbox = [
-            i for i in old_inbox
-            if i.get("status") in ("waitStart", "pending")
-        ]
+            priority_order = {"high": 0, "medium": 1, "low": 2}
+            today_todos.sort(key=lambda t: priority_order.get(t.get("priority", "medium"), 1))
 
-        # 4. 本周学习摘要
-        week_start = today - timedelta(days=today.weekday())
-        week_end_str = (week_start + timedelta(days=6)).isoformat()
-        week_start_str = week_start.isoformat()
+            # 2. 拖延任务（planned_date 已过，状态非 complete）
+            past_tasks = self._sqlite.list_entries(
+                type="task",
+                end_date=today_str,
+                limit=200,
+                user_id=user_id,
+            )
+            overdue = [
+                t for t in past_tasks
+                if t.get("status") in ("waitStart", "doing")
+                and t.get("planned_date")
+                and self._parse_entry_date(t.get("planned_date")) is not None
+                and self._parse_entry_date(t.get("planned_date")) < today
+            ]
+            overdue.sort(key=lambda t: priority_order.get(t.get("priority", "medium"), 1))
 
-        week_entries = self._sqlite.list_entries(
-            start_date=week_start_str,
-            end_date=week_end_str,
-            limit=1000,
-            user_id=user_id,
-        )
+            # 3. 未跟进灵感（>3天未转化的 inbox 条目）
+            three_days_ago = today - timedelta(days=3)
+            old_inbox = self._sqlite.list_entries(
+                type="inbox",
+                end_date=three_days_ago.isoformat(),
+                limit=200,
+                user_id=user_id,
+            )
+            stale_inbox = [
+                i for i in old_inbox
+                if i.get("status") in ("waitStart", "pending")
+            ]
 
-        # 提取本周新增概念（tags）
-        new_concepts_set: set = set()
-        for entry in week_entries:
-            for tag in entry.get("tags", []):
-                new_concepts_set.add(tag)
+            # 4. 本周学习摘要
+            week_start = today - timedelta(days=today.weekday())
+            week_end_str = (week_start + timedelta(days=6)).isoformat()
+            week_start_str = week_start.isoformat()
 
-        weekly_summary = MorningDigestWeeklySummary(
-            new_concepts=sorted(new_concepts_set)[:10],
-            entries_count=len(week_entries),
-        )
+            week_entries = self._sqlite.list_entries(
+                start_date=week_start_str,
+                end_date=week_end_str,
+                limit=1000,
+                user_id=user_id,
+            )
 
-        # 5. 构建 AI 建议
-        ai_suggestion = await self._generate_morning_suggestion(
-            today_todos=today_todos,
-            overdue=overdue,
-            stale_inbox=stale_inbox,
-            weekly_summary=weekly_summary,
-            user_id=user_id,
-        )
+            # 提取本周新增概念（tags）
+            new_concepts_set: set = set()
+            for entry in week_entries:
+                for tag in entry.get("tags", []):
+                    new_concepts_set.add(tag)
 
-        # 6. 新增增强字段
-        learning_streak = self._calculate_learning_streak(user_id)
-        pattern_insights = self._generate_pattern_insights(user_id)
-        daily_focus = await self._generate_daily_focus(
-            user_id=user_id,
-            overdue=overdue,
-            learning_streak=learning_streak,
-            recent_activity=today_todos[:5] + overdue[:5],
-        )
+            weekly_summary = MorningDigestWeeklySummary(
+                new_concepts=sorted(new_concepts_set)[:10],
+                entries_count=len(week_entries),
+            )
 
-        return MorningDigestResponse(
-            date=today_str,
-            ai_suggestion=ai_suggestion,
-            todos=[
-                MorningDigestTodo(
-                    id=t.get("id", ""),
-                    title=t.get("title", ""),
-                    priority=t.get("priority", "medium"),
-                    planned_date=t.get("planned_date"),
+            # 5. 构建 AI 建议
+            ai_suggestion = await self._generate_morning_suggestion(
+                today_todos=today_todos,
+                overdue=overdue,
+                stale_inbox=stale_inbox,
+                weekly_summary=weekly_summary,
+                user_id=user_id,
+            )
+
+            # 6. 新增增强字段
+            learning_streak = self._calculate_learning_streak(user_id)
+            pattern_insights = self._generate_pattern_insights(user_id)
+            daily_focus = await self._generate_daily_focus(
+                user_id=user_id,
+                overdue=overdue,
+                learning_streak=learning_streak,
+                recent_activity=today_todos[:5] + overdue[:5],
+            )
+
+            response = MorningDigestResponse(
+                date=today_str,
+                ai_suggestion=ai_suggestion,
+                todos=[
+                    MorningDigestTodo(
+                        id=t.get("id", ""),
+                        title=t.get("title", ""),
+                        priority=t.get("priority", "medium"),
+                        planned_date=t.get("planned_date"),
+                    )
+                    for t in today_todos[:5]
+                ],
+                overdue=[
+                    MorningDigestOverdue(
+                        id=t.get("id", ""),
+                        title=t.get("title", ""),
+                        priority=t.get("priority", "medium"),
+                        planned_date=t.get("planned_date"),
+                    )
+                    for t in overdue[:5]
+                ],
+                stale_inbox=[
+                    MorningDigestStaleInbox(
+                        id=i.get("id", ""),
+                        title=i.get("title", ""),
+                        created_at=i.get("created_at", ""),
+                    )
+                    for i in stale_inbox[:5]
+                ],
+                weekly_summary=weekly_summary,
+                learning_streak=learning_streak,
+                daily_focus=daily_focus,
+                pattern_insights=pattern_insights,
+                cached_at=None,
+            )
+
+            # --- B85: 写入缓存 ---
+            async with _morning_digest_lock:
+                # 跨日清理：删除所有非今日的旧缓存
+                keys_to_remove = [k for k in _morning_digest_cache if not k.endswith(f":{today_str}")]
+                for k in keys_to_remove:
+                    del _morning_digest_cache[k]
+                if keys_to_remove:
+                    logger.debug("晨报缓存跨日清理: 删除 %d 条旧缓存", len(keys_to_remove))
+
+                _morning_digest_cache[cache_key] = (
+                    response.model_dump(),
+                    datetime.now(timezone.utc).isoformat(),
                 )
-                for t in today_todos[:5]
-            ],
-            overdue=[
-                MorningDigestOverdue(
-                    id=t.get("id", ""),
-                    title=t.get("title", ""),
-                    priority=t.get("priority", "medium"),
-                    planned_date=t.get("planned_date"),
-                )
-                for t in overdue[:5]
-            ],
-            stale_inbox=[
-                MorningDigestStaleInbox(
-                    id=i.get("id", ""),
-                    title=i.get("title", ""),
-                    created_at=i.get("created_at", ""),
-                )
-                for i in stale_inbox[:5]
-            ],
-            weekly_summary=weekly_summary,
-            learning_streak=learning_streak,
-            daily_focus=daily_focus,
-            pattern_insights=pattern_insights,
-        )
+                # LRU 淘汰：超过上限时删除最旧的条目
+                if len(_morning_digest_cache) > _MORNING_DIGEST_CACHE_MAX:
+                    oldest_key = next(iter(_morning_digest_cache))
+                    del _morning_digest_cache[oldest_key]
+                    logger.debug("晨报缓存淘汰: %s", oldest_key)
+                _morning_digest_pending.discard(cache_key)
+
+            return response
+        except Exception:
+            # 计算失败也要清理 pending 标记，避免死锁
+            async with _morning_digest_lock:
+                _morning_digest_pending.discard(cache_key)
+            raise
 
     async def _generate_morning_suggestion(
         self,

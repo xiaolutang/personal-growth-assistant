@@ -1,8 +1,30 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 当前无活跃需求包
-> 最后更新：2026-04-23
+> 活跃需求包：R030 AI 晨报增强
+> 最后更新：2026-04-24
+
+## 活跃需求包
+
+### R030: AI 晨报增强
+
+```
+R030 (feat/R030-ai-morning-report)
+├── P1: 后端增强
+│   ├── B85 晨报缓存机制 [completed]
+│   ├── B86 AI 建议个性化 [pending] → depends: B85
+│   └── B87 模式洞察 LLM 增强 [pending] → depends: B86
+├── P2: 前端优化
+│   └── F117 晨报展示优化 [pending] → depends: B86, B87
+└── P3: 质量收口
+    └── S27 全量验证 [pending] → depends: F117
+```
+
+**依赖图：**
+```
+B85 → B86 → B87 → F117 → S27
+```
+（串行执行，B86/B87 共享 review_service.py 不并行）
 
 ## 归档需求包
 
