@@ -183,6 +183,9 @@ class KnowledgeService:
     async def _with_neo4j_fallback(self, neo4j_fn, sqlite_fn):
         """尝试 Neo4j 操作，失败则降级到 SQLite
 
+        ConnectionError 表示 Neo4j 驱动不可用，静默降级到 SQLite。
+        其他异常（如查询错误）也触发降级并记录警告。
+
         Args:
             neo4j_fn: async 零参 callable（调用方用 lambda/partial 绑定参数）
             sqlite_fn: 同步零参 callable（调用方用 lambda/partial 绑定参数）
@@ -190,6 +193,9 @@ class KnowledgeService:
         if self.is_neo4j_available():
             try:
                 return await neo4j_fn()
+            except ConnectionError as e:
+                # 驱动不可用是预期场景（连接失败），用 debug 级别
+                logger.debug(f"Neo4j 不可用，降级到 SQLite: {e}")
             except Exception as e:
                 logger.warning(f"Neo4j 操作失败，降级到 SQLite: {e}")
         if self._sqlite:
