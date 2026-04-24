@@ -1,31 +1,12 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：R033 安全增强收口
-> 最后更新：2026-04-24
+> 活跃需求包：无
+> 最后更新：2026-04-25
 
 ## 活跃需求包
 
-### R033: 安全增强收口（R017 deferred 项）
-
-```
-R033 (feat/R033-security-hardening)
-├── P1: JWT 黑名单
-│   ├── B90 JWT Token 黑名单机制 [completed]
-│   └── F121 前端 logout 调用后端接口 [completed]
-├── P2: 降级保护
-│   ├── B91 Qdrant 客户端懒重连异常保护 [completed]
-│   └── B92 Neo4j 客户端降级 + 知识图谱路由层完善 [completed]
-└── P3: 质量收口
-    └── S30 全量验证 [completed]
-```
-
-**依赖图：**
-```
-B90 → F121 → S30
-B91 → S30
-B92 → S30
-```
+无活跃需求包。
 
 ## 归档需求包
 
@@ -58,11 +39,12 @@ B92 → S30
 | R029 Simplify 收敛检查 | _archive/R029_simplify-convergence | completed |
 | R030 AI 晨报增强 | _archive/R030_ai-morning-report | completed |
 | R031 对话式 Onboarding | _archive/R031_conversational-onboarding | completed |
+| R033 安全增强收口 | _archive/R033_security-hardening | completed |
 
 ## 测试汇总
 
 | 项目 | 测试数 | 状态 |
 |------|--------|------|
-| 后端测试 | 1173 passed | 全绿 |
+| 后端测试 | 1074 passed | 全绿 |
 | 前端测试 | 363 passed | 全绿 |
 | E2E 测试 | 113 passed | 全绿 |

@@ -3,14 +3,9 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-24T22:50:00",
+  "updated_at": "2026-04-25T00:30:00",
   "status": "active",
-  "active_requirement_cycle": {
-    "id": "R033",
-    "name": "security-hardening",
-    "branch": "feat/R033-security-hardening",
-    "started_at": "2026-04-24"
-  },
+  "active_requirement_cycle": null,
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -20,234 +15,15 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 5,
+    "total_tasks": 0,
     "pending": 0,
-    "completed": 5,
+    "completed": 0,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
   },
-  "modules": [
-    {
-      "id": "jwt-blacklist",
-      "name": "JWT Token 黑名单",
-      "description": "后端 logout 实现 token 失效，前端调用对接",
-      "tasks": [
-        "B90",
-        "F121"
-      ]
-    },
-    {
-      "id": "degradation",
-      "name": "Neo4j/Qdrant 降级完善",
-      "description": "统一双重检查模式、懒重连异常保护、路由层降级提示",
-      "tasks": [
-        "B91",
-        "B92"
-      ]
-    },
-    {
-      "id": "quality",
-      "name": "质量收口",
-      "description": "全量测试验证和构建",
-      "tasks": [
-        "S30"
-      ]
-    }
-  ],
-  "features": [
-    {
-      "id": "B90",
-      "phase": "P1",
-      "module": "jwt-blacklist",
-      "name": "JWT Token 黑名单机制",
-      "description": "实现内存 Token 黑名单。auth_service 新增 TokenBlacklist 类（内存 Set + 定时清理过期 token）。/auth/logout 端点将 token jti 加入黑名单。get_current_user 在验证 token 时检查黑名单。Token payload 新增 jti 字段用于唯一标识。",
-      "verification": "L2",
-      "depends_on": [],
-      "status": "completed",
-      "test_tasks": [
-        "正常登录获取 token，调 logout 后用同一 token 请求受保护路由，验证返回 401",
-        "logout 后等待新 token 登录，验证新 token 可正常使用",
-        "token 过期后调 logout，验证不报错（幂等）",
-        "黑名单清理：mock 一个已过期 jti，触发 cleanup，验证被清理",
-        "并发 logout：同时调 3 次 logout 同一 token，验证无异常且黑名单正确",
-        "未携带 token 调 /auth/logout，验证返回 403",
-        "携带无效 token 调 /auth/logout，验证返回 401",
-        "回归：现有认证测试全通过"
-      ],
-      "risk_tags": [
-        "auth"
-      ],
-      "files": [
-        "backend/app/services/auth_service.py",
-        "backend/app/routers/auth.py",
-        "backend/app/routers/deps.py",
-        "backend/app/models/user.py",
-        "backend/app/main.py"
-      ],
-      "contract_refs": [
-        "CONTRACT-AUTH01"
-      ],
-      "planning_notes": "单实例内存黑名单足够（Docker 单容器部署）。不加 Redis 减少依赖。jti 用 UUID4 保证唯一。cleanup task 在 main.py lifespan 中启动和取消，确保应用关闭时正确回收。",
-      "started_at": "2026-04-24T19:40:00",
-      "completed_at": "2026-04-24T21:30:00",
-      "actual_minutes": 110,
-      "evidence_file": ".dev-flow/evidence/B90.md",
-      "execution_notes": "18 tests (11 unit + 7 API), 1130 pytest total, code-review pass, audit pass after evidence + scenario补齐",
-      "summary": "JWT Token 黑名单机制实现完成，含 TokenBlacklist 类、jti 字段、logout 黑名单写入、get_current_user 黑名单拦截、lifespan 清理任务"
-    },
-    {
-      "id": "F121",
-      "phase": "P1",
-      "module": "jwt-blacklist",
-      "name": "前端 logout 调用后端接口",
-      "description": "前端 userStore.logout() 改为异步方法，本地清理（localStorage + state）前置消除 auth 闪现窗口，后端 /auth/logout 为 best-effort 调用。Sidebar 登出按钮改为 await logout() 后再跳转。",
-      "verification": "F2",
-      "depends_on": [
-        "B90"
-      ],
-      "status": "completed",
-      "priority": "P0",
-      "acceptance_criteria": [
-        "userStore.logout() 改为 async，本地清理（localStorage + state）前置到后端调用之前，消除 auth 闪现窗口",
-        "后端 POST /auth/logout 为 best-effort：try-catch 包裹，失败不阻塞",
-        "本地清理包括 removeItem(TOKEN_KEY/USER_KEY) + set({user:null,token:null,isAuthenticated:false})",
-        "无 token 时跳过后端 logout 调用，直接清理本地",
-        "Sidebar 登出按钮改为 await logout() 完成后再执行 window.location.href 跳转",
-        "userStore 中 fetchMe 401 拦截调 get().logout() 后本地状态立即清除（无 isAuthenticated=true 窗口期）"
-      ],
-      "test_tasks": [
-        "有 token 时 logout，验证调用了 POST /auth/logout",
-        "无 token 时 logout，验证跳过后端调用",
-        "后端 logout 返回 500 时，验证前端仍清理本地状态",
-        "logout 后验证 localStorage 中 pga_token 已移除",
-        "Sidebar 点击登出，验证先完成后端调用再跳转（不因导航取消请求）"
-      ],
-      "risk_tags": [
-        "auth"
-      ],
-      "files": [
-        "frontend/src/stores/userStore.ts",
-        "frontend/src/components/layout/Sidebar.tsx"
-      ],
-      "contract_refs": [
-        "CONTRACT-AUTH01"
-      ],
-      "planning_notes": "核心改动：1) userStore.logout() 改 async，本地清理（localStorage+state）前置到后端调用之前，消除 fetchMe 401 时 isAuthenticated=true 的闪现窗口 2) 后端 POST /auth/logout 为 best-effort（try-catch 包裹，失败不阻塞）3) Sidebar 登出按钮改为 onClick={async () => { await logout(); window.location.href=... }} 4) 无 token 时跳过后端调用",
-      "started_at": "2026-04-24T21:30:00",
-      "completed_at": "2026-04-24T21:45:00",
-      "actual_minutes": 15,
-      "evidence_file": ".dev-flow/evidence/F121.md",
-      "execution_notes": "4 new tests, 2 test fixes, 363 vitest total, build success"
-    },
-    {
-      "id": "B91",
-      "phase": "P2",
-      "module": "degradation",
-      "name": "Qdrant 客户端懒重连异常保护",
-      "description": "修复 Qdrant 客户端内部懒重连缺少 try-except 的问题。在 upsert_entry、search、delete 等方法的 await self.connect() 调用处增加异常保护，连接失败时返回空结果或抛出明确异常（而非 AttributeError）。",
-      "verification": "L2",
-      "depends_on": [],
-      "status": "completed",
-      "test_tasks": [
-        "Qdrant URL 未配置时启动，验证应用正常启动且 Qdrant 操作静默跳过",
-        "Qdrant 运行时断开后调搜索，验证降级到 SQLite 且无 AttributeError 日志",
-        "Qdrant 可用时搜索，验证结果正常（回归）",
-        "delete_entry 时 Qdrant 不可用，验证静默跳过不报错",
-        "sync_entry 时 Qdrant 运行时断连，验证不抛 AttributeError 且 SQLite 写入不受影响",
-        "sync_to_graph_and_vector 时 Qdrant 不可用，验证静默跳过",
-        "delete_entry 在 sync_service 中 Qdrant 不可用时，验证双重检查生效不报错"
-      ],
-      "risk_tags": [],
-      "files": [
-        "backend/app/infrastructure/storage/qdrant_client.py",
-        "backend/app/services/sync_service.py"
-      ],
-      "contract_refs": [],
-      "planning_notes": "核心改动：1) qdrant_client.connect() 加 try-except 2) 各方法中 _client=None 时不调懒重连而是返回空/False 3) sync_service 中统一双重检查模式（self.qdrant and self.qdrant._client）覆盖 sync_entry、sync_to_graph_and_vector、delete_entry 三个入口",
-      "started_at": "2026-04-24T22:00:00",
-      "completed_at": "2026-04-24T22:20:00",
-      "actual_minutes": 20,
-      "evidence_file": ".dev-flow/evidence/B91.md",
-      "execution_notes": "23 tests (16 qdrant + 7 sync), 1169 pytest total after code-review fix"
-    },
-    {
-      "id": "B92",
-      "phase": "P2",
-      "module": "degradation",
-      "name": "Neo4j 客户端降级 + 知识图谱路由层完善",
-      "description": "修复 Neo4j 客户端 _get_session() 在 _driver=None 时可能抛 AttributeError 的问题。知识图谱路由层（/knowledge-map、/knowledge-graph/{concept}、/knowledge/stats 等）在 Neo4j 不可用时返回空数据结构（200 + 空图），而非 500。仅在 Neo4j 返回 ValueError（明确不可用）时保留现有 503 行为。",
-      "verification": "L2",
-      "depends_on": [],
-      "status": "completed",
-      "acceptance_criteria": [
-        "/knowledge-map 路由在 knowledge_service 返回空数据时返回空 KnowledgeMapResponse（200）而非 500",
-        "/knowledge/stats 路由在 knowledge_service 返回空数据时返回空 ConceptStatsResponse（200）而非 500",
-        "/knowledge-graph/{concept} 现有 503 行为不变（ValueError → 503）",
-        "所有改动不影响正常路径"
-      ],
-      "test_tasks": [
-        "Neo4j URL 未配置时调 GET /knowledge-map，验证返回空图（200 + 空节点/关系）而非 500",
-        "Neo4j URL 未配置时调 GET /knowledge/stats，验证返回空统计（200 + 零值字段）而非 500",
-        "Neo4j 运行时断开后调 GET /knowledge/stats，验证返回 SQLite 降级数据",
-        "Neo4j 可用时调 GET /knowledge-map，验证返回正常数据（回归）",
-        "knowledge_service 返回 None 时路由层返回 200 + 空数据",
-        "GET /knowledge-graph/{concept} 在 Neo4j 不可用时仍返回 503（现有行为不变）"
-      ],
-      "risk_tags": [],
-      "files": [
-        "backend/app/infrastructure/storage/neo4j_client.py",
-        "backend/app/services/knowledge_service.py",
-        "backend/app/routers/knowledge.py"
-      ],
-      "contract_refs": [
-        "CONTRACT-KNOWLEDGE01"
-      ],
-      "planning_notes": "核心改动：1) neo4j_client._get_session() 加 _driver=None 检查 2) knowledge_service._with_neo4j_fallback 返回空数据结构 3) knowledge.py 路由层对 None 返回值做防御处理 4) /knowledge-map 和 /knowledge/stats 返回 200+空数据，/knowledge-graph/{concept} 保留 503",
-      "started_at": "2026-04-24T22:20:00",
-      "completed_at": "2026-04-24T22:40:00",
-      "actual_minutes": 20,
-      "evidence_file": ".dev-flow/evidence/B92.md",
-      "execution_notes": "19 new + 2 service层 + 2 API层补测, 1173 pytest total"
-    },
-    {
-      "id": "S30",
-      "phase": "P3",
-      "module": "quality",
-      "name": "质量收口+全量验证",
-      "description": "R033 全量测试验证 + 构建。",
-      "verification": "L4",
-      "depends_on": [
-        "B90",
-        "F121",
-        "B91",
-        "B92"
-      ],
-      "status": "completed",
-      "acceptance_criteria": [
-        "pytest 全量通过",
-        "vitest 全量通过",
-        "frontend build 成功"
-      ],
-      "test_tasks": [
-        "pytest 全量运行",
-        "vitest 全量运行",
-        "npm run build",
-        "smoke：登录 → logout → 用旧 token 请求受保护路由返回 401",
-        "smoke：不配置 Neo4j/Qdrant 时应用正常启动、搜索正常",
-        "smoke：Sidebar 登出后旧 token 确认失效（黑名单生效）",
-        "smoke：Qdrant 断连时 sync_entry/delete_entry 不抛 AttributeError"
-      ],
-      "risk_tags": [],
-      "files": [],
-      "planning_notes": "验证 R033 所有改动不影响现有功能",
-      "started_at": "2026-04-24T22:45:00",
-      "completed_at": "2026-04-24T22:50:00",
-      "actual_minutes": 5,
-      "evidence_file": ".dev-flow/evidence/S30.md",
-      "execution_notes": "pytest 1070, vitest 363, build success, 64 new tests total"
-    }
-  ],
+  "modules": [],
+  "features": [],
   "next_cycle_preview": null,
   "archived_requirement_cycles": [
     {
@@ -441,6 +217,12 @@
       "name": "search-filter-batch",
       "status": "completed",
       "archive_dir": "_archive/R032_search-filter-batch"
+    },
+    {
+      "id": "R033",
+      "name": "security-hardening",
+      "status": "completed",
+      "archive_dir": "_archive/R033_security-hardening"
     }
   ]
 }
