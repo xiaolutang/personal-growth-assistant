@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Loader2, AlertCircle, ChevronDown, ChevronUp, Map } from "lucide-react";
 import { type CapabilityMapResponse, getCapabilityMap } from "@/services/api";
-import { masteryLabels } from "./constants";
+import { masteryLabels, MASTERY_LEVELS } from "./constants";
 
 // === 能力地图视图组件 ===
 export function CapabilityMapView() {
@@ -76,7 +76,7 @@ export function CapabilityMapView() {
         {/* 掌握度筛选 */}
         <div className="flex items-center gap-2 mb-4">
           <span className="text-xs text-muted-foreground">筛选：</span>
-          {(["", "advanced", "intermediate", "beginner", "new"] as const).map((level) => (
+          {(["", ...MASTERY_LEVELS] as const).map((level) => (
             <button
               key={level}
               onClick={() => setCapabilityFilter(level)}

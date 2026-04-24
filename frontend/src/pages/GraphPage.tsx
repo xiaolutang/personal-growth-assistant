@@ -13,7 +13,7 @@ import { useGraphState } from "./graph/useGraphState";
 import { DetailPanel } from "./graph/DetailPanel";
 import { CapabilityMapView } from "./graph/CapabilityMapView";
 import { nodeTypes } from "./graph/CustomNodes";
-import { viewTabs, masteryColors, masteryLabels, NODE_THRESHOLD } from "./graph/constants";
+import { viewTabs, masteryColors, masteryLabels, MASTERY_LEVELS, NODE_THRESHOLD } from "./graph/constants";
 
 // === 主页面 ===
 export function GraphPage() {
@@ -197,7 +197,7 @@ export function GraphPage() {
 
               {state.masteryDist && !state.masteryDistLoading && (
                 <div className="space-y-2.5">
-                  {(["advanced", "intermediate", "beginner", "new"] as const).map((level) => {
+                  {MASTERY_LEVELS.map((level) => {
                     const count = state.masteryDist![level];
                     const total = state.masteryDist!.total || 1;
                     const pct = Math.round((count / total) * 100);

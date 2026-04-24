@@ -30,6 +30,9 @@ export const viewTabs = [
 
 export type ViewKey = (typeof viewTabs)[number]["key"];
 
+// === 掌握度等级列表 ===
+export const MASTERY_LEVELS = ["advanced", "intermediate", "beginner", "new"] as const;
+
 // === 性能优化常量 ===
 export const NODE_THRESHOLD = 50;
 export const EDGE_LABEL_THRESHOLD = 100;

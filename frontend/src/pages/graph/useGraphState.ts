@@ -16,7 +16,7 @@ import {
   type KnowledgeSearchResponse,
   type MasteryDistributionResponse,
 } from "@/services/api";
-import { type ViewKey, EDGE_LABEL_THRESHOLD } from "./constants";
+import { type ViewKey, EDGE_LABEL_THRESHOLD, masteryColors } from "./constants";
 import { layoutNodes, aggregateByCategory, buildEdges, getDisplayData } from "./utils";
 
 export interface GraphState {
@@ -259,12 +259,6 @@ export function useGraphState(focusConcept: string | null): GraphState {
   // MiniMap 节点颜色
   const miniMapNodeColor = useCallback((node: Node) => {
     const data = node.data as unknown as MapNode;
-    const masteryColors: Record<string, string> = {
-      advanced: "#22c55e",
-      intermediate: "#3b82f6",
-      beginner: "#f97316",
-      new: "#9ca3af",
-    };
     return masteryColors[data.mastery] || "#9ca3af";
   }, []);
 
