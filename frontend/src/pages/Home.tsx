@@ -1,7 +1,8 @@
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Header } from "@/components/layout/Header";
 import { useTaskStore } from "@/stores/taskStore";
+import { useUserStore } from "@/stores/userStore";
 import { toast } from "sonner";
 import {
   CheckCircle,
@@ -37,6 +38,37 @@ export function Home() {
   const tasks = useTaskStore((state) => state.tasks);
   const updateTaskStatus = useTaskStore((state) => state.updateTaskStatus);
   const navigate = useNavigate();
+  const user = useUserStore((state) => state.user);
+  const updateMe = useUserStore((state) => state.updateMe);
+
+  // onboarding 状态：新用户自动展开 chat panel + 专属引导
+  const isNewUser = user ? !user.onboarding_completed : false;
+  const [onboardingCompleted, setOnboardingCompleted] = useState(!isNewUser);
+  const onboardingUpdateCalled = useRef(false);
+
+  // 当 isNewUser 变化时同步（如 updateMe 后 user 更新）
+  useEffect(() => {
+    if (!isNewUser) {
+      setOnboardingCompleted(true);
+    }
+  }, [isNewUser]);
+
+  const handleOnboardingFirstResponse = useCallback(async () => {
+    if (onboardingUpdateCalled.current) return;
+    onboardingUpdateCalled.current = true;
+    try {
+      await updateMe({ onboarding_completed: true });
+      setOnboardingCompleted(true);
+    } catch (err) {
+      // 失败不阻塞，下次仍为 onboarding 模式
+      console.error("Failed to mark onboarding completed:", err);
+      onboardingUpdateCalled.current = false;
+    }
+  }, [updateMe]);
+
+  // onboarding 未完成时，重置 chat panel 内部的一次性回调（通过 key 变化已处理）
+  // updateMe 失败后 onboardingCompleted 不变 → key 不变 → 组件不重挂载
+  // 用户再次发消息 → 新的 SSE 完成 → onFirstResponse 再次触发 → 重新尝试 updateMe
 
   // 当前正在切换状态的任务 ID（防止双击）
   const [togglingTaskId, setTogglingTaskId] = useState<string | null>(null);
@@ -568,17 +600,29 @@ export function Home() {
                 />
               </div>
             </div>
+          </>
+        )}
 
-            {/* ====== 晨报助手 AI ====== */}
-            <PageChatPanel
+        {/* ====== AI 对话面板（新用户和有数据时都渲染） ====== */}
+        <PageChatPanel
+              key={onboardingCompleted ? "normal" : "onboarding"}
               title="晨报助手"
-              welcomeMessage="有什么想聊的？我可以帮你规划今天"
-              suggestions={[
-                { label: "今日复盘", message: "帮我复盘一下今天的任务完成情况" },
-                { label: "查看进度", message: "本周的学习进度怎么样？" },
-                { label: "推荐优先级", message: "帮我看看今天哪些任务最该优先做" },
-              ]}
-              pageContext={{ page: "home" }}
+              welcomeMessage={onboardingCompleted ? "有什么想聊的？我可以帮你规划今天" : undefined}
+              greetingMessage={onboardingCompleted ? undefined : "你好！我是日知，你的个人成长助手。你可以试试和我聊天来记录灵感、管理任务或写笔记。"}
+              suggestions={
+                onboardingCompleted
+                  ? [
+                      { label: "今日复盘", message: "帮我复盘一下今天的任务完成情况" },
+                      { label: "查看进度", message: "本周的学习进度怎么样？" },
+                      { label: "推荐优先级", message: "帮我看看今天哪些任务最该优先做" },
+                    ]
+                  : [
+                      { label: "记灵感", message: "想到一个有趣的想法" },
+                      { label: "做任务", message: "今天要完成阅读" },
+                      { label: "记笔记", message: "读了《深度工作》的体会" },
+                    ]
+              }
+              pageContext={onboardingCompleted ? { page: "home" } : { page: "home", is_new_user: true }}
               pageData={{
                 todo_count: todayTasks.length,
                 completed_today: todayStats.completed,
@@ -592,10 +636,9 @@ export function Home() {
                 learning_streak: digest?.learning_streak ?? 0,
                 active_goals_count: activeGoals.length,
               }}
-              defaultCollapsed
+              defaultCollapsed={onboardingCompleted}
+              onFirstResponse={onboardingCompleted ? undefined : handleOnboardingFirstResponse}
             />
-          </>
-        )}
       </main>
     </>
   );

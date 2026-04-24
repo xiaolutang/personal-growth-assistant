@@ -183,4 +183,123 @@ describe("PageChatPanel", () => {
       expect(screen.queryByText("hello")).not.toBeInTheDocument();
     });
   });
+
+  // F118: greetingMessage 测试
+  it("shows greetingMessage as initial assistant message", () => {
+    render(
+      <PageChatPanel
+        title="助手"
+        greetingMessage="你好！我是日知。"
+        defaultCollapsed={false}
+      />
+    );
+    expect(screen.getByText("你好！我是日知。")).toBeInTheDocument();
+  });
+
+  it("does not show welcomeMessage when greetingMessage is set", () => {
+    render(
+      <PageChatPanel
+        title="助手"
+        welcomeMessage="普通欢迎语"
+        greetingMessage="日知问候"
+        defaultCollapsed={false}
+      />
+    );
+    // greetingMessage 作为初始消息显示，welcomeMessage 仅在 messages 为空时显示
+    // greetingMessage 注入后 messages 不为空，所以 welcomeMessage 不显示
+    expect(screen.getByText("日知问候")).toBeInTheDocument();
+    expect(screen.queryByText("普通欢迎语")).not.toBeInTheDocument();
+  });
+
+  // F118: onFirstResponse 测试
+  it("calls onFirstResponse after first successful stream", async () => {
+    const onFirstResponse = vi.fn();
+    mockSendAIChat.mockResolvedValue(makeStreamResponse(["好的"]));
+
+    render(
+      <PageChatPanel
+        title="助手"
+        onFirstResponse={onFirstResponse}
+        defaultCollapsed={false}
+      />
+    );
+
+    const input = screen.getByPlaceholderText("输入消息...");
+    await userEvent.type(input, "hi{Enter}");
+
+    await waitFor(() => {
+      expect(screen.getByText("好的")).toBeInTheDocument();
+    });
+
+    expect(onFirstResponse).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call onFirstResponse on stream error", async () => {
+    const onFirstResponse = vi.fn();
+    mockSendAIChat.mockRejectedValue(new Error("network error"));
+
+    render(
+      <PageChatPanel
+        title="助手"
+        onFirstResponse={onFirstResponse}
+        defaultCollapsed={false}
+      />
+    );
+
+    const input = screen.getByPlaceholderText("输入消息...");
+    await userEvent.type(input, "hi{Enter}");
+
+    await waitFor(() => {
+      expect(screen.getByText(/请求失败/)).toBeInTheDocument();
+    });
+
+    expect(onFirstResponse).not.toHaveBeenCalled();
+  });
+
+  it("calls onFirstResponse on each successful stream response", async () => {
+    const onFirstResponse = vi.fn();
+    mockSendAIChat.mockResolvedValue(makeStreamResponse(["ok"]));
+
+    render(
+      <PageChatPanel
+        title="助手"
+        onFirstResponse={onFirstResponse}
+        defaultCollapsed={false}
+      />
+    );
+
+    const input = screen.getByPlaceholderText("输入消息...");
+    await userEvent.type(input, "hi{Enter}");
+    await waitFor(() => expect(screen.getByText("ok")).toBeInTheDocument());
+
+    expect(onFirstResponse).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call onFirstResponse on empty stream response", async () => {
+    const onFirstResponse = vi.fn();
+    // 模拟空响应（只有 [DONE]，没有 token）
+    mockSendAIChat.mockResolvedValue({ body: new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode("data: [DONE]\n"));
+        controller.close();
+      },
+    })});
+
+    render(
+      <PageChatPanel
+        title="助手"
+        onFirstResponse={onFirstResponse}
+        defaultCollapsed={false}
+      />
+    );
+
+    const input = screen.getByPlaceholderText("输入消息...");
+    await userEvent.type(input, "hi{Enter}");
+
+    await waitFor(() => {
+      expect(screen.getByText(/暂时无法回复/)).toBeInTheDocument();
+    });
+
+    expect(onFirstResponse).not.toHaveBeenCalled();
+  });
 });

@@ -15,20 +15,24 @@ interface Suggestion {
 interface PageChatPanelProps {
   title?: string;
   welcomeMessage?: string;
+  greetingMessage?: string;
   suggestions?: Suggestion[];
   pageContext?: AIChatContext;
   pageData?: Record<string, string | number>;
   defaultCollapsed?: boolean;
+  onFirstResponse?: () => void;
   className?: string;
 }
 
 export function PageChatPanel({
   title = "日知 AI",
   welcomeMessage = "有什么想聊的？",
+  greetingMessage,
   suggestions = [],
   pageContext,
   pageData,
   defaultCollapsed = false,
+  onFirstResponse,
   className = "",
 }: PageChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -40,6 +44,15 @@ export function PageChatPanel({
   useEffect(() => {
     setCollapsed(defaultCollapsed);
   }, [defaultCollapsed]);
+
+  // greetingMessage 注入：mount 时将 greeting 显示为初始 assistant 消息
+  useEffect(() => {
+    if (greetingMessage && messages.length === 0) {
+      setMessages([{ role: "assistant", content: greetingMessage }]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -128,6 +141,11 @@ export function PageChatPanel({
             };
             return updated;
           });
+        }
+
+        // 收到有效 AI 内容后触发 onFirstResponse（空回复不触发，防重复由父组件管理）
+        if (accumulated && onFirstResponse) {
+          onFirstResponse();
         }
       }
     } catch (error) {

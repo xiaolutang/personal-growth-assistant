@@ -13,7 +13,7 @@ R031 (feat/R031-conversational-onboarding)
 ├── P1: 后端
 │   └── B88 Onboarding AI Prompt [completed]
 ├── P1: 前端
-│   └── F118 对话式 Onboarding 前端 [pending]
+│   └── F118 对话式 Onboarding 前端 [completed]
 └── P3: 质量收口
     └── S28 全量验证 [pending]
 ```

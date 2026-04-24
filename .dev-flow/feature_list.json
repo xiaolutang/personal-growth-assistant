@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 3,
-    "pending": 2,
-    "completed": 1,
+    "pending": 1,
+    "completed": 2,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -94,8 +94,12 @@
       "description": "移除静态 OnboardingFlow 弹窗，改为在 Home 页通过 PageChatPanel 实现对话式引导。新用户首次进入时，日知自动打招呼并提供引导建议，用户首次对话后自动标记 onboarding 完成。",
       "verification": "F2",
       "depends_on": ["B88"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
+      "started_at": "2026-04-24T14:45:00",
+      "completed_at": "2026-04-24T15:00:00",
+      "evidence_file": ".dev-flow/evidence/F118.md",
+      "execution_notes": "vitest 360 passed, build success, code-review fix round done",
       "acceptance_criteria": [
         "onboarding_completed=false 时，不显示静态弹窗 OnboardingFlow",
         "onboarding_completed=false 时，Home 页 PageChatPanel 自动展开（非折叠）",
