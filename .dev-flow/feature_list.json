@@ -3,9 +3,14 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-23T19:20:00",
-  "status": "idle",
-  "active_requirement_cycle": null,
+  "updated_at": "2026-04-24T10:30:00",
+  "status": "planning",
+  "active_requirement_cycle": {
+    "id": "R030",
+    "name": "ai-morning-report",
+    "branch": "feat/R030-ai-morning-report",
+    "description": "AI 晨报增强：缓存、AI 建议个性化、模式洞察 LLM 增强"
+  },
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -15,200 +20,229 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 0,
+    "total_tasks": 5,
     "pending": 0,
-    "completed": 0,
+    "completed": 5,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
   },
-  "modules": [],
-  "features": [],
-  "next_cycle_preview": {
-    "id": "R030",
-    "name": "ai-morning-report",
-    "branch": "feat/R030-ai-morning-report",
-    "description": "Phase 13 AI 晨报增强：缓存、AI 建议个性化、模式洞察 LLM 增强",
-    "entry_conditions": [
-      "S26b 全部 must_fix 发现已关闭(resolution=fixed)",
-      "residual_risks 不涉及晨报/洞察/知识图谱主链路",
-      "R029 全量测试(pytest+vitest+build)通过"
-    ]
-  },
-  "archived_requirement_cycles": [
+  "modules": [
     {
-      "id": "R003",
-      "name": "production-content-recovery",
-      "status": "completed",
-      "archive_dir": "_archive/R003_production-content-recovery"
+      "id": "review",
+      "name": "晨报缓存与AI增强",
+      "description": "晨报缓存机制、AI建议个性化、模式洞察LLM增强",
+      "tasks": ["B85", "B86", "B87"]
     },
     {
-      "id": "R004",
-      "name": "product-evolution-phase1a",
-      "status": "completed",
-      "archive_dir": "_archive/R004_product-evolution-phase1a"
+      "id": "review-frontend",
+      "name": "晨报前端展示优化",
+      "description": "缓存感知加载、AI建议和模式洞察展示增强",
+      "tasks": ["F117"]
     },
     {
-      "id": "R004",
-      "name": "product-evolution-phase1b",
-      "status": "completed",
-      "archive_dir": "_archive/R004_product-evolution-phase1b"
-    },
-    {
-      "id": "R004",
-      "name": "product-evolution-phase2",
-      "status": "completed",
-      "archive_dir": "_archive/R004_product-evolution-phase2"
-    },
-    {
-      "id": "R005",
-      "name": "product-evolution-phase3",
-      "status": "completed",
-      "archive_dir": "_archive/R005_product-evolution-phase3"
-    },
-    {
-      "id": "R006",
-      "name": "product-polish",
-      "status": "completed",
-      "archive_dir": "_archive/R006_product-polish"
-    },
-    {
-      "id": "R007",
-      "name": "engagement-experience",
-      "status": "completed",
-      "archive_dir": "_archive/R007_engagement-experience"
-    },
-    {
-      "id": "R008",
-      "name": "intelligence-omni",
-      "status": "completed",
-      "archive_dir": "_archive/R008_intelligence-omni"
-    },
-    {
-      "id": "R009",
-      "name": "chat-user-id-threading",
-      "status": "completed",
-      "archive_dir": "_archive/R009_chat-user-id-threading"
-    },
-    {
-      "id": "R010",
-      "name": "engineering-foundation",
-      "status": "completed",
-      "archive_dir": "_archive/R010_engineering-foundation"
-    },
-    {
-      "id": "R011",
-      "name": "entry-context-and-morning-report",
-      "status": "completed",
-      "archive_dir": "_archive/R011_entry-context-and-morning-report"
-    },
-    {
-      "id": "R012",
-      "name": "goal-tracking",
-      "status": "completed",
-      "archive_dir": "_archive/R012_goal-tracking"
-    },
-    {
-      "id": "R013",
-      "name": "decision-reflection-entries",
-      "status": "completed",
-      "archive_dir": "_archive/R013_decision-reflection-entries"
-    },
-    {
-      "id": "R014",
-      "name": "page-context-ai",
-      "status": "completed",
-      "archive_dir": "_archive/R014_page-context-ai"
-    },
-    {
-      "id": "R015",
-      "name": "review-enhancement",
-      "status": "completed",
-      "archive_dir": "_archive/R015_review-enhancement"
-    },
-    {
-      "id": "R016",
-      "name": "polish-cleanup",
-      "status": "completed",
-      "archive_dir": "_archive/R016_polish-cleanup"
-    },
-    {
-      "id": "R017",
-      "name": "code-audit-hardening",
-      "status": "completed",
-      "archive_dir": "_archive/R017_code-audit-hardening"
-    },
-    {
-      "id": "R018",
-      "name": "defect-fix-quality",
-      "status": "completed",
-      "archive_dir": "_archive/R018_defect-fix-quality"
-    },
-    {
-      "id": "R019",
-      "name": "offline-pwa",
-      "status": "completed",
-      "archive_dir": "_archive/R019_offline-pwa"
-    },
-    {
-      "id": "R020",
-      "name": "e2e-ci-pipeline",
-      "status": "completed",
-      "archive_dir": "_archive/R020_e2e-ci-pipeline"
-    },
-    {
-      "id": "R021",
-      "name": "tech-debt-cleanup",
-      "status": "completed",
-      "archive_dir": "_archive/R021_tech-debt-cleanup"
-    },
-    {
-      "id": "R022",
-      "name": "polish-deferred",
-      "status": "completed",
-      "archive_dir": "_archive/R022_polish-deferred"
-    },
-    {
-      "id": "R023",
-      "name": "ai-page-embedded",
-      "status": "completed",
-      "archive_dir": "_archive/R023_ai-page-embedded"
-    },
-    {
-      "id": "R024",
-      "name": "flutter-mobile-mvp",
-      "status": "completed",
-      "archive_dir": "_archive/R024_flutter-mobile-mvp"
-    },
-    {
-      "id": "R025",
-      "name": "stage3-completion",
-      "status": "completed",
-      "archive_dir": "_archive/R025_stage3-completion"
-    },
-    {
-      "id": "R026",
-      "name": "convergence-fixes",
-      "status": "completed",
-      "archive_dir": "_archive/R026_convergence-fixes"
-    },
-    {
-      "id": "R027",
-      "name": "export-feedback-tracking",
-      "status": "completed",
-      "archive_dir": "_archive/R027_export-feedback-tracking"
-    },
-    {
-      "id": "R028",
-      "name": "engineering-cleanup",
-      "status": "completed",
-      "archive_dir": "_archive/R028_engineering-cleanup"
-    },
-    {
-      "id": "R029",
-      "name": "simplify-convergence",
-      "status": "completed",
-      "archive_dir": "_archive/R029_simplify-convergence"
+      "id": "quality",
+      "name": "质量收口",
+      "description": "全量测试验证和构建",
+      "tasks": ["S27"]
     }
+  ],
+  "features": [
+    {
+      "id": "B85",
+      "phase": "P1",
+      "module": "review",
+      "name": "晨报缓存机制",
+      "description": "为晨报接口添加按 user_id + date 的内存缓存。同一天内重复请求直接返回缓存数据，不重新查询数据库和调用 LLM。缓存跨日自动失效。缓存命中时响应添加 cached_at 时间戳。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "同一用户同一天第二次请求命中缓存，不触发数据库查询和LLM调用",
+        "新的一天首次请求不命中缓存，正常计算",
+        "缓存命中时响应包含 cached_at 时间戳字段（ISO格式）",
+        "缓存未命中时 cached_at 为 null",
+        "缓存未命中时行为与现有完全一致（全量回归通过）",
+        "并发安全：同一用户同日并发首请求只计算一次（asyncio.Lock）",
+        "旧缓存 key 在跨日时自动清理（LRU 上限 1000 条）"
+      ],
+      "test_tasks": [
+        "缓存命中：mock 底层方法，第二次调用不触发",
+        "缓存失效：模拟跨日，缓存失效重新计算",
+        "cached_at 字段：命中时有值，未命中时为 null",
+        "并发去重：同一用户并发首次请求，底层只调用一次",
+        "缓存清理：模拟缓存超过上限，旧条目被淘汰",
+        "回归：现有晨报测试全部通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "backend/app/services/review_service.py",
+        "backend/app/routers/review.py"
+      ],
+      "contract_refs": ["CONTRACT-MORNING-CACHE01"],
+      "planning_notes": "单进程 best-effort 缓存。使用模块级 dict + asyncio.Lock，key=f'{user_id}:{date_str}'。LRU 上限 1000 条。同日并发首请求用 Lock 去重。不引入外部依赖"
+    },
+    {
+      "id": "B86",
+      "phase": "P1",
+      "module": "review",
+      "name": "AI 建议个性化",
+      "description": "增强晨报 AI 建议的个性化程度，在 LLM prompt 中注入用户活跃目标和近期高频标签，使建议更贴合用户实际情况。",
+      "verification": "L2",
+      "depends_on": ["B85"],
+      "status": "completed",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "LLM prompt 包含用户活跃目标标题（如有活跃目标，从 GoalService 获取）",
+        "LLM prompt 包含近 30 天高频标签 top 5（从 entries tags 统计）",
+        "LLM 不可用时降级到现有模板逻辑完全不变",
+        "有目标和没目标用户的建议 prompt 差异化",
+        "10 秒超时保护不变",
+        "LLM 返回 5xx 或非预期结构时降级到模板文本"
+      ],
+      "test_tasks": [
+        "有目标用户：prompt 包含目标信息，LLM 返回个性化建议",
+        "无目标用户：prompt 无目标段落，LLM 返回通用建议",
+        "高频标签：验证 top 5 标签出现在 prompt 中",
+        "LLM 降级：LLM 不可用时返回模板文本",
+        "超时：LLM 超时时返回降级文本，不抛异常",
+        "LLM 5xx：模拟 LLM 返回 500 错误，降级到模板文本",
+        "LLM 异常结构：模拟 LLM 返回非字符串，降级到模板文本"
+      ],
+      "risk_tags": ["network"],
+      "files": [
+        "backend/app/services/review_service.py"
+      ],
+      "contract_refs": [],
+      "planning_notes": "不改 API 契约，只改 prompt 构造和数据聚合。目标数据从 GoalService.list_goals(status=active) 获取，高频标签从近 30 天 entries 的 tags 字段统计"
+    },
+    {
+      "id": "B87",
+      "phase": "P1",
+      "module": "review",
+      "name": "模式洞察 LLM 增强",
+      "description": "将模式洞察从纯规则引擎增强为 LLM 驱动的行为分析。保留规则引擎作为 LLM 不可用时的降级方案。输出格式保持 string[] 不变。",
+      "verification": "L2",
+      "depends_on": ["B86"],
+      "status": "completed",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "LLM 可用时生成最多 5 条模式洞察（string[]，每条为中文描述）",
+        "LLM 不可用时降级到现有 3 条规则引擎洞察",
+        "LLM 洞察基于近 30 天数据分析（分类分布、完成率、时间模式）",
+        "10 秒超时保护不变",
+        "空数据（30天无条目）时返回空列表",
+        "LLM 返回 5xx 或非预期结构时降级到规则引擎"
+      ],
+      "test_tasks": [
+        "LLM 正常：返回最多 5 条洞察，格式为 string[]",
+        "LLM 降级：LLM 不可用时返回规则引擎结果（最多 3 条）",
+        "LLM 超时：降级到规则引擎",
+        "空数据：30 天无条目时返回空列表",
+        "LLM 5xx：模拟 LLM 返回 500 错误，降级到规则引擎",
+        "LLM 异常结构：模拟 LLM 返回非列表，降级到规则引擎",
+        "回归：现有模式洞察测试通过"
+      ],
+      "risk_tags": ["network"],
+      "files": [
+        "backend/app/services/review_service.py"
+      ],
+      "contract_refs": [],
+      "planning_notes": "LLM prompt 要求直接返回中文洞察字符串列表，不返回 JSON 对象。映射层将 LLM 输出解析为 string[]，解析失败时降级到规则引擎。规则引擎作为 fallback"
+    },
+    {
+      "id": "F117",
+      "phase": "P2",
+      "module": "review-frontend",
+      "name": "晨报展示优化",
+      "description": "优化晨报展示，利用缓存提升加载体验，增强 AI 建议和模式洞察的展示效果。",
+      "verification": "F2",
+      "depends_on": ["B86", "B87"],
+      "status": "completed",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "缓存命中时（cached_at 非 null）晨报卡片显示'上次更新于 HH:mm'",
+        "cached_at 为 null 时不显示更新时间",
+        "AI 建议区域有独立视觉样式（与普通文字区分）",
+        "模式洞察支持最多 5 条展示（现有支持 3 条，需扩展）",
+        "不新增网络请求，不增加 loading 阶段",
+        "窗口宽度 < 640px 时晨报卡片不溢出"
+      ],
+      "test_tasks": [
+        "cached_at 非 null：验证渲染'上次更新于 HH:mm'",
+        "cached_at 为 null：验证不显示更新时间",
+        "cached_at 缺失（旧后端）：验证不显示更新时间（向前兼容）",
+        "模式洞察 5 条：验证列表正确展示",
+        "空洞察：验证不显示洞察区块",
+        "加载态：验证骨架屏正常"
+      ],
+      "risk_tags": [],
+      "files": [
+        "frontend/src/pages/Home.tsx",
+        "frontend/src/hooks/useMorningDigest.ts"
+      ],
+      "contract_refs": [],
+      "planning_notes": "cached_at 为后端 B85 新增字段，前端按 optional 处理"
+    },
+    {
+      "id": "S27",
+      "phase": "P3",
+      "module": "quality",
+      "name": "质量收口+全量验证",
+      "description": "R030 全量测试验证 + 构建 + Docker smoke 测试。",
+      "verification": "L4",
+      "depends_on": ["F117"],
+      "status": "completed",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "pytest 全量通过",
+        "vitest 全量通过",
+        "frontend build 成功",
+        "Docker 部署 smoke 通过（晨报接口正常响应）"
+      ],
+      "test_tasks": [
+        "pytest 全量运行",
+        "vitest 全量运行",
+        "npm run build",
+        "Docker 部署后 curl 晨报接口验证"
+      ],
+      "risk_tags": [],
+      "files": [],
+      "smoke_required": true,
+      "planning_notes": "验证 R030 所有改动不影响现有功能"
+    }
+  ],
+  "next_cycle_preview": null,
+  "archived_requirement_cycles": [
+    {"id": "R003", "name": "production-content-recovery", "status": "completed", "archive_dir": "_archive/R003_production-content-recovery"},
+    {"id": "R004", "name": "product-evolution-phase1a", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase1a"},
+    {"id": "R004", "name": "product-evolution-phase1b", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase1b"},
+    {"id": "R004", "name": "product-evolution-phase2", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase2"},
+    {"id": "R005", "name": "product-evolution-phase3", "status": "completed", "archive_dir": "_archive/R005_product-evolution-phase3"},
+    {"id": "R006", "name": "product-polish", "status": "completed", "archive_dir": "_archive/R006_product-polish"},
+    {"id": "R007", "name": "engagement-experience", "status": "completed", "archive_dir": "_archive/R007_engagement-experience"},
+    {"id": "R008", "name": "intelligence-omni", "status": "completed", "archive_dir": "_archive/R008_intelligence-omni"},
+    {"id": "R009", "name": "chat-user-id-threading", "status": "completed", "archive_dir": "_archive/R009_chat-user-id-threading"},
+    {"id": "R010", "name": "engineering-foundation", "status": "completed", "archive_dir": "_archive/R010_engineering-foundation"},
+    {"id": "R011", "name": "entry-context-and-morning-report", "status": "completed", "archive_dir": "_archive/R011_entry-context-and-morning-report"},
+    {"id": "R012", "name": "goal-tracking", "status": "completed", "archive_dir": "_archive/R012_goal-tracking"},
+    {"id": "R013", "name": "decision-reflection-entries", "status": "completed", "archive_dir": "_archive/R013_decision-reflection-entries"},
+    {"id": "R014", "name": "page-context-ai", "status": "completed", "archive_dir": "_archive/R014_page-context-ai"},
+    {"id": "R015", "name": "review-enhancement", "status": "completed", "archive_dir": "_archive/R015_review-enhancement"},
+    {"id": "R016", "name": "polish-cleanup", "status": "completed", "archive_dir": "_archive/R016_polish-cleanup"},
+    {"id": "R017", "name": "code-audit-hardening", "status": "completed", "archive_dir": "_archive/R017_code-audit-hardening"},
+    {"id": "R018", "name": "defect-fix-quality", "status": "completed", "archive_dir": "_archive/R018_defect-fix-quality"},
+    {"id": "R019", "name": "offline-pwa", "status": "completed", "archive_dir": "_archive/R019_offline-pwa"},
+    {"id": "R020", "name": "e2e-ci-pipeline", "status": "completed", "archive_dir": "_archive/R020_e2e-ci-pipeline"},
+    {"id": "R021", "name": "tech-debt-cleanup", "status": "completed", "archive_dir": "_archive/R021_tech-debt-cleanup"},
+    {"id": "R022", "name": "polish-deferred", "status": "completed", "archive_dir": "_archive/R022_polish-deferred"},
+    {"id": "R023", "name": "ai-page-embedded", "status": "completed", "archive_dir": "_archive/R023_ai-page-embedded"},
+    {"id": "R024", "name": "flutter-mobile-mvp", "status": "completed", "archive_dir": "_archive/R024_flutter-mobile-mvp"},
+    {"id": "R025", "name": "stage3-completion", "status": "completed", "archive_dir": "_archive/R025_stage3-completion"},
+    {"id": "R026", "name": "convergence-fixes", "status": "completed", "archive_dir": "_archive/R026_convergence-fixes"},
+    {"id": "R027", "name": "export-feedback-tracking", "status": "completed", "archive_dir": "_archive/R027_export-feedback-tracking"},
+    {"id": "R028", "name": "engineering-cleanup", "status": "completed", "archive_dir": "_archive/R028_engineering-cleanup"},
+    {"id": "R029", "name": "simplify-convergence", "status": "completed", "archive_dir": "_archive/R029_simplify-convergence"}
   ]
 }

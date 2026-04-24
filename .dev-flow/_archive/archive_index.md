@@ -142,6 +142,12 @@
 - 完成时间: 2026-04-13
 - 任务数: 36 (P1 → P11)
 
+## R030: AI 晨报增强
+- 归档目录: _archive/R030_ai-morning-report
+- 状态: planning (2026-04-24)
+- 分支: feat/R030-ai-morning-report
+- 任务: B85(缓存), B86(AI个性化), B87(模式洞察LLM), F117(前端优化), S27(质量收口)
+
 ## R029: Simplify 收敛检查
 - 归档目录: _archive/R029_simplify-convergence
 - 状态: completed (2026-04-23)

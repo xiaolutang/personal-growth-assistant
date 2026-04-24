@@ -654,6 +654,7 @@ export interface MorningDigestResponse {
   learning_streak?: number;
   daily_focus?: DailyFocus | null;
   pattern_insights?: string[];
+  cached_at?: string | null;
 }
 
 export async function getMorningDigest(): Promise<MorningDigestResponse> {

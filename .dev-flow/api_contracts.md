@@ -2,6 +2,24 @@
 
 ## 契约索引
 
+### R030 新增/变更契约
+
+| 契约 ID | 方法 | 端点 | 任务 | 状态 |
+|---------|------|------|------|------|
+| CONTRACT-MORNING-CACHE01 | GET | /review/morning-digest (cached_at 字段) | B85, F117 | done |
+
+### R030 契约详情
+
+#### CONTRACT-MORNING-CACHE01: GET /review/morning-digest (cached_at 字段)
+
+现有端点，响应模型 `MorningDigestResponse` 新增可选字段。
+
+| 变更字段 | 类型 | 说明 |
+|---------|------|------|
+| cached_at | string \| null | 缓存命中时为 ISO 格式时间戳，未命中时为 null |
+
+新增字段为可选字段，不影响现有前端消费。
+
 ### R027 新增/变更契约
 
 | 契约 ID | 方法 | 端点 | 任务 | 状态 |

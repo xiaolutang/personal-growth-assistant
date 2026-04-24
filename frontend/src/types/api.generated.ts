@@ -2711,6 +2711,8 @@ export interface components {
              * @default []
              */
             pattern_insights: string[];
+            /** Cached At */
+            cached_at?: string | null;
         };
         /**
          * MorningDigestStaleInbox
