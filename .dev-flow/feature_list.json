@@ -91,7 +91,7 @@
       "description": "增强晨报 AI 建议的个性化程度，在 LLM prompt 中注入用户活跃目标和近期高频标签，使建议更贴合用户实际情况。",
       "verification": "L2",
       "depends_on": ["B85"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
       "acceptance_criteria": [
         "LLM prompt 包含用户活跃目标标题（如有活跃目标，从 GoalService 获取）",

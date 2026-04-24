@@ -691,7 +691,8 @@ class ReviewService:
         return date(today.year, today.month, 1)
 
     async def _generate_ai_summary(
-        self, report_type: str, stats_data: dict, user_id: str = "_default"
+        self, report_type: str, stats_data: dict, user_id: str = "_default",
+        system_prompt_override: str = "",
     ) -> str:
         """
         使用 LLM 生成 AI 总结
@@ -700,6 +701,7 @@ class ReviewService:
             report_type: 报告类型 (daily/weekly/monthly)
             stats_data: 统计数据
             user_id: 用户 ID
+            system_prompt_override: 可选的自定义系统提示词
 
         Returns:
             AI 总结文本，失败时返回空字符串
@@ -709,7 +711,7 @@ class ReviewService:
 
         import json
 
-        system_prompt = (
+        system_prompt = system_prompt_override or (
             "你是个人成长助手「日知」，请根据以下数据生成一段简短的中文总结（2-3句话），"
             "包含关键成就和建议。"
         )
@@ -1451,7 +1453,58 @@ class ReviewService:
                     "todos": [t.get("title", "") for t in today_todos[:3]],
                     "overdue_titles": [t.get("title", "") for t in overdue[:3]],
                 }
-                suggestion = await self._generate_ai_summary("morning_digest", stats_data, user_id=user_id)
+
+                # B86: 注入活跃目标
+                try:
+                    from app.routers import deps
+                    goal_service = deps.get_goal_service()
+                    goals, _, _ = await goal_service.list_goals(user_id, status="active")
+                    if goals:
+                        stats_data["active_goals"] = [
+                            {"title": g.get("title", ""), "progress": g.get("progress_percentage", 0)}
+                            for g in goals[:5]
+                        ]
+                except Exception:
+                    pass  # GoalService 不可用时不影响主流程
+
+                # B86: 注入近 30 天高频标签 top 5
+                try:
+                    from datetime import timedelta as _td
+                    from datetime import date as _date
+                    today = _date.today()
+                    start_30 = (today - _td(days=30)).isoformat()
+                    entries_30 = self._sqlite.list_entries(
+                        start_date=start_30,
+                        end_date=today.isoformat(),
+                        limit=5000,
+                        user_id=user_id,
+                    )
+                    tag_freq: dict[str, int] = {}
+                    for entry in entries_30:
+                        for tag in entry.get("tags", []):
+                            tag_freq[tag] = tag_freq.get(tag, 0) + 1
+                    top_tags = sorted(tag_freq.items(), key=lambda x: x[1], reverse=True)[:5]
+                    if top_tags:
+                        stats_data["top_tags_30d"] = [t[0] for t in top_tags]
+                except Exception:
+                    pass  # 标签统计失败不影响主流程
+
+                # B86: 个性化晨报 prompt
+                has_goals = "active_goals" in stats_data
+                has_tags = "top_tags_30d" in stats_data
+                morning_prompt = (
+                    "你是个人成长助手「日知」，请根据以下数据为用户生成一段个性化的早安建议（2-3句话）。"
+                    "建议应具体、可执行，直接关联用户的目标和近期关注领域。"
+                )
+                if has_goals:
+                    morning_prompt += "请结合用户的活跃目标，给出与目标相关的具体行动建议。"
+                if has_tags:
+                    morning_prompt += "请参考用户近期高频关注的话题方向，让建议更贴合实际。"
+
+                suggestion = await self._generate_ai_summary(
+                    "morning_digest", stats_data, user_id=user_id,
+                    system_prompt_override=morning_prompt,
+                )
                 if suggestion:
                     return suggestion
             except Exception:
