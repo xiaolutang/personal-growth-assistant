@@ -1,32 +1,39 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.30.0
-> 状态：规划中（R030）
-> 活跃分支：feat/R030-ai-morning-report
+> 版本：v0.31.0
+> 状态：规划中（R031）
+> 活跃分支：feat/R031-conversational-onboarding
 
 ## 当前范围
 
-R030 AI 晨报增强：缓存 + AI 建议个性化 + 模式洞察 LLM 增强。
+R031 对话式 Onboarding（Phase 0）：用日知对话引导代替静态弹窗，新用户首次进入时通过真实对话完成首个条目创建。
 
-1. **B85 晨报缓存**：按 user_id + date 内存缓存，同天重复请求不重算，缓存命中添加 cached_at 时间戳
-2. **B86 AI 建议个性化**：LLM prompt 注入活跃目标和高频标签，使建议更贴合用户
-3. **B87 模式洞察 LLM 增强**：将规则引擎增强为 LLM 驱动行为分析，保留规则降级
-4. **F117 晨报展示优化**：缓存感知加载、展示增强
-5. **S27 质量收口**：全量测试 + 构建 + Docker smoke
+1. **B88 Onboarding AI Prompt**：AI chat 注入 is_new_user 上下文，新用户对话时使用引导性系统提示
+2. **F118 对话式 Onboarding 前端**：移除静态弹窗，PageChatPanel 自动展开 + 日知欢迎消息 + 引导建议
+3. **S28 质量收口**：全量测试 + 构建
 
 ## 技术约束
 
-- 不引入外部缓存依赖（不用 Redis），使用模块级内存缓存
-- 不改 API 端点路径和请求格式，仅 MorningDigestResponse 添加可选 cached_at 字段
-- 所有 LLM 改动保留现有降级机制（10 秒超时 + 模板兜底）
+- 不新增 API 端点，is_new_user 通过现有 chat context 透传
+- 不改 User 模型（已有 onboarding_completed 字段）
+- 不改 PageChatPanel 核心架构，只增加 greetingMessage prop
 - workflow: B/codex_plugin/skill_orchestrated
 
 ## 用户路径
 
 ```
-打开首页 → 自动加载晨报（首次计算并缓存/后续返回缓存）
-         → 查看 AI 建议（个性化内容）
-         → 查看模式洞察（LLM 增强分析）
-         → 缓存命中时显示"上次更新于 HH:mm"
+新用户注册 → 登录 → 进入首页
+         → 无静态弹窗
+         → PageChatPanel 自动展开，日知打招呼：
+           "你好，我是日知。帮你把每天的想法记下来..."
+         → 显示建议：记灵感 / 做任务 / 记笔记
+         → 用户点击建议或输入内容
+         → AI 创建条目并回应
+         → 自动标记 onboarding 完成
+         → 后续访问恢复正常模式
+
+老用户（onboarding_completed=true）：
+         → 进入首页，PageChatPanel 默认折叠
+         → 正常使用，无任何变化
 ```

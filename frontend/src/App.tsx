@@ -6,7 +6,6 @@ import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext"
 import { MobileNavBar } from "@/components/layout/MobileNavBar";
 import { FloatingChat } from "@/components/FloatingChat";
 import { FeedbackButton } from "@/components/FeedbackButton";
-import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ThemeProvider } from "@/lib/theme";
@@ -148,23 +147,6 @@ function App() {
   const fetchEntries = useTaskStore((state) => state.fetchEntries);
   const isAuthenticated = useUserStore((state) => state.isAuthenticated);
   const loadFromStorage = useUserStore((state) => state.loadFromStorage);
-  const user = useUserStore((state) => state.user);
-  const fetchMe = useUserStore((state) => state.fetchMe);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-
-  // 用户加载完成后决定是否显示 onboarding
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      setShowOnboarding(!user.onboarding_completed);
-    } else {
-      setShowOnboarding(false);
-    }
-  }, [isAuthenticated, user]);
-
-  function handleOnboardingComplete() {
-    setShowOnboarding(false);
-    fetchMe();
-  }
 
   // 初始化用户状态（从 localStorage 恢复登录态）
   useEffect(() => {
@@ -197,9 +179,6 @@ function App() {
             <ProtectedRoute>
               <ThemeProvider>
               <SidebarProvider>
-                {showOnboarding && (
-                  <OnboardingFlow onComplete={handleOnboardingComplete} />
-                )}
                 <Toaster position="top-center" richColors />
                 <OfflineIndicator />
                 <AppLayout />

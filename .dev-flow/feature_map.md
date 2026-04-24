@@ -1,30 +1,27 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：R030 AI 晨报增强
+> 活跃需求包：R031 对话式 Onboarding
 > 最后更新：2026-04-24
 
 ## 活跃需求包
 
-### R030: AI 晨报增强
+### R031: 对话式 Onboarding
 
 ```
-R030 (feat/R030-ai-morning-report)
-├── P1: 后端增强
-│   ├── B85 晨报缓存机制 [completed]
-│   ├── B86 AI 建议个性化 [completed]
-│   └── B87 模式洞察 LLM 增强 [completed]
-├── P2: 前端优化
-│   └── F117 晨报展示优化 [completed]
+R031 (feat/R031-conversational-onboarding)
+├── P1: 后端
+│   └── B88 Onboarding AI Prompt [completed]
+├── P1: 前端
+│   └── F118 对话式 Onboarding 前端 [completed]
 └── P3: 质量收口
-    └── S27 全量验证 [completed]
+    └── S28 全量验证 [completed]
 ```
 
 **依赖图：**
 ```
-B85 → B86 → B87 → F117 → S27
+B88 → F118 → S28
 ```
-（串行执行，B86/B87 共享 review_service.py 不并行）
 
 ## 归档需求包
 
@@ -55,6 +52,7 @@ B85 → B86 → B87 → F117 → S27
 | R027 数据导出 + 反馈追踪 | _archive/R027_export-feedback-tracking | completed |
 | R028 工程清理 | _archive/R028_engineering-cleanup | completed |
 | R029 Simplify 收敛检查 | _archive/R029_simplify-convergence | completed |
+| R030 AI 晨报增强 | _archive/R030_ai-morning-report | completed |
 
 ## 测试汇总
 

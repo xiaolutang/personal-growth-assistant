@@ -1,5 +1,28 @@
 # 对齐清单
 
+## R031: 对话式 Onboarding
+
+### 契约对齐
+
+- [x] B88: 不涉及新契约，context.is_new_user 通过现有 chat body 透传 ✓
+- [x] F118: 不涉及新契约，复用现有 onboarding_completed 字段和 updateMe API ✓
+
+### 依赖对齐
+
+- [x] B88 无外部依赖 ✓
+- [x] F118 depends_on B88 ✓（前端依赖后端 prompt 注入就绪）
+- [x] S28 depends_on F118 ✓
+
+### 架构对齐
+
+- [x] 不新建服务文件，在现有 ai_chat_service.py _build_system_prompt 内注入 onboarding 段 ✓
+- [x] 不新建前端组件，复用现有 PageChatPanel + greetingMessage prop ✓
+- [x] 新用户首页隐藏 FloatingChat，确保单入口（PageChatPanel） ✓
+- [x] onboarding 完成后通过 key 变化重挂载 PageChatPanel，恢复正常模式 ✓
+- [x] updateMe 防重复：boolean flag 保证只调用一次 ✓
+- [x] updateMe 失败不阻塞，静默记录，下次仍为 onboarding 模式 ✓
+- [x] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫 ✓
+
 ## R030: AI 晨报增强
 
 ### 契约对齐

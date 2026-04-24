@@ -19,6 +19,7 @@ import { useIntentDispatcher } from "@/hooks/useIntentDispatcher";
 import { useChatActions } from "@/hooks/useChatActions";
 import { useTaskStore } from "@/stores/taskStore";
 import { useChatStore, type PageContext } from "@/stores/chatStore";
+import { useUserStore } from "@/stores/userStore";
 import { SearchResultList } from "@/components/SearchResultCard";
 import { KnowledgeGraphInline } from "@/components/KnowledgeGraph";
 import type { Intent } from "@/lib/intentDetection";
@@ -34,6 +35,7 @@ const MOBILE_MAX_RATIO = 0.7; // 移动端面板不超过可视区域 70%
 
 export function FloatingChat() {
   const isMobile = useIsMobile();
+  const user = useUserStore((state) => state.user);
   const [input, setInput] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [currentIntent, setCurrentIntent] = useState<Intent | null>(null);
@@ -70,6 +72,14 @@ export function FloatingChat() {
 
   // 路由感知：根据当前路径更新 pageContext
   const location = useLocation();
+
+  // 新用户首页隐藏 FloatingChat，避免双入口混淆
+  const isNewUser = user ? !user.onboarding_completed : false;
+  const base = (import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL?.replace(/\/$/, "") || "";
+  const relativePath = base ? location.pathname.replace(base, "") || "/" : location.pathname;
+  if (isNewUser && relativePath === "/") {
+    return null;
+  }
 
   useEffect(() => {
     const path = location.pathname;

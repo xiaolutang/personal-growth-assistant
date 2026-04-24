@@ -352,6 +352,7 @@ export async function getFeedbackDetail(id: number): Promise<FeedbackItem> {
  */
 export interface AIChatContext {
   page?: string;
+  is_new_user?: boolean;
   selected_items?: string[];
   filters?: Record<string, string>;
   page_data?: Record<string, string | number>;
