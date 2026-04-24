@@ -106,7 +106,7 @@ describe("useUserStore", () => {
   });
 
   describe("logout", () => {
-    it("有 token 时应先调后端 logout 再清除状态", async () => {
+    it("有 token 时应先清除本地状态再 best-effort 调后端 logout", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ message: "logged out" }),

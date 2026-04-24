@@ -646,3 +646,32 @@ class TestCapabilityMapAPI:
             all_concepts.extend(domain["concepts"])
 
         assert all(c["name"] != "ExclusiveSkillTag" for c in all_concepts)
+
+
+class TestConnectionError503Routing:
+    """B92: ConnectionError 运行时断连在路由层映射为 503（API 层测试）"""
+
+    async def test_knowledge_graph_connection_error_returns_503(self, storage, client: AsyncClient):
+        """knowledge-graph 运行时 ConnectionError 应返回 HTTP 503"""
+        from unittest.mock import AsyncMock, patch
+
+        mock_service = AsyncMock()
+        mock_service.get_knowledge_graph = AsyncMock(side_effect=ConnectionError("Neo4j 连接断开"))
+
+        with patch("app.routers.knowledge.get_knowledge_service", return_value=mock_service):
+            response = await client.get("/knowledge-graph/Python")
+            assert response.status_code == 503
+            assert "Neo4j 连接断开" in response.json()["detail"]
+
+    async def test_related_concepts_connection_error_returns_503(self, storage, client: AsyncClient):
+        """related-concepts 运行时 ConnectionError 应返回 HTTP 503"""
+        from unittest.mock import AsyncMock, patch
+
+        mock_service = AsyncMock()
+        mock_service.get_related_concepts = AsyncMock(side_effect=ConnectionError("Neo4j 连接断开"))
+
+        with patch("app.routers.knowledge.get_knowledge_service", return_value=mock_service):
+            response = await client.get("/related-concepts/Python")
+            assert response.status_code == 503
+            assert "Neo4j 连接断开" in response.json()["detail"]
+

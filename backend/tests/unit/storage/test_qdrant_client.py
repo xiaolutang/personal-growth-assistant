@@ -182,13 +182,13 @@ class TestQdrantClient:
         mock_qdrant_available.close.assert_called_once()
         assert client._client is None
 
-    async def test_embedding_not_configured_returns_false(self, mock_qdrant_available, sample_entry):
-        """测试 Embedding 服务未配置时返回 False（不抛异常）"""
+    async def test_embedding_not_configured_raises_error(self, mock_qdrant_available, sample_entry):
+        """测试 Embedding 服务未配置时抛 NotImplementedError（配置错误不静默吞掉）"""
         client = QdrantClient(url="http://test:6333")  # 没有 embedding_service
         await client.connect()
 
-        result = await client.upsert_entry(sample_entry)
-        assert result is False
+        with pytest.raises(NotImplementedError, match="Embedding service not configured"):
+            await client.upsert_entry(sample_entry)
 
 
 class TestQdrantClientUnavailable:
@@ -400,8 +400,8 @@ class TestQdrantDimensionMismatch:
             client = QdrantClient(url="http://test:6333", vector_size=1024)
             await client.connect()
 
-            # 应该检测到维度不匹配并重建
-            mock_client.get_collection.assert_called_once()
+            # 应该检测到维度不匹配并重建（connect 先调 get_collection 验证连接，_ensure_collection 再调一次）
+            assert mock_client.get_collection.call_count >= 2
             mock_client.delete_collection.assert_called_once()
             mock_client.create_collection.assert_called_once()
 
@@ -420,8 +420,8 @@ class TestQdrantDimensionMismatch:
             client = QdrantClient(url="http://test:6333", vector_size=1024)
             await client.connect()
 
-            # 不应该删除或创建
-            mock_client.get_collection.assert_called_once()
+            # 不应该删除或创建（connect 先调 get_collection 验证连接，_ensure_collection 再调一次）
+            assert mock_client.get_collection.call_count >= 2
             mock_client.delete_collection.assert_not_called()
             mock_client.create_collection.assert_not_called()
 

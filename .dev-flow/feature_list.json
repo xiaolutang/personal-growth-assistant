@@ -101,7 +101,7 @@
       "phase": "P1",
       "module": "jwt-blacklist",
       "name": "前端 logout 调用后端接口",
-      "description": "前端 userStore.logout() 改为异步方法，先调用后端 /auth/logout API（将 token 加入黑名单），然后清除本地存储。Sidebar 登出按钮改为 await logout() 后再跳转，确保 token 入黑名单后再离开页面。",
+      "description": "前端 userStore.logout() 改为异步方法，本地清理（localStorage + state）前置消除 auth 闪现窗口，后端 /auth/logout 为 best-effort 调用。Sidebar 登出按钮改为 await logout() 后再跳转。",
       "verification": "F2",
       "depends_on": [
         "B90"
@@ -109,12 +109,12 @@
       "status": "completed",
       "priority": "P0",
       "acceptance_criteria": [
-        "userStore.logout() 改为 async，先 await POST /auth/logout（带 Authorization header）",
-        "后端 logout 调用失败不阻塞前端清理流程（catch 后继续）",
-        "logout API 调用成功后清除 localStorage token",
+        "userStore.logout() 改为 async，本地清理（localStorage + state）前置到后端调用之前，消除 auth 闪现窗口",
+        "后端 POST /auth/logout 为 best-effort：try-catch 包裹，失败不阻塞",
+        "本地清理包括 removeItem(TOKEN_KEY/USER_KEY) + set({user:null,token:null,isAuthenticated:false})",
         "无 token 时跳过后端 logout 调用，直接清理本地",
         "Sidebar 登出按钮改为 await logout() 完成后再执行 window.location.href 跳转",
-        "userStore 中 401 拦截的自动 logout 调用兼容 async（fetchMe 失败时走 logout 清理）"
+        "userStore 中 fetchMe 401 拦截调 get().logout() 后本地状态立即清除（无 isAuthenticated=true 窗口期）"
       ],
       "test_tasks": [
         "有 token 时 logout，验证调用了 POST /auth/logout",
@@ -130,8 +130,10 @@
         "frontend/src/stores/userStore.ts",
         "frontend/src/components/layout/Sidebar.tsx"
       ],
-      "contract_refs": [],
-      "planning_notes": "核心改动：1) userStore.logout() 改 async，在清理本地前先 await POST /auth/logout 2) Sidebar 登出按钮改为 onClick={async () => { await logout(); window.location.href=... }} 3) 后端调用失败不影响前端清理（try-catch 包裹）4) userStore 中 401 拦截（fetchMe 失败时 logout）兼容 async",
+      "contract_refs": [
+        "CONTRACT-AUTH01"
+      ],
+      "planning_notes": "核心改动：1) userStore.logout() 改 async，本地清理（localStorage+state）前置到后端调用之前，消除 fetchMe 401 时 isAuthenticated=true 的闪现窗口 2) 后端 POST /auth/logout 为 best-effort（try-catch 包裹，失败不阻塞）3) Sidebar 登出按钮改为 onClick={async () => { await logout(); window.location.href=... }} 4) 无 token 时跳过后端调用",
       "started_at": "2026-04-24T21:30:00",
       "completed_at": "2026-04-24T21:45:00",
       "actual_minutes": 15,
@@ -167,7 +169,7 @@
       "completed_at": "2026-04-24T22:20:00",
       "actual_minutes": 20,
       "evidence_file": ".dev-flow/evidence/B91.md",
-      "execution_notes": "23 tests (16 qdrant + 7 sync), 1051 pytest total"
+      "execution_notes": "23 tests (16 qdrant + 7 sync), 1169 pytest total after code-review fix"
     },
     {
       "id": "B92",
@@ -178,6 +180,7 @@
       "verification": "L2",
       "depends_on": [],
       "status": "completed",
+      "acceptance_criteria": [
         "/knowledge-map 路由在 knowledge_service 返回空数据时返回空 KnowledgeMapResponse（200）而非 500",
         "/knowledge/stats 路由在 knowledge_service 返回空数据时返回空 ConceptStatsResponse（200）而非 500",
         "/knowledge-graph/{concept} 现有 503 行为不变（ValueError → 503）",
@@ -205,7 +208,7 @@
       "completed_at": "2026-04-24T22:40:00",
       "actual_minutes": 20,
       "evidence_file": ".dev-flow/evidence/B92.md",
-      "execution_notes": "19 tests, 1070 pytest total"
+      "execution_notes": "19 new + 2 service层 + 2 API层补测, 1173 pytest total"
     },
     {
       "id": "S30",

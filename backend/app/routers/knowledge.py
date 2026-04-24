@@ -38,6 +38,8 @@ async def get_knowledge_graph(
         return await knowledge_service.get_knowledge_graph(concept, depth, user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
+    except ConnectionError as e:
+        raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         logger.error("查询失败", exc_info=True)
         raise HTTPException(status_code=500, detail="查询失败，请稍后重试")
@@ -51,6 +53,8 @@ async def get_related_concepts(concept: str, user: User = Depends(get_current_us
     try:
         return await knowledge_service.get_related_concepts(concept, user_id=user.id)
     except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except ConnectionError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         logger.error("查询失败", exc_info=True)
@@ -92,7 +96,7 @@ async def get_knowledge_map(
 
     try:
         return await knowledge_service.get_knowledge_map(depth=depth, view=view, user_id=user.id)
-    except Exception as e:
+    except (ConnectionError, ValueError) as e:
         logger.warning(f"知识图谱查询降级返回空数据: {e}")
         return KnowledgeMapResponse()
 
@@ -108,7 +112,7 @@ async def get_knowledge_stats(user: User = Depends(get_current_user)):
 
     try:
         return await knowledge_service.get_knowledge_stats(user_id=user.id)
-    except Exception as e:
+    except (ConnectionError, ValueError) as e:
         logger.warning(f"知识统计查询降级返回空数据: {e}")
         return ConceptStatsResponse()
 

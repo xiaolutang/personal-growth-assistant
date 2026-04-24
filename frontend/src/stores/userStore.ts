@@ -70,7 +70,12 @@ export const useUserStore = create<UserState>((set, get) => ({
     const { token } = get();
     const userId = get().user?.id;
 
-    // 先调后端 logout 将 token 加入黑名单
+    // 立即清理本地认证状态（避免 auth 闪现窗口）
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    set({ user: null, token: null, isAuthenticated: false });
+
+    // 异步调后端 logout 将 token 加入黑名单（best-effort）
     if (token) {
       try {
         await fetch(`${API_BASE}/auth/logout`, {
@@ -81,10 +86,6 @@ export const useUserStore = create<UserState>((set, get) => ({
         // 后端调用失败不阻塞前端清理
       }
     }
-
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    set({ user: null, token: null, isAuthenticated: false });
 
     if (userId) {
       import("@/stores/taskStore").then(m => m.useTaskStore.getState().clearOfflineEntries()).catch(() => {});

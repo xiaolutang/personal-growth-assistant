@@ -355,3 +355,32 @@ class TestNormalPathRegression:
         assert result.center is not None
         assert result.center.name == "Python"
         assert len(result.connections) == 1
+
+
+# ==================== ConnectionError → 503 路由层测试 ====================
+
+
+class TestConnectionError503Mapping:
+    """ConnectionError 在路由层映射为 503（运行时断连场景）"""
+
+    async def test_knowledge_graph_connection_error_returns_503(self):
+        """get_knowledge_graph 在 Neo4j 运行时断连时抛 ConnectionError"""
+        neo4j_client = MagicMock()
+        neo4j_client._driver = MagicMock()  # is_neo4j_available -> True
+        neo4j_client.get_knowledge_graph = AsyncMock(side_effect=ConnectionError("连接断开"))
+
+        service = KnowledgeService(neo4j_client=neo4j_client, sqlite_storage=None)
+
+        with pytest.raises(ConnectionError, match="连接断开"):
+            await service.get_knowledge_graph("Python", depth=2, user_id="test")
+
+    async def test_get_related_concepts_connection_error(self):
+        """get_related_concepts 在 Neo4j 运行时断连时抛 ConnectionError"""
+        neo4j_client = MagicMock()
+        neo4j_client._driver = MagicMock()
+        neo4j_client.get_related_concepts = AsyncMock(side_effect=ConnectionError("连接断开"))
+
+        service = KnowledgeService(neo4j_client=neo4j_client, sqlite_storage=None)
+
+        with pytest.raises(ConnectionError, match="连接断开"):
+            await service.get_related_concepts("Python", user_id="test")

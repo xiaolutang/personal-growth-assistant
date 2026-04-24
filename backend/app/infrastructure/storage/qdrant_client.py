@@ -47,13 +47,23 @@ class QdrantClient:
     async def connect(self):
         """连接数据库，失败时设 _client=None 并抛 ConnectionError"""
         if not self._client:
+            new_client = None
             try:
-                self._client = AsyncQdrantClient(
+                new_client = AsyncQdrantClient(
                     url=self.url,
                     api_key=self.api_key,
                 )
+                await new_client.get_collection(self.COLLECTION_NAME)
+                # 连接和 collection 检查成功后才赋值
+                self._client = new_client
                 await self._ensure_collection()
             except Exception as e:
+                # 清理未成功的 client
+                if new_client:
+                    try:
+                        await new_client.close()
+                    except Exception:
+                        pass
                 logger.warning(f"Qdrant 连接失败: {e}")
                 self._client = None
                 raise ConnectionError(f"Qdrant 连接失败: {e}") from e
@@ -145,7 +155,8 @@ class QdrantClient:
                 ],
             )
             return True
-        except Exception as e:
+        except (OSError, ConnectionError) as e:
+            # 连接/IO 类异常：降级
             logger.warning(f"Qdrant upsert 失败: {e}")
             return False
 
@@ -165,7 +176,7 @@ class QdrantClient:
                 ),
             )
             return True
-        except Exception as e:
+        except (OSError, ConnectionError) as e:
             logger.warning(f"Qdrant delete 失败: {e}")
             return False
 
@@ -191,7 +202,7 @@ class QdrantClient:
                     "payload": point.payload,
                 }
             return None
-        except Exception as e:
+        except (OSError, ConnectionError) as e:
             logger.warning(f"Qdrant get_entry 失败: {e}")
             return None
 
@@ -256,7 +267,7 @@ class QdrantClient:
                 }
                 for result in response.points
             ]
-        except Exception as e:
+        except (OSError, ConnectionError) as e:
             logger.warning(f"Qdrant search 失败: {e}")
             return []
 
@@ -287,7 +298,7 @@ class QdrantClient:
                 }
                 for result in response.points
             ]
-        except Exception as e:
+        except (OSError, ConnectionError) as e:
             logger.warning(f"Qdrant search_by_vector 失败: {e}")
             return []
 
@@ -323,7 +334,7 @@ class QdrantClient:
                 points=points,
             )
             return len(points)
-        except Exception as e:
+        except (OSError, ConnectionError) as e:
             logger.warning(f"Qdrant batch_upsert 失败: {e}")
             return 0
 
@@ -346,7 +357,7 @@ class QdrantClient:
                 ),
             )
             return len(entry_ids)
-        except Exception as e:
+        except (OSError, ConnectionError) as e:
             logger.warning(f"Qdrant batch_delete 失败: {e}")
             return 0
 
@@ -366,6 +377,6 @@ class QdrantClient:
                 "points_count": info.points_count,
                 "status": info.status.value,
             }
-        except Exception as e:
+        except (OSError, ConnectionError) as e:
             logger.warning(f"Qdrant get_stats 失败: {e}")
             return {"points_count": 0, "status": "unavailable"}
