@@ -8,7 +8,7 @@
   "active_requirement_cycle": {
     "id": "R034",
     "name": "tech-debt-residual",
-    "status": "planning",
+    "status": "executing",
     "branch": "feat/R034-tech-debt-residual"
   },
   "workflow": {
@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 10,
-    "pending": 10,
-    "completed": 0,
+    "pending": 9,
+    "completed": 1,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -113,7 +113,7 @@
       "description": "将 error 从 useState(false) 改为 useState<string | null>(null)，存储错误消息而非 boolean",
       "verification": "F1",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P2",
       "acceptance_criteria": [
         "error 状态类型从 boolean 改为 string | null",
@@ -133,7 +133,13 @@
         "加载失败后 error 为错误消息字符串",
         "组件卸载后不更新状态"
       ],
-      "planning_notes": "R029 F-011 residual: useMorningDigest error 只存 boolean，丢失错误详情"
+      "planning_notes": "R029 F-011 residual: useMorningDigest error 只存 boolean，丢失错误详情",
+      "started_at": "2026-04-25T10:00:00",
+      "completed_at": "2026-04-25T10:15:00",
+      "actual_minutes": 15,
+      "evidence_file": ".dev-flow/evidence/F122.md",
+      "summary": "error 从 boolean 改为 string|null，捕获错误消息，修复相邻测试桩",
+      "execution_notes": "Review.trend.test.tsx mock 同步修复"
     },
     {
       "id": "F123",

@@ -11,7 +11,7 @@
 **Phase 1 快速修复**
 | 任务 | 模块 | 状态 |
 |------|------|------|
-| F122 useMorningDigest error 增强 | hooks | pending |
+| F122 useMorningDigest error 增强 | hooks | done |
 | F123 Review 组件统一导出 | review-components | pending |
 | B93 export_growth_report 依赖注入 | review | pending |
 

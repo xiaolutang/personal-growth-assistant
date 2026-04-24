@@ -4,7 +4,7 @@
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
 |--------|----------|-----------|--------------------|--------|------|
-| useMorningDigest 增强 | F122 | unit | error初始null/成功null/失败string/卸载不更新 | pending | F1 |
+| useMorningDigest 增强 | F122 | unit | error初始null/成功null/失败string/卸载不更新 | done | F1, 10 tests (7 existing + 3 new), 366 vitest total |
 | 统一导出 | F123 | unit | 5组件移除default后build无报错/Review.tsx命名导入 | pending | F1 |
 | 依赖注入 | B93 | unit | 构造函数参数/不调deps/growth-report回归200 | pending | L2 |
 | 合并遍历 | F124 | unit | todayTasks/unprocessedInbox/recentInbox/todayStats等价 | pending | F1 |

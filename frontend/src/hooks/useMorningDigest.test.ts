@@ -1,13 +1,8 @@
 /**
- * F117: 晨报展示优化 — hook 测试
+ * useMorningDigest hook 测试
  *
- * 验证:
- * 1. cached_at 非 null 时 hook 返回数据包含该字段
- * 2. cached_at 为 null 时不包含更新时间
- * 3. cached_at 缺失（旧后端）时向前兼容
- * 4. pattern_insights 支持最多 5 条
- * 5. 空 pattern_insights 时不崩溃
- * 6. 加载态和错误态正确
+ * F117: cached_at / pattern_insights 展示
+ * F122: error 状态增强（string | null）
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
@@ -38,7 +33,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("useMorningDigest — F117 晨报展示优化", () => {
+describe("useMorningDigest", () => {
   it("cached_at 非 null 时数据包含 cached_at 字段", async () => {
     const digest = { ...baseDigest, cached_at: "2026-04-24T09:30:00" };
     mockGetMorningDigest.mockResolvedValue(digest);
@@ -47,7 +42,7 @@ describe("useMorningDigest — F117 晨报展示优化", () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    expect(result.current.error).toBe(false);
+    expect(result.current.error).toBeNull();
     expect(result.current.data?.cached_at).toBe("2026-04-24T09:30:00");
   });
 
@@ -71,7 +66,7 @@ describe("useMorningDigest — F117 晨报展示优化", () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    expect(result.current.error).toBe(false);
+    expect(result.current.error).toBeNull();
     // cached_at 未定义，falsy → 不显示更新时间
     expect(result.current.data?.cached_at).toBeFalsy();
   });
@@ -120,14 +115,52 @@ describe("useMorningDigest — F117 晨报展示优化", () => {
     expect(result.current.data).toBeTruthy();
   });
 
-  it("API 失败时 error=true", async () => {
+  it("API 失败时 error 为错误消息字符串", async () => {
     mockGetMorningDigest.mockRejectedValue(new Error("Network error"));
 
     const { result } = renderHook(() => useMorningDigest());
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    expect(result.current.error).toBe(true);
+    expect(result.current.error).toBe("Network error");
     expect(result.current.data).toBeNull();
+  });
+
+  it("API 失败且非 Error 实例时 error 为默认消息", async () => {
+    mockGetMorningDigest.mockRejectedValue("unknown");
+
+    const { result } = renderHook(() => useMorningDigest());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.error).toBe("加载失败");
+  });
+
+  it("成功加载后 error 仍为 null", async () => {
+    mockGetMorningDigest.mockResolvedValue(baseDigest);
+
+    const { result } = renderHook(() => useMorningDigest());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.data).toBeTruthy();
+    expect(result.current.error).toBeNull();
+  });
+
+  it("组件卸载后不更新状态", async () => {
+    let rejectPromise!: (reason: unknown) => void;
+    mockGetMorningDigest.mockReturnValue(
+      new Promise((_resolve, reject) => {
+        rejectPromise = reject;
+      })
+    );
+
+    const { result, unmount } = renderHook(() => useMorningDigest());
+    unmount();
+    rejectPromise(new Error("fail"));
+
+    // 等待一微任务周期，确认不会抛错
+    await new Promise((r) => setTimeout(r, 50));
+    expect(result.current.error).toBeNull();
   });
 });
