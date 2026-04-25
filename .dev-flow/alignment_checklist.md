@@ -4,7 +4,7 @@
 
 ### 契约对齐
 
-- [ ] 不涉及新契约，所有改动为内部缺陷修复和性能优化
+- [x] 不涉及新契约，所有改动为内部缺陷修复和性能优化 ✓
 
 ### 依赖对齐
 
@@ -16,18 +16,18 @@
 
 ### 架构对齐
 
-- [ ] B96: 字段名修正，不改变数据模型
-- [ ] B97: 新建 app/utils/mastery.py，ReviewService 和 KnowledgeService 各自导入，消除循环依赖
-- [ ] B97: 统一签名为 4 参数版本（含 relationship_count）
+- [x] B96: 字段名修正，不改变数据模型 ✓
+- [x] B97: 新建 app/utils/mastery.py，ReviewService 和 KnowledgeService 各自导入，消除循环依赖 ✓
+- [x] B97: 统一签名为 4 参数版本（含 relationship_count） ✓
 - [x] B98: 复用已有 SQL 聚合方法，不新增 SQL 查询
 - [x] B99: sqlite.py 新增 get_tag_stats_in_range 方法
-- [ ] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫 ✓
+- [x] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫 ✓
 
 ### 执行顺序
 
-- [ ] Phase 1: B96 → B97（串行，共享 review_service.py）
-- [x] Phase 2: B98 → B99（串行，B98 depends_on B97，B99 depends_on B98）
-- [ ] Phase 3: S32
+- [x] Phase 1: B96 → B97（串行，共享 review_service.py）✓
+- [x] Phase 2: B98 → B99（串行，B98 depends_on B97，B99 depends_on B98）✓
+- [x] Phase 3: S32 ✓
 
 ## R034: 技术债收敛 (R029 Residual Risks)
 
