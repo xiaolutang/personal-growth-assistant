@@ -5,12 +5,7 @@
   "created_at": "2026-03-28",
   "updated_at": "2026-04-25T20:00:00",
   "status": "active",
-  "active_requirement_cycle": {
-    "id": "R035",
-    "name": "preexisting-fixes",
-    "branch": "fix/R035-preexisting-fixes",
-    "status": "executing"
-  },
+  "active_requirement_cycle": null,
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -918,6 +913,12 @@
       "name": "tech-debt-residual",
       "status": "completed",
       "archive_dir": "_archive/R034_tech-debt-residual"
+    },
+    {
+      "id": "R035",
+      "name": "preexisting-fixes",
+      "status": "completed",
+      "archive_dir": "_archive/R035_preexisting-fixes"
     }
   ]
 }

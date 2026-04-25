@@ -222,12 +222,16 @@ class SQLiteStorage:
 
         Args:
             user_id: 用户 ID
-            start_date: 起始日期 (YYYY-MM-DD)
-            end_date: 结束日期 (YYYY-MM-DD)
+            start_date: 起始日期 (YYYY-MM-DD)，包含当天
+            end_date: 结束日期 (YYYY-MM-DD)，包含当天
             top_n: 返回前 N 个标签
 
         Returns:
-            [(tag_name, frequency), ...] 按频次降序
+            [(tag_name, frequency), ...] 按频次降序、标签名升序
+
+        Note:
+            日期范围使用 end_date + "\\uffff" 作为上界，要求 created_at
+            存储为 ISO 日期格式 (YYYY-MM-DDTHH:MM:SS)。
         """
         conn = self._get_conn()
         try:
@@ -244,6 +248,7 @@ class SQLiteStorage:
             return [(row["tag_name"], row["freq"]) for row in rows]
         finally:
             conn.close()
+
     def search_tags_by_keyword(
         self, keyword: str, limit: int = 20, user_id: str = "_default"
     ) -> list[dict]:

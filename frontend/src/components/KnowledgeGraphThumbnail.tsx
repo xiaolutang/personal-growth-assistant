@@ -18,13 +18,7 @@ import type {
   KnowledgeContextNode,
   KnowledgeContextEdge,
 } from "@/services/api";
-
-const masteryColors: Record<string, string> = {
-  advanced: "#22c55e",
-  intermediate: "#3b82f6",
-  beginner: "#f97316",
-  new: "#9ca3af",
-};
+import { masteryColors } from "@/pages/graph/constants";
 
 function ThumbnailNode({ data }: NodeProps) {
   const nodeData = data as unknown as KnowledgeContextNode & { isCenter?: boolean };
