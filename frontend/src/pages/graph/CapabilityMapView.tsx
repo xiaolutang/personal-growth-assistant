@@ -5,6 +5,7 @@ import { type CapabilityMapResponse, getCapabilityMap } from "@/services/api";
 import { masteryLabels, MASTERY_LEVELS } from "./constants";
 import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
+import { ApiError } from "@/lib/errors";
 
 // === 能力地图视图组件 ===
 export function CapabilityMapView() {
@@ -20,23 +21,25 @@ export function CapabilityMapView() {
     setCapabilityError(null);
     setCapabilityMap(null);
     setExpandedDomain(null);
-    await runWith503(async () => {
-      const data = await getCapabilityMap(filter || undefined);
-      setCapabilityMap(data);
-    });
-    // runWith503 只捕获 503，其他错误会抛出
-    // 但我们还需要 catch 非 503 错误来设置 capabilityError
-    setCapabilityLoading(false);
+    try {
+      await runWith503(async () => {
+        const data = await getCapabilityMap(filter || undefined);
+        setCapabilityMap(data);
+      });
+    } catch (err: any) {
+      // runWith503 只捕获 503 并设 serviceUnavailable=true，其他错误原样抛出
+      if (err instanceof ApiError && err.isServiceUnavailable) {
+        // 503 已由 hook 处理，不再设置 capabilityError
+      } else {
+        setCapabilityError(err.message || "加载能力地图失败");
+      }
+    } finally {
+      setCapabilityLoading(false);
+    }
   }, [runWith503]);
 
   useEffect(() => {
-    loadCapability(capabilityFilter || undefined).catch((err: any) => {
-      if (!(err instanceof Error && "isServiceUnavailable" in err)) {
-        setCapabilityError(err.message || "加载能力地图失败");
-      }
-    }).finally(() => {
-      setCapabilityLoading(false);
-    });
+    loadCapability(capabilityFilter || undefined);
   }, [capabilityFilter, loadCapability]);
 
   return (
