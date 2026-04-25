@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { getEntry, getEntries, getProjectProgress } from "@/services/api";
-import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
+import { ApiError } from "@/lib/errors";
 import type { Task } from "@/types/task";
 import type { ProjectProgressResponse } from "@/services/api";
 
@@ -28,11 +28,15 @@ export function useEntryData(): EntryDataState {
   const [projectProgress, setProjectProgress] = useState<ProjectProgressResponse | null>(null);
   const [parentEntry, setParentEntry] = useState<Task | null>(null);
   const [referencedNotes, setReferencedNotes] = useState<Map<string, Task>>(new Map());
-
-  const { serviceUnavailable, runWith503, retry: retryService } = useServiceUnavailable();
+  const [serviceUnavailable, setServiceUnavailable] = useState(false);
 
   // 请求版本号，用于取消过期请求
   const loadVersionRef = useRef(0);
+
+  const retryService = useCallback((fn: () => Promise<void>) => {
+    setServiceUnavailable(false);
+    fn();
+  }, []);
 
   const reloadEntry = useCallback(async () => {
     if (!id) return;
@@ -40,60 +44,63 @@ export function useEntryData(): EntryDataState {
     setIsLoading(true);
     setError(null);
     try {
-      await runWith503(async () => {
-        const data = await getEntry(id);
+      const data = await getEntry(id);
+      if (loadVersionRef.current !== version) return;
+      setServiceUnavailable(false);
+      setEntry(data);
+      // 清除上次加载的关联数据（防止路由切换残留）
+      setChildTasks([]);
+      setProjectProgress(null);
+      setParentEntry(null);
+      setReferencedNotes(new Map());
+
+      if (data.category === "project") {
+        const [tasksRes, progressRes] = await Promise.all([
+          getEntries({ parent_id: id, limit: 100 }),
+          getProjectProgress(id).catch(() => null),
+        ]);
         if (loadVersionRef.current !== version) return;
-        setEntry(data);
-        // 清除上次加载的关联数据（防止路由切换残留）
-        setChildTasks([]);
-        setProjectProgress(null);
-        setParentEntry(null);
-        setReferencedNotes(new Map());
+        setChildTasks(tasksRes.entries);
+        setProjectProgress(progressRes);
+      }
 
-        if (data.category === "project") {
-          const [tasksRes, progressRes] = await Promise.all([
-            getEntries({ parent_id: id, limit: 100 }),
-            getProjectProgress(id).catch(() => null),
-          ]);
+      if (data.parent_id) {
+        try {
+          const parentData = await getEntry(data.parent_id);
           if (loadVersionRef.current !== version) return;
-          setChildTasks(tasksRes.entries);
-          setProjectProgress(progressRes);
+          setParentEntry(parentData);
+        } catch {
+          // parent may be deleted
         }
+      }
 
-        if (data.parent_id) {
-          try {
-            const parentData = await getEntry(data.parent_id);
-            if (loadVersionRef.current !== version) return;
-            setParentEntry(parentData);
-          } catch {
-            // parent may be deleted
-          }
-        }
-
-        const noteIds = data.content?.match(/\[\[([^\]]+)\]\]/g)?.map((m) => m.slice(2, -2)) || [];
-        if (noteIds.length > 0) {
-          const notesMap = new Map<string, Task>();
-          await Promise.all(
-            noteIds.map(async (noteId) => {
-              try {
-                const noteData = await getEntry(noteId);
-                notesMap.set(noteId, noteData);
-              } catch {
-                // referenced note may not exist
-              }
-            })
-          );
-          if (loadVersionRef.current !== version) return;
-          setReferencedNotes(notesMap);
-        }
-      });
+      const noteIds = data.content?.match(/\[\[([^\]]+)\]\]/g)?.map((m) => m.slice(2, -2)) || [];
+      if (noteIds.length > 0) {
+        const notesMap = new Map<string, Task>();
+        await Promise.all(
+          noteIds.map(async (noteId) => {
+            try {
+              const noteData = await getEntry(noteId);
+              notesMap.set(noteId, noteData);
+            } catch {
+              // referenced note may not exist
+            }
+          })
+        );
+        if (loadVersionRef.current !== version) return;
+        setReferencedNotes(notesMap);
+      }
     } catch (err) {
       if (loadVersionRef.current !== version) return;
-      setError(err instanceof Error ? err.message : "获取条目失败");
+      if (err instanceof ApiError && err.isServiceUnavailable) {
+        setServiceUnavailable(true);
+      } else {
+        setError(err instanceof Error ? err.message : "获取条目失败");
+      }
     } finally {
       if (loadVersionRef.current === version) setIsLoading(false);
     }
-  }, [id, runWith503]);
+  }, [id]);
 
   useEffect(() => { reloadEntry(); }, [reloadEntry]);
 
