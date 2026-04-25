@@ -8,7 +8,7 @@
 | 掌握度共享模块 | B97 | unit | 阈值矩阵(0/1/3/6+note)/relationship_count折算/KnowledgeService调用路径/ReviewService调用路径/回归 | done | L1, 15 tests, 1190 pytest total |
 | heatmap SQL 聚合 | B98 | unit | 有entries正确tag统计/无entries空列表/计数一致/掌握度正确/回归 | done | L1, 5 service tests + 4 API tests + 7 regression fixes, 1213 pytest total |
 | tag_stats SQL 聚合 | B99 | unit | 有entries频次排序/无entries空列表/时间范围边界/频次一致/user_id隔离跨用户/回归 | done | L1, 6 service tests + 8 storage tests (real SQLite), 1213 pytest total |
-| 质量收口 | S32 | integration+smoke | pytest全量/vitest全量/build/Docker smoke(成长报告趋势+heatmap+AI洞察tag统计) | done | L4, pytest 1114, vitest 386, build success, Docker smoke 待部署 |
+| 质量收口 | S32 | integration+smoke | pytest全量/vitest全量/build/Docker smoke(成长报告趋势+heatmap+AI洞察tag统计) | in_progress | L4, pytest 1213, vitest 386, build success, Docker smoke 待部署验证 |
 
 ## R034: 技术债收敛 (R029 Residual Risks)
 

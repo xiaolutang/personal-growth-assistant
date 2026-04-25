@@ -21,9 +21,9 @@
   },
   "summary": {
     "total_tasks": 5,
-    "pending": 1,
+    "pending": 0,
     "completed": 4,
-    "in_progress": 0,
+    "in_progress": 1,
     "blocked": 0,
     "cancelled": 0
   },
