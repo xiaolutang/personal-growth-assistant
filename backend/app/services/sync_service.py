@@ -134,10 +134,10 @@ class SyncService:
         # 4. 并行同步到 Neo4j 和 Qdrant（索引层，失败不阻塞主流程）
         tasks = []
 
-        if self.neo4j and self.neo4j._driver:
+        if self.neo4j and self.neo4j.is_connected:
             tasks.append(self._sync_to_neo4j(entry, knowledge, user_id))
 
-        if self.qdrant and self.qdrant._client:
+        if self.qdrant and self.qdrant.is_connected:
             try:
                 tasks.append(self.qdrant.upsert_entry(entry, user_id=user_id))
             except Exception as e:
@@ -164,10 +164,10 @@ class SyncService:
             # 并行同步到 Neo4j 和 Qdrant
             tasks = []
 
-            if self.neo4j and self.neo4j._driver:
+            if self.neo4j and self.neo4j.is_connected:
                 tasks.append(self._sync_to_neo4j(entry, knowledge, user_id))
 
-            if self.qdrant and self.qdrant._client:
+            if self.qdrant and self.qdrant.is_connected:
                 try:
                     tasks.append(self.qdrant.upsert_entry(entry, user_id=user_id))
                 except Exception as e:
@@ -240,7 +240,7 @@ class SyncService:
             except Exception as e:
                 logger.warning(f"Neo4j 删除任务创建失败，忽略: {e}")
 
-        if self.qdrant and self.qdrant._client:
+        if self.qdrant and self.qdrant.is_connected:
             try:
                 tasks.append(self.qdrant.delete_entry(entry_id))
             except Exception as e:
@@ -281,12 +281,6 @@ class SyncService:
         if entry:
             return await self.sync_entry(entry, user_id=user_id)
         return False
-
-    @property
-    def driver(self):
-        """向后兼容：返回 Neo4j driver"""
-        return self.neo4j._driver if self.neo4j else None
-
 
 async def init_storage(
     data_dir: str = "./data",

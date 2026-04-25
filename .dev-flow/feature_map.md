@@ -1,19 +1,20 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：R035 预存问题修复
+> 活跃需求包：R036 残留问题全面收口
 > 最后更新：2026-04-25
 
 ## 活跃需求包
 
 | 需求包 | 状态 | 任务数 |
 |--------|------|--------|
-| R035 预存问题修复 | completed | 5 (B96-B99, S32 all completed) |
+| R036 残留问题全面收口 | in_progress | 10 (B100 completed, 9 pending) |
 
 ## 归档需求包
 
 | 需求包 | 归档目录 | 状态 |
 |--------|---------|------|
+| R035 预存问题修复 | _archive/R035_preexisting-fixes | completed |
 | R001 Personal Growth Assistant v1 | _archive/R001_personal-growth-assistant-v1 | completed |
 | R003 Production Content Recovery | _archive/R003_production-content-recovery | completed |
 | R004 Phase 1A Product Evolution | _archive/R004_product-evolution-phase1a | completed |

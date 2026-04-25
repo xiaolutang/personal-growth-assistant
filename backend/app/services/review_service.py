@@ -54,6 +54,16 @@ class ReviewService:
         """设置知识图谱服务（由 deps.py 注入）"""
         self._knowledge_service = knowledge_service
 
+    @property
+    def goal_service(self):
+        """获取目标服务实例"""
+        return self._goal_service
+
+    @property
+    def knowledge_service(self):
+        """获取知识图谱服务实例"""
+        return self._knowledge_service
+
     @staticmethod
     def calculate_task_stats(tasks: List[dict]) -> TaskStats:
         """计算任务统计"""

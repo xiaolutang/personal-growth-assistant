@@ -44,6 +44,21 @@ class QdrantClient:
         self._embedding_service = embedding_service
         self.vector_size = vector_size
 
+    @property
+    def is_connected(self) -> bool:
+        """检查是否已连接"""
+        return self._client is not None
+
+    async def check_alive(self) -> bool:
+        """检查 Qdrant 服务是否可达（公共接口）"""
+        if not self._client:
+            return False
+        try:
+            await self._client.get_collections()
+            return True
+        except Exception:
+            return False
+
     async def connect(self):
         """连接数据库，失败时设 _client=None 并抛 ConnectionError"""
         if not self._client:

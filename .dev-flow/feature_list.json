@@ -3,9 +3,13 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-25T20:00:00",
+  "updated_at": "2026-04-25T22:00:00",
   "status": "active",
-  "active_requirement_cycle": null,
+  "active_requirement_cycle": {
+    "id": "R036",
+    "name": "residual-cleanup",
+    "branch": "chore/R036-residual-cleanup"
+  },
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -15,644 +19,111 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 5,
-    "pending": 0,
-    "completed": 5,
+    "total_tasks": 10,
+    "pending": 9,
+    "completed": 1,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
   },
   "modules": [
-    {
-      "name": "hooks",
-      "description": "前端自定义 Hooks"
-    },
-    {
-      "name": "review-components",
-      "description": "Review 页子组件"
-    },
-    {
-      "name": "review",
-      "description": "回顾系统后端"
-    },
-    {
-      "name": "home",
-      "description": "首页"
-    },
-    {
-      "name": "knowledge",
-      "description": "知识图谱后端"
-    },
-    {
-      "name": "graph",
-      "description": "图谱页前端"
-    },
-    {
-      "name": "api",
-      "description": "前端 API 层"
-    },
-    {
-      "name": "quality",
-      "description": "质量收口"
-    },
-    {
-      "name": "review-perf",
-      "description": "回顾系统性能优化"
-    },
-    {
-      "name": "mastery-utils",
-      "description": "掌握度计算共享模块"
-    }
+    { "name": "architecture", "description": "架构层公共接口完善" },
+    { "name": "review-perf", "description": "回顾系统性能优化" },
+    { "name": "review", "description": "回顾系统后端" },
+    { "name": "service-availability", "description": "503 服务降级" },
+    { "name": "entry-detail", "description": "条目详情页" },
+    { "name": "page-split", "description": "页面组件拆分" },
+    { "name": "mobile", "description": "Flutter 移动端" },
+    { "name": "quality", "description": "质量收口" }
   ],
   "features": [
     {
-      "id": "R034",
-      "name": "技术债收敛 (R029 Residual Risks)",
-      "description": "处理 R029 Simplify 收敛审查发现的 9 项 residual risks + 1 项测试缺口",
+      "id": "R036",
+      "name": "残留问题全面收口",
+      "description": "处理所有已记录但未解决的残留风险和技术债务。8项残留→10任务映射：(1)deps.py私有属性访问→B100 (2)get_growth_curve性能→B101 (3)review_service 1845行→B102 (4)503降级7页缺失→F128 (5)EntryDetail 1201行→F129 (6)Home+Explore 730+729行→F130 (7)Review+Tasks+Goals ProgressRing去重→F131 (8)Flutter拖拽排序→M100。验证/收口任务：S33(R032+R027测试补齐)、S34(质量收口含S29/S21 smoke)",
       "phases": [
-        {
-          "id": "P1",
-          "name": "快速修复",
-          "tasks": [
-            "F122",
-            "F123",
-            "B93"
-          ]
-        },
-        {
-          "id": "P2",
-          "name": "效率优化",
-          "tasks": [
-            "F124",
-            "B94"
-          ]
-        },
-        {
-          "id": "P3",
-          "name": "大型重构",
-          "tasks": [
-            "F125",
-            "B95",
-            "F126"
-          ]
-        },
-        {
-          "id": "P4",
-          "name": "测试补齐 + 质量收口",
-          "tasks": [
-            "F127",
-            "S31"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "R035",
-      "name": "预存问题修复（R034 Simplify 发现）",
-      "description": "修复 R034 simplify 收敛审查发现的预存 bug 和性能问题：成长报告趋势数据字段名不匹配、review_service 全表扫描、掌握度计算跨服务循环依赖",
-      "phases": [
-        {
-          "id": "P1",
-          "name": "缺陷修复",
-          "tasks": [
-            "B96",
-            "B97"
-          ]
-        },
-        {
-          "id": "P2",
-          "name": "性能优化",
-          "tasks": [
-            "B98",
-            "B99"
-          ]
-        },
-        {
-          "id": "P3",
-          "name": "质量收口",
-          "tasks": [
-            "S32"
-          ]
-        }
+        { "id": "P1", "name": "Backend 架构修复", "tasks": ["B100", "B101"] },
+        { "id": "P2", "name": "Backend 代码组织", "tasks": ["B102"] },
+        { "id": "P3", "name": "前端基础设施", "tasks": ["F128"] },
+        { "id": "P4", "name": "前端页面拆分", "tasks": ["F129", "F130", "F131"] },
+        { "id": "P5", "name": "移动端功能", "tasks": ["M100"] },
+        { "id": "P6", "name": "测试补齐 + 质量收口", "tasks": ["S33", "S34"] }
       ]
     }
   ],
   "tasks": [
     {
-      "id": "F122",
+      "id": "B100",
       "phase": "P1",
-      "module": "hooks",
-      "name": "useMorningDigest error 状态增强",
-      "description": "将 error 从 useState(false) 改为 useState<string | null>(null)，存储错误消息而非 boolean",
-      "verification": "F1",
-      "depends_on": [],
-      "status": "completed",
-      "priority": "P2",
-      "acceptance_criteria": [
-        "error 状态类型从 boolean 改为 string | null",
-        "catch 中捕获错误消息存入 error（优先 message，fallback 为 '加载失败'",
-        "调用者 Home.tsx 适配新 error 类型（digestError 为 string | null | false）",
-        "vitest 通过",
-        "build 通过"
-      ],
-      "risk_tags": [],
-      "files": [
-        "frontend/src/hooks/useMorningDigest.ts",
-        "frontend/src/pages/Home.tsx"
-      ],
-      "test_tasks": [
-        "error 初始值为 null",
-        "成功加载后 error 仍为 null",
-        "加载失败后 error 为错误消息字符串",
-        "组件卸载后不更新状态"
-      ],
-      "planning_notes": "R029 F-011 residual: useMorningDigest error 只存 boolean，丢失错误详情",
-      "started_at": "2026-04-25T10:00:00",
-      "completed_at": "2026-04-25T10:15:00",
-      "actual_minutes": 15,
-      "evidence_file": ".dev-flow/evidence/F122.md",
-      "summary": "error 从 boolean 改为 string|null，捕获错误消息，修复相邻测试桩",
-      "execution_notes": "Review.trend.test.tsx mock 同步修复"
-    },
-    {
-      "id": "F123",
-      "phase": "P1",
-      "module": "review-components",
-      "name": "Review 组件统一导出风格",
-      "description": "5 个 Review 组件统一为命名导出，移除 export default",
-      "verification": "F1",
-      "depends_on": [],
-      "status": "completed",
-      "priority": "P2",
-      "acceptance_criteria": [
-        "InsightCard/AiSummaryCard/HeatmapCard/MorningDigestCard/GrowthCurveCard 移除 export default 行",
-        "所有导入这些组件的文件改为命名导入",
-        "vitest 通过",
-        "build 通过"
-      ],
-      "risk_tags": [],
-      "files": [
-        "frontend/src/components/review/InsightCard.tsx",
-        "frontend/src/components/review/AiSummaryCard.tsx",
-        "frontend/src/components/review/HeatmapCard.tsx",
-        "frontend/src/components/review/MorningDigestCard.tsx",
-        "frontend/src/components/review/GrowthCurveCard.tsx",
-        "frontend/src/pages/Review.tsx"
-      ],
-      "test_tasks": [
-        "每个组件移除 export default 后 build 无报错",
-        "Review.tsx 中所有导入为命名导入"
-      ],
-      "planning_notes": "R029 F-015 residual: 双重导出风格不统一。原来只有 InsightCard/AiSummaryCard，现在 HeatmapCard/MorningDigestCard/GrowthCurveCard 也有此问题",
-      "started_at": "2026-04-25T10:20:00",
-      "completed_at": "2026-04-25T10:20:00",
-      "actual_minutes": 0,
-      "evidence_file": ".dev-flow/evidence/F123.md",
-      "summary": "验收已满足：5个组件均无export default，Review.tsx全为命名导入",
-      "execution_notes": "R029规划时存在的问题已在先前迭代中修复，无需代码变更"
-    },
-    {
-      "id": "B93",
-      "phase": "P1",
-      "module": "review",
-      "name": "export_growth_report 消除反向依赖",
-      "description": "ReviewService.export_growth_report 通过构造函数接收 knowledge_service，不再通过 deps 全局获取",
+      "module": "architecture",
+      "name": "消除私有属性访问",
+      "description": "为 Neo4jClient/QdrantClient 添加 is_connected 公共属性，ReviewService 添加 getter，SQLiteStorage 添加公共 get_connection()，消除所有跨层私有属性访问",
       "verification": "L2",
       "depends_on": [],
       "status": "completed",
-      "priority": "P2",
-      "acceptance_criteria": [
-        "ReviewService.__init__ 接收 knowledge_service 参数",
-        "export_growth_report 使用 self._knowledge_service 而非 deps.get_knowledge_service()",
-        "deps.py 初始化 ReviewService 时传入 knowledge_service",
-        "成长报告导出链路回归验证：GET /review/growth-report 返回 200 + 完整 Markdown",
-        "现有测试通过"
-      ],
-      "risk_tags": [],
-      "files": [
-        "backend/app/services/review_service.py",
-        "backend/app/routers/deps.py"
-      ],
-      "test_tasks": [
-        "ReviewService 构造函数接收 knowledge_service 参数",
-        "export_growth_report 不调用 deps.get_knowledge_service",
-        "GET /review/growth-report 回归验证返回完整报告",
-        "pytest 通过"
-      ],
-      "planning_notes": "R029 CR-001 residual: export_growth_report 反向依赖 deps.get_knowledge_service",
-      "started_at": "2026-04-25T10:25:00",
-      "completed_at": "2026-04-25T10:35:00",
-      "actual_minutes": 10,
-      "evidence_file": ".dev-flow/evidence/B93.md",
-      "summary": "export_growth_report 通过 set_knowledge_service 注入，消除反向依赖"
-    },
-    {
-      "id": "F124",
-      "phase": "P2",
-      "module": "home",
-      "name": "Home.tsx 合并 tasks 遍历",
-      "description": "将 todayTasks/unprocessedInbox/recentInbox/todayStats 4 个独立 useMemo 合并为单次遍历",
-      "verification": "F1",
-      "depends_on": [],
-      "status": "completed",
-      "priority": "P2",
-      "acceptance_criteria": [
-        "4 个 useMemo 合并为 1 个，单次遍历产出所有结果",
-        "行为完全等价（todayTasks/unprocessedInbox/recentInbox/todayStats 值不变）",
-        "vitest 通过",
-        "build 通过"
-      ],
-      "risk_tags": [],
-      "files": [
-        "frontend/src/pages/Home.tsx"
-      ],
-      "test_tasks": [
-        "合并后 todayTasks 过滤逻辑不变",
-        "合并后 unprocessedInbox 过滤逻辑不变",
-        "合并后 recentInbox 排序和截取逻辑不变",
-        "合并后 todayStats 计数逻辑不变"
-      ],
-      "planning_notes": "R029 F-012 residual: Home.tsx 多次遍历全量 tasks 数组，3-4 个 useMemo 各自遍历",
-      "started_at": "2026-04-25T10:40:00",
-      "completed_at": "2026-04-25T10:45:00",
-      "actual_minutes": 5,
-      "evidence_file": ".dev-flow/evidence/F124.md",
-      "summary": "4个useMemo合并为单次遍历，行为等价"
-    },
-    {
-      "id": "B94",
-      "phase": "P2",
-      "module": "knowledge",
-      "name": "_recommend_from_tags 定向查询优化",
-      "description": "将 list_entries(limit=100) + 内存标签匹配改为基于 tag 的定向查询",
-      "verification": "L1",
-      "depends_on": [],
-      "status": "completed",
-      "priority": "P2",
-      "acceptance_criteria": [
-        "_recommend_from_tags 改为基于 tag 的定向查询",
-        "大小写不敏感的部分匹配行为保持不变",
-        "去重逻辑保持不变",
-        "最多 5 条推荐限制保持不变",
-        "空标签或异常标签优雅处理",
-        "现有测试通过"
-      ],
-      "risk_tags": [],
-      "files": [
-        "backend/app/services/knowledge_service.py"
-      ],
-      "test_tasks": [
-        "有匹配 tag 时返回正确条目",
-        "无匹配 tag 时返回空列表",
-        "大小写不敏感匹配",
-        "部分匹配（tag 包含搜索词）",
-        "结果去重",
-        "最多返回 5 条",
-        "空标签输入返回空列表",
-        "异常标签（特殊字符）不报错"
-      ],
-      "planning_notes": "R029 F-016 residual: _recommend_from_tags 全量遍历条目，效率低下",
-      "started_at": "2026-04-25T10:50:00",
-      "completed_at": "2026-04-25T10:55:00",
-      "actual_minutes": 5,
-      "evidence_file": ".dev-flow/evidence/B94.md",
-      "summary": "全量遍历改为 search_tags_by_keyword 定向查询"
-    },
-    {
-      "id": "F125",
-      "phase": "P3",
-      "module": "graph",
-      "name": "GraphPage.tsx 组件拆分 + useGraphState",
-      "description": "将 GraphPage.tsx(1016行) 的 6 个组件和 4 个辅助函数拆分为独立文件，提取 useGraphState hook",
-      "verification": "F2",
-      "depends_on": [],
-      "status": "completed",
       "priority": "P1",
-      "acceptance_criteria": [
-        "DetailPanel + DetailPanelContent 拆为 graph/DetailPanel.tsx",
-        "CapabilityMapView 拆为 graph/CapabilityMapView.tsx",
-        "状态管理(15+ useState)提取为 useGraphState hook",
-        "GraphPage.tsx 主文件降至 400 行以内",
-        "所有 4 个 Tab 功能不变",
-        "vitest 通过",
-        "build 通过"
-      ],
-      "risk_tags": [],
-      "files": [
-        "frontend/src/pages/GraphPage.tsx",
-        "frontend/src/pages/graph/DetailPanel.tsx",
-        "frontend/src/pages/graph/CapabilityMapView.tsx",
-        "frontend/src/pages/graph/useGraphState.ts",
-        "frontend/src/pages/graph/index.ts"
-      ],
-      "test_tasks": [
-        "知识地图 Tab 加载正常",
-        "能力地图 Tab 加载正常",
-        "概念搜索功能正常",
-        "掌握度分布功能正常",
-        "build 通过无 TypeScript 错误"
-      ],
-      "planning_notes": "R029 F-014 residual: GraphPage.tsx 1016 行，含 6 组件 + 4 辅助函数，15+ useState",
-      "started_at": "2026-04-25T11:00:00",
-      "completed_at": "2026-04-25T11:30:00",
-      "actual_minutes": 30,
-      "evidence_file": ".dev-flow/evidence/F125.md",
-      "summary": "GraphPage 1016行拆为 7 个文件，主文件 304 行"
-    },
-    {
-      "id": "B95",
-      "phase": "P3",
-      "module": "review",
-      "name": "review_service 模型定义独立拆分",
-      "description": "将 review_service.py 中约 190 行 Pydantic 模型定义迁移到 models/review.py",
-      "verification": "L1",
-      "depends_on": [],
-      "status": "completed",
-      "priority": "P1",
-      "acceptance_criteria": [
-        "Pydantic 模型从 review_service.py 迁移到 models/review.py",
-        "review_service.py 中 import from models.review",
-        "review.py 路由层 import 切换到 models.review",
-        "review_service.py 降至 1900 行以内",
-        "所有 import 更新正确",
-        "现有测试通过"
-      ],
-      "risk_tags": [],
-      "files": [
-        "backend/app/services/review_service.py",
-        "backend/app/models/review.py",
-        "backend/app/routers/review.py"
-      ],
-      "test_tasks": [
-        "所有模型 import 正确（review_service + review.py 路由）",
-        "review_service 正常使用模型",
-        "路由层正常使用模型",
-        "pytest 通过"
-      ],
-      "planning_notes": "R029 F-017 residual: review_service 2091 行，混合了约 190 行 Pydantic 模型定义和业务逻辑",
-      "started_at": "2026-04-25T11:35:00",
-      "completed_at": "2026-04-25T11:45:00",
-      "actual_minutes": 10,
-      "evidence_file": ".dev-flow/evidence/B95.md",
-      "summary": "22个Pydantic模型迁移到models/review.py，1900行"
-    },
-    {
-      "id": "F126",
-      "phase": "P3",
-      "module": "api",
-      "name": "api.ts 手动类型迁移到 api.generated.ts",
-      "description": "将 api.ts 中约 700 行手动 TypeScript 类型定义替换为 api.generated.ts 的自动生成类型",
-      "verification": "F2",
-      "depends_on": [],
-      "status": "completed",
-      "priority": "P1",
-      "acceptance_criteria": [
-        "手动类型逐步替换为 api.generated.ts 中的类型",
-        "api.ts 降至 500 行以内（仅保留 API 调用逻辑和少量适配代码）",
-        "所有调用者无感知变更",
-        "vitest 通过",
-        "build 通过",
-        "npm run gen:types 后类型仍一致"
-      ],
-      "risk_tags": [],
-      "files": [
-        "frontend/src/services/api.ts"
-      ],
-      "test_tasks": [
-        "替换后所有 API 调用类型正确",
-        "gen:types 后无类型冲突",
-        "build 通过"
-      ],
-      "planning_notes": "R029 F-013 residual: api.ts 1188 行，约 700 行手动类型与 api.generated.ts OpenAPI 生成类型重复。注意：生成类型可能不完全匹配，需要适配代码",
-      "started_at": "2026-04-25T11:50:00",
-      "completed_at": "2026-04-25T12:05:00",
-      "actual_minutes": 15,
-      "evidence_file": ".dev-flow/evidence/F126.md",
-      "summary": "36个类型替换为api.generated.ts，1189→500行"
-    },
-    {
-      "id": "F127",
-      "phase": "P4",
-      "module": "graph",
-      "name": "GraphPage Tab 切换自动化测试",
-      "description": "为 GraphPage 4 个 Tab（知识地图/能力地图/搜索/掌握度）添加切换和基本渲染自动化测试",
-      "verification": "F2",
-      "depends_on": [
-        "F125"
-      ],
-      "status": "completed",
-      "priority": "P2",
-      "acceptance_criteria": [
-        "4 个 Tab 切换测试覆盖",
-        "每个 Tab 基本渲染验证",
-        "?focus= 参数高亮功能验证",
-        "搜索防抖功能验证",
-        "聚合/展开全部 (showAll) 功能验证",
-        "能力地图筛选与重试验证",
-        "详情面板/时间线显示验证",
-        "vitest 通过"
-      ],
-      "risk_tags": [],
-      "files": [
-        "frontend/src/pages/GraphPage.test.tsx"
-      ],
-      "test_tasks": [
-        "默认 Tab 为知识地图",
-        "切换到能力地图 Tab 正常渲染",
-        "切换到搜索 Tab 正常渲染",
-        "切换到掌握度 Tab 正常渲染",
-        "?focus= 参数自动定位并高亮节点",
-        "搜索输入防抖后触发请求",
-        "showAll 聚合/展开切换正常",
-        "能力地图筛选条件变更触发重新加载",
-        "能力地图加载失败时展示重试入口",
-        "点击重试后重新加载成功、状态恢复",
-        "详情面板打开/关闭正常",
-        "时间线数据加载和显示"
-      ],
-      "planning_notes": "R029 AC8 residual: GraphPage 无前端自动化 Tab 切换测试。依赖 F125 完成组件拆分后再编写",
-      "started_at": "2026-04-25T12:10:00",
-      "completed_at": "2026-04-25T12:25:00",
-      "actual_minutes": 15,
-      "evidence_file": ".dev-flow/evidence/F127.md",
-      "summary": "20个GraphPage Tab测试，覆盖切换/防抖/重试/详情"
-    },
-    {
-      "id": "S31",
-      "phase": "P4",
-      "module": "quality",
-      "name": "质量收口",
-      "description": "全量测试 + 构建 + Docker smoke 验证",
-      "verification": "L4",
-      "depends_on": [
-        "F122",
-        "F123",
-        "B93",
-        "F124",
-        "B94",
-        "F125",
-        "B95",
-        "F126",
-        "F127"
-      ],
-      "status": "completed",
-      "priority": "P2",
-      "acceptance_criteria": [
-        "pytest 后端全量通过",
-        "vitest 前端全量通过",
-        "npm run build 成功",
-        "Docker smoke 验证：首页/回顾页/图谱页正常"
-      ],
-      "risk_tags": [
-        "regression",
-        "cross-cutting"
-      ],
-      "test_tasks": [
-        "pytest 全量通过",
-        "vitest 全量通过",
-        "build 成功",
-        "Docker smoke 通过"
-      ],
-      "planning_notes": "R034 质量收口，汇总所有任务的回归验证",
-      "started_at": "2026-04-25T12:30:00",
-      "completed_at": "2026-04-25T12:40:00",
-      "actual_minutes": 10,
-      "evidence_file": ".dev-flow/evidence/S31.md",
-      "summary": "1176 pytest + 386 vitest + build 通过"
-    },
-    {
-      "id": "B96",
-      "phase": "P1",
-      "module": "review",
-      "name": "修复 export_growth_report 趋势数据字段名",
-      "description": "export_growth_report 检查 trend_data.daily_data 但 TrendResponse 模型字段是 periods，导致趋势始终'暂无数据'",
-      "verification": "L2",
-      "depends_on": [],
-      "status": "completed",
-      "priority": "P0",
-      "acceptance_criteria": [
-        "trend_data.daily_data 改为 trend_data.periods",
-        "export_growth_report 有趋势数据时正确渲染周维度趋势",
-        "无趋势数据时正常 fallback 到'暂无数据'",
-        "现有测试通过"
-      ],
-      "risk_tags": [],
-      "files": [
-        "backend/app/services/review_service.py"
-      ],
-      "test_tasks": [
-        "有趋势数据时 export_growth_report 趋势段包含正确周数据",
-        "无趋势数据（空 periods）时 fallback 到暂无数据",
-        "回归：其他 report 导出不受影响"
-      ],
-      "fix_level": "L1",
-      "root_cause_analysis": "R034 Simplify 发现：review_service.py:1515 检查 hasattr(trend_data, 'daily_data')，但 TrendResponse 模型只有 periods 字段。可能是模型重命名时遗漏的引用更新。行 1515 hasattr 和行 1518 for 循环两处 daily_data 都需改为 periods",
-      "planning_notes": "fix_level L1：字段名拼写错误，2-3 行改动即可修复",
-      "started_at": "2026-04-25T21:00:00",
-      "completed_at": "2026-04-25T21:15:00",
-      "actual_minutes": 15,
-      "evidence_file": ".dev-flow/evidence/B96.md",
-      "execution_notes": "2 行字段名修正 + 3 个新测试，1179 pytest passed",
-      "summary": "daily_data→periods 字段名修正，3 测试覆盖"
-    },
-    {
-      "id": "B97",
-      "phase": "P1",
-      "module": "mastery-utils",
-      "name": "提取 _calculate_mastery_from_stats 到共享模块",
-      "description": "将 ReviewService._calculate_mastery_from_stats 静态方法提取到独立的 app/utils/mastery.py 模块，消除 knowledge_service 运行时导入 review_service 的循环依赖",
-      "verification": "L1",
-      "depends_on": [
-        "B96"
-      ],
-      "status": "completed",
-      "priority": "P1",
-      "acceptance_criteria": [
-        "新建 app/utils/mastery.py 包含 calculate_mastery_from_stats 函数（4 参数：entry_count, recent_count, note_count, relationship_count）",
-        "ReviewService._calculate_mastery_from_stats 改为委托到 utils.mastery",
-        "KnowledgeService._calculate_mastery_from_stats 改为直接导入 utils.mastery，移除运行时 from review_service import",
-        "两个 service 的掌握度计算结果不变",
-        "现有测试通过"
-      ],
-      "risk_tags": [],
-      "files": [
-        "backend/app/utils/mastery.py",
-        "backend/app/services/review_service.py",
-        "backend/app/services/knowledge_service.py"
-      ],
-      "test_tasks": [
-        "calculate_mastery_from_stats(entry_count=0) → 'new'",
-        "calculate_mastery_from_stats(entry_count=1) → 'beginner'",
-        "calculate_mastery_from_stats(entry_count=3, recent_count=1) → 'intermediate'",
-        "calculate_mastery_from_stats(entry_count=6, note_count=3) → 'advanced'",
-        "relationship_count 折算验证：entry_count=2, relationship_count=8 → effective=6, 如有 note 则 advanced",
-        "KnowledgeService 调用路径验证：mock 返回正确掌握度",
-        "ReviewService 调用路径验证：mock 返回正确掌握度",
-        "knowledge_service 位置参数调用 (entry_count, 0, 0) 在新 4 参数签名下 relationship_count 默认为 0，行为不变",
-        "回归：知识图谱掌握度分布不变"
-      ],
-      "planning_notes": "消除循环依赖 + 统一签名为 4 参数版本。knowledge_service 之前丢失 relationship_count 信息，统一后可选择性传入",
-      "started_at": "2026-04-25T21:20:00",
-      "completed_at": "2026-04-25T21:45:00",
-      "actual_minutes": 25,
-      "evidence_file": ".dev-flow/evidence/B97.md",
-      "execution_notes": "新建 mastery.py + 15 测试，1190 pytest passed，循环依赖已消除",
-      "summary": "掌握度算法提取到 utils/mastery.py，消除循环依赖"
-    },
-    {
-      "id": "B98",
-      "phase": "P2",
-      "module": "review-perf",
-      "name": "_get_heatmap_from_sqlite 改用 SQL 聚合",
-      "description": "将 _get_heatmap_from_sqlite 中的 list_entries(limit=1000) 全量遍历替换为 sqlite.py 已有的 get_tag_stats_for_knowledge_map() SQL 聚合查询",
-      "verification": "L1",
-      "depends_on": [
-        "B97"
-      ],
-      "status": "completed",
-      "priority": "P1",
-      "acceptance_criteria": [
-        "_get_heatmap_from_sqlite 不再调用 list_entries",
-        "改用 get_tag_stats_for_knowledge_map() 获取 tag 统计",
-        "返回的 heatmap 数据结构不变（tag 名称 + 掌握度 + 计数）",
-        "现有测试通过"
-      ],
-      "risk_tags": [],
-      "files": [
-        "backend/app/services/review_service.py"
-      ],
-      "test_tasks": [
-        "有 entries 时 heatmap 返回正确的 tag 统计",
-        "无 entries 时 heatmap 返回空列表",
-        "tag 计数与之前的 Python 遍历结果一致",
-        "掌握度计算使用正确的参数",
-        "回归：知识图谱 heatmap 不变"
-      ],
-      "planning_notes": "sqlite.py:160 已有 get_tag_stats_for_knowledge_map 返回 entry_count/note_count/recent_count，完全匹配需求",
       "started_at": "2026-04-25T22:10:00",
-      "completed_at": "2026-04-25T23:30:00",
-      "actual_minutes": 80,
-      "evidence_file": ".dev-flow/evidence/B98.md",
-      "execution_notes": "heatmap SQL 聚合升级，1213 pytest passed，code-review pass",
-      "summary": "heatmap 从 list_entries 全量遍历改为 SQL 聚合，性能提升"
+      "completed_at": "2026-04-25T22:45:00",
+      "actual_minutes": 35,
+      "execution_notes": "为 Neo4jClient/QdrantClient 添加 is_connected，SQLiteStorage 添加 get_connection()，ReviewService 添加 getter，消除 18+ 处跨层私有属性访问",
+      "evidence_file": ".dev-flow/evidence/B100.md",
+      "execution_state": {
+        "current_step": "completed",
+        "evidence_file": ".dev-flow/evidence/B100.md"
+      },
+      "acceptance_criteria": [
+        "Neo4jClient 新增 is_connected 属性（检查 _driver is not None）",
+        "QdrantClient 新增 is_connected 属性（检查 _client is not None）",
+        "ReviewService 新增 goal_service 和 knowledge_service 属性 getter",
+        "deps.py 不再直接访问 _goal_service/_knowledge_service（2 处）",
+        "entries.py 不再调用 _get_markdown_storage()/_get_file_path()（2 处）",
+        "sync_service.py 使用 is_connected 替代 _driver/_client 直接访问（9 处）",
+        "knowledge_service.py 使用 is_connected 替代 _driver 直接访问（1 处）",
+        "notification_service.py 不再调用 _sqlite._get_conn()（1 处）",
+        "main.py _check_services 使用 is_connected 和 get_connection() 替代 _driver/_client/_get_conn()（3 处）",
+        "SQLiteStorage 新增公共 get_connection() 方法替代 _get_conn()",
+        "现有测试通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "backend/app/main.py",
+        "backend/app/routers/deps.py",
+        "backend/app/routers/entries.py",
+        "backend/app/infrastructure/storage/neo4j_client.py",
+        "backend/app/infrastructure/storage/qdrant_client.py",
+        "backend/app/infrastructure/storage/sqlite.py",
+        "backend/app/services/sync_service.py",
+        "backend/app/services/knowledge_service.py",
+        "backend/app/services/review_service.py",
+        "backend/app/services/notification_service.py"
+      ],
+      "test_tasks": [
+        "Neo4jClient.is_connected 返回正确连接状态",
+        "QdrantClient.is_connected 返回正确连接状态",
+        "ReviewService getter 返回正确的服务实例",
+        "deps.py 初始化链路回归验证",
+        "entries.py 条目导出链路回归验证",
+        "sync_service 同步链路回归验证",
+        "main.py health check 使用公共属性回归验证",
+        "pytest 通过"
+      ],
+      "planning_notes": "R035 A4 residual: 跨层访问私有属性。范围：deps.py(2)+entries.py(2)+sync_service(9)+knowledge_service(1)+notification_service(1)+main.py(3)+sqlite公共接口(1)。main.py _check_services 中 sqlite._get_conn()、neo4j._driver、qdrant._client 需改用公共接口"
     },
     {
-      "id": "B99",
-      "phase": "P2",
+      "id": "B101",
+      "phase": "P1",
       "module": "review-perf",
-      "name": "_compute_30d_tag_stats 改用 SQL 聚合",
-      "description": "将 _compute_30d_tag_stats 中的 list_entries(limit=5000) 替换为时间范围过滤的 SQL 聚合查询",
+      "name": "get_growth_curve SQL 聚合",
+      "description": "将 get_growth_curve 的 list_entries(limit=10000) 替换为按 ISO 周 + tag 分组的单条 SQL 聚合查询，复用 get_tag_stats_for_knowledge_map 的 SQL 模式",
       "verification": "L1",
-      "depends_on": [
-        "B98"
-      ],
-      "status": "completed",
-      "priority": "P2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
       "acceptance_criteria": [
-        "sqlite.py 新增 get_tag_stats_in_range(user_id, start_date, end_date) 方法",
-        "get_tag_stats_in_range 按 user_id 过滤，不返回其他用户数据",
-        "_compute_30d_tag_stats 不再调用 list_entries",
-        "返回的 tag 频次排序结果与之前一致",
+        "sqlite.py 新增 get_growth_curve_tag_stats(user_id, start_date, end_date) 方法",
+        "方法返回按周+tag 分组的 entry_count/note_count/recent_count",
+        "get_growth_curve 不再调用 list_entries",
+        "掌握度分布结果与之前一致",
         "现有测试通过"
       ],
       "risk_tags": [],
@@ -661,264 +132,339 @@
         "backend/app/services/review_service.py"
       ],
       "test_tasks": [
-        "30 天内有 entries 时返回正确的 tag 频次排序",
-        "30 天内无 entries 时返回空列表",
-        "时间范围边界验证：只统计 start_date 到 end_date 内的条目",
-        "tag 频次与之前的 Python 遍历结果一致",
-        "user_id 隔离：不同用户的 tag 统计互不干扰",
-        "回归：AI 洞察 tag 统计不变"
+        "有 entries 时 SQL 聚合返回正确的按周 tag 统计",
+        "无 entries 时返回空结果",
+        "周边界验证：ISO 周正确分组",
+        "掌握度计算结果与内存过滤一致",
+        "user_id 隔离验证",
+        "回归：成长曲线页面正常"
       ],
-      "planning_notes": "复用 get_tag_stats_for_knowledge_map 的 SQL 模式，增加 start_date/end_date 过滤条件",
-      "started_at": "2026-04-25T22:15:00",
-      "completed_at": "2026-04-25T23:30:00",
-      "actual_minutes": 75,
-      "evidence_file": ".dev-flow/evidence/B99.md",
-      "execution_notes": "tag_stats SQL 聚合 + 真实 SQLite 测试，1213 pytest passed，code-review pass",
-      "summary": "tag_stats 从 list_entries 遍历改为 SQL 聚合，确定性排序 + 真实测试"
+      "planning_notes": "R035 A2-partial: get_growth_curve 是 review_service 第3处全表扫描（前2处已在B98/B99修复）"
     },
     {
-      "id": "S32",
+      "id": "B102",
+      "phase": "P2",
+      "module": "review",
+      "name": "review_service 进一步拆分",
+      "description": "将 review_service.py (1845行) 中可独立的方法组（导出、图谱统计等）拆分到 services/review/ 子模块，目标降至 1200 行以内",
+      "verification": "L1",
+      "depends_on": ["B101"],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "识别可独立的方法组并拆分到 services/review/ 子模块",
+        "review_service.py 降至 1200 行以内",
+        "所有 import 正确更新（路由层 + 测试）",
+        "现有测试通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "backend/app/services/review_service.py",
+        "backend/app/services/review/",
+        "backend/app/routers/review.py"
+      ],
+      "test_tasks": [
+        "所有 import 更新正确",
+        "拆分后 review 服务功能不变",
+        "路由层调用链路正常",
+        "pytest 通过"
+      ],
+      "planning_notes": "R034 F-017 partial: review_service 虽从2096降到1845行，仍偏大。B95已拆出模型，本次拆出方法组"
+    },
+    {
+      "id": "F128",
       "phase": "P3",
+      "module": "service-availability",
+      "name": "503 降级共享 hook + 7 页接入",
+      "description": "创建 useServiceUnavailable 共享 hook 封装 503 检测和重试逻辑，应用到 Home/Review/Explore/EntryDetail/GraphPage/GoalsPage/GoalDetail 7 个缺失页面，并重构 Tasks.tsx 为使用共享 hook。多请求页面（Home/Review/GraphPage）语义：主请求 503 触发整页降级，retry 重拉主请求；次级请求独立 503 只影响对应区块，不触发整页降级",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "新建 useServiceUnavailable hook：封装 503 检测 + serviceUnavailable 状态 + retry 函数",
+        "Home.tsx 接入 503 降级",
+        "Review.tsx 接入 503 降级",
+        "Explore.tsx 接入 503 降级",
+        "EntryDetail.tsx 接入 503 降级",
+        "GraphPage.tsx 接入 503 降级",
+        "GoalsPage.tsx 接入 503 降级",
+        "GoalDetail.tsx 接入 503 降级",
+        "Tasks.tsx 重构为使用共享 hook（已有实现保留，改为 hook 驱动）",
+        "vitest 通过",
+        "build 通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "frontend/src/hooks/useServiceUnavailable.ts",
+        "frontend/src/pages/Home.tsx",
+        "frontend/src/pages/Review.tsx",
+        "frontend/src/pages/Explore.tsx",
+        "frontend/src/pages/EntryDetail.tsx",
+        "frontend/src/pages/GraphPage.tsx",
+        "frontend/src/pages/GoalsPage.tsx",
+        "frontend/src/pages/GoalDetail.tsx",
+        "frontend/src/pages/Tasks.tsx"
+      ],
+      "test_tasks": [
+        "useServiceUnavailable hook 单元测试：检测 503 + 重试恢复",
+        "Home 页面 503 降级集成测试",
+        "Review 页面 503 降级集成测试",
+        "Explore 页面 503 降级集成测试",
+        "EntryDetail 页面 503 降级集成测试",
+        "GraphPage 页面 503 降级集成测试",
+        "GoalsPage 页面 503 降级集成测试",
+        "GoalDetail 页面 503 降级集成测试",
+        "各页面重试后恢复正常状态",
+        "build 通过"
+      ],
+      "planning_notes": "TD10 residual: 503 降级只在 Tasks 页生效。方案：提取共享 hook + 7 页接入"
+    },
+    {
+      "id": "F129",
+      "phase": "P4",
+      "module": "entry-detail",
+      "name": "EntryDetail.tsx 组件拆分",
+      "description": "将 EntryDetail.tsx (1201行, 25+ useState, 3 组件) 拆分为 entry-detail/ 子目录，提取 6 个 hooks + 2 个独立组件文件",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "提取 useEntryData hook（基础数据加载）",
+        "提取 useEntryEditing hook（编辑状态和逻辑）",
+        "提取 useRelatedEntries hook（关联条目/引用笔记）",
+        "提取 useKnowledgeContext hook（知识上下文）",
+        "提取 useEntryLinks hook（条目链接管理）",
+        "提取 useAiSummary hook（AI 摘要）",
+        "StructuredContent 拆为独立组件文件",
+        "MarkdownComponents 拆为独立文件",
+        "EntryDetail 主文件降至 300 行以内",
+        "所有功能不变",
+        "vitest 通过",
+        "build 通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "frontend/src/pages/EntryDetail.tsx",
+        "frontend/src/pages/entry-detail/"
+      ],
+      "test_tasks": [
+        "条目详情页加载正常",
+        "编辑功能正常（标题/内容/标签/状态）",
+        "关联条目/引用笔记加载正常",
+        "知识图谱上下文加载正常",
+        "AI 摘要功能正常",
+        "条目链接管理正常",
+        "build 通过无 TypeScript 错误"
+      ],
+      "planning_notes": "R035 A5: EntryDetail 是最大页面文件(1201行)，优先拆分"
+    },
+    {
+      "id": "F130",
+      "phase": "P4",
+      "module": "page-split",
+      "name": "Home.tsx + Explore.tsx 组件拆分",
+      "description": "将 Home.tsx (730行, 4组件, 15 useState) 和 Explore.tsx (729行, 130行工具函数) 拆分为子目录",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Home.tsx: 提取 TodayTaskItem/QuickActionButton/DigestStat 为独立组件",
+        "Home.tsx: 提取 useHomeData hook",
+        "Home.tsx 主文件降至 300 行以内",
+        "Explore.tsx: 提取工具函数到 utils.ts",
+        "Explore.tsx: 提取 useSearchHistory/useExploreSearch/useBatchOperations hooks",
+        "Explore.tsx 主文件降至 300 行以内",
+        "所有功能不变",
+        "vitest 通过",
+        "build 通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "frontend/src/pages/Home.tsx",
+        "frontend/src/pages/home/",
+        "frontend/src/pages/Explore.tsx",
+        "frontend/src/pages/explore/"
+      ],
+      "test_tasks": [
+        "首页加载正常（晨报/今日任务/目标）",
+        "探索页搜索功能正常",
+        "探索页标签筛选正常",
+        "探索页批量操作正常",
+        "build 通过无 TypeScript 错误"
+      ],
+      "planning_notes": "R035 A5: Home(730)和Explore(729)是第二梯队的拆分目标"
+    },
+    {
+      "id": "F131",
+      "phase": "P4",
+      "module": "page-split",
+      "name": "Review + Tasks + Goals 拆分去重",
+      "description": "将 Review.tsx (525行)、Tasks.tsx (381行) 拆分为子目录，GoalsPage/GoalDetail 中重复的 ProgressRing 提取为共享组件。GoalsPage(338行)/GoalDetail(330行)低于 350 行阈值，仅做 ProgressRing 去重，不做子目录拆分",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P3",
+      "acceptance_criteria": [
+        "Review.tsx: 提取 useReportData/useInsights hooks 到 review/ 子目录，主文件降至 300 行以内",
+        "Tasks.tsx: 提取 constants/useTaskFilters hooks 到 tasks/ 子目录，主文件降至 300 行以内",
+        "ProgressRing 提取到 components/ProgressRing.tsx，GoalsPage + GoalDetail 去重",
+        "GoalsPage/GoalDetail 因低于 350 行阈值，仅做 ProgressRing 去重，不做子目录拆分（与 F125 大文件拆分策略一致）",
+        "所有功能不变",
+        "vitest 通过",
+        "build 通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "frontend/src/pages/Review.tsx",
+        "frontend/src/pages/review/",
+        "frontend/src/pages/Tasks.tsx",
+        "frontend/src/pages/tasks/",
+        "frontend/src/pages/GoalsPage.tsx",
+        "frontend/src/pages/GoalDetail.tsx",
+        "frontend/src/components/ProgressRing.tsx"
+      ],
+      "test_tasks": [
+        "回顾页日报/周报/月报切换正常",
+        "回顾页洞察卡片正常",
+        "任务页筛选和批量操作正常",
+        "目标页进度环正常",
+        "目标详情页进度环正常",
+        "build 通过无 TypeScript 错误"
+      ],
+      "planning_notes": "R035 A5: 第三梯队拆分。ProgressRing 在 GoalsPage(195行)和GoalDetail(23行)重复定义"
+    },
+    {
+      "id": "M100",
+      "phase": "P5",
+      "module": "mobile",
+      "name": "移动端拖拽排序",
+      "description": "为 Flutter 移动端任务列表添加长按拖拽排序功能（本地体验，当前后端无排序字段）",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P3",
+      "acceptance_criteria": [
+        "任务列表支持长按拖拽排序",
+        "拖拽排序为本地体验（当前后端 API 无 sort_order 字段，不持久化）",
+        "刷新页面后顺序恢复默认（已知非持久化行为，不视为缺陷）",
+        "切换筛选条件后顺序恢复默认",
+        "拖拽动画流畅",
+        "flutter analyze 通过",
+        "flutter test 通过"
+      ],
+      "risk_tags": ["first_use"],
+      "files": [
+        "mobile/lib/pages/tasks_page.dart",
+        "mobile/lib/widgets/task_card.dart"
+      ],
+      "test_tasks": [
+        "长按触发拖拽模式",
+        "拖拽中 UI 反馈正常",
+        "释放后顺序更新（本地状态）",
+        "刷新/切换筛选后顺序恢复默认",
+        "flutter analyze 通过"
+      ],
+      "planning_notes": "R017 H10 deferred: 移动端拖拽排序缺失。当前后端 updateEntry 无 sort_order 字段，本任务仅实现本地拖拽体验。后端排序持久化需要新增字段和 API，超出本范围"
+    },
+    {
+      "id": "S33",
+      "phase": "P6",
+      "module": "quality",
+      "name": "R032 + R027 测试覆盖补齐",
+      "description": "补齐 R032（搜索增强/批量操作 ~33 场景）和 R027（导出/反馈追踪 ~22 场景）的缺失单元测试",
+      "verification": "L2",
+      "depends_on": ["B100", "B101", "B102", "F128", "F129", "F130", "F131"],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "R032 B89 搜索增强测试覆盖（约 16 场景）",
+        "R032 F119 搜索过滤 UI 测试覆盖（约 7 场景）",
+        "R032 F120 Explore 批量操作测试覆盖（约 10 场景）",
+        "R027 B83 导出 API 测试覆盖（约 10 场景）",
+        "R027 F114 条目导出按钮测试覆盖（约 3 场景）",
+        "R027 F115 Review 导出入口测试覆盖（约 3 场景）",
+        "R027 F116 反馈状态增强测试覆盖（约 6 场景）",
+        "pytest 通过",
+        "vitest 通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "backend/tests/unit/",
+        "frontend/src/__tests__/"
+      ],
+      "test_tasks": [
+        "B89 搜索增强后端测试",
+        "F119 搜索过滤前端测试",
+        "F120 批量操作前端测试",
+        "B83 导出 API 后端测试",
+        "F114-F116 导出反馈前端测试"
+      ],
+      "planning_notes": "R032/R027 planned tests: 搜索增强、批量操作、导出、反馈追踪的测试缺口。S33 覆盖 R032 全部 planned unit 项（B89/F119/F120 ~33场景）和 R027 全部 planned unit 项（B83/F114/F115/F116 ~22场景），承接 R032 原 S29 和 R027 原 S21 的单元测试部分。smoke/E2E 由 S34 承接"
+    },
+    {
+      "id": "S34",
+      "phase": "P6",
       "module": "quality",
       "name": "质量收口",
-      "description": "全量测试 + 构建 + Docker smoke 验证",
+      "description": "全量测试 + 构建 + Docker smoke 验证（含 R032 S29 和 R027 S21 的 smoke/E2E 验收）",
       "verification": "L4",
-      "depends_on": [
-        "B96",
-        "B97",
-        "B98",
-        "B99"
-      ],
-      "status": "completed",
+      "depends_on": ["S33", "M100"],
+      "status": "pending",
       "priority": "P2",
       "acceptance_criteria": [
         "pytest 后端全量通过",
         "vitest 前端全量通过",
         "npm run build 成功",
-        "Docker smoke：成长报告导出趋势正常显示",
-        "Docker smoke：知识图谱 heatmap SQL 聚合链路正常",
-        "Docker smoke：AI 洞察 30 天 tag 统计正常"
+        "Docker smoke：各页面正常加载",
+        "Docker smoke：503 降级覆盖生效"
       ],
-      "risk_tags": [
-        "regression",
-        "cross-cutting"
-      ],
+      "risk_tags": ["regression", "cross-cutting"],
       "test_tasks": [
         "pytest 全量通过",
         "vitest 全量通过",
         "build 成功",
-        "Docker smoke：成长报告趋势数据正常",
-        "Docker smoke：知识图谱 heatmap 页面加载正常",
-        "Docker smoke：回顾页 AI 洞察标签统计正常"
+        "Docker smoke 通过"
       ],
-      "planning_notes": "R035 质量收口，重点验证成长报告趋势修复。测试和构建已通过，Docker smoke 待部署",
-      "started_at": "2026-04-25T10:10:00",
-      "execution_state": {
-        "current_step": "completed"
-      },
-      "evidence_file": ".dev-flow/evidence/S32.md",
-      "execution_notes": "Docker smoke 3 项全部通过，R035 质量收口完成"
+      "planning_notes": "R036 质量收口，汇总所有任务的回归验证。S34 承接 R032 原 S29 smoke（搜索+时间+标签+批量操作）和 R027 原 S21 smoke（导出+反馈），加上 R036 自身的全量回归"
     }
   ],
   "next_cycle_preview": null,
   "archived_requirement_cycles": [
-    {
-      "id": "R003",
-      "name": "production-content-recovery",
-      "status": "completed",
-      "archive_dir": "_archive/R003_production-content-recovery"
-    },
-    {
-      "id": "R004",
-      "name": "product-evolution-phase1a",
-      "status": "completed",
-      "archive_dir": "_archive/R004_product-evolution-phase1a"
-    },
-    {
-      "id": "R004",
-      "name": "product-evolution-phase1b",
-      "status": "completed",
-      "archive_dir": "_archive/R004_product-evolution-phase1a"
-    },
-    {
-      "id": "R004",
-      "name": "product-evolution-phase2",
-      "status": "completed",
-      "archive_dir": "_archive/R004_product-evolution-phase2"
-    },
-    {
-      "id": "R005",
-      "name": "product-evolution-phase3",
-      "status": "completed",
-      "archive_dir": "_archive/R005_product-evolution-phase3"
-    },
-    {
-      "id": "R006",
-      "name": "product-polish",
-      "status": "completed",
-      "archive_dir": "_archive/R006_product-polish"
-    },
-    {
-      "id": "R007",
-      "name": "engagement-experience",
-      "status": "completed",
-      "archive_dir": "_archive/R007_engagement-experience"
-    },
-    {
-      "id": "R008",
-      "name": "intelligence-omni",
-      "status": "completed",
-      "archive_dir": "_archive/R008_intelligence-omni"
-    },
-    {
-      "id": "R009",
-      "name": "chat-user-id-threading",
-      "status": "completed",
-      "archive_dir": "_archive/R009_chat-user-id-threading"
-    },
-    {
-      "id": "R010",
-      "name": "engineering-foundation",
-      "status": "completed",
-      "archive_dir": "_archive/R010_engineering-foundation"
-    },
-    {
-      "id": "R011",
-      "name": "entry-context-and-morning-report",
-      "status": "completed",
-      "archive_dir": "_archive/R011_entry-context-and-morning-report"
-    },
-    {
-      "id": "R012",
-      "name": "goal-tracking",
-      "status": "completed",
-      "archive_dir": "_archive/R012_goal-tracking"
-    },
-    {
-      "id": "R013",
-      "name": "decision-reflection-entries",
-      "status": "completed",
-      "archive_dir": "_archive/R013_decision-reflection-entries"
-    },
-    {
-      "id": "R014",
-      "name": "page-context-ai",
-      "status": "completed",
-      "archive_dir": "_archive/R014_page-context-ai"
-    },
-    {
-      "id": "R015",
-      "name": "review-enhancement",
-      "status": "completed",
-      "archive_dir": "_archive/R015_review-enhancement"
-    },
-    {
-      "id": "R016",
-      "name": "polish-cleanup",
-      "status": "completed",
-      "archive_dir": "_archive/R016_polish-cleanup"
-    },
-    {
-      "id": "R017",
-      "name": "code-audit-hardening",
-      "status": "completed",
-      "archive_dir": "_archive/R017_code-audit-hardening"
-    },
-    {
-      "id": "R018",
-      "name": "defect-fix-quality",
-      "status": "completed",
-      "archive_dir": "_archive/R018_defect-fix-quality"
-    },
-    {
-      "id": "R019",
-      "name": "offline-pwa",
-      "status": "completed",
-      "archive_dir": "_archive/R019_offline-pwa"
-    },
-    {
-      "id": "R020",
-      "name": "e2e-ci-pipeline",
-      "status": "completed",
-      "archive_dir": "_archive/R020_e2e-ci-pipeline"
-    },
-    {
-      "id": "R021",
-      "name": "tech-debt-cleanup",
-      "status": "completed",
-      "archive_dir": "_archive/R021_tech-debt-cleanup"
-    },
-    {
-      "id": "R022",
-      "name": "polish-deferred",
-      "status": "completed",
-      "archive_dir": "_archive/R022_polish-deferred"
-    },
-    {
-      "id": "R025",
-      "name": "stage3-completion",
-      "status": "completed",
-      "archive_dir": "_archive/R025_stage3-completion"
-    },
-    {
-      "id": "R026",
-      "name": "convergence-fixes",
-      "status": "completed",
-      "archive_dir": "_archive/R026_convergence-fixes"
-    },
-    {
-      "id": "R027",
-      "name": "export-feedback-tracking",
-      "status": "completed",
-      "archive_dir": "_archive/R027_export-feedback-tracking"
-    },
-    {
-      "id": "R028",
-      "name": "engineering-cleanup",
-      "status": "completed",
-      "archive_dir": "_archive/R028_engineering-cleanup"
-    },
-    {
-      "id": "R029",
-      "name": "simplify-convergence",
-      "status": "completed",
-      "archive_dir": "_archive/R029_simplify-convergence"
-    },
-    {
-      "id": "R030",
-      "name": "ai-morning-report",
-      "status": "completed",
-      "archive_dir": "_archive/R030_ai-morning-report"
-    },
-    {
-      "id": "R031",
-      "name": "conversational-onboarding",
-      "status": "completed",
-      "archive_dir": "_archive/R031_conversational-onboarding"
-    },
-    {
-      "id": "R032",
-      "name": "search-filter-batch",
-      "status": "completed",
-      "archive_dir": "_archive/R032_search-filter-batch"
-    },
-    {
-      "id": "R033",
-      "name": "security-hardening",
-      "status": "completed",
-      "archive_dir": "_archive/R033_security-hardening"
-    },
-    {
-      "id": "R034",
-      "name": "tech-debt-residual",
-      "status": "completed",
-      "archive_dir": "_archive/R034_tech-debt-residual"
-    },
-    {
-      "id": "R035",
-      "name": "preexisting-fixes",
-      "status": "completed",
-      "archive_dir": "_archive/R035_preexisting-fixes"
-    }
+    { "id": "R003", "name": "production-content-recovery", "status": "completed", "archive_dir": "_archive/R003_production-content-recovery" },
+    { "id": "R004", "name": "product-evolution-phase1a", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase1a" },
+    { "id": "R004", "name": "product-evolution-phase1b", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase1a" },
+    { "id": "R004", "name": "product-evolution-phase2", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase2" },
+    { "id": "R005", "name": "product-evolution-phase3", "status": "completed", "archive_dir": "_archive/R005_product-evolution-phase3" },
+    { "id": "R006", "name": "product-polish", "status": "completed", "archive_dir": "_archive/R006_product-polish" },
+    { "id": "R007", "name": "engagement-experience", "status": "completed", "archive_dir": "_archive/R007_engagement-experience" },
+    { "id": "R008", "name": "intelligence-omni", "status": "completed", "archive_dir": "_archive/R008_intelligence-omni" },
+    { "id": "R009", "name": "chat-user-id-threading", "status": "completed", "archive_dir": "_archive/R009_chat-user-id-threading" },
+    { "id": "R010", "name": "engineering-foundation", "status": "completed", "archive_dir": "_archive/R010_engineering-foundation" },
+    { "id": "R011", "name": "entry-context-and-morning-report", "status": "completed", "archive_dir": "_archive/R011_entry-context-and-morning-report" },
+    { "id": "R012", "name": "goal-tracking", "status": "completed", "archive_dir": "_archive/R012_goal-tracking" },
+    { "id": "R013", "name": "decision-reflection-entries", "status": "completed", "archive_dir": "_archive/R013_decision-reflection-entries" },
+    { "id": "R014", "name": "page-context-ai", "status": "completed", "archive_dir": "_archive/R014_page-context-ai" },
+    { "id": "R015", "name": "review-enhancement", "status": "completed", "archive_dir": "_archive/R015_review-enhancement" },
+    { "id": "R016", "name": "polish-cleanup", "status": "completed", "archive_dir": "_archive/R016_polish-cleanup" },
+    { "id": "R017", "name": "code-audit-hardening", "status": "completed", "archive_dir": "_archive/R017_code-audit-hardening" },
+    { "id": "R018", "name": "defect-fix-quality", "status": "completed", "archive_dir": "_archive/R018_defect-fix-quality" },
+    { "id": "R019", "name": "offline-pwa", "status": "completed", "archive_dir": "_archive/R019_offline-pwa" },
+    { "id": "R020", "name": "e2e-ci-pipeline", "status": "completed", "archive_dir": "_archive/R020_e2e-ci-pipeline" },
+    { "id": "R021", "name": "tech-debt-cleanup", "status": "completed", "archive_dir": "_archive/R021_tech-debt-cleanup" },
+    { "id": "R022", "name": "polish-deferred", "status": "completed", "archive_dir": "_archive/R022_polish-deferred" },
+    { "id": "R025", "name": "stage3-completion", "status": "completed", "archive_dir": "_archive/R025_stage3-completion" },
+    { "id": "R026", "name": "convergence-fixes", "status": "completed", "archive_dir": "_archive/R026_convergence-fixes" },
+    { "id": "R027", "name": "export-feedback-tracking", "status": "completed", "archive_dir": "_archive/R027_export-feedback-tracking" },
+    { "id": "R028", "name": "engineering-cleanup", "status": "completed", "archive_dir": "_archive/R028_engineering-cleanup" },
+    { "id": "R029", "name": "simplify-convergence", "status": "completed", "archive_dir": "_archive/R029_simplify-convergence" },
+    { "id": "R030", "name": "ai-morning-report", "status": "completed", "archive_dir": "_archive/R030_ai-morning-report" },
+    { "id": "R031", "name": "conversational-onboarding", "status": "completed", "archive_dir": "_archive/R031_conversational-onboarding" },
+    { "id": "R032", "name": "search-filter-batch", "status": "completed", "archive_dir": "_archive/R032_search-filter-batch" },
+    { "id": "R033", "name": "security-hardening", "status": "completed", "archive_dir": "_archive/R033_security-hardening" },
+    { "id": "R034", "name": "tech-debt-residual", "status": "completed", "archive_dir": "_archive/R034_tech-debt-residual" },
+    { "id": "R035", "name": "preexisting-fixes", "status": "completed", "archive_dir": "_archive/R035_preexisting-fixes" }
   ]
 }

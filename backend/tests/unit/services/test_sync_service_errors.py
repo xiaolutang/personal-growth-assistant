@@ -111,7 +111,7 @@ class TestSyncServiceErrors:
         """Neo4j 同步失败时优雅降级 — Markdown 已写入，主流程返回 True"""
         # Neo4j 抛出异常
         mock_neo4j = AsyncMock()
-        mock_neo4j._driver = AsyncMock()
+        mock_neo4j.is_connected = True
         mock_neo4j.create_entry = AsyncMock(side_effect=Exception("Neo4j error"))
 
         mock_qdrant = AsyncMock()
@@ -507,7 +507,7 @@ class TestSyncServiceWriteDeleteOrder:
     ):
         """sync_entry: Neo4j 和 Qdrant 都失败时主流程仍返回 True"""
         mock_neo4j = AsyncMock()
-        mock_neo4j._driver = AsyncMock()
+        mock_neo4j.is_connected = True
         mock_neo4j.create_entry = AsyncMock(side_effect=Exception("Neo4j down"))
 
         mock_qdrant = AsyncMock()
@@ -605,7 +605,7 @@ class TestSyncServiceQdrantDoubleCheck:
         """B91: sync_entry 中 Qdrant _client=None 时静默跳过（无 AttributeError）"""
         # Qdrant 实例存在但 _client=None（模拟连接失败后状态）
         mock_qdrant = MagicMock()
-        mock_qdrant._client = None  # 关键：_client 为 None
+        mock_qdrant.is_connected = False  # 关键：_client 为 None
         mock_qdrant.upsert_entry = AsyncMock(return_value=True)
 
         sync_service = SyncService(
@@ -628,7 +628,7 @@ class TestSyncServiceQdrantDoubleCheck:
     ):
         """B91: sync_entry 中 Qdrant _client 非空时正常调用 upsert"""
         mock_qdrant = MagicMock()
-        mock_qdrant._client = MagicMock()  # _client 不为 None
+        mock_qdrant.is_connected = True  # _client 不为 None
         mock_qdrant.upsert_entry = AsyncMock(return_value=True)
 
         sync_service = SyncService(
@@ -651,7 +651,7 @@ class TestSyncServiceQdrantDoubleCheck:
         mock_markdown_storage.write_entry(sample_entry)
 
         mock_qdrant = MagicMock()
-        mock_qdrant._client = None
+        mock_qdrant.is_connected = False
         mock_qdrant.delete_entry = AsyncMock(return_value=True)
 
         sync_service = SyncService(
@@ -674,7 +674,7 @@ class TestSyncServiceQdrantDoubleCheck:
         mock_markdown_storage.write_entry(sample_entry)
 
         mock_qdrant = MagicMock()
-        mock_qdrant._client = MagicMock()
+        mock_qdrant.is_connected = True
         mock_qdrant.delete_entry = AsyncMock(return_value=True)
 
         sync_service = SyncService(
@@ -695,7 +695,7 @@ class TestSyncServiceQdrantDoubleCheck:
     ):
         """B91: sync_to_graph_and_vector 中 Qdrant _client=None 时静默跳过"""
         mock_qdrant = MagicMock()
-        mock_qdrant._client = None
+        mock_qdrant.is_connected = False
         mock_qdrant.upsert_entry = AsyncMock(return_value=True)
 
         sync_service = SyncService(
@@ -717,7 +717,7 @@ class TestSyncServiceQdrantDoubleCheck:
         """B91: sync_entry 中 Qdrant 运行时断连不抛 AttributeError"""
         # _client 非空但 upsert 操作失败
         mock_qdrant = MagicMock()
-        mock_qdrant._client = MagicMock()
+        mock_qdrant.is_connected = True
         mock_qdrant.upsert_entry = AsyncMock(side_effect=ConnectionError("Connection lost"))
 
         sync_service = SyncService(

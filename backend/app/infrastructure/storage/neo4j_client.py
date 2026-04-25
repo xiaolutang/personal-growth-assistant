@@ -53,6 +53,21 @@ class Neo4jClient:
                 self._driver = None
                 # 不抛出异常，允许优雅降级
 
+    @property
+    def is_connected(self) -> bool:
+        """检查是否已连接"""
+        return self._driver is not None
+
+    async def verify_connectivity(self) -> bool:
+        """验证连接是否真正可用（公共接口）"""
+        if not self._driver:
+            return False
+        try:
+            await self._driver.verify_connectivity()
+            return True
+        except Exception:
+            return False
+
     async def close(self):
         """关闭连接"""
         if self._driver:

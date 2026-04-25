@@ -76,6 +76,10 @@ class SQLiteStorage:
         conn.execute("PRAGMA foreign_keys = ON")
         return conn
 
+    def get_connection(self) -> sqlite3.Connection:
+        """获取数据库连接（公共接口，替代外部直接调用 _get_conn）"""
+        return self._get_conn()
+
     # === 公共聚合查询方法 ===
 
     def get_active_dates(self, user_id: str, days: int = 90) -> list[str]:

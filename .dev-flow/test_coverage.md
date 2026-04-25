@@ -1,5 +1,20 @@
 # 测试覆盖清单
 
+## R036: 残留问题全面收口
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| 消除私有属性访问 | B100 | unit | is_connected正确状态/ReviewService getter/初始化链路回归/entries导出回归/sync回归/main.py health check公共属性回归/pytest | done | L2, 8 tests, 1213 pytest total |
+| get_growth_curve SQL 聚合 | B101 | unit | 有entries按周tag统计/无entries空结果/周边界/掌握度一致/user_id隔离/回归 | pending | L1, ~6 tests |
+| review_service 拆分 | B102 | unit | import正确/功能不变/路由链路/pytest | pending | L1, ~4 tests |
+| 503 降级共享 hook | F128 | unit | hook检测503+重试/7页集成测试(Home/Review/Explore/EntryDetail/GraphPage/GoalsPage/GoalDetail)/重试恢复/多请求页面主请求503整页降级/build | pending | F2, ~9 tests |
+| EntryDetail 拆分 | F129 | unit+manual | 详情页加载/编辑/关联条目/知识上下文/AI摘要/链接管理/build | pending | F2, ~7 tests |
+| Home+Explore 拆分 | F130 | unit+manual | 首页加载/探索页搜索+筛选+批量操作/build | pending | F2, ~5 tests |
+| Review+Tasks+Goals 拆分 | F131 | unit+manual | 回顾页切换/任务筛选/目标进度环/build | pending | F2, ~5 tests |
+| 移动端拖拽 | M100 | unit | 长按触发/拖拽反馈/释放更新(本地)/刷新恢复默认/切换筛选恢复/analyze | pending | F2, ~5 tests |
+| R032+R027 测试补齐 | S33 | unit | B89搜索(~16)/F119过滤UI(~7)/F120批量(~10)/B83导出(~10)/F114-F116导出反馈(~12) | pending | L2, ~55 tests |
+| 质量收口 | S34 | integration+smoke | pytest全量/vitest全量/build/Docker smoke | pending | L4 |
+
 ## R035: 预存问题修复（R034 Simplify 发现）
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |

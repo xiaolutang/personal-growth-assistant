@@ -50,6 +50,10 @@ class MarkdownStorage:
         else:
             return self.data_dir / f"{entry_id}.md"
 
+    def get_file_path(self, entry_id: str, category: Category) -> Path:
+        """获取文件路径（公共接口，替代外部直接调用 _get_file_path）"""
+        return self._get_file_path(entry_id, category)
+
     # === 旧格式提取方法（兼容用）===
 
     def _extract_title(self, content: str) -> str:

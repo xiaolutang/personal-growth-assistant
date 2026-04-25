@@ -162,12 +162,12 @@ async def export_single_entry(entry_id: str, user: User = Depends(get_current_us
         raise HTTPException(status_code=404, detail=f"条目不存在: {entry_id}")
 
     # 获取 Markdown 文件路径
-    md_storage = service._get_markdown_storage(user.id)
+    md_storage = service.get_markdown_storage(user.id)
     file_path = None
     from app.models import Category
     for cat in [Category.NOTE, Category.PROJECT, Category.TASK, Category.INBOX,
                 Category.DECISION, Category.REFLECTION, Category.QUESTION]:
-        fp = md_storage._get_file_path(entry_id, cat)
+        fp = md_storage.get_file_path(entry_id, cat)
         if fp.exists():
             file_path = fp
             break

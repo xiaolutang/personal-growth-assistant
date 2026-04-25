@@ -85,9 +85,9 @@ def get_review_service() -> "ReviewService":
             _review_service.set_knowledge_service(_knowledge_service)
     else:
         # 延迟注入：ReviewService 先创建，GoalService 后初始化的情况
-        if _goal_service and _review_service._goal_service is None:
+        if _goal_service and _review_service.goal_service is None:
             _review_service.set_goal_service(_goal_service)
-        if _knowledge_service and _review_service._knowledge_service is None:
+        if _knowledge_service and _review_service.knowledge_service is None:
             _review_service.set_knowledge_service(_knowledge_service)
     return _review_service
 

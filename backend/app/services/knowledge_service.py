@@ -179,7 +179,7 @@ class KnowledgeService:
 
     def is_neo4j_available(self) -> bool:
         """检查 Neo4j 是否可用"""
-        return self._neo4j is not None and self._neo4j._driver is not None
+        return self._neo4j is not None and self._neo4j.is_connected
 
     async def _with_neo4j_fallback(self, neo4j_fn, sqlite_fn):
         """尝试 Neo4j 操作，失败则降级到 SQLite

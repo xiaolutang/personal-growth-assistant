@@ -66,7 +66,7 @@ class TestNeo4jFallback:
         neo4j_client = None
         if neo4j_available:
             neo4j_client = MagicMock()
-            neo4j_client._driver = MagicMock()  # 模拟 driver 存在
+            neo4j_client.is_connected = True  # 模拟已连接
 
         sqlite_storage = MagicMock() if sqlite_available else None
 
@@ -173,7 +173,7 @@ class TestKnowledgeMapDegradation:
     async def test_neo4j_connection_error_returns_empty_map(self):
         """Neo4j 抛 ConnectionError 时返回空 KnowledgeMapResponse"""
         neo4j_client = MagicMock()
-        neo4j_client._driver = MagicMock()  # is_neo4j_available 返回 True
+        neo4j_client.is_connected = True  # is_neo4j_available 返回 True
 
         service = KnowledgeService(neo4j_client=neo4j_client, sqlite_storage=None)
 
@@ -229,7 +229,7 @@ class TestKnowledgeStatsDegradation:
     async def test_neo4j_connection_error_returns_empty_stats(self):
         """Neo4j 抛 ConnectionError 时返回空 ConceptStatsResponse"""
         neo4j_client = MagicMock()
-        neo4j_client._driver = MagicMock()
+        neo4j_client.is_connected = True
 
         service = KnowledgeService(neo4j_client=neo4j_client, sqlite_storage=None)
 
@@ -280,7 +280,7 @@ class TestKnowledgeGraphNoDegradation:
     async def test_neo4j_driver_none_raises_value_error(self):
         """Neo4j driver 为 None 时 get_knowledge_graph 抛 ValueError"""
         neo4j_client = MagicMock()
-        neo4j_client._driver = None
+        neo4j_client.is_connected = False
 
         service = KnowledgeService(neo4j_client=neo4j_client, sqlite_storage=None)
 
@@ -297,7 +297,7 @@ class TestNormalPathRegression:
     async def test_get_knowledge_map_neo4j_success(self):
         """Neo4j 可用时 get_knowledge_map 正常返回"""
         neo4j_client = MagicMock()
-        neo4j_client._driver = MagicMock()  # is_neo4j_available -> True
+        neo4j_client.is_connected = True  # is_neo4j_available -> True
         neo4j_client.get_all_concepts_with_stats = AsyncMock(return_value=[
             {"name": "Python", "category": "技术", "entry_count": 5, "mention_count": 3},
         ])
@@ -319,7 +319,7 @@ class TestNormalPathRegression:
     async def test_get_knowledge_stats_neo4j_success(self):
         """Neo4j 可用时 get_knowledge_stats 正常返回"""
         neo4j_client = MagicMock()
-        neo4j_client._driver = MagicMock()
+        neo4j_client.is_connected = True
         neo4j_client.get_all_concepts_with_stats = AsyncMock(return_value=[
             {"name": "Python", "category": "技术", "entry_count": 5},
             {"name": "AI", "category": "技术", "entry_count": 3},
@@ -339,7 +339,7 @@ class TestNormalPathRegression:
     async def test_get_knowledge_graph_neo4j_success(self):
         """Neo4j 可用时 get_knowledge_graph 正常返回"""
         neo4j_client = MagicMock()
-        neo4j_client._driver = MagicMock()
+        neo4j_client.is_connected = True
         neo4j_client.get_knowledge_graph = AsyncMock(return_value={
             "center": {"name": "Python", "category": "技术", "description": "编程语言"},
             "connections": [
@@ -366,7 +366,7 @@ class TestConnectionError503Mapping:
     async def test_knowledge_graph_connection_error_returns_503(self):
         """get_knowledge_graph 在 Neo4j 运行时断连时抛 ConnectionError"""
         neo4j_client = MagicMock()
-        neo4j_client._driver = MagicMock()  # is_neo4j_available -> True
+        neo4j_client.is_connected = True  # is_neo4j_available -> True
         neo4j_client.get_knowledge_graph = AsyncMock(side_effect=ConnectionError("连接断开"))
 
         service = KnowledgeService(neo4j_client=neo4j_client, sqlite_storage=None)
@@ -377,7 +377,7 @@ class TestConnectionError503Mapping:
     async def test_get_related_concepts_connection_error(self):
         """get_related_concepts 在 Neo4j 运行时断连时抛 ConnectionError"""
         neo4j_client = MagicMock()
-        neo4j_client._driver = MagicMock()
+        neo4j_client.is_connected = True
         neo4j_client.get_related_concepts = AsyncMock(side_effect=ConnectionError("连接断开"))
 
         service = KnowledgeService(neo4j_client=neo4j_client, sqlite_storage=None)
