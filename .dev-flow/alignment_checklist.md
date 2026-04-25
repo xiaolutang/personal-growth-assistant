@@ -9,7 +9,7 @@
 ### 依赖对齐
 
 - [x] B96 无外部依赖 ✓
-- [ ] B97 depends_on B96 ✓（共享 review_service.py，串行避免写冲突）
+- [x] B97 depends_on B96 ✓（共享 review_service.py，串行避免写冲突）
 - [ ] B98 depends_on B97 ✓（_get_heatmap_from_sqlite 内部调用 _calculate_mastery_from_stats，B97 提取后需适配新调用路径）
 - [ ] B99 depends_on B98 ✓（共享 sqlite.py 文件，串行避免写冲突）
 - [ ] S32 depends_on B96-B99 ✓

@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional, TYPE_CHECKING
 
 from app.models.review import *  # noqa: F401,F403 — re-export for backward compat
+from app.utils.mastery import calculate_mastery_from_stats
 if TYPE_CHECKING:
     from app.callers import APICaller
 
@@ -1436,31 +1437,13 @@ class ReviewService:
         note_count: int = 0,
         relationship_count: int = 0,
     ) -> str:
-        """
-        根据统计数据计算掌握度（阈值式，与 knowledge_service 一致）
-
-        规则：
-        - relationship_count 折算为等价 entry_count（每 2 个关系 ≈ 1 个条目）
-        - effective_count = entry_count + relationship_count // 2
-        - effective_count >= 6 且 note_ratio > 0.3 → advanced
-        - effective_count >= 3 且 recent_count > 0 → intermediate
-        - effective_count >= 1 → beginner
-        - 其他 → new
-        """
-        effective_count = entry_count + max(0, relationship_count // 2)
-
-        if effective_count == 0:
-            return "new"
-
-        note_ratio = note_count / effective_count if effective_count > 0 else 0
-
-        if effective_count >= 6 and note_ratio > 0.3:
-            return "advanced"
-        elif effective_count >= 3 and recent_count > 0:
-            return "intermediate"
-        elif effective_count >= 1:
-            return "beginner"
-        return "new"
+        """根据统计数据计算掌握度（委托到共享模块）"""
+        return calculate_mastery_from_stats(
+            entry_count=entry_count,
+            recent_count=recent_count,
+            note_count=note_count,
+            relationship_count=relationship_count,
+        )
 
     def get_activity_heatmap(self, year: int, user_id: str) -> ActivityHeatmapResponse:
         """获取年度每日活动热力图数据（基于 created_at）"""

@@ -8,6 +8,7 @@ from typing import List, Optional, Dict, Any, Literal, TYPE_CHECKING
 from pydantic import BaseModel, Field
 
 from app.models import Concept, ConceptRelation, ExtractedKnowledge, Task
+from app.utils.mastery import calculate_mastery_from_stats as _calc_mastery
 
 if TYPE_CHECKING:
     from app.callers import APICaller
@@ -608,14 +609,15 @@ class KnowledgeService:
         return nodes, edges
 
     def _calculate_mastery_from_stats(
-        self, entry_count: int, recent_count: int, note_count: int
+        self, entry_count: int, recent_count: int, note_count: int,
+        relationship_count: int = 0,
     ) -> str:
-        """根据统计数据计算掌握度（委托到 ReviewService 统一实现）"""
-        from app.services.review_service import ReviewService
-        return ReviewService._calculate_mastery_from_stats(
+        """根据统计数据计算掌握度（直接调用共享模块）"""
+        return _calc_mastery(
             entry_count=entry_count,
             recent_count=recent_count,
             note_count=note_count,
+            relationship_count=relationship_count,
         )
 
     async def get_knowledge_stats(self, user_id: str = "_default") -> ConceptStatsResponse:

@@ -5,7 +5,7 @@
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
 |--------|----------|-----------|--------------------|--------|------|
 | 趋势字段修复 | B96 | unit | 有趋势数据正确渲染/空趋势fallback/回归report导出 | done | L2, 3 tests, 1179 pytest total |
-| 掌握度共享模块 | B97 | unit | 阈值矩阵(0/1/3/6+note)/relationship_count折算/KnowledgeService调用路径/ReviewService调用路径/回归 | planned | L1, ~8 tests |
+| 掌握度共享模块 | B97 | unit | 阈值矩阵(0/1/3/6+note)/relationship_count折算/KnowledgeService调用路径/ReviewService调用路径/回归 | done | L1, 15 tests, 1190 pytest total |
 | heatmap SQL 聚合 | B98 | unit | 有entries正确tag统计/无entries空列表/计数一致/掌握度正确/回归 | planned | L1, ~5 tests |
 | tag_stats SQL 聚合 | B99 | unit | 有entries频次排序/无entries空列表/时间范围边界/频次一致/user_id隔离跨用户/回归 | planned | L1, ~6 tests |
 | 质量收口 | S32 | integration+smoke | pytest全量/vitest全量/build/Docker smoke(成长报告趋势+heatmap+AI洞察tag统计) | planned | L4 |

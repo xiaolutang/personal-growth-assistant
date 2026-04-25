@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 5,
-    "pending": 4,
-    "completed": 1,
+    "pending": 3,
+    "completed": 2,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -570,7 +570,7 @@
       "depends_on": [
         "B96"
       ],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
       "acceptance_criteria": [
         "新建 app/utils/mastery.py 包含 calculate_mastery_from_stats 函数（4 参数：entry_count, recent_count, note_count, relationship_count）",
@@ -596,7 +596,13 @@
         "knowledge_service 位置参数调用 (entry_count, 0, 0) 在新 4 参数签名下 relationship_count 默认为 0，行为不变",
         "回归：知识图谱掌握度分布不变"
       ],
-      "planning_notes": "消除循环依赖 + 统一签名为 4 参数版本。knowledge_service 之前丢失 relationship_count 信息，统一后可选择性传入"
+      "planning_notes": "消除循环依赖 + 统一签名为 4 参数版本。knowledge_service 之前丢失 relationship_count 信息，统一后可选择性传入",
+      "started_at": "2026-04-25T21:20:00",
+      "completed_at": "2026-04-25T21:45:00",
+      "actual_minutes": 25,
+      "evidence_file": ".dev-flow/evidence/B97.md",
+      "execution_notes": "新建 mastery.py + 15 测试，1190 pytest passed，循环依赖已消除",
+      "summary": "掌握度算法提取到 utils/mastery.py，消除循环依赖"
     },
     {
       "id": "B98",
