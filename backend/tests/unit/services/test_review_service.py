@@ -646,3 +646,77 @@ class TestB93KnowledgeServiceDI:
         report = await service.export_growth_report("user1")
         assert "成长报告" in report
         assert "知识图谱" in report
+
+
+class TestB96TrendDataFieldFix:
+    """B96: export_growth_report 趋势数据字段名修复（daily_data → periods）"""
+
+    def _make_service(self):
+        mock_sqlite = MagicMock()
+        mock_sqlite.list_entries.return_value = []
+        mock_sqlite.count_entries.return_value = 0
+        service = ReviewService(sqlite_storage=mock_sqlite)
+        return service
+
+    @pytest.mark.asyncio
+    async def test_trend_data_with_periods_renders_weekly(self):
+        """有趋势数据时 export_growth_report 正确渲染周维度趋势"""
+        from app.models.review import TrendResponse, TrendPeriod
+
+        service = self._make_service()
+        # 2026-04-20 是周一，属于 W17 周；2026-04-13 也是周一，属于 W16 周
+        periods = [
+            TrendPeriod(date="2026-04-20", total=5, completed=3),
+            TrendPeriod(date="2026-04-13", total=2, completed=1),
+        ]
+        trend_response = TrendResponse(periods=periods)
+
+        with patch.object(service, "get_trend_data", return_value=trend_response):
+            report = await service.export_growth_report("user1")
+
+        assert "学习趋势" in report
+        # 验证具体周数据渲染：W17 有 5 条，W16 有 2 条
+        assert "2026-04-20: 5 条" in report
+        assert "2026-04-13: 2 条" in report
+        # 不应 fallback 到"暂无数据"
+        # 趋势数据段之后到下一个 section 之前，不应出现"暂无数据"
+        lines = report.split("\n")
+        trend_start = None
+        for i, line in enumerate(lines):
+            if "学习趋势" in line:
+                trend_start = i
+                break
+        assert trend_start is not None
+        # 趋势段后面的行应包含具体数据
+        after_trend = "\n".join(lines[trend_start:trend_start + 10])
+        assert "暂无数据" not in after_trend
+
+    @pytest.mark.asyncio
+    async def test_trend_data_empty_periods_fallback(self):
+        """空 periods 时 fallback 到'暂无数据'"""
+        from app.models.review import TrendResponse
+
+        service = self._make_service()
+        trend_response = TrendResponse(periods=[])
+
+        with patch.object(service, "get_trend_data", return_value=trend_response):
+            report = await service.export_growth_report("user1")
+
+        assert "暂无数据" in report
+
+    @pytest.mark.asyncio
+    async def test_regression_other_report_sections_intact(self):
+        """回归: 其他 report section 不受影响"""
+        from app.models.review import TrendResponse
+
+        mock_sqlite = MagicMock()
+        mock_sqlite.list_entries.return_value = []
+        mock_sqlite.count_entries.return_value = 10
+        mock_sqlite.count_entries_by_type.return_value = {"task": 5, "note": 3, "inbox": 2}
+        service = ReviewService(sqlite_storage=mock_sqlite)
+
+        with patch.object(service, "get_trend_data", return_value=TrendResponse(periods=[])):
+            report = await service.export_growth_report("user1")
+
+        assert "成长报告" in report
+        assert "概览" in report

@@ -1512,10 +1512,10 @@ class ReviewService:
         # Section 2: 学习趋势
         trend_data = self.get_trend_data(period="weekly", weeks=4, user_id=user_id)
         trend_lines = []
-        if trend_data and hasattr(trend_data, "daily_data") and trend_data.daily_data:
+        if trend_data and hasattr(trend_data, "periods") and trend_data.periods:
             from collections import defaultdict
             weekly_buckets = defaultdict(int)
-            for item in trend_data.daily_data:
+            for item in trend_data.periods:
                 d = item.date if hasattr(item, "date") else str(item.get("date", ""))
                 cnt = item.total if hasattr(item, "total") else item.get("total", 0)
                 try:

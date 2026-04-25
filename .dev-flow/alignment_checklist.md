@@ -1,5 +1,34 @@
 # 对齐清单
 
+## R035: 预存问题修复（R034 Simplify 发现）
+
+### 契约对齐
+
+- [ ] 不涉及新契约，所有改动为内部缺陷修复和性能优化
+
+### 依赖对齐
+
+- [x] B96 无外部依赖 ✓
+- [ ] B97 depends_on B96 ✓（共享 review_service.py，串行避免写冲突）
+- [ ] B98 depends_on B97 ✓（_get_heatmap_from_sqlite 内部调用 _calculate_mastery_from_stats，B97 提取后需适配新调用路径）
+- [ ] B99 depends_on B98 ✓（共享 sqlite.py 文件，串行避免写冲突）
+- [ ] S32 depends_on B96-B99 ✓
+
+### 架构对齐
+
+- [ ] B96: 字段名修正，不改变数据模型
+- [ ] B97: 新建 app/utils/mastery.py，ReviewService 和 KnowledgeService 各自导入，消除循环依赖
+- [ ] B97: 统一签名为 4 参数版本（含 relationship_count）
+- [ ] B98: 复用已有 SQL 聚合方法，不新增 SQL 查询
+- [ ] B99: sqlite.py 新增 get_tag_stats_in_range 方法
+- [ ] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫 ✓
+
+### 执行顺序
+
+- [ ] Phase 1: B96 → B97（串行，共享 review_service.py）
+- [ ] Phase 2: B98 → B99（串行，B98 depends_on B97，B99 depends_on B98）
+- [ ] Phase 3: S32
+
 ## R034: 技术债收敛 (R029 Residual Risks)
 
 ### 契约对齐

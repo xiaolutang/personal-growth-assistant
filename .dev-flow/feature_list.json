@@ -5,7 +5,12 @@
   "created_at": "2026-03-28",
   "updated_at": "2026-04-25T20:00:00",
   "status": "active",
-  "active_requirement_cycle": null,
+  "active_requirement_cycle": {
+    "id": "R035",
+    "name": "preexisting-fixes",
+    "branch": "fix/R035-preexisting-fixes",
+    "status": "planning"
+  },
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -15,9 +20,9 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 10,
-    "pending": 0,
-    "completed": 10,
+    "total_tasks": 5,
+    "pending": 4,
+    "completed": 1,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -54,6 +59,14 @@
     {
       "name": "quality",
       "description": "质量收口"
+    },
+    {
+      "name": "review-perf",
+      "description": "回顾系统性能优化"
+    },
+    {
+      "name": "mastery-utils",
+      "description": "掌握度计算共享模块"
     }
   ],
   "features": [
@@ -94,6 +107,36 @@
           "tasks": [
             "F127",
             "S31"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R035",
+      "name": "预存问题修复（R034 Simplify 发现）",
+      "description": "修复 R034 simplify 收敛审查发现的预存 bug 和性能问题：成长报告趋势数据字段名不匹配、review_service 全表扫描、掌握度计算跨服务循环依赖",
+      "phases": [
+        {
+          "id": "P1",
+          "name": "缺陷修复",
+          "tasks": [
+            "B96",
+            "B97"
+          ]
+        },
+        {
+          "id": "P2",
+          "name": "性能优化",
+          "tasks": [
+            "B98",
+            "B99"
+          ]
+        },
+        {
+          "id": "P3",
+          "name": "质量收口",
+          "tasks": [
+            "S32"
           ]
         }
       ]
@@ -481,6 +524,181 @@
       "actual_minutes": 10,
       "evidence_file": ".dev-flow/evidence/S31.md",
       "summary": "1176 pytest + 386 vitest + build 通过"
+    },
+    {
+      "id": "B96",
+      "phase": "P1",
+      "module": "review",
+      "name": "修复 export_growth_report 趋势数据字段名",
+      "description": "export_growth_report 检查 trend_data.daily_data 但 TrendResponse 模型字段是 periods，导致趋势始终'暂无数据'",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "trend_data.daily_data 改为 trend_data.periods",
+        "export_growth_report 有趋势数据时正确渲染周维度趋势",
+        "无趋势数据时正常 fallback 到'暂无数据'",
+        "现有测试通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "backend/app/services/review_service.py"
+      ],
+      "test_tasks": [
+        "有趋势数据时 export_growth_report 趋势段包含正确周数据",
+        "无趋势数据（空 periods）时 fallback 到暂无数据",
+        "回归：其他 report 导出不受影响"
+      ],
+      "fix_level": "L1",
+      "root_cause_analysis": "R034 Simplify 发现：review_service.py:1515 检查 hasattr(trend_data, 'daily_data')，但 TrendResponse 模型只有 periods 字段。可能是模型重命名时遗漏的引用更新。行 1515 hasattr 和行 1518 for 循环两处 daily_data 都需改为 periods",
+      "planning_notes": "fix_level L1：字段名拼写错误，2-3 行改动即可修复",
+      "started_at": "2026-04-25T21:00:00",
+      "completed_at": "2026-04-25T21:15:00",
+      "actual_minutes": 15,
+      "evidence_file": ".dev-flow/evidence/B96.md",
+      "execution_notes": "2 行字段名修正 + 3 个新测试，1179 pytest passed",
+      "summary": "daily_data→periods 字段名修正，3 测试覆盖"
+    },
+    {
+      "id": "B97",
+      "phase": "P1",
+      "module": "mastery-utils",
+      "name": "提取 _calculate_mastery_from_stats 到共享模块",
+      "description": "将 ReviewService._calculate_mastery_from_stats 静态方法提取到独立的 app/utils/mastery.py 模块，消除 knowledge_service 运行时导入 review_service 的循环依赖",
+      "verification": "L1",
+      "depends_on": [
+        "B96"
+      ],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "新建 app/utils/mastery.py 包含 calculate_mastery_from_stats 函数（4 参数：entry_count, recent_count, note_count, relationship_count）",
+        "ReviewService._calculate_mastery_from_stats 改为委托到 utils.mastery",
+        "KnowledgeService._calculate_mastery_from_stats 改为直接导入 utils.mastery，移除运行时 from review_service import",
+        "两个 service 的掌握度计算结果不变",
+        "现有测试通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "backend/app/utils/mastery.py",
+        "backend/app/services/review_service.py",
+        "backend/app/services/knowledge_service.py"
+      ],
+      "test_tasks": [
+        "calculate_mastery_from_stats(entry_count=0) → 'new'",
+        "calculate_mastery_from_stats(entry_count=1) → 'beginner'",
+        "calculate_mastery_from_stats(entry_count=3, recent_count=1) → 'intermediate'",
+        "calculate_mastery_from_stats(entry_count=6, note_count=3) → 'advanced'",
+        "relationship_count 折算验证：entry_count=2, relationship_count=8 → effective=6, 如有 note 则 advanced",
+        "KnowledgeService 调用路径验证：mock 返回正确掌握度",
+        "ReviewService 调用路径验证：mock 返回正确掌握度",
+        "knowledge_service 位置参数调用 (entry_count, 0, 0) 在新 4 参数签名下 relationship_count 默认为 0，行为不变",
+        "回归：知识图谱掌握度分布不变"
+      ],
+      "planning_notes": "消除循环依赖 + 统一签名为 4 参数版本。knowledge_service 之前丢失 relationship_count 信息，统一后可选择性传入"
+    },
+    {
+      "id": "B98",
+      "phase": "P2",
+      "module": "review-perf",
+      "name": "_get_heatmap_from_sqlite 改用 SQL 聚合",
+      "description": "将 _get_heatmap_from_sqlite 中的 list_entries(limit=1000) 全量遍历替换为 sqlite.py 已有的 get_tag_stats_for_knowledge_map() SQL 聚合查询",
+      "verification": "L1",
+      "depends_on": [
+        "B97"
+      ],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "_get_heatmap_from_sqlite 不再调用 list_entries",
+        "改用 get_tag_stats_for_knowledge_map() 获取 tag 统计",
+        "返回的 heatmap 数据结构不变（tag 名称 + 掌握度 + 计数）",
+        "现有测试通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "backend/app/services/review_service.py"
+      ],
+      "test_tasks": [
+        "有 entries 时 heatmap 返回正确的 tag 统计",
+        "无 entries 时 heatmap 返回空列表",
+        "tag 计数与之前的 Python 遍历结果一致",
+        "掌握度计算使用正确的参数",
+        "回归：知识图谱 heatmap 不变"
+      ],
+      "planning_notes": "sqlite.py:160 已有 get_tag_stats_for_knowledge_map 返回 entry_count/note_count/recent_count，完全匹配需求"
+    },
+    {
+      "id": "B99",
+      "phase": "P2",
+      "module": "review-perf",
+      "name": "_compute_30d_tag_stats 改用 SQL 聚合",
+      "description": "将 _compute_30d_tag_stats 中的 list_entries(limit=5000) 替换为时间范围过滤的 SQL 聚合查询",
+      "verification": "L1",
+      "depends_on": [
+        "B98"
+      ],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "sqlite.py 新增 get_tag_stats_in_range(user_id, start_date, end_date) 方法",
+        "get_tag_stats_in_range 按 user_id 过滤，不返回其他用户数据",
+        "_compute_30d_tag_stats 不再调用 list_entries",
+        "返回的 tag 频次排序结果与之前一致",
+        "现有测试通过"
+      ],
+      "risk_tags": [],
+      "files": [
+        "backend/app/infrastructure/storage/sqlite.py",
+        "backend/app/services/review_service.py"
+      ],
+      "test_tasks": [
+        "30 天内有 entries 时返回正确的 tag 频次排序",
+        "30 天内无 entries 时返回空列表",
+        "时间范围边界验证：只统计 start_date 到 end_date 内的条目",
+        "tag 频次与之前的 Python 遍历结果一致",
+        "user_id 隔离：不同用户的 tag 统计互不干扰",
+        "回归：AI 洞察 tag 统计不变"
+      ],
+      "planning_notes": "复用 get_tag_stats_for_knowledge_map 的 SQL 模式，增加 start_date/end_date 过滤条件"
+    },
+    {
+      "id": "S32",
+      "phase": "P3",
+      "module": "quality",
+      "name": "质量收口",
+      "description": "全量测试 + 构建 + Docker smoke 验证",
+      "verification": "L4",
+      "depends_on": [
+        "B96",
+        "B97",
+        "B98",
+        "B99"
+      ],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "pytest 后端全量通过",
+        "vitest 前端全量通过",
+        "npm run build 成功",
+        "Docker smoke：成长报告导出趋势正常显示",
+        "Docker smoke：知识图谱 heatmap SQL 聚合链路正常",
+        "Docker smoke：AI 洞察 30 天 tag 统计正常"
+      ],
+      "risk_tags": [
+        "regression",
+        "cross-cutting"
+      ],
+      "test_tasks": [
+        "pytest 全量通过",
+        "vitest 全量通过",
+        "build 成功",
+        "Docker smoke：成长报告趋势数据正常",
+        "Docker smoke：知识图谱 heatmap 页面加载正常",
+        "Docker smoke：回顾页 AI 洞察标签统计正常"
+      ],
+      "planning_notes": "R035 质量收口，重点验证成长报告趋势修复"
     }
   ],
   "next_cycle_preview": null,
@@ -670,6 +888,12 @@
       "name": "security-hardening",
       "status": "completed",
       "archive_dir": "_archive/R033_security-hardening"
+    },
+    {
+      "id": "R034",
+      "name": "tech-debt-residual",
+      "status": "completed",
+      "archive_dir": "_archive/R034_tech-debt-residual"
     }
   ]
 }
