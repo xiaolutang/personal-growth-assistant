@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { getEntry, getEntries, getProjectProgress } from "@/services/api";
 import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
@@ -31,13 +31,18 @@ export function useEntryData(): EntryDataState {
 
   const { serviceUnavailable, runWith503, retry: retryService } = useServiceUnavailable();
 
+  // 请求版本号，用于取消过期请求
+  const loadVersionRef = useRef(0);
+
   const reloadEntry = useCallback(async () => {
     if (!id) return;
+    const version = ++loadVersionRef.current;
     setIsLoading(true);
     setError(null);
     try {
       await runWith503(async () => {
         const data = await getEntry(id);
+        if (loadVersionRef.current !== version) return;
         setEntry(data);
         // 清除上次加载的关联数据（防止路由切换残留）
         setChildTasks([]);
@@ -50,6 +55,7 @@ export function useEntryData(): EntryDataState {
             getEntries({ parent_id: id, limit: 100 }),
             getProjectProgress(id).catch(() => null),
           ]);
+          if (loadVersionRef.current !== version) return;
           setChildTasks(tasksRes.entries);
           setProjectProgress(progressRes);
         }
@@ -57,6 +63,7 @@ export function useEntryData(): EntryDataState {
         if (data.parent_id) {
           try {
             const parentData = await getEntry(data.parent_id);
+            if (loadVersionRef.current !== version) return;
             setParentEntry(parentData);
           } catch {
             // parent may be deleted
@@ -76,13 +83,15 @@ export function useEntryData(): EntryDataState {
               }
             })
           );
+          if (loadVersionRef.current !== version) return;
           setReferencedNotes(notesMap);
         }
       });
     } catch (err) {
+      if (loadVersionRef.current !== version) return;
       setError(err instanceof Error ? err.message : "获取条目失败");
     } finally {
-      setIsLoading(false);
+      if (loadVersionRef.current === version) setIsLoading(false);
     }
   }, [id, runWith503]);
 
