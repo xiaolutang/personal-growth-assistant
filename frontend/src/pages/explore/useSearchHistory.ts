@@ -1,11 +1,10 @@
 import { useState, useCallback } from "react";
-import { getSearchHistory, addToSearchHistory, removeFromSearchHistory } from "./utils";
+import { getSearchHistory, removeFromSearchHistory } from "./utils";
 
 export function useSearchHistory() {
   const [searchHistory, setSearchHistory] = useState<string[]>(getSearchHistory());
 
-  const addHistory = useCallback((query: string) => {
-    addToSearchHistory(query);
+  const refresh = useCallback(() => {
     setSearchHistory(getSearchHistory());
   }, []);
 
@@ -14,5 +13,5 @@ export function useSearchHistory() {
     setSearchHistory(getSearchHistory());
   }, []);
 
-  return { searchHistory, addHistory, removeHistory };
+  return { searchHistory, removeHistory, refresh };
 }

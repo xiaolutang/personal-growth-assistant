@@ -21,10 +21,10 @@ import { TABS } from "./explore/utils";
 
 export function Explore() {
   // 搜索历史
-  const { searchHistory, removeHistory } = useSearchHistory();
+  const { searchHistory, removeHistory, refresh: refreshHistory } = useSearchHistory();
 
   // 搜索 & 过滤
-  const search = useExploreSearch(() => {});
+  const search = useExploreSearch(refreshHistory);
   const {
     activeTab,
     handleTabChange,
@@ -54,6 +54,7 @@ export function Explore() {
     emptyMessage,
     serviceUnavailable,
     retryService,
+    searchInputRef,
   } = search;
 
   // 批量操作
@@ -78,6 +79,7 @@ export function Explore() {
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
         onKeyDown={handleKeyDown}
+        inputRef={searchInputRef}
         onFocus={() => setShowSuggestions(true)}
         onBlur={() => setShowSuggestions(false)}
         showPanel={showPanel}

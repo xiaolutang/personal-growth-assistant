@@ -47,6 +47,8 @@ interface UseExploreSearchReturn {
   // service
   serviceUnavailable: boolean;
   retryService: (fn: () => Promise<void>) => void;
+  // ref for global focus shortcut
+  searchInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSearchReturn {
@@ -286,5 +288,6 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
     emptyMessage,
     serviceUnavailable,
     retryService,
+    searchInputRef,
   };
 }

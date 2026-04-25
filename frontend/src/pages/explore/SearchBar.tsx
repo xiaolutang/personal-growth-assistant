@@ -13,6 +13,7 @@ interface SearchBarProps {
   popularTags: string[];
   selectedTags: string[];
   onTagFilter: (tag: string) => void;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 export function SearchBar({
@@ -28,12 +29,14 @@ export function SearchBar({
   popularTags,
   selectedTags,
   onTagFilter,
+  inputRef,
 }: SearchBarProps) {
   return (
     <div className="mb-4 relative">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
         <input
+          ref={inputRef}
           type="text"
           value={searchQuery}
           onChange={(e) => onSearchQueryChange(e.target.value)}
