@@ -20,8 +20,8 @@
   },
   "summary": {
     "total_tasks": 10,
-    "pending": 4,
-    "completed": 6,
+    "pending": 3,
+    "completed": 7,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -397,7 +397,7 @@
       "description": "将 Review.tsx (525行)、Tasks.tsx (381行) 拆分为子目录，GoalsPage/GoalDetail 中重复的 ProgressRing 提取为共享组件。GoalsPage(338行)/GoalDetail(330行)低于 350 行阈值，仅做 ProgressRing 去重，不做子目录拆分",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P3",
       "acceptance_criteria": [
         "Review.tsx: 提取 useReportData/useInsights hooks 到 review/ 子目录，主文件降至 300 行以内",
@@ -426,7 +426,11 @@
         "目标详情页进度环正常",
         "build 通过无 TypeScript 错误"
       ],
-      "planning_notes": "R035 A5: 第三梯队拆分。ProgressRing 在 GoalsPage(195行)和GoalDetail(23行)重复定义"
+      "planning_notes": "R035 A5: 第三梯队拆分。ProgressRing 在 GoalsPage(195行)和GoalDetail(23行)重复定义",
+      "evidence_file": "evidence/F131.md",
+      "started_at": "2026-04-26T01:30:00+0800",
+      "completed_at": "2026-04-26T01:42:00+0800",
+      "actual_minutes": 15
     },
     {
       "id": "M100",
