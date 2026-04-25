@@ -10,11 +10,9 @@
 
 - [x] B100 无外部依赖 ✓ (completed)
 - [x] B101 无外部依赖 ✓ (completed)
-- [ ] B102 depends_on B101 ✓（共享 review_service.py）
-- [ ] F128 无外部依赖 ✓
+- [x] B102 depends_on B101 ✓（共享 review_service.py）
+- [x] F128 无外部依赖 ✓ (completed)
 - [ ] F129 无外部依赖 ✓
-- [ ] F130 无外部依赖 ✓
-- [ ] F131 无外部依赖 ✓
 - [ ] M100 无外部依赖 ✓（Flutter 独立模块）
 - [ ] S33 depends_on B100-B102, F128-F131 ✓（结构性改动完成后再补测试）
 - [ ] S34 depends_on S33, M100 ✓
@@ -24,7 +22,7 @@
 - [x] B100: 添加公共属性/方法，不改变行为 ✓ (completed)
 - [x] B101: SQL 聚合替换内存过滤，结果等价 ✓ (completed)
 - [x] B102: 拆分到子模块，路由层 import 同步更新 ✓ (completed)
-- [ ] F128: 共享 hook，不新建全局状态 ✓
+- [x] F128: 共享 hook，不新建全局状态 ✓ (completed)
 - [ ] F129-F131: 组件拆分，不引入新依赖 ✓
 - [ ] M100: Flutter 端独立功能 ✓
 - [ ] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫 ✓
@@ -33,7 +31,7 @@
 
 - [x] Phase 1: B100, B101（可并行）✓
 - [x] Phase 2: B102（depends B101）✓
-- [ ] Phase 3: F128
+- [x] Phase 3: F128 ✓
 - [ ] Phase 4: F129, F130, F131（可并行，不共享文件）
 - [ ] Phase 5: M100（独立）
 - [ ] Phase 6: S33 → S34

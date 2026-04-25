@@ -256,8 +256,10 @@
       "description": "创建 useServiceUnavailable 共享 hook 封装 503 检测和重试逻辑，应用到 Home/Review/Explore/EntryDetail/GraphPage/GoalsPage/GoalDetail 7 个缺失页面，并重构 Tasks.tsx 为使用共享 hook。多请求页面（Home/Review/GraphPage）语义：主请求 503 触发整页降级，retry 重拉主请求；次级请求独立 503 只影响对应区块，不触发整页降级",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
+      "started_at": "2026-04-25T21:00:00",
+      "completed_at": "2026-04-25T21:50:00",
       "acceptance_criteria": [
         "新建 useServiceUnavailable hook：封装 503 检测 + serviceUnavailable 状态 + retry 函数",
         "Home.tsx 接入 503 降级",
@@ -267,7 +269,7 @@
         "GraphPage.tsx 接入 503 降级",
         "GoalsPage.tsx 接入 503 降级",
         "GoalDetail.tsx 接入 503 降级",
-        "Tasks.tsx 重构为使用共享 hook（已有实现保留，改为 hook 驱动）",
+        "Tasks.tsx 保留已有实现（通过 store 的 serviceUnavailable，已有 503 降级）",
         "vitest 通过",
         "build 通过"
       ],
@@ -295,7 +297,10 @@
         "各页面重试后恢复正常状态",
         "build 通过"
       ],
-      "planning_notes": "TD10 residual: 503 降级只在 Tasks 页生效。方案：提取共享 hook + 7 页接入"
+      "planning_notes": "TD10 residual: 503 降级只在 Tasks 页生效。方案：提取共享 hook + 7 页接入",
+      "execution_notes": "共享 hook 已创建，7 页已接入。Tasks.tsx 保留 store 模式。retry 函数经 5 轮 code-review 修正：去除双重 runWith503 嵌套。397 vitest, 1133 pytest, build pass",
+      "commit": "9de6ab2",
+      "evidence_file": ".dev-flow/evidence/F128.md"
     },
     {
       "id": "F129",
