@@ -12,7 +12,7 @@
 | Home+Explore 拆分 | F130 | unit+manual | 首页加载/探索页搜索+筛选+批量操作/build | pending | F2, ~5 tests |
 | Review+Tasks+Goals 拆分 | F131 | unit+manual | 回顾页切换/任务筛选/目标进度环/build | completed | F2, ~5 tests |
 | 移动端拖拽 | M100 | unit | 长按触发/拖拽反馈/释放更新(本地)/刷新恢复默认/切换筛选恢复/analyze | pending | F2, ~5 tests |
-| R032+R027 测试补齐 | S33 | unit | B89搜索(~16)/F119过滤UI(~7)/F120批量(~10)/B83导出(~10)/F114-F116导出反馈(~12) | pending | L2, ~55 tests |
+| R032+R027 测试补齐 | S33 | unit | B89搜索(~16)/F119过滤UI(~7)/F120批量(~10)/B83导出(~10)/F114-F116导出反馈(~12) | completed | L2, 63 tests, vitest 475 passed |
 | 质量收口 | S34 | integration+smoke | pytest全量/vitest全量/build/Docker smoke | pending | L4 |
 
 ## R035: 预存问题修复（R034 Simplify 发现）

@@ -483,7 +483,9 @@
         "F130",
         "F131"
       ],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-26T01:00:00+0800",
+      "completed_at": "2026-04-26T02:30:00+0800",
       "priority": "P2",
       "acceptance_criteria": [
         "R032 B89 搜索增强测试覆盖（约 16 场景）",
@@ -508,7 +510,9 @@
         "B83 导出 API 后端测试",
         "F114-F116 导出反馈前端测试"
       ],
-      "planning_notes": "R032/R027 planned tests: 搜索增强、批量操作、导出、反馈追踪的测试缺口。S33 覆盖 R032 全部 planned unit 项（B89/F119/F120 ~33场景）和 R027 全部 planned unit 项（B83/F114/F115/F116 ~22场景），承接 R032 原 S29 和 R027 原 S21 的单元测试部分。smoke/E2E 由 S34 承接"
+      "planning_notes": "R032/R027 planned tests: 搜索增强、批量操作、导出、反馈追踪的测试缺口。S33 覆盖 R032 全部 planned unit 项（B89/F119/F120 ~33场景）和 R027 全部 planned unit 项（B83/F114/F115/F116 ~22场景），承接 R032 原 S29 和 R027 原 S21 的单元测试部分。smoke/E2E 由 S34 承接",
+      "evidence_file": ".dev-flow/evidence/S33.md",
+      "execution_notes": "7 前端测试文件 + 63 新测试，SearchBar.tsx 组件 mouseDown 冒泡修复。code-review 5 轮通过。vitest 475 passed, build 成功。"
     },
     {
       "id": "S34",

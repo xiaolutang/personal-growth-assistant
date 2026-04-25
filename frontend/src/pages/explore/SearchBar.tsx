@@ -67,6 +67,7 @@ export function SearchBar({
                   >
                     <span className="truncate">{query}</span>
                     <button
+                      onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
                         e.stopPropagation();
                         onDeleteHistory(query);
