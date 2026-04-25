@@ -20,8 +20,8 @@
   },
   "summary": {
     "total_tasks": 10,
-    "pending": 5,
-    "completed": 5,
+    "pending": 4,
+    "completed": 6,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -355,7 +355,7 @@
       "description": "将 Home.tsx (730行, 4组件, 15 useState) 和 Explore.tsx (729行, 130行工具函数) 拆分为子目录",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P2",
       "acceptance_criteria": [
         "Home.tsx: 提取 TodayTaskItem/QuickActionButton/DigestStat 为独立组件",
@@ -382,7 +382,12 @@
         "探索页批量操作正常",
         "build 通过无 TypeScript 错误"
       ],
-      "planning_notes": "R035 A5: Home(730)和Explore(729)是第二梯队的拆分目标"
+      "planning_notes": "R035 A5: Home(730)和Explore(729)是第二梯队的拆分目标",
+      "started_at": "2026-04-26T01:10:00+0800",
+      "completed_at": "2026-04-26T01:25:00+0800",
+      "evidence_file": ".dev-flow/evidence/F130.md",
+      "execution_notes": "Home 735→202行 + Explore 736→222行，code-review R1 修2个功能回退",
+      "commit": "e64c559"
     },
     {
       "id": "F131",
