@@ -186,7 +186,7 @@
       "started_at": "2026-04-25T22:50:00",
       "completed_at": "2026-04-25T23:20:00",
       "actual_minutes": 30,
-      "execution_notes": "SQL 聚合替换 list_entries(limit=10000)，统一 %W 周格式，新增 16 测试",
+      "execution_notes": "SQL 聚合替换 list_entries(limit=10000)，CTE+UNION 跨周归属，ISO 周标签恢复，19 测试（含跨周+年边界确定性），code-review R4 pass",
       "evidence_file": ".dev-flow/evidence/B101.md",
       "execution_state": {
         "current_step": "completed",
