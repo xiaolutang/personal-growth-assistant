@@ -14,7 +14,7 @@ export function CapabilityMapView() {
   const [capabilityError, setCapabilityError] = useState<string | null>(null);
   const [expandedDomain, setExpandedDomain] = useState<string | null>(null);
   const [capabilityFilter, setCapabilityFilter] = useState<string>("");
-  const { serviceUnavailable, runWith503 } = useServiceUnavailable();
+  const { serviceUnavailable, runWith503, retry: retryCapability } = useServiceUnavailable();
 
   const loadCapability = useCallback(async (filter?: string) => {
     setCapabilityLoading(true);
@@ -45,7 +45,7 @@ export function CapabilityMapView() {
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-6">
       {serviceUnavailable && (
-        <ServiceUnavailable onRetry={() => loadCapability(capabilityFilter || undefined)} />
+        <ServiceUnavailable onRetry={() => retryCapability(() => loadCapability(capabilityFilter || undefined))} />
       )}
       {!serviceUnavailable && capabilityLoading && (
         <div className="flex items-center justify-center h-64">

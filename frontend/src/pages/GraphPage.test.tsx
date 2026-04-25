@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest";
 import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState, useCallback } from "react";
@@ -661,5 +661,90 @@ describe("GraphPage Tab 切换与基本渲染", () => {
     });
 
     vi.useRealTimers();
+  });
+
+  // ── 能力地图 503 降级集成测试 ─────────────────────────
+  describe("能力地图 503 降级", () => {
+    // 动态导入 ApiError 用于测试
+    let ApiError: typeof import("@/lib/errors").ApiError;
+    beforeAll(async () => {
+      const mod = await import("@/lib/errors");
+      ApiError = mod.ApiError;
+    });
+
+    it("首次 503 显示降级页面", async () => {
+      mockGetCapabilityMap.mockRejectedValueOnce(
+        new ApiError(503, "Service Unavailable", {})
+      );
+
+      render(<GraphPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("react-flow")).toBeInTheDocument();
+      });
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: "能力地图" }));
+
+      await waitFor(() => {
+        expect(screen.getByText("服务暂时不可用")).toBeInTheDocument();
+      });
+    });
+
+    it("503 后重试成功恢复正常", async () => {
+      mockGetCapabilityMap
+        .mockRejectedValueOnce(new ApiError(503, "Service Unavailable", {}))
+        .mockResolvedValueOnce(CAPABILITY_DATA);
+
+      render(<GraphPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("react-flow")).toBeInTheDocument();
+      });
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: "能力地图" }));
+
+      await waitFor(() => {
+        expect(screen.getByText("服务暂时不可用")).toBeInTheDocument();
+      });
+
+      // 点击重试
+      await user.click(screen.getByRole("button", { name: "重试" }));
+
+      // 重新加载成功，应显示能力地图内容
+      await waitFor(() => {
+        expect(screen.getByText("编程")).toBeInTheDocument();
+      });
+      expect(screen.queryByText("服务暂时不可用")).not.toBeInTheDocument();
+    });
+
+    it("503 后重试遇到非 503 错误显示错误消息而非降级页", async () => {
+      mockGetCapabilityMap
+        .mockRejectedValueOnce(new ApiError(503, "Service Unavailable", {}))
+        .mockRejectedValueOnce(new ApiError(500, "Internal Server Error", {}));
+
+      render(<GraphPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("react-flow")).toBeInTheDocument();
+      });
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: "能力地图" }));
+
+      await waitFor(() => {
+        expect(screen.getByText("服务暂时不可用")).toBeInTheDocument();
+      });
+
+      // 点击重试 — 这次返回 500
+      await user.click(screen.getByRole("button", { name: "重试" }));
+
+      // 应显示错误消息，而非仍停留在降级页
+      await waitFor(() => {
+        expect(screen.getByText("Internal Server Error")).toBeInTheDocument();
+      });
+      expect(screen.queryByText("服务暂时不可用")).not.toBeInTheDocument();
+    });
   });
 });
