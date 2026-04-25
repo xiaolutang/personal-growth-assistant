@@ -165,7 +165,7 @@ export function useEntryEditing(
           tags: editTags,
           status: editStatus,
           priority: editPriority,
-          planned_date: editPlannedDate || prev.planned_date,
+          planned_date: editPlannedDate ? `${editPlannedDate}T00:00:00` : undefined,
         } : prev);
         lastSavedContent.current = editContent;
       }

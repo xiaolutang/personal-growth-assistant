@@ -39,6 +39,11 @@ export function useEntryData(): EntryDataState {
       await runWith503(async () => {
         const data = await getEntry(id);
         setEntry(data);
+        // 清除上次加载的关联数据（防止路由切换残留）
+        setChildTasks([]);
+        setProjectProgress(null);
+        setParentEntry(null);
+        setReferencedNotes(new Map());
 
         if (data.category === "project") {
           const [tasksRes, progressRes] = await Promise.all([
