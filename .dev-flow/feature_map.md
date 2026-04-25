@@ -8,7 +8,7 @@
 
 | 需求包 | 状态 | 任务数 |
 |--------|------|--------|
-| R036 残留问题全面收口 | in_progress | 10 (B100-B102 completed, 7 pending) |
+| R036 残留问题全面收口 | in_progress | 10 (B100-B102, F128 completed + code-review/audit, 6 pending) |
 
 ## 归档需求包
 
@@ -49,6 +49,6 @@
 
 | 项目 | 测试数 | 状态 |
 |------|--------|------|
-| 后端测试 | 1213 passed | 全绿 |
+| 后端测试 | 1130 passed | 全绿 |
 | 前端测试 | 386 passed | 全绿 |
 | E2E 测试 | 113 passed | 全绿 |
