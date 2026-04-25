@@ -41,6 +41,8 @@ import { GrowthCurveCard } from "@/components/review/GrowthCurveCard";
 import { AiSummaryCard } from "@/components/review/AiSummaryCard";
 import { InsightCard } from "@/components/review/InsightCard";
 import { PageChatPanel } from "@/components/PageChatPanel";
+import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
+import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import type { ReportType } from "@/types/review";
 
 export function Review() {
@@ -52,6 +54,7 @@ export function Review() {
   const [dailyReport, setDailyReport] = useState<DailyReport | null>(null);
   const [weeklyReport, setWeeklyReport] = useState<WeeklyReport | null>(null);
   const [monthlyReport, setMonthlyReport] = useState<MonthlyReport | null>(null);
+  const { serviceUnavailable, runWith503 } = useServiceUnavailable();
 
   // 目标进展概览
   const [goalSummary, setGoalSummary] = useState<ProgressSummaryResponse | null>(null);
@@ -63,16 +66,18 @@ export function Review() {
       setIsLoading(true);
       setError(null);
       try {
-        if (reportType === "daily") {
-          const data = await getDailyReport();
-          if (!cancelled) setDailyReport(data);
-        } else if (reportType === "weekly") {
-          const data = await getWeeklyReport();
-          if (!cancelled) setWeeklyReport(data);
-        } else if (reportType === "monthly") {
-          const data = await getMonthlyReport();
-          if (!cancelled) setMonthlyReport(data);
-        }
+        await runWith503(async () => {
+          if (reportType === "daily") {
+            const data = await getDailyReport();
+            if (!cancelled) setDailyReport(data);
+          } else if (reportType === "weekly") {
+            const data = await getWeeklyReport();
+            if (!cancelled) setWeeklyReport(data);
+          } else if (reportType === "monthly") {
+            const data = await getMonthlyReport();
+            if (!cancelled) setMonthlyReport(data);
+          }
+        });
       } catch (err) {
         if (!cancelled) setError("加载失败，请重试");
       } finally {
@@ -87,7 +92,7 @@ export function Review() {
     }
 
     return () => { cancelled = true; };
-  }, [reportType, retryKey]);
+  }, [reportType, retryKey, runWith503]);
 
   // 目标进展概览
   useEffect(() => {
@@ -165,6 +170,10 @@ export function Review() {
     <>
       <Header title="成长回顾" />
       <main className="flex-1 p-4 md:p-6 pb-32 overflow-y-auto">
+        {serviceUnavailable ? (
+          <ServiceUnavailable onRetry={() => { setRetryKey((k) => k + 1); }} />
+        ) : (
+        <>
         {/* 报告类型选择 */}
         <div className="flex gap-2 mb-6 items-center">
           {(["daily", "weekly", "monthly", "trend"] as ReportType[]).map((type) => (
@@ -518,6 +527,8 @@ export function Review() {
               </div>
             )}
           </>
+        )}
+        </>
         )}
       </main>
     </>

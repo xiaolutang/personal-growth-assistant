@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/Header";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUserStore } from "@/stores/userStore";
 import { toast } from "sonner";
+import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import {
   CheckCircle,
   Circle,
@@ -37,6 +38,8 @@ import { PageChatPanel } from "@/components/PageChatPanel";
 export function Home() {
   const tasks = useTaskStore((state) => state.tasks);
   const updateTaskStatus = useTaskStore((state) => state.updateTaskStatus);
+  const fetchEntries = useTaskStore((state) => state.fetchEntries);
+  const serviceUnavailable = useTaskStore((state) => state.serviceUnavailable);
   const navigate = useNavigate();
   const user = useUserStore((state) => state.user);
   const updateMe = useUserStore((state) => state.updateMe);
@@ -184,7 +187,9 @@ export function Home() {
     <>
       <Header title="今天" />
       <main className="flex-1 space-y-5 p-4 md:p-6 pb-32 overflow-y-auto">
-        {isEmpty ? (
+        {serviceUnavailable ? (
+          <ServiceUnavailable onRetry={() => fetchEntries()} />
+        ) : isEmpty ? (
           /* ====== 空状态 ====== */
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">

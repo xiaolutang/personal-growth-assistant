@@ -47,6 +47,8 @@ import { statusConfig, categoryConfig, priorityConfig } from "@/config/constants
 import { TaskList } from "@/components/TaskList";
 import { KnowledgeGraphThumbnail } from "@/components/KnowledgeGraphThumbnail";
 import { LinkEntryDialog } from "@/components/LinkEntryDialog";
+import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
+import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 
 type ContentTab = "preview" | "edit";
 
@@ -173,6 +175,7 @@ export function EntryDetail() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const { updateEntry } = useTaskStore();
+  const { serviceUnavailable, runWith503, retry: retryService } = useServiceUnavailable();
 
   // 自动保存 debounce
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>(null);
@@ -197,13 +200,12 @@ export function EntryDetail() {
     return matches.map((m) => m.slice(2, -2));
   }, [entry?.content]);
 
-  useEffect(() => {
+  const reloadEntry = useCallback(async () => {
     if (!id) return;
-
-    const fetchEntry = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await runWith503(async () => {
         const data = await getEntry(id);
         setEntry(data);
         setEditContent(data.content || "");
@@ -247,15 +249,15 @@ export function EntryDetail() {
           );
           setReferencedNotes(notesMap);
         }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "获取条目失败");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "获取条目失败");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [id, runWith503]);
 
-    fetchEntry();
-  }, [id]);
+  useEffect(() => { reloadEntry(); }, [reloadEntry]);
 
   // 关联条目独立加载
   useEffect(() => {
@@ -510,6 +512,14 @@ export function EntryDetail() {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (serviceUnavailable) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <ServiceUnavailable onRetry={() => retryService(reloadEntry)} />
       </div>
     );
   }

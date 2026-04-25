@@ -6,6 +6,8 @@ import type { SearchFilterOptions } from "../services/api";
 import { useTaskStore } from "@/stores/taskStore";
 import { toast } from "sonner";
 import { PageChatPanel } from "@/components/PageChatPanel";
+import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
+import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { TaskList } from "../components/TaskList";
 import type { Task, Category, TaskStatus, Priority, SearchResult } from "../types/task";
 import { Button } from "@/components/ui/button";
@@ -141,6 +143,7 @@ export function Explore() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [entriesError, setEntriesError] = useState<string | null>(null);
   const { setPageExtra } = useChatStore();
+  const { serviceUnavailable, runWith503, retry: retryService } = useServiceUnavailable();
 
   // 同步 activeTab/searchQuery 到 chatStore.pageExtra
   useEffect(() => {
@@ -240,24 +243,22 @@ export function Explore() {
   }, [searchQuery, searchFilters, activeTab, hasActiveFilters]);
 
   // 独立获取探索页数据（不复用全局 taskStore）
-  useEffect(() => {
-    let cancelled = false;
+  const loadEntries = useCallback(async () => {
     setIsLoading(true);
     setEntriesError(null);
-    getEntries({ limit: 100 })
-      .then((res) => {
-        if (!cancelled) {
-          setEntries(res.entries ?? []);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setEntriesError("加载失败，请重试");
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
+    try {
+      await runWith503(async () => {
+        const res = await getEntries({ limit: 100 });
+        setEntries(res.entries ?? []);
       });
-    return () => { cancelled = true; };
-  }, []);
+    } catch {
+      setEntriesError("加载失败，请重试");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [runWith503]);
+
+  useEffect(() => { loadEntries(); }, [loadEntries]);
 
   // 热门标签
   const popularTags = useMemo(() => getPopularTags(entries), [entries]);
@@ -452,6 +453,10 @@ export function Explore() {
     <main className="flex-1 p-4 md:p-6 pb-32 overflow-y-auto">
       <Header title="探索" />
 
+      {serviceUnavailable ? (
+        <ServiceUnavailable onRetry={() => retryService(loadEntries)} />
+      ) : (
+      <>
       {/* 搜索栏 */}
       <div className="mb-4 relative">
         <div className="relative">
@@ -724,6 +729,8 @@ export function Explore() {
         }}
         defaultCollapsed={!autoExpandAssistant}
       />
+      </>
+      )}
     </main>
   );
 }

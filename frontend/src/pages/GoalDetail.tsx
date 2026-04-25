@@ -7,6 +7,8 @@ import { Progress } from "@/components/ui/progress";
 import { Header } from "@/components/layout/Header";
 import { ArrowLeft, Link2, X, CheckSquare, Square, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
+import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import {
   getGoal,
   updateGoal,
@@ -100,22 +102,25 @@ export function GoalDetail() {
   const [entries, setEntries] = useState<GoalEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSearch, setShowSearch] = useState(false);
+  const { serviceUnavailable, runWith503, retry: retryService } = useServiceUnavailable();
 
   const fetchData = useCallback(async () => {
     if (!goalId) return;
     try {
-      const [goalRes, entriesRes] = await Promise.all([
-        getGoal(goalId),
-        getGoalEntries(goalId).catch(() => ({ entries: [] })),
-      ]);
-      setGoal(goalRes);
-      setEntries(entriesRes.entries ?? []);
+      await runWith503(async () => {
+        const [goalRes, entriesRes] = await Promise.all([
+          getGoal(goalId),
+          getGoalEntries(goalId).catch(() => ({ entries: [] })),
+        ]);
+        setGoal(goalRes);
+        setEntries(entriesRes.entries ?? []);
+      });
     } catch {
       toast.error("加载目标失败");
     } finally {
       setLoading(false);
     }
-  }, [goalId]);
+  }, [goalId, runWith503]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -173,6 +178,14 @@ export function GoalDetail() {
   };
 
   if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">加载中...</div>;
+  if (serviceUnavailable) return (
+    <div className="flex-1">
+      <Header title="目标详情" />
+      <main className="p-6">
+        <ServiceUnavailable onRetry={() => retryService(fetchData)} />
+      </main>
+    </div>
+  );
   if (!goal) return <div className="text-center py-12 text-muted-foreground">目标不存在</div>;
 
   const metricLabel = goal.metric_type === "count" ? "手动计数" : goal.metric_type === "checklist" ? "检查清单" : "Tag 追踪";
