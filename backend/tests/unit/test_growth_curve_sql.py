@@ -437,12 +437,20 @@ class TestYearBoundaryConsistency:
         assert jan6.strftime("%Y-%W") in year_weeks
 
     def test_review_service_year_boundary_week_label(self, service, mock_sqlite):
-        """B101: ReviewService 在年边界时 week label 与 SQL year_week 一致"""
-        # 模拟 SQL 返回 2024-12-30 所在周的数据
-        dec30 = date(2024, 12, 30)
-        # week_start 是 2024-12-30 (周一)
-        week_start_dec30 = dec30 - timedelta(days=dec30.weekday())
-        year_week_key = week_start_dec30.strftime("%Y-%W")
+        """B101: ReviewService 在年边界时 week label 与 SQL year_week 正确映射为 ISO"""
+        from unittest.mock import patch
+
+        # 固定 today=2024-12-31 (周二)，current_week_start=2024-12-30 (周一)
+        fixed_today = date(2024, 12, 31)
+
+        # 2024-12-30 周一的 strftime('%Y-%W') = "2024-53"
+        week_start = fixed_today - timedelta(days=fixed_today.weekday())
+        year_week_key = week_start.strftime("%Y-%W")
+        assert year_week_key == "2024-53"
+
+        # ISO label: 2024-12-30 的 isocalendar() = (2025, 1, 1) → "2025-W01"
+        expected_iso = f"{week_start.isocalendar()[0]}-W{week_start.isocalendar()[1]:02d}"
+        assert expected_iso == "2025-W01"
 
         mock_sqlite.get_growth_curve_tag_stats.return_value = [
             {
@@ -454,21 +462,17 @@ class TestYearBoundaryConsistency:
             },
         ]
 
-        # 请求的 weeks 要覆盖到 2024-12-30 那周
-        # 让 get_growth_curve 使用固定日期来验证
-        # 由于 get_growth_curve 用 date.today()，我们通过 mock 数据的 key
-        # 来验证一致性：如果 SQL 返回的 key 能被 Python 正确匹配到
-        result = service.get_growth_curve(weeks=4, user_id="user1")
+        with patch("app.services.review_service.date") as mock_date:
+            mock_date.today.return_value = fixed_today
+            result = service.get_growth_curve(weeks=4, user_id="user1")
 
-        # 查找包含数据的 point
-        matched_points = [p for p in result.points if p.total_concepts > 0]
-        # 如果当前日期正好能让这个 week 出现在最近 4 周范围内
-        # 由于测试运行时间不同，week_start_dec30 不一定在范围内
-        # 关键验证：如果有匹配，label 必须等于 year_week_key
-        for p in matched_points:
-            assert p.week == year_week_key, (
-                f"week label={p.week} != SQL year_week={year_week_key}"
-            )
+        # 当前周 (index 0) 一定有数据
+        current_point = result.points[0]
+        assert current_point.total_concepts == 1
+        # 验证 week label 是 ISO 格式而非 %Y-%W
+        assert current_point.week == expected_iso, (
+            f"week label={current_point.week} != expected ISO={expected_iso}"
+        )
 
 
 class TestCrossWeekAttribution:
@@ -542,11 +546,21 @@ class TestCrossWeekAttribution:
         assert python_rows[0]["entry_count"] == 1
 
     def test_iso_week_label_format(self, service, mock_sqlite):
-        """B101: week label 必须是 ISO 格式 YYYY-WXX"""
-        # 使用确定性的 mock 数据，不依赖 date.today()
+        """B101: week label 必须精确匹配 ISO 格式 — 使用固定时钟验证年边界映射"""
+        from unittest.mock import patch
+
+        # 固定 today=2025-01-08 (周三)，current_week_start=2025-01-06 (周一)
+        fixed_today = date(2025, 1, 8)
+        week_start = fixed_today - timedelta(days=fixed_today.weekday())
+        year_week_key = week_start.strftime("%Y-%W")
+        assert year_week_key == "2025-01"
+
+        # ISO label: 2025-01-06 的 isocalendar() = (2025, 2, 1) → "2025-W02"
+        expected_iso = f"{week_start.isocalendar()[0]}-W{week_start.isocalendar()[1]:02d}"
+
         mock_sqlite.get_growth_curve_tag_stats.return_value = [
             {
-                "year_week": datetime.now().strftime("%Y-%W"),
+                "year_week": year_week_key,
                 "tag_name": "python",
                 "entry_count": 3,
                 "note_count": 1,
@@ -554,12 +568,18 @@ class TestCrossWeekAttribution:
             },
         ]
 
-        result = service.get_growth_curve(weeks=4, user_id="user1")
-        matched = [p for p in result.points if p.total_concepts > 0]
-        assert len(matched) >= 1, "Should have at least one matched week"
-        for p in matched:
-            # ISO week 格式: YYYY-WXX (如 2026-W16)
-            import re
-            assert re.match(r"\d{4}-W\d{2}$", p.week), (
-                f"week label '{p.week}' should be ISO format YYYY-WXX"
-            )
+        with patch("app.services.review_service.date") as mock_date:
+            mock_date.today.return_value = fixed_today
+            result = service.get_growth_curve(weeks=4, user_id="user1")
+
+        # 当前周一定有匹配
+        current_point = result.points[0]
+        assert current_point.total_concepts == 1, "Current week should have data"
+        # 精确断言 ISO label，不只验正则
+        assert current_point.week == expected_iso, (
+            f"week label={current_point.week} != expected ISO={expected_iso}"
+        )
+        # 同时验证格式不是 %Y-%W（即 "2025-01"）
+        assert current_point.week != year_week_key, (
+            f"week label should be ISO format, not %Y-%W: got {current_point.week}"
+        )
