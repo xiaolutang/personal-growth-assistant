@@ -8,6 +8,7 @@ import { Header } from "@/components/layout/Header";
 import { Plus, Target, Calendar, Archive, CheckCircle2, ListChecks, Tag } from "lucide-react";
 import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
+import { ProgressRing } from "@/components/ProgressRing";
 import { toast } from "sonner";
 import {
   getGoals,
@@ -190,21 +191,6 @@ function CreateGoalDialog({ open, onClose, onCreated }: {
         </div>
       </div>
     </div>
-  );
-}
-
-// === 进度环形图 ===
-function ProgressRing({ percentage, size = 80 }: { percentage: number; size?: number }) {
-  const strokeWidth = 6;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (percentage / 100) * circumference;
-
-  return (
-    <svg width={size} height={size} className="transform -rotate-90">
-      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="currentColor" strokeWidth={strokeWidth} className="text-primary/20" />
-      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="text-primary transition-all duration-500" />
-    </svg>
   );
 }
 
