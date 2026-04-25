@@ -450,9 +450,9 @@ class TestReviewKnowledgeAPI:
             assert "advanced_count" in point
             assert "intermediate_count" in point
             assert "beginner_count" in point
-            # week 格式应为 YYYY-WW (strftime('%Y-%W')，如 "2026-16")
+            # week 格式应为 ISO 周格式 (YYYY-WXX，如 "2026-W16")
             import re
-            assert re.match(r"\d{4}-\d{2}", point["week"]), f"Invalid week format: {point['week']}"
+            assert re.match(r"\d{4}-W\d{2}", point["week"]), f"Invalid week format: {point['week']}"
 
     async def test_growth_curve_default_weeks(self, client: AsyncClient):
         """测试成长曲线默认 8 周"""

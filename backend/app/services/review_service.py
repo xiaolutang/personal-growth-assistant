@@ -721,8 +721,6 @@ class ReviewService(MorningDigestMixin, InsightsMixin):
 
             # 计算 year_week key：使用 strftime('%Y-%W') 格式
             # %W 是 Monday-based week number (00-53)，与 SQL 的 strftime('%Y-%W') 完全一致
-            # 注意：不用 isocalendar()，因为 ISO week 与 %W 在年边界有偏差
-            # 例：2024-12-30 的 ISO week = 2025-W01，但 %W = 2024-53
             year_week_key = week_start.strftime("%Y-%W")
 
             # 获取该周的 tag 统计
@@ -746,8 +744,9 @@ class ReviewService(MorningDigestMixin, InsightsMixin):
                 elif mastery == "beginner":
                     beginner_count += 1
 
-            # 计算周编号：使用 %W 格式，与 SQL strftime('%Y-%W') 保持一致
-            week_label = year_week_key
+            # 恢复 ISO 周标签格式 (YYYY-WXX)，与 API 契约一致
+            iso_calendar = week_start.isocalendar()
+            week_label = f"{iso_calendar[0]}-W{iso_calendar[1]:02d}"
 
             points.append(GrowthCurvePoint(
                 week=week_label,

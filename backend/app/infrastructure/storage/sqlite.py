@@ -1682,16 +1682,13 @@ class SQLiteStorage:
     ) -> list[dict[str, Any]]:
         """按周 + tag 分组聚合 entry_count / note_count / recent_count。
 
-        复用 get_tag_stats_for_knowledge_map 的 SQL 模式，增加周分组。
-        使用 strftime('%Y-%W', created_at) 计算 Monday-based 周编号。
-        %W 以周一为一周起始，编号 00-53，年从 1 月 1 日开始计。
-        Python 层 review_service.get_growth_curve 使用同样的 strftime('%Y-%W')
-        生成查找键，确保两端口径一致。
+        周归属规则（与旧 list_entries 实现等价）：
+        条目按 created_at 或 updated_at 落入某周即归属该周。
+        同一条目可出现在多个周（创建于周 A、更新于周 B 时两处都计数）。
+        同一周内去重（created_at 和 updated_at 在同一周只计一次）。
 
-        注意：%W 不是 ISO week。ISO week 与 %W 在年边界有偏差：
-        - 2024-12-30 的 %W = 2024-53，但 ISO = 2025-W01
-        - 2025-01-06 的 %W = 2025-01，但 ISO = 2025-W02
-        两端统一使用 %W 即可保证数据匹配。
+        内部使用 strftime('%Y-%W') 做周编号（Monday-based, 00-53），
+        Python 层 get_growth_curve 用同样的 key 做查找，再转换为 ISO 周标签。
 
         Args:
             user_id: 用户 ID
@@ -1701,7 +1698,7 @@ class SQLiteStorage:
         Returns:
             [
                 {
-                    "year_week": str,       # "2026-16" 格式
+                    "year_week": str,       # "%Y-%W" 格式，如 "2026-16"
                     "tag_name": str,
                     "entry_count": int,
                     "note_count": int,
@@ -1712,29 +1709,41 @@ class SQLiteStorage:
             如果某周无 entries，则不返回该周行。
 
         Note:
-            - 日期范围使用 start_date <= created_at <= end_date + "T23:59:59"
+            - 主过滤按 created_at 在范围内筛选条目（与旧 list_entries 一致）
+            - 周归属同时考虑 created_at 和 updated_at
             - recent_count 基于 updated_at 是否在最近 30 天内
         """
         thirty_days_ago = (datetime.now() - __import__("datetime").timedelta(days=30)).isoformat()
-        # end_date 需要包含当天，上界用 end_date + "T23:59:59"
         end_upper = end_date + "T23:59:59"
         conn = self._get_conn()
         try:
             rows = conn.execute("""
-                SELECT strftime('%Y-%W', e.created_at) AS year_week,
+                WITH base_entries AS (
+                    SELECT e.id, e.type, e.updated_at, e.created_at
+                    FROM entries e
+                    WHERE e.user_id = ?
+                      AND e.created_at >= ?
+                      AND e.created_at <= ?
+                ),
+                entry_weeks AS (
+                    SELECT strftime('%Y-%W', created_at) AS year_week, id
+                    FROM base_entries
+                    UNION
+                    SELECT strftime('%Y-%W', updated_at) AS year_week, id
+                    FROM base_entries
+                )
+                SELECT ew.year_week,
                        t.name AS tag_name,
-                       COUNT(DISTINCT e.id) AS entry_count,
-                       SUM(CASE WHEN e.type = 'note' THEN 1 ELSE 0 END) AS note_count,
-                       SUM(CASE WHEN e.updated_at >= ? THEN 1 ELSE 0 END) AS recent_count
-                FROM tags t
-                JOIN entry_tags et ON t.id = et.tag_id
-                JOIN entries e ON et.entry_id = e.id
-                WHERE e.user_id = ?
-                  AND e.created_at >= ?
-                  AND e.created_at <= ?
-                GROUP BY year_week, t.name
-                ORDER BY year_week, t.name
-            """, (thirty_days_ago, user_id, start_date, end_upper)).fetchall()
+                       COUNT(DISTINCT ew.id) AS entry_count,
+                       SUM(CASE WHEN be.type = 'note' THEN 1 ELSE 0 END) AS note_count,
+                       SUM(CASE WHEN be.updated_at >= ? THEN 1 ELSE 0 END) AS recent_count
+                FROM entry_weeks ew
+                JOIN base_entries be ON ew.id = be.id
+                JOIN entry_tags et ON be.id = et.entry_id
+                JOIN tags t ON et.tag_id = t.id
+                GROUP BY ew.year_week, t.name
+                ORDER BY ew.year_week, t.name
+            """, (user_id, start_date, end_upper, thirty_days_ago)).fetchall()
 
             return [
                 {
