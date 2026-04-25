@@ -746,5 +746,32 @@ describe("GraphPage Tab 切换与基本渲染", () => {
       });
       expect(screen.queryByText("服务暂时不可用")).not.toBeInTheDocument();
     });
+
+    it("503 后重试再次 503 仍显示降级页", async () => {
+      mockGetCapabilityMap
+        .mockRejectedValueOnce(new ApiError(503, "Service Unavailable", {}))
+        .mockRejectedValueOnce(new ApiError(503, "Service Unavailable", {}));
+
+      render(<GraphPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("react-flow")).toBeInTheDocument();
+      });
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: "能力地图" }));
+
+      await waitFor(() => {
+        expect(screen.getByText("服务暂时不可用")).toBeInTheDocument();
+      });
+
+      // 点击重试 — 仍然 503
+      await user.click(screen.getByRole("button", { name: "重试" }));
+
+      // 降级页应持续显示，而非空白页
+      await waitFor(() => {
+        expect(screen.getByText("服务暂时不可用")).toBeInTheDocument();
+      });
+    });
   });
 });

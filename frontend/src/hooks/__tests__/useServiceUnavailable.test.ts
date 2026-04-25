@@ -93,4 +93,32 @@ describe("useServiceUnavailable", () => {
     expect(result.current.serviceUnavailable).toBe(false);
     expect(fn).toHaveBeenCalledTimes(1);
   });
+
+  it("retry 后 fn 内部 503 再次触发时保持 serviceUnavailable=true", async () => {
+    const { result } = renderHook(() => useServiceUnavailable());
+    const error503 = new ApiError(503, "Service Unavailable", {});
+
+    // 先触发 503
+    await act(async () => {
+      await result.current.runWith503(async () => {
+        throw error503;
+      });
+    });
+    expect(result.current.serviceUnavailable).toBe(true);
+
+    // retry 时 fn 内部又 503（模拟：fn 内部调用 runWith503 并再次遇到 503）
+    const fnThat503s = vi.fn().mockImplementation(async () => {
+      await result.current.runWith503(async () => {
+        throw error503;
+      });
+    });
+
+    await act(async () => {
+      result.current.retry(fnThat503s);
+    });
+
+    // 应仍为 true：retry 清了状态，但 fn 内部 runWith503 又设回 true
+    expect(result.current.serviceUnavailable).toBe(true);
+    expect(fnThat503s).toHaveBeenCalledTimes(1);
+  });
 });
