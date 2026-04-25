@@ -339,6 +339,7 @@ export interface paths {
          * @description 获取全局知识图谱
          *
          *     返回所有概念节点及其关系，支持按掌握度/领域/项目分组查看。
+         *     Neo4j 不可用时返回 200 + 空图谱（降级到 SQLite）。
          */
         get: operations["get_knowledge_map_knowledge_map_get"];
         put?: never;
@@ -361,6 +362,7 @@ export interface paths {
          * @description 获取知识概念统计
          *
          *     返回概念总数、关系总数、类别分布和热门概念。
+         *     Neo4j 不可用时返回 200 + 零值统计（降级到 SQLite）。
          */
         get: operations["get_knowledge_stats_knowledge_stats_get"];
         put?: never;
@@ -968,7 +970,7 @@ export interface paths {
         put?: never;
         /**
          * Logout
-         * @description 登出（前端清除 token）
+         * @description 登出：将 token 加入黑名单
          */
         post: operations["logout_auth_logout_post"];
         delete?: never;

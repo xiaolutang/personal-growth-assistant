@@ -95,46 +95,43 @@ export function Home() {
     }
   }, [convertingId, storeUpdateEntry]);
 
-  // 今日任务
-  const todayTasks = useMemo(() => {
+  // 单次遍历产出今日任务、灵感、统计
+  const { todayTasks, unprocessedInbox, recentInbox, todayStats } = useMemo(() => {
     const today = new Date().toISOString().split("T")[0];
-    return tasks.filter((task) => {
-      if (task.planned_date) {
-        return task.planned_date.startsWith(today);
+    const _todayTasks: typeof tasks = [];
+    const _unprocessedInbox: typeof tasks = [];
+    const allInbox: typeof tasks = [];
+    const stats = { total: 0, completed: 0, doing: 0, waitStart: 0 };
+
+    for (const task of tasks) {
+      // 今日任务
+      const isToday = task.planned_date?.startsWith(today) || task.created_at?.startsWith(today);
+      if (isToday) {
+        _todayTasks.push(task);
+        stats.total++;
+        if (task.status === "complete") stats.completed++;
+        else if (task.status === "doing") stats.doing++;
+        else if (task.status === "waitStart") stats.waitStart++;
       }
-      if (task.created_at) {
-        return task.created_at.startsWith(today);
+      // 灵感收集
+      if (task.category === "inbox") {
+        allInbox.push(task);
+        if (task.status !== "complete") _unprocessedInbox.push(task);
       }
-      return false;
-    });
-  }, [tasks]);
-
-  // 未处理的灵感（inbox 中非 complete 状态）
-  const unprocessedInbox = useMemo(
-    () => tasks.filter((t) => t.category === "inbox" && t.status !== "complete"),
-    [tasks]
-  );
-
-  // 最近灵感（取最新 3 条）
-  const recentInbox = useMemo(
-    () =>
-      [...tasks]
-        .filter((t) => t.category === "inbox")
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 3),
-    [tasks]
-  );
-
-  // 今日统计
-  const todayStats = useMemo(() => {
-    const stats = { total: todayTasks.length, completed: 0, doing: 0, waitStart: 0 };
-    for (const task of todayTasks) {
-      if (task.status === "complete") stats.completed++;
-      else if (task.status === "doing") stats.doing++;
-      else if (task.status === "waitStart") stats.waitStart++;
     }
-    return stats;
-  }, [todayTasks]);
+
+    // 最近灵感：按创建时间降序取前 3 条
+    const _recentInbox = allInbox
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 3);
+
+    return {
+      todayTasks: _todayTasks,
+      unprocessedInbox: _unprocessedInbox,
+      recentInbox: _recentInbox,
+      todayStats: stats,
+    };
+  }, [tasks]);
 
   const todayCompletionRate =
     todayStats.total > 0 ? Math.round((todayStats.completed / todayStats.total) * 100) : 0;

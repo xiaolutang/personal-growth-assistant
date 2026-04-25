@@ -1,5 +1,30 @@
 # 测试覆盖清单
 
+## R035: 预存问题修复（R034 Simplify 发现）
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| 趋势字段修复 | B96 | unit | 有趋势数据正确渲染/空趋势fallback/回归report导出 | done | L2, 3 tests, 1179 pytest total |
+| 掌握度共享模块 | B97 | unit | 阈值矩阵(0/1/3/6+note)/relationship_count折算/KnowledgeService调用路径/ReviewService调用路径/回归 | done | L1, 15 tests, 1190 pytest total |
+| heatmap SQL 聚合 | B98 | unit | 有entries正确tag统计/无entries空列表/计数一致/掌握度正确/回归 | done | L1, 5 service tests + 4 API tests + 7 regression fixes, 1213 pytest total |
+| tag_stats SQL 聚合 | B99 | unit | 有entries频次排序/无entries空列表/时间范围边界/频次一致/user_id隔离跨用户/回归 | done | L1, 6 service tests + 8 storage tests (real SQLite), 1213 pytest total |
+| 质量收口 | S32 | integration+smoke | pytest全量/vitest全量/build/Docker smoke(成长报告趋势+heatmap+AI洞察tag统计) | done | L4, pytest 1213, vitest 386, build success, Docker smoke 3 项全部通过 |
+
+## R034: 技术债收敛 (R029 Residual Risks)
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| useMorningDigest 增强 | F122 | unit | error初始null/成功null/失败string/卸载不更新 | done | F1, 10 tests (7 existing + 3 new), 366 vitest total |
+| 统一导出 | F123 | unit | 5组件移除default后build无报错/Review.tsx命名导入 | done | F1, 验收已满足无需代码变更 |
+| 依赖注入 | B93 | unit | 构造函数参数/不调deps/growth-report回归200 | done | L2, 3 new tests, 1173 pytest total |
+| 合并遍历 | F124 | unit | todayTasks/unprocessedInbox/recentInbox/todayStats等价 | done | F1, 366 vitest passed, build success |
+| 定向查询 | B94 | unit | 匹配tag/无匹配/大小写不敏感/部分匹配/去重/最多5条/空tag/异常tag | done | L1, 1176 pytest passed |
+| GraphPage 拆分 | F125 | unit+manual | 4 Tab功能不变/build无TS错误 | done | F2, 366 vitest, build success, 1016→304 行 |
+| 模型拆分 | B95 | unit | 模型import正确(review_service+review.py)/pytest | done | L1, 1176 pytest passed, 2096→1900 行 |
+| api.ts 类型迁移 | F126 | unit | API调用类型正确/gen:types无冲突/build | done | F2, 366 vitest, build success, 1189→500 行 |
+| GraphPage Tab 测试 | F127 | unit | 4 Tab切换/focus高亮/搜索防抖/showAll/能力地图筛选+重试/详情面板/时间线 | done | F2, 20 new tests, 386 vitest total |
+| 质量收口 | S31 | integration+smoke | pytest全量/vitest全量/build/Docker smoke | done | L4, 1176 pytest, 386 vitest, build success |
+
 ## R033: 安全增强收口
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |

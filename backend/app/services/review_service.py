@@ -3,215 +3,20 @@ import asyncio
 import json
 import logging
 from datetime import date, datetime, timedelta, timezone
-from typing import List, Dict, Any, Optional, Literal, TYPE_CHECKING
+from typing import List, Dict, Any, Optional, TYPE_CHECKING
 
-from pydantic import BaseModel, Field
-
+from app.models.review import *  # noqa: F401,F403 — re-export for backward compat
+from app.utils.mastery import calculate_mastery_from_stats
 if TYPE_CHECKING:
     from app.callers import APICaller
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
 # B85: 晨报缓存 — 单进程 best-effort
-# ---------------------------------------------------------------------------
 _MORNING_DIGEST_CACHE_MAX = 1000
 _morning_digest_cache: dict[str, tuple[dict, str]] = {}  # key -> (response_dict, cached_at)
 _morning_digest_lock = asyncio.Lock()
 _morning_digest_pending: set[str] = set()  # single-flight: 正在计算的 key
-
-
-class TrendPeriod(BaseModel):
-    """趋势统计周期"""
-    date: str = Field(..., description="日期（YYYY-MM-DD 或 YYYY-WXX）")
-    total: int = Field(0, description="总任务数")
-    completed: int = Field(0, description="已完成数")
-    completion_rate: float = Field(0.0, description="完成率（百分比）")
-    notes_count: int = Field(0, description="笔记数")
-    task_count: int = Field(0, description="任务数")
-    inbox_count: int = Field(0, description="灵感数")
-
-
-class TrendResponse(BaseModel):
-    """趋势数据响应"""
-    periods: List[TrendPeriod] = Field(default_factory=list, description="统计周期数组")
-
-
-class HeatmapItem(BaseModel):
-    """热力图项"""
-    concept: str
-    mastery: str = "new"
-    entry_count: int = 0
-    category: Optional[str] = None
-    mention_count: int = 0
-
-
-class HeatmapResponse(BaseModel):
-    """知识热力图响应"""
-    items: List[HeatmapItem] = []
-
-
-class GrowthCurvePoint(BaseModel):
-    """成长曲线点"""
-    week: str  # e.g. "2026-W15"
-    total_concepts: int = 0
-    advanced_count: int = 0
-    intermediate_count: int = 0
-    beginner_count: int = 0
-
-
-class GrowthCurveResponse(BaseModel):
-    """成长曲线响应"""
-    points: List[GrowthCurvePoint] = []
-
-
-class MorningDigestTodo(BaseModel):
-    """晨报待办项"""
-    id: str
-    title: str
-    priority: str = "medium"
-    planned_date: Optional[str] = None
-
-
-class MorningDigestOverdue(BaseModel):
-    """晨报拖延项"""
-    id: str
-    title: str
-    priority: str = "medium"
-    planned_date: Optional[str] = None
-
-
-class MorningDigestStaleInbox(BaseModel):
-    """晨报未跟进灵感"""
-    id: str
-    title: str
-    created_at: str
-
-
-class MorningDigestWeeklySummary(BaseModel):
-    """晨报本周学习摘要"""
-    new_concepts: List[str] = []
-    entries_count: int = 0
-
-
-class DailyFocus(BaseModel):
-    """每日聚焦"""
-    title: str
-    description: str
-    target_entry_id: Optional[str] = None
-
-
-class MorningDigestResponse(BaseModel):
-    """AI 晨报响应"""
-    date: str
-    ai_suggestion: str
-    todos: List[MorningDigestTodo] = []
-    overdue: List[MorningDigestOverdue] = []
-    stale_inbox: List[MorningDigestStaleInbox] = []
-    weekly_summary: MorningDigestWeeklySummary = Field(default_factory=MorningDigestWeeklySummary)
-    learning_streak: int = 0
-    daily_focus: Optional[DailyFocus] = None
-    pattern_insights: List[str] = []
-    cached_at: Optional[str] = None
-
-
-class TaskStats(BaseModel):
-    """任务统计"""
-    total: int = Field(..., description="总任务数")
-    completed: int = Field(..., description="已完成数")
-    doing: int = Field(..., description="进行中数")
-    wait_start: int = Field(..., description="待开始数")
-    completion_rate: float = Field(..., description="完成率")
-
-
-class NoteStats(BaseModel):
-    """笔记统计"""
-    total: int = Field(..., description="笔记总数")
-    recent_titles: List[str] = Field(default_factory=list, description="最近笔记标题")
-
-
-class DailyReport(BaseModel):
-    """日报响应"""
-    date: str
-    task_stats: TaskStats
-    note_stats: NoteStats
-    completed_tasks: List[dict] = Field(default_factory=list)
-    ai_summary: Optional[str] = None
-
-
-class VsLastPeriod(BaseModel):
-    """环比差值"""
-    delta_completion_rate: Optional[float] = Field(None, description="完成率差值（百分比）")
-    delta_total: Optional[int] = Field(None, description="总任务数差值")
-
-
-class WeeklyReport(BaseModel):
-    """周报响应"""
-    start_date: str
-    end_date: str
-    task_stats: TaskStats
-    note_stats: NoteStats
-    daily_breakdown: List[dict] = Field(default_factory=list)
-    ai_summary: Optional[str] = None
-    vs_last_week: Optional[VsLastPeriod] = Field(None, description="环比上周")
-
-
-class MonthlyReport(BaseModel):
-    """月报响应"""
-    month: str
-    task_stats: TaskStats
-    note_stats: NoteStats
-    weekly_breakdown: List[dict] = Field(default_factory=list)
-    ai_summary: Optional[str] = None
-    vs_last_month: Optional[VsLastPeriod] = Field(None, description="环比上月")
-
-
-class ActivityHeatmapItem(BaseModel):
-    date: str
-    count: int = 0
-
-
-class ActivityHeatmapResponse(BaseModel):
-    year: int
-    items: List[ActivityHeatmapItem] = []
-
-
-class BehaviorPattern(BaseModel):
-    """行为模式"""
-    pattern: str = Field(..., description="模式描述")
-    frequency: int = Field(0, description="出现频率")
-    trend: Literal["improving", "stable", "declining"] = Field("stable", description="趋势")
-
-
-class GrowthSuggestion(BaseModel):
-    """成长建议"""
-    suggestion: str = Field(..., description="建议内容")
-    priority: Literal["high", "medium", "low"] = Field("medium", description="优先级")
-    related_area: str = Field("", description="相关领域")
-
-
-class CapabilityChange(BaseModel):
-    """能力变化"""
-    capability: str = Field(..., description="能力名称")
-    previous_level: float = Field(0.0, ge=0.0, le=1.0, description="前水平 (0-1)")
-    current_level: float = Field(0.0, ge=0.0, le=1.0, description="当前水平 (0-1)")
-    change: float = Field(0.0, description="变化值")
-
-
-class DeepInsights(BaseModel):
-    """深度洞察内容"""
-    behavior_patterns: List[BehaviorPattern] = Field(default_factory=list, max_length=3, description="行为模式")
-    growth_suggestions: List[GrowthSuggestion] = Field(default_factory=list, max_length=3, description="成长建议")
-    capability_changes: List[CapabilityChange] = Field(default_factory=list, max_length=3, description="能力变化")
-
-
-class InsightsResponse(BaseModel):
-    """深度洞察响应"""
-    period: Literal["weekly", "monthly"] = Field(..., description="周期")
-    start_date: str = Field(..., description="开始日期")
-    end_date: str = Field(..., description="结束日期")
-    insights: DeepInsights = Field(default_factory=DeepInsights, description="洞察内容")
-    source: Literal["llm", "rule_based"] = Field("rule_based", description="来源")
 
 
 class ReviewService:
@@ -231,6 +36,7 @@ class ReviewService:
         self._neo4j_client = neo4j_client
         self._llm_caller: Optional["APICaller"] = None
         self._goal_service = None  # 通过 set_goal_service 注入
+        self._knowledge_service = None  # 通过 set_knowledge_service 注入
 
     def set_sqlite_storage(self, storage):
         """设置 SQLite 存储"""
@@ -243,6 +49,10 @@ class ReviewService:
     def set_goal_service(self, goal_service):
         """设置目标服务（由 deps.py 注入）"""
         self._goal_service = goal_service
+
+    def set_knowledge_service(self, knowledge_service):
+        """设置知识图谱服务（由 deps.py 注入）"""
+        self._knowledge_service = knowledge_service
 
     @staticmethod
     def calculate_task_stats(tasks: List[dict]) -> TaskStats:
@@ -778,57 +588,24 @@ class ReviewService:
         return self._get_heatmap_from_sqlite(user_id)
 
     def _get_heatmap_from_sqlite(self, user_id: str) -> HeatmapResponse:
-        """从 SQLite tags 获取热力图数据（降级路径）"""
+        """从 SQLite tags 获取热力图数据（降级路径，SQL 聚合）"""
         if not self._sqlite:
             raise ValueError("SQLite 存储未初始化")
 
-        all_entries = self._sqlite.list_entries(limit=1000, user_id=user_id)
-
-        # 从所有条目的 tags 中提取概念并统计
-        concept_map: Dict[str, Dict] = {}
-        for entry in all_entries:
-            tags = entry.get("tags", [])
-            entry_type = entry.get("type", "task")
-            updated_str = entry.get("updated_at", "")
-
-            for tag in tags:
-                if tag not in concept_map:
-                    concept_map[tag] = {
-                        "entry_count": 0,
-                        "recent_count": 0,
-                        "note_count": 0,
-                    }
-                concept_map[tag]["entry_count"] += 1
-
-                if entry_type == "note":
-                    concept_map[tag]["note_count"] += 1
-
-                # 检查是否在最近 30 天内更新
-                try:
-                    if updated_str:
-                        if isinstance(updated_str, str):
-                            updated_at = datetime.fromisoformat(
-                                updated_str.replace("Z", "+00:00")
-                            )
-                        else:
-                            updated_at = updated_str
-                        if updated_at >= datetime.now() - timedelta(days=30):
-                            concept_map[tag]["recent_count"] += 1
-                except (ValueError, TypeError):
-                    pass
+        stats = self._sqlite.get_tag_stats_for_knowledge_map(user_id=user_id)
 
         # 构建热力图项
         items: List[HeatmapItem] = []
-        for concept, info in concept_map.items():
+        for tag_info in stats.get("tags", []):
             mastery = self._calculate_mastery_from_stats(
-                entry_count=info["entry_count"],
-                recent_count=info["recent_count"],
-                note_count=info["note_count"],
+                entry_count=tag_info["entry_count"],
+                recent_count=tag_info["recent_count"],
+                note_count=tag_info["note_count"],
             )
             items.append(HeatmapItem(
-                concept=concept,
+                concept=tag_info["name"],
                 mastery=mastery,
-                entry_count=info["entry_count"],
+                entry_count=tag_info["entry_count"],
                 category="tag",
             ))
 
@@ -1022,19 +799,14 @@ class ReviewService:
         return streak
 
     def _compute_30d_tag_stats(self, user_id: str, days: int = 30, top_n: int = 10) -> list[tuple[str, int]]:
-        """统计近 N 天条目的标签频次 top N，供 B86/B87 共享"""
+        """统计近 N 天条目的标签频次 top N（SQL 聚合）"""
         if not self._sqlite:
             return []
         today = date.today()
         start = (today - timedelta(days=days)).isoformat()
-        entries = self._sqlite.list_entries(
-            start_date=start, end_date=today.isoformat(), limit=5000, user_id=user_id,
+        return self._sqlite.get_tag_stats_in_range(
+            user_id=user_id, start_date=start, end_date=today.isoformat(), top_n=top_n,
         )
-        tag_freq: dict[str, int] = {}
-        for entry in entries:
-            for tag in entry.get("tags", []):
-                tag_freq[tag] = tag_freq.get(tag, 0) + 1
-        return sorted(tag_freq.items(), key=lambda x: x[1], reverse=True)[:top_n]
 
     async def _generate_pattern_insights_llm(self, user_id: str) -> Optional[List[str]]:
         """B87: 使用 LLM 生成模式洞察。返回 None 表示 LLM 不可用/失败（需降级），返回列表表示 LLM 成功。"""
@@ -1627,31 +1399,13 @@ class ReviewService:
         note_count: int = 0,
         relationship_count: int = 0,
     ) -> str:
-        """
-        根据统计数据计算掌握度（阈值式，与 knowledge_service 一致）
-
-        规则：
-        - relationship_count 折算为等价 entry_count（每 2 个关系 ≈ 1 个条目）
-        - effective_count = entry_count + relationship_count // 2
-        - effective_count >= 6 且 note_ratio > 0.3 → advanced
-        - effective_count >= 3 且 recent_count > 0 → intermediate
-        - effective_count >= 1 → beginner
-        - 其他 → new
-        """
-        effective_count = entry_count + max(0, relationship_count // 2)
-
-        if effective_count == 0:
-            return "new"
-
-        note_ratio = note_count / effective_count if effective_count > 0 else 0
-
-        if effective_count >= 6 and note_ratio > 0.3:
-            return "advanced"
-        elif effective_count >= 3 and recent_count > 0:
-            return "intermediate"
-        elif effective_count >= 1:
-            return "beginner"
-        return "new"
+        """根据统计数据计算掌握度（委托到共享模块）"""
+        return calculate_mastery_from_stats(
+            entry_count=entry_count,
+            recent_count=recent_count,
+            note_count=note_count,
+            relationship_count=relationship_count,
+        )
 
     def get_activity_heatmap(self, year: int, user_id: str) -> ActivityHeatmapResponse:
         """获取年度每日活动热力图数据（基于 created_at）"""
@@ -1703,10 +1457,10 @@ class ReviewService:
         # Section 2: 学习趋势
         trend_data = self.get_trend_data(period="weekly", weeks=4, user_id=user_id)
         trend_lines = []
-        if trend_data and hasattr(trend_data, "daily_data") and trend_data.daily_data:
+        if trend_data and hasattr(trend_data, "periods") and trend_data.periods:
             from collections import defaultdict
             weekly_buckets = defaultdict(int)
-            for item in trend_data.daily_data:
+            for item in trend_data.periods:
                 d = item.date if hasattr(item, "date") else str(item.get("date", ""))
                 cnt = item.total if hasattr(item, "total") else item.get("total", 0)
                 try:
@@ -1726,9 +1480,9 @@ class ReviewService:
         # Section 4: 知识图谱概览
         knowledge_lines = []
         try:
-            from app.routers.deps import get_knowledge_service
-            ks = get_knowledge_service()
-            stats = await ks.get_knowledge_stats(user_id)
+            if self._knowledge_service:
+                ks = self._knowledge_service
+                stats = await ks.get_knowledge_stats(user_id)
             knowledge_lines = [
                 f"| 指标 | 数值 |",
                 f"|------|------|",

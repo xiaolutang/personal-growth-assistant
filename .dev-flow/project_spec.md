@@ -1,38 +1,34 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.33.0
-> 状态：规划中（R033）
-> 活跃分支：feat/R033-security-hardening
+> 版本：v0.34.0
+> 状态：规划中（R034）
+> 活跃分支：feat/R034-tech-debt-residual
 
 ## 当前范围
 
-R033 安全增强收口（R017 deferred 项）：
+R034 技术债收敛（R029 Residual Risks）：
 
-1. **B90 JWT Token 黑名单机制**：内存黑名单 + jti 标识 + 定时清理，/auth/logout 真正失效 token
-2. **F121 前端 logout 调用后端**：userStore.logout() 先调后端 API 再清本地
-3. **B91 Qdrant 懒重连异常保护**：connect() 加 try-except，统一双重检查模式
-4. **B92 Neo4j 降级 + 知识图谱路由完善**：_get_session() 防护，路由层返回空数据而非 500
-5. **S30 质量收口**：全量测试 + 构建
+1. **F122 useMorningDigest error 增强**：error 从 boolean 改为 string | null
+2. **F123 Review 组件统一导出**：5 个组件移除 export default
+3. **B93 export_growth_report 依赖注入**：消除反向依赖 deps
+4. **F124 Home.tsx 合并遍历**：4 个 useMemo 合并为单次遍历
+5. **B94 _recommend_from_tags 优化**：全量遍历改为定向查询
+6. **F125 GraphPage 拆分**：1016 行拆为 5 个文件 + useGraphState hook
+7. **B95 review_service 模型拆分**：Pydantic 模型独立到 models/review.py
+8. **F126 api.ts 类型迁移**：手动类型替换为 api.generated.ts 生成类型
+9. **F127 GraphPage Tab 测试**：4 个 Tab 切换自动化测试
+10. **S31 质量收口**：全量测试 + 构建 + Docker smoke
 
 ## 技术约束
 
-- Token 黑名单使用内存 Set（单实例 Docker 部署足够），不引入 Redis
-- jti 使用 UUID4 唯一标识，定时清理过期记录（10 分钟间隔）
-- 降级修复为防御性改动，不改变现有降级架构
+- 所有改动为现有模块内代码质量提升，不改业务逻辑
+- 大型重构采用渐进策略，保持每步可验证
 - workflow: B/codex_plugin/skill_orchestrated
 
 ## 用户路径
 
 ```
-JWT 黑名单：
-用户点击"退出登录" → 前端调 POST /auth/logout（带 token）
-         → 后端将 token jti 加入黑名单
-         → 前端清除 localStorage，跳转登录页
-         → 旧 token 在过期前也无法使用（已被黑名单拦截）
-
-降级完善：
-管理员不配置 NEO4J_URI → 应用正常启动
-         → 知识图谱页面返回空数据（200 + 空图），而非 500 错误
-         → 搜索功能降级到 SQLite 全文搜索
+无新增用户路径。所有改动为内部代码质量提升，
+用户可见行为不变。
 ```

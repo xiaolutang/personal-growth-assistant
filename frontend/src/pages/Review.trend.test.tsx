@@ -54,7 +54,7 @@ vi.mock("@/services/api", () => ({
 
 // Mock useMorningDigest hook
 vi.mock("@/hooks/useMorningDigest", () => ({
-  useMorningDigest: () => ({ data: null, loading: false, error: false }),
+  useMorningDigest: () => ({ data: null, loading: false, error: null }),
 }));
 
 // 辅助：测试用趋势数据

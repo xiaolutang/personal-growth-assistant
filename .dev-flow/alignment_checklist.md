@@ -1,5 +1,69 @@
 # 对齐清单
 
+## R035: 预存问题修复（R034 Simplify 发现）
+
+### 契约对齐
+
+- [x] 不涉及新契约，所有改动为内部缺陷修复和性能优化 ✓
+
+### 依赖对齐
+
+- [x] B96 无外部依赖 ✓
+- [x] B97 depends_on B96 ✓（共享 review_service.py，串行避免写冲突）
+- [x] B98 depends_on B97 ✓（_get_heatmap_from_sqlite 内部调用 _calculate_mastery_from_stats，B97 提取后需适配新调用路径）
+- [x] B99 depends_on B98 ✓（共享 sqlite.py 文件，串行避免写冲突）
+- [x] S32 depends_on B96-B99 ✓
+
+### 架构对齐
+
+- [x] B96: 字段名修正，不改变数据模型 ✓
+- [x] B97: 新建 app/utils/mastery.py，ReviewService 和 KnowledgeService 各自导入，消除循环依赖 ✓
+- [x] B97: 统一签名为 4 参数版本（含 relationship_count） ✓
+- [x] B98: 复用已有 SQL 聚合方法，不新增 SQL 查询
+- [x] B99: sqlite.py 新增 get_tag_stats_in_range 方法
+- [x] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫 ✓
+
+### 执行顺序
+
+- [x] Phase 1: B96 → B97（串行，共享 review_service.py）✓
+- [x] Phase 2: B98 → B99（串行，B98 depends_on B97，B99 depends_on B98）✓
+- [x] Phase 3: S32 ✓
+
+## R034: 技术债收敛 (R029 Residual Risks)
+
+### 契约对齐
+
+- [ ] 不涉及新契约，所有改动为内部代码质量提升
+
+### 依赖对齐
+
+- [ ] F122 无外部依赖 ✓
+- [ ] F123 无外部依赖 ✓
+- [ ] B93 无外部依赖 ✓
+- [ ] F124 无外部依赖 ✓
+- [ ] B94 无外部依赖 ✓
+- [ ] F125 无外部依赖 ✓
+- [ ] B95 无外部依赖 ✓（需同步更新 review.py 路由层 import）
+- [ ] F126 无外部依赖 ✓
+- [ ] F127 depends_on F125 ✓（GraphPage 拆分完成后再写测试）
+- [ ] S31 depends_on F122-F127 全部 ✓
+
+### 架构对齐
+
+- [ ] 所有改动不改变用户可见行为 ✓
+- [ ] B93: ReviewService 构造函数注入 knowledge_service，不新增全局状态 ✓
+- [ ] B95: Pydantic 模型迁移到 models/review.py，路由层 import 同步更新 ✓
+- [ ] F125: GraphPage 拆分为独立文件，不引入新依赖 ✓
+- [ ] F126: api.ts 类型迁移到 api.generated.ts，保持类型兼容 ✓
+- [ ] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫 ✓
+
+### 执行顺序
+
+- [ ] Phase 1: F122, F123, B93（可并行）
+- [ ] Phase 2: F124, B94（可并行）
+- [ ] Phase 3: F125, B95, F126（串行推荐，避免共享文件冲突）
+- [ ] Phase 4: F127（依赖 F125）→ S31
+
 ## R033: 安全增强收口（R017 deferred 项）
 
 ### 契约对齐

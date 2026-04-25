@@ -8,6 +8,7 @@ from typing import List, Optional, Dict, Any, Literal, TYPE_CHECKING
 from pydantic import BaseModel, Field
 
 from app.models import Concept, ConceptRelation, ExtractedKnowledge, Task
+from app.utils.mastery import calculate_mastery_from_stats as _calc_mastery
 
 if TYPE_CHECKING:
     from app.callers import APICaller
@@ -482,26 +483,29 @@ class KnowledgeService:
         response: LearningPathResponse,
         user_id: str = "_default",
     ) -> LearningPathResponse:
-        """从标签关联推荐下一步学习内容"""
-        all_entries = self._sqlite.list_entries(limit=100, user_id=user_id)
-        seen_concepts = set()
+        """从标签关联推荐下一步学习内容（基于 SQLite 定向查询）"""
+        if not concept or not concept.strip():
+            return response
 
-        for entry in all_entries:
-            tags = entry.get("tags", [])
-            # 查找有共同标签的其他概念
-            if any(tag.lower() in concept.lower() or concept.lower() in tag.lower() for tag in tags):
-                for tag in tags:
-                    if tag.lower() != concept.lower() and tag not in seen_concepts:
-                        seen_concepts.add(tag)
-                        response.next_steps.append(ConceptNode(
-                            name=tag,
-                            category="tag",
-                            description="相关标签",
-                        ))
-                        if len(response.next_steps) >= 5:
-                            break
-            if len(response.next_steps) >= 5:
-                break
+        try:
+            matching_tags = self._sqlite.search_tags_by_keyword(
+                keyword=concept, limit=10, user_id=user_id
+            )
+        except Exception:
+            return response
+
+        seen = set()
+        for tag_info in matching_tags:
+            tag = tag_info["name"]
+            if tag.lower() != concept.lower() and tag not in seen:
+                seen.add(tag)
+                response.next_steps.append(ConceptNode(
+                    name=tag,
+                    category="tag",
+                    description="相关标签",
+                ))
+                if len(response.next_steps) >= 5:
+                    break
 
         return response
 
@@ -605,14 +609,15 @@ class KnowledgeService:
         return nodes, edges
 
     def _calculate_mastery_from_stats(
-        self, entry_count: int, recent_count: int, note_count: int
+        self, entry_count: int, recent_count: int, note_count: int,
+        relationship_count: int = 0,
     ) -> str:
-        """根据统计数据计算掌握度（委托到 ReviewService 统一实现）"""
-        from app.services.review_service import ReviewService
-        return ReviewService._calculate_mastery_from_stats(
+        """根据统计数据计算掌握度（直接调用共享模块）"""
+        return _calc_mastery(
             entry_count=entry_count,
             recent_count=recent_count,
             note_count=note_count,
+            relationship_count=relationship_count,
         )
 
     async def get_knowledge_stats(self, user_id: str = "_default") -> ConceptStatsResponse:

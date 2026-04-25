@@ -38,6 +38,7 @@ def _make_service():
     from app.services.review_service import ReviewService
     sqlite_mock = MagicMock()
     sqlite_mock.list_entries.return_value = []
+    sqlite_mock.get_tag_stats_in_range.return_value = []
     return ReviewService(sqlite_storage=sqlite_mock)
 
 
@@ -116,16 +117,10 @@ async def test_top_tags_in_stats():
     """近 30 天高频标签 top 5 出现在 stats_data"""
     svc = _make_service()
 
-    # 模拟 30 天内条目，含多个标签
-    entries = [
-        {"tags": ["Python", "Rust"]},
-        {"tags": ["Python", "Go"]},
-        {"tags": ["Python"]},
-        {"tags": ["Rust", "Go", "TypeScript"]},
-        {"tags": ["Go"]},
-        {"tags": ["Java"]},
+    # 模拟 30 天内标签统计（SQL 聚合路径）
+    svc._sqlite.get_tag_stats_in_range.return_value = [
+        ("Python", 3), ("Go", 3), ("Rust", 2), ("TypeScript", 1), ("Java", 1),
     ]
-    svc._sqlite.list_entries.return_value = entries
 
     captured_stats = {}
 
