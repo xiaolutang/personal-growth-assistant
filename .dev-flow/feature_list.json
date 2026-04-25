@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 5,
-    "pending": 0,
-    "completed": 5,
+    "pending": 1,
+    "completed": 4,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -694,7 +694,7 @@
         "B98",
         "B99"
       ],
-      "status": "completed",
+      "status": "in_progress",
       "priority": "P2",
       "acceptance_criteria": [
         "pytest 后端全量通过",
@@ -716,13 +716,14 @@
         "Docker smoke：知识图谱 heatmap 页面加载正常",
         "Docker smoke：回顾页 AI 洞察标签统计正常"
       ],
-      "planning_notes": "R035 质量收口，重点验证成长报告趋势修复",
-      "started_at": "2026-04-25T23:35:00",
-      "completed_at": "2026-04-25T23:45:00",
-      "actual_minutes": 10,
+      "planning_notes": "R035 质量收口，重点验证成长报告趋势修复。测试和构建已通过，Docker smoke 待部署",
+      "started_at": "2026-04-25T10:10:00",
+      "execution_state": {
+        "current_step": "waiting_docker_smoke",
+        "resume_hint": "pytest 1114 + vitest 386 + build 已通过，需部署后验证 Docker smoke 3 项"
+      },
       "evidence_file": ".dev-flow/evidence/S32.md",
-      "execution_notes": "pytest 1114 + vitest 386 + build success，Docker smoke 待部署验证",
-      "summary": "R035 质量收口：测试全量通过，构建成功"
+      "execution_notes": "pytest 1114 + vitest 386 + build success，Docker smoke 待部署验证"
     }
   ],
   "next_cycle_preview": null,
