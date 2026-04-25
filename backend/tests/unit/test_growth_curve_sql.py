@@ -469,3 +469,97 @@ class TestYearBoundaryConsistency:
             assert p.week == year_week_key, (
                 f"week label={p.week} != SQL year_week={year_week_key}"
             )
+
+
+class TestCrossWeekAttribution:
+    """B101: created_at/updated_at 跨周归属回归测试"""
+
+    def test_entry_counted_in_both_created_and_updated_weeks(self, sqlite_storage):
+        """条目 created_at 在周 A、updated_at 在周 B → 两周都包含该条目"""
+        now = datetime.now()
+        # 本周一和上周一
+        this_monday = now - timedelta(days=now.weekday())
+        last_monday = this_monday - timedelta(weeks=1)
+
+        # 创建条目：created_at 在上周，updated_at 在本周
+        entry = Task(
+            id="cross-week-1",
+            title="跨周条目",
+            content="",
+            category=Category.TASK,
+            status=TaskStatus.COMPLETE,
+            priority=Priority.MEDIUM,
+            tags=["python"],
+            created_at=last_monday + timedelta(hours=12),
+            updated_at=this_monday + timedelta(hours=12),
+            file_path="tasks/cross-week-1.md",
+        )
+        sqlite_storage.upsert_entry(entry)
+
+        start = last_monday.strftime("%Y-%m-%d")
+        end = this_monday.strftime("%Y-%m-%d")
+
+        result = sqlite_storage.get_growth_curve_tag_stats(
+            user_id="_default", start_date=start, end_date=end
+        )
+
+        # 应该有 2 行：上周和本周各一行
+        tag_rows = [r for r in result if r["tag_name"] == "python"]
+        assert len(tag_rows) == 2, f"Expected 2 rows for cross-week, got {len(tag_rows)}"
+        # 每行 entry_count = 1
+        for row in tag_rows:
+            assert row["entry_count"] == 1
+
+    def test_same_week_no_double_count(self, sqlite_storage):
+        """created_at 和 updated_at 在同一周 → 只计一次"""
+        now = datetime.now()
+        this_monday = now - timedelta(days=now.weekday())
+
+        # 两个时间都在同一周内
+        entry = Task(
+            id="same-week-1",
+            title="同周条目",
+            content="",
+            category=Category.TASK,
+            status=TaskStatus.COMPLETE,
+            priority=Priority.MEDIUM,
+            tags=["python"],
+            created_at=this_monday + timedelta(hours=1),
+            updated_at=this_monday + timedelta(hours=48),
+            file_path="tasks/same-week-1.md",
+        )
+        sqlite_storage.upsert_entry(entry)
+
+        start = (this_monday - timedelta(days=1)).strftime("%Y-%m-%d")
+        end = (this_monday + timedelta(days=7)).strftime("%Y-%m-%d")
+
+        result = sqlite_storage.get_growth_curve_tag_stats(
+            user_id="_default", start_date=start, end_date=end
+        )
+
+        python_rows = [r for r in result if r["tag_name"] == "python"]
+        assert len(python_rows) == 1, f"Expected 1 row (same week dedup), got {len(python_rows)}"
+        assert python_rows[0]["entry_count"] == 1
+
+    def test_iso_week_label_format(self, service, mock_sqlite):
+        """B101: week label 必须是 ISO 格式 YYYY-WXX"""
+        # 使用确定性的 mock 数据，不依赖 date.today()
+        mock_sqlite.get_growth_curve_tag_stats.return_value = [
+            {
+                "year_week": datetime.now().strftime("%Y-%W"),
+                "tag_name": "python",
+                "entry_count": 3,
+                "note_count": 1,
+                "recent_count": 2,
+            },
+        ]
+
+        result = service.get_growth_curve(weeks=4, user_id="user1")
+        matched = [p for p in result.points if p.total_concepts > 0]
+        assert len(matched) >= 1, "Should have at least one matched week"
+        for p in matched:
+            # ISO week 格式: YYYY-WXX (如 2026-W16)
+            import re
+            assert re.match(r"\d{4}-W\d{2}$", p.week), (
+                f"week label '{p.week}' should be ISO format YYYY-WXX"
+            )
