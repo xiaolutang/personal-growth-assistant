@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Loader2, AlertCircle, ChevronDown, ChevronUp, Map } from "lucide-react";
 import { type CapabilityMapResponse, getCapabilityMap } from "@/services/api";
 import { masteryLabels, MASTERY_LEVELS } from "./constants";
+import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
+import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 
 // === 能力地图视图组件 ===
 export function CapabilityMapView() {
@@ -11,35 +13,48 @@ export function CapabilityMapView() {
   const [capabilityError, setCapabilityError] = useState<string | null>(null);
   const [expandedDomain, setExpandedDomain] = useState<string | null>(null);
   const [capabilityFilter, setCapabilityFilter] = useState<string>("");
-  const [capabilityRetryKey, setCapabilityRetryKey] = useState(0);
+  const { serviceUnavailable, runWith503 } = useServiceUnavailable();
 
-  // 加载能力地图数据（带请求取消保护，防止快速切换筛选时旧请求覆盖新结果）
-  useEffect(() => {
-    let cancelled = false;
+  const loadCapability = useCallback(async (filter?: string) => {
     setCapabilityLoading(true);
     setCapabilityError(null);
     setCapabilityMap(null);
     setExpandedDomain(null);
-    getCapabilityMap(capabilityFilter || undefined)
-      .then((data) => { if (!cancelled) setCapabilityMap(data); })
-      .catch((err: any) => { if (!cancelled) setCapabilityError(err.message || "加载能力地图失败"); })
-      .finally(() => { if (!cancelled) setCapabilityLoading(false); });
-    return () => { cancelled = true; };
-  }, [capabilityFilter, capabilityRetryKey]);
+    await runWith503(async () => {
+      const data = await getCapabilityMap(filter || undefined);
+      setCapabilityMap(data);
+    });
+    // runWith503 只捕获 503，其他错误会抛出
+    // 但我们还需要 catch 非 503 错误来设置 capabilityError
+    setCapabilityLoading(false);
+  }, [runWith503]);
+
+  useEffect(() => {
+    loadCapability(capabilityFilter || undefined).catch((err: any) => {
+      if (!(err instanceof Error && "isServiceUnavailable" in err)) {
+        setCapabilityError(err.message || "加载能力地图失败");
+      }
+    }).finally(() => {
+      setCapabilityLoading(false);
+    });
+  }, [capabilityFilter, loadCapability]);
 
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-6">
-      {capabilityLoading && (
+      {serviceUnavailable && (
+        <ServiceUnavailable onRetry={() => loadCapability(capabilityFilter || undefined)} />
+      )}
+      {!serviceUnavailable && capabilityLoading && (
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       )}
-      {capabilityError && (
+      {!serviceUnavailable && capabilityError && (
         <div className="flex flex-col items-center justify-center h-64 gap-3">
           <AlertCircle className="h-10 w-10 text-destructive" />
           <p className="text-sm text-destructive">{capabilityError}</p>
           <button
-            onClick={() => setCapabilityRetryKey((k) => k + 1)}
+            onClick={() => loadCapability(capabilityFilter || undefined)}
             className="text-sm text-primary hover:underline"
           >
             重试

@@ -101,12 +101,12 @@ export function useGraphState(focusConcept: string | null): GraphState {
     setSearchResults(null);
     setSearchError(null);
     try {
-      const [mapResult, statsResult] = await Promise.all([
-        getKnowledgeMap(2, view),
-        getKnowledgeStats(),
-      ]);
+      // 主请求：503 时整页降级
+      const mapResult = await getKnowledgeMap(2, view);
       setMapData(mapResult);
-      setStats(statsResult);
+
+      // 次级请求：独立失败，不触发整页降级
+      getKnowledgeStats().then(setStats).catch(() => { /* 静默失败 */ });
 
       // 根据节点数决定初始渲染
       const { displayNodes, displayEdges } = getDisplayData(mapResult, false);
