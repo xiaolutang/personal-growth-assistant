@@ -588,57 +588,24 @@ class ReviewService:
         return self._get_heatmap_from_sqlite(user_id)
 
     def _get_heatmap_from_sqlite(self, user_id: str) -> HeatmapResponse:
-        """从 SQLite tags 获取热力图数据（降级路径）"""
+        """从 SQLite tags 获取热力图数据（降级路径，SQL 聚合）"""
         if not self._sqlite:
             raise ValueError("SQLite 存储未初始化")
 
-        all_entries = self._sqlite.list_entries(limit=1000, user_id=user_id)
-
-        # 从所有条目的 tags 中提取概念并统计
-        concept_map: Dict[str, Dict] = {}
-        for entry in all_entries:
-            tags = entry.get("tags", [])
-            entry_type = entry.get("type", "task")
-            updated_str = entry.get("updated_at", "")
-
-            for tag in tags:
-                if tag not in concept_map:
-                    concept_map[tag] = {
-                        "entry_count": 0,
-                        "recent_count": 0,
-                        "note_count": 0,
-                    }
-                concept_map[tag]["entry_count"] += 1
-
-                if entry_type == "note":
-                    concept_map[tag]["note_count"] += 1
-
-                # 检查是否在最近 30 天内更新
-                try:
-                    if updated_str:
-                        if isinstance(updated_str, str):
-                            updated_at = datetime.fromisoformat(
-                                updated_str.replace("Z", "+00:00")
-                            )
-                        else:
-                            updated_at = updated_str
-                        if updated_at >= datetime.now() - timedelta(days=30):
-                            concept_map[tag]["recent_count"] += 1
-                except (ValueError, TypeError):
-                    pass
+        stats = self._sqlite.get_tag_stats_for_knowledge_map(user_id=user_id)
 
         # 构建热力图项
         items: List[HeatmapItem] = []
-        for concept, info in concept_map.items():
+        for tag_info in stats.get("tags", []):
             mastery = self._calculate_mastery_from_stats(
-                entry_count=info["entry_count"],
-                recent_count=info["recent_count"],
-                note_count=info["note_count"],
+                entry_count=tag_info["entry_count"],
+                recent_count=tag_info["recent_count"],
+                note_count=tag_info["note_count"],
             )
             items.append(HeatmapItem(
-                concept=concept,
+                concept=tag_info["name"],
                 mastery=mastery,
-                entry_count=info["entry_count"],
+                entry_count=tag_info["entry_count"],
                 category="tag",
             ))
 
@@ -832,19 +799,14 @@ class ReviewService:
         return streak
 
     def _compute_30d_tag_stats(self, user_id: str, days: int = 30, top_n: int = 10) -> list[tuple[str, int]]:
-        """统计近 N 天条目的标签频次 top N，供 B86/B87 共享"""
+        """统计近 N 天条目的标签频次 top N（SQL 聚合）"""
         if not self._sqlite:
             return []
         today = date.today()
         start = (today - timedelta(days=days)).isoformat()
-        entries = self._sqlite.list_entries(
-            start_date=start, end_date=today.isoformat(), limit=5000, user_id=user_id,
+        return self._sqlite.get_tag_stats_in_range(
+            user_id=user_id, start_date=start, end_date=today.isoformat(), top_n=top_n,
         )
-        tag_freq: dict[str, int] = {}
-        for entry in entries:
-            for tag in entry.get("tags", []):
-                tag_freq[tag] = tag_freq.get(tag, 0) + 1
-        return sorted(tag_freq.items(), key=lambda x: x[1], reverse=True)[:top_n]
 
     async def _generate_pattern_insights_llm(self, user_id: str) -> Optional[List[str]]:
         """B87: 使用 LLM 生成模式洞察。返回 None 表示 LLM 不可用/失败（需降级），返回列表表示 LLM 成功。"""

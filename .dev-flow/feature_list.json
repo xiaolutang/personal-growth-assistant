@@ -9,7 +9,7 @@
     "id": "R035",
     "name": "preexisting-fixes",
     "branch": "fix/R035-preexisting-fixes",
-    "status": "planning"
+    "status": "executing"
   },
   "workflow": {
     "name": "XLFoundry",
@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 5,
-    "pending": 3,
-    "completed": 2,
+    "pending": 1,
+    "completed": 4,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -614,7 +614,7 @@
       "depends_on": [
         "B97"
       ],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
       "acceptance_criteria": [
         "_get_heatmap_from_sqlite 不再调用 list_entries",
@@ -633,7 +633,13 @@
         "掌握度计算使用正确的参数",
         "回归：知识图谱 heatmap 不变"
       ],
-      "planning_notes": "sqlite.py:160 已有 get_tag_stats_for_knowledge_map 返回 entry_count/note_count/recent_count，完全匹配需求"
+      "planning_notes": "sqlite.py:160 已有 get_tag_stats_for_knowledge_map 返回 entry_count/note_count/recent_count，完全匹配需求",
+      "started_at": "2026-04-25T22:10:00",
+      "completed_at": "2026-04-25T23:30:00",
+      "actual_minutes": 80,
+      "evidence_file": ".dev-flow/evidence/B98.md",
+      "execution_notes": "heatmap SQL 聚合升级，1213 pytest passed，code-review pass",
+      "summary": "heatmap 从 list_entries 全量遍历改为 SQL 聚合，性能提升"
     },
     {
       "id": "B99",
@@ -645,7 +651,7 @@
       "depends_on": [
         "B98"
       ],
-      "status": "pending",
+      "status": "completed",
       "priority": "P2",
       "acceptance_criteria": [
         "sqlite.py 新增 get_tag_stats_in_range(user_id, start_date, end_date) 方法",
@@ -667,7 +673,13 @@
         "user_id 隔离：不同用户的 tag 统计互不干扰",
         "回归：AI 洞察 tag 统计不变"
       ],
-      "planning_notes": "复用 get_tag_stats_for_knowledge_map 的 SQL 模式，增加 start_date/end_date 过滤条件"
+      "planning_notes": "复用 get_tag_stats_for_knowledge_map 的 SQL 模式，增加 start_date/end_date 过滤条件",
+      "started_at": "2026-04-25T22:15:00",
+      "completed_at": "2026-04-25T23:30:00",
+      "actual_minutes": 75,
+      "evidence_file": ".dev-flow/evidence/B99.md",
+      "execution_notes": "tag_stats SQL 聚合 + 真实 SQLite 测试，1213 pytest passed，code-review pass",
+      "summary": "tag_stats 从 list_entries 遍历改为 SQL 聚合，确定性排序 + 真实测试"
     },
     {
       "id": "S32",

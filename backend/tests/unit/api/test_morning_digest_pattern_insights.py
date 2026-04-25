@@ -35,6 +35,7 @@ def _reset_cache():
 def _make_service():
     from app.services.review_service import ReviewService
     sqlite_mock = MagicMock()
+    sqlite_mock.get_tag_stats_in_range.return_value = []
     return ReviewService(sqlite_storage=sqlite_mock)
 
 

@@ -228,13 +228,13 @@ class TestNeo4jPath:
         mock_neo4j.get_all_concepts_with_stats = AsyncMock(return_value=[])
 
         mock_sqlite = MagicMock()
-        mock_sqlite.list_entries.return_value = []
+        mock_sqlite.get_tag_stats_for_knowledge_map.return_value = {"tags": [], "co_occurrence_pairs": []}
 
         svc = ReviewService(sqlite_storage=mock_sqlite, neo4j_client=mock_neo4j)
         result = await svc.get_knowledge_heatmap(user_id="user1")
 
-        # 应该调用 SQLite 降级路径
-        mock_sqlite.list_entries.assert_called_once()
+        # 应该调用 SQLite 降级路径（SQL 聚合）
+        mock_sqlite.get_tag_stats_for_knowledge_map.assert_called_once()
 
 
 # ==================== Neo4j 降级测试 ====================
@@ -251,44 +251,36 @@ class TestNeo4jDegradation:
         )
 
         mock_sqlite = MagicMock()
-        mock_sqlite.list_entries.return_value = []
+        mock_sqlite.get_tag_stats_for_knowledge_map.return_value = {"tags": [], "co_occurrence_pairs": []}
 
         svc = ReviewService(sqlite_storage=mock_sqlite, neo4j_client=mock_neo4j)
         result = await svc.get_knowledge_heatmap(user_id="user1")
 
         # 不抛异常，返回降级结果
         assert isinstance(result, HeatmapResponse)
-        mock_sqlite.list_entries.assert_called_once()
+        mock_sqlite.get_tag_stats_for_knowledge_map.assert_called_once()
 
     async def test_no_neo4j_uses_sqlite(self):
         """没有 Neo4j client 时直接使用 SQLite"""
         mock_sqlite = MagicMock()
-        mock_sqlite.list_entries.return_value = []
+        mock_sqlite.get_tag_stats_for_knowledge_map.return_value = {"tags": [], "co_occurrence_pairs": []}
 
         svc = ReviewService(sqlite_storage=mock_sqlite, neo4j_client=None)
         result = await svc.get_knowledge_heatmap(user_id="user1")
 
         assert isinstance(result, HeatmapResponse)
-        mock_sqlite.list_entries.assert_called_once()
+        mock_sqlite.get_tag_stats_for_knowledge_map.assert_called_once()
 
     async def test_sqlite_fallback_data_format(self):
         """SQLite 降级路径返回格式一致（包含 category 和 mention_count）"""
         mock_sqlite = MagicMock()
-        now = datetime.now().isoformat()
-        mock_sqlite.list_entries.return_value = [
-            {
-                "id": "e1", "title": "test", "type": "task",
-                "tags": ["Python", "AI"],
-                "status": "doing",
-                "updated_at": now,
-            },
-            {
-                "id": "e2", "title": "note", "type": "note",
-                "tags": ["Python"],
-                "status": "doing",
-                "updated_at": now,
-            },
-        ]
+        mock_sqlite.get_tag_stats_for_knowledge_map.return_value = {
+            "tags": [
+                {"name": "Python", "entry_count": 2, "note_count": 1, "recent_count": 2},
+                {"name": "AI", "entry_count": 1, "note_count": 0, "recent_count": 1},
+            ],
+            "co_occurrence_pairs": [],
+        }
 
         svc = ReviewService(sqlite_storage=mock_sqlite, neo4j_client=None)
         result = await svc.get_knowledge_heatmap(user_id="user1")

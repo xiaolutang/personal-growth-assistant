@@ -215,6 +215,35 @@ class SQLiteStorage:
         finally:
             conn.close()
 
+    def get_tag_stats_in_range(
+        self, user_id: str, start_date: str, end_date: str, top_n: int = 10,
+    ) -> list[tuple[str, int]]:
+        """获取指定时间范围内的标签频次 top N（SQL 聚合）。
+
+        Args:
+            user_id: 用户 ID
+            start_date: 起始日期 (YYYY-MM-DD)
+            end_date: 结束日期 (YYYY-MM-DD)
+            top_n: 返回前 N 个标签
+
+        Returns:
+            [(tag_name, frequency), ...] 按频次降序
+        """
+        conn = self._get_conn()
+        try:
+            rows = conn.execute("""
+                SELECT t.name AS tag_name, COUNT(DISTINCT e.id) AS freq
+                FROM tags t
+                JOIN entry_tags et ON t.id = et.tag_id
+                JOIN entries e ON et.entry_id = e.id
+                WHERE e.user_id = ? AND e.created_at >= ? AND e.created_at < ?
+                GROUP BY t.name
+                ORDER BY freq DESC, tag_name ASC
+                LIMIT ?
+            """, (user_id, start_date, end_date + "\uffff", top_n)).fetchall()
+            return [(row["tag_name"], row["freq"]) for row in rows]
+        finally:
+            conn.close()
     def search_tags_by_keyword(
         self, keyword: str, limit: int = 20, user_id: str = "_default"
     ) -> list[dict]:
