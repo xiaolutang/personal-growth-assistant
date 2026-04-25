@@ -20,8 +20,8 @@
   },
   "summary": {
     "total_tasks": 10,
-    "pending": 6,
-    "completed": 4,
+    "pending": 5,
+    "completed": 5,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -310,7 +310,7 @@
       "description": "将 EntryDetail.tsx (1201行, 25+ useState, 3 组件) 拆分为 entry-detail/ 子目录，提取 6 个 hooks + 2 个独立组件文件",
       "verification": "F2",
       "depends_on": [],
-      "status": "in_progress",
+      "status": "completed",
       "priority": "P1",
       "acceptance_criteria": [
         "提取 useEntryData hook（基础数据加载）",
@@ -340,7 +340,12 @@
         "条目链接管理正常",
         "build 通过无 TypeScript 错误"
       ],
-      "planning_notes": "R035 A5: EntryDetail 是最大页面文件(1201行)，优先拆分"
+      "planning_notes": "R035 A5: EntryDetail 是最大页面文件(1201行)，优先拆分",
+      "started_at": "2026-04-25T22:30:00+0800",
+      "completed_at": "2026-04-26T00:50:00+0800",
+      "evidence_file": ".dev-flow/evidence/F129.md",
+      "execution_notes": "1211→213行，6 hooks + 9 组件，6轮 code-review，9个定向测试",
+      "commit": "21a044b"
     },
     {
       "id": "F130",
