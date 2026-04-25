@@ -1676,3 +1676,75 @@ class SQLiteStorage:
             return [dict(row) for row in cursor.fetchall()]
         finally:
             conn.close()
+
+    def get_growth_curve_tag_stats(
+        self, user_id: str, start_date: str, end_date: str
+    ) -> list[dict[str, Any]]:
+        """按周 + tag 分组聚合 entry_count / note_count / recent_count。
+
+        复用 get_tag_stats_for_knowledge_map 的 SQL 模式，增加周分组。
+        使用 strftime('%Y-%W', created_at) 计算 Monday-based 周编号。
+        %W 以周一为一周起始，编号 00-53，年从 1 月 1 日开始计。
+        Python 层 review_service.get_growth_curve 使用同样的 strftime('%Y-%W')
+        生成查找键，确保两端口径一致。
+
+        注意：%W 不是 ISO week。ISO week 与 %W 在年边界有偏差：
+        - 2024-12-30 的 %W = 2024-53，但 ISO = 2025-W01
+        - 2025-01-06 的 %W = 2025-01，但 ISO = 2025-W02
+        两端统一使用 %W 即可保证数据匹配。
+
+        Args:
+            user_id: 用户 ID
+            start_date: 起始日期 (YYYY-MM-DD)，包含当天
+            end_date: 结束日期 (YYYY-MM-DD)，包含当天
+
+        Returns:
+            [
+                {
+                    "year_week": str,       # "2026-16" 格式
+                    "tag_name": str,
+                    "entry_count": int,
+                    "note_count": int,
+                    "recent_count": int,
+                },
+                ...
+            ]
+            如果某周无 entries，则不返回该周行。
+
+        Note:
+            - 日期范围使用 start_date <= created_at <= end_date + "T23:59:59"
+            - recent_count 基于 updated_at 是否在最近 30 天内
+        """
+        thirty_days_ago = (datetime.now() - __import__("datetime").timedelta(days=30)).isoformat()
+        # end_date 需要包含当天，上界用 end_date + "T23:59:59"
+        end_upper = end_date + "T23:59:59"
+        conn = self._get_conn()
+        try:
+            rows = conn.execute("""
+                SELECT strftime('%Y-%W', e.created_at) AS year_week,
+                       t.name AS tag_name,
+                       COUNT(DISTINCT e.id) AS entry_count,
+                       SUM(CASE WHEN e.type = 'note' THEN 1 ELSE 0 END) AS note_count,
+                       SUM(CASE WHEN e.updated_at >= ? THEN 1 ELSE 0 END) AS recent_count
+                FROM tags t
+                JOIN entry_tags et ON t.id = et.tag_id
+                JOIN entries e ON et.entry_id = e.id
+                WHERE e.user_id = ?
+                  AND e.created_at >= ?
+                  AND e.created_at <= ?
+                GROUP BY year_week, t.name
+                ORDER BY year_week, t.name
+            """, (thirty_days_ago, user_id, start_date, end_upper)).fetchall()
+
+            return [
+                {
+                    "year_week": row["year_week"] or "",
+                    "tag_name": row["tag_name"],
+                    "entry_count": row["entry_count"],
+                    "note_count": row["note_count"] or 0,
+                    "recent_count": row["recent_count"] or 0,
+                }
+                for row in rows
+            ]
+        finally:
+            conn.close()

@@ -20,8 +20,8 @@
   },
   "summary": {
     "total_tasks": 10,
-    "pending": 9,
-    "completed": 1,
+    "pending": 8,
+    "completed": 2,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -117,8 +117,17 @@
       "description": "将 get_growth_curve 的 list_entries(limit=10000) 替换为按 ISO 周 + tag 分组的单条 SQL 聚合查询，复用 get_tag_stats_for_knowledge_map 的 SQL 模式",
       "verification": "L1",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
+      "started_at": "2026-04-25T22:50:00",
+      "completed_at": "2026-04-25T23:20:00",
+      "actual_minutes": 30,
+      "execution_notes": "SQL 聚合替换 list_entries(limit=10000)，统一 %W 周格式，新增 16 测试",
+      "evidence_file": ".dev-flow/evidence/B101.md",
+      "execution_state": {
+        "current_step": "completed",
+        "evidence_file": ".dev-flow/evidence/B101.md"
+      },
       "acceptance_criteria": [
         "sqlite.py 新增 get_growth_curve_tag_stats(user_id, start_date, end_date) 方法",
         "方法返回按周+tag 分组的 entry_count/note_count/recent_count",

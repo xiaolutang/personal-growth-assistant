@@ -688,61 +688,39 @@ class ReviewService:
         today = date.today()
         current_week_start = today - timedelta(days=today.weekday())
 
-        # 一次查询获取所有周的条目，避免 N+1
+        # 使用 SQL 聚合查询替代 list_entries(limit=10000)
         earliest_week_start = current_week_start - timedelta(weeks=count - 1)
-        all_entries = self._sqlite.list_entries(
+        tag_stats = self._sqlite.get_growth_curve_tag_stats(
+            user_id=user_id,
             start_date=earliest_week_start.isoformat(),
             end_date=today.isoformat(),
-            limit=10000,
-            user_id=user_id,
         )
+
+        # 构建 year_week -> {tag_name -> {entry_count, note_count, recent_count}} 索引
+        week_tag_map: Dict[str, Dict[str, Dict]] = {}
+        for row in tag_stats:
+            yw = row["year_week"]
+            if yw not in week_tag_map:
+                week_tag_map[yw] = {}
+            week_tag_map[yw][row["tag_name"]] = {
+                "entry_count": row["entry_count"],
+                "note_count": row["note_count"],
+                "recent_count": row["recent_count"],
+            }
 
         points: List[GrowthCurvePoint] = []
 
         for i in range(count):
             week_start = current_week_start - timedelta(weeks=i)
-            week_end = week_start + timedelta(days=6)
-            ws_str = week_start.isoformat()
-            we_str = week_end.isoformat()
 
-            # 从内存中过滤该周条目
-            week_entries = [
-                e for e in all_entries
-                if ws_str <= (e.get("created_at", "")[:10]) <= we_str
-                or ws_str <= (e.get("updated_at", "")[:10]) <= we_str
-            ]
+            # 计算 year_week key：使用 strftime('%Y-%W') 格式
+            # %W 是 Monday-based week number (00-53)，与 SQL 的 strftime('%Y-%W') 完全一致
+            # 注意：不用 isocalendar()，因为 ISO week 与 %W 在年边界有偏差
+            # 例：2024-12-30 的 ISO week = 2025-W01，但 %W = 2024-53
+            year_week_key = week_start.strftime("%Y-%W")
 
-            # 提取概念并计算掌握度分布
-            concept_map: Dict[str, Dict] = {}
-            for entry in week_entries:
-                tags = entry.get("tags", [])
-                entry_type = entry.get("type", "task")
-                updated_str = entry.get("updated_at", "")
-
-                for tag in tags:
-                    if tag not in concept_map:
-                        concept_map[tag] = {
-                            "entry_count": 0,
-                            "recent_count": 0,
-                            "note_count": 0,
-                        }
-                    concept_map[tag]["entry_count"] += 1
-
-                    if entry_type == "note":
-                        concept_map[tag]["note_count"] += 1
-
-                    try:
-                        if updated_str:
-                            if isinstance(updated_str, str):
-                                updated_at = datetime.fromisoformat(
-                                    updated_str.replace("Z", "+00:00")
-                                )
-                            else:
-                                updated_at = updated_str
-                            if updated_at >= datetime.now() - timedelta(days=30):
-                                concept_map[tag]["recent_count"] += 1
-                    except (ValueError, TypeError):
-                        pass
+            # 获取该周的 tag 统计
+            concept_map = week_tag_map.get(year_week_key, {})
 
             # 统计掌握度分布
             advanced_count = 0
@@ -762,9 +740,8 @@ class ReviewService:
                 elif mastery == "beginner":
                     beginner_count += 1
 
-            # 计算周编号 (ISO week)
-            iso_calendar = week_start.isocalendar()
-            week_label = f"{iso_calendar[0]}-W{iso_calendar[1]:02d}"
+            # 计算周编号：使用 %W 格式，与 SQL strftime('%Y-%W') 保持一致
+            week_label = year_week_key
 
             points.append(GrowthCurvePoint(
                 week=week_label,
