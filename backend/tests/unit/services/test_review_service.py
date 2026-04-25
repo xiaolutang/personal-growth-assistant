@@ -125,7 +125,7 @@ class TestGetInsights:
         assert calls[1].kwargs.get("start_date") == expected_prev_start.isoformat()
 
     @pytest.mark.asyncio
-    @patch("app.services.review_service.date")
+    @patch("app.services.review.insights.date")
     async def test_january_monthly_prev_december(self, mock_date, service, mock_sqlite):
         """1 月 monthly 的前一个周期是去年 12 月"""
         mock_date.today.return_value = date(2026, 1, 15)

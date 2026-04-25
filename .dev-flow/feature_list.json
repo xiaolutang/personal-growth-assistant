@@ -20,21 +20,45 @@
   },
   "summary": {
     "total_tasks": 10,
-    "pending": 8,
-    "completed": 2,
+    "pending": 7,
+    "completed": 3,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
   },
   "modules": [
-    { "name": "architecture", "description": "架构层公共接口完善" },
-    { "name": "review-perf", "description": "回顾系统性能优化" },
-    { "name": "review", "description": "回顾系统后端" },
-    { "name": "service-availability", "description": "503 服务降级" },
-    { "name": "entry-detail", "description": "条目详情页" },
-    { "name": "page-split", "description": "页面组件拆分" },
-    { "name": "mobile", "description": "Flutter 移动端" },
-    { "name": "quality", "description": "质量收口" }
+    {
+      "name": "architecture",
+      "description": "架构层公共接口完善"
+    },
+    {
+      "name": "review-perf",
+      "description": "回顾系统性能优化"
+    },
+    {
+      "name": "review",
+      "description": "回顾系统后端"
+    },
+    {
+      "name": "service-availability",
+      "description": "503 服务降级"
+    },
+    {
+      "name": "entry-detail",
+      "description": "条目详情页"
+    },
+    {
+      "name": "page-split",
+      "description": "页面组件拆分"
+    },
+    {
+      "name": "mobile",
+      "description": "Flutter 移动端"
+    },
+    {
+      "name": "quality",
+      "description": "质量收口"
+    }
   ],
   "features": [
     {
@@ -42,12 +66,52 @@
       "name": "残留问题全面收口",
       "description": "处理所有已记录但未解决的残留风险和技术债务。8项残留→10任务映射：(1)deps.py私有属性访问→B100 (2)get_growth_curve性能→B101 (3)review_service 1845行→B102 (4)503降级7页缺失→F128 (5)EntryDetail 1201行→F129 (6)Home+Explore 730+729行→F130 (7)Review+Tasks+Goals ProgressRing去重→F131 (8)Flutter拖拽排序→M100。验证/收口任务：S33(R032+R027测试补齐)、S34(质量收口含S29/S21 smoke)",
       "phases": [
-        { "id": "P1", "name": "Backend 架构修复", "tasks": ["B100", "B101"] },
-        { "id": "P2", "name": "Backend 代码组织", "tasks": ["B102"] },
-        { "id": "P3", "name": "前端基础设施", "tasks": ["F128"] },
-        { "id": "P4", "name": "前端页面拆分", "tasks": ["F129", "F130", "F131"] },
-        { "id": "P5", "name": "移动端功能", "tasks": ["M100"] },
-        { "id": "P6", "name": "测试补齐 + 质量收口", "tasks": ["S33", "S34"] }
+        {
+          "id": "P1",
+          "name": "Backend 架构修复",
+          "tasks": [
+            "B100",
+            "B101"
+          ]
+        },
+        {
+          "id": "P2",
+          "name": "Backend 代码组织",
+          "tasks": [
+            "B102"
+          ]
+        },
+        {
+          "id": "P3",
+          "name": "前端基础设施",
+          "tasks": [
+            "F128"
+          ]
+        },
+        {
+          "id": "P4",
+          "name": "前端页面拆分",
+          "tasks": [
+            "F129",
+            "F130",
+            "F131"
+          ]
+        },
+        {
+          "id": "P5",
+          "name": "移动端功能",
+          "tasks": [
+            "M100"
+          ]
+        },
+        {
+          "id": "P6",
+          "name": "测试补齐 + 质量收口",
+          "tasks": [
+            "S33",
+            "S34"
+          ]
+        }
       ]
     }
   ],
@@ -157,8 +221,10 @@
       "name": "review_service 进一步拆分",
       "description": "将 review_service.py (1845行) 中可独立的方法组（导出、图谱统计等）拆分到 services/review/ 子模块，目标降至 1200 行以内",
       "verification": "L1",
-      "depends_on": ["B101"],
-      "status": "pending",
+      "depends_on": [
+        "B101"
+      ],
+      "status": "completed",
       "priority": "P2",
       "acceptance_criteria": [
         "识别可独立的方法组并拆分到 services/review/ 子模块",
@@ -178,7 +244,9 @@
         "路由层调用链路正常",
         "pytest 通过"
       ],
-      "planning_notes": "R034 F-017 partial: review_service 虽从2096降到1845行，仍偏大。B95已拆出模型，本次拆出方法组"
+      "planning_notes": "R034 F-017 partial: review_service 虽从2096降到1845行，仍偏大。B95已拆出模型，本次拆出方法组",
+      "evidence_file": ".dev-flow/evidence/B102.md",
+      "execution_notes": "Mixin pattern: MorningDigestMixin + InsightsMixin. review_service.py 1832→885 lines. 1229 pytest passed."
     },
     {
       "id": "F128",
@@ -364,7 +432,9 @@
         "flutter analyze 通过",
         "flutter test 通过"
       ],
-      "risk_tags": ["first_use"],
+      "risk_tags": [
+        "first_use"
+      ],
       "files": [
         "mobile/lib/pages/tasks_page.dart",
         "mobile/lib/widgets/task_card.dart"
@@ -385,7 +455,15 @@
       "name": "R032 + R027 测试覆盖补齐",
       "description": "补齐 R032（搜索增强/批量操作 ~33 场景）和 R027（导出/反馈追踪 ~22 场景）的缺失单元测试",
       "verification": "L2",
-      "depends_on": ["B100", "B101", "B102", "F128", "F129", "F130", "F131"],
+      "depends_on": [
+        "B100",
+        "B101",
+        "B102",
+        "F128",
+        "F129",
+        "F130",
+        "F131"
+      ],
       "status": "pending",
       "priority": "P2",
       "acceptance_criteria": [
@@ -420,7 +498,10 @@
       "name": "质量收口",
       "description": "全量测试 + 构建 + Docker smoke 验证（含 R032 S29 和 R027 S21 的 smoke/E2E 验收）",
       "verification": "L4",
-      "depends_on": ["S33", "M100"],
+      "depends_on": [
+        "S33",
+        "M100"
+      ],
       "status": "pending",
       "priority": "P2",
       "acceptance_criteria": [
@@ -430,7 +511,10 @@
         "Docker smoke：各页面正常加载",
         "Docker smoke：503 降级覆盖生效"
       ],
-      "risk_tags": ["regression", "cross-cutting"],
+      "risk_tags": [
+        "regression",
+        "cross-cutting"
+      ],
       "test_tasks": [
         "pytest 全量通过",
         "vitest 全量通过",
@@ -442,38 +526,203 @@
   ],
   "next_cycle_preview": null,
   "archived_requirement_cycles": [
-    { "id": "R003", "name": "production-content-recovery", "status": "completed", "archive_dir": "_archive/R003_production-content-recovery" },
-    { "id": "R004", "name": "product-evolution-phase1a", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase1a" },
-    { "id": "R004", "name": "product-evolution-phase1b", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase1a" },
-    { "id": "R004", "name": "product-evolution-phase2", "status": "completed", "archive_dir": "_archive/R004_product-evolution-phase2" },
-    { "id": "R005", "name": "product-evolution-phase3", "status": "completed", "archive_dir": "_archive/R005_product-evolution-phase3" },
-    { "id": "R006", "name": "product-polish", "status": "completed", "archive_dir": "_archive/R006_product-polish" },
-    { "id": "R007", "name": "engagement-experience", "status": "completed", "archive_dir": "_archive/R007_engagement-experience" },
-    { "id": "R008", "name": "intelligence-omni", "status": "completed", "archive_dir": "_archive/R008_intelligence-omni" },
-    { "id": "R009", "name": "chat-user-id-threading", "status": "completed", "archive_dir": "_archive/R009_chat-user-id-threading" },
-    { "id": "R010", "name": "engineering-foundation", "status": "completed", "archive_dir": "_archive/R010_engineering-foundation" },
-    { "id": "R011", "name": "entry-context-and-morning-report", "status": "completed", "archive_dir": "_archive/R011_entry-context-and-morning-report" },
-    { "id": "R012", "name": "goal-tracking", "status": "completed", "archive_dir": "_archive/R012_goal-tracking" },
-    { "id": "R013", "name": "decision-reflection-entries", "status": "completed", "archive_dir": "_archive/R013_decision-reflection-entries" },
-    { "id": "R014", "name": "page-context-ai", "status": "completed", "archive_dir": "_archive/R014_page-context-ai" },
-    { "id": "R015", "name": "review-enhancement", "status": "completed", "archive_dir": "_archive/R015_review-enhancement" },
-    { "id": "R016", "name": "polish-cleanup", "status": "completed", "archive_dir": "_archive/R016_polish-cleanup" },
-    { "id": "R017", "name": "code-audit-hardening", "status": "completed", "archive_dir": "_archive/R017_code-audit-hardening" },
-    { "id": "R018", "name": "defect-fix-quality", "status": "completed", "archive_dir": "_archive/R018_defect-fix-quality" },
-    { "id": "R019", "name": "offline-pwa", "status": "completed", "archive_dir": "_archive/R019_offline-pwa" },
-    { "id": "R020", "name": "e2e-ci-pipeline", "status": "completed", "archive_dir": "_archive/R020_e2e-ci-pipeline" },
-    { "id": "R021", "name": "tech-debt-cleanup", "status": "completed", "archive_dir": "_archive/R021_tech-debt-cleanup" },
-    { "id": "R022", "name": "polish-deferred", "status": "completed", "archive_dir": "_archive/R022_polish-deferred" },
-    { "id": "R025", "name": "stage3-completion", "status": "completed", "archive_dir": "_archive/R025_stage3-completion" },
-    { "id": "R026", "name": "convergence-fixes", "status": "completed", "archive_dir": "_archive/R026_convergence-fixes" },
-    { "id": "R027", "name": "export-feedback-tracking", "status": "completed", "archive_dir": "_archive/R027_export-feedback-tracking" },
-    { "id": "R028", "name": "engineering-cleanup", "status": "completed", "archive_dir": "_archive/R028_engineering-cleanup" },
-    { "id": "R029", "name": "simplify-convergence", "status": "completed", "archive_dir": "_archive/R029_simplify-convergence" },
-    { "id": "R030", "name": "ai-morning-report", "status": "completed", "archive_dir": "_archive/R030_ai-morning-report" },
-    { "id": "R031", "name": "conversational-onboarding", "status": "completed", "archive_dir": "_archive/R031_conversational-onboarding" },
-    { "id": "R032", "name": "search-filter-batch", "status": "completed", "archive_dir": "_archive/R032_search-filter-batch" },
-    { "id": "R033", "name": "security-hardening", "status": "completed", "archive_dir": "_archive/R033_security-hardening" },
-    { "id": "R034", "name": "tech-debt-residual", "status": "completed", "archive_dir": "_archive/R034_tech-debt-residual" },
-    { "id": "R035", "name": "preexisting-fixes", "status": "completed", "archive_dir": "_archive/R035_preexisting-fixes" }
+    {
+      "id": "R003",
+      "name": "production-content-recovery",
+      "status": "completed",
+      "archive_dir": "_archive/R003_production-content-recovery"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase1a",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase1a"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase1b",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase1a"
+    },
+    {
+      "id": "R004",
+      "name": "product-evolution-phase2",
+      "status": "completed",
+      "archive_dir": "_archive/R004_product-evolution-phase2"
+    },
+    {
+      "id": "R005",
+      "name": "product-evolution-phase3",
+      "status": "completed",
+      "archive_dir": "_archive/R005_product-evolution-phase3"
+    },
+    {
+      "id": "R006",
+      "name": "product-polish",
+      "status": "completed",
+      "archive_dir": "_archive/R006_product-polish"
+    },
+    {
+      "id": "R007",
+      "name": "engagement-experience",
+      "status": "completed",
+      "archive_dir": "_archive/R007_engagement-experience"
+    },
+    {
+      "id": "R008",
+      "name": "intelligence-omni",
+      "status": "completed",
+      "archive_dir": "_archive/R008_intelligence-omni"
+    },
+    {
+      "id": "R009",
+      "name": "chat-user-id-threading",
+      "status": "completed",
+      "archive_dir": "_archive/R009_chat-user-id-threading"
+    },
+    {
+      "id": "R010",
+      "name": "engineering-foundation",
+      "status": "completed",
+      "archive_dir": "_archive/R010_engineering-foundation"
+    },
+    {
+      "id": "R011",
+      "name": "entry-context-and-morning-report",
+      "status": "completed",
+      "archive_dir": "_archive/R011_entry-context-and-morning-report"
+    },
+    {
+      "id": "R012",
+      "name": "goal-tracking",
+      "status": "completed",
+      "archive_dir": "_archive/R012_goal-tracking"
+    },
+    {
+      "id": "R013",
+      "name": "decision-reflection-entries",
+      "status": "completed",
+      "archive_dir": "_archive/R013_decision-reflection-entries"
+    },
+    {
+      "id": "R014",
+      "name": "page-context-ai",
+      "status": "completed",
+      "archive_dir": "_archive/R014_page-context-ai"
+    },
+    {
+      "id": "R015",
+      "name": "review-enhancement",
+      "status": "completed",
+      "archive_dir": "_archive/R015_review-enhancement"
+    },
+    {
+      "id": "R016",
+      "name": "polish-cleanup",
+      "status": "completed",
+      "archive_dir": "_archive/R016_polish-cleanup"
+    },
+    {
+      "id": "R017",
+      "name": "code-audit-hardening",
+      "status": "completed",
+      "archive_dir": "_archive/R017_code-audit-hardening"
+    },
+    {
+      "id": "R018",
+      "name": "defect-fix-quality",
+      "status": "completed",
+      "archive_dir": "_archive/R018_defect-fix-quality"
+    },
+    {
+      "id": "R019",
+      "name": "offline-pwa",
+      "status": "completed",
+      "archive_dir": "_archive/R019_offline-pwa"
+    },
+    {
+      "id": "R020",
+      "name": "e2e-ci-pipeline",
+      "status": "completed",
+      "archive_dir": "_archive/R020_e2e-ci-pipeline"
+    },
+    {
+      "id": "R021",
+      "name": "tech-debt-cleanup",
+      "status": "completed",
+      "archive_dir": "_archive/R021_tech-debt-cleanup"
+    },
+    {
+      "id": "R022",
+      "name": "polish-deferred",
+      "status": "completed",
+      "archive_dir": "_archive/R022_polish-deferred"
+    },
+    {
+      "id": "R025",
+      "name": "stage3-completion",
+      "status": "completed",
+      "archive_dir": "_archive/R025_stage3-completion"
+    },
+    {
+      "id": "R026",
+      "name": "convergence-fixes",
+      "status": "completed",
+      "archive_dir": "_archive/R026_convergence-fixes"
+    },
+    {
+      "id": "R027",
+      "name": "export-feedback-tracking",
+      "status": "completed",
+      "archive_dir": "_archive/R027_export-feedback-tracking"
+    },
+    {
+      "id": "R028",
+      "name": "engineering-cleanup",
+      "status": "completed",
+      "archive_dir": "_archive/R028_engineering-cleanup"
+    },
+    {
+      "id": "R029",
+      "name": "simplify-convergence",
+      "status": "completed",
+      "archive_dir": "_archive/R029_simplify-convergence"
+    },
+    {
+      "id": "R030",
+      "name": "ai-morning-report",
+      "status": "completed",
+      "archive_dir": "_archive/R030_ai-morning-report"
+    },
+    {
+      "id": "R031",
+      "name": "conversational-onboarding",
+      "status": "completed",
+      "archive_dir": "_archive/R031_conversational-onboarding"
+    },
+    {
+      "id": "R032",
+      "name": "search-filter-batch",
+      "status": "completed",
+      "archive_dir": "_archive/R032_search-filter-batch"
+    },
+    {
+      "id": "R033",
+      "name": "security-hardening",
+      "status": "completed",
+      "archive_dir": "_archive/R033_security-hardening"
+    },
+    {
+      "id": "R034",
+      "name": "tech-debt-residual",
+      "status": "completed",
+      "archive_dir": "_archive/R034_tech-debt-residual"
+    },
+    {
+      "id": "R035",
+      "name": "preexisting-fixes",
+      "status": "completed",
+      "archive_dir": "_archive/R035_preexisting-fixes"
+    }
   ]
 }

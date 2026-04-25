@@ -6,7 +6,7 @@
 |--------|----------|-----------|--------------------|--------|------|
 | 消除私有属性访问 | B100 | unit | is_connected正确状态/ReviewService getter/初始化链路回归/entries导出回归/sync回归/main.py health check公共属性回归/pytest | done | L2, 8 tests, 1213 pytest total |
 | get_growth_curve SQL 聚合 | B101 | unit | 有entries按周tag统计/无entries空结果/周边界/掌握度一致/user_id隔离/年边界一致性/回归 | done | L1, 16 tests, 1229 pytest total |
-| review_service 拆分 | B102 | unit | import正确/功能不变/路由链路/pytest | pending | L1, ~4 tests |
+| review_service 拆分 | B102 | unit | import正确/功能不变/路由链路/pytest | done | L1, 1229 pytest passed, mock path fix |
 | 503 降级共享 hook | F128 | unit | hook检测503+重试/7页集成测试(Home/Review/Explore/EntryDetail/GraphPage/GoalsPage/GoalDetail)/重试恢复/多请求页面主请求503整页降级/build | pending | F2, ~9 tests |
 | EntryDetail 拆分 | F129 | unit+manual | 详情页加载/编辑/关联条目/知识上下文/AI摘要/链接管理/build | pending | F2, ~7 tests |
 | Home+Explore 拆分 | F130 | unit+manual | 首页加载/探索页搜索+筛选+批量操作/build | pending | F2, ~5 tests |

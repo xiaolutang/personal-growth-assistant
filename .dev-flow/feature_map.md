@@ -8,7 +8,7 @@
 
 | 需求包 | 状态 | 任务数 |
 |--------|------|--------|
-| R036 残留问题全面收口 | in_progress | 10 (B100 completed, 9 pending) |
+| R036 残留问题全面收口 | in_progress | 10 (B100-B102 completed, 7 pending) |
 
 ## 归档需求包
 
