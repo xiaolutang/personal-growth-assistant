@@ -88,8 +88,8 @@ describe("useEntryData", () => {
   });
 
   it("旧请求的 503 不会覆盖新请求的成功结果", async () => {
-    let resolveOld: (v: Task) => void;
-    const oldPromise = new Promise<Task>((r) => { resolveOld = r; });
+    let rejectOld: (e: Error) => void;
+    const oldPromise = new Promise<Task>((_, rej) => { rejectOld = rej; });
 
     let callCount = 0;
     getEntryMock.mockImplementation(() => {
@@ -119,10 +119,9 @@ describe("useEntryData", () => {
     expect(result.current.entry?.id).toBe("entry-2");
     expect(result.current.serviceUnavailable).toBe(false);
 
-    // 旧请求现在以 503 返回
+    // 旧请求现在以 503 reject
     await act(async () => {
-      resolveOld!(makeTask({ id: "entry-1" }));
-      // 让微任务排空
+      rejectOld!(new ApiError(503, "Service Unavailable", {}));
       await new Promise((r) => setTimeout(r, 0));
     });
 
@@ -188,9 +187,36 @@ describe("useEntryData", () => {
     expect(result.current.projectProgress).toBeTruthy();
   });
 
+  it("503 后路由切换到 404 不再显示 serviceUnavailable", async () => {
+    // 第一次请求 503
+    getEntryMock.mockRejectedValueOnce(new ApiError(503, "Service Unavailable", {}));
+
+    const { result } = renderHook(() => useEntryData());
+
+    await waitFor(() => {
+      expect(result.current.serviceUnavailable).toBe(true);
+    });
+
+    // 路由切换，新请求返回 404
+    getEntryMock.mockRejectedValueOnce(new ApiError(404, "Not Found", {}));
+    mockParams.id = "entry-2";
+
+    await act(async () => {
+      await result.current.reloadEntry();
+    });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    // serviceUnavailable 已清除，显示真实错误
+    expect(result.current.serviceUnavailable).toBe(false);
+    expect(result.current.error).toBe("Not Found");
+  });
+
   it("过期请求不写入 isLoading/error/serviceUnavailable", async () => {
-    let resolveOld: (v: Task) => void;
-    const oldPromise = new Promise<Task>((r) => { resolveOld = r; });
+    let rejectOld: (e: Error) => void;
+    const oldPromise = new Promise<Task>((_, rej) => { rejectOld = rej; });
 
     let callCount = 0;
     getEntryMock.mockImplementation(() => {
@@ -213,9 +239,9 @@ describe("useEntryData", () => {
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBeNull();
 
-    // 旧请求现在以 error 返回
+    // 旧请求现在以 500 error reject
     await act(async () => {
-      resolveOld!(makeTask({ id: "entry-1" }));
+      rejectOld!(new ApiError(500, "Server Error", {}));
       await new Promise((r) => setTimeout(r, 0));
     });
 

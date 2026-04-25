@@ -43,10 +43,10 @@ export function useEntryData(): EntryDataState {
     const version = ++loadVersionRef.current;
     setIsLoading(true);
     setError(null);
+    setServiceUnavailable(false);
     try {
       const data = await getEntry(id);
       if (loadVersionRef.current !== version) return;
-      setServiceUnavailable(false);
       setEntry(data);
       // 清除上次加载的关联数据（防止路由切换残留）
       setChildTasks([]);

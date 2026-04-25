@@ -29,7 +29,9 @@ export function useEntryLinks(): EntryLinksState {
       .finally(() => setEntryLinksLoading(false));
   }, [id]);
 
+  // id 变化时清空旧数据（防路由切换残留）
   useEffect(() => {
+    setEntryLinks([]);
     loadEntryLinks();
   }, [loadEntryLinks]);
 
