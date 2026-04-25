@@ -32,6 +32,9 @@ class InsightsMixin:
         Returns:
             InsightsResponse 结构化洞察
         """
+        if period not in ("weekly", "monthly"):
+            raise ValueError(f"不支持的统计 period: {period}")
+
         if not self._sqlite:
             raise ValueError("SQLite 存储未初始化")
 
