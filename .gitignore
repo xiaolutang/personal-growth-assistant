@@ -35,6 +35,8 @@ data/logs.db
 data/users/
 data/tasks/
 data/users.db
+data/checkpoints*.db*
+data/checkpoints_meta.db*
 backend/data/
 backend/checkpoints*.db
 

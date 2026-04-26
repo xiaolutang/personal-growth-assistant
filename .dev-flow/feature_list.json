@@ -35,9 +35,9 @@
     "summary": {
       "total": 8,
       "by_status": {
-        "pending": 7,
+        "pending": 6,
         "in_progress": 0,
-        "completed": 1,
+        "completed": 2,
         "in_progress": 0,
         "completed": 0,
         "cancelled": 0
@@ -84,7 +84,10 @@
       "description": "将 checkpoints*.db*、checkpoints_meta.db* 加入 .gitignore，git rm --cached 清理已跟踪的运行时文件，确保 git status 不再显示这些文件的变更。",
       "verification": "L1",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-26",
+      "completed_at": "2026-04-26",
+      "evidence_file": ".dev-flow/evidence/B109.md",
       "priority": "P1",
       "acceptance_criteria": [
         ".gitignore 包含 data/checkpoints*.db* 和 data/checkpoints_meta.db*",
