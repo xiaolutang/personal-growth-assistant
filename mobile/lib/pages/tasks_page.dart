@@ -32,6 +32,8 @@ class TasksPage extends ConsumerStatefulWidget {
 
 class _TasksPageState extends ConsumerState<TasksPage> {
   TaskFilter _currentFilter = TaskFilter.all;
+  // 本地拖拽排序状态（不持久化）
+  List<Entry> _reorderedEntries = [];
 
   @override
   void initState() {
@@ -70,7 +72,10 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   }
 
   void _onFilterChanged(TaskFilter filter) {
-    setState(() => _currentFilter = filter);
+    setState(() {
+      _currentFilter = filter;
+      _reorderedEntries = []; // 切换筛选时重置排序
+    });
     ref.read(entryListProvider.notifier).fetchEntries(
           type: AppConstants.categoryTask,
           status: _statusFilter,
@@ -154,11 +159,26 @@ class _TasksPageState extends ConsumerState<TasksPage> {
       return _buildEmptyState(theme);
     }
 
+    // 数据刷新时同步本地排序（保留已有排序或重置）
+    if (_reorderedEntries.isEmpty ||
+        _reorderedEntries.length != state.entries.length ||
+        !_sameEntryIds(_reorderedEntries, state.entries)) {
+      _reorderedEntries = List.of(state.entries);
+    } else {
+      // IDs 相同但 entry 数据可能已变（如乐观状态更新），保留排序但刷新数据
+      _reorderedEntries = _reorderedEntries
+          .map((local) => state.entries.firstWhere((e) => e.id == local.id))
+          .toList();
+    }
+
     // 按状态分组
-    final grouped = _groupByStatus(state.entries);
+    final grouped = _groupByStatus(_reorderedEntries);
 
     return RefreshIndicator(
-      onRefresh: _onRefresh,
+      onRefresh: () async {
+        setState(() => _reorderedEntries = []);
+        await _onRefresh();
+      },
       child: ListView(
         padding: const EdgeInsets.only(bottom: AppSpacing.xl),
         children: [
@@ -177,6 +197,12 @@ class _TasksPageState extends ConsumerState<TasksPage> {
         ],
       ),
     );
+  }
+
+  bool _sameEntryIds(List<Entry> a, List<Entry> b) {
+    final idsA = a.map((e) => e.id).toSet();
+    final idsB = b.map((e) => e.id).toSet();
+    return idsA.length == idsB.length && idsA.containsAll(idsB);
   }
 
   Widget _buildGroup(String label, List<Entry> entries) {
@@ -199,14 +225,65 @@ class _TasksPageState extends ConsumerState<TasksPage> {
             ),
           ),
         ),
-        ...entries.map((entry) {
-              return TaskCard(
-                entry: entry,
-                onTap: () => context.push('/entries/${entry.id}'),
-                onStatusChanged: (newStatus) =>
-                    _onStatusChanged(entry, newStatus),
+        if (entries.length == 1)
+          // 单条目无法拖拽排序，直接显示
+          TaskCard(
+            entry: entries.first,
+            onTap: () => context.push('/entries/${entries.first.id}'),
+            onStatusChanged: (newStatus) =>
+                _onStatusChanged(entries.first, newStatus),
+          )
+        else
+          ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: entries.length,
+            onReorder: (oldIndex, newIndex) {
+              setState(() {
+                if (newIndex > oldIndex) newIndex--;
+                // 用 ID 映射重排，不依赖条目在全局列表中的连续性
+                final groupIds = entries.map((e) => e.id).toList();
+                final movedId = groupIds.removeAt(oldIndex);
+                groupIds.insert(newIndex, movedId);
+                final groupIdSet = groupIds.toSet();
+                final groupEntryMap = {for (var e in entries) e.id: e};
+                final reorderedGroup = groupIds.map((id) => groupEntryMap[id]!).toList();
+                var gi = 0;
+                _reorderedEntries = _reorderedEntries.map((e) {
+                  if (groupIdSet.contains(e.id)) {
+                    return reorderedGroup[gi++];
+                  }
+                  return e;
+                }).toList();
+              });
+            },
+            proxyDecorator: (child, index, animation) {
+              // 拖拽时的视觉效果
+              return AnimatedBuilder(
+                animation: animation,
+                builder: (context, child) {
+                  final t = Curves.easeInOut.transform(animation.value);
+                  return Transform.scale(
+                    scale: 1.0 + 0.05 * t,
+                    child: child,
+                  );
+                },
+                child: child,
               );
-            }),
+            },
+            itemBuilder: (context, index) {
+              final entry = entries[index];
+              return KeyedSubtree(
+                key: ValueKey(entry.id),
+                child: TaskCard(
+                  entry: entry,
+                  onTap: () => context.push('/entries/${entry.id}'),
+                  onStatusChanged: (newStatus) =>
+                      _onStatusChanged(entry, newStatus),
+                ),
+              );
+            },
+          ),
       ],
     );
   }

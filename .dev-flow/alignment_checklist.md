@@ -13,7 +13,7 @@
 - [x] B102 depends_on B101 ✓（共享 review_service.py）
 - [x] F128 无外部依赖 ✓ (completed)
 - [ ] F129 无外部依赖 ✓
-- [ ] M100 无外部依赖 ✓（Flutter 独立模块）
+- [x] M100 无外部依赖 ✓ (completed)
 - [x] S33 depends_on B100-B102, F128-F131 ✓（结构性改动完成后再补测试）
 - [ ] S34 depends_on S33, M100 ✓
 

@@ -20,8 +20,8 @@
   },
   "summary": {
     "total_tasks": 10,
-    "pending": 3,
-    "completed": 7,
+    "pending": 2,
+    "completed": 8,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -440,7 +440,11 @@
       "description": "为 Flutter 移动端任务列表添加长按拖拽排序功能（本地体验，当前后端无排序字段）",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-26T07:30:00+0800",
+      "completed_at": "2026-04-26T08:00:00+0800",
+      "evidence_file": ".dev-flow/evidence/M100.md",
+      "execution_notes": "12 widget tests, flutter analyze no issues, flutter test 170 passed, code-review R5 pass",
       "priority": "P3",
       "acceptance_criteria": [
         "任务列表支持长按拖拽排序",
