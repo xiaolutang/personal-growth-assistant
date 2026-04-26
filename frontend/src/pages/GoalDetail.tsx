@@ -7,6 +7,9 @@ import { Progress } from "@/components/ui/progress";
 import { Header } from "@/components/layout/Header";
 import { ArrowLeft, Link2, X, CheckSquare, Square, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
+import { ServiceUnavailable } from "@/components/ServiceUnavailable";
+import { ProgressRing } from "@/components/ProgressRing";
 import {
   getGoal,
   updateGoal,
@@ -18,24 +21,6 @@ import {
   type Goal,
   type GoalEntry,
 } from "@/services/api";
-
-// === 进度环形图 ===
-function ProgressRing({ percentage, size = 120 }: { percentage: number; size?: number }) {
-  const strokeWidth = 8;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (percentage / 100) * circumference;
-
-  return (
-    <div className="relative inline-flex items-center justify-center">
-      <svg width={size} height={size} className="transform -rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="currentColor" strokeWidth={strokeWidth} className="text-primary/20" />
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="text-primary transition-all duration-500" />
-      </svg>
-      <span className="absolute text-2xl font-bold">{Math.round(percentage)}%</span>
-    </div>
-  );
-}
 
 // === 条目搜索弹窗 ===
 function EntrySearchDialog({ open, onClose, onSelect }: {
@@ -100,22 +85,25 @@ export function GoalDetail() {
   const [entries, setEntries] = useState<GoalEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSearch, setShowSearch] = useState(false);
+  const { serviceUnavailable, runWith503, retry: retryService } = useServiceUnavailable();
 
   const fetchData = useCallback(async () => {
     if (!goalId) return;
     try {
-      const [goalRes, entriesRes] = await Promise.all([
-        getGoal(goalId),
-        getGoalEntries(goalId).catch(() => ({ entries: [] })),
-      ]);
-      setGoal(goalRes);
-      setEntries(entriesRes.entries ?? []);
+      await runWith503(async () => {
+        const [goalRes, entriesRes] = await Promise.all([
+          getGoal(goalId),
+          getGoalEntries(goalId).catch(() => ({ entries: [] })),
+        ]);
+        setGoal(goalRes);
+        setEntries(entriesRes.entries ?? []);
+      });
     } catch {
       toast.error("加载目标失败");
     } finally {
       setLoading(false);
     }
-  }, [goalId]);
+  }, [goalId, runWith503]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -173,6 +161,14 @@ export function GoalDetail() {
   };
 
   if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">加载中...</div>;
+  if (serviceUnavailable) return (
+    <div className="flex-1">
+      <Header title="目标详情" />
+      <main className="p-6">
+        <ServiceUnavailable onRetry={() => retryService(fetchData)} />
+      </main>
+    </div>
+  );
   if (!goal) return <div className="text-center py-12 text-muted-foreground">目标不存在</div>;
 
   const metricLabel = goal.metric_type === "count" ? "手动计数" : goal.metric_type === "checklist" ? "检查清单" : "Tag 追踪";
@@ -190,7 +186,7 @@ export function GoalDetail() {
         <Card className="mb-4">
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row items-center gap-6">
-              <ProgressRing percentage={goal.progress_percentage} />
+              <ProgressRing percentage={goal.progress_percentage} size={120} showLabel />
               <div className="flex-1 text-center sm:text-left">
                 <h2 className="text-xl font-semibold">{goal.title}</h2>
                 {goal.description && <p className="text-sm text-muted-foreground mt-1">{goal.description}</p>}

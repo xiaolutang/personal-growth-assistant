@@ -107,7 +107,7 @@ class TestUserIsolation:
         sqlite_storage.upsert_entry(_make_entry("migrate-test"))
 
         # 验证 user_id = _default
-        conn = sqlite_storage._get_conn()
+        conn = sqlite_storage.get_connection()
         try:
             row = conn.execute(
                 "SELECT user_id FROM entries WHERE id = ?", ("migrate-test",)

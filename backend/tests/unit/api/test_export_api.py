@@ -73,7 +73,7 @@ def _create_entry_file(data_dir: str, user_id: str, entry_id: str, category: str
 
 def _insert_entry_index(sqlite: SQLiteStorage, entry_id: str, user_id: str, entry_type: str, title: str):
     """直接在 entries 表插入索引记录"""
-    conn = sqlite._get_conn()
+    conn = sqlite.get_connection()
     try:
         now = datetime.now(timezone.utc).isoformat()
         cat_dirs = {"task": "tasks", "note": "notes", "inbox": "inbox", "project": "projects",

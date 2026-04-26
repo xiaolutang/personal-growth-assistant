@@ -20,7 +20,7 @@ def _insert_entry(conn, entry_id, user_id, title, entry_type, status, created_at
 async def test_learning_streak_consecutive(client, test_user, storage):
     """连续 5 天有记录返回 streak=5"""
     today = date.today()
-    conn = storage.sqlite._get_conn()
+    conn = storage.sqlite.get_connection()
     for i in range(5):
         day = today - timedelta(days=i)
         _insert_entry(conn, f"streak-b44-{i}", test_user.id, f"Day {i}", "note", "complete", day.isoformat())
@@ -35,7 +35,7 @@ async def test_learning_streak_consecutive(client, test_user, storage):
 async def test_learning_streak_broken(client, test_user, storage):
     """中断记录后 streak 从 1 重新计算"""
     today = date.today()
-    conn = storage.sqlite._get_conn()
+    conn = storage.sqlite.get_connection()
     for offset in [0, 3, 4]:
         day = today - timedelta(days=offset)
         _insert_entry(conn, f"broken-b44-{offset}", test_user.id, f"Day {offset}", "note", "complete", day.isoformat())
@@ -59,7 +59,7 @@ async def test_daily_focus_overdue_template(client, test_user, storage):
     """LLM 不可用时 daily_focus 降级为逾期任务模板"""
     today = date.today()
     yesterday = today - timedelta(days=1)
-    conn = storage.sqlite._get_conn()
+    conn = storage.sqlite.get_connection()
     _insert_entry(conn, "overdue-b44-1", test_user.id, "逾期任务", "task", "doing",
                   today.isoformat(), priority="high", planned_date=yesterday.isoformat())
     conn.commit()
@@ -85,7 +85,7 @@ async def test_daily_focus_no_data(client, test_user):
 async def test_pattern_insights_inbox_heavy(client, test_user, storage):
     """灵感占比高时生成洞察"""
     today = date.today()
-    conn = storage.sqlite._get_conn()
+    conn = storage.sqlite.get_connection()
     for i in range(5):
         day = today - timedelta(days=i)
         _insert_entry(conn, f"inbox-b44-{i}", test_user.id, f"灵感 {i}", "inbox", "pending", day.isoformat())

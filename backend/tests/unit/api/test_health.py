@@ -16,19 +16,19 @@ def mock_storage():
     sqlite = MagicMock()
     conn = MagicMock()
     conn.execute = MagicMock(return_value=None)
-    sqlite._get_conn = MagicMock(return_value=conn)
+    sqlite.get_connection = MagicMock(return_value=conn)
     storage.sqlite = sqlite
 
     # Neo4j
     neo4j = MagicMock()
-    neo4j._driver = MagicMock()
-    neo4j._driver.verify_connectivity = AsyncMock(return_value=None)
+    neo4j.is_connected = True
+    neo4j.verify_connectivity = AsyncMock(return_value=True)
     storage.neo4j = neo4j
 
     # Qdrant
     qdrant = MagicMock()
-    qdrant._client = MagicMock()
-    qdrant._client.get_collections = AsyncMock(return_value=[])
+    qdrant.is_connected = True
+    qdrant.check_alive = AsyncMock(return_value=True)
     storage.qdrant = qdrant
 
     return storage
@@ -59,14 +59,14 @@ class TestCheckServices:
     @pytest.mark.asyncio
     async def test_sqlite_query_fails(self, mock_storage):
         """SQLite 查询失败 → error"""
-        mock_storage.sqlite._get_conn.return_value.execute.side_effect = Exception("db error")
+        mock_storage.sqlite.get_connection.return_value.execute.side_effect = Exception("db error")
         result = await _check_services(mock_storage)
         assert result["sqlite"] == "error"
 
     @pytest.mark.asyncio
     async def test_neo4j_unavailable(self, mock_storage):
         """Neo4j driver 为 None → unavailable"""
-        mock_storage.neo4j._driver = None
+        mock_storage.neo4j.is_connected = False
         result = await _check_services(mock_storage)
         assert result["neo4j"] == "unavailable"
         assert result["sqlite"] == "ok"
@@ -75,7 +75,7 @@ class TestCheckServices:
     @pytest.mark.asyncio
     async def test_neo4j_connectivity_fails(self, mock_storage):
         """Neo4j verify_connectivity 失败 → error"""
-        mock_storage.neo4j._driver.verify_connectivity = AsyncMock(side_effect=Exception("connection refused"))
+        mock_storage.neo4j.verify_connectivity = AsyncMock(return_value=False)
         result = await _check_services(mock_storage)
         assert result["neo4j"] == "error"
         assert result["sqlite"] == "ok"
@@ -90,15 +90,15 @@ class TestCheckServices:
     @pytest.mark.asyncio
     async def test_qdrant_unavailable(self, mock_storage):
         """Qdrant client 为 None → unavailable"""
-        mock_storage.qdrant._client = None
+        mock_storage.qdrant.is_connected = False
         result = await _check_services(mock_storage)
         assert result["qdrant"] == "unavailable"
         assert result["sqlite"] == "ok"
 
     @pytest.mark.asyncio
     async def test_qdrant_connectivity_fails(self, mock_storage):
-        """Qdrant get_collections 失败 → error"""
-        mock_storage.qdrant._client.get_collections = AsyncMock(side_effect=Exception("connection refused"))
+        """Qdrant check_alive 失败 → error"""
+        mock_storage.qdrant.check_alive = AsyncMock(return_value=False)
         result = await _check_services(mock_storage)
         assert result["qdrant"] == "error"
         assert result["sqlite"] == "ok"
@@ -113,8 +113,8 @@ class TestCheckServices:
     @pytest.mark.asyncio
     async def test_both_non_core_unavailable(self, mock_storage):
         """Neo4j + Qdrant 同时不可达 → 都标记 unavailable"""
-        mock_storage.neo4j._driver = None
-        mock_storage.qdrant._client = None
+        mock_storage.neo4j.is_connected = False
+        mock_storage.qdrant.is_connected = False
         result = await _check_services(mock_storage)
         assert result == {
             "sqlite": "ok",
@@ -172,7 +172,7 @@ class TestHealthEndpoint:
     @pytest.mark.asyncio
     async def test_neo4j_down_returns_200_degraded(self, mock_storage):
         """Neo4j 不可达 → 200 + status: degraded"""
-        mock_storage.neo4j._driver = None
+        mock_storage.neo4j.is_connected = False
         with patch("app.main.deps") as mock_deps:
             mock_deps.storage = mock_storage
             transport = ASGITransport(app=app)
@@ -188,7 +188,7 @@ class TestHealthEndpoint:
     @pytest.mark.asyncio
     async def test_qdrant_down_returns_200_degraded(self, mock_storage):
         """Qdrant 不可达 → 200 + status: degraded"""
-        mock_storage.qdrant._client = None
+        mock_storage.qdrant.is_connected = False
         with patch("app.main.deps") as mock_deps:
             mock_deps.storage = mock_storage
             transport = ASGITransport(app=app)
@@ -204,8 +204,8 @@ class TestHealthEndpoint:
     @pytest.mark.asyncio
     async def test_both_non_core_down_returns_200_degraded(self, mock_storage):
         """Neo4j + Qdrant 同时不可达 → 200 + status: degraded"""
-        mock_storage.neo4j._driver = None
-        mock_storage.qdrant._client = None
+        mock_storage.neo4j.is_connected = False
+        mock_storage.qdrant.is_connected = False
         with patch("app.main.deps") as mock_deps:
             mock_deps.storage = mock_storage
             transport = ASGITransport(app=app)

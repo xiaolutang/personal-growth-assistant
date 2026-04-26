@@ -1,6 +1,22 @@
 # 归档索引
 
+## 进行中需求包
+
+（无）
+
 ## 已完成需求包
+
+### R036: 残留问题全面收口
+
+- 状态: 已完成
+- 分支: `chore/R036-residual-cleanup`
+- 主题: 处理所有已记录但未解决的残留风险和技术债务
+- 目录: `R036_residual-cleanup/`
+- 完成时间: 2026-04-26
+- 任务数: 10 (B100-B102, F128-F131, M100, S33-S34)
+- 范围: 架构修复 + 503降级 + 性能优化 + 页面拆分 + 移动端拖拽 + 测试补齐
+- Codex 审核: M100 5轮 code-review + S34 5轮 code-review + audit
+- 验证: pytest 1133 + vitest 475 + flutter test 170 + build + Docker smoke
 
 ### R026: 收敛修复
 

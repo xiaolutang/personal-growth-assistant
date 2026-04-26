@@ -55,6 +55,10 @@ class EntryService:
     def _get_markdown_storage(self, user_id: str) -> MarkdownStorage:
         return self.storage.get_markdown_storage(user_id)
 
+    def get_markdown_storage(self, user_id: str) -> MarkdownStorage:
+        """获取 Markdown 存储（公共接口，替代外部直接调用 _get_markdown_storage）"""
+        return self._get_markdown_storage(user_id)
+
     # === 辅助方法 ===
 
     def _parse_category(self, category_str: str) -> Category:

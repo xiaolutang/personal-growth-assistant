@@ -9,6 +9,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Loader2, AlertCircle, Compass, Plus, Layers, Search, BarChart3 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { PageChatPanel } from "@/components/PageChatPanel";
+import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { useGraphState } from "./graph/useGraphState";
 import { DetailPanel } from "./graph/DetailPanel";
 import { CapabilityMapView } from "./graph/CapabilityMapView";
@@ -77,6 +78,10 @@ export function GraphPage() {
         {/* F109: 能力地图视图 */}
         {state.activeView === "capability" ? (
           <CapabilityMapView />
+        ) : state.serviceUnavailable ? (
+          <div className="flex-1 flex items-center justify-center">
+            <ServiceUnavailable onRetry={() => state.loadMap(state.activeView)} />
+          </div>
         ) : (
         <>
         {/* 画布区 */}

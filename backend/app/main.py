@@ -205,7 +205,7 @@ async def _check_services(storage) -> dict:
     # SQLite — 核心依赖
     try:
         if storage and storage.sqlite is not None:
-            conn = storage.sqlite._get_conn()
+            conn = storage.sqlite.get_connection()
             try:
                 conn.execute("SELECT 1")
                 services["sqlite"] = "ok"
@@ -218,9 +218,11 @@ async def _check_services(storage) -> dict:
 
     # Neo4j — 非核心，降级（真实连接探测）
     try:
-        if storage and storage.neo4j is not None and storage.neo4j._driver is not None:
-            await storage.neo4j._driver.verify_connectivity()
-            services["neo4j"] = "ok"
+        if storage and storage.neo4j is not None and storage.neo4j.is_connected:
+            if await storage.neo4j.verify_connectivity():
+                services["neo4j"] = "ok"
+            else:
+                services["neo4j"] = "error"
         else:
             services["neo4j"] = "unavailable"
     except Exception:
@@ -228,9 +230,11 @@ async def _check_services(storage) -> dict:
 
     # Qdrant — 非核心，降级（真实连接探测）
     try:
-        if storage and storage.qdrant is not None and storage.qdrant._client is not None:
-            await storage.qdrant._client.get_collections()
-            services["qdrant"] = "ok"
+        if storage and storage.qdrant is not None and storage.qdrant.is_connected:
+            if await storage.qdrant.check_alive():
+                services["qdrant"] = "ok"
+            else:
+                services["qdrant"] = "error"
         else:
             services["qdrant"] = "unavailable"
     except Exception:

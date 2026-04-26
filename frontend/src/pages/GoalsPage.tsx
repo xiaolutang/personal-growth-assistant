@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Header } from "@/components/layout/Header";
 import { Plus, Target, Calendar, Archive, CheckCircle2, ListChecks, Tag } from "lucide-react";
+import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
+import { ServiceUnavailable } from "@/components/ServiceUnavailable";
+import { ProgressRing } from "@/components/ProgressRing";
 import { toast } from "sonner";
 import {
   getGoals,
@@ -191,21 +194,6 @@ function CreateGoalDialog({ open, onClose, onCreated }: {
   );
 }
 
-// === 进度环形图 ===
-function ProgressRing({ percentage, size = 80 }: { percentage: number; size?: number }) {
-  const strokeWidth = 6;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (percentage / 100) * circumference;
-
-  return (
-    <svg width={size} height={size} className="transform -rotate-90">
-      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="currentColor" strokeWidth={strokeWidth} className="text-primary/20" />
-      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="text-primary transition-all duration-500" />
-    </svg>
-  );
-}
-
 // === 主页面 ===
 export function GoalsPage() {
   const navigate = useNavigate();
@@ -213,17 +201,20 @@ export function GoalsPage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"active" | "completed" | "abandoned">("active");
+  const { serviceUnavailable, runWith503, retry: retryService } = useServiceUnavailable();
 
   const fetchGoals = useCallback(async () => {
     try {
-      const res = await getGoals(statusFilter);
-      setGoals(res.goals ?? []);
+      await runWith503(async () => {
+        const res = await getGoals(statusFilter);
+        setGoals(res.goals ?? []);
+      });
     } catch {
       toast.error("加载目标失败");
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, runWith503]);
 
   useEffect(() => { fetchGoals(); }, [fetchGoals]);
 
@@ -243,6 +234,10 @@ export function GoalsPage() {
     <>
       <Header title="目标追踪" />
       <main className="flex-1 p-6 pb-32">
+        {serviceUnavailable ? (
+          <ServiceUnavailable onRetry={() => retryService(fetchGoals)} />
+        ) : (
+        <>
         <div className="flex items-center justify-between mb-4">
           <div className="flex gap-2">
             {(["active", "completed", "abandoned"] as const).map(s => (
@@ -332,6 +327,8 @@ export function GoalsPage() {
         )}
 
         <CreateGoalDialog open={showCreate} onClose={() => setShowCreate(false)} onCreated={fetchGoals} />
+        </>
+        )}
       </main>
     </>
   );

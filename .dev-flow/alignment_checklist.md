@@ -1,5 +1,41 @@
 # 对齐清单
 
+## R036: 残留问题全面收口
+
+### 契约对齐
+
+- [x] 不涉及新契约，所有改动为架构修复、性能优化、代码组织和测试补齐 ✓
+
+### 依赖对齐
+
+- [x] B100 无外部依赖 ✓ (completed)
+- [x] B101 无外部依赖 ✓ (completed)
+- [x] B102 depends_on B101 ✓（共享 review_service.py）
+- [x] F128 无外部依赖 ✓ (completed)
+- [x] F129 无外部依赖 ✓ (completed)
+- [x] M100 无外部依赖 ✓ (completed)
+- [x] S33 depends_on B100-B102, F128-F131 ✓（结构性改动完成后再补测试）
+- [x] S34 depends_on S33, M100 ✓ (completed)
+
+### 架构对齐
+
+- [x] B100: 添加公共属性/方法，不改变行为 ✓ (completed)
+- [x] B101: SQL 聚合替换内存过滤，结果等价 ✓ (completed)
+- [x] B102: 拆分到子模块，路由层 import 同步更新 ✓ (completed)
+- [x] F128: 共享 hook，不新建全局状态 ✓ (completed)
+- [x] F129-F131: 组件拆分，不引入新依赖 ✓ (completed)
+- [x] M100: Flutter 端独立功能 ✓ (completed)
+- [x] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫 ✓ (completed)
+
+### 执行顺序
+
+- [x] Phase 1: B100, B101（可并行）✓
+- [x] Phase 2: B102（depends B101）✓
+- [x] Phase 3: F128 ✓
+- [x] Phase 4: F129, F130, F131（可并行，不共享文件）✓
+- [x] Phase 5: M100（独立）✓ (completed)
+- [x] Phase 6: S33 → S34 ✓
+
 ## R035: 预存问题修复（R034 Simplify 发现）
 
 ### 契约对齐

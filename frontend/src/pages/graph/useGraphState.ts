@@ -16,6 +16,7 @@ import {
   type KnowledgeSearchResponse,
   type MasteryDistributionResponse,
 } from "@/services/api";
+import { ApiError } from "@/lib/errors";
 import { type ViewKey, EDGE_LABEL_THRESHOLD, masteryColors } from "./constants";
 import { layoutNodes, aggregateByCategory, buildEdges, getDisplayData } from "./utils";
 
@@ -24,6 +25,7 @@ export interface GraphState {
   setActiveView: (view: ViewKey) => void;
   loading: boolean;
   error: string | null;
+  serviceUnavailable: boolean;
   mapData: KnowledgeMapResponse | null;
   stats: ConceptStatsResponse | null;
   selectedNode: MapNode | null;
@@ -63,6 +65,7 @@ export function useGraphState(focusConcept: string | null): GraphState {
   const [activeView, setActiveView] = useState<ViewKey>("domain");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [serviceUnavailable, setServiceUnavailable] = useState(false);
   const [mapData, setMapData] = useState<KnowledgeMapResponse | null>(null);
   const [stats, setStats] = useState<ConceptStatsResponse | null>(null);
   const [selectedNode, setSelectedNode] = useState<MapNode | null>(null);
@@ -90,6 +93,7 @@ export function useGraphState(focusConcept: string | null): GraphState {
   const loadMap = useCallback(async (view: ViewKey) => {
     setLoading(true);
     setError(null);
+    setServiceUnavailable(false);
     setSelectedNode(null);
     setShowAllNodes(false);
     setAggregateMode(false);
@@ -97,19 +101,23 @@ export function useGraphState(focusConcept: string | null): GraphState {
     setSearchResults(null);
     setSearchError(null);
     try {
-      const [mapResult, statsResult] = await Promise.all([
-        getKnowledgeMap(2, view),
-        getKnowledgeStats(),
-      ]);
+      // 主请求：503 时整页降级
+      const mapResult = await getKnowledgeMap(2, view);
       setMapData(mapResult);
-      setStats(statsResult);
+
+      // 次级请求：独立失败，不触发整页降级
+      getKnowledgeStats().then(setStats).catch(() => { /* 静默失败 */ });
 
       // 根据节点数决定初始渲染
       const { displayNodes, displayEdges } = getDisplayData(mapResult, false);
       setNodes(layoutNodes(displayNodes));
       setEdges(buildEdges(displayEdges, displayEdges.length > EDGE_LABEL_THRESHOLD));
     } catch (err: any) {
-      setError(err.message || "加载图谱失败");
+      if (err instanceof ApiError && err.isServiceUnavailable) {
+        setServiceUnavailable(true);
+      } else {
+        setError(err.message || "加载图谱失败");
+      }
     } finally {
       setLoading(false);
     }
@@ -269,6 +277,7 @@ export function useGraphState(focusConcept: string | null): GraphState {
     setActiveView,
     loading,
     error,
+    serviceUnavailable,
     mapData,
     stats,
     selectedNode,

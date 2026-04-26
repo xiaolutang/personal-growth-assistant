@@ -32,7 +32,7 @@ class NotificationService:
         self._sqlite = sqlite_storage
 
     def _get_conn(self):
-        return self._sqlite._get_conn()
+        return self._sqlite.get_connection()
 
     # === 偏好 ===
 

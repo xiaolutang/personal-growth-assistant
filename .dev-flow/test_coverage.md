@@ -1,5 +1,20 @@
 # 测试覆盖清单
 
+## R036: 残留问题全面收口
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| 消除私有属性访问 | B100 | unit | is_connected正确状态/ReviewService getter/初始化链路回归/entries导出回归/sync回归/main.py health check公共属性回归/pytest | done | L2, 8 tests, 1213 pytest total |
+| get_growth_curve SQL 聚合 | B101 | unit | 有entries按周tag统计/无entries空结果/周边界/掌握度一致/user_id隔离/年边界一致性/跨周归属/同周去重/ISO标签确定性/回归 | done | L1, 19 tests, 1232 pytest total, code-review R4 pass, audit done |
+| review_service 拆分 | B102 | unit | import正确/功能不变/路由链路/period校验/pytest | done | L1, 1229 pytest (拆分) + 1130 pytest + 386 vitest + build (修复), code-review pass, audit pending |
+| 503 降级共享 hook | F128 | unit+integration | hook检测503+重试恢复/retry不双重嵌套/503→retry→503/503→retry→500/503→retry→success/GraphPage能力地图503降级/build | done | F2, 7 hook tests + 4 GraphPage集成 tests, 397 vitest total, code-review R5 pass |
+| EntryDetail 拆分 | F129 | unit+manual | 详情页加载/编辑/关联条目/知识上下文/AI摘要/链接管理/build | completed | F2, ~7 tests |
+| Home+Explore 拆分 | F130 | unit+manual | 首页加载/探索页搜索+筛选+批量操作/build | completed | F2, ~5 tests |
+| Review+Tasks+Goals 拆分 | F131 | unit+manual | 回顾页切换/任务筛选/目标进度环/build | completed | F2, ~5 tests |
+| 移动端拖拽 | M100 | unit | 长按触发/拖拽反馈/释放更新(本地)/刷新恢复默认/切换筛选恢复/analyze | done | F2, 12 tests (含拖拽重排+同ID数据刷新), flutter test 170 passed |
+| R032+R027 测试补齐 | S33 | unit | B89搜索(~16)/F119过滤UI(~7)/F120批量(~10)/B83导出(~10)/F114-F116导出反馈(~12) | completed | L2, 63 tests, vitest 475 passed |
+| 质量收口 | S34 | integration+smoke | pytest全量/vitest全量/build/Docker smoke | done | L4, pytest 1133, vitest 475, build success, Docker smoke 7 endpoints passed |
+
 ## R035: 预存问题修复（R034 Simplify 发现）
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
