@@ -1,4 +1,4 @@
-import { Loader2, Pencil } from "lucide-react";
+import { AlertCircle, Loader2, Pencil, RefreshCw } from "lucide-react";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { TaskList } from "@/components/TaskList";
 import { Button } from "@/components/ui/button";
@@ -134,7 +134,7 @@ export function Explore() {
                 ? `${TABS.find((t) => t.key === activeTab)?.label} (${filteredTasks.length})`
                 : `全部 (${filteredTasks.length})`}
           </CardTitle>
-          {!isLoading && !entriesError && filteredTasks.length > 0 && (
+          {!isLoading && !entriesError && filteredTasks.length > 0 && !searchError && (
             !batch.selectMode ? (
               <Button variant="outline" size="sm" onClick={batch.enterSelectMode}>
                 <Pencil className="h-4 w-4 mr-1" />
@@ -157,13 +157,17 @@ export function Explore() {
             <Loader2 className="h-4 w-4 animate-spin" />
             加载中...
           </div>
-        ) : entriesError ? (
-          <div className="flex flex-col items-center justify-center gap-3 p-8 text-muted-foreground">
-            <p>{entriesError}</p>
+        ) : entriesError && filteredTasks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30">
+              <AlertCircle className="h-8 w-8 text-red-500 dark:text-red-400" />
+            </div>
+            <p className="text-sm text-muted-foreground">{entriesError}</p>
             <button
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm"
-              onClick={() => window.location.reload()}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:bg-primary/90 transition-colors"
+              onClick={() => loadEntries()}
             >
+              <RefreshCw className="h-4 w-4" />
               重试
             </button>
           </div>
@@ -176,6 +180,22 @@ export function Explore() {
           <div className="p-4 text-center text-red-500 dark:text-red-400">{searchError}</div>
         ) : (
           <div onTouchStart={batch.selectMode ? undefined : undefined}>
+            {/* 部分失败提示条：有错误但已有数据时显示 */}
+            {entriesError && filteredTasks.length > 0 && (
+              <div className="flex items-center justify-between gap-2 mx-4 mt-2 mb-3 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>部分数据加载失败</span>
+                </div>
+                <button
+                  className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 transition-colors"
+                  onClick={() => loadEntries()}
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  重试
+                </button>
+              </div>
+            )}
             <TaskList
               tasks={filteredTasks}
               emptyMessage={emptyMessage}

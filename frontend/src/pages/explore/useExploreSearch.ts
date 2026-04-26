@@ -154,7 +154,7 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
     };
   }, [searchQuery, searchFilters, activeTab, hasActiveFilters, searchHistoryRefresh]);
 
-  // 加载条目
+  // 加载条目（部分失败时保留已有数据）
   const loadEntries = useCallback(async () => {
     setIsLoading(true);
     setEntriesError(null);
@@ -164,6 +164,7 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
         setEntries(res.entries ?? []);
       });
     } catch {
+      // 保留已有 entries（部分失败场景），仅在完全无数据时才设空
       setEntriesError("加载失败，请重试");
     } finally {
       setIsLoading(false);

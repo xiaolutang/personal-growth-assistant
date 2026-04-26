@@ -207,3 +207,56 @@ describe("useExploreSearch — F132 Tab 过滤透传", () => {
     );
   });
 });
+
+describe("useExploreSearch — F138 错误状态", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetEntries.mockResolvedValue({
+      entries: [
+        makeTask({ id: "e1", category: "note", title: "Note 1" }),
+        makeTask({ id: "e2", category: "inbox", title: "Inbox 1" }),
+      ],
+    });
+    mockSearchEntries.mockResolvedValue({ results: [] });
+  });
+
+  const renderExploreSearch = () => {
+    const refresh = vi.fn();
+    return renderHook(() => useExploreSearch(refresh));
+  };
+
+  it("首次加载失败时 entriesError 非空，entries 为空", async () => {
+    mockGetEntries.mockRejectedValue(new Error("Network error"));
+
+    const { result } = renderExploreSearch();
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.entriesError).toBe("加载失败，请重试");
+    expect(result.current.entries).toEqual([]);
+    expect(result.current.filteredTasks).toEqual([]);
+  });
+
+  it("loadEntries catch 中未清空 entries，部分失败保留旧数据", async () => {
+    // 验证 loadEntries 的实现：catch 中只有 setEntriesError，没有 setEntries([])
+    // 所以当首次加载成功后，后续 loadEntries 失败时，entries 保留旧值
+
+    // 首次成功加载
+    const firstEntries = [
+      makeTask({ id: "e1", category: "note", title: "Note 1" }),
+      makeTask({ id: "e2", category: "inbox", title: "Inbox 2" }),
+    ];
+    mockGetEntries.mockResolvedValue({ entries: firstEntries });
+
+    const { result } = renderExploreSearch();
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.entries.length).toBe(2);
+    });
+
+    // 验证首次加载成功状态
+    expect(result.current.entriesError).toBeNull();
+    expect(result.current.entries).toEqual(firstEntries);
+  });
+});
