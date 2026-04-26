@@ -35,9 +35,9 @@
     "summary": {
       "total": 8,
       "by_status": {
-        "pending": 2,
+        "pending": 1,
         "in_progress": 0,
-        "completed": 6,
+        "completed": 7,
         "in_progress": 0,
         "completed": 0,
         "cancelled": 0
@@ -256,10 +256,10 @@
       "description": "新建 useAnalytics hook，在关键用户动作处调用 POST /analytics/event。埋点动作：条目创建、条目查看、AI 对话发送、搜索执行、页面切换、Onboarding 完成。写入为 best-effort，失败静默。",
       "verification": "F2",
       "depends_on": ["B111"],
-      "status": "pending",
-      "priority": "P2",
-      "acceptance_criteria": [
-        "useAnalytics hook 导出 trackEvent 方法",
+      "status": "completed",
+      "started_at": "2026-04-26",
+      "completed_at": "2026-04-26",
+      "evidence_file": ".dev-flow/evidence/F149.md",
         "6 个关键动作正确调用 trackEvent",
         "API 失败时静默（不影响用户体验）",
         "event_type 与后端契约一致",

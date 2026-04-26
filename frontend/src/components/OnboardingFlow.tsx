@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Loader2, Sparkles, ArrowRight, SkipForward, RefreshCw } from "lucide-react";
 import { useUserStore } from "@/stores/userStore";
 import { Button } from "@/components/ui/button";
+import { trackEvent } from "@/lib/analytics";
 
 type Step = "welcome" | "guide" | "error";
 
@@ -18,6 +19,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     setIsSubmitting(true);
     try {
       await updateMe({ onboarding_completed: true });
+      trackEvent("onboarding_completed");
       onComplete();
     } catch {
       setStep("error");

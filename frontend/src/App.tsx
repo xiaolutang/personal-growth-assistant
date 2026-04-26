@@ -14,6 +14,7 @@ import { useTaskStore } from "@/stores/taskStore";
 import { useUserStore } from "@/stores/userStore";
 import { initFetchInterceptor } from "@/lib/uid";
 import { initSync } from "@/lib/offlineSync";
+import { trackEvent } from "@/lib/analytics";
 
 // 路由懒加载
 const Home = lazy(() => import("@/pages/Home").then(m => ({ default: m.Home })));
@@ -86,6 +87,11 @@ function AppLayout() {
   }, []);
 
   const toggleCollapse = useCallback(() => setSidebarCollapsed((v) => !v), []);
+
+  // 路由切换时触发 page_viewed 埋点
+  useEffect(() => {
+    trackEvent("page_viewed", { path: location.pathname });
+  }, [location.pathname]);
 
   // 全局 Cmd+K / Ctrl+K：跳转探索页并聚焦搜索框
   useEffect(() => {

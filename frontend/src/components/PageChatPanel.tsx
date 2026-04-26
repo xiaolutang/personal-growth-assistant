@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Sparkles, Send, Loader2, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { sendAIChat, type AIChatContext } from "@/services/api";
+import { trackEvent } from "@/lib/analytics";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -82,6 +83,7 @@ export function PageChatPanel({
     setMessages(newMessages);
     setInput("");
     setIsStreaming(true);
+    trackEvent("chat_message_sent", { source: "page_chat", page: pageContext?.page });
 
     const assistantMessage: ChatMessage = { role: "assistant", content: "" };
     setMessages((prev) => [...prev, assistantMessage]);

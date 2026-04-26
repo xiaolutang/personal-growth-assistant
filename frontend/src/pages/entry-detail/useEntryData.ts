@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { getEntry, getEntries, getProjectProgress } from "@/services/api";
 import { ApiError } from "@/lib/errors";
+import { trackEvent } from "@/lib/analytics";
 import type { Task } from "@/types/task";
 import type { ProjectProgressResponse } from "@/services/api";
 
@@ -48,6 +49,7 @@ export function useEntryData(): EntryDataState {
       const data = await getEntry(id);
       if (loadVersionRef.current !== version) return;
       setEntry(data);
+      trackEvent("entry_viewed", { entry_id: id, category: data.category });
       // 清除上次加载的关联数据（防止路由切换残留）
       setChildTasks([]);
       setProjectProgress(null);
