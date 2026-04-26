@@ -1,8 +1,16 @@
 {
   "version": "1.4",
   "project": "personal-growth-assistant",
-  "status": "idle",
+  "status": "active",
   "archived_requirement_cycles": [
+    {
+      "id": "R038",
+      "name": "engineering-health-and-features",
+      "status": "completed",
+      "archive_dir": "_archive/R038_engineering-health-and-features",
+      "total_tasks": 8,
+      "completed_at": "2026-04-26"
+    },
     {
       "id": "R037",
       "name": "comprehensive-completion",
@@ -18,5 +26,6 @@
       "archive_dir": "_archive/R036_residual-cleanup"
     }
   ],
+  "archived_phases": [],
   "features": []
 }

@@ -6,6 +6,17 @@
 
 ## 已完成需求包
 
+### R038: 工程健康与功能增强
+
+- 状态: 已完成
+- 分支: `chore/R038-engineering-health`
+- 主题: 架构文档更新 + gitignore修复 + 笔记模板 + 用户埋点 + 质量收口
+- 目录: `R038_engineering-health-and-features/`
+- 完成时间: 2026-04-26
+- 任务数: 8 (B108, B109, S36, B110, F148, B111, F149, S37)
+- Codex 审核: code-review 4 项 finding 全部修复
+- 验证: pytest 1299 + vitest 612 + build + Docker smoke
+
 ### R036: 残留问题全面收口
 
 - 状态: 已完成

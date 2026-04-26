@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUserStore } from "@/stores/userStore";
 import { toast } from "sonner";
+import { trackEvent } from "@/lib/analytics";
 import type { TaskStatus } from "@/types/task";
 import { nextStatusMap } from "@/config/constants";
 import {
@@ -37,6 +38,7 @@ export function useHomeData() {
     try {
       await updateMe({ onboarding_completed: true });
       setOnboardingCompleted(true);
+      trackEvent("onboarding_completed");
     } catch (err) {
       console.error("Failed to mark onboarding completed:", err);
       onboardingUpdateCalled.current = false;

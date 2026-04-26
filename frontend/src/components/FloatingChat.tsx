@@ -23,6 +23,7 @@ import { useUserStore } from "@/stores/userStore";
 import { SearchResultList } from "@/components/SearchResultCard";
 import { KnowledgeGraphInline } from "@/components/KnowledgeGraph";
 import type { Intent } from "@/lib/intentDetection";
+import { trackEvent } from "@/lib/analytics";
 import { OperationStatusBar } from "@/components/OperationStatusBar";
 import { ActionIndicator } from "@/components/ActionIndicator";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -223,6 +224,7 @@ export function FloatingChat() {
 
     const userMessage = input.trim();
     setIsSubmitting(true);
+    trackEvent("chat_message_sent", { source: "floating_chat" });
 
     // 处理确认操作
     if (await handleConfirm(userMessage)) {

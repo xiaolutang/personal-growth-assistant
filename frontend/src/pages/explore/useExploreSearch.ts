@@ -6,6 +6,7 @@ import { useChatStore } from "@/stores/chatStore";
 import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
 import type { Task } from "@/types/task";
 import { normalizeSearchResult, computeTimeRange, filterByCategory, getPopularTags, addToSearchHistory, TABS } from "./utils";
+import { trackEvent } from "@/lib/analytics";
 import type { TimeRange } from "./utils";
 
 interface UseExploreSearchReturn {
@@ -132,6 +133,7 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
         if (!cancelled) {
           const mapped: Task[] = (result.results ?? []).map(normalizeSearchResult);
           setSearchResults(mapped);
+          trackEvent("search_performed", { query: searchQuery.trim(), source: "debounce", result_count: mapped.length });
           if (searchQuery.trim()) {
             addToSearchHistory(searchQuery.trim());
             searchHistoryRefresh();
@@ -220,6 +222,7 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
       );
       const mapped: Task[] = (result.results ?? []).map(normalizeSearchResult);
       setSearchResults(mapped);
+      trackEvent("search_performed", { query: searchQuery.trim(), source: "manual", result_count: mapped.length });
       if (searchQuery.trim()) {
         addToSearchHistory(searchQuery.trim());
         searchHistoryRefresh();

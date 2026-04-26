@@ -178,10 +178,14 @@ export async function getEntry(id: string): Promise<Task> {
 }
 
 export async function createEntry(data: EntryCreate): Promise<Task> {
+  const body: Record<string, unknown> = {
+    category: data.type, title: data.title, content: data.content ?? "", tags: data.tags,
+    parent_id: data.parent_id ?? null, status: data.status ?? null, priority: data.priority ?? null,
+    planned_date: data.planned_date ?? null, time_spent: data.time_spent,
+  };
+  if (data.template_id) body.template_id = data.template_id;
   const { data: rd, error, response } = await client.POST("/entries", {
-    body: { category: data.type, title: data.title, content: data.content ?? "", tags: data.tags,
-      parent_id: data.parent_id ?? null, status: data.status ?? null, priority: data.priority ?? null,
-      planned_date: data.planned_date ?? null, time_spent: data.time_spent },
+    body: body as S["EntryCreate"],
   });
   return handleOpenApiResponse<Task>(rd as Task | undefined, error, response);
 }
@@ -513,6 +517,32 @@ export async function getBacklinks(entryId: string): Promise<BacklinksResponse> 
   } catch (err) {
     if (err instanceof ApiError) throw err;
     throw new ApiError(0, "Network error", {});
+  }
+}
+
+// === 笔记模板 ===
+export interface EntryTemplate {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  content: string;
+}
+export interface EntryTemplateListResponse {
+  templates: EntryTemplate[];
+}
+
+export async function fetchTemplates(category?: string): Promise<EntryTemplateListResponse> {
+  try {
+    const params = new URLSearchParams();
+    if (category) params.set("category", category);
+    const url = `${API_BASE}/entries/templates${params.toString() ? `?${params}` : ""}`;
+    const response = await authFetch(url);
+    if (!response.ok) return { templates: [] };
+    const data = await response.json() as EntryTemplateListResponse;
+    return data ?? { templates: [] };
+  } catch {
+    return { templates: [] };
   }
 }
 

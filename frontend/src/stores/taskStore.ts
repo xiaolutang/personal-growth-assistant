@@ -17,6 +17,7 @@ import {
   getKnowledgeGraph as apiGetKnowledgeGraph,
 } from "@/services/api";
 import { ApiError } from "@/lib/errors";
+import { trackEvent } from "@/lib/analytics";
 
 interface TaskStore {
   tasks: Task[];
@@ -90,6 +91,7 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const entry = await apiCreateEntry(data);
+      trackEvent("entry_created", { category: data.type });
       // 创建成功后重新获取列表
       await get().fetchEntries();
       return entry;

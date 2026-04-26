@@ -23,6 +23,7 @@ class EntryCreate(BaseModel):
     priority: Optional[str] = Field(None, description="优先级: high/medium/low")
     planned_date: Optional[str] = Field(None, description="计划日期")
     time_spent: Optional[int] = Field(None, description="耗时（分钟）")
+    template_id: Optional[str] = Field(None, description="笔记模板ID（如 learning/reading/meeting）")
 
 
 class EntryUpdate(BaseModel):
@@ -166,3 +167,19 @@ class BacklinkItem(BaseModel):
 class BacklinksResponse(BaseModel):
     """反向引用列表响应"""
     backlinks: List[BacklinkItem]
+
+
+# === 模板 ===
+
+class EntryTemplate(BaseModel):
+    """条目模板"""
+    id: str
+    name: str
+    category: str
+    description: str
+    content: str
+
+
+class EntryTemplateListResponse(BaseModel):
+    """模板列表响应"""
+    templates: List[EntryTemplate]
