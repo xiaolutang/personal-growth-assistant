@@ -37,6 +37,97 @@ function notifyProgress(event: SyncEvent) {
   listeners.forEach((cb) => cb(event));
 }
 
+// ─── 队列优化 ────────────────────────────────────────
+
+import type { OfflineQueueItem } from "@/lib/offlineQueue";
+
+/**
+ * 优化 pending 队列：合并同条目多次 update，处理 update→delete 冲突。
+ *
+ * 规则：
+ * 1. 同一条目（client_entry_id 相同）的多次 PUT，合并为最后一次的 body。
+ * 2. 同一条目有 PUT + DELETE 时，丢弃所有 PUT（delete 已包含最终意图），只保留 DELETE。
+ * 3. POST 条目不参与合并。
+ * 4. 返回优化后的列表，同时返回被丢弃的队列项 ID（需从 IDB 中删除）。
+ *
+ * 优化后的列表保持原始时间顺序（只替换/丢弃，不重排）。
+ */
+export function optimizePendingQueue(
+  items: OfflineQueueItem[]
+): { optimized: OfflineQueueItem[]; discarded: string[] } {
+  const discarded: string[] = [];
+
+  // 按条目分组（排除 POST）
+  const byEntry = new Map<string, OfflineQueueItem[]>();
+  for (const item of items) {
+    if (item.method === "POST") continue;
+    const entryId = item.url.replace("/entries/", "");
+    if (!entryId) continue;
+    const group = byEntry.get(entryId) ?? [];
+    group.push(item);
+    byEntry.set(entryId, group);
+  }
+
+  // 对每个条目组进行优化
+  const mergeMap = new Map<string, OfflineQueueItem>(); // entryId → merged item
+  for (const [entryId, group] of byEntry) {
+    const hasDelete = group.some((i) => i.method === "DELETE");
+    const puts = group.filter((i) => i.method === "PUT");
+    const deletes = group.filter((i) => i.method === "DELETE");
+
+    if (hasDelete) {
+      // 有 DELETE：丢弃所有 PUT，只保留最后一个 DELETE
+      for (const put of puts) {
+        discarded.push(put.id);
+      }
+      // 保留最后一个 DELETE（如果有多个 DELETE 也只保留最后一个）
+      for (let i = 0; i < deletes.length - 1; i++) {
+        discarded.push(deletes[i].id);
+      }
+      mergeMap.set(entryId, deletes[deletes.length - 1]);
+    } else if (puts.length > 1) {
+      // 多次 PUT：累积合并 body（partial patch 语义，保留所有字段）
+      for (let i = 0; i < puts.length - 1; i++) {
+        discarded.push(puts[i].id);
+      }
+      // 从第一个到最后一个依次合并 body，后面的字段覆盖前面的
+      const mergedBody = puts.reduce(
+        (acc, put) => ({ ...acc, ...put.body }),
+        {} as Record<string, unknown>
+      );
+      const lastPut = puts[puts.length - 1];
+      mergeMap.set(entryId, { ...lastPut, body: mergedBody });
+    }
+  }
+
+  // 构建优化后的列表
+  const optimized: OfflineQueueItem[] = [];
+  const discardedSet = new Set(discarded);
+  for (const item of items) {
+    if (discardedSet.has(item.id)) continue;
+    if (item.method === "POST") {
+      // POST 条目不参与优化，直接保留
+      optimized.push(item);
+      continue;
+    }
+    const entryId = item.url.replace("/entries/", "");
+    if (mergeMap.has(entryId)) {
+      // 有合并/冲突优化：在第一次遇到该 entryId 时输出优化后的条目
+      const mergedItem = mergeMap.get(entryId)!;
+      if (mergedItem.id === item.id) {
+        optimized.push(mergedItem);
+        mergeMap.delete(entryId);
+      }
+      // 否则是被替代的条目（在 discarded 中），跳过
+    } else {
+      // 不在 mergeMap 中，说明是单条操作，直接保留
+      optimized.push(item);
+    }
+  }
+
+  return { optimized, discarded };
+}
+
 // ─── 同步核心 ────────────────────────────────────────
 
 let syncing = false;
@@ -56,13 +147,25 @@ export async function sync(): Promise<void> {
 
   try {
     const items = await queue.getAll();
-    const pending = items.filter((i) => i.status === "pending");
+    let pending = items.filter((i) => i.status === "pending");
 
     // 清理上次 sync 已标记 synced 但 remove 失败的残留项
     const syncedItems = items.filter((i) => i.status === "synced");
     for (const si of syncedItems) {
       try { await queue.remove(si.id); } catch { /* 忽略 */ }
     }
+
+    if (pending.length === 0) {
+      return;
+    }
+
+    // 队列优化：合并同条目多次 PUT，处理 PUT→DELETE 冲突
+    const { optimized, discarded } = optimizePendingQueue(pending);
+    // 从 IDB 中删除被丢弃的队列项
+    for (const id of discarded) {
+      try { await queue.remove(id); } catch { /* 忽略 */ }
+    }
+    pending = optimized;
 
     if (pending.length === 0) {
       return;
