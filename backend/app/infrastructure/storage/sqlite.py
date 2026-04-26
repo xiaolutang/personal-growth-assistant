@@ -964,8 +964,15 @@ class SQLiteStorage:
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
         user_id: Optional[str] = None,
+        due: Optional[str] = None,
     ) -> tuple[str, List]:
-        """构建筛选查询（复用逻辑）"""
+        """构建筛选查询（复用逻辑）
+
+        Args:
+            due: 到期过滤，可选 "today" 或 "overdue"
+                - today: planned_date == 今天 (UTC)
+                - overdue: planned_date < 今天 (UTC) 且 status != 'complete'
+        """
         query = base_select
         params = []
         conditions = []
@@ -1008,10 +1015,24 @@ class SQLiteStorage:
             # <= end_date 23:59:59 (使用日期前缀匹配)
             conditions.append("e.created_at < ?")
             # 下一天的开始 = 当前 end_date + 1 天
-            from datetime import datetime, timedelta
+            from datetime import timedelta
             end_dt = datetime.strptime(end_date, "%Y-%m-%d")
             next_day = (end_dt + timedelta(days=1)).strftime("%Y-%m-%d")
             params.append(next_day)
+
+        # 到期过滤（基于 planned_date，UTC midnight 日界规则）
+        # planned_date 存储为 ISO 格式（如 2026-04-26T00:00:00），用 DATE() 提取日期部分比较
+        if due == "today":
+            today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            conditions.append("DATE(e.planned_date) = ?")
+            params.append(today_str)
+        elif due == "overdue":
+            today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            conditions.append("e.planned_date IS NOT NULL")
+            conditions.append("e.planned_date != ''")
+            conditions.append("DATE(e.planned_date) < ?")
+            params.append(today_str)
+            conditions.append("e.status != 'complete'")
 
         if conditions:
             if tags:
@@ -1032,12 +1053,13 @@ class SQLiteStorage:
         limit: int = 50,
         offset: int = 0,
         user_id: str = "_default",
+        due: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """列出条目（支持筛选）"""
         conn = self._get_conn()
         try:
             query, params = self._build_filter_query(
-                "SELECT DISTINCT e.* FROM entries e", type, status, tags, parent_id, start_date, end_date, user_id
+                "SELECT DISTINCT e.* FROM entries e", type, status, tags, parent_id, start_date, end_date, user_id, due
             )
             query += " ORDER BY e.updated_at DESC LIMIT ? OFFSET ?"
             params.extend([limit, offset])
@@ -1084,12 +1106,13 @@ class SQLiteStorage:
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
         user_id: str = "_default",
+        due: Optional[str] = None,
     ) -> int:
         """统计条目数量"""
         conn = self._get_conn()
         try:
             query, params = self._build_filter_query(
-                "SELECT COUNT(DISTINCT e.id) as cnt FROM entries e", type, status, tags, parent_id, start_date, end_date, user_id
+                "SELECT COUNT(DISTINCT e.id) as cnt FROM entries e", type, status, tags, parent_id, start_date, end_date, user_id, due
             )
             cursor = conn.execute(query, params)
             return cursor.fetchone()["cnt"]

@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 18,
-    "pending": 12,
-    "completed": 6,
+    "pending": 11,
+    "completed": 7,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 4
@@ -357,7 +357,14 @@
       "description": "Explore 页批量操作执行：批量删除和批量转分类。在线时直接执行 API 调用；离线时通过 F142 队列拦截，显示「将在恢复网络后执行」提示，联网后自动回放。含确认对话框和部分失败提示。",
       "verification": "F2",
       "depends_on": ["F142", "F143"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-26T17:30:00+0800",
+      "completed_at": "2026-04-26T18:45:00+0800",
+      "actual_minutes": 75,
+      "commit": "8b7f96e",
+      "evidence_file": ".dev-flow/evidence/F144.md",
+      "execution_notes": "useBatchOperations 离线检测 + 队列入队 + sync完成回调 + 部分失败面板 + Explore错误E2E测试; pytest 1136 vitest 546 build OK",
+      "summary": "批量操作离线支持+部分失败处理，12个测试，vitest 546 passed",
       "priority": "P1",
       "acceptance_criteria": [
         "在线：批量删除确认后执行，列表本地更新",

@@ -39,11 +39,15 @@ async def list_entries(
     parent_id: str | None = Query(None, description="父条目ID（用于获取子任务）"),
     start_date: str | None = Query(None, description="开始日期 (YYYY-MM-DD)"),
     end_date: str | None = Query(None, description="结束日期 (YYYY-MM-DD)"),
+    due: str | None = Query(None, description="到期过滤: today(今日到期) / overdue(已过期)"),
     limit: int = Query(50, ge=1, le=100, description="返回数量限制"),
     offset: int = Query(0, ge=0, description="偏移量"),
     user: User = Depends(get_current_user),
 ):
     """列出条目（优先从 SQLite 索引读取）"""
+    if due is not None and due not in ("today", "overdue"):
+        raise HTTPException(status_code=422, detail="due 参数必须是 today 或 overdue")
+
     service = get_entry_service()
     return await service.list_entries(
         type=type,
@@ -52,6 +56,7 @@ async def list_entries(
         parent_id=parent_id,
         start_date=start_date,
         end_date=end_date,
+        due=due,
         limit=limit,
         offset=offset,
         user_id=user.id,
