@@ -63,6 +63,7 @@ export function Explore() {
     filteredTasks,
     setEntries,
     setSearchResults,
+    onSyncCompleted: () => loadEntries(),
   });
 
   const showPanel = showSuggestions && !searchQuery.trim();
@@ -206,6 +207,36 @@ export function Explore() {
           onBatchCategory={batch.handleBatchCategory}
           onBatchDelete={batch.handleBatchDelete}
         />
+      )}
+
+      {/* 离线批量操作提示 */}
+      {batch.offlineMode && batch.selectMode && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 text-sm text-amber-700 dark:text-amber-300 shadow-lg">
+          当前离线，操作将在联网后自动同步
+        </div>
+      )}
+
+      {/* 部分失败条目提示 */}
+      {batch.failedItems.length > 0 && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 max-w-sm px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 shadow-lg">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 mt-0.5 text-red-500 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-red-700 dark:text-red-300">
+                {batch.failedItems.length} 条操作失败
+              </p>
+              <p className="text-xs text-red-600 dark:text-red-400 mt-1 truncate">
+                {batch.failedItems.map((f) => f.title).join("、")}
+              </p>
+            </div>
+            <button
+              className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-300 shrink-0"
+              onClick={batch.clearFailedItems}
+            >
+              关闭
+            </button>
+          </div>
+        </div>
       )}
 
       {/* 搜索助手 AI */}

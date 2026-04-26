@@ -108,12 +108,15 @@ vi.mock("../explore/useBatchOperations", () => ({
     selectMode: false,
     selectedIds: new Set(),
     batchLoading: false,
+    failedItems: [],
+    offlineMode: false,
     enterSelectMode: vi.fn(),
     exitSelectMode: vi.fn(),
     selectAll: vi.fn(),
     toggleSelect: vi.fn(),
     handleBatchCategory: vi.fn(),
     handleBatchDelete: vi.fn(),
+    clearFailedItems: vi.fn(),
   }),
 }));
 

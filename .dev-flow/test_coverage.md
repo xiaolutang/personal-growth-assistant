@@ -9,8 +9,8 @@
 | Home 统计卡片响应式 | F134 | manual | 640px/768px/1024px 断点布局/无溢出 | planned | F1, visual |
 | Explore Tab 滚动 | F135 | manual | 窄屏横向滚动/选中 Tab 自动可见 | planned | F1, visual |
 | TaskCard 触摸目标 | F136 | manual | 可点击区域≥44px/桌面端不受影响 | planned | F1, visual |
-| Review 加载态 | F137 | unit | spinner 展示/错误+重试/空数据提示 | planned | F2, ~3 tests |
-| Explore 错误状态 | F138 | unit | 错误提示+重试/部分失败展示 | planned | F2, ~3 tests |
+| Review 加载态 | F137 | unit | spinner 展示/错误+重试/空数据提示 | done | F2, 7 tests, 491 vitest total |
+| Explore 错误状态 | F138 | unit | 错误提示+重试/部分失败展示 | done | F2, 8 tests, 499 vitest total |
 | TaskList 空状态 | F139 | unit | 空列表引导/筛选无结果提示 | planned | F2, ~2 tests |
 | NotificationCenter 轮询 | F140 | unit | 相对时间戳/后台300s轮询/面板60s轮询/卸载清理 | planned | F2, ~4 tests |
 | 搜索结果摘要 | F141 | unit | content_snippet 展示/关键词高亮/UTF-8 安全 | planned | F1, ~3 tests |

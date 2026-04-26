@@ -3,9 +3,14 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-26T16:45:00+0800",
+  "updated_at": "2026-04-26T18:00:00+0800",
   "status": "active",
-  "active_requirement_cycle": null,
+  "active_requirement_cycle": {
+    "id": "R037",
+    "name": "comprehensive-completion",
+    "status": "active",
+    "branch": "feat/R037-comprehensive-completion"
+  },
   "workflow": {
     "name": "XLFoundry",
     "mode": "B",
@@ -15,41 +20,37 @@
     "risk_provider": "codex_plugin"
   },
   "summary": {
-    "total_tasks": 0,
-    "pending": 0,
-    "completed": 0,
+    "total_tasks": 18,
+    "pending": 12,
+    "completed": 6,
     "in_progress": 0,
     "blocked": 0,
-    "cancelled": 0
+    "cancelled": 4
   },
   "modules": [
     {
-      "name": "architecture",
-      "description": "架构层公共接口完善"
+      "name": "tech-debt",
+      "description": "技术债清理"
     },
     {
-      "name": "review-perf",
-      "description": "回顾系统性能优化"
+      "name": "search",
+      "description": "搜索前端增强"
     },
     {
-      "name": "review",
-      "description": "回顾系统后端"
+      "name": "ux-polish",
+      "description": "体验打磨（R022 遗留）"
     },
     {
-      "name": "service-availability",
-      "description": "503 服务降级"
+      "name": "offline-batch",
+      "description": "离线同步扩展 + 批量操作"
     },
     {
-      "name": "entry-detail",
-      "description": "条目详情页"
+      "name": "task-due-date",
+      "description": "任务截止日期与提醒"
     },
     {
-      "name": "page-split",
-      "description": "页面组件拆分"
-    },
-    {
-      "name": "mobile",
-      "description": "Flutter 移动端"
+      "name": "note-link",
+      "description": "笔记双链引用"
     },
     {
       "name": "quality",
@@ -57,7 +58,488 @@
     }
   ],
   "features": [],
-  "tasks": [],
+  "tasks": [
+    {
+      "id": "B103",
+      "phase": 1,
+      "module": "search",
+      "name": "搜索迁移到 HybridSearchService",
+      "description": "已在历史迭代中完成。HybridSearchService 已集成到 search.py 路由。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "cancelled",
+      "priority": "P0",
+      "acceptance_criteria": ["已验证：search.py 已使用 HybridSearchService"],
+      "planning_notes": "plan-review 发现已在 search.py:159 集成。取消。"
+    },
+    {
+      "id": "B104",
+      "phase": 1,
+      "module": "tech-debt",
+      "name": "技术债清理",
+      "description": "清理代码层技术债：(1) review_service.py 通配符 import * 改为显式导入；(2) qdrant_client.py _get_embedding 未配置时友好降级；(3) test_coverage.md + alignment_checklist.md + feature_map.md 文档状态同步。",
+      "verification": "L1",
+      "depends_on": [],
+      "status": "completed",
+      "started_at": "2026-04-26T10:05:00+0800",
+      "completed_at": "2026-04-26T10:35:00+0800",
+      "actual_minutes": 30,
+      "commit": "69c5a34",
+      "evidence_file": ".dev-flow/evidence/B104.md",
+      "execution_notes": "review_service.py import * → 25 显式导入; qdrant _get_embedding 降级 + 公共方法短路; 文档状态同步; pytest 1136 passed",
+      "summary": "技术债清理完成：import * 显式化 + qdrant 未配置友好降级 + dev-flow 文档状态同步",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "review_service.py 移除 import * 通配符，改为显式导入",
+        "qdrant_client.py _get_embedding 未配置时返回空结果而非 NotImplementedError",
+        "test_coverage.md B89/F119/F120/B83/F114/F115/F116 状态更新为 completed（S33 已覆盖）",
+        "alignment_checklist.md R034/R027 复选框状态更新",
+        "feature_map.md 前端测试数统一为 475",
+        "pytest 全量通过"
+      ],
+      "test_tasks": [
+        {"type": "unit", "description": "review_service 显式导入验证", "scenarios": ["导入正确", "功能回归"]},
+        {"type": "unit", "description": "qdrant 降级验证", "scenarios": ["未配置时返回空结果", "不抛 NotImplementedError"]}
+      ]
+    },
+    {
+      "id": "F132",
+      "phase": 1,
+      "module": "search",
+      "name": "前端搜索 Tab 过滤透传",
+      "description": "Explore 页 Tab（灵感/笔记/项目）过滤透传到搜索 API 的 filter_type 参数。搜索结果统一渲染（跨类型混合展示）。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "completed",
+      "started_at": "2026-04-26T10:38:00+0800",
+      "completed_at": "2026-04-26T11:12:00+0800",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Explore 页 Tab（灵感/笔记/项目）切换时 filter_type 参数正确传递",
+        "搜索结果跨类型混合展示",
+        "build 无 TS 错误",
+        "vitest 全量通过"
+      ],
+      "files": ["frontend/src/pages/explore/useExploreSearch.ts"],
+      "evidence_file": ".dev-flow/evidence/F132.md",
+      "commit": "cb6412b",
+      "summary": "搜索 Tab 过滤透传 + 跨类型混合展示，9 个测试，vitest 484 passed"
+    },
+    {
+      "id": "F133",
+      "phase": 2,
+      "module": "ux-polish",
+      "name": "FloatingChat 触摸拖拽支持",
+      "description": "已在历史迭代中完成。FloatingChat.tsx 已有 touchmove/touchend 事件处理。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "cancelled",
+      "priority": "P1",
+      "acceptance_criteria": ["已验证：FloatingChat.tsx:303-328 已有触摸拖拽"],
+      "planning_notes": "plan-review 发现已实现。取消。"
+    },
+    {
+      "id": "F134",
+      "phase": 2,
+      "module": "ux-polish",
+      "name": "Home 统计卡片响应式",
+      "description": "Home 页统计卡片在窄屏下自适应布局，避免横向溢出或信息截断。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "统计卡片在 640px/768px/1024px 断点下正确布局",
+        "无横向溢出",
+        "信息完整显示不截断",
+        "build 无 TS 错误"
+      ],
+      "files": ["frontend/src/pages/Home.tsx"]
+    },
+    {
+      "id": "F135",
+      "phase": 2,
+      "module": "ux-polish",
+      "name": "Explore Tab 栏横向滚动",
+      "description": "Explore 页 Tab 栏在窄屏下支持横向滚动，避免 Tab 文字被截断。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "窄屏下 Tab 栏可横向滚动",
+        "当前选中 Tab 自动滚动到可见区域",
+        "滚动指示器可见",
+        "build 无 TS 错误"
+      ],
+      "files": ["frontend/src/pages/Explore.tsx"]
+    },
+    {
+      "id": "F136",
+      "phase": 2,
+      "module": "ux-polish",
+      "name": "TaskCard 触摸目标增大",
+      "description": "TaskCard 组件增大触摸目标区域，适配移动端操作。按钮/可点击区域最小 44px。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "TaskCard 可点击区域最小 44px",
+        "状态切换按钮触摸友好",
+        "桌面端视觉不受影响",
+        "build 无 TS 错误"
+      ],
+      "files": ["frontend/src/components/TaskCard.tsx"]
+    },
+    {
+      "id": "F137",
+      "phase": 2,
+      "module": "ux-polish",
+      "name": "Review 加载态 spinner + 错误状态",
+      "description": "Review 页面添加加载态 spinner 和错误状态展示，替代空白加载。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "completed",
+      "started_at": "2026-04-26T11:42:00+0800",
+      "completed_at": "2026-04-26T11:50:00+0800",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Review 页数据加载中显示 spinner",
+        "加载失败显示错误提示 + 重试按钮",
+        "空数据状态有友好提示",
+        "build 无 TS 错误"
+      ],
+      "files": ["frontend/src/pages/Review.tsx", "frontend/src/pages/review/useReportData.ts"],
+      "evidence_file": ".dev-flow/evidence/F137.md",
+      "commit": "d817976",
+      "summary": "Review 页三种 UX 状态：loading spinner、error+重试、空数据提示。7 个测试，491 vitest passed"
+    },
+    {
+      "id": "F138",
+      "phase": 2,
+      "module": "ux-polish",
+      "name": "Explore 错误状态处理",
+      "description": "Explore 页面添加错误状态处理，网络异常时展示错误提示和重试。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "completed",
+      "started_at": "2026-04-26T12:07:00+0800",
+      "completed_at": "2026-04-26T12:15:00+0800",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Explore 页数据加载失败显示错误提示",
+        "错误状态有重试按钮",
+        "部分失败时已加载数据正常展示",
+        "build 无 TS 错误"
+      ],
+      "files": ["frontend/src/pages/Explore.tsx", "frontend/src/pages/explore/useExploreSearch.ts"],
+      "evidence_file": ".dev-flow/evidence/F138.md",
+      "commit": "b6377f0",
+      "summary": "Explore 错误态 + 部分失败提示。8 个测试，499 vitest passed"
+    },
+    {
+      "id": "F139",
+      "phase": 2,
+      "module": "ux-polish",
+      "name": "TaskList 空状态增强",
+      "description": "TaskList 无任务时展示空状态引导，而非空白页面。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "completed",
+      "started_at": "2026-04-26T12:25:00+0800",
+      "completed_at": "2026-04-26T12:30:00+0800",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "无任务时显示空状态插画和引导文案",
+        "空状态有快速创建入口",
+        "筛选无结果时显示不同提示",
+        "build 无 TS 错误"
+      ],
+      "files": ["frontend/src/pages/Tasks.tsx"],
+      "evidence_file": ".dev-flow/evidence/F139.md",
+      "commit": "234699d",
+      "summary": "TaskList 两种空状态：无任务引导 + 筛选无结果提示。5 个测试，504 vitest passed"
+    },
+    {
+      "id": "F140",
+      "phase": 2,
+      "module": "ux-polish",
+      "name": "NotificationCenter 时间戳 + 后台轮询",
+      "description": "NotificationCenter 已有面板打开时 60s 轮询。增强：(1) 每条通知显示相对时间戳；(2) 面板关闭时低频后台轮询（300s）更新未读计数。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "每条通知显示相对时间戳（如"3分钟前"）",
+        "面板关闭时 300s 间隔后台轮询更新未读计数",
+        "面板展开时切换为 60s 高频轮询",
+        "组件卸载时清理所有定时器",
+        "build 无 TS 错误"
+      ],
+      "files": ["frontend/src/components/NotificationCenter.tsx"]
+    },
+    {
+      "id": "F141",
+      "phase": 2,
+      "module": "ux-polish",
+      "name": "搜索结果内容摘要",
+      "description": "搜索结果展示内容摘要而非仅标题，提升信息密度。Explore 页搜索结果通过 TaskList/TaskCard 渲染（非 SearchResultCard，后者用于 FloatingChat），需要在 TaskCard 中展示 content_snippet。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "TaskCard 在搜索模式下显示 content_snippet 摘要（截取前 100 字符）",
+        "搜索关键词在摘要中高亮",
+        "摘要不截断 UTF-8 多字节字符",
+        "非搜索模式不展示摘要",
+        "build 无 TS 错误"
+      ],
+      "planning_notes": "codex-plugin review: 修正范围，Explore 搜索结果实际通过 TaskList→TaskCard 渲染（Explore.tsx:179），SearchResultCard 仅用于 FloatingChat。聚焦 TaskCard 搜索模式摘要展示。",
+      "files": ["frontend/src/components/TaskCard.tsx"]
+    },
+    {
+      "id": "F142",
+      "phase": 3,
+      "module": "offline-batch",
+      "name": "离线更新/删除入口拦截 + 队列扩展",
+      "description": "离线模式下更新和删除操作被拦截并加入待同步队列，上线后自动回放。当前离线仅支持创建，扩展到更新和删除。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "离线时更新操作拦截并加入 offlineSync 队列",
+        "离线时删除操作拦截并加入队列",
+        "队列条目包含操作类型（update/delete）",
+        "上线后队列自动回放",
+        "回放失败重试最多 3 次",
+        "vitest 覆盖拦截和回放场景"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        {"type": "unit", "description": "离线拦截", "scenarios": ["离线更新拦截", "离线删除拦截", "在线操作不拦截"]},
+        {"type": "unit", "description": "队列回放", "scenarios": ["上线自动回放", "回放失败重试(最多3次)", "回放成功清队列"]},
+        {"type": "unit", "description": "回放异常处理", "scenarios": ["服务端5xx→重试", "超时→重试", "3次失败后标记失败+用户提示", "网络恢复后用户可见反馈"]},
+        {"type": "unit", "description": "online/offline切换", "scenarios": ["离线→在线自动触发回放", "在线→离线立即切换拦截模式", "快速切换不丢队列条目"]},
+        {"type": "unit", "description": "同条目多操作冲突", "scenarios": ["同一entry先update后delete→回放按序执行(先更新再删除)", "同一entry连续多次update→仅保留最后一次更新", "回放中某条失败不影响后续条目", "delete后不再回放该entry的后续update"]}
+      ],
+      "files": ["frontend/src/lib/offlineSync.ts"]
+    },
+    {
+      "id": "F143",
+      "phase": 3,
+      "module": "offline-batch",
+      "name": "多选框架 + 选择状态（Explore 页）",
+      "description": "Explore 页添加多选模式框架，支持 checkbox 选择和批量操作入口。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Explore 页编辑按钮进入多选模式",
+        "checkbox 可见且可点击",
+        "单卡动作在多选模式下禁用",
+        "选中计数实时更新",
+        "ESC 退出多选模式",
+        "Tab 切换不清空选择状态",
+        "build 无 TS 错误"
+      ],
+      "files": ["frontend/src/pages/Explore.tsx"]
+    },
+    {
+      "id": "F144",
+      "phase": 3,
+      "module": "offline-batch",
+      "name": "批量删除/转分类执行",
+      "description": "Explore 页批量操作执行：批量删除和批量转分类。在线时直接执行 API 调用；离线时通过 F142 队列拦截，显示「将在恢复网络后执行」提示，联网后自动回放。含确认对话框和部分失败提示。",
+      "verification": "F2",
+      "depends_on": ["F142", "F143"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "在线：批量删除确认后执行，列表本地更新",
+        "在线：批量转分类确认后执行，列表本地刷新",
+        "离线：批量操作入 offlineSync 队列，显示离线提示",
+        "联网后：队列回放，成功后刷新列表",
+        "部分失败时展示失败条目提示",
+        "全量成功后自动退出多选模式",
+        "空列表时编辑按钮禁用",
+        "同一条目批量操作冲突时按队序回放",
+        "vitest 覆盖在线/离线批量操作场景"
+      ],
+      "test_tasks": [
+        {"type": "unit", "description": "在线批量操作", "scenarios": ["批量删除确认→API调用+本地列表更新", "批量转分类确认→API调用+本地刷新", "全量成功→退出多选"]},
+        {"type": "unit", "description": "离线批量操作", "scenarios": ["离线批量删除→入队+离线提示", "离线批量转分类→入队+离线提示", "联网→回放+刷新列表"]},
+        {"type": "unit", "description": "部分失败", "scenarios": ["部分失败→展示失败条目", "失败条目保留在多选状态", "空列表→编辑按钮禁用"]}
+      ],
+      "files": ["frontend/src/pages/Explore.tsx"]
+    },
+    {
+      "id": "B105",
+      "phase": 4,
+      "module": "task-due-date",
+      "name": "任务截止日期 API",
+      "description": "扩展现有 planned_date 字段为到期查询的权威字段，提供到期查询 API（今日到期、已过期）。planned_date 已在 task.py/SQLite/前端类型中存在，无需新增列。扩展 Markdown frontmatter 写入/读取（已支持）、SQLite 查询条件和 API 参数。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "GET /entries?due=today 返回 planned_date 为今天（UTC 日期，date(planned_date) == date(utcnow)）的任务",
+        "GET /entries?due=overdue 返回 planned_date 早于今天（date(planned_date) < date(utcnow)）且未完成的任务",
+        "日界规则统一为 UTC midnight：B105 API、F145 UI、useHomeData todayTasks、notification_service 均使用 UTC 日期比较",
+        "due 查询参数与现有 filter_type、status 等参数可组合",
+        "planned_date 为 NULL 时不影响现有行为",
+        "notification_service.py 已有基于 planned_date 的到期提醒保持不变",
+        "useHomeData.ts 已有 todayTasks 基于 planned_date 的过滤保持不变",
+        "API 契约向后兼容",
+        "单元测试覆盖新增到期查询场景"
+      ],
+      "planning_notes": "codex-plugin review: 扩展已有 planned_date 字段而非新增 due_date，避免日期语义分叉。前端 types/task.ts 和 EntryCreate/EntryUpdate 已有 planned_date 字段。日界规则统一 UTC midnight。",
+      "risk_tags": ["config"],
+      "test_tasks": [
+        {"type": "unit", "description": "到期查询", "scenarios": ["今日到期(planned_date=today)", "已过期(planned_date<today且未完成)", "无到期任务", "跨用户隔离", "due 参数与 status 组合"]},
+        {"type": "unit", "description": "回归验证", "scenarios": ["planned_date=NULL 不命中到期查询", "现有 notification 到期逻辑不变", "useHomeData todayTasks 不变"]},
+        {"type": "unit", "description": "时区边界", "scenarios": ["UTC midnight 边界（23:59 vs 00:00）正确归类", "overdue 从 today-1 正确过渡", "前端 UI 与 API 使用同一日界规则"]}
+      ],
+      "contract_refs": ["GET /entries"],
+      "files": ["backend/app/routers/entries.py", "backend/app/infrastructure/storage/sqlite.py"]
+    },
+    {
+      "id": "F145",
+      "phase": 4,
+      "module": "task-due-date",
+      "name": "任务截止日期 UI",
+      "description": "前端基于已有 planned_date 字段展示截止日期，包含日期选择器、到期/过期标识。无需新增前端类型字段，task.ts 已有 planned_date。",
+      "verification": "F2",
+      "depends_on": ["B105"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "任务详情可设置 planned_date 截止日期（日期选择器）",
+        "TaskCard 展示 planned_date 截止日期标签",
+        "今日到期任务（planned_date=today）高亮标识",
+        "已过期任务（planned_date<today）红色警告标识",
+        "今天页已有 todayTasks 基于 planned_date 的过滤保持不变",
+        "build 无 TS 错误",
+        "vitest 覆盖日期选择和展示"
+      ],
+      "planning_notes": "codex-plugin review: 复用已有 planned_date 字段和前端类型，无需新增字段或 gen:types。",
+      "test_tasks": [
+        {"type": "unit", "description": "截止日期 UI", "scenarios": ["TaskCard 展示 planned_date 标签", "到期高亮", "过期红色警告", "无 planned_date 不展示"]},
+        {"type": "unit", "description": "日期选择器", "scenarios": ["选择日期写入 planned_date", "清除日期设为 null"]}
+      ],
+      "files": ["frontend/src/components/TaskCard.tsx", "frontend/src/pages/entry-detail/ContentSection.tsx"]
+    },
+    {
+      "id": "B106",
+      "phase": 4,
+      "module": "growth-curve",
+      "name": "成长曲线数据端点",
+      "description": "已在历史迭代中完成。GET /review/growth-curve 已在 review.py:125 实现。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "cancelled",
+      "priority": "P1",
+      "acceptance_criteria": ["已验证：review.py:125 GET /review/growth-curve 已实现"],
+      "planning_notes": "plan-review 发现已实现。取消。"
+    },
+    {
+      "id": "F146",
+      "phase": 4,
+      "module": "growth-curve",
+      "name": "成长曲线可视化",
+      "description": "已在历史迭代中完成。GrowthCurveCard.tsx 已使用 recharts AreaChart 渲染。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "cancelled",
+      "priority": "P1",
+      "acceptance_criteria": ["已验证：GrowthCurveCard.tsx 已渲染 AreaChart"],
+      "planning_notes": "plan-review 发现已实现。取消。"
+    },
+    {
+      "id": "B107",
+      "phase": 4,
+      "module": "note-link",
+      "name": "笔记双链引用后端",
+      "description": "后端支持 [[note-id]] 和 [[note-id|标题]] 双链语法解析、关系存储和查询。解析 Markdown 内容中的双链语法，在 SQLite 中新增 note_references 表存储引用关系。两种语法统一提取 note-id 作为引用目标。含已有笔记回填路径。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "解析 [[note-id]] 简写语法提取引用",
+        "解析 [[note-id|显示标题]] 完整语法提取引用（取 note-id 部分）",
+        "SQLite 新增 note_references 表（source_id, target_id）",
+        "GET /entries/{id}/backlinks 返回反向引用列表（含标题摘要）",
+        "创建/更新条目时自动解析并更新引用关系",
+        "删除条目时清理引用关系",
+        "提供 reindex_backlinks(user_id) 方法扫描已有笔记内容并重建引用关系",
+        "reindex_backlinks 在首次调用 backlinks API 时自动触发（按 user_id 延迟初始化）",
+        "单元测试覆盖两种语法的解析、存储、查询、清理、回填"
+      ],
+      "planning_notes": "codex-plugin review: 增加已有笔记回填路径，确保现有笔记内容中的双链引用也被解析。采用延迟初始化策略：首次查询 backlinks 时自动 reindex，不增加启动负担。",
+      "risk_tags": ["config"],
+      "test_tasks": [
+        {"type": "unit", "description": "双链解析", "scenarios": ["[[note-id]] 简写", "[[note-id|标题]] 完整", "多个引用混合两种语法", "无效 note-id 忽略", "自引用忽略", "空内容无引用"]},
+        {"type": "unit", "description": "引用关系存储", "scenarios": ["创建引用", "更新引用（旧引用删除+新引用写入）", "删除条目级联清理", "重复引用幂等"]},
+        {"type": "unit", "description": "反向引用查询", "scenarios": ["有反向引用", "无反向引用", "跨用户隔离"]},
+        {"type": "unit", "description": "回填路径", "scenarios": ["已有笔记含双链→reindex后可查backlinks", "空内容笔记→无引用", "reindex幂等（多次调用结果一致）", "首次API调用自动触发reindex"]}
+      ],
+      "contract_refs": ["GET /entries/{id}/backlinks"],
+      "files": ["backend/app/infrastructure/storage/sqlite.py", "backend/app/routers/entries.py", "backend/app/services/entry_service.py"]
+    },
+    {
+      "id": "F147",
+      "phase": 4,
+      "module": "note-link",
+      "name": "笔记双链引用前端",
+      "description": "笔记编辑器支持 [[ 语法触发引用自动补全，详情页展示反向引用面板。实际编辑面在 ContentSection.tsx（EntryDetail 子组件），非独立 NoteEditor 组件。",
+      "verification": "F2",
+      "depends_on": ["B107"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "ContentSection 编辑区输入 [[ 触发引用补全弹窗",
+        "补全数据源：复用现有 GET /entries?filter_type=note 获取笔记列表（前端本地过滤匹配）",
+        "补全列表按标题匹配度排序，支持输入过滤",
+        "选中补全项插入 [[note-id|标题]] 格式",
+        "补全请求失败时静默降级（不弹窗，仅隐藏补全列表）",
+        "空结果时显示「无匹配笔记」提示",
+        "EntryDetail 底部展示反向引用列表",
+        "反向引用可点击跳转到对应条目",
+        "build 无 TS 错误",
+        "vitest 覆盖补全和反向引用展示"
+      ],
+      "planning_notes": "codex-plugin review: 修正文件路径，实际可编辑面为 ContentSection.tsx（entry-detail/ 子组件），非 NoteEditor.tsx。补全数据源复用现有 GET /entries API，不新增端点。",
+      "test_tasks": [
+        {"type": "unit", "description": "引用补全", "scenarios": ["输入[[触发补全", "标题过滤匹配", "选中插入", "空结果提示", "API失败静默降级"]},
+        {"type": "unit", "description": "反向引用面板", "scenarios": ["有引用时展示列表", "无引用时隐藏", "点击跳转"]}
+      ],
+      "files": ["frontend/src/pages/entry-detail/ContentSection.tsx", "frontend/src/pages/EntryDetail.tsx"]
+    },
+    {
+      "id": "S35",
+      "phase": 5,
+      "module": "quality",
+      "name": "质量收口",
+      "description": "全量 pytest + vitest + build + Docker smoke 验证。",
+      "verification": "L4",
+      "depends_on": ["B104", "F132", "F134", "F135", "F136", "F137", "F138", "F139", "F140", "F141", "F142", "F143", "F144", "B105", "F145", "B107", "F147"],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "pytest 全量通过",
+        "vitest 全量通过",
+        "npm run build 成功（0 errors, 已知 warnings 允许）",
+        "Docker smoke 验证 7 个核心端点可访问：health、auth/me、entries、search、review/morning-digest、entries?due=today、entries/{id}/backlinks",
+        "无新增 deprecation 警告（对比上一轮 baseline）"
+      ]
+    }
+  ],
   "next_cycle_preview": null,
   "archived_requirement_cycles": [
     {
@@ -67,16 +549,184 @@
       "archive_dir": "_archive/R036_residual-cleanup"
     },
     {
-      "id": "R003",
-      "name": "production-content-recovery",
+      "id": "R035",
+      "name": "preexisting-fixes",
       "status": "completed",
-      "archive_dir": "_archive/R003_production-content-recovery"
+      "archive_dir": "_archive/R035_preexisting-fixes"
+    },
+    {
+      "id": "R034",
+      "name": "tech-debt-residual",
+      "status": "completed",
+      "archive_dir": "_archive/R034_tech-debt-residual"
+    },
+    {
+      "id": "R033",
+      "name": "security-hardening",
+      "status": "completed",
+      "archive_dir": "_archive/R033_security-hardening"
+    },
+    {
+      "id": "R032",
+      "name": "search-filter-batch",
+      "status": "completed",
+      "archive_dir": "_archive/R032_search-filter-batch"
+    },
+    {
+      "id": "R031",
+      "name": "conversational-onboarding",
+      "status": "completed",
+      "archive_dir": "_archive/R031_conversational-onboarding"
+    },
+    {
+      "id": "R030",
+      "name": "ai-morning-report",
+      "status": "completed",
+      "archive_dir": "_archive/R030_ai-morning-report"
+    },
+    {
+      "id": "R029",
+      "name": "simplify-convergence",
+      "status": "completed",
+      "archive_dir": "_archive/R029_simplify-convergence"
+    },
+    {
+      "id": "R028",
+      "name": "engineering-cleanup",
+      "status": "completed",
+      "archive_dir": "_archive/R028_engineering-cleanup"
+    },
+    {
+      "id": "R027",
+      "name": "export-feedback-tracking",
+      "status": "completed",
+      "archive_dir": "_archive/R027_export-feedback-tracking"
+    },
+    {
+      "id": "R026",
+      "name": "convergence-fixes",
+      "status": "completed",
+      "archive_dir": "_archive/R026_convergence-fixes"
+    },
+    {
+      "id": "R025",
+      "name": "stage3-completion",
+      "status": "completed",
+      "archive_dir": "_archive/R025_stage3-completion"
+    },
+    {
+      "id": "R022",
+      "name": "polish-deferred",
+      "status": "completed",
+      "archive_dir": "_archive/R022_polish-deferred"
+    },
+    {
+      "id": "R021",
+      "name": "tech-debt-cleanup",
+      "status": "completed",
+      "archive_dir": "_archive/R021_tech-debt-cleanup"
+    },
+    {
+      "id": "R020",
+      "name": "e2e-ci-pipeline",
+      "status": "completed",
+      "archive_dir": "_archive/R020_e2e-ci-pipeline"
+    },
+    {
+      "id": "R019",
+      "name": "offline-pwa",
+      "status": "completed",
+      "archive_dir": "_archive/R019_offline-pwa"
+    },
+    {
+      "id": "R018",
+      "name": "defect-fix-quality",
+      "status": "completed",
+      "archive_dir": "_archive/R018_defect-fix-quality"
+    },
+    {
+      "id": "R017",
+      "name": "code-audit-hardening",
+      "status": "completed",
+      "archive_dir": "_archive/R017_code-audit-hardening"
+    },
+    {
+      "id": "R016",
+      "name": "polish-cleanup",
+      "status": "completed",
+      "archive_dir": "_archive/R016_polish-cleanup"
+    },
+    {
+      "id": "R015",
+      "name": "review-enhancement",
+      "status": "completed",
+      "archive_dir": "_archive/R015_review-enhancement"
+    },
+    {
+      "id": "R014",
+      "name": "page-context-ai",
+      "status": "completed",
+      "archive_dir": "_archive/R014_page-context-ai"
+    },
+    {
+      "id": "R013",
+      "name": "decision-reflection-entries",
+      "status": "completed",
+      "archive_dir": "_archive/R013_decision-reflection-entries"
+    },
+    {
+      "id": "R012",
+      "name": "goal-tracking",
+      "status": "completed",
+      "archive_dir": "_archive/R012_goal-tracking"
+    },
+    {
+      "id": "R011",
+      "name": "entry-context-and-morning-report",
+      "status": "completed",
+      "archive_dir": "_archive/R011_entry-context-and-morning-report"
+    },
+    {
+      "id": "R010",
+      "name": "engineering-foundation",
+      "status": "completed",
+      "archive_dir": "_archive/R010_engineering-foundation"
+    },
+    {
+      "id": "R009",
+      "name": "chat-user-id-threading",
+      "status": "completed",
+      "archive_dir": "_archive/R009_chat-user-id-threading"
+    },
+    {
+      "id": "R008",
+      "name": "intelligence-omni",
+      "status": "completed",
+      "archive_dir": "_archive/R008_intelligence-omni"
+    },
+    {
+      "id": "R007",
+      "name": "engagement-experience",
+      "status": "completed",
+      "archive_dir": "_archive/R007_engagement-experience"
+    },
+    {
+      "id": "R006",
+      "name": "product-polish",
+      "status": "completed",
+      "archive_dir": "_archive/R006_product-polish"
+    },
+    {
+      "id": "R005",
+      "name": "product-evolution-phase3",
+      "status": "completed",
+      "archive_dir": "_archive/R005_product-evolution-phase3"
     },
     {
       "id": "R004",
-      "name": "product-evolution-phase1a",
+      "name": "product-evolution-phase2",
       "status": "completed",
-      "archive_dir": "_archive/R004_product-evolution-phase1a"
+      "archive_dir": "_archive/R004_product-evolution-phase2"
     },
     {
       "id": "R004",
@@ -86,183 +736,21 @@
     },
     {
       "id": "R004",
-      "name": "product-evolution-phase2",
+      "name": "product-evolution-phase1a",
       "status": "completed",
-      "archive_dir": "_archive/R004_product-evolution-phase2"
+      "archive_dir": "_archive/R004_product-evolution-phase1a"
     },
     {
-      "id": "R005",
-      "name": "product-evolution-phase3",
+      "id": "R003",
+      "name": "production-content-recovery",
       "status": "completed",
-      "archive_dir": "_archive/R005_product-evolution-phase3"
+      "archive_dir": "_archive/R003_production-content-recovery"
     },
     {
-      "id": "R006",
-      "name": "product-polish",
+      "id": "R001",
+      "name": "personal-growth-assistant-v1",
       "status": "completed",
-      "archive_dir": "_archive/R006_product-polish"
-    },
-    {
-      "id": "R007",
-      "name": "engagement-experience",
-      "status": "completed",
-      "archive_dir": "_archive/R007_engagement-experience"
-    },
-    {
-      "id": "R008",
-      "name": "intelligence-omni",
-      "status": "completed",
-      "archive_dir": "_archive/R008_intelligence-omni"
-    },
-    {
-      "id": "R009",
-      "name": "chat-user-id-threading",
-      "status": "completed",
-      "archive_dir": "_archive/R009_chat-user-id-threading"
-    },
-    {
-      "id": "R010",
-      "name": "engineering-foundation",
-      "status": "completed",
-      "archive_dir": "_archive/R010_engineering-foundation"
-    },
-    {
-      "id": "R011",
-      "name": "entry-context-and-morning-report",
-      "status": "completed",
-      "archive_dir": "_archive/R011_entry-context-and-morning-report"
-    },
-    {
-      "id": "R012",
-      "name": "goal-tracking",
-      "status": "completed",
-      "archive_dir": "_archive/R012_goal-tracking"
-    },
-    {
-      "id": "R013",
-      "name": "decision-reflection-entries",
-      "status": "completed",
-      "archive_dir": "_archive/R013_decision-reflection-entries"
-    },
-    {
-      "id": "R014",
-      "name": "page-context-ai",
-      "status": "completed",
-      "archive_dir": "_archive/R014_page-context-ai"
-    },
-    {
-      "id": "R015",
-      "name": "review-enhancement",
-      "status": "completed",
-      "archive_dir": "_archive/R015_review-enhancement"
-    },
-    {
-      "id": "R016",
-      "name": "polish-cleanup",
-      "status": "completed",
-      "archive_dir": "_archive/R016_polish-cleanup"
-    },
-    {
-      "id": "R017",
-      "name": "code-audit-hardening",
-      "status": "completed",
-      "archive_dir": "_archive/R017_code-audit-hardening"
-    },
-    {
-      "id": "R018",
-      "name": "defect-fix-quality",
-      "status": "completed",
-      "archive_dir": "_archive/R018_defect-fix-quality"
-    },
-    {
-      "id": "R019",
-      "name": "offline-pwa",
-      "status": "completed",
-      "archive_dir": "_archive/R019_offline-pwa"
-    },
-    {
-      "id": "R020",
-      "name": "e2e-ci-pipeline",
-      "status": "completed",
-      "archive_dir": "_archive/R020_e2e-ci-pipeline"
-    },
-    {
-      "id": "R021",
-      "name": "tech-debt-cleanup",
-      "status": "completed",
-      "archive_dir": "_archive/R021_tech-debt-cleanup"
-    },
-    {
-      "id": "R022",
-      "name": "polish-deferred",
-      "status": "completed",
-      "archive_dir": "_archive/R022_polish-deferred"
-    },
-    {
-      "id": "R025",
-      "name": "stage3-completion",
-      "status": "completed",
-      "archive_dir": "_archive/R025_stage3-completion"
-    },
-    {
-      "id": "R026",
-      "name": "convergence-fixes",
-      "status": "completed",
-      "archive_dir": "_archive/R026_convergence-fixes"
-    },
-    {
-      "id": "R027",
-      "name": "export-feedback-tracking",
-      "status": "completed",
-      "archive_dir": "_archive/R027_export-feedback-tracking"
-    },
-    {
-      "id": "R028",
-      "name": "engineering-cleanup",
-      "status": "completed",
-      "archive_dir": "_archive/R028_engineering-cleanup"
-    },
-    {
-      "id": "R029",
-      "name": "simplify-convergence",
-      "status": "completed",
-      "archive_dir": "_archive/R029_simplify-convergence"
-    },
-    {
-      "id": "R030",
-      "name": "ai-morning-report",
-      "status": "completed",
-      "archive_dir": "_archive/R030_ai-morning-report"
-    },
-    {
-      "id": "R031",
-      "name": "conversational-onboarding",
-      "status": "completed",
-      "archive_dir": "_archive/R031_conversational-onboarding"
-    },
-    {
-      "id": "R032",
-      "name": "search-filter-batch",
-      "status": "completed",
-      "archive_dir": "_archive/R032_search-filter-batch"
-    },
-    {
-      "id": "R033",
-      "name": "security-hardening",
-      "status": "completed",
-      "archive_dir": "_archive/R033_security-hardening"
-    },
-    {
-      "id": "R034",
-      "name": "tech-debt-residual",
-      "status": "completed",
-      "archive_dir": "_archive/R034_tech-debt-residual"
-    },
-    {
-      "id": "R035",
-      "name": "preexisting-fixes",
-      "status": "completed",
-      "archive_dir": "_archive/R035_preexisting-fixes"
+      "archive_dir": "_archive/R001_personal-growth-assistant-v1"
     }
   ]
 }

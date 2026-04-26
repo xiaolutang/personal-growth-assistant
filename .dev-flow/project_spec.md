@@ -1,50 +1,81 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.36.0
-> 状态：规划中（R036）
-> 活跃分支：chore/R036-residual-cleanup
+> 版本：v0.37.0
+> 状态：规划中（R037）
+> 活跃分支：feat/R037-comprehensive-completion
 
 ## 当前范围
 
-R036 残留问题全面收口：处理项目中所有已记录但未解决的 8 项残留风险和技术债务。
+R037 全面补齐与功能增强：遗留问题收口 + R022 体验打磨 + P1 功能补齐。
 
-### Backend 架构修复
+### 已取消（代码验证后发现已实现）
 
-1. **B100 消除私有属性访问**：为 Neo4jClient/QdrantClient 添加 is_connected 公共属性，ReviewService 添加 getter，entries.py/notification_service.py 改用公共方法
-2. **B101 get_growth_curve SQL 聚合**：将 list_entries(limit=10000) 替换为按周+tag 分组的 SQL 聚合查询
-3. **B102 review_service 进一步拆分**：1845 行拆分到 services/review/ 子模块，目标 1200 行以内
+- ~~B103 搜索迁移~~ → HybridSearchService 已集成到 search.py
+- ~~F133 FloatingChat 触摸拖拽~~ → 已有 touch 事件处理
+- ~~B106 成长曲线 API~~ → GET /review/growth-curve 已实现
+- ~~F146 成长曲线可视化~~ → GrowthCurveCard.tsx 已渲染 AreaChart
 
-### 前端基础设施
+### Phase 1: 技术债 + 搜索前端（2 tasks）
 
-4. **F128 503 降级共享 hook**：创建 useServiceUnavailable hook，应用到 7 个缺失页面
+1. **B104 技术债清理**：import * 通配符、NotImplementedError 降级、文档状态同步
+2. **F132 搜索 Tab 过滤透传**：Explore 页 Tab 过滤传递到搜索 API
 
-### 前端页面拆分
+### Phase 2: R022 体验打磨（8 tasks）
 
-5. **F129 EntryDetail.tsx 拆分**：1201 行 → 子目录 entry-detail/
-6. **F130 Home.tsx + Explore.tsx 拆分**：730+729 行 → 子目录 home/ + explore/
-7. **F131 Review + Tasks + Goals 拆分去重**：ProgressRing 去重 + 子目录拆分
+3. **F134 Home 统计卡片响应式**
+4. **F135 Explore Tab 栏横向滚动**
+5. **F136 TaskCard 触摸目标增大**
+6. **F137 Review 加载态 + 错误状态**
+7. **F138 Explore 错误状态处理**
+8. **F139 TaskList 空状态增强**
+9. **F140 NotificationCenter 时间戳 + 后台轮询**（已有 60s 面板内轮询，需增强）
+10. **F141 搜索结果内容摘要**
 
-### 移动端
+### Phase 3: 离线 + 批量操作（3 tasks）
 
-8. **M100 移动端拖拽排序**：Flutter 任务列表长按拖拽
+11. **F142 离线更新/删除拦截 + 队列扩展**
+12. **F143 多选框架 + 选择状态**
+13. **F144 批量删除/转分类执行**
 
-### 测试补齐 + 质量收口
+### Phase 4: P1 功能补齐（4 tasks）
 
-9. **S33 R032 + R027 测试覆盖补齐**：~55 场景
-10. **S34 质量收口**：全量测试 + build + Docker smoke
+14. **B105 任务到期查询 API**：基于已有 planned_date 字段的到期查询（不新增 due_date）
+15. **F145 任务截止日期 UI**：日期选择器 + 到期/过期标识
+16. **B107 笔记双链引用后端**：[[note-id]] 解析 + 反向引用
+17. **F147 笔记双链引用前端**：引用补全 + 反向引用面板
+
+### Phase 5: 质量收口（1 task）
+
+18. **S35 全量测试 + build + Docker smoke**
+
+## 统计
+
+| 指标 | 值 |
+|------|-----|
+| 总任务数 | 22（4 cancelled + 18 pending）|
+| 待执行 | 18 |
+| P0 | 1（S35 质量收口）|
+| P1 | 10 |
+| P2 | 7 |
+
+### Codex Plugin 审核修复记录
+
+审核结果：conditional_pass（修复后从 fail 提升）
+
+| # | 发现 | 修复措施 |
+|---|------|---------|
+| 1 | 双链语法 B107/F147 不一致 | B107 统一支持 `[[note-id]]` 和 `[[note-id\|标题]]` 两种语法 |
+| 2 | 缺少 R037 契约文档和对齐块 | 补齐 api_contracts.md 3 个契约定义 + alignment_checklist.md R037 块 |
+| 3 | F144 未依赖 F142，离线批量缝隙 | F144 添加 F142 依赖，补齐离线批量行为描述 |
+| 4 | F142 测试缺少失败分支 | 增补 5xx/超时/快速切换/用户反馈测试场景 |
 
 ## 技术约束
 
-- 全部为修复/补齐/重构，不引入新业务功能
-- 不改变 API 契约
+- 搜索前端增强不改变后端 API 契约（HybridSearchService 已集成）
+- 截止日期复用已有 planned_date 字段（不新增 due_date），向后兼容
+- 笔记双链不改变 Markdown 存储架构，新增 note_references 表
+- B107 含已有笔记回填路径（reindex_backlinks 延迟初始化）
 - workflow: B/codex_plugin/skill_orchestrated
-
-## 用户路径
-
-```
-无新增用户路径。改善现有体验：
-- 503 降级覆盖所有页面 → 服务不可用时所有页面展示友好提示
-- 页面拆分 → 开发体验改善，不改变用户功能
-- 性能优化 → get_growth_curve 更快的响应时间
-```
+- 笔记双链不改变 Markdown 存储架构，新增 note_references 表
+- workflow: B/codex_plugin/skill_orchestrated

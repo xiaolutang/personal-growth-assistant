@@ -2,6 +2,65 @@
 
 ## 契约索引
 
+### R037 新增/变更契约
+
+| 契约 ID | 方法 | 端点 | 任务 | 状态 |
+|---------|------|------|------|------|
+| CONTRACT-DUE01 | GET | /entries?due=today\|overdue | B105 | planned |
+| CONTRACT-BACKLINK01 | GET | /entries/{id}/backlinks | B107 | planned |
+
+### R037 契约详情
+
+#### CONTRACT-DUE01: GET /entries?due=today|overdue
+
+现有端点扩展查询参数，基于已有 `planned_date` 字段（不新增 due_date）。
+
+请求：
+- `due=today`：返回 planned_date 为今天（UTC 日期）的条目
+- `due=overdue`：返回 planned_date 早于今天（UTC 日期）且未完成的条目
+- 与现有 `filter_type`、`status` 等参数可组合使用
+
+日界规则：
+- 统一使用 UTC midnight 作为日界
+- API、前端 UI（F145）、useHomeData todayTasks、notification_service 均使用 `date(planned_date) == date(utcnow)` 比较
+- overdue 判定为 `date(planned_date) < date(utcnow)`
+
+响应：
+- 复用现有 `EntryListResponse` 结构
+- 条目中包含已有 `planned_date` 字段（ISO 日期字符串或 null）
+
+设计说明：
+- 产品已有 `planned_date` 字段（task.py:32, task.ts:20），语义为「计划完成日期」
+- 不新增 `due_date` 字段，避免日期语义分叉
+- 前端 `EntryCreate`/`EntryUpdate` 已支持 `planned_date` 写入
+- `notification_service.py` 和 `useHomeData.ts` 已有基于 `planned_date` 的到期逻辑
+
+#### CONTRACT-BACKLINK01: GET /entries/{id}/backlinks
+
+新增端点。
+
+请求：
+- `GET /entries/{id}/backlinks`
+- 需认证（Depends(get_current_user)）
+
+响应（200）：
+```json
+{
+  "entry_id": "note-abc123",
+  "backlinks": [
+    {
+      "source_id": "note-def456",
+      "source_title": "相关笔记标题",
+      "source_category": "note",
+      "excerpt": "提及了 [[note-abc123|某概念]] 的上下文片段..."
+    }
+  ]
+}
+```
+
+响应（404）：条目不存在
+响应（403）：非当前用户条目
+
 ### R033 新增/变更契约
 
 | 契约 ID | 方法 | 端点 | 任务 | 状态 |
