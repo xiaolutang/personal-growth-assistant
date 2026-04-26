@@ -22,10 +22,13 @@ import {
   toggleChecklistItem,
   searchEntries,
   fetchProgressHistory,
+  getMilestones,
   type Goal,
   type GoalEntry,
   type ProgressSnapshot,
+  type Milestone as MilestoneType,
 } from "@/services/api";
+import { MilestoneList } from "./goals/MilestoneList";
 
 // === 条目搜索弹窗 ===
 function EntrySearchDialog({ open, onClose, onSelect }: {
@@ -89,6 +92,7 @@ export function GoalDetail() {
   const [goal, setGoal] = useState<Goal | null>(null);
   const [entries, setEntries] = useState<GoalEntry[]>([]);
   const [progressHistory, setProgressHistory] = useState<ProgressSnapshot[]>([]);
+  const [milestones, setMilestones] = useState<MilestoneType[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSearch, setShowSearch] = useState(false);
   const { serviceUnavailable, runWith503, retry: retryService } = useServiceUnavailable();
@@ -97,14 +101,16 @@ export function GoalDetail() {
     if (!goalId) return;
     try {
       await runWith503(async () => {
-        const [goalRes, entriesRes, historyRes] = await Promise.all([
+        const [goalRes, entriesRes, historyRes, milestonesRes] = await Promise.all([
           getGoal(goalId),
           getGoalEntries(goalId).catch(() => ({ entries: [] })),
           fetchProgressHistory(goalId).catch(() => ({ snapshots: [] })),
+          getMilestones(goalId).catch(() => ({ milestones: [] })),
         ]);
         setGoal(goalRes);
         setEntries(entriesRes.entries ?? []);
         setProgressHistory(historyRes.snapshots ?? []);
+        setMilestones(milestonesRes.milestones ?? []);
       });
     } catch {
       toast.error("加载目标失败");
@@ -264,6 +270,15 @@ export function GoalDetail() {
             )}
           </CardContent>
         </Card>
+
+        {/* 里程碑管理 */}
+        <div className="mb-4">
+          <MilestoneList
+            goalId={goalId!}
+            milestones={milestones}
+            onMilestonesChange={setMilestones}
+          />
+        </div>
 
         {/* count 类型：关联条目 */}
         {goal.metric_type === "count" && (

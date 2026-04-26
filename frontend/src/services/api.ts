@@ -508,6 +508,59 @@ export async function getProgressSummary(period?: string): Promise<ProgressSumma
   return handleOpenApiResponse<ProgressSummaryResponse>(data as ProgressSummaryResponse | undefined, error, response);
 }
 
+// === 里程碑 ===
+export interface Milestone {
+  id: string;
+  goal_id: string;
+  title: string;
+  description: string | null;
+  due_date: string | null;
+  status: "pending" | "completed";
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+export interface MilestoneListResponse {
+  milestones: Milestone[];
+}
+
+export async function getMilestones(goalId: string): Promise<MilestoneListResponse> {
+  const response = await authFetch(`${API_BASE}/goals/${goalId}/milestones`);
+  if (!response.ok) throw new ApiError(response.status, `获取里程碑失败: ${response.status}`);
+  return await response.json() as MilestoneListResponse;
+}
+
+export async function createMilestone(goalId: string, payload: {
+  title: string; description?: string; due_date?: string;
+}): Promise<Milestone> {
+  const response = await authFetch(`${API_BASE}/goals/${goalId}/milestones`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new ApiError(response.status, `创建里程碑失败: ${response.status}`);
+  return await response.json() as Milestone;
+}
+
+export async function updateMilestone(goalId: string, milestoneId: string, payload: {
+  title?: string; description?: string; due_date?: string; status?: "pending" | "completed";
+}): Promise<Milestone> {
+  const response = await authFetch(`${API_BASE}/goals/${goalId}/milestones/${milestoneId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new ApiError(response.status, `更新里程碑失败: ${response.status}`);
+  return await response.json() as Milestone;
+}
+
+export async function deleteMilestone(goalId: string, milestoneId: string): Promise<void> {
+  const response = await authFetch(`${API_BASE}/goals/${goalId}/milestones/${milestoneId}`, {
+    method: "DELETE",
+  });
+  if (!response.ok && response.status !== 204) throw new ApiError(response.status, `删除里程碑失败: ${response.status}`);
+}
+
 // === Goal 进度历史 ===
 export interface ProgressSnapshot {
   id: string;
