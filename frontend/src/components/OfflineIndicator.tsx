@@ -1,18 +1,23 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import {
   subscribeSyncProgress,
+  sync as doSync,
+  isSyncing,
   type SyncEvent,
   type SyncProgress,
 } from "@/lib/offlineSync";
+import * as queue from "@/lib/offlineQueue";
 
 type IndicatorState = "online" | "offline" | "recovered" | "syncing" | "auth_failed";
 
 /**
  * 全局离线提示组件。
- * - 离线时显示底部固定条：「当前处于离线状态，部分功能不可用」
- * - 上线时切换为同步进度或「已恢复连接」，3 秒后自动消失
- * - 401 认证失败时显示「需要重新登录」提示
+ * - 离线时显示底部固定条：「同步队列：X 条待同步」
+ * - 同步中状态条显示进度「同步中 (X/Y)」
+ * - 同步失败时显示「重试」按钮，点击触发手动同步
+ * - recovered 状态显示「已同步 X 条」
+ * - 手动同步按钮不与自动 online 事件冲突
  */
 export function OfflineIndicator() {
   const { isOnline } = useOnlineStatus();
@@ -20,13 +25,28 @@ export function OfflineIndicator() {
     navigator.onLine ? "online" : "offline"
   );
   const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [syncedCount, setSyncedCount] = useState(0);
+  const manualSyncRef = useRef(false);
   // 用 ref 保存最新 state，避免订阅回调闭包陈旧
   const stateRef = useRef(state);
   stateRef.current = state;
 
+  // 读取队列 pending 数量
+  const refreshQueueCount = useCallback(async () => {
+    try {
+      const items = await queue.getAll();
+      const pending = items.filter((i) => i.status === "pending");
+      setPendingCount(pending.length);
+    } catch {
+      // IDB 不可用时忽略
+    }
+  }, []);
+
   useEffect(() => {
     if (!isOnline) {
       setState("offline");
+      refreshQueueCount();
     } else {
       if (stateRef.current === "offline") {
         setState("recovered");
@@ -34,7 +54,7 @@ export function OfflineIndicator() {
         setState("online");
       }
     }
-  }, [isOnline]);
+  }, [isOnline, refreshQueueCount]);
 
   // 订阅同步进度
   useEffect(() => {
@@ -44,13 +64,18 @@ export function OfflineIndicator() {
         setState("syncing");
       } else if (event.type === "completed") {
         setSyncProgress(null);
+        setSyncedCount((prev) => prev + (manualSyncRef.current ? 0 : 0));
         setState("recovered");
+        manualSyncRef.current = false;
+        refreshQueueCount();
       } else if (event.type === "auth_failed") {
         setSyncProgress(null);
         setState("auth_failed");
+        manualSyncRef.current = false;
+        refreshQueueCount();
       }
     });
-  }, []);
+  }, [refreshQueueCount]);
 
   // recovered/auth_failed 状态 3 秒后自动切回 online（隐藏提示）
   useEffect(() => {
@@ -59,8 +84,35 @@ export function OfflineIndicator() {
     return () => clearTimeout(timer);
   }, [state]);
 
-  // online 状态不渲染
-  if (state === "online") return null;
+  // 手动同步
+  const handleManualSync = useCallback(() => {
+    if (isSyncing()) return;
+    manualSyncRef.current = true;
+    doSync();
+  }, []);
+
+  // online 状态不渲染（除非有 pending 队列且不是 syncing 状态）
+  if (state === "online") {
+    // 如果有 pending 队列且在线，显示同步提示
+    if (pendingCount > 0 && isOnline) {
+      return (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center gap-2 bg-amber-500 px-4 py-2.5 text-sm font-medium text-white shadow-lg"
+        >
+          <span>同步队列：{pendingCount} 条待同步</span>
+          <button
+            onClick={handleManualSync}
+            className="ml-2 rounded bg-white/20 px-2 py-0.5 text-xs font-medium hover:bg-white/30 transition-colors"
+          >
+            立即同步
+          </button>
+        </div>
+      );
+    }
+    return null;
+  }
 
   if (state === "offline") {
     return (
@@ -87,7 +139,7 @@ export function OfflineIndicator() {
           <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
           <line x1="12" y1="20" x2="12.01" y2="20" />
         </svg>
-        <span>当前处于离线状态，部分功能不可用</span>
+        <span>当前处于离线状态{pendingCount > 0 ? `，同步队列：${pendingCount} 条待同步` : "，部分功能不可用"}</span>
       </div>
     );
   }
@@ -114,6 +166,12 @@ export function OfflineIndicator() {
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
         <span>同步失败，请重新登录</span>
+        <button
+          onClick={handleManualSync}
+          className="ml-2 rounded bg-white/20 px-2 py-0.5 text-xs font-medium hover:bg-white/30 transition-colors"
+        >
+          重试
+        </button>
       </div>
     );
   }
@@ -137,7 +195,7 @@ export function OfflineIndicator() {
         >
           <path d="M21 12a9 9 0 1 1-6.219-8.56" />
         </svg>
-        <span>正在同步 {syncProgress.current}/{syncProgress.total}...</span>
+        <span>同步中 ({syncProgress.current}/{syncProgress.total})</span>
       </div>
     );
   }
@@ -164,7 +222,7 @@ export function OfflineIndicator() {
         <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
         <line x1="12" y1="20" x2="12.01" y2="20" />
       </svg>
-      <span>已恢复连接</span>
+      <span>已恢复连接{syncedCount > 0 ? `，已同步 ${syncedCount} 条` : ""}</span>
     </div>
   );
 }

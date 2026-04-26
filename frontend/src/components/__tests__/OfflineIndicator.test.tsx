@@ -12,6 +12,12 @@ vi.mock("@/lib/offlineSync", () => ({
     syncCallback = cb;
     return () => { syncCallback = null; };
   },
+  sync: vi.fn(),
+  isSyncing: () => false,
+}));
+
+vi.mock("@/lib/offlineQueue", () => ({
+  getAll: () => Promise.resolve([]),
 }));
 
 import { OfflineIndicator } from "../OfflineIndicator";
@@ -98,7 +104,7 @@ describe("OfflineIndicator", () => {
     act(() => {
       syncCallback?.({ type: "progress", progress: { current: 1, total: 2 } });
     });
-    expect(screen.getByText(/正在同步/)).toBeInTheDocument();
+    expect(screen.getByText(/同步中/)).toBeInTheDocument();
 
     // 模拟 sync completed
     act(() => {
