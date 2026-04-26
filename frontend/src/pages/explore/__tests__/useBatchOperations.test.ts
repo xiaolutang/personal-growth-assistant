@@ -253,6 +253,47 @@ describe("useBatchOperations", () => {
     expect(result.current.selectMode).toBe(true);
   });
 
+  it("ESC 键退出多选模式并清空选中", () => {
+    const { result } = renderHook(() =>
+      useBatchOperations({
+        filteredTasks: [],
+        setEntries,
+        setSearchResults,
+      })
+    );
+    act(() => {
+      result.current.enterSelectMode();
+      result.current.toggleSelect("id1");
+      result.current.toggleSelect("id2");
+    });
+    expect(result.current.selectMode).toBe(true);
+    expect(result.current.selectedIds.size).toBe(2);
+
+    // Simulate pressing ESC
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    });
+    expect(result.current.selectMode).toBe(false);
+    expect(result.current.selectedIds.size).toBe(0);
+  });
+
+  it("ESC 不在多选模式时无效", () => {
+    const { result } = renderHook(() =>
+      useBatchOperations({
+        filteredTasks: [],
+        setEntries,
+        setSearchResults,
+      })
+    );
+    expect(result.current.selectMode).toBe(false);
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    });
+    // Still not in select mode, nothing happens
+    expect(result.current.selectMode).toBe(false);
+  });
+
   it("batchLoading 操作结束后恢复 false", async () => {
     mockDeleteTask.mockResolvedValue(undefined);
     const { result } = renderHook(() =>
