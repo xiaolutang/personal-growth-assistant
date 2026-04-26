@@ -45,9 +45,9 @@
   "summary": {
     "total": 6,
     "by_status": {
-      "pending": 1,
+      "pending": 0,
       "in_progress": 0,
-      "completed": 5,
+      "completed": 6,
       "cancelled": 0,
       "blocked": 0
     },
@@ -235,7 +235,7 @@
       "description": "运行全量测试验证：后端 pytest + 前端 vitest + Flutter test + 前端 build + Docker 构建/启动。",
       "verification": "所有测试通过 + 构建成功",
       "depends_on": ["S38", "F154", "F153"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "acceptance_criteria": [
         "cd backend && uv run pytest tests/ -q 全部通过",
@@ -245,8 +245,11 @@
         "./deploy/deploy.sh Docker 构建启动成功"
       ],
       "risk_tags": [],
-      "files": []
+      "files": [],
+      "evidence_file": ".dev-flow/evidence/S39.md",
+      "summary": "pytest 1200 + vitest 612 + flutter test all passed + frontend build + Docker smoke healthy",
+      "completed_at": "2026-04-27"
     }
   ],
-  "updated_at": "2026-04-26"
+  "updated_at": "2026-04-27"
 }
