@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from app.services.goal_service import GoalService
     from app.services.hybrid_search import HybridSearchService
     from app.services.analytics_service import AnalyticsService
+    from app.services.recommendation_service import RecommendationService
     from app.infrastructure.storage.user_storage import UserStorage
     from app.models.user import User
 
@@ -31,6 +32,7 @@ _notification_service: "NotificationService" = None
 _goal_service: "GoalService" = None
 _hybrid_search_service: "HybridSearchService" = None
 _analytics_service: "AnalyticsService" = None
+_recommendation_service: "RecommendationService" = None
 _user_storage: "UserStorage" = None
 
 
@@ -160,6 +162,21 @@ def get_analytics_service() -> "AnalyticsService | None":
     return _analytics_service
 
 
+def get_recommendation_service() -> "RecommendationService":
+    """获取知识推荐服务的依赖函数"""
+    global _recommendation_service, storage
+    if storage is None:
+        raise HTTPException(status_code=503, detail="存储服务未初始化")
+    if _recommendation_service is None:
+        from app.services.recommendation_service import RecommendationService
+        neo4j_client = getattr(storage, "neo4j", None)
+        _recommendation_service = RecommendationService(
+            neo4j_client=neo4j_client,
+            sqlite_storage=storage.sqlite,
+        )
+    return _recommendation_service
+
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(_bearer_scheme),
 ) -> "User":
@@ -172,7 +189,7 @@ def get_current_user(
 
 def reset_all_services():
     """重置所有服务缓存（用于测试）"""
-    global _entry_service, _intent_service, _review_service, _knowledge_service, _notification_service, _goal_service, _hybrid_search_service, _analytics_service
+    global _entry_service, _intent_service, _review_service, _knowledge_service, _notification_service, _goal_service, _hybrid_search_service, _analytics_service, _recommendation_service
     _entry_service = None
     _intent_service = None
     _review_service = None
@@ -181,6 +198,7 @@ def reset_all_services():
     _goal_service = None
     _hybrid_search_service = None
     _analytics_service = None
+    _recommendation_service = None
 
 
 # 向后兼容

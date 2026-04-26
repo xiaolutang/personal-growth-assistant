@@ -430,6 +430,58 @@ class Neo4jClient:
                 })
             return relationships
 
+    # ==================== 图算法查询 ====================
+
+    async def find_prerequisite_gaps(self, user_id: str = "_default") -> List[Dict[str, Any]]:
+        """查找知识缺口：有前置关系(PREREQUISITE)但用户未学习的概念
+
+        返回格式: [{"concept": "概念名", "missing_prerequisites": ["前置1", "前置2"]}]
+        """
+        query = """
+        MATCH (c:Concept {user_id: $user_id})<-[:PREREQUISITE]-(prereq:Concept)
+        WHERE NOT (prereq)<-[:MENTIONS]-(:Entry {user_id: $user_id})
+        WITH c, collect(DISTINCT prereq.name) AS missing
+        RETURN c.name AS concept, missing AS missing_prerequisites
+        ORDER BY size(missing) DESC
+        LIMIT 20
+        """
+        async with await self._get_session() as session:
+            result = await session.run(query, user_id=user_id)
+            gaps = []
+            async for record in result:
+                missing = record["missing_prerequisites"]
+                # Neo4j driver 可能返回 List 对象，确保转为 Python list
+                if missing and not isinstance(missing, list):
+                    missing = list(missing)
+                gaps.append({
+                    "concept": record["concept"],
+                    "missing_prerequisites": missing if missing else [],
+                })
+            return gaps
+
+    async def get_concept_centrality(self, user_id: str = "_default", limit: int = 20) -> List[Dict[str, Any]]:
+        """获取概念中心度排序（基于关系数量）
+
+        返回格式: [{"name": "概念名", "centrality": 关系数, "category": "类别"}]
+        """
+        query = """
+        MATCH (c:Concept {user_id: $user_id})-[r]-(other)
+        WITH c, count(DISTINCT other) AS degree
+        ORDER BY degree DESC
+        LIMIT $limit
+        RETURN c.name AS name, degree AS centrality, c.category AS category
+        """
+        async with await self._get_session() as session:
+            result = await session.run(query, user_id=user_id, limit=limit)
+            centrality_list = []
+            async for record in result:
+                centrality_list.append({
+                    "name": record["name"],
+                    "centrality": record["centrality"],
+                    "category": record["category"],
+                })
+            return centrality_list
+
     # ==================== 初始化 ====================
 
     async def create_indexes(self):

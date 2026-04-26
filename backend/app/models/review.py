@@ -95,6 +95,7 @@ class MorningDigestResponse(BaseModel):
     learning_streak: int = 0
     daily_focus: Optional[DailyFocus] = None
     pattern_insights: List[str] = []
+    knowledge_recommendations: Optional[dict] = None
     cached_at: Optional[str] = None
 
 

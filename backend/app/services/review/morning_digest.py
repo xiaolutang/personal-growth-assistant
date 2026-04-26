@@ -461,6 +461,22 @@ class MorningDigestMixin:
                 recent_activity=today_todos[:5] + overdue[:5],
             )
 
+            # 7. 知识推荐（B115）
+            knowledge_recommendations = None
+            try:
+                if self._knowledge_service is not None:
+                    from app.services.recommendation_service import RecommendationService
+                    neo4j_client = getattr(self, "_neo4j_client", None)
+                    sqlite_storage = self._sqlite
+                    rec_svc = RecommendationService(
+                        neo4j_client=neo4j_client,
+                        sqlite_storage=sqlite_storage,
+                    )
+                    rec_resp = await rec_svc.get_recommendations(user_id=user_id)
+                    knowledge_recommendations = rec_resp.model_dump()
+            except Exception:
+                logger.debug("B115: 晨报知识推荐获取失败，跳过", exc_info=True)
+
             response = MorningDigestResponse(
                 date=today_str,
                 ai_suggestion=ai_suggestion,
@@ -494,6 +510,7 @@ class MorningDigestMixin:
                 learning_streak=learning_streak,
                 daily_focus=daily_focus,
                 pattern_insights=pattern_insights,
+                knowledge_recommendations=knowledge_recommendations,
                 cached_at=None,
             )
 

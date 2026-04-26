@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.routers.deps import get_knowledge_service, get_current_user
+from app.routers.deps import get_knowledge_service, get_recommendation_service, get_current_user
 from app.models.user import User
 from app.services.knowledge_service import (
     ConceptNode,
@@ -19,6 +19,7 @@ from app.services.knowledge_service import (
     MasteryDistributionResponse,
     CapabilityMapResponse,
 )
+from app.services.recommendation_service import RecommendationResponse
 
 router = APIRouter(tags=["knowledge"])
 
@@ -179,3 +180,21 @@ async def get_capability_map(
     except Exception as e:
         logger.error("查询失败", exc_info=True)
         raise HTTPException(status_code=500, detail="查询失败，请稍后重试")
+
+
+@router.get("/knowledge/recommendations", response_model=RecommendationResponse)
+async def get_knowledge_recommendations(user: User = Depends(get_current_user)):
+    """获取知识推荐
+
+    返回三类推荐：
+    - knowledge_gaps: 知识缺口（PREREQUISITE 关系链中未涉足的概念）
+    - review_suggestions: 复习推荐（间隔重复策略，推荐近期未复习的概念）
+    - related_concepts: 共现推荐（基于标签共现或概念中心度）
+    """
+    recommendation_service = get_recommendation_service()
+
+    try:
+        return await recommendation_service.get_recommendations(user_id=user.id)
+    except Exception as e:
+        logger.error("推荐查询失败", exc_info=True)
+        raise HTTPException(status_code=500, detail="推荐查询失败，请稍后重试")
