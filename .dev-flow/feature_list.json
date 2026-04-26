@@ -45,9 +45,9 @@
   "summary": {
     "total": 6,
     "by_status": {
-      "pending": 6,
+      "pending": 5,
       "in_progress": 0,
-      "completed": 0,
+      "completed": 1,
       "cancelled": 0,
       "blocked": 0
     },
@@ -66,7 +66,7 @@
       "description": "删除已合并到 main 的历史分支（排除 main 本身和当前活跃开发分支 feat/R039-flutter-explore）；更新 project_spec.md 为 R039 状态；更新 architecture.md Flutter 导航栏约束从 3 Tab 到 4 Tab；更新 architecture.md 允许搜索历史使用内存列表（MVP 不引入 SharedPreferences）",
       "verification": "已合并分支清理完毕（仅剩 main + feat/R039-*）；project_spec.md 反映 R039；architecture.md 反映 4 Tab",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P2",
       "acceptance_criteria": [
         "git branch --merged main 的分支全部删除，保留 main 和 feat/R039-flutter-explore",
@@ -75,7 +75,11 @@
         "architecture.md 允许搜索历史使用内存列表（MVP 阶段不引入本地持久化依赖）"
       ],
       "risk_tags": [],
-      "files": [".dev-flow/project_spec.md", ".dev-flow/architecture.md"]
+      "files": [".dev-flow/project_spec.md", ".dev-flow/architecture.md"],
+      "commit": "d343ff1",
+      "evidence_file": ".dev-flow/evidence/S38.md",
+      "summary": "删除 35 个已合并分支，architecture.md 4 Tab + 搜索历史内存例外",
+      "completed_at": "2026-04-26"
     },
     {
       "id": "F151",
