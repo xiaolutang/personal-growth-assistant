@@ -125,10 +125,11 @@ class QdrantClient:
         self._embedding_service = service
 
     async def _get_embedding(self, text: str) -> List[float]:
-        """获取文本的向量"""
+        """获取文本的向量（未配置 embedding 服务时返回空列表）"""
         if self._embedding_service:
             return await self._embedding_service.get_embedding(text)
-        raise NotImplementedError("Embedding service not configured")
+        logger.warning("Embedding service not configured, returning empty vector")
+        return []
 
     def _build_payload(self, entry: Task, user_id: str = "_default") -> Dict[str, Any]:
         """构建向量存储的 payload"""
@@ -157,6 +158,11 @@ class QdrantClient:
         try:
             # 获取向量
             vector = await self._get_embedding(f"{entry.title}\n\n{entry.content}")
+
+            # embedding 未配置时返回空向量，短路降级
+            if not vector:
+                logger.warning("Embedding not available, skipping upsert")
+                return False
 
             # 存储向量（ID 转换为 UUID）
             await self._client.upsert(
@@ -239,6 +245,11 @@ class QdrantClient:
         try:
             # 获取查询向量
             query_vector = await self._get_embedding(query)
+
+            # embedding 未配置时返回空向量，短路降级
+            if not query_vector:
+                logger.warning("Embedding not available, returning empty search results")
+                return []
 
             # 构建过滤条件
             must_conditions = [
@@ -334,6 +345,11 @@ class QdrantClient:
             # 并行获取所有 embedding
             texts = [f"{e.title}\n\n{e.content}" for e in entries]
             vectors = await asyncio.gather(*[self._get_embedding(t) for t in texts])
+
+            # embedding 未配置时返回空向量列表，短路降级
+            if not vectors or not vectors[0]:
+                logger.warning("Embedding not available, skipping batch upsert")
+                return 0
 
             points = [
                 models.PointStruct(

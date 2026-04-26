@@ -282,4 +282,34 @@ describe("utils", () => {
       expect(result[0].category).toBe("note");
     });
   });
+
+  // --- filterByCategory 搜索模式跨类型混合展示 (F132) ---
+  describe("filterByCategory — 搜索模式（tab=空）跨类型混合展示", () => {
+    it("tab 为空时排除 task 等非 Explore 类型", () => {
+      const entries = [
+        makeTask({ category: "note" }),
+        makeTask({ category: "task" }),
+        makeTask({ category: "inbox" }),
+        makeTask({ category: "project" }),
+      ];
+      const result = filterByCategory(entries, "");
+      expect(result).toHaveLength(3);
+      expect(result.every((t) => t.category !== "task")).toBe(true);
+    });
+
+    it("tab 为空时保留所有 Explore 类型（混合展示）", () => {
+      const entries = [
+        makeTask({ category: "note" }),
+        makeTask({ category: "inbox" }),
+        makeTask({ category: "project" }),
+        makeTask({ category: "decision" }),
+      ];
+      const result = filterByCategory(entries, "");
+      expect(result).toHaveLength(4);
+    });
+
+    it("空数组返回空", () => {
+      expect(filterByCategory([], "")).toEqual([]);
+    });
+  });
 });

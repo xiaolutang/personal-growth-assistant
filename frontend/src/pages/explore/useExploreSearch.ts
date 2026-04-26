@@ -63,7 +63,7 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
   const [searchResults, setSearchResults] = useState<Task[] | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [entriesError, setEntriesError] = useState<string | null>(null);
-  const { setPageExtra } = useChatStore();
+  const setPageExtra = useChatStore((state) => state.setPageExtra);
   const { serviceUnavailable, runWith503, retry: retryService } = useServiceUnavailable();
 
   // 同步 activeTab/searchQuery 到 chatStore.pageExtra
@@ -118,8 +118,6 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
       return;
     }
 
-    if (!searchQuery.trim() && !hasActiveFilters) return;
-
     let cancelled = false;
     debounceTimer.current = setTimeout(async () => {
       setIsSearching(true);
@@ -128,7 +126,7 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
         const result = await searchEntries(
           searchQuery.trim() || "",
           20,
-          activeTab || undefined,
+          activeTab || undefined, // Tab 过滤透传到后端 filter_type
           searchFilters,
         );
         if (!cancelled) {
@@ -154,7 +152,7 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
     };
   }, [searchQuery, searchFilters, activeTab, hasActiveFilters, searchHistoryRefresh]);
 
-  // 加载条目
+  // 加载条目（部分失败时保留已有数据）
   const loadEntries = useCallback(async () => {
     setIsLoading(true);
     setEntriesError(null);
@@ -164,6 +162,7 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
         setEntries(res.entries ?? []);
       });
     } catch {
+      // 保留已有 entries（部分失败场景），仅在完全无数据时才设空
       setEntriesError("加载失败，请重试");
     } finally {
       setIsLoading(false);
@@ -176,8 +175,11 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
   const popularTags = useMemo(() => getPopularTags(entries), [entries]);
 
   const filteredTasks = useMemo(() => {
-    const source = searchResults ?? entries;
-    return filterByCategory(source, activeTab);
+    if (searchResults !== null) {
+      // 搜索模式：跨类型混合展示，仅过滤 Explore 类别边界（排除 task 等）
+      return filterByCategory(searchResults, "");
+    }
+    return filterByCategory(entries, activeTab);
   }, [entries, searchResults, activeTab]);
 
   const autoExpandAssistant = !isLoading && !isSearching && filteredTasks.length === 0;
@@ -213,7 +215,7 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
       const result = await searchEntries(
         searchQuery.trim() || "",
         20,
-        activeTab || undefined,
+        activeTab || undefined, // Tab 过滤透传到后端 filter_type
         searchFilters,
       );
       const mapped: Task[] = (result.results ?? []).map(normalizeSearchResult);

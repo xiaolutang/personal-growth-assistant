@@ -154,3 +154,15 @@ class KnowledgeContextResponse(BaseModel):
     nodes: List[KnowledgeContextNode] = []
     edges: List[KnowledgeContextEdge] = []
     center_concepts: List[str] = []
+
+
+class BacklinkItem(BaseModel):
+    """反向引用条目"""
+    id: str
+    title: str
+    category: str
+
+
+class BacklinksResponse(BaseModel):
+    """反向引用列表响应"""
+    backlinks: List[BacklinkItem]

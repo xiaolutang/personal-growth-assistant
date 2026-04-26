@@ -18,6 +18,18 @@
 - Codex 审核: M100 5轮 code-review + S34 5轮 code-review + audit
 - 验证: pytest 1133 + vitest 475 + flutter test 170 + build + Docker smoke
 
+### R037: 全面补齐与功能增强
+
+- 状态: 已完成
+- 分支: `feat/R037-comprehensive-completion`
+- 主题: 技术债清理 + UX打磨 + 离线批量 + P1功能(任务到期/笔记双链) + 质量收口
+- 目录: `R037_comprehensive-completion/`
+- 完成时间: 2026-04-26
+- 任务数: 18 (completed: 14, cancelled: 4)
+- 范围: B104 tech-debt, F132 search, F134-F141 ux-polish, F142-F144 offline-batch, B105/F145 task-due-date, B107/F147 note-link, S35 quality
+- Codex 审核: xlfoundry-code-review conditional_pass + xlfoundry-audit (6 issues found & fixed)
+- 验证: pytest 1180 + vitest 597 + build OK
+
 ### R026: 收敛修复
 
 - 状态: 已完成

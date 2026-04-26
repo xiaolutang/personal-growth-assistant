@@ -22,23 +22,27 @@ export function useRelatedEntries(
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [relatedError, setRelatedError] = useState(false);
 
-  // 解析内容中的 [[note-id]] 引用
+  // 解析内容中的 [[note-id]] 或 [[note-id|标题]] 引用
   const parsedContent = useMemo(() => {
     if (!entry?.content) return entry?.content || "";
-    return entry.content.replace(/\[\[([^\]]+)\]\]/g, (_match, noteId) => {
+    return entry.content.replace(/\[\[([^\]|]+)(?:\|([^\]]*))?\]\]/g, (_match, noteId, displayTitle) => {
       const refNote = referencedNotes.get(noteId);
-      if (refNote) {
-        return `[${refNote.title}](/entry/${noteId})`;
-      }
-      return `[${noteId}](/entry/${noteId})`;
+      const title = displayTitle || refNote?.title || noteId;
+      return `[${title}](/entry/${noteId})`;
     });
   }, [entry?.content, referencedNotes]);
 
-  // 提取内容中的所有引用 ID
+  // 提取内容中的所有引用 ID（去重）
   const referenceIds = useMemo(() => {
     if (!entry?.content) return [];
-    const matches = entry.content.match(/\[\[([^\]]+)\]\]/g) || [];
-    return matches.map((m) => m.slice(2, -2));
+    const matches = entry.content.match(/\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g) || [];
+    const ids = matches.map((m) => {
+      // 提取 [[...]] 中 | 前面的 ID 部分
+      const inner = m.slice(2, -2);
+      const pipeIdx = inner.indexOf("|");
+      return pipeIdx >= 0 ? inner.slice(0, pipeIdx) : inner;
+    });
+    return [...new Set(ids)];
   }, [entry?.content]);
 
   // 关联条目独立加载

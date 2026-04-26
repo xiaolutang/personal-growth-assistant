@@ -29,6 +29,7 @@ interface UseReportDataReturn {
   aiSummary: string | null;
   goalSummary: ProgressSummaryResponse | null;
   serviceUnavailable: boolean;
+  isEmpty: boolean;
 }
 
 export function useReportData(): UseReportDataReturn {
@@ -50,6 +51,12 @@ export function useReportData(): UseReportDataReturn {
     const fetchReport = async () => {
       setIsLoading(true);
       setError(null);
+      // Clear stale report data before refetching to prevent mixed state
+      if (!cancelled) {
+        setDailyReport(null);
+        setWeeklyReport(null);
+        setMonthlyReport(null);
+      }
       try {
         await runWith503(async () => {
           if (reportType === "daily") {
@@ -82,31 +89,29 @@ export function useReportData(): UseReportDataReturn {
   // 目标进展概览
   useEffect(() => {
     let cancelled = false;
+    // Clear stale goal data before refetching
+    setGoalSummary(null);
     getProgressSummary(reportType === "monthly" ? "monthly" : "weekly")
       .then((data) => { if (!cancelled) setGoalSummary(data); })
       .catch(() => { if (!cancelled) setGoalSummary(null); });
     return () => { cancelled = true; };
   }, [reportType]);
 
-  // 派生值
-  const taskStats: TaskStats | null = (() => {
-    if (reportType === "daily") return dailyReport?.task_stats || null;
-    if (reportType === "weekly") return weeklyReport?.task_stats || null;
-    return monthlyReport?.task_stats || null;
-  })();
+  // 派生值：用字典模式消除三路 if 重复
+  const currentReport = reportType === "daily" ? dailyReport
+    : reportType === "weekly" ? weeklyReport
+    : reportType === "monthly" ? monthlyReport
+    : null;
 
-  const noteStats: NoteStats | null = (() => {
-    if (reportType === "daily") return dailyReport?.note_stats || null;
-    if (reportType === "weekly") return weeklyReport?.note_stats || null;
-    return monthlyReport?.note_stats || null;
-  })();
+  const taskStats: TaskStats | null = currentReport?.task_stats || null;
+  const noteStats: NoteStats | null = currentReport?.note_stats || null;
+  const aiSummary: string | null = currentReport?.ai_summary ?? null;
 
-  const aiSummary: string | null = (() => {
-    if (reportType === "daily") return dailyReport?.ai_summary ?? null;
-    if (reportType === "weekly") return weeklyReport?.ai_summary ?? null;
-    if (reportType === "monthly") return monthlyReport?.ai_summary ?? null;
-    return null;
-  })();
+  // Empty state: both taskStats and noteStats are zero / absent
+  const isEmpty = !isLoading && !error && !!(
+    (!taskStats || taskStats.total === 0) &&
+    (!noteStats || noteStats.total === 0)
+  );
 
   return {
     reportType,
@@ -123,5 +128,6 @@ export function useReportData(): UseReportDataReturn {
     aiSummary,
     goalSummary,
     serviceUnavailable,
+    isEmpty,
   };
 }

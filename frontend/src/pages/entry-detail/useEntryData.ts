@@ -74,7 +74,11 @@ export function useEntryData(): EntryDataState {
         }
       }
 
-      const noteIds = data.content?.match(/\[\[([^\]]+)\]\]/g)?.map((m) => m.slice(2, -2)) || [];
+      const noteIds = data.content?.match(/\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g)?.map((m) => {
+        const inner = m.slice(2, -2);
+        const pipeIdx = inner.indexOf("|");
+        return pipeIdx >= 0 ? inner.slice(0, pipeIdx) : inner;
+      }) || [];
       if (noteIds.length > 0) {
         const notesMap = new Map<string, Task>();
         await Promise.all(

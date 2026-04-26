@@ -11,11 +11,13 @@ import {
   Plus,
   Link2,
   Download,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { statusConfig, categoryConfig, priorityConfig } from "@/config/constants";
 import type { Task, TaskStatus, Priority } from "@/types/task";
+import { getDueDateInfo } from "@/lib/dueDate";
 
 interface EntryHeaderProps {
   entry: Task;
@@ -195,14 +197,37 @@ export function EntryHeader({
                   onChange={(e) => setEditPlannedDate(e.target.value)}
                   className="text-sm border rounded px-1.5 py-0.5 bg-background"
                 />
+                {editPlannedDate && (
+                  <button
+                    type="button"
+                    onClick={() => setEditPlannedDate("")}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="清除日期"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
             ) : (
-              entry.planned_date && (
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>计划 {new Date(entry.planned_date).toLocaleDateString()}</span>
-                </div>
-              )
+              entry.planned_date && (() => {
+                const due = getDueDateInfo(entry.planned_date);
+                return (
+                  <div className={`flex items-center gap-1 ${
+                    due.status === "overdue" ? "text-red-500 dark:text-red-400" :
+                    due.status === "today" ? "text-amber-500 dark:text-amber-400" :
+                    ""
+                  }`}>
+                    {due.status === "overdue" ? (
+                      <AlertTriangle className="h-4 w-4" />
+                    ) : (
+                      <Calendar className="h-4 w-4" />
+                    )}
+                    <span>
+                      {due.label}
+                    </span>
+                  </div>
+                );
+              })()
             )}
 
             {entry.created_at && (

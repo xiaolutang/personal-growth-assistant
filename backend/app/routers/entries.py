@@ -21,6 +21,8 @@ from app.api.schemas import (
     EntryLinkResponse,
     EntryLinkListResponse,
     KnowledgeContextResponse,
+    BacklinksResponse,
+    BacklinkItem,
 )
 from app.routers.deps import get_entry_service, get_current_user, get_knowledge_service
 from app.models.user import User
@@ -39,11 +41,15 @@ async def list_entries(
     parent_id: str | None = Query(None, description="父条目ID（用于获取子任务）"),
     start_date: str | None = Query(None, description="开始日期 (YYYY-MM-DD)"),
     end_date: str | None = Query(None, description="结束日期 (YYYY-MM-DD)"),
+    due: str | None = Query(None, description="到期过滤: today(今日到期) / overdue(已过期)"),
     limit: int = Query(50, ge=1, le=100, description="返回数量限制"),
     offset: int = Query(0, ge=0, description="偏移量"),
     user: User = Depends(get_current_user),
 ):
     """列出条目（优先从 SQLite 索引读取）"""
+    if due is not None and due not in ("today", "overdue"):
+        raise HTTPException(status_code=422, detail="due 参数必须是 today 或 overdue")
+
     service = get_entry_service()
     return await service.list_entries(
         type=type,
@@ -52,6 +58,7 @@ async def list_entries(
         parent_id=parent_id,
         start_date=start_date,
         end_date=end_date,
+        due=due,
         limit=limit,
         offset=offset,
         user_id=user.id,
@@ -149,6 +156,20 @@ async def get_entry(entry_id: str, user: User = Depends(get_current_user)):
     if not entry:
         raise HTTPException(status_code=404, detail=f"条目不存在: {entry_id}")
     return entry
+
+
+@router.get("/{entry_id}/backlinks", response_model=BacklinksResponse)
+async def get_backlinks(entry_id: str, user: User = Depends(get_current_user)):
+    """获取条目的反向引用列表（谁引用了这个条目）"""
+    service = get_entry_service()
+    # 先验证条目存在且属于当前用户
+    if not service._verify_entry_owner(entry_id, user.id):
+        raise HTTPException(status_code=404, detail=f"条目不存在: {entry_id}")
+
+    backlinks = await service.get_backlinks(entry_id, user_id=user.id)
+    return BacklinksResponse(
+        backlinks=[BacklinkItem(**bl) for bl in backlinks]
+    )
 
 
 @router.get("/{entry_id}/export")

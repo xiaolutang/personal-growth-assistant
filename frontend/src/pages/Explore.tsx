@@ -1,4 +1,5 @@
-import { Loader2, Pencil } from "lucide-react";
+import { AlertCircle, Loader2, Pencil, RefreshCw } from "lucide-react";
+import { ErrorState } from "@/components/ErrorState";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { TaskList } from "@/components/TaskList";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ export function Explore() {
     filteredTasks,
     setEntries,
     setSearchResults,
+    onSyncCompleted: () => loadEntries(),
   });
 
   const showPanel = showSuggestions && !searchQuery.trim();
@@ -134,7 +136,7 @@ export function Explore() {
                 ? `${TABS.find((t) => t.key === activeTab)?.label} (${filteredTasks.length})`
                 : `全部 (${filteredTasks.length})`}
           </CardTitle>
-          {!isLoading && !entriesError && filteredTasks.length > 0 && (
+          {!isLoading && !entriesError && filteredTasks.length > 0 && !searchError && (
             !batch.selectMode ? (
               <Button variant="outline" size="sm" onClick={batch.enterSelectMode}>
                 <Pencil className="h-4 w-4 mr-1" />
@@ -157,16 +159,8 @@ export function Explore() {
             <Loader2 className="h-4 w-4 animate-spin" />
             加载中...
           </div>
-        ) : entriesError ? (
-          <div className="flex flex-col items-center justify-center gap-3 p-8 text-muted-foreground">
-            <p>{entriesError}</p>
-            <button
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm"
-              onClick={() => window.location.reload()}
-            >
-              重试
-            </button>
-          </div>
+        ) : entriesError && filteredTasks.length === 0 ? (
+          <ErrorState message={entriesError} onRetry={() => loadEntries()} />
         ) : isSearching ? (
           <div className="flex items-center justify-center gap-2 p-4 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -176,6 +170,22 @@ export function Explore() {
           <div className="p-4 text-center text-red-500 dark:text-red-400">{searchError}</div>
         ) : (
           <div onTouchStart={batch.selectMode ? undefined : undefined}>
+            {/* 部分失败提示条：有错误但已有数据时显示 */}
+            {entriesError && filteredTasks.length > 0 && (
+              <div className="flex items-center justify-between gap-2 mx-4 mt-2 mb-3 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>部分数据加载失败</span>
+                </div>
+                <button
+                  className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 transition-colors"
+                  onClick={() => loadEntries()}
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  重试
+                </button>
+              </div>
+            )}
             <TaskList
               tasks={filteredTasks}
               emptyMessage={emptyMessage}
@@ -197,6 +207,36 @@ export function Explore() {
           onBatchCategory={batch.handleBatchCategory}
           onBatchDelete={batch.handleBatchDelete}
         />
+      )}
+
+      {/* 离线批量操作提示 */}
+      {batch.offlineMode && batch.selectMode && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 text-sm text-amber-700 dark:text-amber-300 shadow-lg">
+          当前离线，操作将在联网后自动同步
+        </div>
+      )}
+
+      {/* 部分失败条目提示 */}
+      {batch.failedItems.length > 0 && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 max-w-sm px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 shadow-lg">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 mt-0.5 text-red-500 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-red-700 dark:text-red-300">
+                {batch.failedItems.length} 条操作失败
+              </p>
+              <p className="text-xs text-red-600 dark:text-red-400 mt-1 truncate">
+                {batch.failedItems.map((f) => f.title).join("、")}
+              </p>
+            </div>
+            <button
+              className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-300 shrink-0"
+              onClick={batch.clearFailedItems}
+            >
+              关闭
+            </button>
+          </div>
+        </div>
       )}
 
       {/* 搜索助手 AI */}

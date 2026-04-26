@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -9,6 +10,7 @@ import { categoryConfig } from "@/config/constants";
 import type { Task } from "@/types/task";
 import { StructuredContent } from "./StructuredContent";
 import { getMarkdownComponents } from "./MarkdownComponents";
+import { getEntries } from "@/services/api";
 
 interface ContentSectionProps {
   entry: Task;
@@ -21,6 +23,25 @@ interface ContentSectionProps {
   isSaving: boolean;
   setEditContent: React.Dispatch<React.SetStateAction<string>>;
   setContentTab: React.Dispatch<React.SetStateAction<"preview" | "edit">>;
+}
+
+/** 从光标位置向前检测 [[ 触发词，返回搜索词和起始位置 */
+function detectLinkTrigger(value: string, cursorPos: number): { searchQuery: string; startPos: number } | null {
+  // 从光标向前找 [[
+  const textBefore = value.slice(0, cursorPos);
+  const openIdx = textBefore.lastIndexOf("[[");
+  if (openIdx === -1) return null;
+
+  // 确保 [[ 后面到光标之间没有换行或 ]]
+  const between = textBefore.slice(openIdx + 2);
+  if (between.includes("\n") || between.includes("]]")) return null;
+
+  return { searchQuery: between, startPos: openIdx };
+}
+
+interface NoteCandidate {
+  id: string;
+  title: string;
 }
 
 export function ContentSection({
@@ -36,6 +57,148 @@ export function ContentSection({
   setContentTab,
 }: ContentSectionProps) {
   const navigate = useNavigate();
+
+  // --- 补全状态 ---
+  const [showCompletion, setShowCompletion] = useState(false);
+  const [completionItems, setCompletionItems] = useState<NoteCandidate[]>([]);
+  const [completionLoading, setCompletionLoading] = useState(false);
+  const [completionError, setCompletionError] = useState(false);
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [triggerInfo, setTriggerInfo] = useState<{ searchQuery: string; startPos: number } | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 笔记列表缓存（首次触发后缓存）
+  const notesCacheRef = useRef<NoteCandidate[] | null>(null);
+
+  // 追踪当前是否有活跃的 [[ trigger（用于 await 后的陈旧检查）
+  const activeTriggerRef = useRef(false);
+
+  // 过滤匹配
+  const filteredItems = triggerInfo
+    ? completionItems.filter((item) => {
+        const q = triggerInfo.searchQuery.toLowerCase();
+        return item.title.toLowerCase().includes(q) || item.id.toLowerCase().includes(q);
+      }).sort((a, b) => {
+        const q = triggerInfo.searchQuery.toLowerCase();
+        const aTitle = a.title.toLowerCase();
+        const bTitle = b.title.toLowerCase();
+        const aStarts = aTitle.startsWith(q) ? 0 : aTitle.includes(q) ? 1 : 2;
+        const bStarts = bTitle.startsWith(q) ? 0 : bTitle.includes(q) ? 1 : 2;
+        return aStarts - bStarts;
+      })
+    : completionItems;
+
+  // 加载笔记列表
+  const loadNotes = useCallback(async () => {
+    if (notesCacheRef.current) return notesCacheRef.current;
+    setCompletionLoading(true);
+    setCompletionError(false);
+    try {
+      const res = await getEntries({ type: "note", limit: 200 });
+      const notes: NoteCandidate[] = res.entries.map((e) => ({ id: e.id, title: e.title }));
+      notesCacheRef.current = notes;
+      return notes;
+    } catch {
+      setCompletionError(true);
+      return null;
+    } finally {
+      setCompletionLoading(false);
+    }
+  }, []);
+
+  // textarea onChange 处理
+  const handleContentChange = useCallback(
+    async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const value = e.target.value;
+      const cursorPos = e.target.selectionStart ?? value.length;
+      setEditContent(value);
+
+      const trigger = detectLinkTrigger(value, cursorPos);
+      if (trigger) {
+        setTriggerInfo(trigger);
+        setSelectedIdx(0);
+        activeTriggerRef.current = true;
+
+        if (!notesCacheRef.current && !completionLoading && !completionError) {
+          const notes = await loadNotes();
+          if (!notes) {
+            // API 失败，静默降级
+            setShowCompletion(false);
+            activeTriggerRef.current = false;
+            return;
+          }
+          setCompletionItems(notes);
+          // await 后重新检查：用户可能在等待期间删除了 [[，此时 ref 已被置为 false
+          if (!activeTriggerRef.current) {
+            return;
+          }
+        }
+        setShowCompletion(true);
+      } else {
+        setShowCompletion(false);
+        setTriggerInfo(null);
+        activeTriggerRef.current = false;
+      }
+    },
+    [setEditContent, loadNotes, completionLoading, completionError],
+  );
+
+  // 选中补全项
+  const handleSelectItem = useCallback(
+    (item: NoteCandidate) => {
+      if (!triggerInfo) return;
+      const before = editContent.slice(0, triggerInfo.startPos);
+      const after = editContent.slice(textareaRef.current?.selectionStart ?? editContent.length);
+      const insertion = `[[${item.id}|${item.title}]]`;
+      setEditContent(before + insertion + after);
+      setShowCompletion(false);
+      setTriggerInfo(null);
+      // 恢复光标
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          const newPos = before.length + insertion.length;
+          textareaRef.current.selectionStart = newPos;
+          textareaRef.current.selectionEnd = newPos;
+          textareaRef.current.focus();
+        }
+      });
+    },
+    [triggerInfo, editContent, setEditContent],
+  );
+
+  // 键盘导航
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (!showCompletion || filteredItems.length === 0) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIdx((prev) => (prev + 1) % filteredItems.length);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIdx((prev) => (prev - 1 + filteredItems.length) % filteredItems.length);
+      } else if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSelectItem(filteredItems[selectedIdx]);
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        setShowCompletion(false);
+        setTriggerInfo(null);
+      }
+    },
+    [showCompletion, filteredItems, selectedIdx, handleSelectItem],
+  );
+
+  // 点击外部关闭补全
+  useEffect(() => {
+    if (!showCompletion) return;
+    const handleClickOutside = () => {
+      setShowCompletion(false);
+      setTriggerInfo(null);
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [showCompletion]);
 
   return (
     <>
@@ -67,15 +230,48 @@ export function ContentSection({
       )}
 
       {isEditing && contentTab === "edit" ? (
-        <div className="space-y-3">
+        <div className="space-y-3 relative">
           <Textarea
+            ref={textareaRef}
             value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            placeholder="输入 Markdown 格式的内容..."
+            onChange={handleContentChange}
+            onKeyDown={handleKeyDown}
+            placeholder="输入 Markdown 格式的内容... 输入 [[ 引用其他笔记"
             className="min-h-[300px] md:min-h-[400px] font-mono text-sm w-full"
             disabled={isSaving}
           />
-          <p className="text-xs text-muted-foreground">内容修改后 1 秒自动保存</p>
+
+          {/* 补全弹窗 */}
+          {showCompletion && !completionError && (
+            <div
+              className="absolute z-50 left-0 right-0 max-h-[240px] overflow-y-auto rounded-lg border bg-popover shadow-lg"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {completionLoading ? (
+                <div className="px-3 py-2 text-sm text-muted-foreground">加载中...</div>
+              ) : filteredItems.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-muted-foreground">无匹配笔记</div>
+              ) : (
+                filteredItems.map((item, idx) => (
+                  <div
+                    key={item.id}
+                    className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
+                      idx === selectedIdx
+                        ? "bg-primary/10 text-primary"
+                        : "hover:bg-muted"
+                    }`}
+                    onClick={() => handleSelectItem(item)}
+                    onMouseEnter={() => setSelectedIdx(idx)}
+                  >
+                    <span className="font-medium">{item.title}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">{item.id}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          <p className="text-xs text-muted-foreground">内容修改后 1 秒自动保存 · 输入 [[ 引用其他笔记</p>
         </div>
       ) : (
         <div className="space-y-4">

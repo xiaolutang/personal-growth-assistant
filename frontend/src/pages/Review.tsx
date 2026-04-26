@@ -10,7 +10,7 @@ import {
   BarChart3,
   Calendar,
   Loader2,
-  AlertCircle,
+  Inbox,
 } from "lucide-react";
 import type { VsLastPeriod } from "@/services/api";
 import { TrendChart } from "@/components/review/TrendChart";
@@ -21,6 +21,7 @@ import { AiSummaryCard } from "@/components/review/AiSummaryCard";
 import { InsightCard } from "@/components/review/InsightCard";
 import { PageChatPanel } from "@/components/PageChatPanel";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
+import { ErrorState } from "@/components/ErrorState";
 
 // Hooks
 import { useReportData } from "./review/useReportData";
@@ -41,7 +42,7 @@ export function Review() {
     isLoading, error, setRetryKey,
     dailyReport, weeklyReport, monthlyReport,
     taskStats, noteStats, aiSummary, goalSummary,
-    serviceUnavailable,
+    serviceUnavailable, isEmpty,
   } = useReportData();
 
   const { insightsData, insightsLoading } = useInsights(reportType);
@@ -134,12 +135,21 @@ export function Review() {
             )}
 
             {isLoading ? (
-              <div className="flex items-center justify-center h-64 text-muted-foreground"><Loader2 className="h-6 w-6 animate-spin" /></div>
-            ) : error ? (
               <div className="flex flex-col items-center justify-center h-64 gap-3 text-muted-foreground">
-                <AlertCircle className="h-8 w-8" />
-                <p>{error}</p>
-                <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm" onClick={() => setRetryKey((k) => k + 1)}>重试</button>
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm">加载报告数据...</p>
+              </div>
+            ) : error ? (
+              <ErrorState message={error} onRetry={() => setRetryKey((k) => k + 1)} />
+            ) : isEmpty ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                  <Inbox className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">暂无报告数据</h3>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                  开始记录任务和笔记后，这里会显示你的成长报告
+                </p>
               </div>
             ) : (
               <div className="space-y-6">

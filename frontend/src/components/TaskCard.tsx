@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Circle, CheckCircle, Clock, Trash2, Pause, XCircle, Folder, MoreHorizontal, Loader2, ArrowRightCircle, FileText, CheckSquare, Square } from "lucide-react";
+import { Circle, CheckCircle, Clock, Trash2, Pause, XCircle, Folder, MoreHorizontal, Loader2, ArrowRightCircle, FileText, CheckSquare, Square, Calendar, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import type { Task, Category } from "@/types/task";
 import { useTaskStore } from "@/stores/taskStore";
 import { nextStatusMap, priorityConfig } from "@/config/constants";
 import { toast } from "sonner";
+import { getDueDateInfo } from "@/lib/dueDate";
 
 interface TaskCardProps {
   task: Task;
@@ -18,6 +19,15 @@ interface TaskCardProps {
   selected?: boolean;
   onSelect?: (id: string) => void;
   disableActions?: boolean;
+}
+
+/** UTF-8 安全截取：确保不在 surrogate pair 中间断断 */
+export function safeTruncate(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text;
+  // 使用 Array.from 按码点拆分，避免在 surrogate pair 中间截断
+  const chars = Array.from(text);
+  if (chars.length <= maxLen) return text;
+  return chars.slice(0, maxLen).join("") + "...";
 }
 
 /** 高亮文本中所有匹配的关键词（大小写不敏感，索引安全） */
@@ -70,6 +80,11 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
   // 查找父项目
   const parentProject = showParent && task.parent_id
     ? tasks.find(t => t.id === task.parent_id && t.category === "project")
+    : null;
+
+  // 搜索模式下展示内容摘要（截取前 100 字符）
+  const snippetText = highlightKeyword
+    ? safeTruncate(task.content_snippet || task.content || "", 100)
     : null;
 
   const handleStatusChange = (e: React.MouseEvent) => {
@@ -126,17 +141,11 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
     }
   };
 
-  // 格式化日期
-  const formatDate = () => {
-    if (!task.planned_date) return null;
-    const date = new Date(task.planned_date);
-    const today = new Date();
-    const isToday = date.toDateString() === today.toDateString();
-    if (isToday) {
-      return date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
-    }
-    return date.toLocaleDateString("zh-CN", { month: "short", day: "numeric" });
-  };
+  // 截止日期状态判断
+  const dueDateResult = getDueDateInfo(task.planned_date);
+  const dueDateInfo = dueDateResult.status !== "none"
+    ? { isOverdue: dueDateResult.status === "overdue", isDueToday: dueDateResult.status === "today", displayText: dueDateResult.label, plannedDateStr: dueDateResult.dateStr! }
+    : null;
 
   // 标签最多显示2个
   const displayTags = task.tags?.slice(0, 2) || [];
@@ -187,9 +196,11 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
             }
           </p>
         </div>
-        {/* Content snippet (search results) */}
-        {task.content_snippet && (
-          <p className="text-xs text-muted-foreground mt-0.5 truncate">{task.content_snippet}</p>
+        {/* Content snippet (search results only) */}
+        {snippetText && (
+          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+            <HighlightText text={snippetText} keyword={highlightKeyword!} />
+          </p>
         )}
 
         {/* Meta Info: parent, date, tags */}
@@ -200,7 +211,24 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
               <span className="truncate max-w-[80px]">{parentProject.title}</span>
             </span>
           )}
-          {formatDate() && <span>{formatDate()}</span>}
+          {dueDateInfo && (
+            <span
+              className={cn(
+                "flex items-center gap-0.5",
+                dueDateInfo.isOverdue && "text-red-500 dark:text-red-400",
+                dueDateInfo.isDueToday && "text-amber-500 dark:text-amber-400",
+                !dueDateInfo.isOverdue && !dueDateInfo.isDueToday && "text-muted-foreground"
+              )}
+              data-testid="due-date-badge"
+            >
+              {dueDateInfo.isOverdue ? (
+                <AlertTriangle className="h-3 w-3" />
+              ) : (
+                <Calendar className="h-3 w-3" />
+              )}
+              {dueDateInfo.displayText}
+            </span>
+          )}
           {displayTags.map((tag) => (
             <Badge key={tag} variant="outline" className="text-[10px] px-1 h-4">
               {tag}
@@ -225,7 +253,7 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-primary"
+              className="h-6 w-6 min-h-[44px] min-w-[44px] text-muted-foreground hover:text-primary"
               onClick={handleMenuToggle}
               disabled={converting}
             >

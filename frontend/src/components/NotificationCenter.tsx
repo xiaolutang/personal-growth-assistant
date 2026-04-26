@@ -48,10 +48,10 @@ export function NotificationCenter() {
     loadNotifications();
   }, []);
 
+  // 后台 + 前台轮询：面板关闭时 300s 低频，面板打开时 60s 高频
   useEffect(() => {
-    if (!open) return;
-    // 面板打开时每 60 秒轮询刷新通知
-    const interval = setInterval(loadNotifications, 60_000);
+    const intervalMs = open ? 60_000 : 300_000;
+    const interval = setInterval(loadNotifications, intervalMs);
     return () => clearInterval(interval);
   }, [open]);
 

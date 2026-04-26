@@ -16,6 +16,8 @@ from app.api.schemas.entry import (
     KnowledgeContextNode,
     KnowledgeContextEdge,
     KnowledgeContextResponse,
+    BacklinkItem,
+    BacklinksResponse,
 )
 from app.api.schemas.common import (
     SuccessResponse,
@@ -49,6 +51,8 @@ __all__ = [
     "KnowledgeContextNode",
     "KnowledgeContextEdge",
     "KnowledgeContextResponse",
+    "BacklinkItem",
+    "BacklinksResponse",
     "GoalCreate",
     "GoalUpdate",
     "GoalResponse",

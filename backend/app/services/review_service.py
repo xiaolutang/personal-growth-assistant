@@ -5,7 +5,33 @@ import logging
 from datetime import date, datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional, TYPE_CHECKING
 
-from app.models.review import *  # noqa: F401,F403 — re-export for backward compat
+from app.models.review import (
+    TaskStats,
+    NoteStats,
+    DailyReport,
+    WeeklyReport,
+    MonthlyReport,
+    TrendPeriod,
+    TrendResponse,
+    HeatmapItem,
+    HeatmapResponse,
+    GrowthCurvePoint,
+    GrowthCurveResponse,
+    VsLastPeriod,
+    ActivityHeatmapItem,
+    ActivityHeatmapResponse,
+    BehaviorPattern,
+    GrowthSuggestion,
+    CapabilityChange,
+    DeepInsights,
+    InsightsResponse,
+    MorningDigestTodo,
+    MorningDigestOverdue,
+    MorningDigestStaleInbox,
+    MorningDigestWeeklySummary,
+    DailyFocus,
+    MorningDigestResponse,
+)
 from app.utils.mastery import calculate_mastery_from_stats
 from app.services.review.morning_digest import (
     MorningDigestMixin,
@@ -20,9 +46,22 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Backward compat: 保持模块级缓存变量可被外部测试 import
-__all__ = ["ReviewService", "_MORNING_DIGEST_CACHE_MAX", "_morning_digest_cache",
-           "_morning_digest_lock", "_morning_digest_pending"]
+# Backward compat: 保持模块级 re-export 和缓存变量可被外部测试 import
+__all__ = [
+    "ReviewService",
+    "TaskStats", "NoteStats", "DailyReport", "WeeklyReport", "MonthlyReport",
+    "TrendPeriod", "TrendResponse",
+    "HeatmapItem", "HeatmapResponse",
+    "GrowthCurvePoint", "GrowthCurveResponse",
+    "VsLastPeriod",
+    "ActivityHeatmapItem", "ActivityHeatmapResponse",
+    "BehaviorPattern", "GrowthSuggestion", "CapabilityChange",
+    "DeepInsights", "InsightsResponse",
+    "MorningDigestTodo", "MorningDigestOverdue", "MorningDigestStaleInbox",
+    "MorningDigestWeeklySummary", "DailyFocus", "MorningDigestResponse",
+    "_MORNING_DIGEST_CACHE_MAX", "_morning_digest_cache",
+    "_morning_digest_lock", "_morning_digest_pending",
+]
 
 
 class ReviewService(MorningDigestMixin, InsightsMixin):

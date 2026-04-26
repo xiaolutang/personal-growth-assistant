@@ -96,6 +96,14 @@ export interface KnowledgeContextResponse {
   nodes: KnowledgeContextNode[]; edges: KnowledgeContextEdge[]; center_concepts: string[];
 }
 export type EntryLinkItem = S["EntryLinkItem"];
+export interface BacklinkItem {
+  id: string;
+  title: string;
+  category: string;
+}
+export interface BacklinksResponse {
+  backlinks: BacklinkItem[];
+}
 export type EntryLinkListResponse = S["EntryLinkListResponse"];
 export type MasteryDistributionResponse = S["MasteryDistributionResponse"];
 export type ConceptTimelineResponse = S["ConceptTimelineResponse"];
@@ -494,6 +502,18 @@ export async function toggleChecklistItem(goalId: string, itemId: string): Promi
 export async function getProgressSummary(period?: string): Promise<ProgressSummaryResponse> {
   const { data, error, response } = await client.GET("/goals/progress-summary", { params: { query: period ? { period } : undefined } });
   return handleOpenApiResponse<ProgressSummaryResponse>(data as ProgressSummaryResponse | undefined, error, response);
+}
+
+// === 反向引用（backlinks） ===
+export async function getBacklinks(entryId: string): Promise<BacklinksResponse> {
+  try {
+    const response = await authFetch(`${API_BASE}/entries/${entryId}/backlinks`);
+    if (!response.ok) throw new ApiError(response.status, `Backlinks API error: ${response.status}`);
+    return await response.json() as BacklinksResponse;
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+    throw new ApiError(0, "Network error", {});
+  }
 }
 
 // 导出错误类供外部使用
