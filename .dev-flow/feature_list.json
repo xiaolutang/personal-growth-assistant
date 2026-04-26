@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 18,
-    "pending": 9,
-    "completed": 9,
+    "pending": 8,
+    "completed": 10,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 4
@@ -294,7 +294,14 @@
       "description": "搜索结果展示内容摘要而非仅标题，提升信息密度。Explore 页搜索结果通过 TaskList/TaskCard 渲染（非 SearchResultCard，后者用于 FloatingChat），需要在 TaskCard 中展示 content_snippet。",
       "verification": "F1",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-26T19:35:00+0800",
+      "completed_at": "2026-04-26T20:00:00+0800",
+      "actual_minutes": 25,
+      "commit": "pending",
+      "evidence_file": ".dev-flow/evidence/F141.md",
+      "execution_notes": "TaskCard 搜索模式 snippet + HighlightText; safeTruncate UTF-8 安全; 18 测试; vitest 575 build OK",
+      "summary": "搜索结果内容摘要 + 关键词高亮，18 测试，vitest 575 passed",
       "priority": "P2",
       "acceptance_criteria": [
         "TaskCard 在搜索模式下显示 content_snippet 摘要（截取前 100 字符）",
