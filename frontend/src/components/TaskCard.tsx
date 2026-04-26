@@ -20,6 +20,15 @@ interface TaskCardProps {
   disableActions?: boolean;
 }
 
+/** UTF-8 安全截取：确保不在 surrogate pair 中间断断 */
+export function safeTruncate(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text;
+  // 使用 Array.from 按码点拆分，避免在 surrogate pair 中间截断
+  const chars = Array.from(text);
+  if (chars.length <= maxLen) return text;
+  return chars.slice(0, maxLen).join("") + "...";
+}
+
 /** 高亮文本中所有匹配的关键词（大小写不敏感，索引安全） */
 function HighlightText({ text, keyword }: { text: string; keyword: string }) {
   if (!keyword) return <>{text}</>;
@@ -70,6 +79,11 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
   // 查找父项目
   const parentProject = showParent && task.parent_id
     ? tasks.find(t => t.id === task.parent_id && t.category === "project")
+    : null;
+
+  // 搜索模式下展示内容摘要（截取前 100 字符）
+  const snippetText = highlightKeyword
+    ? safeTruncate(task.content_snippet || task.content || "", 100)
     : null;
 
   const handleStatusChange = (e: React.MouseEvent) => {
@@ -187,9 +201,11 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
             }
           </p>
         </div>
-        {/* Content snippet (search results) */}
-        {task.content_snippet && (
-          <p className="text-xs text-muted-foreground mt-0.5 truncate">{task.content_snippet}</p>
+        {/* Content snippet (search results only) */}
+        {snippetText && (
+          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+            <HighlightText text={snippetText} keyword={highlightKeyword!} />
+          </p>
         )}
 
         {/* Meta Info: parent, date, tags */}
