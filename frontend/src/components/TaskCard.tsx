@@ -242,7 +242,7 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
 
       {/* Priority & Actions */}
       <div className="flex items-center gap-1 flex-shrink-0">
-        {priority && task.priority !== "medium" && (
+        {priority && (
           <Badge variant={priority.variant} className="text-[10px] px-1 h-4">
             {priority.label}
           </Badge>

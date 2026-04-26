@@ -5,22 +5,24 @@ import { TaskList } from "@/components/TaskList";
 import { Header } from "@/components/layout/Header";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { PullToRefresh } from "@/components/PullToRefresh";
-import { Filter, X, Calendar, Loader2, Pencil, Trash2, FolderInput, ClipboardList, SearchX } from "lucide-react";
+import { Filter, X, Calendar, Loader2, Pencil, Trash2, FolderInput, ClipboardList, SearchX, ArrowUpDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { statusConfig } from "@/config/constants";
 import { useTaskStore } from "@/stores/taskStore";
 
 // Constants & Hooks
-import { STATUS_OPTIONS, TASK_QUERY_PARAMS, QUICK_DATE_OPTIONS } from "./tasks/constants";
+import { STATUS_OPTIONS, TASK_QUERY_PARAMS, QUICK_DATE_OPTIONS, PRIORITY_OPTIONS, SORT_OPTIONS } from "./tasks/constants";
 import { useTaskFilters } from "./tasks/useTaskFilters";
 
 export function Tasks() {
   const {
     showFilters, setShowFilters,
     selectedStatus, setSelectedStatus,
+    selectedPriority, setSelectedPriority,
     quickDate, setQuickDate,
     startDate, setStartDate,
     endDate, setEndDate,
+    sortBy, setSortBy,
     clearFilters, hasActiveFilters,
     filteredTasks,
     selectMode, selectedIds, batchLoading,
@@ -104,6 +106,22 @@ export function Tasks() {
               </div>
 
               <div>
+                <div className="text-sm font-medium mb-2">优先级</div>
+                <div className="flex flex-wrap gap-2">
+                  {PRIORITY_OPTIONS.map((opt) => (
+                    <Badge
+                      key={opt.value}
+                      variant={selectedPriority === opt.value ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() => setSelectedPriority(selectedPriority === opt.value ? null : opt.value)}
+                    >
+                      {opt.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div>
                 <div className="text-sm font-medium mb-2 flex items-center gap-1"><Calendar className="h-4 w-4" />时间范围</div>
                 <div className="flex flex-wrap gap-2">
                   {QUICK_DATE_OPTIONS.map((opt) => (
@@ -125,6 +143,22 @@ export function Tasks() {
                     <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setQuickDate("all"); }} className="text-sm border rounded px-2 py-1" />
                   </div>
                 )}
+              </div>
+
+              <div>
+                <div className="text-sm font-medium mb-2 flex items-center gap-1"><ArrowUpDown className="h-4 w-4" />排序</div>
+                <div className="flex flex-wrap gap-2">
+                  {SORT_OPTIONS.map((opt) => (
+                    <Badge
+                      key={opt.value}
+                      variant={sortBy === opt.value ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() => setSortBy(opt.value)}
+                    >
+                      {opt.label}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             </div>
           )}

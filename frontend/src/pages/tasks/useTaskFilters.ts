@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTaskStore } from "@/stores/taskStore";
-import type { Task, TaskStatus, Category } from "@/types/task";
+import type { Task, TaskStatus, Category, Priority } from "@/types/task";
 import { toast } from "sonner";
-import { TASK_QUERY_PARAMS } from "./constants";
+import { TASK_QUERY_PARAMS, type SortOption } from "./constants";
 
 // 获取日期范围
 function getDateRange(option: string) {
@@ -41,12 +42,16 @@ interface UseTaskFiltersReturn {
   setShowFilters: (v: boolean) => void;
   selectedStatus: TaskStatus | null;
   setSelectedStatus: (s: TaskStatus | null) => void;
+  selectedPriority: Priority | null;
+  setSelectedPriority: (p: Priority | null) => void;
   quickDate: string;
   setQuickDate: (v: string) => void;
   startDate: string;
   setStartDate: (v: string) => void;
   endDate: string;
   setEndDate: (v: string) => void;
+  sortBy: SortOption;
+  setSortBy: (s: SortOption) => void;
   clearFilters: () => void;
   hasActiveFilters: boolean;
 
@@ -75,13 +80,49 @@ export function useTaskFilters(): UseTaskFiltersReturn {
   const serviceUnavailable = useTaskStore((state) => state.serviceUnavailable);
   const deleteTask = useTaskStore((state) => state.deleteTask);
   const storeUpdateEntry = useTaskStore((state) => state.updateEntry);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // 从 URL 初始化筛选状态
+  const initStatus = searchParams.get("status") as TaskStatus | null;
+  const initPriority = searchParams.get("priority") as Priority | null;
+  const initSort = (searchParams.get("sort_by") ?? "") as SortOption;
 
   // 筛选状态
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<TaskStatus | null>(null);
+  const [selectedStatus, setSelectedStatusRaw] = useState<TaskStatus | null>(initStatus);
+  const [selectedPriority, setSelectedPriorityRaw] = useState<Priority | null>(initPriority);
+  const [sortBy, setSortByRaw] = useState<SortOption>(initSort);
   const [quickDate, setQuickDate] = useState<string>("all");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+
+  // URL 同步的 setter
+  const setSelectedStatus = useCallback((s: TaskStatus | null) => {
+    setSelectedStatusRaw(s);
+    setSearchParams((prev) => {
+      if (s) prev.set("status", s);
+      else prev.delete("status");
+      return prev;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  const setSelectedPriority = useCallback((p: Priority | null) => {
+    setSelectedPriorityRaw(p);
+    setSearchParams((prev) => {
+      if (p) prev.set("priority", p);
+      else prev.delete("priority");
+      return prev;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  const setSortBy = useCallback((s: SortOption) => {
+    setSortByRaw(s);
+    setSearchParams((prev) => {
+      if (s) prev.set("sort_by", s);
+      else prev.delete("sort_by");
+      return prev;
+    }, { replace: true });
+  }, [setSearchParams]);
 
   // 多选状态
   const [selectMode, setSelectMode] = useState(false);
@@ -113,6 +154,10 @@ export function useTaskFilters(): UseTaskFiltersReturn {
       result = result.filter((task) => task.status === selectedStatus);
     }
 
+    if (selectedPriority) {
+      result = result.filter((task) => task.priority === selectedPriority);
+    }
+
     if (startDate) {
       result = result.filter((task) => {
         const taskDate = task.planned_date || task.created_at;
@@ -128,17 +173,35 @@ export function useTaskFilters(): UseTaskFiltersReturn {
       });
     }
 
+    // 排序
+    if (sortBy === "priority") {
+      const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+      result = [...result].sort((a, b) => {
+        const pa = a.priority ? priorityOrder[a.priority] : 99;
+        const pb = b.priority ? priorityOrder[b.priority] : 99;
+        return pa - pb;
+      });
+    } else if (sortBy === "created_at") {
+      result = [...result].sort((a, b) => {
+        const da = a.created_at || "";
+        const db = b.created_at || "";
+        return db.localeCompare(da);
+      });
+    }
+
     return result;
-  }, [allTasks, selectedStatus, startDate, endDate]);
+  }, [allTasks, selectedStatus, selectedPriority, startDate, endDate, sortBy]);
 
   const clearFilters = () => {
     setSelectedStatus(null);
+    setSelectedPriority(null);
+    setSortBy("");
     setQuickDate("all");
     setStartDate("");
     setEndDate("");
   };
 
-  const hasActiveFilters = !!(selectedStatus || startDate || endDate);
+  const hasActiveFilters = !!(selectedStatus || selectedPriority || sortBy || startDate || endDate);
 
   // 多选操作
   const enterSelectMode = useCallback(() => {
@@ -212,12 +275,16 @@ export function useTaskFilters(): UseTaskFiltersReturn {
     setShowFilters,
     selectedStatus,
     setSelectedStatus,
+    selectedPriority,
+    setSelectedPriority,
     quickDate,
     setQuickDate,
     startDate,
     setStartDate,
     endDate,
     setEndDate,
+    sortBy,
+    setSortBy,
     clearFilters,
     hasActiveFilters,
     filteredTasks,
