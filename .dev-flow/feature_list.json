@@ -35,9 +35,9 @@
     "summary": {
       "total": 8,
       "by_status": {
-        "pending": 4,
+        "pending": 3,
         "in_progress": 0,
-        "completed": 4,
+        "completed": 5,
         "in_progress": 0,
         "completed": 0,
         "cancelled": 0
@@ -176,7 +176,10 @@
       "description": "在条目创建流程中增加模板选择功能。当 category=note 时，显示可选模板列表，选择后预填 content。不影响现有其他类型的创建流程。",
       "verification": "F2",
       "depends_on": ["B110"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-26",
+      "completed_at": "2026-04-26",
+      "evidence_file": ".dev-flow/evidence/F148.md",
       "priority": "P1",
       "acceptance_criteria": [
         "创建笔记时可选择模板",

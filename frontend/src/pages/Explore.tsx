@@ -1,4 +1,6 @@
 import { AlertCircle, Loader2, Pencil, RefreshCw } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { ErrorState } from "@/components/ErrorState";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { TaskList } from "@/components/TaskList";
@@ -6,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Header } from "@/components/layout/Header";
 import { PageChatPanel } from "@/components/PageChatPanel";
+import { useTaskStore } from "@/stores/taskStore";
+import type { EntryTemplate } from "@/services/api";
 
 // Hooks
 import { useSearchHistory } from "./explore/useSearchHistory";
@@ -16,6 +20,7 @@ import { useBatchOperations } from "./explore/useBatchOperations";
 import { SearchBar } from "./explore/SearchBar";
 import { FilterBar } from "./explore/FilterBar";
 import { BatchActionBar } from "./explore/BatchActionBar";
+import { TemplateSelector } from "./explore/TemplateSelector";
 
 // Utils
 import { TABS } from "./explore/utils";
@@ -57,6 +62,26 @@ export function Explore() {
     retryService,
     searchInputRef,
   } = search;
+
+  // 模板创建
+  const navigate = useNavigate();
+  const createEntry = useTaskStore((state) => state.createEntry);
+  const isCreating = useTaskStore((state) => state.isLoading);
+
+  const handleTemplateSelected = async (template: EntryTemplate) => {
+    try {
+      const entry = await createEntry({
+        type: "note",
+        title: template.name,
+        content: template.content,
+        template_id: template.id,
+      });
+      toast.success(`已创建笔记：${template.name}`);
+      navigate(`/entry/${entry.id}`);
+    } catch {
+      toast.error("创建笔记失败，请重试");
+    }
+  };
 
   // 批量操作
   const batch = useBatchOperations({
@@ -125,6 +150,18 @@ export function Explore() {
           );
         })}
       </div>
+
+      {/* 笔记模板选择器（仅在 note tab 时显示） */}
+      <TemplateSelector
+        activeTab={activeTab}
+        onTemplateSelected={handleTemplateSelected}
+      />
+      {isCreating && activeTab === "note" && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          创建笔记中...
+        </div>
+      )}
 
       {/* 内容区域 */}
       <Card>

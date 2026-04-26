@@ -39,6 +39,7 @@ export interface EntryCreate {
   priority?: Priority;
   planned_date?: string;
   time_spent?: number;
+  template_id?: string;
 }
 
 // 更新条目请求
