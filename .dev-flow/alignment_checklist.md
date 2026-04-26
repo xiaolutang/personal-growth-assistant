@@ -1,5 +1,32 @@
 # 对齐清单
 
+## R037: 全面补齐与功能增强
+
+### 契约对齐
+
+- [ ] B105: CONTRACT-DUE01 (GET /entries?due=) — 基于已有 planned_date 字段，不新增 due_date
+- [ ] B107: CONTRACT-BACKLINK01 (GET /entries/{id}/backlinks)
+- [ ] F145 无需 gen:types（复用已有 planned_date 类型）
+- [ ] F147 无需 gen:types（backlinks 为新增独立 API，前端手写类型即可）
+
+### 依赖对齐
+
+- [ ] F132 无外部依赖（HybridSearchService 已集成）
+- [ ] F134-F141 无外部依赖（独立体验打磨）
+- [ ] F142 无外部依赖（离线队列扩展）
+- [ ] F143 无外部依赖（多选框架）
+- [ ] F144 depends_on F143 ✓ + F142 ✓（批量操作复用离线队列）
+- [ ] F145 depends_on B105 ✓（前端消费后端 due_date 契约）
+- [ ] F147 depends_on B107 ✓（前端消费后端 backlinks 契约）
+- [ ] S35 depends_on 所有 pending 任务 ✓
+
+### 架构对齐
+
+- [ ] B105: 扩展 SQLite 查询条件（planned_date 已有），不新增列或字段
+- [ ] B107: 新增 note_references 表，不改变 Markdown 存储架构，含回填路径（reindex_backlinks）
+- [ ] F142: 扩展现有 offlineSync 队列，不引入新状态管理
+- [ ] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫
+
 ## R036: 残留问题全面收口
 
 ### 契约对齐
@@ -69,36 +96,36 @@
 
 ### 契约对齐
 
-- [ ] 不涉及新契约，所有改动为内部代码质量提升
+- [x] 不涉及新契约，所有改动为内部代码质量提升
 
 ### 依赖对齐
 
-- [ ] F122 无外部依赖 ✓
-- [ ] F123 无外部依赖 ✓
-- [ ] B93 无外部依赖 ✓
-- [ ] F124 无外部依赖 ✓
-- [ ] B94 无外部依赖 ✓
-- [ ] F125 无外部依赖 ✓
-- [ ] B95 无外部依赖 ✓（需同步更新 review.py 路由层 import）
-- [ ] F126 无外部依赖 ✓
-- [ ] F127 depends_on F125 ✓（GraphPage 拆分完成后再写测试）
-- [ ] S31 depends_on F122-F127 全部 ✓
+- [x] F122 无外部依赖 ✓
+- [x] F123 无外部依赖 ✓
+- [x] B93 无外部依赖 ✓
+- [x] F124 无外部依赖 ✓
+- [x] B94 无外部依赖 ✓
+- [x] F125 无外部依赖 ✓
+- [x] B95 无外部依赖 ✓（需同步更新 review.py 路由层 import）
+- [x] F126 无外部依赖 ✓
+- [x] F127 depends_on F125 ✓（GraphPage 拆分完成后再写测试）
+- [x] S31 depends_on F122-F127 全部 ✓
 
 ### 架构对齐
 
-- [ ] 所有改动不改变用户可见行为 ✓
-- [ ] B93: ReviewService 构造函数注入 knowledge_service，不新增全局状态 ✓
-- [ ] B95: Pydantic 模型迁移到 models/review.py，路由层 import 同步更新 ✓
-- [ ] F125: GraphPage 拆分为独立文件，不引入新依赖 ✓
-- [ ] F126: api.ts 类型迁移到 api.generated.ts，保持类型兼容 ✓
-- [ ] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫 ✓
+- [x] 所有改动不改变用户可见行为 ✓
+- [x] B93: ReviewService 构造函数注入 knowledge_service，不新增全局状态 ✓
+- [x] B95: Pydantic 模型迁移到 models/review.py，路由层 import 同步更新 ✓
+- [x] F125: GraphPage 拆分为独立文件，不引入新依赖 ✓
+- [x] F126: api.ts 类型迁移到 api.generated.ts，保持类型兼容 ✓
+- [x] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫 ✓
 
 ### 执行顺序
 
-- [ ] Phase 1: F122, F123, B93（可并行）
-- [ ] Phase 2: F124, B94（可并行）
-- [ ] Phase 3: F125, B95, F126（串行推荐，避免共享文件冲突）
-- [ ] Phase 4: F127（依赖 F125）→ S31
+- [x] Phase 1: F122, F123, B93（可并行）
+- [x] Phase 2: F124, B94（可并行）
+- [x] Phase 3: F125, B95, F126（串行推荐，避免共享文件冲突）
+- [x] Phase 4: F127（依赖 F125）→ S31
 
 ## R033: 安全增强收口（R017 deferred 项）
 
@@ -237,20 +264,20 @@
 
 ### 契约对齐
 
-- [ ] B83: CONTRACT-EXPORT01 + CONTRACT-EXPORT02
-- [ ] B84: CONTRACT-FEEDBACK-SYNC01
+- [x] B83: CONTRACT-EXPORT01 + CONTRACT-EXPORT02
+- [x] B84: CONTRACT-FEEDBACK-SYNC01
 
 ### 依赖对齐
 
-- [ ] F114 depends_on B83 ✓
-- [ ] F115 depends_on B83 ✓
-- [ ] F116 depends_on B84 ✓
-- [ ] S21 depends_on B83, B84, F114, F115, F116 ✓
+- [x] F114 depends_on B83 ✓
+- [x] F115 depends_on B83 ✓
+- [x] F116 depends_on B84 ✓
+- [x] S21 depends_on B83, B84, F114, F115, F116 ✓
 
 ### 架构对齐
 
-- [ ] 不新建路由文件，在现有 entries.py / review.py / feedback.py 内新增端点
-- [ ] 前端不新建页面，在现有组件内添加导出按钮和状态标签
+- [x] 不新建路由文件，在现有 entries.py / review.py / feedback.py 内新增端点
+- [x] 前端不新建页面，在现有组件内添加导出按钮和状态标签
 
 ## R026: 收敛修复
 

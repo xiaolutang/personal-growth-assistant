@@ -1,5 +1,28 @@
 # 测试覆盖清单
 
+## R037: 全面补齐与功能增强
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| 技术债清理 | B104 | unit | import * 替换验证/qdrant 降级验证/文档状态同步 | done | L1, ~2 tests |
+| 搜索 Tab 过滤 | F132 | unit | Tab 切换 filter_type 正确传递/跨类型混合展示/build | planned | F2, ~3 tests |
+| Home 统计卡片响应式 | F134 | manual | 640px/768px/1024px 断点布局/无溢出 | planned | F1, visual |
+| Explore Tab 滚动 | F135 | manual | 窄屏横向滚动/选中 Tab 自动可见 | planned | F1, visual |
+| TaskCard 触摸目标 | F136 | manual | 可点击区域≥44px/桌面端不受影响 | planned | F1, visual |
+| Review 加载态 | F137 | unit | spinner 展示/错误+重试/空数据提示 | planned | F2, ~3 tests |
+| Explore 错误状态 | F138 | unit | 错误提示+重试/部分失败展示 | planned | F2, ~3 tests |
+| TaskList 空状态 | F139 | unit | 空列表引导/筛选无结果提示 | planned | F2, ~2 tests |
+| NotificationCenter 轮询 | F140 | unit | 相对时间戳/后台300s轮询/面板60s轮询/卸载清理 | planned | F2, ~4 tests |
+| 搜索结果摘要 | F141 | unit | content_snippet 展示/关键词高亮/UTF-8 安全 | planned | F1, ~3 tests |
+| 离线更新/删除拦截 | F142 | unit | 拦截+回放/5xx重试/超时/快速切换/同条目多操作冲突(update→delete/多次update) | planned | F2, ~15 tests |
+| 多选框架 | F143 | unit | 多选进入/checkbox/ESC退出/Tab不清空 | planned | F2, ~5 tests |
+| 批量删除/转分类 | F144 | unit | 在线批量执行/离线入队+回放/部分失败提示/同条目冲突恢复 | planned | F2, ~8 tests |
+| 任务到期 API | B105 | unit | planned_date 到期查询(today/overdue)/跨用户隔离/回归现有 | planned | L2, ~5 tests |
+| 任务到期 UI | F145 | unit | 日期选择器/到期高亮/过期警告 | planned | F2, ~4 tests |
+| 笔记双链后端 | B107 | unit | 双链解析(两种语法)/引用存储/反向查询/回填路径/级联清理 | planned | L2, ~12 tests |
+| 笔记双链前端 | F147 | unit | [[触发补全/搜索过滤/反向引用面板/点击跳转 | planned | F2, ~5 tests |
+| 质量收口 | S35 | integration+smoke | pytest全量/vitest全量/build/Docker smoke | planned | L4 |
+
 ## R036: 残留问题全面收口
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
@@ -54,9 +77,9 @@
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
 |--------|----------|-----------|--------------------|--------|------|
-| 搜索过滤增强 | B89 | unit | 时间过滤(start+end/只start/只end/不传/闭区间边界/start>end返回空)/标签过滤(有交集/无交集/不传/空数组)/组合过滤(时间+标签+filter_type)/空query+过滤/空query+无过滤/SQLite降级过滤/422非法日期/回归 | planned | L2, ~16 tests |
-| 搜索过滤 UI | F119 | unit | 时间快选本周/全部/标签筛选/过滤chip显示/移除chip/清除全部/无过滤一致 | planned | F2, ~7 tests |
-| Explore 批量操作 | F120 | unit | 编辑按钮进多选/checkbox可见+禁用单卡动作/批量删除+本地列表更新/删除取消确认/批量转分类+本地刷新/部分失败提示/ESC退出/Tab不清空/空列表禁用编辑 | planned | F2, ~10 tests |
+| 搜索过滤增强 | B89 | unit | 时间过滤(start+end/只start/只end/不传/闭区间边界/start>end返回空)/标签过滤(有交集/无交集/不传/空数组)/组合过滤(时间+标签+filter_type)/空query+过滤/空query+无过滤/SQLite降级过滤/422非法日期/回归 | completed | L2, ~16 tests |
+| 搜索过滤 UI | F119 | unit | 时间快选本周/全部/标签筛选/过滤chip显示/移除chip/清除全部/无过滤一致 | completed | F2, ~7 tests |
+| Explore 批量操作 | F120 | unit | 编辑按钮进多选/checkbox可见+禁用单卡动作/批量删除+本地列表更新/删除取消确认/批量转分类+本地刷新/部分失败提示/ESC退出/Tab不清空/空列表禁用编辑 | completed | F2, ~10 tests |
 | 质量收口 | S29 | integration+smoke | pytest全量/vitest全量/build/Explore搜索+时间+标签+批量操作smoke | planned | L4 |
 
 ## R031: 对话式 Onboarding
@@ -88,11 +111,11 @@
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
 |--------|----------|-----------|--------------------|--------|------|
-| 导出 API 增强 | B83 | unit+integration | 单条目导出正常/404/跨用户/长文件名/成长报告/空数据/Neo4j降级/未认证401 | planned | L2, ~10 tests |
+| 导出 API 增强 | B83 | unit+integration | 单条目导出正常/404/跨用户/长文件名/成长报告/空数据/Neo4j降级/未认证401 | completed | L2, ~10 tests |
 | 反馈状态同步 | B84 | unit+contract | 同步成功/pending→reported/in_progress映射/resolved映射/未变更不更新/首次写入updated_at/计数断言/GET回读/超时跳过/远程404/未知status/批量20+/幂等/认证隔离 | done | L2, 20 tests |
-| 条目导出按钮 | F114 | unit+manual | 导出点击/loading/错误提示 | planned | F2, ~3 tests |
-| Review 导出入口 | F115 | unit+manual | 全量ZIP/成长报告/loading/错误 | planned | F2, ~3 tests |
-| 反馈状态增强 | F116 | unit+manual | 自动同步/4状态渲染/updated_at=null不显示时间/非null相对时间/synced_count=0降级/网络错误显示本地缓存 | planned | F2, ~6 tests |
+| 条目导出按钮 | F114 | unit+manual | 导出点击/loading/错误提示 | completed | F2, ~3 tests |
+| Review 导出入口 | F115 | unit+manual | 全量ZIP/成长报告/loading/错误 | completed | F2, ~3 tests |
+| 反馈状态增强 | F116 | unit+manual | 自动同步/4状态渲染/updated_at=null不显示时间/非null相对时间/synced_count=0降级/网络错误显示本地缓存 | completed | F2, ~6 tests |
 | 质量收口 | S21 | integration+smoke | pytest全量/vitest全量/build/Docker E2E | planned | L4 |
 
 ## R026: 收敛修复

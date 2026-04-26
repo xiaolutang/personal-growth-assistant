@@ -182,13 +182,38 @@ class TestQdrantClient:
         mock_qdrant_available.close.assert_called_once()
         assert client._client is None
 
-    async def test_embedding_not_configured_raises_error(self, mock_qdrant_available, sample_entry):
-        """测试 Embedding 服务未配置时抛 NotImplementedError（配置错误不静默吞掉）"""
+    async def test_embedding_not_configured_returns_empty(self, mock_qdrant_available, sample_entry):
+        """测试 Embedding 服务未配置时返回空结果（友好降级）"""
         client = QdrantClient(url="http://test:6333")  # 没有 embedding_service
         await client.connect()
 
-        with pytest.raises(NotImplementedError, match="Embedding service not configured"):
-            await client.upsert_entry(sample_entry)
+        # _get_embedding 未配置时返回空列表
+        result = await client._get_embedding("test text")
+        assert result == []
+
+    async def test_upsert_degrades_when_no_embedding(self, mock_qdrant_available, sample_entry):
+        """测试未配置 embedding 时 upsert_entry 友好降级返回 False"""
+        client = QdrantClient(url="http://test:6333")  # 没有 embedding_service
+        await client.connect()
+
+        result = await client.upsert_entry(sample_entry)
+        assert result is False
+
+    async def test_search_degrades_when_no_embedding(self, mock_qdrant_available):
+        """测试未配置 embedding 时 search 友好降级返回空列表"""
+        client = QdrantClient(url="http://test:6333")  # 没有 embedding_service
+        await client.connect()
+
+        result = await client.search("test query")
+        assert result == []
+
+    async def test_batch_upsert_degrades_when_no_embedding(self, mock_qdrant_available, sample_entry):
+        """测试未配置 embedding 时 batch_upsert 友好降级返回 0"""
+        client = QdrantClient(url="http://test:6333")  # 没有 embedding_service
+        await client.connect()
+
+        result = await client.batch_upsert([sample_entry])
+        assert result == 0
 
 
 class TestQdrantClientUnavailable:
