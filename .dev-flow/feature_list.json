@@ -20,8 +20,8 @@
   },
   "summary": {
     "total_tasks": 10,
-    "pending": 2,
-    "completed": 8,
+    "pending": 0,
+    "completed": 9,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -529,7 +529,9 @@
         "S33",
         "M100"
       ],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-26T09:00:00+0800",
+      "completed_at": "2026-04-26T09:15:00+0800",
       "priority": "P2",
       "acceptance_criteria": [
         "pytest 后端全量通过",
@@ -548,7 +550,9 @@
         "build 成功",
         "Docker smoke 通过"
       ],
-      "planning_notes": "R036 质量收口，汇总所有任务的回归验证。S34 承接 R032 原 S29 smoke（搜索+时间+标签+批量操作）和 R027 原 S21 smoke（导出+反馈），加上 R036 自身的全量回归"
+      "planning_notes": "R036 质量收口，汇总所有任务的回归验证。S34 承接 R032 原 S29 smoke（搜索+时间+标签+批量操作）和 R027 原 S21 smoke（导出+反馈），加上 R036 自身的全量回归",
+      "evidence_file": ".dev-flow/evidence/S34.md",
+      "execution_notes": "pytest 1133 passed, vitest 475 passed, build success, Docker smoke 7 endpoints verified: health 200, homepage 200, /entries 401(auth), /search 401(auth), /knowledge-map 401(auth), /auth/login 422(reachable), /docs 200, Traefik external 200"
     }
   ],
   "next_cycle_preview": null,
