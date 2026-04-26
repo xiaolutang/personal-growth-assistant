@@ -128,7 +128,7 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
         const result = await searchEntries(
           searchQuery.trim() || "",
           20,
-          activeTab || undefined,
+          activeTab || undefined, // Tab 过滤透传到后端 filter_type
           searchFilters,
         );
         if (!cancelled) {
@@ -176,8 +176,11 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
   const popularTags = useMemo(() => getPopularTags(entries), [entries]);
 
   const filteredTasks = useMemo(() => {
-    const source = searchResults ?? entries;
-    return filterByCategory(source, activeTab);
+    if (searchResults !== null) {
+      // 搜索模式：跨类型混合展示，仅过滤 Explore 类别边界（排除 task 等）
+      return filterByCategory(searchResults, "");
+    }
+    return filterByCategory(entries, activeTab);
   }, [entries, searchResults, activeTab]);
 
   const autoExpandAssistant = !isLoading && !isSearching && filteredTasks.length === 0;
@@ -213,7 +216,7 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
       const result = await searchEntries(
         searchQuery.trim() || "",
         20,
-        activeTab || undefined,
+        activeTab || undefined, // Tab 过滤透传到后端 filter_type
         searchFilters,
       );
       const mapped: Task[] = (result.results ?? []).map(normalizeSearchResult);

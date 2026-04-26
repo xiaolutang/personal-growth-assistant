@@ -5,7 +5,7 @@
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
 |--------|----------|-----------|--------------------|--------|------|
 | 技术债清理 | B104 | unit | import * 替换验证/qdrant 降级验证/文档状态同步 | done | L1, ~2 tests |
-| 搜索 Tab 过滤 | F132 | unit | Tab 切换 filter_type 正确传递/跨类型混合展示/build | planned | F2, ~3 tests |
+| 搜索 Tab 过滤 | F132 | unit | Tab 切换 filter_type 正确传递/跨类型混合展示/build | done | F2, 9 tests, 484 vitest total |
 | Home 统计卡片响应式 | F134 | manual | 640px/768px/1024px 断点布局/无溢出 | planned | F1, visual |
 | Explore Tab 滚动 | F135 | manual | 窄屏横向滚动/选中 Tab 自动可见 | planned | F1, visual |
 | TaskCard 触摸目标 | F136 | manual | 可点击区域≥44px/桌面端不受影响 | planned | F1, visual |

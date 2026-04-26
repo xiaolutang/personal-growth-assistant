@@ -11,7 +11,7 @@
 
 ### 依赖对齐
 
-- [ ] F132 无外部依赖（HybridSearchService 已集成）
+- [x] F132 无外部依赖（HybridSearchService 已集成）✓ (completed)
 - [ ] F134-F141 无外部依赖（独立体验打磨）
 - [ ] F142 无外部依赖（离线队列扩展）
 - [ ] F143 无外部依赖（多选框架）
