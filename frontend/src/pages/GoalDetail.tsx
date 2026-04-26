@@ -5,11 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Header } from "@/components/layout/Header";
-import { ArrowLeft, Link2, X, CheckSquare, Square, RefreshCw } from "lucide-react";
+import { ArrowLeft, Link2, X, CheckSquare, Square, RefreshCw, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { ProgressRing } from "@/components/ProgressRing";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from "recharts";
 import {
   getGoal,
   updateGoal,
@@ -18,8 +21,10 @@ import {
   unlinkGoalEntry,
   toggleChecklistItem,
   searchEntries,
+  fetchProgressHistory,
   type Goal,
   type GoalEntry,
+  type ProgressSnapshot,
 } from "@/services/api";
 
 // === 条目搜索弹窗 ===
@@ -83,6 +88,7 @@ export function GoalDetail() {
   const navigate = useNavigate();
   const [goal, setGoal] = useState<Goal | null>(null);
   const [entries, setEntries] = useState<GoalEntry[]>([]);
+  const [progressHistory, setProgressHistory] = useState<ProgressSnapshot[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSearch, setShowSearch] = useState(false);
   const { serviceUnavailable, runWith503, retry: retryService } = useServiceUnavailable();
@@ -91,12 +97,14 @@ export function GoalDetail() {
     if (!goalId) return;
     try {
       await runWith503(async () => {
-        const [goalRes, entriesRes] = await Promise.all([
+        const [goalRes, entriesRes, historyRes] = await Promise.all([
           getGoal(goalId),
           getGoalEntries(goalId).catch(() => ({ entries: [] })),
+          fetchProgressHistory(goalId).catch(() => ({ snapshots: [] })),
         ]);
         setGoal(goalRes);
         setEntries(entriesRes.entries ?? []);
+        setProgressHistory(historyRes.snapshots ?? []);
       });
     } catch {
       toast.error("加载目标失败");
@@ -215,6 +223,45 @@ export function GoalDetail() {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* 进度趋势折线图 */}
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" /> 进度趋势
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {progressHistory.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">暂无趋势数据</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={progressHistory.map(s => ({
+                  date: s.snapshot_date.slice(5),
+                  percentage: Math.round(s.percentage * 10) / 10,
+                  value: `${s.current_value}/${s.target_value}`,
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} tickFormatter={(v: number) => `${v}%`} />
+                  <Tooltip formatter={(value: unknown, name: unknown) => {
+                    if (name === "percentage") return [`${value}%`, "进度"];
+                    return [value as number, name as string];
+                  }} labelFormatter={(label: unknown) => `日期: ${label}`} />
+                  <Line
+                    type="monotone"
+                    dataKey="percentage"
+                    stroke="#6366F1"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: "#6366F1" }}
+                    activeDot={{ r: 5 }}
+                    name="percentage"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 

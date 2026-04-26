@@ -508,6 +508,26 @@ export async function getProgressSummary(period?: string): Promise<ProgressSumma
   return handleOpenApiResponse<ProgressSummaryResponse>(data as ProgressSummaryResponse | undefined, error, response);
 }
 
+// === Goal 进度历史 ===
+export interface ProgressSnapshot {
+  id: string;
+  goal_id: string;
+  current_value: number;
+  target_value: number;
+  percentage: number;
+  snapshot_date: string;
+  created_at: string;
+}
+export interface ProgressHistoryResponse {
+  snapshots: ProgressSnapshot[];
+}
+
+export async function fetchProgressHistory(goalId: string): Promise<ProgressHistoryResponse> {
+  const response = await authFetch(`${API_BASE}/goals/${goalId}/progress-history`);
+  if (!response.ok) throw new ApiError(response.status, `Progress history API error: ${response.status}`);
+  return await response.json() as ProgressHistoryResponse;
+}
+
 // === 反向引用（backlinks） ===
 export async function getBacklinks(entryId: string): Promise<BacklinksResponse> {
   try {
