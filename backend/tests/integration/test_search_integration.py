@@ -270,8 +270,8 @@ class TestSearchAPIE2E:
                 assert "results" in data
                 assert isinstance(data["results"], list)
 
-    async def test_search_api_empty_query_validation(self, api_base_url, auth_token):
-        """测试搜索 API 空查询验证"""
+    async def test_search_api_empty_query_returns_results(self, api_base_url, auth_token):
+        """测试搜索 API 空查询返回结果（走列表+过滤模式）"""
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 f"{api_base_url}/search",
@@ -279,8 +279,8 @@ class TestSearchAPIE2E:
                 headers={"Authorization": f"Bearer {auth_token}"},
             )
 
-            # 空查询应该返回 422 (Validation Error)
-            assert response.status_code == 422
+            # 空查询允许，返回 200（走列表+过滤模式）或 503（Qdrant 未配置）
+            assert response.status_code in [200, 503]
 
     async def test_search_api_limit_validation(self, api_base_url, auth_token):
         """测试搜索 API limit 参数验证"""

@@ -77,7 +77,7 @@ export function Explore() {
         template_id: template.id,
       });
       toast.success(`已创建笔记：${template.name}`);
-      navigate(`/entry/${entry.id}`);
+      navigate(`/entries/${entry.id}`);
     } catch {
       toast.error("创建笔记失败，请重试");
     }

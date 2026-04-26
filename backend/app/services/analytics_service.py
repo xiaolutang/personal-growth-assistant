@@ -36,6 +36,7 @@ class AnalyticsService:
 
     def ensure_table(self) -> None:
         """启动时创建 analytics_events 表（幂等）"""
+        conn = None
         try:
             conn = self._get_conn()
             conn.execute(CREATE_TABLE_SQL)
@@ -44,6 +45,9 @@ class AnalyticsService:
             logger.info("analytics_events 表就绪")
         except Exception as e:
             logger.error("Failed to create analytics_events table: %s", e)
+        finally:
+            if conn:
+                conn.close()
 
     def record_event(
         self,
@@ -59,6 +63,7 @@ class AnalyticsService:
             event_type: 事件类型
             metadata: 可选元数据 dict
         """
+        conn = None
         try:
             conn = self._get_conn()
             conn.execute(
@@ -74,6 +79,9 @@ class AnalyticsService:
             conn.commit()
         except Exception as e:
             logger.error("Failed to record analytics event: %s", e)
+        finally:
+            if conn:
+                conn.close()
 
     # ---- internal helpers ----
 

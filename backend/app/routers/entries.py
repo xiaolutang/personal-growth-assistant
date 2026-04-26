@@ -23,6 +23,7 @@ from app.api.schemas import (
     KnowledgeContextResponse,
     BacklinksResponse,
     BacklinkItem,
+    EntryTemplateListResponse,
 )
 from app.routers.deps import get_entry_service, get_current_user, get_knowledge_service
 from app.models.user import User
@@ -65,7 +66,7 @@ async def list_entries(
     )
 
 
-@router.get("/templates")
+@router.get("/templates", response_model=EntryTemplateListResponse)
 async def list_templates(
     category: str | None = Query(None, description="按类型过滤模板（如 note）"),
     user: User = Depends(get_current_user),
