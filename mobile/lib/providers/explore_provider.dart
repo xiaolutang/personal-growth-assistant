@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/entry.dart';
+import '../config/constants.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
 
@@ -75,7 +76,7 @@ class ExploreState {
   ExploreState copyWith({
     List<Entry>? entries,
     bool? isLoading,
-    String? error,
+    Object? error = _sentinel,
     String? searchQuery,
     List<String>? searchHistory,
     Set<String>? selectedIds,
@@ -84,13 +85,15 @@ class ExploreState {
     return ExploreState(
       entries: entries ?? this.entries,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: identical(error, _sentinel) ? this.error : error as String?,
       searchQuery: searchQuery ?? this.searchQuery,
       searchHistory: searchHistory ?? this.searchHistory,
       selectedIds: selectedIds ?? this.selectedIds,
       isMultiSelectMode: isMultiSelectMode ?? this.isMultiSelectMode,
     );
   }
+
+  static const _sentinel = Object();
 }
 
 // ============================================================
@@ -122,7 +125,7 @@ class ExploreNotifier extends Notifier<ExploreState> {
         endDate: endDate,
       );
 
-      final entries = _parseEntries(response.data);
+      final entries = parseEntries(response.data);
       state = state.copyWith(entries: entries, isLoading: false);
     } catch (e) {
       state = state.copyWith(
@@ -147,7 +150,7 @@ class ExploreNotifier extends Notifier<ExploreState> {
         query: query,
       );
 
-      final entries = _parseEntries(response.data);
+      final entries = parseEntries(response.data);
       addSearchHistory(query);
       state = state.copyWith(entries: entries, isLoading: false);
     } catch (e) {
@@ -204,7 +207,7 @@ class ExploreNotifier extends Notifier<ExploreState> {
     }
   }
 
-  /// 添加搜索历史（去重、截断到 10 条）
+  /// 添加搜索历史（去重、截断到上限）
   void addSearchHistory(String query) {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return;
@@ -214,9 +217,9 @@ class ExploreNotifier extends Notifier<ExploreState> {
     history.remove(trimmed);
     // 新增放在前面
     history.insert(0, trimmed);
-    // 截断到 10 条
-    if (history.length > 10) {
-      history.removeRange(10, history.length);
+    // 截断到上限
+    if (history.length > AppConstants.searchHistoryLimit) {
+      history.removeRange(AppConstants.searchHistoryLimit, history.length);
     }
 
     state = state.copyWith(searchHistory: history);
@@ -231,39 +234,18 @@ class ExploreNotifier extends Notifier<ExploreState> {
 
   /// 批量删除
   Future<BatchResult> batchDelete(List<String> ids) async {
-    final futures = ids.map((id) async {
-      try {
-        final apiClient = ref.read(apiClientProvider);
-        await apiClient.deleteEntry<Map<String, dynamic>>(id: id);
-        return _BatchOpResult(id: id, success: true);
-      } catch (e) {
-        return _BatchOpResult(
-          id: id,
-          success: false,
-          error: ApiClient.errorMessage(e),
-        );
-      }
-    }).toList();
-
-    final results = await Future.wait(futures);
-
-    final successIds = <String>[];
-    final failedItems = <BatchFailureItem>[];
-    for (final r in results) {
-      if (r.success) {
-        successIds.add(r.id);
-      } else {
-        failedItems.add(BatchFailureItem(id: r.id, error: r.error!));
-      }
-    }
+    final result = await _batchExecute(
+      ids,
+      (id) => ref.read(apiClientProvider).deleteEntry<Map<String, dynamic>>(id: id),
+    );
 
     // 从列表中移除成功删除的条目
-    final successIdSet = successIds.toSet();
+    final successIdSet = result.successIds.toSet();
     final updatedEntries =
         state.entries.where((e) => !successIdSet.contains(e.id)).toList();
     state = state.copyWith(entries: updatedEntries);
 
-    return BatchResult(successIds: successIds, failedItems: failedItems);
+    return result;
   }
 
   /// 批量更新分类
@@ -271,13 +253,35 @@ class ExploreNotifier extends Notifier<ExploreState> {
     List<String> ids,
     String category,
   ) async {
+    final result = await _batchExecute(
+      ids,
+      (id) => ref.read(apiClientProvider).updateEntryCategory<Map<String, dynamic>>(
+        id: id,
+        category: category,
+      ),
+    );
+
+    // 更新本地列表中成功的条目分类
+    final successIdSet = result.successIds.toSet();
+    final updatedEntries = state.entries.map((e) {
+      if (successIdSet.contains(e.id)) {
+        return e.copyWith(category: category);
+      }
+      return e;
+    }).toList();
+    state = state.copyWith(entries: updatedEntries);
+
+    return result;
+  }
+
+  /// 通用批量执行：并发调用操作，返回成功/失败分组
+  Future<BatchResult> _batchExecute(
+    List<String> ids,
+    Future<dynamic> Function(String id) action,
+  ) async {
     final futures = ids.map((id) async {
       try {
-        final apiClient = ref.read(apiClientProvider);
-        await apiClient.updateEntryCategory<Map<String, dynamic>>(
-          id: id,
-          category: category,
-        );
+        await action(id);
         return _BatchOpResult(id: id, success: true);
       } catch (e) {
         return _BatchOpResult(
@@ -299,16 +303,6 @@ class ExploreNotifier extends Notifier<ExploreState> {
         failedItems.add(BatchFailureItem(id: r.id, error: r.error!));
       }
     }
-
-    // 更新本地列表中成功的条目分类
-    final successIdSet = successIds.toSet();
-    final updatedEntries = state.entries.map((e) {
-      if (successIdSet.contains(e.id)) {
-        return e.copyWith(category: category);
-      }
-      return e;
-    }).toList();
-    state = state.copyWith(entries: updatedEntries);
 
     return BatchResult(successIds: successIds, failedItems: failedItems);
   }
@@ -342,17 +336,6 @@ class ExploreNotifier extends Notifier<ExploreState> {
   /// 清除选中
   void clearSelection() {
     state = state.copyWith(selectedIds: {});
-  }
-
-  // ---- 私有方法 ----
-
-  List<Entry> _parseEntries(Map<String, dynamic>? response) {
-    if (response == null) return const [];
-    final entriesJson = response['entries'] as List<dynamic>?;
-    if (entriesJson == null) return const [];
-    return entriesJson
-        .map((e) => Entry.fromJson(e as Map<String, dynamic>))
-        .toList();
   }
 }
 

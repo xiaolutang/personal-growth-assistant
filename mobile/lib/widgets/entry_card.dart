@@ -79,8 +79,8 @@ class EntryCard extends StatelessWidget {
     }
 
     // 其他类别图标
-    final icon = _categoryIcon(entry.category);
-    final color = _categoryColor(entry.category);
+    final icon = CategoryMeta.iconOf(entry.category);
+    final color = CategoryMeta.colorOf(entry.category);
     return Container(
       width: 36,
       height: 36,
@@ -149,8 +149,8 @@ class EntryCard extends StatelessWidget {
   }
 
   Widget _buildCategoryChip(ThemeData theme) {
-    final label = _categoryLabel(entry.category);
-    final color = _categoryColor(entry.category);
+    final label = CategoryMeta.labelOf(entry.category);
+    final color = CategoryMeta.colorOf(entry.category);
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -172,48 +172,4 @@ class EntryCard extends StatelessWidget {
     );
   }
 
-  IconData _categoryIcon(String category) {
-    switch (category) {
-      case AppConstants.categoryTask:
-        return Icons.check_circle_outline;
-      case AppConstants.categoryNote:
-        return Icons.note_outlined;
-      case AppConstants.categoryInbox:
-        return Icons.lightbulb_outline;
-      case AppConstants.categoryProject:
-        return Icons.folder_outlined;
-      default:
-        return Icons.article_outlined;
-    }
-  }
-
-  Color _categoryColor(String category) {
-    switch (category) {
-      case AppConstants.categoryTask:
-        return AppColors.primary;
-      case AppConstants.categoryNote:
-        return AppColors.completed;
-      case AppConstants.categoryInbox:
-        return AppColors.warning;
-      case AppConstants.categoryProject:
-        return AppColors.doing;
-      default:
-        return AppColors.waitStart;
-    }
-  }
-
-  String _categoryLabel(String category) {
-    switch (category) {
-      case AppConstants.categoryTask:
-        return '任务';
-      case AppConstants.categoryNote:
-        return '笔记';
-      case AppConstants.categoryInbox:
-        return '灵感';
-      case AppConstants.categoryProject:
-        return '项目';
-      default:
-        return '条目';
-    }
-  }
 }

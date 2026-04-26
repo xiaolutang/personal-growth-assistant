@@ -77,14 +77,14 @@ class TodayNotifier extends Notifier<TodayState> {
 
       // 解析任务
       final tasksResponse = results[0].data;
-      final allTasks = _parseEntries(tasksResponse);
+      final allTasks = parseEntries(tasksResponse);
       final todayTasks = allTasks.where((e) {
         return e.plannedDate == today || e.createdAt?.startsWith(today) == true;
       }).toList();
 
       // 解析最近动态
       final recentResponse = results[1].data;
-      final recentEntries = _parseEntries(recentResponse);
+      final recentEntries = parseEntries(recentResponse);
 
       state = state.copyWith(
         todayTasks: todayTasks,
@@ -122,15 +122,6 @@ class TodayNotifier extends Notifier<TodayState> {
       );
       return false;
     }
-  }
-
-  List<Entry> _parseEntries(Map<String, dynamic>? response) {
-    if (response == null) return const [];
-    final entriesJson = response['entries'] as List<dynamic>?;
-    if (entriesJson == null) return const [];
-    return entriesJson
-        .map((e) => Entry.fromJson(e as Map<String, dynamic>))
-        .toList();
   }
 
   String _todayDateString() {

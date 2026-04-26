@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/entry.dart';
+import '../config/constants.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
 
@@ -58,7 +59,7 @@ class EntryListNotifier extends Notifier<EntryListState> {
         queryParameters: queryParams.isNotEmpty ? queryParams : null,
       );
 
-      final entries = _parseEntries(response.data);
+      final entries = parseEntries(response.data);
       state = state.copyWith(entries: entries, isLoading: false);
     } catch (e) {
       state = state.copyWith(
@@ -96,15 +97,6 @@ class EntryListNotifier extends Notifier<EntryListState> {
       );
       return false;
     }
-  }
-
-  List<Entry> _parseEntries(Map<String, dynamic>? response) {
-    if (response == null) return const [];
-    final entriesJson = response['entries'] as List<dynamic>?;
-    if (entriesJson == null) return const [];
-    return entriesJson
-        .map((e) => Entry.fromJson(e as Map<String, dynamic>))
-        .toList();
   }
 }
 

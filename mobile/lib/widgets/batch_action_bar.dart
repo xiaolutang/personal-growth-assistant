@@ -10,48 +10,6 @@ import '../config/theme.dart';
 // 选中 0 条时操作按钮禁用
 // ============================================================
 
-/// 分类选项定义
-class _CategoryOption {
-  final String value;
-  final String label;
-  final IconData icon;
-  final Color color;
-
-  const _CategoryOption({
-    required this.value,
-    required this.label,
-    required this.icon,
-    required this.color,
-  });
-}
-
-const _categoryOptions = [
-  _CategoryOption(
-    value: AppConstants.categoryTask,
-    label: '任务',
-    icon: Icons.check_circle_outline,
-    color: AppColors.primary,
-  ),
-  _CategoryOption(
-    value: AppConstants.categoryNote,
-    label: '笔记',
-    icon: Icons.note_outlined,
-    color: AppColors.completed,
-  ),
-  _CategoryOption(
-    value: AppConstants.categoryInbox,
-    label: '灵感',
-    icon: Icons.lightbulb_outline,
-    color: AppColors.warning,
-  ),
-  _CategoryOption(
-    value: AppConstants.categoryProject,
-    label: '项目',
-    icon: Icons.folder_outlined,
-    color: AppColors.doing,
-  ),
-];
-
 class BatchActionBar extends StatelessWidget {
   /// 当前选中的条目数量
   final int selectedCount;
@@ -362,7 +320,7 @@ Future<String?> showCategoryPickerSheet(BuildContext context) {
           ),
           const Divider(height: 1),
           // 分类选项列表
-          ..._categoryOptions.map(
+          ...CategoryMeta.all.map(
             (opt) => ListTile(
               leading: Container(
                 width: 36,

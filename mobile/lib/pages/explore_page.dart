@@ -138,41 +138,7 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
     final result =
         await ref.read(exploreProvider.notifier).batchDelete(ids);
 
-    if (!mounted) return;
-
-    if (result.hasFailures) {
-      // 部分失败：保留失败项选中，显示失败对话框
-      final failedIds = result.failedItems.map((f) => f.id).toSet();
-      // 更新选中为仅失败项
-      for (final id in ids) {
-        if (!failedIds.contains(id) && state.selectedIds.contains(id)) {
-          ref.read(exploreProvider.notifier).toggleSelection(id);
-        }
-      }
-
-      // 获取失败条目标题
-      final failNames = result.failedItems.map((f) {
-        final entry = state.entries.firstWhere(
-          (e) => e.id == f.id,
-          orElse: () => Entry(id: f.id, title: f.id, category: ''),
-        );
-        return entry.title;
-      }).toList();
-
-      await showBatchFailureDialog(
-        context,
-        info: BatchFailureInfo(
-          failureCount: result.failedItems.length,
-          failureNames: failNames,
-          onRetry: _handleBatchDelete,
-        ),
-        operationName: '删除',
-      );
-    } else {
-      // 全部成功：退出多选模式并刷新
-      ref.read(exploreProvider.notifier).toggleMultiSelectMode();
-      await _refreshList();
-    }
+    await _handleBatchResult(result, state, '删除', _handleBatchDelete);
   }
 
   /// 批量转分类流程
@@ -191,17 +157,28 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
           category,
         );
 
+    await _handleBatchResult(result, state, '转分类', _handleBatchMoveCategory);
+  }
+
+  /// 批量操作结果统一处理
+  Future<void> _handleBatchResult(
+    BatchResult result,
+    ExploreState state,
+    String operationName,
+    VoidCallback onRetry,
+  ) async {
     if (!mounted) return;
 
     if (result.hasFailures) {
-      // 部分失败：保留失败项选中
+      // 部分失败：保留失败项选中，取消成功项选中
       final failedIds = result.failedItems.map((f) => f.id).toSet();
-      for (final id in ids) {
-        if (!failedIds.contains(id) && state.selectedIds.contains(id)) {
+      for (final id in state.selectedIds.toList()) {
+        if (!failedIds.contains(id)) {
           ref.read(exploreProvider.notifier).toggleSelection(id);
         }
       }
 
+      // 获取失败条目标题
       final failNames = result.failedItems.map((f) {
         final entry = state.entries.firstWhere(
           (e) => e.id == f.id,
@@ -215,9 +192,9 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
         info: BatchFailureInfo(
           failureCount: result.failedItems.length,
           failureNames: failNames,
-          onRetry: _handleBatchMoveCategory,
+          onRetry: onRetry,
         ),
-        operationName: '转分类',
+        operationName: operationName,
       );
     } else {
       // 全部成功：退出多选模式并刷新

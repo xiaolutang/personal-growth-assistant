@@ -550,7 +550,7 @@ class _FakeApiClient implements ApiClient {
   final Map<String, dynamic>? searchResponse;
   final bool shouldThrow;
   final Set<String>? failOnIds;
-  final Map<String, dynamic>? expectedQueryParams;
+  final Map<String, String>? expectedQueryParams;
 
   _FakeApiClient({
     this.entriesResponse,
@@ -559,6 +559,17 @@ class _FakeApiClient implements ApiClient {
     this.failOnIds,
     this.expectedQueryParams,
   });
+
+  @override
+  Dio get dio => Dio();
+
+  void _checkParams(Map<String, String> actual) {
+    if (expectedQueryParams == null) return;
+    for (final entry in expectedQueryParams!.entries) {
+      expect(actual[entry.key], entry.value,
+          reason: 'Query param "${entry.key}" mismatch');
+    }
+  }
 
   @override
   Future<Response<T>> fetchEntries<T>({
@@ -576,6 +587,15 @@ class _FakeApiClient implements ApiClient {
         type: DioExceptionType.connectionTimeout,
       );
     }
+    // 验证传入的参数
+    final params = <String, String>{};
+    if (type != null) params['type'] = type;
+    if (status != null) params['status'] = status;
+    if (tags != null) params['tags'] = tags;
+    if (startDate != null) params['start_date'] = startDate;
+    if (endDate != null) params['end_date'] = endDate;
+    _checkParams(params);
+
     return Response<T>(
       data: entriesResponse as T,
       statusCode: 200,
@@ -656,7 +676,47 @@ class _FakeApiClient implements ApiClient {
     );
   }
 
-  // Unused ApiClient methods - no-op stubs
+  // ---- 实现 ApiClient 接口的通用方法 ----
   @override
-  dynamic noSuchMethod(Invocation invocation) => null;
+  Future<Response<T>> get<T>(String path,
+      {Map<String, dynamic>? queryParameters, Options? options}) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: path),
+    );
+  }
+
+  @override
+  Future<Response<T>> post<T>(String path,
+      {dynamic data, Options? options,
+      Map<String, dynamic>? queryParameters}) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: path),
+    );
+  }
+
+  @override
+  Future<Response<T>> put<T>(String path,
+      {dynamic data, Options? options,
+      Map<String, dynamic>? queryParameters}) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: path),
+    );
+  }
+
+  @override
+  Future<Response<T>> delete<T>(String path,
+      {dynamic data, Options? options,
+      Map<String, dynamic>? queryParameters}) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: path),
+    );
+  }
 }
