@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { TaskList } from "@/components/TaskList";
 import { Header } from "@/components/layout/Header";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
-import { Filter, X, Calendar, Loader2, Pencil, Trash2, FolderInput } from "lucide-react";
+import { Filter, X, Calendar, Loader2, Pencil, Trash2, FolderInput, ClipboardList, SearchX } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { statusConfig } from "@/config/constants";
 import { useTaskStore } from "@/stores/taskStore";
 
@@ -28,6 +29,12 @@ export function Tasks() {
     serviceUnavailable, fetchEntries,
   } = useTaskFilters();
   const isLoading = useTaskStore((state) => state.isLoading);
+  const allTasks = useTaskStore((state) => state.tasks);
+  const navigate = useNavigate();
+
+  // 区分两种空状态：真正无任务 vs 筛选无结果
+  const isTotallyEmpty = !isLoading && allTasks.length === 0;
+  const isFilterEmpty = !isLoading && allTasks.length > 0 && filteredTasks.length === 0;
 
   return (
     <>
@@ -121,8 +128,28 @@ export function Tasks() {
           <CardContent>
             {isLoading ? (
               <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />加载中...</div>
+            ) : isTotallyEmpty ? (
+              <TaskList
+                tasks={filteredTasks}
+                emptyIcon={<ClipboardList className="h-12 w-12 opacity-20" />}
+                emptyMessage="还没有任务，开始记录你的第一个任务吧"
+                emptyAction={{ label: "去创建任务", onClick: () => navigate("/") }}
+                selectable={selectMode}
+                selectedIds={selectedIds}
+                onSelect={toggleSelect}
+              />
+            ) : isFilterEmpty ? (
+              <TaskList
+                tasks={filteredTasks}
+                emptyIcon={<SearchX className="h-10 w-10 opacity-30" />}
+                emptyMessage="当前筛选条件下没有匹配的任务"
+                emptyAction={{ label: "清除筛选", onClick: clearFilters }}
+                selectable={selectMode}
+                selectedIds={selectedIds}
+                onSelect={toggleSelect}
+              />
             ) : (
-              <TaskList tasks={filteredTasks} emptyMessage="还没有任务，去首页快速录入吧" selectable={selectMode} selectedIds={selectedIds} onSelect={toggleSelect} />
+              <TaskList tasks={filteredTasks} selectable={selectMode} selectedIds={selectedIds} onSelect={toggleSelect} />
             )}
           </CardContent>
         </Card>
