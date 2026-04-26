@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../config/theme.dart';
+import '../models/entry.dart';
 import '../providers/explore_provider.dart';
+import '../widgets/batch_action_bar.dart';
 import '../widgets/entry_card.dart';
 
 // ============================================================
 // ExplorePage - 探索页（View 层，消费 explore_provider 状态）
 //
-// 搜索栏 + 5 个类型 Tab + 条目列表 + 三态
+// 搜索栏 + 5 个类型 Tab + 条目列表 + 三态 + 批量操作
 // 搜索时切换到搜索结果模式，清空搜索恢复 Tab 列表模式
+// 多选模式：编辑按钮 → 复选框 → 底部操作栏 → 批量删除/转分类
 // ============================================================
 
 /// Tab 定义
@@ -89,6 +93,152 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
     _submitSearch(query);
   }
 
+  // ---- 多选模式 ----
+
+  /// 进入/退出多选模式
+  void _toggleMultiSelectMode() {
+    ref.read(exploreProvider.notifier).toggleMultiSelectMode();
+  }
+
+  /// 切换条目选中状态
+  void _toggleSelection(String id) {
+    ref.read(exploreProvider.notifier).toggleSelection(id);
+  }
+
+  /// 全选/取消全选
+  void _selectAll() {
+    final state = ref.read(exploreProvider);
+    if (state.selectedIds.length == state.entries.length) {
+      // 已全选 → 清除选中
+      ref.read(exploreProvider.notifier).clearSelection();
+    } else {
+      ref.read(exploreProvider.notifier).selectAll();
+    }
+  }
+
+  /// 退出多选模式
+  void _cancelMultiSelect() {
+    ref.read(exploreProvider.notifier).toggleMultiSelectMode();
+  }
+
+  /// 批量删除流程
+  Future<void> _handleBatchDelete() async {
+    final state = ref.read(exploreProvider);
+    final ids = state.selectedIds.toList();
+    if (ids.isEmpty) return;
+
+    // 弹出确认对话框
+    final confirmed = await showBatchDeleteConfirmDialog(
+      context,
+      count: ids.length,
+    );
+    if (!confirmed) return;
+
+    // 执行批量删除
+    final result =
+        await ref.read(exploreProvider.notifier).batchDelete(ids);
+
+    if (!mounted) return;
+
+    if (result.hasFailures) {
+      // 部分失败：保留失败项选中，显示失败对话框
+      final failedIds = result.failedItems.map((f) => f.id).toSet();
+      // 更新选中为仅失败项
+      for (final id in ids) {
+        if (!failedIds.contains(id) && state.selectedIds.contains(id)) {
+          ref.read(exploreProvider.notifier).toggleSelection(id);
+        }
+      }
+
+      // 获取失败条目标题
+      final failNames = result.failedItems.map((f) {
+        final entry = state.entries.firstWhere(
+          (e) => e.id == f.id,
+          orElse: () => Entry(id: f.id, title: f.id, category: ''),
+        );
+        return entry.title;
+      }).toList();
+
+      await showBatchFailureDialog(
+        context,
+        info: BatchFailureInfo(
+          failureCount: result.failedItems.length,
+          failureNames: failNames,
+          onRetry: _handleBatchDelete,
+        ),
+        operationName: '删除',
+      );
+    } else {
+      // 全部成功：退出多选模式并刷新
+      ref.read(exploreProvider.notifier).toggleMultiSelectMode();
+      await _refreshList();
+    }
+  }
+
+  /// 批量转分类流程
+  Future<void> _handleBatchMoveCategory() async {
+    final state = ref.read(exploreProvider);
+    final ids = state.selectedIds.toList();
+    if (ids.isEmpty) return;
+
+    // 弹出分类选择底部 Sheet
+    final category = await showCategoryPickerSheet(context);
+    if (category == null) return;
+
+    // 执行批量转分类
+    final result = await ref.read(exploreProvider.notifier).batchUpdateCategory(
+          ids,
+          category,
+        );
+
+    if (!mounted) return;
+
+    if (result.hasFailures) {
+      // 部分失败：保留失败项选中
+      final failedIds = result.failedItems.map((f) => f.id).toSet();
+      for (final id in ids) {
+        if (!failedIds.contains(id) && state.selectedIds.contains(id)) {
+          ref.read(exploreProvider.notifier).toggleSelection(id);
+        }
+      }
+
+      final failNames = result.failedItems.map((f) {
+        final entry = state.entries.firstWhere(
+          (e) => e.id == f.id,
+          orElse: () => Entry(id: f.id, title: f.id, category: ''),
+        );
+        return entry.title;
+      }).toList();
+
+      await showBatchFailureDialog(
+        context,
+        info: BatchFailureInfo(
+          failureCount: result.failedItems.length,
+          failureNames: failNames,
+          onRetry: _handleBatchMoveCategory,
+        ),
+        operationName: '转分类',
+      );
+    } else {
+      // 全部成功：退出多选模式并刷新
+      ref.read(exploreProvider.notifier).toggleMultiSelectMode();
+      await _refreshList();
+    }
+  }
+
+  /// 刷新当前列表（搜索模式保留 query）
+  Future<void> _refreshList() async {
+    final state = ref.read(exploreProvider);
+    if (state.searchQuery.isNotEmpty) {
+      await ref
+          .read(exploreProvider.notifier)
+          .searchEntries(state.searchQuery);
+    } else {
+      final tab = _tabs[_tabController.index];
+      await ref.read(exploreProvider.notifier).loadEntries(type: tab.type);
+    }
+  }
+
   @override
   void dispose() {
     _tabController.removeListener(_onTabChanged);
@@ -108,6 +258,22 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
     return Scaffold(
       appBar: AppBar(
         title: _buildSearchBar(theme),
+        actions: [
+          // 多选模式切换按钮
+          if (!state.isMultiSelectMode)
+            // 非多选模式 → 显示「编辑」按钮
+            TextButton.icon(
+              onPressed: state.entries.isEmpty ? null : _toggleMultiSelectMode,
+              icon: const Icon(Icons.checklist, size: 20),
+              label: const Text('编辑'),
+            )
+          else
+            // 多选模式 → 显示「取消」按钮
+            TextButton(
+              onPressed: _cancelMultiSelect,
+              child: const Text('取消'),
+            ),
+        ],
         bottom: isSearching
             ? null
             : TabBar(
@@ -124,10 +290,28 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
               children:
                   List.generate(_tabs.length, (_) => _buildBody(state, theme)),
             ),
+      // 多选模式时底部显示操作栏
+      bottomNavigationBar:
+          state.isMultiSelectMode ? _buildBatchActionBar(state) : null,
+    );
+  }
+
+  /// 构建底部批量操作栏
+  Widget _buildBatchActionBar(ExploreState state) {
+    return BatchActionBar(
+      selectedCount: state.selectedIds.length,
+      onDelete: _handleBatchDelete,
+      onMoveCategory: _handleBatchMoveCategory,
+      onCancel: _cancelMultiSelect,
+      onSelectAll: _selectAll,
+      isAllSelected:
+          state.entries.isNotEmpty &&
+          state.selectedIds.length == state.entries.length,
     );
   }
 
   Widget _buildSearchBar(ThemeData theme) {
+    final exploreState = ref.read(exploreProvider);
     return TextField(
       controller: _searchController,
       focusNode: _searchFocusNode,
@@ -135,7 +319,7 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
         hintText: '搜索条目...',
         prefixIcon: const Icon(Icons.search, size: 20),
         suffixIcon: _searchController.text.isNotEmpty ||
-                ref.read(exploreProvider).searchQuery.isNotEmpty
+                exploreState.searchQuery.isNotEmpty
             ? IconButton(
                 icon: const Icon(Icons.close, size: 20),
                 onPressed: _exitSearchMode,
@@ -148,7 +332,8 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
           borderSide: BorderSide.none,
         ),
         filled: true,
-        fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        fillColor:
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       ),
       textInputAction: TextInputAction.search,
       onSubmitted: _submitSearch,
@@ -235,28 +420,67 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
 
     // 条目列表
     return RefreshIndicator(
-      onRefresh: () async {
-        if (state.searchQuery.isNotEmpty) {
-          await ref
-              .read(exploreProvider.notifier)
-              .searchEntries(state.searchQuery);
-        } else {
-          final tab = _tabs[_tabController.index];
-          await ref
-              .read(exploreProvider.notifier)
-              .loadEntries(type: tab.type);
-        }
-      },
+      onRefresh: _refreshList,
       child: ListView.builder(
         itemCount: state.entries.length,
         itemBuilder: (context, index) {
           final entry = state.entries[index];
-          return EntryCard(
+          final isSelected = state.selectedIds.contains(entry.id);
+
+          return _buildEntryItem(
             entry: entry,
-            onTap: () => context.go('/entries/${entry.id}'),
+            isSelected: isSelected,
+            isMultiSelectMode: state.isMultiSelectMode,
+            theme: theme,
           );
         },
       ),
+    );
+  }
+
+  /// 构建单条条目（多选模式下显示复选框）
+  Widget _buildEntryItem({
+    required Entry entry,
+    required bool isSelected,
+    required bool isMultiSelectMode,
+    required ThemeData theme,
+  }) {
+    if (isMultiSelectMode) {
+      // 多选模式：复选框 + 条目卡片
+      return InkWell(
+        onTap: () => _toggleSelection(entry.id),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xs,
+          ),
+          child: Row(
+            children: [
+              // 复选框
+              Checkbox(
+                value: isSelected,
+                onChanged: (_) => _toggleSelection(entry.id),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.button),
+                ),
+              ),
+              // 条目卡片（去掉自身 padding 的左侧）
+              Expanded(
+                child: EntryCard(
+                  entry: entry,
+                  onTap: () => _toggleSelection(entry.id),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 普通模式：直接显示卡片
+    return EntryCard(
+      entry: entry,
+      onTap: () => context.go('/entries/${entry.id}'),
     );
   }
 

@@ -45,9 +45,9 @@
   "summary": {
     "total": 6,
     "by_status": {
-      "pending": 2,
+      "pending": 1,
       "in_progress": 0,
-      "completed": 4,
+      "completed": 5,
       "cancelled": 0,
       "blocked": 0
     },
@@ -196,7 +196,7 @@
       "description": "在 Explore 页面添加多选模式 + 批量删除和批量转分类功能（View 层渲染，业务逻辑在 explore_provider）。后端无批量端点，采用循环调用单条 API（DELETE /entries/{id}、PUT /entries/{id}）策略：explore_provider 的 batchDelete/batchUpdateCategory 方法使用 Future.wait 并发执行，捕获每个操作独立异常，返回 BatchResult(successIds, failedItems)。部分失败时：保留失败项选中状态，显示失败数量和条目名，提供「重试失败项」按钮。全部成功后退出多选模式并刷新列表。参考 Web 端 BatchActionBar 交互模式。",
       "verification": "可多选条目并执行批量删除或转分类，部分失败可重试",
       "depends_on": ["F151", "F152", "F153"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
       "acceptance_criteria": [
         "点击「编辑」按钮进入多选模式",
