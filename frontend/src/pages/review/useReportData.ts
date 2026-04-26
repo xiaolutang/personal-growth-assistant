@@ -29,6 +29,7 @@ interface UseReportDataReturn {
   aiSummary: string | null;
   goalSummary: ProgressSummaryResponse | null;
   serviceUnavailable: boolean;
+  isEmpty: boolean;
 }
 
 export function useReportData(): UseReportDataReturn {
@@ -50,6 +51,12 @@ export function useReportData(): UseReportDataReturn {
     const fetchReport = async () => {
       setIsLoading(true);
       setError(null);
+      // Clear stale report data before refetching to prevent mixed state
+      if (!cancelled) {
+        setDailyReport(null);
+        setWeeklyReport(null);
+        setMonthlyReport(null);
+      }
       try {
         await runWith503(async () => {
           if (reportType === "daily") {
@@ -82,6 +89,8 @@ export function useReportData(): UseReportDataReturn {
   // 目标进展概览
   useEffect(() => {
     let cancelled = false;
+    // Clear stale goal data before refetching
+    setGoalSummary(null);
     getProgressSummary(reportType === "monthly" ? "monthly" : "weekly")
       .then((data) => { if (!cancelled) setGoalSummary(data); })
       .catch(() => { if (!cancelled) setGoalSummary(null); });
@@ -108,6 +117,12 @@ export function useReportData(): UseReportDataReturn {
     return null;
   })();
 
+  // Empty state: both taskStats and noteStats are zero / absent
+  const isEmpty = !isLoading && !error && !!(
+    (!taskStats || taskStats.total === 0) &&
+    (!noteStats || noteStats.total === 0)
+  );
+
   return {
     reportType,
     setReportType,
@@ -123,5 +138,6 @@ export function useReportData(): UseReportDataReturn {
     aiSummary,
     goalSummary,
     serviceUnavailable,
+    isEmpty,
   };
 }
