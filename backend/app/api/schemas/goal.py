@@ -140,3 +140,21 @@ class ProgressSummaryResponse(BaseModel):
     active_count: int
     completed_count: int
     goals: List[ProgressItem]
+
+
+# === 进度历史快照 ===
+
+class ProgressSnapshotItem(BaseModel):
+    """进度快照项"""
+    id: str
+    goal_id: str
+    current_value: int
+    target_value: int
+    percentage: float
+    snapshot_date: str
+    created_at: str
+
+
+class ProgressHistoryResponse(BaseModel):
+    """进度历史响应"""
+    snapshots: List[ProgressSnapshotItem]

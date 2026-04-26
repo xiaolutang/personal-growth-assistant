@@ -23,6 +23,22 @@ class GoalService:
     def __init__(self, sqlite_storage):
         self._sqlite = sqlite_storage
 
+    def _write_snapshot(self, goal_id: str, user_id: str, current_value: int, target_value: int):
+        """写入当日进度快照（去重 upsert）"""
+        percentage = _calculate_progress(current_value, target_value)
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        try:
+            self._sqlite.upsert_progress_snapshot(
+                goal_id=goal_id,
+                user_id=user_id,
+                current_value=current_value,
+                target_value=target_value,
+                percentage=percentage,
+                snapshot_date=today,
+            )
+        except Exception as e:
+            logger.warning("写入进度快照失败: %s", e)
+
     def _row_to_response(self, row: dict[str, Any], linked_entries_count: int = 0) -> dict[str, Any]:
         """将数据库行转换为响应 dict，包含计算字段"""
         result = dict(row)
@@ -207,6 +223,9 @@ class GoalService:
             if progress >= 100.0 and goal["status"] == "active":
                 self._sqlite.update_goal_status(goal_id, user_id, "completed")
 
+            # 写入进度快照
+            self._write_snapshot(goal_id, user_id, linked_count, goal["target_value"])
+
             # 获取最新的目标数据
             updated_goal = self._sqlite.get_goal(goal_id, user_id)
             result = self._row_to_response(updated_goal, linked_entries_count=linked_count)
@@ -358,6 +377,9 @@ class GoalService:
         if progress >= 100.0 and goal["status"] == "active":
             self._sqlite.update_goal_status(goal_id, user_id, "completed")
 
+        # 写入进度快照
+        self._write_snapshot(goal_id, user_id, checked_count, goal["target_value"])
+
         # 返回更新后的目标
         updated_goal = self._sqlite.get_goal(goal_id, user_id)
         linked_count = self._sqlite.count_goal_entries(goal_id, user_id)
@@ -410,6 +432,10 @@ class GoalService:
                 if progress >= 100.0 and goal["status"] == "active":
                     self._sqlite.update_goal_status(goal["id"], user_id, "completed")
 
+                # 写入进度快照
+                current_val = int(progress * goal["target_value"] / 100) if goal["target_value"] > 0 else 0
+                self._write_snapshot(goal["id"], user_id, current_val, goal["target_value"])
+
                 logger.debug(
                     "tag_auto 目标 %s 进度已重算: %.1f%%", goal["id"], progress
                 )
@@ -417,6 +443,17 @@ class GoalService:
                 logger.warning("tag_auto 目标 %s 重算失败: %s", goal["id"], e)
 
     # === 进度汇总 ===
+
+    async def get_progress_history(
+        self, goal_id: str, user_id: str, days: int = 30
+    ) -> tuple[Optional[list], int, str]:
+        """获取目标进度历史快照"""
+        goal = self._sqlite.get_goal(goal_id, user_id)
+        if not goal:
+            return None, 404, "目标不存在"
+
+        snapshots = self._sqlite.get_progress_history(goal_id, user_id, days=days)
+        return snapshots, 200, "获取成功"
 
     def _calc_goal_progress(
         self, goal: dict[str, Any], linked_entries_count: int = 0, *, override_count: Optional[int] = None

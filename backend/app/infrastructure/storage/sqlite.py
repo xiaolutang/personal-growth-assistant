@@ -643,6 +643,24 @@ class SQLiteStorage:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_goal_entries_entry_id ON goal_entries(entry_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_goal_entries_user_id ON goal_entries(user_id)")
 
+            # 目标进度快照表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS goal_progress_snapshots (
+                    id TEXT PRIMARY KEY,
+                    goal_id TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    current_value INTEGER NOT NULL,
+                    target_value INTEGER NOT NULL,
+                    percentage REAL NOT NULL,
+                    snapshot_date TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    UNIQUE(goal_id, snapshot_date),
+                    FOREIGN KEY (goal_id) REFERENCES goals(id) ON DELETE CASCADE
+                )
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_goal_snapshots_goal_id ON goal_progress_snapshots(goal_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_goal_snapshots_user_date ON goal_progress_snapshots(user_id, snapshot_date DESC)")
+
             # 笔记双链引用表
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS note_references (
@@ -987,6 +1005,7 @@ class SQLiteStorage:
         end_date: Optional[str] = None,
         user_id: Optional[str] = None,
         due: Optional[str] = None,
+        priority: Optional[str] = None,
     ) -> tuple[str, List]:
         """构建筛选查询（复用逻辑）
 
@@ -1020,6 +1039,12 @@ class SQLiteStorage:
         if status:
             conditions.append("e.status = ?")
             params.append(status)
+
+        # priority 过滤（仅接受合法值，非法值忽略）
+        _VALID_PRIORITIES = {"high", "medium", "low"}
+        if priority and priority in _VALID_PRIORITIES:
+            conditions.append("e.priority = ?")
+            params.append(priority)
 
         if parent_id:
             conditions.append("e.parent_id = ?")
@@ -1076,14 +1101,24 @@ class SQLiteStorage:
         offset: int = 0,
         user_id: str = "_default",
         due: Optional[str] = None,
+        priority: Optional[str] = None,
+        sort_by: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """列出条目（支持筛选）"""
         conn = self._get_conn()
         try:
             query, params = self._build_filter_query(
-                "SELECT DISTINCT e.* FROM entries e", type, status, tags, parent_id, start_date, end_date, user_id, due
+                "SELECT DISTINCT e.* FROM entries e", type, status, tags, parent_id, start_date, end_date, user_id, due, priority
             )
-            query += " ORDER BY e.updated_at DESC LIMIT ? OFFSET ?"
+
+            # 排序逻辑
+            _PRIORITY_ORDER = "CASE e.priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END"
+            if sort_by == "priority":
+                query += f" ORDER BY {_PRIORITY_ORDER} ASC, e.updated_at DESC"
+            else:
+                query += " ORDER BY e.updated_at DESC"
+
+            query += " LIMIT ? OFFSET ?"
             params.extend([limit, offset])
 
             cursor = conn.execute(query, params)
@@ -1129,12 +1164,13 @@ class SQLiteStorage:
         end_date: Optional[str] = None,
         user_id: str = "_default",
         due: Optional[str] = None,
+        priority: Optional[str] = None,
     ) -> int:
         """统计条目数量"""
         conn = self._get_conn()
         try:
             query, params = self._build_filter_query(
-                "SELECT COUNT(DISTINCT e.id) as cnt FROM entries e", type, status, tags, parent_id, start_date, end_date, user_id, due
+                "SELECT COUNT(DISTINCT e.id) as cnt FROM entries e", type, status, tags, parent_id, start_date, end_date, user_id, due, priority
             )
             cursor = conn.execute(query, params)
             return cursor.fetchone()["cnt"]
@@ -1717,6 +1753,73 @@ class SQLiteStorage:
                     WHERE user_id = ? AND status IN ({placeholders})
                     ORDER BY created_at DESC""",
                 (user_id, *statuses),
+            )
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    # === 进度快照 ===
+
+    def upsert_progress_snapshot(
+        self,
+        goal_id: str,
+        user_id: str,
+        current_value: int,
+        target_value: int,
+        percentage: float,
+        snapshot_date: str,
+    ) -> dict[str, Any]:
+        """按 (goal_id, snapshot_date) 去重 upsert 快照"""
+        import uuid as _uuid
+        now = datetime.now(timezone.utc).isoformat()
+        conn = self._get_conn()
+        try:
+            # 检查是否已有当日快照
+            existing = conn.execute(
+                "SELECT id FROM goal_progress_snapshots WHERE goal_id = ? AND snapshot_date = ?",
+                (goal_id, snapshot_date),
+            ).fetchone()
+
+            if existing:
+                conn.execute(
+                    """UPDATE goal_progress_snapshots
+                       SET current_value = ?, target_value = ?, percentage = ?, created_at = ?
+                       WHERE goal_id = ? AND snapshot_date = ?""",
+                    (current_value, target_value, percentage, now, goal_id, snapshot_date),
+                )
+                snapshot_id = existing["id"]
+            else:
+                snapshot_id = _uuid.uuid4().hex
+                conn.execute(
+                    """INSERT INTO goal_progress_snapshots
+                       (id, goal_id, user_id, current_value, target_value, percentage, snapshot_date, created_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (snapshot_id, goal_id, user_id, current_value, target_value, percentage, snapshot_date, now),
+                )
+            conn.commit()
+
+            row = conn.execute(
+                "SELECT * FROM goal_progress_snapshots WHERE id = ?", (snapshot_id,)
+            ).fetchone()
+            return dict(row)
+        finally:
+            conn.close()
+
+    def get_progress_history(
+        self,
+        goal_id: str,
+        user_id: str,
+        days: int = 30,
+    ) -> list[dict[str, Any]]:
+        """获取目标最近 N 天的进度历史"""
+        conn = self._get_conn()
+        try:
+            cursor = conn.execute(
+                """SELECT * FROM goal_progress_snapshots
+                   WHERE goal_id = ? AND user_id = ?
+                   ORDER BY snapshot_date DESC
+                   LIMIT ?""",
+                (goal_id, user_id, days),
             )
             return [dict(row) for row in cursor.fetchall()]
         finally:

@@ -13,6 +13,7 @@ from app.api.schemas.goal import (
     GoalEntryListResponse,
     ChecklistItemToggle,
     ProgressSummaryResponse,
+    ProgressHistoryResponse,
 )
 from app.routers.deps import get_current_user, get_goal_service
 from app.models.user import User
@@ -68,6 +69,20 @@ async def get_goal(
     if result is None:
         raise HTTPException(status_code=status_code, detail=message)
     return result
+
+
+@router.get("/{goal_id}/progress-history", response_model=ProgressHistoryResponse)
+async def get_progress_history(
+    goal_id: str,
+    days: int = Query(30, ge=1, le=365, description="回溯天数"),
+    user: User = Depends(get_current_user),
+):
+    """获取目标进度历史快照"""
+    service = get_goal_service()
+    result, status_code, message = await service.get_progress_history(goal_id, user_id=user.id, days=days)
+    if result is None:
+        raise HTTPException(status_code=status_code, detail=message)
+    return ProgressHistoryResponse(snapshots=result)
 
 
 @router.put("/{goal_id}", response_model=GoalResponse)
