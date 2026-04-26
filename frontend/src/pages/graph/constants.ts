@@ -26,6 +26,7 @@ export const viewTabs = [
   { key: "mastery", label: "掌握度" },
   { key: "project", label: "项目" },
   { key: "capability", label: "能力地图" },
+  { key: "recommend", label: "推荐" },
 ] as const;
 
 export type ViewKey = (typeof viewTabs)[number]["key"];

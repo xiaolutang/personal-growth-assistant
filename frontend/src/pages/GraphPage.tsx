@@ -13,6 +13,7 @@ import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { useGraphState } from "./graph/useGraphState";
 import { DetailPanel } from "./graph/DetailPanel";
 import { CapabilityMapView } from "./graph/CapabilityMapView";
+import { RecommendationPanel } from "./graph/RecommendationPanel";
 import { nodeTypes } from "./graph/CustomNodes";
 import { viewTabs, masteryColors, masteryLabels, MASTERY_LEVELS, NODE_THRESHOLD } from "./graph/constants";
 
@@ -78,6 +79,17 @@ export function GraphPage() {
         {/* F109: 能力地图视图 */}
         {state.activeView === "capability" ? (
           <CapabilityMapView />
+        ) : state.activeView === "recommend" ? (
+          <RecommendationPanel
+            onSelectConcept={(concept) => {
+              state.setActiveView("domain");
+              // 切换到领域视图后聚焦该概念
+              setTimeout(() => {
+                const matchNode = state.mapData?.nodes.find((n) => n.name === concept);
+                if (matchNode) state.setSelectedNode(matchNode);
+              }, 300);
+            }}
+          />
         ) : state.serviceUnavailable ? (
           <div className="flex-1 flex items-center justify-center">
             <ServiceUnavailable onRetry={() => state.loadMap(state.activeView)} />

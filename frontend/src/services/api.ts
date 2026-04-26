@@ -75,6 +75,11 @@ export interface MorningDigestResponse {
   todos: MorningDigestTodo[]; overdue: MorningDigestOverdue[]; stale_inbox: MorningDigestStaleInbox[];
   weekly_summary: MorningDigestWeeklySummary; learning_streak?: number;
   daily_focus?: DailyFocus | null; pattern_insights?: string[]; cached_at?: string | null;
+  knowledge_recommendations?: {
+    knowledge_gaps?: { concept: string; missing_prerequisites?: string[] }[];
+    review_suggestions?: { concept: string; category?: string | null; last_seen_days_ago?: number; entry_count?: number }[];
+    related_concepts?: { concept: string; score?: number; source?: string }[];
+  } | null;
 }
 export type EntrySummaryResponse = S["EntrySummaryResponse"];
 export type NotificationPreferences = S["NotificationPreferences"];
@@ -402,6 +407,34 @@ export async function getNotificationPreferences(): Promise<NotificationPreferen
 export async function updateNotificationPreferences(prefs: NotificationPreferences): Promise<NotificationPreferences> {
   const { data, error, response } = await client.PUT("/notification-preferences", { body: prefs });
   return handleOpenApiResponse<NotificationPreferences>(data as NotificationPreferences | undefined, error, response);
+}
+
+// === 知识推荐 ===
+export interface KnowledgeGapItem {
+  concept: string;
+  missing_prerequisites: string[];
+}
+export interface ReviewSuggestionItem {
+  concept: string;
+  category: string | null;
+  last_seen_days_ago: number;
+  entry_count: number;
+}
+export interface RelatedConceptItem {
+  concept: string;
+  score: number;
+  source: string;
+}
+export interface RecommendationResponse {
+  knowledge_gaps: KnowledgeGapItem[];
+  review_suggestions: ReviewSuggestionItem[];
+  related_concepts: RelatedConceptItem[];
+  source: string;
+}
+export async function fetchRecommendations(): Promise<RecommendationResponse> {
+  const response = await authFetch(`${API_BASE}/knowledge/recommendations`);
+  if (!response.ok) throw new ApiError(response.status, `推荐 API 错误: ${response.status}`);
+  return await response.json() as RecommendationResponse;
 }
 
 // === 知识图谱增强 ===

@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, Clock, AlertTriangle, Inbox, BookOpen, Flame, Target, Eye, ArrowRight } from "lucide-react";
+import { Sparkles, Clock, AlertTriangle, Inbox, BookOpen, Flame, Target, Eye, ArrowRight, Lightbulb } from "lucide-react";
 import type { MorningDigestResponse } from "@/services/api";
 import { DigestStat } from "./DigestStat";
 
@@ -136,6 +136,49 @@ export function MorningDigestCard({
                 )}
               </div>
             )}
+
+            {/* 知识建议 */}
+            {digest.knowledge_recommendations && (() => {
+              const rec = digest.knowledge_recommendations as {
+                knowledge_gaps?: { concept: string; missing_prerequisites?: string[] }[];
+                review_suggestions?: { concept: string; last_seen_days_ago?: number }[];
+                related_concepts?: { concept: string; score?: number }[];
+              };
+              // 取 Top 3（缺口 1 + 复习 1 + 共现 1）
+              const top3 = [
+                ...(rec.knowledge_gaps || []).slice(0, 1).map((g) => ({
+                  concept: g.concept,
+                  reason: g.missing_prerequisites?.length
+                    ? `缺少前置: ${g.missing_prerequisites.join("、")}`
+                    : "建议补充相关前置知识",
+                })),
+                ...(rec.review_suggestions || []).slice(0, 1).map((r) => ({
+                  concept: r.concept,
+                  reason: r.last_seen_days_ago
+                    ? `${r.last_seen_days_ago} 天未复习`
+                    : "建议回顾巩固",
+                })),
+                ...(rec.related_concepts || []).slice(0, 1).map((c) => ({
+                  concept: c.concept,
+                  reason: "与已掌握概念关联",
+                })),
+              ];
+              if (top3.length === 0) return null;
+              return (
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
+                    <span className="text-xs font-medium text-muted-foreground">知识建议</span>
+                  </div>
+                  {top3.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 pl-5">
+                      <span className="text-xs font-medium">{item.concept}</span>
+                      <span className="text-[10px] text-muted-foreground">— {item.reason}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* 模式洞察 */}
             {digest.pattern_insights && digest.pattern_insights.length > 0 && (
