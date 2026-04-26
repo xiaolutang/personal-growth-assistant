@@ -4,6 +4,14 @@
   "status": "active",
   "archived_requirement_cycles": [
     {
+      "id": "R039",
+      "name": "flutter-explore-maintenance",
+      "status": "completed",
+      "archive_dir": "_archive/R039_flutter-explore-maintenance",
+      "total_tasks": 6,
+      "completed_at": "2026-04-27"
+    },
+    {
       "id": "R038",
       "name": "engineering-health-and-features",
       "status": "completed",
@@ -27,5 +35,6 @@
     }
   ],
   "archived_phases": [],
-  "features": []
+  "features": [],
+  "updated_at": "2026-04-27"
 }

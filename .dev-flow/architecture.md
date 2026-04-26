@@ -1,6 +1,6 @@
 # 架构文档
 
-> 项目：personal-growth-assistant | 版本：v0.38.0 | 更新：2026-04-26
+> 项目：personal-growth-assistant | 版本：v0.39.0 | 更新：2026-04-26
 
 ## 系统总览
 
@@ -80,7 +80,7 @@ frontend/src/
 | 本地存储 | flutter_secure_storage (JWT) |
 | 认证 | JWT Bearer，与 Web 端共享 |
 
-MVVM：View → ViewModel(Riverpod) → Model(Services+API)。**禁止**：Widget 调 ApiClient；Provider 含 UI 导航；页面间传对象；Provider 持可变 List；多 Provider 监听同一 SSE。设计约束：纯 API 消费层；3 Tab 底栏；AI 对话核心；零摩擦输入；MVP 无本地缓存。
+MVVM：View → ViewModel(Riverpod) → Model(Services+API)。**禁止**：Widget 调 ApiClient；Provider 含 UI 导航；页面间传对象；Provider 持可变 List；多 Provider 监听同一 SSE。设计约束：纯 API 消费层；4 Tab 底栏（今天/日知/探索/任务）；AI 对话核心；零摩擦输入；MVP 无本地缓存。例外：搜索历史使用内存 List<String> 存储（会话级生命周期），MVP 阶段不引入 SharedPreferences 等本地持久化依赖。
 
 ## 技术栈
 

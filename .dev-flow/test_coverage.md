@@ -1,5 +1,16 @@
 # 测试覆盖清单
 
+## R039: Flutter Explore + 工程维护
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| 分支清理 | S38 | manual+review | git branch 干净/architecture.md 4-tab/project_spec R039 | pending | L1 |
+| Explore API 层 | F151 | unit+smoke | 条目列表 param mapping/搜索 param mapping/删除 404/更新 category/搜索历史去重截断/批量编排/超时/malformed JSON/smoke 完整流程 | pending | L2 |
+| Explore 页面框架 | F152 | widget+smoke | 5 Tab 渲染/Tab 过滤(灵感→inbox)/加载态/空态/错误态/条目点击跳转/导航栏 4-tab/smoke 完整路径 | pending | F2 |
+| Explore 搜索 | F153 | unit+widget | 搜索触发/历史去重截断/空搜索/空历史/API 失败不记历史/搜索栏UI交互/历史面板显示隐藏/清空搜索恢复Tab | pending | F2 |
+| Explore 批量操作 | F154 | unit+widget+smoke | 批量删除成功+确认/批量转分类+分类选择/搜索模式下批量操作/部分失败保留选中+重试/全部失败/0 条禁用/重试成功后退出/多选模式UI进出/smoke 完整批量路径 | pending | F2 |
+| 质量收口 | S39 | integration+smoke | pytest/vitest/flutter test/build/Docker | pending | L4 |
+
 ## R038: 工程健康收口 + 小功能补齐
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |

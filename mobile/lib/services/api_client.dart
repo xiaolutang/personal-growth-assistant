@@ -108,6 +108,72 @@ class ApiClient {
     );
   }
 
+  // ---- Explore API Methods ----
+
+  /// 获取条目列表（支持过滤参数）
+  /// [type] 条目类型：inbox/task/note/project
+  /// [status] 状态过滤
+  /// [tags] 标签过滤
+  /// [startDate] 起始日期 (ISO 格式)
+  /// [endDate] 结束日期 (ISO 格式)
+  /// [limit] 分页大小
+  /// [offset] 分页偏移
+  Future<Response<T>> fetchEntries<T>({
+    String? type,
+    String? status,
+    String? tags,
+    String? startDate,
+    String? endDate,
+    int? limit,
+    int? offset,
+  }) {
+    final queryParams = <String, dynamic>{};
+    if (type != null) queryParams['type'] = type;
+    if (status != null) queryParams['status'] = status;
+    if (tags != null) queryParams['tags'] = tags;
+    if (startDate != null) queryParams['start_date'] = startDate;
+    if (endDate != null) queryParams['end_date'] = endDate;
+    if (limit != null) queryParams['limit'] = limit;
+    if (offset != null) queryParams['offset'] = offset;
+
+    return _dio.get<T>(
+      '/entries',
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
+  }
+
+  /// 全文搜索条目
+  Future<Response<T>> searchEntries<T>({
+    required String query,
+    int? limit,
+  }) {
+    final queryParams = <String, dynamic>{
+      'q': query,
+    };
+    if (limit != null) queryParams['limit'] = limit;
+
+    return _dio.get<T>(
+      '/entries/search/query',
+      queryParameters: queryParams,
+    );
+  }
+
+  /// 删除条目
+  Future<Response<T>> deleteEntry<T>({required String id}) {
+    return _dio.delete<T>('/entries/$id');
+  }
+
+  /// 更新条目分类
+  Future<Response<T>> updateEntryCategory<T>({
+    required String id,
+    required String category,
+  }) {
+    return _dio.put<T>(
+      '/entries/$id',
+      data: {'category': category},
+    );
+  }
+
   // ---- Interceptors ----
 
   /// 请求拦截：注入 JWT token

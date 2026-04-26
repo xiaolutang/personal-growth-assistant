@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../pages/chat_page.dart';
 import '../pages/entry_detail_page.dart';
+import '../pages/explore_page.dart';
 import '../pages/login_page.dart';
 import '../pages/tasks_page.dart';
 import '../pages/today_page.dart';
@@ -67,6 +68,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/chat',
             name: 'chat',
             builder: (context, state) => const ChatPage(),
+          ),
+          GoRoute(
+            path: '/explore',
+            name: 'explore',
+            builder: (context, state) => const ExplorePage(),
           ),
           GoRoute(
             path: '/tasks',

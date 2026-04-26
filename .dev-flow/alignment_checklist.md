@@ -1,5 +1,42 @@
 # 对齐清单
 
+## R039: Flutter Explore + 工程维护
+
+### 契约对齐
+
+- [ ] F151: CONTRACT-ENTRIES-LIST — 消费已有 GET /entries，传递 type/status/tags/start_date/end_date query params
+- [ ] F151: CONTRACT-ENTRIES-SEARCH — 消费已有 GET /entries/search/query，传递 q/limit params
+- [ ] F151: CONTRACT-ENTRIES-DELETE — 消费已有 DELETE /entries/{id}
+- [ ] F151: CONTRACT-ENTRIES-UPDATE — 消费已有 PUT /entries/{id}，body 含 category 字段
+- [ ] F152: Tab→type 参数映射明确（灵感→type=inbox, 任务→type=task, 笔记→type=note, 项目→type=project），后端参数名为 type 非 category
+
+### 依赖对齐
+
+- [ ] S38 无外部依赖
+- [ ] F151 无外部依赖（纯 Flutter API 层扩展）
+- [ ] F152 depends_on S38 ✓（需 architecture.md 4-tab 约束先更新）+ F151 ✓（需 explore_provider）
+- [ ] F153 depends_on F152 ✓（在 ExplorePage 基础上添加搜索）
+- [ ] F154 depends_on F151 ✓（需批量编排方法）+ F152 ✓（需 ExplorePage）+ F153 ✓（严格顺序）
+- [ ] S39 depends_on S38 ✓ + F153 ✓ + F154 ✓
+
+### 架构对齐
+
+- [ ] S38: 更新 architecture.md 底栏约束从 3 Tab 到 4 Tab
+- [ ] S38: 更新 architecture.md 允许搜索历史使用内存 List（MVP 不引入本地持久化）
+- [ ] F151: explore_provider 使用 Riverpod Notifier 模式，参照 entry_provider.dart
+- [ ] F151: ExplorePage 作为 View 层，不含业务逻辑
+- [ ] F151: 搜索历史使用内存 List<String>，不引入 SharedPreferences
+- [ ] F153: 搜索逻辑和历史管理在 explore_provider，ExplorePage 仅渲染 UI
+- [ ] F154: 批量操作编排在 explore_provider，部分失败状态管理在 Provider
+- [ ] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫、MVVM 分层
+
+### 执行顺序
+
+- [ ] Phase 1: S38（分支清理 + arch 更新）
+- [ ] Phase 2: F151（API 层 + Provider）
+- [ ] Phase 3: F152 → F153 → F154（严格顺序）
+- [ ] Phase 4: S39
+
 ## R038: 工程健康收口 + 小功能补齐
 
 ### 契约对齐
