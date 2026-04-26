@@ -1,8 +1,9 @@
 """SQLite 索引层 - 快速元数据查询和全文搜索"""
+import re
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Set
 
 from app.models import Task, Category, TaskStatus, Priority
 
@@ -641,6 +642,27 @@ class SQLiteStorage:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_goal_entries_goal_id ON goal_entries(goal_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_goal_entries_entry_id ON goal_entries(entry_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_goal_entries_user_id ON goal_entries(user_id)")
+
+            # 笔记双链引用表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS note_references (
+                    source_id TEXT NOT NULL,
+                    target_id TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    PRIMARY KEY (source_id, target_id, user_id)
+                )
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_note_refs_source ON note_references(source_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_note_refs_target ON note_references(target_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_note_refs_user_id ON note_references(user_id)")
+
+            # backlinks 索引状态表（延迟初始化标记）
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS backlinks_index_status (
+                    user_id TEXT PRIMARY KEY,
+                    indexed_at TEXT NOT NULL
+                )
+            """)
 
             conn.commit()
         finally:
@@ -1778,5 +1800,109 @@ class SQLiteStorage:
                 }
                 for row in rows
             ]
+        finally:
+            conn.close()
+
+    # === 笔记双链引用 ===
+
+    # 双链语法正则: [[note-id]] 或 [[note-id|显示标题]]
+    _WIKILINK_RE = re.compile(r'\[\[([^\]|]+?)(?:\|[^\]]*?)?\]\]')
+
+    @staticmethod
+    def parse_wikilinks(content: str) -> Set[str]:
+        """从 Markdown 内容中解析双链引用，返回去重的 note-id 集合。
+
+        支持:
+          - [[note-abc123]]       简写语法
+          - [[note-abc123|标题]]  完整语法
+
+        过滤:
+          - 空字符串
+          - 自引用（调用方判断）
+          - 无效 ID（不匹配 {category}-{hex} 格式的）
+        """
+        if not content:
+            return set()
+        matches = SQLiteStorage._WIKILINK_RE.findall(content)
+        # 去重并清理空白
+        return {m.strip() for m in matches if m.strip()}
+
+    def upsert_note_references(self, source_id: str, target_ids: Set[str], user_id: str):
+        """更新某个条目的所有出引用（幂等：先删旧引用再写入新引用）"""
+        conn = self._get_conn()
+        try:
+            # 删除旧引用
+            conn.execute(
+                "DELETE FROM note_references WHERE source_id = ? AND user_id = ?",
+                (source_id, user_id),
+            )
+            # 写入新引用
+            for target_id in target_ids:
+                # 跳过自引用
+                if target_id == source_id:
+                    continue
+                # 跳过无效 ID（至少要有 category- 前缀）
+                if '-' not in target_id:
+                    continue
+                try:
+                    conn.execute(
+                        "INSERT OR IGNORE INTO note_references (source_id, target_id, user_id) VALUES (?, ?, ?)",
+                        (source_id, target_id, user_id),
+                    )
+                except Exception:
+                    pass  # 忽略无效插入
+            conn.commit()
+        finally:
+            conn.close()
+
+    def delete_note_references(self, entry_id: str, user_id: str):
+        """删除条目的所有引用关系（作为 source 和 target 都删）"""
+        conn = self._get_conn()
+        try:
+            conn.execute(
+                "DELETE FROM note_references WHERE (source_id = ? OR target_id = ?) AND user_id = ?",
+                (entry_id, entry_id, user_id),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_backlinks(self, entry_id: str, user_id: str) -> List[Dict[str, Any]]:
+        """获取反向引用列表（谁引用了 entry_id），返回 source 条目的 id、title、category"""
+        conn = self._get_conn()
+        try:
+            rows = conn.execute(
+                """SELECT DISTINCT e.id, e.title, e.type AS category
+                   FROM note_references nr
+                   JOIN entries e ON e.id = nr.source_id AND e.user_id = nr.user_id
+                   WHERE nr.target_id = ? AND nr.user_id = ?
+                   ORDER BY e.updated_at DESC""",
+                (entry_id, user_id),
+            ).fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    def is_backlinks_indexed(self, user_id: str) -> bool:
+        """检查用户是否已完成 backlinks 索引"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT 1 FROM backlinks_index_status WHERE user_id = ? LIMIT 1",
+                (user_id,),
+            ).fetchone()
+            return row is not None
+        finally:
+            conn.close()
+
+    def mark_backlinks_indexed(self, user_id: str):
+        """标记用户已完成 backlinks 索引"""
+        conn = self._get_conn()
+        try:
+            conn.execute(
+                "INSERT OR REPLACE INTO backlinks_index_status (user_id, indexed_at) VALUES (?, ?)",
+                (user_id, datetime.now(timezone.utc).isoformat()),
+            )
+            conn.commit()
         finally:
             conn.close()

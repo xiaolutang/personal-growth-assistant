@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Circle, CheckCircle, Clock, Trash2, Pause, XCircle, Folder, MoreHorizontal, Loader2, ArrowRightCircle, FileText, CheckSquare, Square } from "lucide-react";
+import { Circle, CheckCircle, Clock, Trash2, Pause, XCircle, Folder, MoreHorizontal, Loader2, ArrowRightCircle, FileText, CheckSquare, Square, Calendar, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -140,17 +140,23 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
     }
   };
 
-  // 格式化日期
-  const formatDate = () => {
+  // 截止日期状态判断（UTC 日期比较）
+  const getDueDateInfo = () => {
     if (!task.planned_date) return null;
-    const date = new Date(task.planned_date);
-    const today = new Date();
-    const isToday = date.toDateString() === today.toDateString();
-    if (isToday) {
-      return date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
-    }
-    return date.toLocaleDateString("zh-CN", { month: "short", day: "numeric" });
+    // 仅取日期部分进行比较，与后端 UTC 逻辑一致
+    const plannedDateStr = task.planned_date.split("T")[0];
+    const todayStr = new Date().toISOString().split("T")[0];
+    const isOverdue = plannedDateStr < todayStr;
+    const isDueToday = plannedDateStr === todayStr;
+    // 格式化显示
+    const date = new Date(plannedDateStr + "T00:00:00");
+    const displayText = isDueToday
+      ? "今天到期"
+      : date.toLocaleDateString("zh-CN", { month: "short", day: "numeric" });
+
+    return { isOverdue, isDueToday, displayText, plannedDateStr };
   };
+  const dueDateInfo = getDueDateInfo();
 
   // 标签最多显示2个
   const displayTags = task.tags?.slice(0, 2) || [];
@@ -216,7 +222,24 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
               <span className="truncate max-w-[80px]">{parentProject.title}</span>
             </span>
           )}
-          {formatDate() && <span>{formatDate()}</span>}
+          {dueDateInfo && (
+            <span
+              className={cn(
+                "flex items-center gap-0.5",
+                dueDateInfo.isOverdue && "text-red-500 dark:text-red-400",
+                dueDateInfo.isDueToday && "text-amber-500 dark:text-amber-400",
+                !dueDateInfo.isOverdue && !dueDateInfo.isDueToday && "text-muted-foreground"
+              )}
+              data-testid="due-date-badge"
+            >
+              {dueDateInfo.isOverdue ? (
+                <AlertTriangle className="h-3 w-3" />
+              ) : (
+                <Calendar className="h-3 w-3" />
+              )}
+              {dueDateInfo.displayText}
+            </span>
+          )}
           {displayTags.map((tag) => (
             <Badge key={tag} variant="outline" className="text-[10px] px-1 h-4">
               {tag}

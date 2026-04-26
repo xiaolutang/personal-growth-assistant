@@ -8,7 +8,7 @@ import uuid
 import zipfile
 from datetime import datetime
 from pathlib import Path
-from typing import AsyncGenerator, Optional, Tuple, Any
+from typing import AsyncGenerator, List, Optional, Tuple, Any, Dict, Set
 
 logger = logging.getLogger(__name__)
 
@@ -151,6 +151,8 @@ class EntryService:
         # SQLite 同步（同步执行）
         if self.storage.sqlite:
             self.storage.sqlite.upsert_entry(entry, user_id=user_id)
+            # 解析双链引用
+            self._update_note_references(entry.id, content, user_id)
 
         # Neo4j + Qdrant 后台同步
         asyncio.create_task(self.storage.sync_to_graph_and_vector(entry, user_id=user_id))
@@ -344,6 +346,9 @@ class EntryService:
             self.storage.sqlite.upsert_entry(entry, user_id=user_id)
             if request.title is not None or request.content is not None:
                 self.storage.sqlite.save_ai_summary(entry_id, "", user_id=user_id)
+            # 内容变更时更新双链引用
+            if request.content is not None:
+                self._update_note_references(entry_id, request.content, user_id)
 
         # Neo4j + Qdrant 后台同步
         asyncio.create_task(self.storage.sync_to_graph_and_vector(entry, user_id=user_id))
@@ -369,6 +374,8 @@ class EntryService:
         # 级联删除条目关联
         if self.storage.sqlite:
             self.storage.sqlite.delete_entry_links_by_entry(entry_id, user_id)
+            # 清理双链引用关系
+            self.storage.sqlite.delete_note_references(entry_id, user_id)
 
         # 删除
         success = await self.storage.delete_entry(entry_id, user_id=user_id)
@@ -822,3 +829,66 @@ class EntryService:
             return False, 404, f"关联不存在: {link_id}"
 
         return True, 204, ""
+
+    # === 笔记双链引用 ===
+
+    def _update_note_references(self, source_id: str, content: str, user_id: str):
+        """解析内容的双链语法并更新引用关系"""
+        if not self.storage.sqlite:
+            return
+        from app.infrastructure.storage.sqlite import SQLiteStorage
+        target_ids = SQLiteStorage.parse_wikilinks(content)
+        # 过滤自引用（再次确认）
+        target_ids.discard(source_id)
+        # 过滤不存在的 target_id
+        valid_targets: Set[str] = set()
+        for tid in target_ids:
+            if '-' not in tid:
+                continue
+            if self.storage.sqlite.entry_belongs_to_user(tid, user_id):
+                valid_targets.add(tid)
+        self.storage.sqlite.upsert_note_references(source_id, valid_targets, user_id)
+
+    async def get_backlinks(self, entry_id: str, user_id: str = "_default") -> List[Dict[str, Any]]:
+        """获取条目的反向引用列表。
+
+        首次调用时自动触发 reindex_backlinks（延迟初始化）。
+        """
+        if not self.storage.sqlite:
+            return []
+
+        # 延迟初始化：首次查询时 reindex
+        if not self.storage.sqlite.is_backlinks_indexed(user_id):
+            await self.reindex_backlinks(user_id)
+
+        return self.storage.sqlite.get_backlinks(entry_id, user_id)
+
+    async def reindex_backlinks(self, user_id: str):
+        """扫描用户所有笔记内容并重建引用关系（幂等）"""
+        if not self.storage.sqlite:
+            return
+
+        from app.infrastructure.storage.sqlite import SQLiteStorage
+
+        # 获取用户所有条目（包含 content）
+        conn = self.storage.sqlite.get_connection()
+        try:
+            rows = conn.execute(
+                "SELECT id, content FROM entries WHERE user_id = ?",
+                (user_id,),
+            ).fetchall()
+        finally:
+            conn.close()
+
+        for row in rows:
+            entry_id = row["id"]
+            content = row["content"] or ""
+            target_ids = SQLiteStorage.parse_wikilinks(content)
+            # 过滤自引用
+            target_ids.discard(entry_id)
+            # 过滤无效 ID
+            valid_targets = {tid for tid in target_ids if '-' in tid}
+            self.storage.sqlite.upsert_note_references(entry_id, valid_targets, user_id)
+
+        # 标记已索引
+        self.storage.sqlite.mark_backlinks_indexed(user_id)

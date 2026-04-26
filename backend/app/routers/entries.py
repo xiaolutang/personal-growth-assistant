@@ -21,6 +21,8 @@ from app.api.schemas import (
     EntryLinkResponse,
     EntryLinkListResponse,
     KnowledgeContextResponse,
+    BacklinksResponse,
+    BacklinkItem,
 )
 from app.routers.deps import get_entry_service, get_current_user, get_knowledge_service
 from app.models.user import User
@@ -154,6 +156,20 @@ async def get_entry(entry_id: str, user: User = Depends(get_current_user)):
     if not entry:
         raise HTTPException(status_code=404, detail=f"条目不存在: {entry_id}")
     return entry
+
+
+@router.get("/{entry_id}/backlinks", response_model=BacklinksResponse)
+async def get_backlinks(entry_id: str, user: User = Depends(get_current_user)):
+    """获取条目的反向引用列表（谁引用了这个条目）"""
+    service = get_entry_service()
+    # 先验证条目存在且属于当前用户
+    if not service._verify_entry_owner(entry_id, user.id):
+        raise HTTPException(status_code=404, detail=f"条目不存在: {entry_id}")
+
+    backlinks = await service.get_backlinks(entry_id, user_id=user.id)
+    return BacklinksResponse(
+        backlinks=[BacklinkItem(**bl) for bl in backlinks]
+    )
 
 
 @router.get("/{entry_id}/export")

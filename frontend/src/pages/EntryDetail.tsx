@@ -1,7 +1,11 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { exportSingleEntry } from "@/services/api";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { exportSingleEntry, getBacklinks } from "@/services/api";
+import type { BacklinkItem } from "@/services/api";
 import { PageChatPanel } from "@/components/PageChatPanel";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 
@@ -43,6 +47,21 @@ export function EntryDetail() {
 
   // AI 摘要
   const aiSummary = useAiSummary();
+
+  // 反向引用
+  const [backlinks, setBacklinks] = useState<BacklinkItem[]>([]);
+
+  const loadBacklinks = useCallback(() => {
+    if (!id) return;
+    getBacklinks(id)
+      .then((res) => setBacklinks(res.backlinks))
+      .catch(() => setBacklinks([])); // 静默降级
+  }, [id]);
+
+  useEffect(() => {
+    setBacklinks([]);
+    loadBacklinks();
+  }, [loadBacklinks]);
 
   const { entry } = data;
 
@@ -173,6 +192,39 @@ export function EntryDetail() {
             onDeleteLink={links.handleDeleteLink}
             onReloadLinks={links.loadEntryLinks}
           />
+        )}
+
+        {!editing.isEditing && backlinks.length > 0 && (
+          <Card className="mt-4">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+                  <path d="M9 18h6" />
+                  <path d="M10 22h4" />
+                </svg>
+                反向引用 ({backlinks.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {backlinks.map((bl) => (
+                  <div
+                    key={bl.id}
+                    className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/entry/${bl.id}`)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{bl.title}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {bl.category}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {!editing.isEditing && entry && (

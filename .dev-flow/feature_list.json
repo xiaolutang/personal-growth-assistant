@@ -21,8 +21,8 @@
   },
   "summary": {
     "total_tasks": 18,
-    "pending": 8,
-    "completed": 10,
+    "pending": 7,
+    "completed": 11,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 4
@@ -494,7 +494,14 @@
       "description": "后端支持 [[note-id]] 和 [[note-id|标题]] 双链语法解析、关系存储和查询。解析 Markdown 内容中的双链语法，在 SQLite 中新增 note_references 表存储引用关系。两种语法统一提取 note-id 作为引用目标。含已有笔记回填路径。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-26T19:35:00+0800",
+      "completed_at": "2026-04-26T20:35:00+0800",
+      "actual_minutes": 60,
+      "commit": "pending",
+      "evidence_file": ".dev-flow/evidence/B107.md",
+      "execution_notes": "note_references + backlinks_index_status 表; parse_wikilinks; CRUD 引用管理; GET backlinks 路由; reindex 延迟初始化; BacklinkItem schema; 23 测试; pytest 1279 passed",
+      "summary": "笔记双链后端 — 解析/存储/查询/回填，23 测试，pytest 1279 passed",
       "priority": "P1",
       "acceptance_criteria": [
         "解析 [[note-id]] 简写语法提取引用",
