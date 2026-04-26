@@ -264,7 +264,7 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-primary"
+              className="h-6 w-6 min-h-[44px] min-w-[44px] text-muted-foreground hover:text-primary"
               onClick={handleMenuToggle}
               disabled={converting}
             >
