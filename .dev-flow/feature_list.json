@@ -27,5 +27,222 @@
     }
   ],
   "archived_phases": [],
-  "features": []
+  "workflow": {
+    "name": "xlfoundry",
+    "mode": "B",
+    "runtime": "skill_orchestrated",
+    "review_provider": "codex_plugin",
+    "audit_provider": "codex_plugin",
+    "risk_provider": "codex_plugin",
+    "stop_hook_enabled": false
+  },
+  "active_requirement_cycle": {
+    "id": "R039",
+    "name": "flutter-explore-maintenance",
+    "branch": "feat/R039-flutter-explore",
+    "status": "planning"
+  },
+  "summary": {
+    "total": 6,
+    "by_status": {
+      "pending": 6,
+      "in_progress": 0,
+      "completed": 0,
+      "cancelled": 0,
+      "blocked": 0
+    },
+    "by_priority": {
+      "P0": 1,
+      "P1": 4,
+      "P2": 1
+    }
+  },
+  "features": [
+    {
+      "id": "S38",
+      "phase": 1,
+      "module": "maintenance",
+      "name": "分支清理 + 过时文档修正",
+      "description": "删除已合并到 main 的历史分支（排除 main 本身和当前活跃开发分支 feat/R039-flutter-explore）；更新 project_spec.md 为 R039 状态；更新 architecture.md Flutter 导航栏约束从 3 Tab 到 4 Tab；更新 architecture.md 允许搜索历史使用内存列表（MVP 不引入 SharedPreferences）",
+      "verification": "已合并分支清理完毕（仅剩 main + feat/R039-*）；project_spec.md 反映 R039；architecture.md 反映 4 Tab",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "git branch --merged main 的分支全部删除，保留 main 和 feat/R039-flutter-explore",
+        "project_spec.md 更新为 R039 状态和范围描述",
+        "architecture.md Flutter 底栏约束更新为 4 Tab（今天/日知/探索/任务）",
+        "architecture.md 允许搜索历史使用内存列表（MVP 阶段不引入本地持久化依赖）"
+      ],
+      "risk_tags": [],
+      "files": [".dev-flow/project_spec.md", ".dev-flow/architecture.md"]
+    },
+    {
+      "id": "F151",
+      "phase": 2,
+      "module": "flutter-explore",
+      "name": "Flutter Explore API 层扩展",
+      "description": "扩展 Flutter API 层，添加 Explore 所需接口：带过滤参数的条目列表（type/status/tags/start_date/end_date）、全文搜索（GET /entries/search/query?q=&limit=）、删除条目（DELETE /entries/{id}）、更新条目分类（PUT /entries/{id} body.category）。新建 explore_provider.dart（Riverpod Notifier 模式，参照 entry_provider.dart）管理探索页全部业务状态：列表/搜索/搜索历史（内存 List<String>，最多 10 条）/删除/更新分类/批量操作编排/部分失败聚合。ExplorePage 仅作为 View 层消费 Provider 状态。与 entry_provider（负责详情和状态切换）职责分离。",
+      "verification": "flutter analyze 通过 + 单元测试覆盖 API 调用和参数映射 + smoke 完整流程验证",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "explore_provider.dart（Riverpod Notifier）可获取带过滤参数的条目列表（type/status/tags/start_date/end_date query params 正确映射）",
+        "可调用全文搜索 API（q/limit 参数映射）",
+        "可删除单条条目",
+        "可更新条目分类（PUT /entries/{id} category 字段）",
+        "搜索历史使用内存 List<String>，最多 10 条，去重",
+        "批量操作编排方法：接收 ID 列表 + 操作类型，返回成功/失败分组",
+        "flutter analyze 无报错",
+        "单元测试覆盖成功、失败、边界场景"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        "正常: 条目列表 API 返回正确解析（验证 type/status/tags query params）",
+        "正常: 搜索 API 返回搜索结果（验证 q/limit params）",
+        "正常: 更新条目分类成功",
+        "正常: 搜索历史去重和截断到 10 条",
+        "边界: 空 tags/start_date/end_date 参数不发送",
+        "边界: 搜索历史为空时不报错",
+        "异常: 网络超时返回友好错误消息",
+        "异常: 删除不存在条目返回 404 错误",
+        "异常: malformed JSON 响应不崩溃",
+        "smoke: Provider 完整流程 — 初始化→加载列表→搜索→删除→刷新验证数据一致"
+      ],
+      "files": [
+        "mobile/lib/services/api_client.dart",
+        "mobile/lib/providers/explore_provider.dart"
+      ]
+    },
+    {
+      "id": "F152",
+      "phase": 3,
+      "module": "flutter-explore",
+      "name": "Explore 页面框架 + Tab + 条目列表",
+      "description": "创建 ExplorePage 页面（View 层，消费 explore_provider 状态），包含 5 个类型 Tab（全部/任务/笔记/灵感/项目）+ 条目列表展示 + 加载/空/错误三态。Tab 标签到后端查询参数的映射：灵感→type=inbox，任务→type=task，笔记→type=note，项目→type=project。注册到路由和底部导航栏（替换 PlaceholderPage）。注意：需 S38 先完成 architecture.md 4 Tab 约束更新。",
+      "verification": "页面可正常切换 Tab 并展示对应条目",
+      "depends_on": ["S38", "F151"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "ExplorePage 包含 5 个 Tab：全部/任务/笔记/灵感/项目",
+        "切换 Tab 过滤对应类型条目（灵感 Tab 传 type=inbox 到 API，后端参数名为 type 非 category）",
+        "加载态、空状态、错误态三态完整",
+        "底部导航栏 4 Tab 顺序：今天(0)/日知(1)/探索(2)/任务(3)，路由 /explore",
+        "点击条目跳转到 EntryDetailPage",
+        "ExplorePage 不含业务逻辑，仅消费 explore_provider 状态",
+        "flutter analyze 无报错"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常: 默认加载「全部」Tab 显示所有条目",
+        "正常: 点击「灵感」Tab 传 type=inbox 过滤条目",
+        "正常: 加载态显示 loading indicator",
+        "正常: 空列表显示空状态提示",
+        "正常: API 错误显示错误态+重试按钮",
+        "正常: 点击条目跳转到 /entries/:id",
+        "smoke: 完整路径 — 进入 Explore → 切换 Tab → 点击条目 → 返回"
+      ],
+      "files": [
+        "mobile/lib/pages/explore_page.dart",
+        "mobile/lib/config/routes.dart",
+        "mobile/lib/widgets/bottom_nav.dart"
+      ]
+    },
+    {
+      "id": "F153",
+      "phase": 3,
+      "module": "flutter-explore",
+      "name": "Explore 搜索 + 搜索历史",
+      "description": "在 Explore 页面顶部添加搜索栏（View 层），支持全文搜索 + 搜索历史（内存 List<String>，由 explore_provider 管理，不引入 SharedPreferences）。搜索时切换到搜索结果展示模式。搜索逻辑和历史管理在 explore_provider 中完成，ExplorePage 仅渲染 UI。",
+      "verification": "搜索关键词返回结果 + 搜索历史可点击复用",
+      "depends_on": ["F152"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "搜索栏输入关键词触发搜索（通过 explore_provider），结果覆盖 Tab 列表",
+        "清空搜索恢复 Tab 列表模式",
+        "搜索历史由 explore_provider 管理（内存 List<String>），最近 10 条，自动去重",
+        "可点击历史记录填入搜索",
+        "可删除单条历史",
+        "搜索无结果显示空状态提示"
+      ],
+      "risk_tags": [],
+      "planning_notes": "严格在 F152 之后执行",
+      "test_tasks": [
+        "正常: 搜索关键词返回结果列表",
+        "正常: 搜索历史自动添加、去重、截断到 10 条",
+        "正常: 点击历史记录填入搜索并触发搜索",
+        "正常: 删除单条搜索历史",
+        "边界: 空搜索不触发 API",
+        "边界: 搜索历史为空时不显示历史面板",
+        "异常: 搜索 API 失败显示错误提示，不将失败关键词加入历史"
+      ],
+      "files": [
+        "mobile/lib/pages/explore_page.dart",
+        "mobile/lib/providers/explore_provider.dart"
+      ]
+    },
+    {
+      "id": "F154",
+      "phase": 3,
+      "module": "flutter-explore",
+      "name": "Explore 批量操作",
+      "description": "在 Explore 页面添加多选模式 + 批量删除和批量转分类功能（View 层渲染，业务逻辑在 explore_provider）。后端无批量端点，采用循环调用单条 API（DELETE /entries/{id}、PUT /entries/{id}）策略：explore_provider 的 batchDelete/batchUpdateCategory 方法使用 Future.wait 并发执行，捕获每个操作独立异常，返回 BatchResult(successIds, failedItems)。部分失败时：保留失败项选中状态，显示失败数量和条目名，提供「重试失败项」按钮。全部成功后退出多选模式并刷新列表。参考 Web 端 BatchActionBar 交互模式。",
+      "verification": "可多选条目并执行批量删除或转分类，部分失败可重试",
+      "depends_on": ["F151", "F152", "F153"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "点击「编辑」按钮进入多选模式",
+        "多选模式显示复选框，支持单选和全选",
+        "底部浮动操作栏显示选中数量 + 操作按钮",
+        "批量删除：弹出确认对话框（显示选中数量），确认后 explore_provider.batchDelete 并发调用 DELETE，返回成功/失败分组",
+        "批量转分类：弹出底部 Sheet 选择目标分类（任务task/笔记note/灵感inbox/项目project），选择后 explore_provider.batchUpdateCategory 并发调用 PUT /entries/{id}，请求体含 category 字段（与 GET /entries 的 type 查询参数区分：GET 用 type 过滤，PUT body 用 category 更新）",
+        "全部成功：退出多选模式并刷新当前列表",
+        "搜索模式下批量操作：操作完成后保留当前搜索 query 并重新搜索刷新结果；结果为空则显示搜索空状态",
+        "部分失败：保留失败项选中，显示失败数量+条目名+重试按钮",
+        "点击「重试失败项」仅对失败项重新执行操作",
+        "点击「取消」退出多选模式"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        "正常: 批量删除 3 条全部成功，弹出确认→确认→退出多选模式+列表刷新",
+        "正常: 批量转分类 — 选择目标分类→确认→列表刷新",
+        "正常: 搜索模式下批量删除成功后保留 query 并重新搜索",
+        "异常: 批量删除中 2 成功 1 失败，保留失败项选中+显示失败信息+可重试",
+        "异常: 全部失败，所有项保持选中+显示错误",
+        "边界: 选中 0 条时操作按钮禁用",
+        "边界: 重试失败项全部成功后退出多选模式",
+        "smoke: 完整批量操作路径 — 编辑→选中3条→批量删除→确认→列表更新"
+      ],
+      "files": [
+        "mobile/lib/pages/explore_page.dart",
+        "mobile/lib/providers/explore_provider.dart",
+        "mobile/lib/widgets/batch_action_bar.dart"
+      ]
+    },
+    {
+      "id": "S39",
+      "phase": 4,
+      "module": "quality",
+      "name": "全量测试 + flutter test + build + Docker smoke",
+      "description": "运行全量测试验证：后端 pytest + 前端 vitest + Flutter test + 前端 build + Docker 构建/启动。",
+      "verification": "所有测试通过 + 构建成功",
+      "depends_on": ["S38", "F154", "F153"],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "cd backend && uv run pytest tests/ -q 全部通过",
+        "npm run test:run --prefix frontend/ 全部通过",
+        "cd mobile && flutter test 全部通过",
+        "npm run build --prefix frontend/ 构建成功",
+        "./deploy/deploy.sh Docker 构建启动成功"
+      ],
+      "risk_tags": [],
+      "files": []
+    }
+  ],
+  "updated_at": "2026-04-26"
 }

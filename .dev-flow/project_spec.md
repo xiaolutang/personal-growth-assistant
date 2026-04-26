@@ -1,46 +1,45 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.38.0
-> 状态：规划中（R038）
-> 活跃分支：chore/R038-engineering-health
+> 版本：v0.39.0
+> 状态：规划中（R039）
+> 活跃分支：feat/R039-flutter-explore
 
 ## 当前范围
 
-R038 工程健康收口 + 小功能补齐：工程债务清理 + 笔记模板 + 成功指标埋点 + 质量收口。
+R039 Flutter Explore 页 + 工程维护：补齐 Flutter 移动端最大缺失页面（Explore 条目浏览/搜索/批量操作）+ 清理历史分支和过时文档。
 
-### Phase 1: 工程债务清理（3 tasks）
+### Phase 1: 工程维护（1 task）
 
-1. **B108 architecture.md 更新**：版本升级 + R037 新增内容 + 压缩到 120 行
-2. **B109 .gitignore 修复**：checkpoints*.db* 加入 gitignore + untrack 运行时文件
-3. **S36 plan 文档清理**：api_contracts 归档、project_spec 重置、feature_map 修正
+1. **S38 分支清理 + 文档修正**：删除 20 个已合并历史分支 + 更新 project_spec
 
-### Phase 2: 笔记模板（2 tasks）
+### Phase 2: Flutter API 基础（1 task）
 
-4. **B110 笔记模板后端 API**：扩展 CATEGORY_TEMPLATES + GET /entries/templates 端点
-5. **F148 笔记模板前端选择器**：创建笔记时模板选择 + content 预填
+2. **F151 Flutter Explore API 层**：条目列表过滤、全文搜索、删除 API 对接
 
-### Phase 3: 成功指标埋点（2 tasks）
+### Phase 3: Flutter Explore 页面（3 tasks）
 
-6. **B111 成功指标后端**：analytics_events 表 + POST /analytics/event
-7. **F149 成功指标前端**：useAnalytics hook + 6 个关键动作埋点
+3. **F152 Explore 页面框架**：5 Tab + 条目列表 + 三态 + 路由注册
+4. **F153 Explore 搜索**：搜索栏 + 搜索历史 + 搜索结果展示
+5. **F154 Explore 批量操作**：多选模式 + 批量删除 + 批量转分类
 
 ### Phase 4: 质量收口（1 task）
 
-8. **S37 全量测试 + build + Docker smoke**
+6. **S39 全量测试 + build + Docker smoke**
 
 ## 统计
 
 | 指标 | 值 |
 |------|-----|
-| 总任务数 | 8 |
-| P0 | 1（S37 质量收口）|
-| P1 | 5 |
-| P2 | 2 |
+| 总任务数 | 6 |
+| P0 | 1（S39 质量收口）|
+| P1 | 4 |
+| P2 | 1 |
 
 ## 技术约束
 
-- 笔记模板为预定义常量，不新增数据库表
-- 成功指标写入为 best-effort，不影响业务逻辑
-- 工程债务清理不改变现有功能行为
+- Flutter Explore 页面复用现有 Riverpod Provider 模式
+- 底部导航栏从 3 Tab 扩展到 4 Tab（今天/日知/探索/任务）
+- 搜索历史使用内存 List（MVP 不引入 SharedPreferences）
+- 批量操作在 explore_provider 中编排，ExplorePage 仅作 View 层
 - workflow: B/codex_plugin/skill_orchestrated

@@ -2,6 +2,73 @@
 
 ## 契约索引
 
+### R039 消费的已有契约（Flutter Explore 消费）
+
+| 契约 ID | 方法 | 端点 | 任务 | 状态 |
+|---------|------|------|------|------|
+| CONTRACT-ENTRIES-LIST | GET | /entries | F151, F152 | existing |
+| CONTRACT-ENTRIES-SEARCH | GET | /entries/search/query | F151, F153 | existing |
+| CONTRACT-ENTRIES-DELETE | DELETE | /entries/{id} | F151, F154 | existing |
+| CONTRACT-ENTRIES-UPDATE | PUT | /entries/{id} | F151, F154 | existing |
+
+### R039 契约详情
+
+#### CONTRACT-ENTRIES-LIST: GET /entries
+
+已有端点，Flutter Explore 消费。查询参数：
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | string | 否 | 条目类型过滤：task/note/inbox/project |
+| status | string | 否 | 状态过滤 |
+| tags | string | 否 | 逗号分隔的标签列表 |
+| start_date | string | 否 | 起始日期，ISO 格式 2024-01-01 |
+| end_date | string | 否 | 结束日期，ISO 格式 2024-12-31 |
+| limit | int | 否 | 每页条数，默认 50 |
+| offset | int | 否 | 偏移量，默认 0 |
+
+Tab → type 参数映射（F152 使用）：
+- 全部：不传 type 参数
+- 任务：type=task
+- 笔记：type=note
+- **灵感**：type=inbox（UI 显示「灵感」，API 传 type=inbox）
+- 项目：type=project
+
+响应（200）：条目列表，每个条目含 id/title/category/status/tags/content/created_at/updated_at
+
+#### CONTRACT-ENTRIES-SEARCH: GET /entries/search/query
+
+已有端点，Flutter Explore 搜索消费。
+
+请求：
+- `GET /entries/search/query?q={keyword}&limit={n}`
+- 需认证
+
+响应（200）：搜索结果条目列表
+
+#### CONTRACT-ENTRIES-DELETE: DELETE /entries/{id}
+
+已有端点，Flutter Explore 批量删除消费。
+
+请求：
+- `DELETE /entries/{id}`
+- 需认证
+
+响应（200）：`SuccessResponse` — `{"success": true, "message": "..."}`
+
+#### CONTRACT-ENTRIES-UPDATE: PUT /entries/{id}
+
+已有端点，Flutter Explore 批量转分类消费。
+
+请求体（仅更新 category）：
+```json
+{
+  "category": "task"
+}
+```
+
+响应（200）：`SuccessResponse` — `{"success": true, "message": "..."}`
+
 ### R038 新增/变更契约
 
 | 契约 ID | 方法 | 端点 | 任务 | 状态 |
