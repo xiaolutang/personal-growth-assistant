@@ -100,6 +100,30 @@ class EntryService:
         ),
     }
 
+    NOTE_TEMPLATES = {
+        "learning": {
+            "id": "learning",
+            "name": "学习笔记",
+            "category": "note",
+            "description": "记录学习内容和心得",
+            "content": "## 核心概念\n\n## 关键要点\n\n## 个人思考\n\n## 后续行动",
+        },
+        "reading": {
+            "id": "reading",
+            "name": "读书笔记",
+            "category": "note",
+            "description": "记录读书摘要和感悟",
+            "content": "## 书名与作者\n\n## 核心观点\n\n## 精彩摘录\n\n## 我的思考\n\n## 推荐理由",
+        },
+        "meeting": {
+            "id": "meeting",
+            "name": "会议记录",
+            "category": "note",
+            "description": "记录会议内容和决议",
+            "content": "## 会议主题\n\n## 参与者\n\n## 讨论要点\n\n## 决议事项\n\n## 后续行动",
+        },
+    }
+
     def _apply_category_template(self, category: Category, content: str, title: str) -> str:
         """为新类型条目应用结构化模板"""
         template = self.CATEGORY_TEMPLATES.get(category)
@@ -108,6 +132,28 @@ class EntryService:
         if content.strip():
             return f"# {title}\n\n{content}{template}"
         return f"# {title}{template}"
+
+    def get_templates(self, category: str = None) -> list[dict]:
+        """获取可用模板列表，可选按 category 过滤"""
+        templates = list(self.NOTE_TEMPLATES.values())
+        if category:
+            templates = [t for t in templates if t["category"] == category]
+        return templates
+
+    def _apply_template_id(self, template_id: str, category: Category, request_content: str) -> str | None:
+        """尝试应用 template_id 模板。
+
+        Returns:
+            模板内容字符串（如果模板生效），或 None（如果模板不生效，应走原有流程）。
+        """
+        template = self.NOTE_TEMPLATES.get(template_id)
+        if not template:
+            return None  # 无效 template_id
+        if template["category"] != category.value:
+            return None  # category 不匹配
+        if request_content.strip():
+            return None  # content 非空，不覆盖用户内容
+        return template["content"]
 
     # === CRUD 操作 ===
 
@@ -128,7 +174,19 @@ class EntryService:
         planned_date = self._parse_datetime(request.planned_date)
 
         # 创建条目对象
-        content = self._apply_category_template(category, request.content, request.title)
+        # template_id 优先：如果有效则使用模板内容，跳过 CATEGORY_TEMPLATES
+        template_content = None
+        if request.template_id:
+            template_content = self._apply_template_id(
+                request.template_id, category, request.content
+            )
+
+        if template_content is not None:
+            # template_id 生效，使用模板内容，跳过 CATEGORY_TEMPLATES
+            content = f"# {request.title}\n\n{template_content}"
+        else:
+            # 走原有 CATEGORY_TEMPLATES 流程
+            content = self._apply_category_template(category, request.content, request.title)
         entry = Task(
             id=entry_id,
             title=request.title,

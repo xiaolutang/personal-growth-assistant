@@ -65,6 +65,17 @@ async def list_entries(
     )
 
 
+@router.get("/templates")
+async def list_templates(
+    category: str | None = Query(None, description="按类型过滤模板（如 note）"),
+    user: User = Depends(get_current_user),
+):
+    """获取可用模板列表"""
+    service = get_entry_service()
+    templates = service.get_templates(category)
+    return {"templates": templates}
+
+
 @router.get("/export")
 async def export_entries(
     format: str = Query("markdown", description="导出格式: markdown 或 json"),

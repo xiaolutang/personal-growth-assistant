@@ -35,9 +35,9 @@
     "summary": {
       "total": 8,
       "by_status": {
-        "pending": 5,
+        "pending": 4,
         "in_progress": 0,
-        "completed": 3,
+        "completed": 4,
         "in_progress": 0,
         "completed": 0,
         "cancelled": 0
@@ -133,7 +133,10 @@
       "description": "扩展 CATEGORY_TEMPLATES 支持 note 类型模板（学习笔记、读书笔记、会议记录），新增 GET /entries/templates 端点返回可用模板列表。模板为预定义常量，不存数据库。创建条目时通过 template_id 参数选择模板，后端将模板内容作为 content 初始值。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-26",
+      "completed_at": "2026-04-26",
+      "evidence_file": ".dev-flow/evidence/B110.md",
       "priority": "P1",
       "acceptance_criteria": [
         "GET /entries/templates 返回模板列表（至少 3 个 note 模板）",
