@@ -3,7 +3,7 @@
   "plan_version": "2.0",
   "project": "personal-growth-assistant",
   "created_at": "2026-03-28",
-  "updated_at": "2026-04-25T22:00:00",
+  "updated_at": "2026-04-26T16:40:00+0800",
   "status": "active",
   "active_requirement_cycle": {
     "id": "R036",
@@ -21,7 +21,7 @@
   "summary": {
     "total_tasks": 10,
     "pending": 0,
-    "completed": 9,
+    "completed": 10,
     "in_progress": 0,
     "blocked": 0,
     "cancelled": 0
@@ -64,7 +64,7 @@
     {
       "id": "R036",
       "name": "残留问题全面收口",
-      "description": "处理所有已记录但未解决的残留风险和技术债务。8项残留→10任务映射：(1)deps.py私有属性访问→B100 (2)get_growth_curve性能→B101 (3)review_service 1845行→B102 (4)503降级7页缺失→F128 (5)EntryDetail 1201行→F129 (6)Home+Explore 730+729行→F130 (7)Review+Tasks+Goals ProgressRing去重→F131 (8)Flutter拖拽排序→M100。验证/收口任务：S33(R032+R027测试补齐)、S34(质量收口含S29/S21 smoke)",
+      "description": "处理所有已记录但未解决的残留风险和技术债务。8项残留→10任务映射：(1)deps.py私有属性访问→B100 (2)get_growth_curve性能→B101 (3)review_service 1845行→B102 (4)503降级7页缺失→F128 (5)EntryDetail 1201行→F129 (6)Home+Explore 730+729行→F130 (7)Review+Tasks+Goals ProgressRing去重→F131 (8)Flutter拖拽排序→M100。验证/收口任务：S33(R032+R027测试补齐)、S34(R036全量回归验证)",
       "phases": [
         {
           "id": "P1",
@@ -514,7 +514,7 @@
         "B83 导出 API 后端测试",
         "F114-F116 导出反馈前端测试"
       ],
-      "planning_notes": "R032/R027 planned tests: 搜索增强、批量操作、导出、反馈追踪的测试缺口。S33 覆盖 R032 全部 planned unit 项（B89/F119/F120 ~33场景）和 R027 全部 planned unit 项（B83/F114/F115/F116 ~22场景），承接 R032 原 S29 和 R027 原 S21 的单元测试部分。smoke/E2E 由 S34 承接",
+      "planning_notes": "R032/R027 planned tests: 搜索增强、批量操作、导出、反馈追踪的测试缺口。S33 覆盖 R032 全部 planned unit 项（B89/F119/F120 ~33场景）和 R027 全部 planned unit 项（B83/F114/F115/F116 ~22场景），补齐单元测试覆盖",
       "evidence_file": ".dev-flow/evidence/S33.md",
       "execution_notes": "7 前端测试文件 + 63 新测试，SearchBar.tsx 组件 mouseDown 冒泡修复。code-review 5 轮通过。vitest 475 passed, build 成功。"
     },
@@ -523,7 +523,7 @@
       "phase": "P6",
       "module": "quality",
       "name": "质量收口",
-      "description": "全量测试 + 构建 + Docker smoke 验证（含 R032 S29 和 R027 S21 的 smoke/E2E 验收）",
+      "description": "全量测试 + 构建 + Docker smoke 验证（R036 自身回归验证）",
       "verification": "L4",
       "depends_on": [
         "S33",
@@ -537,8 +537,7 @@
         "pytest 后端全量通过",
         "vitest 前端全量通过",
         "npm run build 成功",
-        "Docker smoke：各页面正常加载",
-        "Docker smoke：503 降级覆盖生效"
+        "Docker smoke：各页面正常加载，JWT 认证守卫生效"
       ],
       "risk_tags": [
         "regression",
@@ -550,7 +549,7 @@
         "build 成功",
         "Docker smoke 通过"
       ],
-      "planning_notes": "R036 质量收口，汇总所有任务的回归验证。S34 承接 R032 原 S29 smoke（搜索+时间+标签+批量操作）和 R027 原 S21 smoke（导出+反馈），加上 R036 自身的全量回归",
+      "planning_notes": "R036 质量收口，汇总 R036 所有任务的回归验证",
       "evidence_file": ".dev-flow/evidence/S34.md",
       "execution_notes": "pytest 1133 passed, vitest 475 passed, build success, Docker smoke 7 endpoints verified: health 200, homepage 200, /entries 401(auth), /search 401(auth), /knowledge-map 401(auth), /auth/login 422(reachable), /docs 200, Traefik external 200"
     }

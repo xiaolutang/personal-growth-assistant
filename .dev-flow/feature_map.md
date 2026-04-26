@@ -2,13 +2,13 @@
 
 > 项目：personal-growth-assistant
 > 活跃需求包：R036 残留问题全面收口
-> 最后更新：2026-04-25
+> 最后更新：2026-04-26
 
 ## 活跃需求包
 
 | 需求包 | 状态 | 任务数 |
 |--------|------|--------|
-| R036 残留问题全面收口 | in_progress | 10 (B100-B102, F128 completed + code-review/audit, 6 pending) |
+| R036 残留问题全面收口 | completed | 10 (全部 completed, pytest 1133, vitest 475) |
 
 ## 归档需求包
 
