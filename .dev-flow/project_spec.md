@@ -2,7 +2,7 @@
 
 > 项目：personal-growth-assistant
 > 版本：v0.39.0
-> 状态：规划中（R039）
+> 状态：已完成（R039）
 > 活跃分支：feat/R039-flutter-explore
 
 ## 当前范围
