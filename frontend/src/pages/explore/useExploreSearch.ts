@@ -63,7 +63,7 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
   const [searchResults, setSearchResults] = useState<Task[] | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [entriesError, setEntriesError] = useState<string | null>(null);
-  const { setPageExtra } = useChatStore();
+  const setPageExtra = useChatStore((state) => state.setPageExtra);
   const { serviceUnavailable, runWith503, retry: retryService } = useServiceUnavailable();
 
   // 同步 activeTab/searchQuery 到 chatStore.pageExtra
@@ -117,8 +117,6 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
       setSearchError(null);
       return;
     }
-
-    if (!searchQuery.trim() && !hasActiveFilters) return;
 
     let cancelled = false;
     debounceTimer.current = setTimeout(async () => {

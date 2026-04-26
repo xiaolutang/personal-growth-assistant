@@ -10,7 +10,6 @@ import {
   BarChart3,
   Calendar,
   Loader2,
-  AlertCircle,
   Inbox,
 } from "lucide-react";
 import type { VsLastPeriod } from "@/services/api";
@@ -22,6 +21,7 @@ import { AiSummaryCard } from "@/components/review/AiSummaryCard";
 import { InsightCard } from "@/components/review/InsightCard";
 import { PageChatPanel } from "@/components/PageChatPanel";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
+import { ErrorState } from "@/components/ErrorState";
 
 // Hooks
 import { useReportData } from "./review/useReportData";
@@ -140,13 +140,7 @@ export function Review() {
                 <p className="text-sm">加载报告数据...</p>
               </div>
             ) : error ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-4">
-                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30">
-                  <AlertCircle className="h-8 w-8 text-red-500 dark:text-red-400" />
-                </div>
-                <p className="text-sm text-muted-foreground">{error}</p>
-                <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:bg-primary/90 transition-colors" onClick={() => setRetryKey((k) => k + 1)}>重试</button>
-              </div>
+              <ErrorState message={error} onRetry={() => setRetryKey((k) => k + 1)} />
             ) : isEmpty ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">

@@ -97,25 +97,15 @@ export function useReportData(): UseReportDataReturn {
     return () => { cancelled = true; };
   }, [reportType]);
 
-  // 派生值
-  const taskStats: TaskStats | null = (() => {
-    if (reportType === "daily") return dailyReport?.task_stats || null;
-    if (reportType === "weekly") return weeklyReport?.task_stats || null;
-    return monthlyReport?.task_stats || null;
-  })();
+  // 派生值：用字典模式消除三路 if 重复
+  const currentReport = reportType === "daily" ? dailyReport
+    : reportType === "weekly" ? weeklyReport
+    : reportType === "monthly" ? monthlyReport
+    : null;
 
-  const noteStats: NoteStats | null = (() => {
-    if (reportType === "daily") return dailyReport?.note_stats || null;
-    if (reportType === "weekly") return weeklyReport?.note_stats || null;
-    return monthlyReport?.note_stats || null;
-  })();
-
-  const aiSummary: string | null = (() => {
-    if (reportType === "daily") return dailyReport?.ai_summary ?? null;
-    if (reportType === "weekly") return weeklyReport?.ai_summary ?? null;
-    if (reportType === "monthly") return monthlyReport?.ai_summary ?? null;
-    return null;
-  })();
+  const taskStats: TaskStats | null = currentReport?.task_stats || null;
+  const noteStats: NoteStats | null = currentReport?.note_stats || null;
+  const aiSummary: string | null = currentReport?.ai_summary ?? null;
 
   // Empty state: both taskStats and noteStats are zero / absent
   const isEmpty = !isLoading && !error && !!(
