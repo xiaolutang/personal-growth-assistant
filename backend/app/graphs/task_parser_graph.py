@@ -1,5 +1,6 @@
 """基于 LangGraph 的任务解析图"""
 import json
+import logging
 from datetime import datetime
 from typing import AsyncGenerator, Any
 
@@ -10,6 +11,67 @@ from langgraph.graph import StateGraph, MessagesState, START, END
 
 from app.callers import LLMCaller
 from app.core.config import get_settings
+
+logger = logging.getLogger(__name__)
+
+# ── 消息截断配置 ──
+MAX_MESSAGES = 20       # 保留最近 N 条消息（不含 system prompt）
+MAX_TOKENS = 4000        # 超过此阈值触发截断
+TOKENS_PER_CHAR_ZH = 1.5  # 中文每字符约 1.5 token
+
+
+def estimate_tokens(text: str) -> int:
+    """估算文本的 token 数（中文 1.5 token/字符，英文约 0.25 token/字符）
+
+    简单启发式：对 CJK 字符按 1.5 计算，其余按 0.25 计算。
+    """
+    tokens = 0
+    for ch in text:
+        cp = ord(ch)
+        # CJK Unified Ideographs + CJK Extension A/B + common CJK ranges
+        if (
+            0x4E00 <= cp <= 0x9FFF
+            or 0x3400 <= cp <= 0x4DBF
+            or 0x20000 <= cp <= 0x2A6DF
+            or 0x2A700 <= cp <= 0x2B73F
+            or 0x3000 <= cp <= 0x303F  # CJK Symbols and Punctuation
+            or 0xFF00 <= cp <= 0xFFEF  # Fullwidth Forms
+        ):
+            tokens += TOKENS_PER_CHAR_ZH
+        else:
+            tokens += 0.25
+    return int(tokens)
+
+
+def truncate_messages(messages: list, max_messages: int = MAX_MESSAGES, max_tokens: int = MAX_TOKENS) -> list:
+    """截断消息列表：保留最近 max_messages 条，且总 token 数不超过 max_tokens。
+
+    策略：
+    1. 先按条数截断（保留最近 N 条）
+    2. 再按 token 数截断（从最旧的消息开始丢弃，直到总 token < max_tokens）
+
+    Args:
+        messages: 消息列表（LangChain HumanMessage/AIMessage 对象）
+        max_messages: 保留的最大消息条数
+        max_tokens: 最大 token 数阈值
+
+    Returns:
+        截断后的消息列表
+    """
+    # Step 1: 按条数截断
+    if len(messages) > max_messages:
+        messages = messages[-max_messages:]
+        logger.debug("消息截断: 保留最近 %d 条 (原始 %d 条)", max_messages, len(messages))
+
+    # Step 2: 按 token 数截断（从最旧的消息开始丢弃）
+    total_tokens = sum(estimate_tokens(m.content if isinstance(m.content, str) else str(m.content)) for m in messages)
+    while total_tokens > max_tokens and len(messages) > 1:
+        removed = messages.pop(0)
+        removed_tokens = estimate_tokens(removed.content if isinstance(removed.content, str) else str(removed.content))
+        total_tokens -= removed_tokens
+        logger.debug("token 截断: 移除 1 条消息 (token %d), 剩余 %d 条, 总 token %d", removed_tokens, len(messages), total_tokens)
+
+    return messages
 
 
 SYSTEM_PROMPT_TEMPLATE = """你是一个任务解析助手。用户会输入一段文字，你需要从中提取出任务、灵感、笔记、项目、决策、复盘或疑问，同时提取知识图谱概念。
@@ -139,9 +201,12 @@ class TaskParserGraph:
         if page_context_hint:
             system_prompt = f"{system_prompt}\n\n## 当前页面上下文\n{page_context_hint}"
 
+        # 截断消息（防止长会话 token 超限）
+        messages = truncate_messages(list(state["messages"]))
+
         # 将 LangChain 消息对象转换为字典格式
         dict_messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
-        for msg in state["messages"]:
+        for msg in messages:
             if isinstance(msg, HumanMessage):
                 content = msg.content if isinstance(msg.content, str) else str(msg.content)
                 dict_messages.append({"role": "user", "content": content})

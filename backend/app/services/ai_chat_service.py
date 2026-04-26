@@ -1,9 +1,18 @@
-"""AI 对话服务 — 页面级上下文感知 + 多轮记忆 + 日知角色"""
+"""AI 对话服务 — 页面级上下文感知 + 多轮记忆 + 日知角色 + LangGraph 持久化"""
 import json
 import logging
+from datetime import datetime
 from typing import Optional, AsyncGenerator, List
 
+from langchain_core.messages import HumanMessage, AIMessage
 from pydantic import BaseModel
+
+from app.graphs.task_parser_graph import (
+    MAX_MESSAGES,
+    MAX_TOKENS,
+    estimate_tokens,
+    truncate_messages,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +63,16 @@ class ChatMessage(BaseModel):
 
 
 class AIChatService:
-    def __init__(self, llm_caller=None):
+    def __init__(self, llm_caller=None, checkpointer=None):
         self._llm_caller = llm_caller
+        self._checkpointer = checkpointer
 
     def set_llm_caller(self, caller):
         self._llm_caller = caller
+
+    def set_checkpointer(self, checkpointer):
+        """注入 LangGraph checkpointer（来自 TaskParserGraph）"""
+        self._checkpointer = checkpointer
 
     def _build_system_prompt(self, context: Optional[dict] = None) -> str:
         parts = [SYSTEM_PROMPT]
@@ -86,25 +100,86 @@ class AIChatService:
                 parts.append(f"当前筛选条件：{json.dumps(filters, ensure_ascii=False)}")
         return "\n".join(parts)
 
+    async def load_history(self, thread_id: str, limit: int = 20) -> list[HistoryMessage]:
+        """从 LangGraph checkpointer 加载历史消息。
+
+        Args:
+            thread_id: 会话线程 ID（格式 page:{page_name}:{user_id}）
+            limit: 最多返回的消息条数
+
+        Returns:
+            历史消息列表（按时间正序）
+        """
+        if not self._checkpointer:
+            return []
+
+        try:
+            config = {"configurable": {"thread_id": thread_id}}
+            state = await self._checkpointer.aget_tuple(config)
+
+            if not state or not state.checkpoint:
+                return []
+
+            channel_values = state.checkpoint.get("channel_values", {})
+            msgs = channel_values.get("messages", [])
+
+            # 取最近 limit 条
+            msgs = msgs[-limit:]
+
+            result = []
+            for msg in msgs:
+                if isinstance(msg, HumanMessage):
+                    content = msg.content if isinstance(msg.content, str) else str(msg.content)
+                    result.append(HistoryMessage(role="user", content=content))
+                elif isinstance(msg, AIMessage):
+                    content = msg.content if isinstance(msg.content, str) else str(msg.content)
+                    result.append(HistoryMessage(role="assistant", content=content))
+                elif isinstance(msg, dict):
+                    role = "user" if msg.get("type") == "human" else "assistant"
+                    result.append(HistoryMessage(role=role, content=msg.get("content", "")))
+
+            return result
+        except Exception as e:
+            logger.debug("加载历史消息失败 thread_id=%s: %s", thread_id, e)
+            return []
+
     async def chat_stream(
         self,
         message: str,
         context: Optional[dict] = None,
         user_id: str = "_default",
+        thread_id: Optional[str] = None,
     ) -> AsyncGenerator[str, None]:
+        """流式聊天。
+
+        如果提供 thread_id，则从 LangGraph checkpointer 加载历史消息作为上下文，
+        实现持久化。否则使用 context.messages 前端传入的方式（向后兼容）。
+        """
         if not self._llm_caller:
             yield "AI 助手暂不可用，请稍后再试。"
             return
 
         system_prompt = self._build_system_prompt(context)
-        messages = [{"role": "system", "content": system_prompt}]
+        messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
 
-        # 注入历史对话（最多 5 轮）
-        if context and context.get("messages"):
-            history = context["messages"][-10:]  # 5 轮 = 10 条消息
-            for msg in history:
-                if isinstance(msg, dict) and msg.get("role") in ("user", "assistant"):
-                    messages.append({"role": msg["role"], "content": msg["content"]})
+        if thread_id and self._checkpointer:
+            # 持久化模式：从 checkpointer 加载历史
+            history_msgs = await self.load_history(thread_id)
+            # 截断
+            history_msgs = history_msgs[-MAX_MESSAGES:]
+            total_tokens = sum(estimate_tokens(m.content) for m in history_msgs)
+            while total_tokens > MAX_TOKENS and len(history_msgs) > 1:
+                removed = history_msgs.pop(0)
+                total_tokens -= estimate_tokens(removed.content)
+            for m in history_msgs:
+                messages.append({"role": m.role, "content": m.content})
+        else:
+            # 向后兼容：使用前端传入的历史消息
+            if context and context.get("messages"):
+                history = context["messages"][-10:]  # 5 轮 = 10 条消息
+                for msg in history:
+                    if isinstance(msg, dict) and msg.get("role") in ("user", "assistant"):
+                        messages.append({"role": msg["role"], "content": msg["content"]})
 
         messages.append({"role": "user", "content": message})
 
