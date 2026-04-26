@@ -31,15 +31,13 @@
     "id": "R038",
     "name": "engineering-health-and-features",
     "branch": "chore/R038-engineering-health",
-    "status": "planning",
+    "status": "completed",
     "summary": {
       "total": 8,
       "by_status": {
-        "pending": 1,
+        "pending": 0,
         "in_progress": 0,
-        "completed": 7,
-        "in_progress": 0,
-        "completed": 0,
+        "completed": 8,
         "cancelled": 0
       },
       "by_priority": {
@@ -298,8 +296,12 @@
       "description": "R038 质量收口：pytest 全量、vitest 全量、前端 build、Docker smoke（部署后验证关键端点）。",
       "verification": "L4",
       "depends_on": ["B108", "B109", "S36", "B110", "F148", "B111", "F149"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
+      "started_at": "2026-04-26",
+      "completed_at": "2026-04-26",
+      "evidence_file": ".dev-flow/evidence/S37.md",
+      "execution_notes": "pytest 1299 passed, vitest 612 passed, build 成功, Docker smoke 通过",
       "acceptance_criteria": [
         "pytest 全量通过",
         "vitest 全量通过",
