@@ -32,16 +32,17 @@ export function useRelatedEntries(
     });
   }, [entry?.content, referencedNotes]);
 
-  // 提取内容中的所有引用 ID
+  // 提取内容中的所有引用 ID（去重）
   const referenceIds = useMemo(() => {
     if (!entry?.content) return [];
     const matches = entry.content.match(/\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g) || [];
-    return matches.map((m) => {
+    const ids = matches.map((m) => {
       // 提取 [[...]] 中 | 前面的 ID 部分
       const inner = m.slice(2, -2);
       const pipeIdx = inner.indexOf("|");
       return pipeIdx >= 0 ? inner.slice(0, pipeIdx) : inner;
     });
+    return [...new Set(ids)];
   }, [entry?.content]);
 
   // 关联条目独立加载

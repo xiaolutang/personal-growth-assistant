@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,12 +50,22 @@ export function EntryDetail() {
 
   // 反向引用
   const [backlinks, setBacklinks] = useState<BacklinkItem[]>([]);
+  const backlinksVersionRef = useRef(0);
 
   const loadBacklinks = useCallback(() => {
     if (!id) return;
+    const version = ++backlinksVersionRef.current;
     getBacklinks(id)
-      .then((res) => setBacklinks(res.backlinks))
-      .catch(() => setBacklinks([])); // 静默降级
+      .then((res) => {
+        if (backlinksVersionRef.current === version) {
+          setBacklinks(res.backlinks);
+        }
+      })
+      .catch(() => {
+        if (backlinksVersionRef.current === version) {
+          setBacklinks([]); // 静默降级
+        }
+      });
   }, [id]);
 
   useEffect(() => {

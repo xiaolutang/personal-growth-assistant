@@ -9,6 +9,7 @@ import type { Task, Category } from "@/types/task";
 import { useTaskStore } from "@/stores/taskStore";
 import { nextStatusMap, priorityConfig } from "@/config/constants";
 import { toast } from "sonner";
+import { getDueDateInfo } from "@/lib/dueDate";
 
 interface TaskCardProps {
   task: Task;
@@ -140,23 +141,11 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
     }
   };
 
-  // 截止日期状态判断（UTC 日期比较）
-  const getDueDateInfo = () => {
-    if (!task.planned_date) return null;
-    // 仅取日期部分进行比较，与后端 UTC 逻辑一致
-    const plannedDateStr = task.planned_date.split("T")[0];
-    const todayStr = new Date().toISOString().split("T")[0];
-    const isOverdue = plannedDateStr < todayStr;
-    const isDueToday = plannedDateStr === todayStr;
-    // 格式化显示
-    const date = new Date(plannedDateStr + "T00:00:00");
-    const displayText = isDueToday
-      ? "今天到期"
-      : date.toLocaleDateString("zh-CN", { month: "short", day: "numeric" });
-
-    return { isOverdue, isDueToday, displayText, plannedDateStr };
-  };
-  const dueDateInfo = getDueDateInfo();
+  // 截止日期状态判断
+  const dueDateResult = getDueDateInfo(task.planned_date);
+  const dueDateInfo = dueDateResult.status !== "none"
+    ? { isOverdue: dueDateResult.status === "overdue", isDueToday: dueDateResult.status === "today", displayText: dueDateResult.label, plannedDateStr: dueDateResult.dateStr! }
+    : null;
 
   // 标签最多显示2个
   const displayTags = task.tags?.slice(0, 2) || [];

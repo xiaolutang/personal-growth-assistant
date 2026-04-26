@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { statusConfig, categoryConfig, priorityConfig } from "@/config/constants";
 import type { Task, TaskStatus, Priority } from "@/types/task";
+import { getDueDateInfo } from "@/lib/dueDate";
 
 interface EntryHeaderProps {
   entry: Task;
@@ -209,24 +210,20 @@ export function EntryHeader({
               </div>
             ) : (
               entry.planned_date && (() => {
-                const plannedDateStr = entry.planned_date.split("T")[0];
-                const todayStr = new Date().toISOString().split("T")[0];
-                const isOverdue = plannedDateStr < todayStr;
-                const isDueToday = plannedDateStr === todayStr;
+                const due = getDueDateInfo(entry.planned_date);
                 return (
                   <div className={`flex items-center gap-1 ${
-                    isOverdue ? "text-red-500 dark:text-red-400" :
-                    isDueToday ? "text-amber-500 dark:text-amber-400" :
+                    due.status === "overdue" ? "text-red-500 dark:text-red-400" :
+                    due.status === "today" ? "text-amber-500 dark:text-amber-400" :
                     ""
                   }`}>
-                    {isOverdue ? (
+                    {due.status === "overdue" ? (
                       <AlertTriangle className="h-4 w-4" />
                     ) : (
                       <Calendar className="h-4 w-4" />
                     )}
                     <span>
-                      {isOverdue ? "已过期 " : isDueToday ? "今天到期 " : "计划 "}
-                      {new Date(plannedDateStr + "T00:00:00").toLocaleDateString()}
+                      {due.label}
                     </span>
                   </div>
                 );

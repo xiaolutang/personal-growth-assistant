@@ -70,6 +70,9 @@ export function ContentSection({
   // 笔记列表缓存（首次触发后缓存）
   const notesCacheRef = useRef<NoteCandidate[] | null>(null);
 
+  // 追踪当前是否有活跃的 [[ trigger（用于 await 后的陈旧检查）
+  const activeTriggerRef = useRef(false);
+
   // 过滤匹配
   const filteredItems = triggerInfo
     ? completionItems.filter((item) => {
@@ -114,20 +117,27 @@ export function ContentSection({
       if (trigger) {
         setTriggerInfo(trigger);
         setSelectedIdx(0);
+        activeTriggerRef.current = true;
 
         if (!notesCacheRef.current && !completionLoading && !completionError) {
           const notes = await loadNotes();
           if (!notes) {
             // API 失败，静默降级
             setShowCompletion(false);
+            activeTriggerRef.current = false;
             return;
           }
           setCompletionItems(notes);
+          // await 后重新检查：用户可能在等待期间删除了 [[，此时 ref 已被置为 false
+          if (!activeTriggerRef.current) {
+            return;
+          }
         }
         setShowCompletion(true);
       } else {
         setShowCompletion(false);
         setTriggerInfo(null);
+        activeTriggerRef.current = false;
       }
     },
     [setEditContent, loadNotes, completionLoading, completionError],

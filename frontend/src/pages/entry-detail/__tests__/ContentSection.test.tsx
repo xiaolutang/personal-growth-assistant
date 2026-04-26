@@ -116,6 +116,18 @@ describe("ContentSection - 双链引用补全", () => {
     await waitFor(() => {
       expect(getEntriesMock).toHaveBeenCalledWith({ type: "note", limit: 200 });
     });
+
+    // 验证排序结果：标题以"学习"开头的排最前（学习笔记），然后是包含"学习"的（按原始顺序）
+    await waitFor(() => {
+      const items = screen.queryAllByText(/学习笔记|React 学习|深度学习/);
+      // 学习笔记 以"学习"开头 → 排第一
+      // 深度学习 和 React 学习 都只是包含"学习" → 保持原始 filter 顺序
+      expect(items.length).toBeGreaterThanOrEqual(3);
+      expect(items[0].textContent).toContain("学习笔记");
+      // 后两项都包含"学习"但不是开头，保持 filter 的原始顺序
+      expect(items.some(i => i.textContent?.includes("React 学习"))).toBe(true);
+      expect(items.some(i => i.textContent?.includes("深度学习"))).toBe(true);
+    });
   });
 
   it("选中补全项插入 [[note-id|标题]] 格式", async () => {
@@ -163,6 +175,10 @@ describe("ContentSection - 双链引用补全", () => {
     fireEvent.click(items[0]);
 
     expect(setEditContent).toHaveBeenCalled();
+    // 验证传入 setEditContent 的字符串包含 [[note-id|标题]] 格式
+    const lastCall = setEditContent.mock.calls[setEditContent.mock.calls.length - 1];
+    const lastValue = typeof lastCall[0] === "function" ? lastCall[0](currentContent) : lastCall[0];
+    expect(lastValue).toMatch(/\[\[note-\d+\|.+\]\]/);
   });
 
   it("空结果显示「无匹配笔记」", async () => {
