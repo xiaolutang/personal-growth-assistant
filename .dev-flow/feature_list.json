@@ -2,6 +2,37 @@
   "version": "1.4",
   "project": "personal-growth-assistant",
   "status": "active",
+  "updated_at": "2026-04-27",
+  "workflow": {
+    "name": "R040-web-enhancement-cleanup",
+    "mode": "B",
+    "runtime": "skill_orchestrated",
+    "review_provider": "codex_plugin",
+    "audit_provider": "codex_plugin",
+    "risk_provider": "codex_plugin",
+    "stop_hook_enabled": false
+  },
+  "active_requirement_cycle": {
+    "id": "R040",
+    "name": "web-enhancement-cleanup",
+    "branch": "feat/R040-web-enhancement",
+    "status": "planning"
+  },
+  "summary": {
+    "by_status": {
+      "pending": 15,
+      "in_progress": 0,
+      "completed": 0,
+      "cancelled": 0,
+      "blocked": 0
+    },
+    "by_priority": {
+      "P0": 1,
+      "P1": 8,
+      "P2": 6
+    },
+    "total_tasks": 15
+  },
   "archived_requirement_cycles": [
     {
       "id": "R039",
@@ -35,6 +66,473 @@
     }
   ],
   "archived_phases": [],
-  "features": [],
-  "updated_at": "2026-04-27"
+  "features": [
+    {
+      "id": "S40",
+      "phase": 1,
+      "module": "engineering",
+      "name": "历史残留清理 + 日志服务 issue 批量关闭",
+      "description": "清理历史迭代的 8 个 pending 任务（#68-70, #76, #105, #206-209）和日志服务中 430 条重复 pending issue。日志 issue 清理通过 MCP 工具批量操作。",
+      "verification": "L1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "8 个历史 pending 任务全部标记 completed 或 deleted",
+        "日志服务 pending issue 标题完全相同的仅保留最新一条，其余批量关闭（按标题去重）",
+        "无代码变更，纯流程清理"
+      ],
+      "risk_tags": [],
+      "planning_notes": "不涉及代码修改，纯流程清理任务"
+    },
+    {
+      "id": "F155",
+      "phase": 1,
+      "module": "frontend",
+      "name": "下拉刷新手势",
+      "description": "为前端列表页（Tasks、Explore、GoalsPage）添加下拉刷新手势，Review 可选集成。创建通用 PullToRefresh 包装组件，集成到各列表页面的数据刷新函数。不引入 react-query/SWR，保持现有 fetch+useState 模式。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "PullToRefresh 通用组件支持 pullThreshold、onRefresh、children props",
+        "至少 3 个页面（Tasks、Explore、GoalsPage）集成下拉刷新",
+        "刷新动画：下拉箭头 → 释放旋转 → 加载中 → 完成",
+        "刷新期间列表可正常滚动，无闪烁",
+        "刷新完成有短暂成功反馈（1.5s）"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：下拉超过阈值触发 onRefresh，数据刷新",
+        "边界：下拉未达阈值松手回弹，不触发刷新",
+        "边界：刷新中再次下拉不重复触发",
+        "异常：onRefresh 抛错时不卡死，恢复可刷新状态"
+      ],
+      "files": [
+        "frontend/src/components/PullToRefresh.tsx",
+        "frontend/src/pages/Tasks.tsx",
+        "frontend/src/pages/Explore.tsx",
+        "frontend/src/pages/GoalsPage.tsx"
+      ]
+    },
+    {
+      "id": "F156",
+      "phase": 1,
+      "module": "frontend",
+      "name": "同步重试 UI",
+      "description": "在 OfflineIndicator 组件上添加手动同步按钮和队列状态展示。用户可点击按钮触发 offlineSync.sync()，看到队列中 pending/failed 条目数。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "OfflineIndicator offline 状态条显示「同步队列：X 条待同步」",
+        "同步中状态条显示进度「同步中 (X/Y)」",
+        "同步失败时显示「重试」按钮，点击触发手动同步",
+        "recovered 状态显示「已同步 X 条」",
+        "手动同步按钮不与自动 online 事件冲突"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：点击重试按钮触发 sync()，进度更新",
+        "边界：队列为空时重试按钮不显示",
+        "异常：同步中再次点击不重复触发（防重入）"
+      ],
+      "files": [
+        "frontend/src/components/OfflineIndicator.tsx",
+        "frontend/src/lib/offlineSync.ts",
+        "frontend/src/lib/offlineQueue.ts"
+      ]
+    },
+    {
+      "id": "B112",
+      "phase": 2,
+      "module": "backend",
+      "name": "后端 priority 筛选/排序 API",
+      "description": "为 entries 列表 API 添加 priority 查询参数支持筛选和排序。SQLite _build_filter_query 增加 priority 过滤条件，list_entries 排序逻辑支持按 priority 排序（high→medium→low）。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "GET /entries?priority=high 返回仅 high 优先级条目",
+        "GET /entries?sort_by=priority 返回按 high→medium→low 排序",
+        "priority 可与 status、type 等参数组合过滤",
+        "无 priority 参数时行为与现有一致（不破坏兼容性）",
+        "测试覆盖单参数、组合参数、排序场景"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：priority=high 只返回高优先级",
+        "正常：sort_by=priority 按 high→medium→low 排序",
+        "组合：priority=high&status=doing 同时过滤",
+        "兼容：无 priority 参数时返回全部（向后兼容）",
+        "边界：priority 值非法时忽略过滤（不报错）",
+        "隔离：不同用户的条目互不可见，筛选/排序仅返回当前用户数据"
+      ],
+      "files": [
+        "backend/app/routers/entries.py",
+        "backend/app/infrastructure/storage/sqlite.py"
+      ],
+      "contract_refs": ["GET /entries"]
+    },
+    {
+      "id": "F157",
+      "phase": 2,
+      "module": "frontend",
+      "name": "Tasks 页面优先级筛选 UI",
+      "description": "在 Tasks 页面筛选面板添加优先级选项，支持按高/中/低筛选。TaskCard 始终显示优先级 Badge（包括 medium），添加优先级排序切换。",
+      "verification": "F2",
+      "depends_on": ["B112"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Tasks 页筛选面板新增「优先级」筛选：全部/高/中/低",
+        "选中优先级后调用 API 带 priority 参数",
+        "TaskCard 始终显示优先级 Badge（medium 也显示）",
+        "支持按优先级排序（新增排序选项）",
+        "筛选状态与 URL query 参数同步"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：选择「高」筛选，列表只显示高优先级任务",
+        "正常：切换排序为「按优先级」，列表按高→中→低排序",
+        "组合：优先级筛选 + 状态筛选同时生效",
+        "边界：无任务时显示空状态"
+      ],
+      "files": [
+        "frontend/src/pages/Tasks.tsx",
+        "frontend/src/pages/tasks/useTaskFilters.ts",
+        "frontend/src/pages/tasks/constants.ts",
+        "frontend/src/components/TaskCard.tsx",
+        "frontend/src/services/api.ts"
+      ],
+      "contract_refs": ["GET /entries"]
+    },
+    {
+      "id": "B113",
+      "phase": 3,
+      "module": "backend",
+      "name": "目标进度历史快照 API",
+      "description": "新增 goal_progress_snapshots 表，每日自动记录各目标的进度快照。新增 API 端点返回目标进度时间序列数据，支持前端绘制进度趋势图。在 GoalService.recalculate 时顺便写入快照。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "goal_progress_snapshots 表：id, goal_id, user_id, current_value, target_value, percentage, snapshot_date",
+        "SQLite upsert_snapshot 方法：按 (goal_id, snapshot_date) 去重",
+        "GET /goals/{id}/progress-history 返回进度时间序列",
+        "GET /goals/progress-summary 增加 recent_snapshots 字段",
+        "GoalService 更新进度时自动写入当日快照",
+        "测试覆盖快照写入、去重、时间序列查询"
+      ],
+      "risk_tags": ["config"],
+      "test_tasks": [
+        "正常：进度更新后写入当日快照",
+        "去重：同一天多次更新只保留最后一次快照",
+        "查询：获取 30 天进度历史返回正确时间序列",
+        "隔离：不同用户的快照互不可见"
+      ],
+      "files": [
+        "backend/app/infrastructure/storage/sqlite.py",
+        "backend/app/services/goal_service.py",
+        "backend/app/routers/goals.py",
+        "backend/app/api/schemas/goal.py"
+      ],
+      "contract_refs": ["GET /goals/{id}/progress-history"]
+    },
+    {
+      "id": "F158",
+      "phase": 3,
+      "module": "frontend",
+      "name": "目标进度可视化增强",
+      "description": "增强 GoalsPage 和 GoalDetail 的进度可视化：进度颜色语义（<30%红、30-70%黄、>70%绿）、截止日期紧迫性提示、GoalDetail 添加进度趋势折线图。",
+      "verification": "F2",
+      "depends_on": ["B113"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "ProgressRing 根据进度百分比变色：<30% 红色、30-70% 黄色、>70% 绿色",
+        "GoalsPage 目标卡片显示截止日期紧迫性：已逾期红色、<3天橙色、<7天黄色",
+        "GoalDetail 页面新增进度趋势折线图（使用 recharts LineChart）",
+        "趋势图 X 轴日期、Y 轴百分比，悬停显示具体数值",
+        "无进度历史时显示「暂无趋势数据」占位"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：进度 80% 时 ProgressRing 显示绿色",
+        "正常：截止日期已过显示红色「已逾期 X 天」",
+        "正常：趋势图正确渲染 30 天进度曲线",
+        "边界：无快照数据时显示空状态占位",
+        "边界：目标无截止日期时不显示紧迫性"
+      ],
+      "files": [
+        "frontend/src/components/ProgressRing.tsx",
+        "frontend/src/pages/GoalsPage.tsx",
+        "frontend/src/pages/GoalDetail.tsx",
+        "frontend/src/services/api.ts"
+      ],
+      "contract_refs": ["GET /goals/{id}/progress-history"]
+    },
+    {
+      "id": "B114",
+      "phase": 4,
+      "module": "backend",
+      "name": "里程碑数据模型 + API",
+      "description": "新增 milestones 表和 CRUD API。里程碑属于目标（goal_id），有标题、截止日期、状态、排序序号。支持创建、更新、删除、重排序里程碑。里程碑作为第四种度量类型（metric_type=milestone），目标仅使用其配置的度量类型计算进度。user_id 从 JWT token 提取，禁止前端传入。",
+      "verification": "L2",
+      "depends_on": ["B113"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "milestones 表：id, goal_id, user_id, title, description, due_date, status(pending/completed), sort_order, created_at, updated_at",
+        "CRUD API：POST/GET/PUT/DELETE /goals/{goal_id}/milestones",
+        "PATCH /goals/{goal_id}/milestones/reorder 支持拖拽排序",
+        "里程碑作为 metric_type=milestone 度量类型，进度 = completed_milestones / total_milestones",
+        "user_id 从 JWT token 提取，禁止前端传入，数据严格隔离",
+        "所有触发 GoalService 进度计算的路径均写入快照（与 B113 基础设施一致）",
+        "测试覆盖 CRUD、排序、进度计算"
+      ],
+      "risk_tags": ["config"],
+      "test_tasks": [
+        "正常：创建里程碑，关联目标",
+        "正常：完成里程碑后目标进度自动更新",
+        "排序：重排序后 sort_order 正确",
+        "删除：删除里程碑后目标进度重新计算",
+        "隔离：不同用户里程碑互不可见",
+        "异常：目标不存在时返回 404"
+      ],
+      "files": [
+        "backend/app/infrastructure/storage/sqlite.py",
+        "backend/app/services/goal_service.py",
+        "backend/app/routers/goals.py",
+        "backend/app/api/schemas/goal.py"
+      ],
+      "contract_refs": ["POST/GET/PUT/DELETE /goals/{goal_id}/milestones"]
+    },
+    {
+      "id": "F159",
+      "phase": 4,
+      "module": "frontend",
+      "name": "里程碑管理 UI",
+      "description": "在 GoalDetail 页面添加里程碑管理区域：里程碑列表、创建/编辑/完成/删除操作、拖拽排序。里程碑显示为带复选框的卡片，支持内联编辑标题。",
+      "verification": "F2",
+      "depends_on": ["B114"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "GoalDetail 页面新增「里程碑」区域，显示目标下所有里程碑",
+        "每个里程碑显示：复选框、标题、截止日期、状态",
+        "支持创建新里程碑（标题 + 可选截止日期）",
+        "点击复选框切换完成/未完成状态",
+        "支持删除里程碑（确认弹窗）",
+        "里程碑列表按 sort_order 排列"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：创建里程碑并显示在列表中",
+        "正常：点击复选框完成里程碑，进度更新",
+        "正常：删除里程碑后列表更新",
+        "边界：无里程碑时显示空状态引导"
+      ],
+      "files": [
+        "frontend/src/pages/GoalDetail.tsx",
+        "frontend/src/pages/goals/MilestoneList.tsx",
+        "frontend/src/pages/goals/MilestoneItem.tsx",
+        "frontend/src/services/api.ts"
+      ],
+      "contract_refs": ["POST/GET/PUT/DELETE /goals/{goal_id}/milestones"]
+    },
+    {
+      "id": "F160",
+      "phase": 4,
+      "module": "frontend",
+      "name": "甘特图时间线视图",
+      "description": "在 GoalsPage 添加时间线视图模式（与卡片列表并列切换）。横向时间轴显示目标及其里程碑的时间跨度，用条形表示起止日期，里程碑用菱形标记。使用纯 CSS/SVG 实现，不引入重量级甘特图库。",
+      "verification": "F2",
+      "depends_on": ["B114", "F159"],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "GoalsPage 顶部新增「卡片/时间线」视图切换",
+        "时间线视图：横向时间轴，每行一个目标",
+        "目标条形：从 start_date 到 end_date，颜色按状态区分",
+        "里程碑标记：菱形图标在对应日期位置",
+        "今日线：红色竖线标记当前日期",
+        "悬停显示目标/里程碑详情 tooltip",
+        "时间范围自动适配（最早开始到最晚结束，最小 1 个月）"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：有目标的月份正确渲染时间线条形",
+        "正常：今日红线在正确位置",
+        "边界：无目标时显示空状态",
+        "边界：目标无日期时不显示条形",
+        "交互：点击条形跳转到 GoalDetail"
+      ],
+      "files": [
+        "frontend/src/pages/GoalsPage.tsx",
+        "frontend/src/pages/goals/TimelineView.tsx",
+        "frontend/src/pages/goals/GoalTimelineBar.tsx"
+      ]
+    },
+    {
+      "id": "B115",
+      "phase": 5,
+      "module": "backend",
+      "name": "知识推荐引擎 + Neo4j 图算法查询",
+      "description": "构建知识推荐服务，提供三种推荐能力：(1) 知识缺口检测（PREREQUISITE 关系链中未涉足的概念），(2) 复习推荐（间隔重复策略，推荐近期未复习的概念），(3) 共现推荐（基于 _recommend_from_tags 扩展）。新增 Neo4j 查询支持 PREREQUISITE 缺口检测和概念中心度计算。集成到晨报的每日聚焦中。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "新增 RecommendationService：knowledge_gaps()、review_suggestions()、related_concepts()",
+        "Neo4j 新增 find_prerequisite_gaps()：返回有前置但用户未学习的概念",
+        "Neo4j 新增 get_concept_centrality()：返回核心概念排序",
+        "GET /knowledge/recommendations 端点返回三类推荐",
+        "晨报 get_morning_digest 集成知识推荐字段",
+        "Neo4j 不可用时降级到 SQLite 标签推荐",
+        "测试覆盖三种推荐场景 + 降级"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        "正常：知识缺口检测返回 PREREQUISITE 链中未学概念",
+        "正常：复习推荐返回 7+ 天未接触的概念",
+        "正常：共现推荐返回相关标签概念",
+        "降级：Neo4j 不可用时退回到 SQLite 标签推荐",
+        "隔离：推荐结果按 user_id 过滤",
+        "空数据：用户无概念时返回空推荐列表"
+      ],
+      "files": [
+        "backend/app/services/recommendation_service.py",
+        "backend/app/services/knowledge_service.py",
+        "backend/app/infrastructure/storage/neo4j_client.py",
+        "backend/app/routers/knowledge.py",
+        "backend/app/services/review/morning_digest.py",
+        "backend/app/routers/deps.py"
+      ],
+      "contract_refs": ["GET /knowledge/recommendations"]
+    },
+    {
+      "id": "F161",
+      "phase": 5,
+      "module": "frontend",
+      "name": "图谱推荐 UI + 晨报知识建议",
+      "description": "GraphPage 新增「推荐」Tab 展示知识推荐列表（缺口/复习/共现三类）。首页晨报卡片中新增「知识建议」区域展示 2-3 条推荐。推荐项显示推荐理由和快捷操作（查看图谱/关联笔记）。",
+      "verification": "F2",
+      "depends_on": ["B115"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "GraphPage 新增「推荐」Tab，展示三类知识推荐",
+        "每条推荐显示：概念名、推荐理由（如「前置知识未掌握」）、掌握度",
+        "推荐项点击跳转到图谱节点详情",
+        "首页晨报卡片新增「知识建议」区域，显示 Top 3 推荐",
+        "无推荐时显示「暂无推荐，继续记录学习内容」",
+        "推荐数据首次加载有 loading 态"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：推荐 Tab 正确显示三类推荐",
+        "正常：晨报卡片显示知识建议",
+        "交互：点击推荐项跳转到图谱节点",
+        "边界：无推荐时显示空状态",
+        "加载：首次加载显示 skeleton"
+      ],
+      "files": [
+        "frontend/src/pages/GraphPage.tsx",
+        "frontend/src/pages/graph/RecommendationPanel.tsx",
+        "frontend/src/pages/Home.tsx",
+        "frontend/src/services/api.ts"
+      ],
+      "contract_refs": ["GET /knowledge/recommendations"]
+    },
+    {
+      "id": "B116",
+      "phase": 6,
+      "module": "backend",
+      "name": "PageChatPanel 后端持久化 + FloatingChat 上下文窗口截断",
+      "description": "PageChatPanel 的对话消息通过 LangGraph session API 持久化，页面刷新后不丢失。FloatingChat 的 _parse_node 添加上下文窗口截断策略（最近 N 条消息 + token 估算），防止长会话 token 超限。新增 /ai/chat/sessions 端点管理页面级 AI 对话会话。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "PageChatPanel 对话通过 /ai/chat 接口写入 LangGraph checkpointer，每个页面使用独立 thread_id（格式 page:{page_name}:{user_id}）避免会话串扰",
+        "页面刷新后自动加载最近 20 条历史消息",
+        "FloatingChat _parse_node 添加消息截断：保留最近 20 条 + system prompt",
+        "截断时估算 token 数（中文 1.5 token/字符），超过 4000 token 触发截断",
+        "截断策略可配置（MAX_MESSAGES, MAX_TOKENS 常量）",
+        "测试覆盖持久化、截断、token 估算"
+      ],
+      "risk_tags": ["config", "network"],
+      "test_tasks": [
+        "正常：PageChatPanel 消息持久化，刷新后恢复",
+        "正常：30 条消息自动截断到最近 20 条",
+        "边界：空对话发送不报错",
+        "性能：token 估算在 <1ms 内完成",
+        "兼容：现有 FloatingChat 对话不受影响"
+      ],
+      "files": [
+        "backend/app/graphs/task_parser_graph.py",
+        "backend/app/services/chat_service.py",
+        "backend/app/routers/chat.py"
+      ],
+      "contract_refs": ["POST /ai/chat", "GET /ai/chat/sessions"]
+    },
+    {
+      "id": "F162",
+      "phase": 6,
+      "module": "frontend",
+      "name": "PageChatPanel 持久化集成 + FloatingChat 截断 UI",
+      "description": "前端 PageChatPanel 改用后端 session API 加载历史消息，替代本地 useState。FloatingChat 添加「上下文长度」指示器和截断提示。",
+      "verification": "F2",
+      "depends_on": ["B116"],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "PageChatPanel 启动时从后端 session 加载历史消息",
+        "新消息通过后端 API 持久化",
+        "FloatingChat 底部显示上下文使用指示器（如「12/20 条消息」）",
+        "接近截断阈值时显示提示「历史消息将被截断以保持性能」",
+        "页面切换回来时自动恢复上次的 PageChatPanel 对话"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常：PageChatPanel 刷新后恢复历史消息",
+        "正常：FloatingChat 指示器正确显示消息计数",
+        "边界：空对话不显示指示器",
+        "交互：切换页面后回来，对话仍在"
+      ],
+      "files": [
+        "frontend/src/components/PageChatPanel.tsx",
+        "frontend/src/components/FloatingChat.tsx",
+        "frontend/src/services/sessionApi.ts"
+      ],
+      "contract_refs": ["POST /ai/chat", "GET /ai/chat/sessions"]
+    },
+    {
+      "id": "S41",
+      "phase": 7,
+      "module": "quality",
+      "name": "全量测试 + build + Docker smoke",
+      "description": "R040 质量收口：运行后端全量测试、前端全量测试、前端构建、Docker smoke 验证。确保所有新功能不破坏现有功能。",
+      "verification": "L4",
+      "depends_on": ["S40", "F155", "F156", "B112", "F157", "B113", "F158", "B114", "F159", "F160", "B115", "F161", "B116", "F162"],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "uv run pytest tests/ 全量通过",
+        "npm run test:run --prefix frontend/ 全量通过",
+        "npm run build --prefix frontend/ 构建成功",
+        "Docker 容器启动并响应 /health",
+        "关键用户路径验证：任务优先级筛选、目标进度趋势、里程碑操作、图谱推荐、AI 上下文保持"
+      ],
+      "risk_tags": ["startup"],
+      "smoke_required": true
+    }
+  ]
 }
