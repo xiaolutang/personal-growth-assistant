@@ -45,9 +45,9 @@
   "summary": {
     "total": 6,
     "by_status": {
-      "pending": 5,
+      "pending": 2,
       "in_progress": 0,
-      "completed": 1,
+      "completed": 4,
       "cancelled": 0,
       "blocked": 0
     },
@@ -89,7 +89,7 @@
       "description": "扩展 Flutter API 层，添加 Explore 所需接口：带过滤参数的条目列表（type/status/tags/start_date/end_date）、全文搜索（GET /entries/search/query?q=&limit=）、删除条目（DELETE /entries/{id}）、更新条目分类（PUT /entries/{id} body.category）。新建 explore_provider.dart（Riverpod Notifier 模式，参照 entry_provider.dart）管理探索页全部业务状态：列表/搜索/搜索历史（内存 List<String>，最多 10 条）/删除/更新分类/批量操作编排/部分失败聚合。ExplorePage 仅作为 View 层消费 Provider 状态。与 entry_provider（负责详情和状态切换）职责分离。",
       "verification": "flutter analyze 通过 + 单元测试覆盖 API 调用和参数映射 + smoke 完整流程验证",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
       "acceptance_criteria": [
         "explore_provider.dart（Riverpod Notifier）可获取带过滤参数的条目列表（type/status/tags/start_date/end_date query params 正确映射）",
@@ -127,7 +127,7 @@
       "description": "创建 ExplorePage 页面（View 层，消费 explore_provider 状态），包含 5 个类型 Tab（全部/任务/笔记/灵感/项目）+ 条目列表展示 + 加载/空/错误三态。Tab 标签到后端查询参数的映射：灵感→type=inbox，任务→type=task，笔记→type=note，项目→type=project。注册到路由和底部导航栏（替换 PlaceholderPage）。注意：需 S38 先完成 architecture.md 4 Tab 约束更新。",
       "verification": "页面可正常切换 Tab 并展示对应条目",
       "depends_on": ["S38", "F151"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
       "acceptance_criteria": [
         "ExplorePage 包含 5 个 Tab：全部/任务/笔记/灵感/项目",
@@ -162,7 +162,7 @@
       "description": "在 Explore 页面顶部添加搜索栏（View 层），支持全文搜索 + 搜索历史（内存 List<String>，由 explore_provider 管理，不引入 SharedPreferences）。搜索时切换到搜索结果展示模式。搜索逻辑和历史管理在 explore_provider 中完成，ExplorePage 仅渲染 UI。",
       "verification": "搜索关键词返回结果 + 搜索历史可点击复用",
       "depends_on": ["F152"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
       "acceptance_criteria": [
         "搜索栏输入关键词触发搜索（通过 explore_provider），结果覆盖 Tab 列表",

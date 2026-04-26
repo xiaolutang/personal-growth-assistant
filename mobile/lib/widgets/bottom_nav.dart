@@ -9,7 +9,8 @@ class BottomNavShell extends StatelessWidget {
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
     if (location == '/chat') return 1;
-    if (location == '/tasks') return 2;
+    if (location == '/explore') return 2;
+    if (location == '/tasks') return 3;
     return 0;
   }
 
@@ -26,6 +27,8 @@ class BottomNavShell extends StatelessWidget {
             case 1:
               context.go('/chat');
             case 2:
+              context.go('/explore');
+            case 3:
               context.go('/tasks');
           }
         },
@@ -39,6 +42,11 @@ class BottomNavShell extends StatelessWidget {
             icon: Icon(Icons.chat_bubble_outline),
             selectedIcon: Icon(Icons.chat_bubble),
             label: '日知',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.explore_outlined),
+            selectedIcon: Icon(Icons.explore),
+            label: '探索',
           ),
           NavigationDestination(
             icon: Icon(Icons.check_circle_outline),
