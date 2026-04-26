@@ -9,8 +9,10 @@ Element.prototype.scrollIntoView = vi.fn();
 
 // Mock sendAIChat
 const mockSendAIChat = vi.fn();
+const mockFetchChatHistory = vi.fn();
 vi.mock("@/services/api", () => ({
   sendAIChat: (...args: unknown[]) => mockSendAIChat(...args),
+  fetchChatHistory: (...args: unknown[]) => mockFetchChatHistory(...args),
 }));
 
 function makeStreamResponse(tokens: string[]) {
@@ -27,6 +29,8 @@ function makeStreamResponse(tokens: string[]) {
 describe("PageChatPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // 默认无历史消息
+    mockFetchChatHistory.mockResolvedValue([]);
   });
 
   it("renders title and welcome message", () => {

@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Sparkles, Send, Loader2, Trash2, ChevronDown, ChevronUp } from "lucide-react";
-import { sendAIChat, type AIChatContext } from "@/services/api";
+import { sendAIChat, fetchChatHistory, type AIChatContext } from "@/services/api";
 import { trackEvent } from "@/lib/analytics";
+
+/** 上下文窗口最大消息数（与后端截断阈值对齐） */
+const CONTEXT_MAX_MESSAGES = 20;
+/** 接近截断时的警告阈值 */
+const TRUNCATION_WARN_THRESHOLD = 16;
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -23,6 +28,8 @@ interface PageChatPanelProps {
   defaultCollapsed?: boolean;
   onFirstResponse?: () => void;
   className?: string;
+  /** 上下文窗口最大消息数，默认 20 */
+  maxMessages?: number;
 }
 
 export function PageChatPanel({
@@ -35,24 +42,47 @@ export function PageChatPanel({
   defaultCollapsed = false,
   onFirstResponse,
   className = "",
+  maxMessages = CONTEXT_MAX_MESSAGES,
 }: PageChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
 
   // 当外部 defaultCollapsed 变化时同步内部状态（支持父组件驱动展开/收起）
   useEffect(() => {
     setCollapsed(defaultCollapsed);
   }, [defaultCollapsed]);
 
-  // greetingMessage 注入：mount 时将 greeting 显示为初始 assistant 消息
+  // 启动时从后端加载历史消息（仅当 page 存在时）
   useEffect(() => {
-    if (greetingMessage && messages.length === 0) {
-      setMessages([{ role: "assistant", content: greetingMessage }]);
+    const page = pageContext?.page;
+    if (!page) {
+      // 无 page 标识，走本地模式
+      if (greetingMessage && messages.length === 0) {
+        setMessages([{ role: "assistant", content: greetingMessage }]);
+      }
+      setHistoryLoaded(true);
+      return;
     }
+
+    let cancelled = false;
+    fetchChatHistory(page, maxMessages).then((history) => {
+      if (cancelled) return;
+      if (history.length > 0) {
+        setMessages(history.map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        })));
+      } else if (greetingMessage) {
+        setMessages([{ role: "assistant", content: greetingMessage }]);
+      }
+      setHistoryLoaded(true);
+    });
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [pageContext?.page]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -93,6 +123,7 @@ export function PageChatPanel({
 
     try {
       abortRef.current = new AbortController();
+      // 传递 page 字段让后端自动持久化（thread_id = page:{page}:{user_id}）
       const contextWithHistory: AIChatContext = {
         ...pageContext,
         page_data: pageData,
@@ -178,6 +209,11 @@ export function PageChatPanel({
     handleSend(suggestion.message);
   }
 
+  // 计算截断状态
+  const messageCount = messages.length;
+  const nearTruncation = messageCount >= TRUNCATION_WARN_THRESHOLD && messageCount < maxMessages;
+  const atTruncation = messageCount >= maxMessages;
+
   return (
     <div className={`rounded-xl border border-border bg-background ${className}`}>
       {/* Header */}
@@ -254,6 +290,30 @@ export function PageChatPanel({
             ))}
             <div ref={messagesEndRef} />
           </div>
+
+          {/* 上下文长度指示器 */}
+          {historyLoaded && messageCount > 0 && (
+            <div className="px-4 pb-1">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{messageCount}/{maxMessages} 条消息</span>
+                {nearTruncation && (
+                  <span className="text-amber-500">接近上下文上限</span>
+                )}
+                {atTruncation && (
+                  <span className="text-orange-500">历史消息将被截断以保持性能</span>
+                )}
+              </div>
+              {/* 进度条 */}
+              <div className="mt-1 h-1 bg-muted rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    atTruncation ? "bg-orange-500" : nearTruncation ? "bg-amber-500" : "bg-indigo-500"
+                  }`}
+                  style={{ width: `${Math.min(100, (messageCount / maxMessages) * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Input */}
           <div className="border-t border-border p-3">

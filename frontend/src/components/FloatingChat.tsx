@@ -34,6 +34,11 @@ const MAX_HEIGHT_DESKTOP = 600;
 const MOBILE_NAV_HEIGHT = 56; // h-14 = 56px
 const MOBILE_MAX_RATIO = 0.7; // 移动端面板不超过可视区域 70%
 
+/** FloatingChat 上下文窗口上限 */
+const FLOATING_CONTEXT_MAX = 50;
+/** 接近截断警告阈值 */
+const FLOATING_TRUNCATION_WARN = 40;
+
 export function FloatingChat() {
   const isMobile = useIsMobile();
   const user = useUserStore((state) => state.user);
@@ -407,6 +412,33 @@ export function FloatingChat() {
 
       {/* 输入区域 - 固定在底部 */}
       <div className="shrink-0 mt-auto">
+        {/* 上下文长度指示器 */}
+        {currentSession && currentSession.messages.length > 0 && (
+          <div className="px-3 pt-2">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{currentSession.messages.length}/{FLOATING_CONTEXT_MAX} 条消息</span>
+              {currentSession.messages.length >= FLOATING_TRUNCATION_WARN && currentSession.messages.length < FLOATING_CONTEXT_MAX && (
+                <span className="text-amber-500">接近上下文上限</span>
+              )}
+              {currentSession.messages.length >= FLOATING_CONTEXT_MAX && (
+                <span className="text-orange-500">历史消息将被截断以保持性能</span>
+              )}
+            </div>
+            <div className="mt-1 h-1 bg-muted rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  currentSession.messages.length >= FLOATING_CONTEXT_MAX
+                    ? "bg-orange-500"
+                    : currentSession.messages.length >= FLOATING_TRUNCATION_WARN
+                      ? "bg-amber-500"
+                      : "bg-indigo-400"
+                }`}
+                style={{ width: `${Math.min(100, (currentSession.messages.length / FLOATING_CONTEXT_MAX) * 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* 操作状态提示条 */}
         <OperationStatusBar
           operation={lastOperation}

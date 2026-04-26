@@ -50,6 +50,7 @@ vi.mock("@/services/api", () => ({
   getGrowthCurve: () => Promise.resolve({ points: [] }),
   getProgressSummary: () =>
     Promise.resolve({ active_count: 0, completed_count: 0, goals: [] }),
+  fetchChatHistory: () => Promise.resolve([]),
 }));
 
 // Mock useMorningDigest hook

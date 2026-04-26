@@ -300,6 +300,18 @@ export async function sendAIChat(message: string, context?: AIChatContext): Prom
   return response;
 }
 
+/** 从后端加载页面级对话历史 */
+export async function fetchChatHistory(page: string, limit = 20): Promise<Array<{ role: string; content: string }>> {
+  try {
+    const params = new URLSearchParams({ page, limit: String(limit) });
+    const response = await authFetch(`${API_BASE}/ai/chat/history?${params}`);
+    if (!response.ok) return [];
+    return await response.json() as Array<{ role: string; content: string }>;
+  } catch {
+    return [];
+  }
+}
+
 // === 意图识别（带回退）===
 const localIntentFallback = (text: string): IntentResponse => ({
   intent: detectIntentLocal(text), confidence: 0.8, entities: {}, query: text,

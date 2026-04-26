@@ -77,6 +77,7 @@ vi.mock("@/services/api", () => ({
   getKnowledgeHeatmap: (...args: unknown[]) => mockGetKnowledgeHeatmap(...args),
   getGrowthCurve: (...args: unknown[]) => mockGetGrowthCurve(...args),
   getInsights: (...args: unknown[]) => mockGetInsights(...args),
+  fetchChatHistory: () => Promise.resolve([]),
 }));
 
 function renderReview() {
