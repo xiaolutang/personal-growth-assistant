@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Header } from "@/components/layout/Header";
-import { Plus, Target, Calendar, Archive, CheckCircle2, ListChecks, Tag, AlertTriangle, Clock } from "lucide-react";
+import { Plus, Target, Calendar, Archive, CheckCircle2, ListChecks, Tag, AlertTriangle, Clock, LayoutGrid, GanttChart } from "lucide-react";
 import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { ProgressRing } from "@/components/ProgressRing";
@@ -19,6 +19,7 @@ import {
   type MetricType,
 } from "@/services/api";
 import { getKnowledgeSearch } from "@/services/api";
+import { TimelineView } from "./goals/TimelineView";
 
 // === 度量类型配置 ===
 const metricTypeConfig: Record<MetricType, { label: string; icon: typeof Target; color: string }> = {
@@ -218,6 +219,7 @@ export function GoalsPage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"active" | "completed" | "abandoned">("active");
+  const [viewMode, setViewMode] = useState<"card" | "timeline">("card");
   const { serviceUnavailable, runWith503, retry: retryService } = useServiceUnavailable();
 
   const fetchGoals = useCallback(async () => {
@@ -263,9 +265,27 @@ export function GoalsPage() {
               </Badge>
             ))}
           </div>
-          <Button size="sm" onClick={() => setShowCreate(true)}>
-            <Plus className="h-4 w-4 mr-1" /> 新建
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="flex border rounded-md overflow-hidden">
+              <button
+                className={`px-2 py-1 text-xs flex items-center gap-1 transition-colors ${viewMode === "card" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
+                onClick={() => setViewMode("card")}
+                title="卡片视图"
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+              </button>
+              <button
+                className={`px-2 py-1 text-xs flex items-center gap-1 transition-colors ${viewMode === "timeline" ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
+                onClick={() => setViewMode("timeline")}
+                title="时间线视图"
+              >
+                <GanttChart className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <Button size="sm" onClick={() => setShowCreate(true)}>
+              <Plus className="h-4 w-4 mr-1" /> 新建
+            </Button>
+          </div>
         </div>
 
         {loading ? (
@@ -284,6 +304,8 @@ export function GoalsPage() {
               )}
             </CardContent>
           </Card>
+        ) : viewMode === "timeline" ? (
+          <TimelineView goals={sortedGoals} />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {sortedGoals.map(goal => {
