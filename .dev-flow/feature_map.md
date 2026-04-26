@@ -9,7 +9,7 @@
 | 需求包 | 状态 | 任务数 |
 |--------|------|--------|
 | R036 残留问题全面收口 | completed | 10 (全部 completed, pytest 1133, vitest 475) |
-| R037 全面补齐与功能增强 | active | 18 pending, 1 in_progress (B104) |
+| R037 全面补齐与功能增强 | completed | 18 completed, 4 cancelled (pytest 1180, vitest 597) |
 
 ## 归档需求包
 

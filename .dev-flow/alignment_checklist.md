@@ -4,28 +4,28 @@
 
 ### 契约对齐
 
-- [ ] B105: CONTRACT-DUE01 (GET /entries?due=) — 基于已有 planned_date 字段，不新增 due_date
-- [ ] B107: CONTRACT-BACKLINK01 (GET /entries/{id}/backlinks)
-- [ ] F145 无需 gen:types（复用已有 planned_date 类型）
-- [ ] F147 无需 gen:types（backlinks 为新增独立 API，前端手写类型即可）
+- [x] B105: CONTRACT-DUE01 (GET /entries?due=) — 基于已有 planned_date 字段，不新增 due_date ✓
+- [x] B107: CONTRACT-BACKLINK01 (GET /entries/{id}/backlinks) ✓
+- [x] F145 无需 gen:types（复用已有 planned_date 类型）✓
+- [x] F147 无需 gen:types（backlinks 为新增独立 API，前端手写类型即可）✓
 
 ### 依赖对齐
 
 - [x] F132 无外部依赖（HybridSearchService 已集成）✓ (completed)
-- [x] F134-F141 无外部依赖（独立体验打磨）— F137 done ✓
-- [ ] F142 无外部依赖（离线队列扩展）
-- [ ] F143 无外部依赖（多选框架）
-- [ ] F144 depends_on F143 ✓ + F142 ✓（批量操作复用离线队列）
-- [ ] F145 depends_on B105 ✓（前端消费后端 due_date 契约）
-- [ ] F147 depends_on B107 ✓（前端消费后端 backlinks 契约）
-- [ ] S35 depends_on 所有 pending 任务 ✓
+- [x] F134-F141 无外部依赖（独立体验打磨）— F137 done, F138 done, F139 done, F140 done, F141 done, F134-F136 visual verified ✓
+- [x] F142 无外部依赖（离线队列扩展）✓
+- [x] F143 无外部依赖（多选框架）✓
+- [x] F144 depends_on F143 ✓ + F142 ✓（批量操作复用离线队列）✓
+- [x] F145 depends_on B105 ✓（前端消费后端 due_date 契约）✓
+- [x] F147 depends_on B107 ✓（前端消费后端 backlinks 契约）✓
+- [x] S35 depends_on 所有 pending 任务 ✓
 
 ### 架构对齐
 
-- [ ] B105: 扩展 SQLite 查询条件（planned_date 已有），不新增列或字段
-- [ ] B107: 新增 note_references 表，不改变 Markdown 存储架构，含回填路径（reindex_backlinks）
-- [ ] F142: 扩展现有 offlineSync 队列，不引入新状态管理
-- [ ] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫
+- [x] B105: 扩展 SQLite 查询条件（planned_date 已有），不新增列或字段 ✓
+- [x] B107: 新增 note_references 表，不改变 Markdown 存储架构，含回填路径（reindex_backlinks）✓
+- [x] F142: 扩展现有 offlineSync 队列，不引入新状态管理 ✓
+- [x] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫 ✓
 
 ## R036: 残留问题全面收口
 

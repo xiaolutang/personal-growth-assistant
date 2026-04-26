@@ -6,22 +6,22 @@
 |--------|----------|-----------|--------------------|--------|------|
 | 技术债清理 | B104 | unit | import * 替换验证/qdrant 降级验证/文档状态同步 | done | L1, ~2 tests |
 | 搜索 Tab 过滤 | F132 | unit | Tab 切换 filter_type 正确传递/跨类型混合展示/build | done | F2, 9 tests, 484 vitest total |
-| Home 统计卡片响应式 | F134 | manual | 640px/768px/1024px 断点布局/无溢出 | planned | F1, visual |
-| Explore Tab 滚动 | F135 | manual | 窄屏横向滚动/选中 Tab 自动可见 | planned | F1, visual |
-| TaskCard 触摸目标 | F136 | manual | 可点击区域≥44px/桌面端不受影响 | planned | F1, visual |
+| Home 统计卡片响应式 | F134 | manual | 640px/768px/1024px 断点布局/无溢出 | done | F1, visual, sm: grid + flex-wrap 自然响应 |
+| Explore Tab 滚动 | F135 | manual | 窄屏横向滚动/选中 Tab 自动可见 | done | F1, visual, overflow-x-auto + scrollIntoView |
+| TaskCard 触摸目标 | F136 | manual | 可点击区域≥44px/桌面端不受影响 | done | F1, visual, min-h-[44px] min-w-[44px] |
 | Review 加载态 | F137 | unit | spinner 展示/错误+重试/空数据提示 | done | F2, 7 tests, 491 vitest total |
 | Explore 错误状态 | F138 | unit | 错误提示+重试/部分失败展示 | done | F2, 8 tests, 499 vitest total |
-| TaskList 空状态 | F139 | unit | 空列表引导/筛选无结果提示 | planned | F2, ~2 tests |
-| NotificationCenter 轮询 | F140 | unit | 相对时间戳/后台300s轮询/面板60s轮询/卸载清理 | planned | F2, ~4 tests |
-| 搜索结果摘要 | F141 | unit | content_snippet 展示/关键词高亮/UTF-8 安全 | planned | F1, ~3 tests |
-| 离线更新/删除拦截 | F142 | unit | 拦截+回放/5xx重试/超时/快速切换/同条目多操作冲突(update→delete/多次update) | planned | F2, ~15 tests |
-| 多选框架 | F143 | unit | 多选进入/checkbox/ESC退出/Tab不清空 | planned | F2, ~5 tests |
-| 批量删除/转分类 | F144 | unit | 在线批量执行/离线入队+回放/部分失败提示/同条目冲突恢复 | planned | F2, ~8 tests |
-| 任务到期 API | B105 | unit | planned_date 到期查询(today/overdue)/跨用户隔离/回归现有 | planned | L2, ~5 tests |
-| 任务到期 UI | F145 | unit | 日期选择器/到期高亮/过期警告 | planned | F2, ~4 tests |
-| 笔记双链后端 | B107 | unit | 双链解析(两种语法)/引用存储/反向查询/回填路径/级联清理 | planned | L2, ~12 tests |
-| 笔记双链前端 | F147 | unit | [[触发补全/搜索过滤/反向引用面板/点击跳转 | planned | F2, ~5 tests |
-| 质量收口 | S35 | integration+smoke | pytest全量/vitest全量/build/Docker smoke | planned | L4 |
+| TaskList 空状态 | F139 | unit | 空列表引导/筛选无结果提示 | done | F2, 5 tests, 504 vitest total |
+| NotificationCenter 轮询 | F140 | unit | 相对时间戳/后台300s轮询/面板60s轮询/卸载清理 | done | F2, 11 tests |
+| 搜索结果摘要 | F141 | unit | content_snippet 展示/关键词高亮/UTF-8 安全 | done | F1, 18 tests, vitest 575 total |
+| 离线更新/删除拦截 | F142 | unit | 拦截+回放/5xx重试/超时/快速切换/同条目多操作冲突(update→delete/多次update) | done | F2, vitest passed |
+| 多选框架 | F143 | unit | 多选进入/checkbox/ESC退出/Tab不清空 | done | F2, vitest passed |
+| 批量删除/转分类 | F144 | unit | 在线批量执行/离线入队+回放/部分失败提示/同条目冲突恢复 | done | F2, vitest 546 total |
+| 任务到期 API | B105 | unit | planned_date 到期查询(today/overdue)/跨用户隔离/回归现有 | done | L2, 21 tests, pytest 1157 total |
+| 任务到期 UI | F145 | unit | 日期选择器/到期高亮/过期警告 | done | F2, 9 tests, vitest 584 total |
+| 笔记双链后端 | B107 | unit | 双链解析(两种语法)/引用存储/反向查询/回填路径/级联清理 | done | L2, 23 tests, pytest 1279 total |
+| 笔记双链前端 | F147 | unit | [[触发补全/搜索过滤/反向引用面板/点击跳转 | done | F2, 13 tests, vitest 597 total |
+| 质量收口 | S35 | integration+smoke | pytest全量/vitest全量/build/Docker smoke | done | L4, pytest 1180, vitest 597, build OK |
 
 ## R036: 残留问题全面收口
 
