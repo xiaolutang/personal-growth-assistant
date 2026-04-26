@@ -35,9 +35,9 @@
     "summary": {
       "total": 8,
       "by_status": {
-        "pending": 6,
+        "pending": 5,
         "in_progress": 0,
-        "completed": 2,
+        "completed": 3,
         "in_progress": 0,
         "completed": 0,
         "cancelled": 0
@@ -106,7 +106,10 @@
       "description": "清理 plan 配套文档：api_contracts.md 中 R013-R033 历史契约归档到 _archive/contracts/，修正状态标记；project_spec.md 重置为 R038 idle 状态；feature_map.md 测试数据修正为实际值。",
       "verification": "L1",
       "depends_on": ["B108"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-26",
+      "completed_at": "2026-04-26",
+      "evidence_file": ".dev-flow/evidence/S36.md",
       "priority": "P1",
       "acceptance_criteria": [
         "api_contracts.md R037 契约标记为 done，R038 契约保持 planned",
