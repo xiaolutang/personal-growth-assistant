@@ -71,6 +71,8 @@ class GoalService:
                 )
             else:
                 current_value = self._sqlite.count_entries_by_tags(tags, row["user_id"])
+        elif metric_type == "milestone":
+            current_value = self._sqlite.count_completed_milestones(row["id"], row["user_id"])
         else:
             # count 类型：使用关联条目数
             current_value = linked_entries_count
@@ -487,6 +489,8 @@ class GoalService:
                 )
             else:
                 current = self._sqlite.count_entries_by_tags(tags, goal["user_id"])
+        elif metric_type == "milestone":
+            current = self._sqlite.count_completed_milestones(goal["id"], goal["user_id"])
         else:
             current = linked_entries_count
 
@@ -559,3 +563,154 @@ class GoalService:
             first_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             return first_of_month.strftime("%Y-%m-%dT00:00:00")
 
+    # === 里程碑 CRUD ===
+
+    async def _refresh_milestone_goal_progress(self, goal_id: str, user_id: str):
+        """刷新 milestone 类型目标的进度并写入快照"""
+        goal = self._sqlite.get_goal(goal_id, user_id)
+        if not goal or goal["metric_type"] != "milestone":
+            return
+
+        total = self._sqlite.count_milestones(goal_id, user_id)
+        completed = self._sqlite.count_completed_milestones(goal_id, user_id)
+        target_value = goal["target_value"]
+
+        progress = _calculate_progress(completed, target_value)
+
+        # 自动完成
+        if progress >= 100.0 and goal["status"] == "active":
+            self._sqlite.update_goal_status(goal_id, user_id, "completed")
+
+        # 写入进度快照
+        self._write_snapshot(goal_id, user_id, completed, target_value)
+
+    async def create_milestone(
+        self, goal_id: str, request, user_id: str
+    ) -> tuple[Optional[dict], int, str]:
+        """创建里程碑"""
+        goal = self._sqlite.get_goal(goal_id, user_id)
+        if not goal:
+            return None, 404, "目标不存在"
+
+        if goal["metric_type"] != "milestone":
+            return None, 400, "仅 milestone 类型目标支持里程碑操作"
+
+        milestone_id = uuid.uuid4().hex
+        # 获取当前最大 sort_order
+        existing = self._sqlite.get_milestones(goal_id, user_id)
+        next_sort = len(existing)
+
+        try:
+            row = self._sqlite.create_milestone(
+                milestone_id=milestone_id,
+                goal_id=goal_id,
+                user_id=user_id,
+                title=request.title,
+                description=request.description,
+                due_date=request.due_date,
+                sort_order=next_sort,
+            )
+
+            # 刷新目标进度并写入快照
+            await self._refresh_milestone_goal_progress(goal_id, user_id)
+
+            return row, 201, "里程碑创建成功"
+        except Exception as e:
+            logger.error("创建里程碑失败: %s", e)
+            return None, 500, f"创建里程碑失败: {e}"
+
+    async def list_milestones(
+        self, goal_id: str, user_id: str
+    ) -> tuple[Optional[list], int, str]:
+        """列出目标下所有里程碑"""
+        goal = self._sqlite.get_goal(goal_id, user_id)
+        if not goal:
+            return None, 404, "目标不存在"
+
+        milestones = self._sqlite.get_milestones(goal_id, user_id)
+        return milestones, 200, "获取成功"
+
+    async def update_milestone(
+        self, goal_id: str, milestone_id: str, request, user_id: str
+    ) -> tuple[Optional[dict], int, str]:
+        """更新里程碑"""
+        goal = self._sqlite.get_goal(goal_id, user_id)
+        if not goal:
+            return None, 404, "目标不存在"
+
+        milestone = self._sqlite.get_milestone(milestone_id, user_id)
+        if not milestone or milestone["goal_id"] != goal_id:
+            return None, 404, "里程碑不存在"
+
+        # 构建更新字段
+        fields = {}
+        if request.title is not None:
+            fields["title"] = request.title
+        if request.description is not None:
+            fields["description"] = request.description
+        if request.due_date is not None:
+            fields["due_date"] = request.due_date
+        if request.status is not None:
+            fields["status"] = request.status
+
+        if not fields:
+            return milestone, 200, "里程碑未变更"
+
+        try:
+            updated = self._sqlite.update_milestone(milestone_id, user_id, **fields)
+            if not updated:
+                return None, 404, "里程碑不存在"
+
+            # 刷新目标进度并写入快照
+            await self._refresh_milestone_goal_progress(goal_id, user_id)
+
+            return updated, 200, "里程碑更新成功"
+        except Exception as e:
+            logger.error("更新里程碑失败: %s", e)
+            return None, 500, f"更新里程碑失败: {e}"
+
+    async def delete_milestone(
+        self, goal_id: str, milestone_id: str, user_id: str
+    ) -> tuple[Optional[dict], int, str]:
+        """删除里程碑"""
+        goal = self._sqlite.get_goal(goal_id, user_id)
+        if not goal:
+            return None, 404, "目标不存在"
+
+        milestone = self._sqlite.get_milestone(milestone_id, user_id)
+        if not milestone or milestone["goal_id"] != goal_id:
+            return None, 404, "里程碑不存在"
+
+        deleted = self._sqlite.delete_milestone(milestone_id, user_id)
+        if not deleted:
+            return None, 404, "里程碑删除失败"
+
+        # 刷新目标进度并写入快照
+        await self._refresh_milestone_goal_progress(goal_id, user_id)
+
+        return {"id": milestone_id}, 200, "里程碑已删除"
+
+    async def reorder_milestones(
+        self, goal_id: str, request, user_id: str
+    ) -> tuple[Optional[list], int, str]:
+        """重排序里程碑"""
+        goal = self._sqlite.get_goal(goal_id, user_id)
+        if not goal:
+            return None, 404, "目标不存在"
+
+        # 验证所有 milestone_ids 都属于该目标
+        existing = self._sqlite.get_milestones(goal_id, user_id)
+        existing_ids = {m["id"] for m in existing}
+        requested_ids = set(request.milestone_ids)
+
+        if requested_ids != existing_ids:
+            return None, 400, "里程碑 ID 列表不完整或包含不属于该目标的 ID"
+
+        try:
+            milestones = self._sqlite.reorder_milestones(
+                goal_id, user_id, request.milestone_ids
+            )
+            return milestones, 200, "里程碑排序已更新"
+        except Exception as e:
+            logger.error("重排序里程碑失败: %s", e)
+            return None, 500, f"重排序里程碑失败: {e}"

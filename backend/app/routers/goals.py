@@ -14,6 +14,11 @@ from app.api.schemas.goal import (
     ChecklistItemToggle,
     ProgressSummaryResponse,
     ProgressHistoryResponse,
+    MilestoneCreate,
+    MilestoneUpdate,
+    MilestoneResponse,
+    MilestoneReorderRequest,
+    MilestoneListResponse,
 )
 from app.routers.deps import get_current_user, get_goal_service
 from app.models.user import User
@@ -169,3 +174,75 @@ async def toggle_checklist_item(
     if result is None:
         raise HTTPException(status_code=status_code, detail=message)
     return result
+
+
+# === 里程碑 ===
+
+@router.post("/{goal_id}/milestones", response_model=MilestoneResponse, status_code=201)
+async def create_milestone(
+    goal_id: str,
+    request: MilestoneCreate,
+    user: User = Depends(get_current_user),
+):
+    """创建里程碑"""
+    service = get_goal_service()
+    result, status_code, message = await service.create_milestone(goal_id, request, user_id=user.id)
+    if result is None:
+        raise HTTPException(status_code=status_code, detail=message)
+    return result
+
+
+@router.get("/{goal_id}/milestones", response_model=MilestoneListResponse)
+async def list_milestones(
+    goal_id: str,
+    user: User = Depends(get_current_user),
+):
+    """列出目标下所有里程碑"""
+    service = get_goal_service()
+    result, status_code, message = await service.list_milestones(goal_id, user_id=user.id)
+    if result is None:
+        raise HTTPException(status_code=status_code, detail=message)
+    return MilestoneListResponse(milestones=result)
+
+
+@router.put("/{goal_id}/milestones/{milestone_id}", response_model=MilestoneResponse)
+async def update_milestone(
+    goal_id: str,
+    milestone_id: str,
+    request: MilestoneUpdate,
+    user: User = Depends(get_current_user),
+):
+    """更新里程碑"""
+    service = get_goal_service()
+    result, status_code, message = await service.update_milestone(goal_id, milestone_id, request, user_id=user.id)
+    if result is None:
+        raise HTTPException(status_code=status_code, detail=message)
+    return result
+
+
+@router.delete("/{goal_id}/milestones/{milestone_id}", status_code=204)
+async def delete_milestone(
+    goal_id: str,
+    milestone_id: str,
+    user: User = Depends(get_current_user),
+):
+    """删除里程碑"""
+    service = get_goal_service()
+    result, status_code, message = await service.delete_milestone(goal_id, milestone_id, user_id=user.id)
+    if result is None:
+        raise HTTPException(status_code=status_code, detail=message)
+    return Response(status_code=204)
+
+
+@router.patch("/{goal_id}/milestones/reorder", response_model=MilestoneListResponse)
+async def reorder_milestones(
+    goal_id: str,
+    request: MilestoneReorderRequest,
+    user: User = Depends(get_current_user),
+):
+    """重排序里程碑（拖拽排序）"""
+    service = get_goal_service()
+    result, status_code, message = await service.reorder_milestones(goal_id, request, user_id=user.id)
+    if result is None:
+        raise HTTPException(status_code=status_code, detail=message)
+    return MilestoneListResponse(milestones=result)

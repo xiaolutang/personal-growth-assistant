@@ -12,8 +12,8 @@ class GoalCreate(BaseModel):
     """创建目标请求"""
     title: str = Field(..., min_length=1, description="目标标题")
     description: Optional[str] = Field(None, description="目标描述")
-    metric_type: Literal["count", "checklist", "tag_auto"] = Field(
-        ..., description="衡量方式: count(手动计数)/checklist(检查清单)/tag_auto(基于tag自动追踪)"
+    metric_type: Literal["count", "checklist", "tag_auto", "milestone"] = Field(
+        ..., description="衡量方式: count(手动计数)/checklist(检查清单)/tag_auto(基于tag自动追踪)/milestone(里程碑)"
     )
     target_value: int = Field(..., ge=1, description="目标值（必须 >= 1）")
     start_date: Optional[str] = Field(None, description="开始日期 (YYYY-MM-DD)")
@@ -158,3 +158,43 @@ class ProgressSnapshotItem(BaseModel):
 class ProgressHistoryResponse(BaseModel):
     """进度历史响应"""
     snapshots: List[ProgressSnapshotItem]
+
+
+# === 里程碑 ===
+
+class MilestoneCreate(BaseModel):
+    """创建里程碑请求"""
+    title: str = Field(..., min_length=1, description="里程碑标题")
+    description: Optional[str] = Field(None, description="里程碑描述")
+    due_date: Optional[str] = Field(None, description="截止日期 (YYYY-MM-DD)")
+
+
+class MilestoneUpdate(BaseModel):
+    """更新里程碑请求"""
+    title: Optional[str] = Field(None, min_length=1, description="里程碑标题")
+    description: Optional[str] = Field(None, description="里程碑描述")
+    due_date: Optional[str] = Field(None, description="截止日期 (YYYY-MM-DD)")
+    status: Optional[Literal["pending", "completed"]] = Field(None, description="里程碑状态")
+
+
+class MilestoneResponse(BaseModel):
+    """里程碑响应"""
+    id: str
+    goal_id: str
+    title: str
+    description: Optional[str] = None
+    due_date: Optional[str] = None
+    status: str = "pending"
+    sort_order: int = 0
+    created_at: str
+    updated_at: str
+
+
+class MilestoneReorderRequest(BaseModel):
+    """里程碑重排序请求"""
+    milestone_ids: List[str] = Field(..., min_length=1, description="按新顺序排列的里程碑 ID 列表")
+
+
+class MilestoneListResponse(BaseModel):
+    """里程碑列表响应"""
+    milestones: List[MilestoneResponse]

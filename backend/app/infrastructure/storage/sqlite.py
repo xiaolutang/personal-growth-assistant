@@ -661,6 +661,26 @@ class SQLiteStorage:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_goal_snapshots_goal_id ON goal_progress_snapshots(goal_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_goal_snapshots_user_date ON goal_progress_snapshots(user_id, snapshot_date DESC)")
 
+            # 里程碑表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS milestones (
+                    id TEXT PRIMARY KEY,
+                    goal_id TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    due_date TEXT,
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    sort_order INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (goal_id) REFERENCES goals(id) ON DELETE CASCADE
+                )
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_milestones_goal_id ON milestones(goal_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_milestones_user_id ON milestones(user_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_milestones_goal_sort ON milestones(goal_id, sort_order)")
+
             # 笔记双链引用表
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS note_references (
@@ -1822,6 +1842,156 @@ class SQLiteStorage:
                 (goal_id, user_id, days),
             )
             return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    # === 里程碑 CRUD ===
+
+    def create_milestone(
+        self,
+        milestone_id: str,
+        goal_id: str,
+        user_id: str,
+        title: str,
+        description: str | None = None,
+        due_date: str | None = None,
+        sort_order: int = 0,
+    ) -> dict[str, Any]:
+        """创建里程碑，返回新记录"""
+        now = datetime.now(timezone.utc).isoformat()
+        conn = self._get_conn()
+        try:
+            conn.execute(
+                """INSERT INTO milestones
+                   (id, goal_id, user_id, title, description, due_date, status, sort_order, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)""",
+                (milestone_id, goal_id, user_id, title, description, due_date, sort_order, now, now),
+            )
+            conn.commit()
+            row = conn.execute("SELECT * FROM milestones WHERE id = ?", (milestone_id,)).fetchone()
+            return dict(row)
+        finally:
+            conn.close()
+
+    def get_milestones(
+        self, goal_id: str, user_id: str
+    ) -> list[dict[str, Any]]:
+        """获取目标下所有里程碑（按 sort_order 排序）"""
+        conn = self._get_conn()
+        try:
+            cursor = conn.execute(
+                "SELECT * FROM milestones WHERE goal_id = ? AND user_id = ? ORDER BY sort_order ASC, created_at ASC",
+                (goal_id, user_id),
+            )
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    def get_milestone(self, milestone_id: str, user_id: str) -> Optional[dict[str, Any]]:
+        """获取单个里程碑"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT * FROM milestones WHERE id = ? AND user_id = ?",
+                (milestone_id, user_id),
+            ).fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def update_milestone(
+        self,
+        milestone_id: str,
+        user_id: str,
+        **fields,
+    ) -> Optional[dict[str, Any]]:
+        """更新里程碑（仅更新传入的非 None 字段），返回更新后的记录"""
+        ALLOWED_MILESTONE_FIELDS = frozenset({
+            "title", "description", "due_date", "status", "sort_order",
+        })
+        updates = {k: v for k, v in fields.items() if v is not None}
+        if not updates:
+            return self.get_milestone(milestone_id, user_id)
+
+        invalid_fields = set(updates.keys()) - ALLOWED_MILESTONE_FIELDS
+        if invalid_fields:
+            raise ValueError(f"非法字段名: {sorted(invalid_fields)}")
+
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        set_clause = ", ".join(f"{k} = ?" for k in updates)
+        values = list(updates.values()) + [milestone_id, user_id]
+
+        conn = self._get_conn()
+        try:
+            conn.execute(
+                f"UPDATE milestones SET {set_clause} WHERE id = ? AND user_id = ?",
+                values,
+            )
+            conn.commit()
+            row = conn.execute(
+                "SELECT * FROM milestones WHERE id = ? AND user_id = ?",
+                (milestone_id, user_id),
+            ).fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def delete_milestone(self, milestone_id: str, user_id: str) -> bool:
+        """删除里程碑"""
+        conn = self._get_conn()
+        try:
+            cursor = conn.execute(
+                "DELETE FROM milestones WHERE id = ? AND user_id = ?",
+                (milestone_id, user_id),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def reorder_milestones(
+        self, goal_id: str, user_id: str, ordered_ids: list[str]
+    ) -> list[dict[str, Any]]:
+        """重排序里程碑：按 ordered_ids 的顺序设置 sort_order"""
+        conn = self._get_conn()
+        try:
+            now = datetime.now(timezone.utc).isoformat()
+            for idx, mid in enumerate(ordered_ids):
+                conn.execute(
+                    "UPDATE milestones SET sort_order = ?, updated_at = ? WHERE id = ? AND goal_id = ? AND user_id = ?",
+                    (idx, now, mid, goal_id, user_id),
+                )
+            conn.commit()
+            # 返回重排后的列表
+            cursor = conn.execute(
+                "SELECT * FROM milestones WHERE goal_id = ? AND user_id = ? ORDER BY sort_order ASC",
+                (goal_id, user_id),
+            )
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    def count_milestones(self, goal_id: str, user_id: str) -> int:
+        """统计目标下里程碑总数"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT COUNT(*) as cnt FROM milestones WHERE goal_id = ? AND user_id = ?",
+                (goal_id, user_id),
+            ).fetchone()
+            return row["cnt"]
+        finally:
+            conn.close()
+
+    def count_completed_milestones(self, goal_id: str, user_id: str) -> int:
+        """统计目标下已完成里程碑数"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT COUNT(*) as cnt FROM milestones WHERE goal_id = ? AND user_id = ? AND status = 'completed'",
+                (goal_id, user_id),
+            ).fetchone()
+            return row["cnt"]
         finally:
             conn.close()
 
