@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Header } from "@/components/layout/Header";
 import { PageChatPanel } from "@/components/PageChatPanel";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { useTaskStore } from "@/stores/taskStore";
 import type { EntryTemplate } from "@/services/api";
 
@@ -94,13 +95,13 @@ export function Explore() {
   const showPanel = showSuggestions && !searchQuery.trim();
 
   return (
-    <main className="flex-1 p-4 md:p-6 pb-32 overflow-y-auto">
+    <main className="flex-1 p-4 md:p-6 pb-32">
       <Header title="探索" />
 
       {serviceUnavailable ? (
         <ServiceUnavailable onRetry={() => retryService(loadEntries)} />
       ) : (
-      <>
+      <PullToRefresh onRefresh={loadEntries}>
       {/* 搜索栏 */}
       <SearchBar
         searchQuery={searchQuery}
@@ -294,7 +295,7 @@ export function Explore() {
         }}
         defaultCollapsed={!autoExpandAssistant}
       />
-      </>
+      </PullToRefresh>
       )}
     </main>
   );

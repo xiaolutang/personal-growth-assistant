@@ -9,6 +9,7 @@ import { Plus, Target, Calendar, Archive, CheckCircle2, ListChecks, Tag } from "
 import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { ProgressRing } from "@/components/ProgressRing";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { toast } from "sonner";
 import {
   getGoals,
@@ -237,7 +238,7 @@ export function GoalsPage() {
         {serviceUnavailable ? (
           <ServiceUnavailable onRetry={() => retryService(fetchGoals)} />
         ) : (
-        <>
+        <PullToRefresh onRefresh={fetchGoals}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex gap-2">
             {(["active", "completed", "abandoned"] as const).map(s => (
@@ -327,7 +328,7 @@ export function GoalsPage() {
         )}
 
         <CreateGoalDialog open={showCreate} onClose={() => setShowCreate(false)} onCreated={fetchGoals} />
-        </>
+        </PullToRefresh>
         )}
       </main>
     </>

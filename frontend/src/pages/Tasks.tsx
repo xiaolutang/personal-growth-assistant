@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { TaskList } from "@/components/TaskList";
 import { Header } from "@/components/layout/Header";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { Filter, X, Calendar, Loader2, Pencil, Trash2, FolderInput, ClipboardList, SearchX } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { statusConfig } from "@/config/constants";
@@ -36,6 +37,8 @@ export function Tasks() {
   const isTotallyEmpty = !isLoading && allTasks.length === 0;
   const isFilterEmpty = !isLoading && allTasks.length > 0 && filteredTasks.length === 0;
 
+  const handleRefresh = () => fetchEntries(TASK_QUERY_PARAMS);
+
   return (
     <>
       <Header title="任务列表" />
@@ -43,6 +46,7 @@ export function Tasks() {
         {serviceUnavailable ? (
           <ServiceUnavailable onRetry={() => fetchEntries(TASK_QUERY_PARAMS)} />
         ) : (
+        <PullToRefresh onRefresh={handleRefresh}>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">所有任务 ({filteredTasks.length})</CardTitle>
@@ -153,6 +157,7 @@ export function Tasks() {
             )}
           </CardContent>
         </Card>
+        </PullToRefresh>
         )}
 
         {/* 底部批量操作栏 */}
