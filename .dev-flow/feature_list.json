@@ -35,9 +35,9 @@
     "summary": {
       "total": 8,
       "by_status": {
-        "pending": 3,
+        "pending": 2,
         "in_progress": 0,
-        "completed": 5,
+        "completed": 6,
         "in_progress": 0,
         "completed": 0,
         "cancelled": 0
@@ -213,7 +213,10 @@
       "description": "新建 analytics_events 表存储用户行为事件，新增 POST /analytics/event 端点接收前端埋点。按 user_id 隔离。初始支持的事件类型：entry_created、entry_viewed、chat_message_sent、search_performed、page_viewed、onboarding_completed。事件写入异步执行，不阻塞业务逻辑。",
       "verification": "L2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-26",
+      "completed_at": "2026-04-26",
+      "evidence_file": ".dev-flow/evidence/B111.md",
       "priority": "P2",
       "acceptance_criteria": [
         "analytics_router 注册到 FastAPI app（main.py）",

@@ -24,6 +24,7 @@ from app.routers import (
     ai_chat_router,
     notifications_router,
     goals_router,
+    analytics_router,
 )
 from app.routers import deps
 from app.services import init_storage
@@ -129,6 +130,14 @@ async def lifespan(app: FastAPI):
         if graph.caller:
             intent_service.set_llm_caller(graph.caller)
 
+        # 初始化 Analytics 埋点表（幂等，失败不影响启动）
+        try:
+            analytics_svc = deps.get_analytics_service()
+            if analytics_svc:
+                analytics_svc.ensure_table()
+        except Exception as e:
+            logger.warning("analytics_events 表创建失败（不影响启动）: %s", e)
+
         # 注入 Graph 到解析模块
         from app.routers import parse as parse_module
 
@@ -183,6 +192,7 @@ app.include_router(auth_router)
 app.include_router(ai_chat_router)
 app.include_router(notifications_router)
 app.include_router(goals_router)
+app.include_router(analytics_router)
 
 
 # === 健康检查 ===
