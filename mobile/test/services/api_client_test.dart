@@ -7,10 +7,18 @@ import 'package:growth_assistant/services/api_client.dart';
 
 /// Mock Dio HttpClientAdapter，拦截请求并返回预设响应
 class _MockHttpClientAdapter implements HttpClientAdapter {
-  final Map<String, dynamic> _responses;
   final List<RequestMethod> _requests = [];
 
-  _MockHttpClientAdapter(this._responses);
+  /// 支持自定义状态码：key 为 'METHOD path'，value 为 _MockResponse 或 Map（默认 200）
+  final Map<String, _MockResponse> _statusResponses;
+
+  _MockHttpClientAdapter(Map<String, dynamic> responses)
+      : _statusResponses = responses.map((key, value) {
+          if (value is _MockResponse) {
+            return MapEntry(key, value);
+          }
+          return MapEntry(key, _MockResponse(statusCode: 200, data: value));
+        });
 
   /// 获取记录的请求列表
   List<RequestMethod> get requests => _requests;
@@ -30,12 +38,12 @@ class _MockHttpClientAdapter implements HttpClientAdapter {
 
 
     final key = '${options.method} ${options.path}';
-    final mockResponse = _responses[key];
+    final mockResponse = _statusResponses[key];
 
     if (mockResponse != null) {
       return ResponseBody.fromString(
-        jsonEncode(mockResponse),
-        200,
+        jsonEncode(mockResponse.data),
+        mockResponse.statusCode,
         headers: {
           'content-type': ['application/json'],
         },
@@ -43,7 +51,7 @@ class _MockHttpClientAdapter implements HttpClientAdapter {
     }
 
     return ResponseBody.fromString(
-      jsonEncode({'error': 'not found'}),
+      jsonEncode({'detail': 'not found'}),
       404,
       headers: {
         'content-type': ['application/json'],
@@ -53,6 +61,14 @@ class _MockHttpClientAdapter implements HttpClientAdapter {
 
   @override
   void close({bool force = false}) {}
+}
+
+/// Mock 响应，支持自定义状态码
+class _MockResponse {
+  final int statusCode;
+  final dynamic data;
+
+  const _MockResponse({required this.statusCode, this.data});
 }
 
 /// 记录一次请求的信息
@@ -632,6 +648,505 @@ void main() {
 
       expect(
         () => client.fetchGoal<Map<String, dynamic>>(id: 'nonexistent'),
+        throwsA(isA<DioException>()),
+      );
+    });
+  });
+
+  // ============================================================
+  // F172: Entry Interaction API Methods 测试
+  // 覆盖 updateEntry, fetchBacklinks, fetchEntryLinks,
+  // createEntryLink, deleteEntryLink, fetchKnowledgeContext,
+  // generateAISummary 及各种错误场景
+  // ============================================================
+
+  group('F172: Entry Interaction API Methods', () {
+    late ApiClient client;
+    late _MockHttpClientAdapter adapter;
+
+    ApiClient createTestClient(Map<String, dynamic> responses) {
+      adapter = _MockHttpClientAdapter(responses);
+      final c = ApiClient(baseUrl: 'http://test-api.local');
+      c.dio.httpClientAdapter = adapter;
+      c.dio.interceptors.clear();
+      return c;
+    }
+
+    // ---- updateEntry ----
+
+    test('updateEntry sends PUT /entries/{id} and returns SuccessResponse',
+        () async {
+      client = createTestClient({
+        'PUT /entries/e-1': {
+          'success': true,
+          'message': 'Entry updated successfully',
+        },
+      });
+
+      final response = await client.updateEntry<Map<String, dynamic>>(
+        id: 'e-1',
+        data: {'title': 'Updated Title', 'content': 'New content'},
+      );
+
+      expect(response.data!['success'], true);
+      expect(response.data!['message'], 'Entry updated successfully');
+      expect(adapter.requests[0].method, 'PUT');
+      expect(adapter.requests[0].path, '/entries/e-1');
+      expect(adapter.requests[0].data['title'], 'Updated Title');
+      expect(adapter.requests[0].data['content'], 'New content');
+    });
+
+    test('updateEntry returns 404 for nonexistent entry', () async {
+      client = createTestClient({
+        'PUT /entries/nonexistent': _MockResponse(
+          statusCode: 404,
+          data: {'detail': 'Entry not found'},
+        ),
+      });
+
+      expect(
+        () => client.updateEntry<Map<String, dynamic>>(
+          id: 'nonexistent',
+          data: {'title': 'test'},
+        ),
+        throwsA(isA<DioException>()),
+      );
+    });
+
+    test('updateEntry returns 500 on server error', () async {
+      client = createTestClient({
+        'PUT /entries/e-1': _MockResponse(
+          statusCode: 500,
+          data: {'detail': 'Internal server error'},
+        ),
+      });
+
+      expect(
+        () => client.updateEntry<Map<String, dynamic>>(
+          id: 'e-1',
+          data: {'title': 'test'},
+        ),
+        throwsA(isA<DioException>()),
+      );
+    });
+
+    // ---- fetchBacklinks ----
+
+    test('fetchBacklinks sends GET /entries/{id}/backlinks', () async {
+      client = createTestClient({
+        'GET /entries/e-1/backlinks': {
+          'backlinks': [
+            {'entry_id': 'e-2', 'title': 'Related Note', 'relation': 'reference'},
+            {'entry_id': 'e-3', 'title': 'Another Note', 'relation': 'mention'},
+          ],
+        },
+      });
+
+      final response = await client.fetchBacklinks<Map<String, dynamic>>(
+        id: 'e-1',
+      );
+
+      final backlinks = response.data!['backlinks'] as List;
+      expect(backlinks.length, 2);
+      expect(backlinks[0]['entry_id'], 'e-2');
+      expect(adapter.requests[0].method, 'GET');
+      expect(adapter.requests[0].path, '/entries/e-1/backlinks');
+    });
+
+    test('fetchBacklinks returns empty list when no backlinks', () async {
+      client = createTestClient({
+        'GET /entries/e-1/backlinks': {'backlinks': []},
+      });
+
+      final response = await client.fetchBacklinks<Map<String, dynamic>>(
+        id: 'e-1',
+      );
+
+      expect((response.data!['backlinks'] as List).length, 0);
+    });
+
+    test('fetchBacklinks returns 404 for nonexistent entry', () async {
+      client = createTestClient({
+        'GET /entries/nonexistent/backlinks': _MockResponse(
+          statusCode: 404,
+          data: {'detail': 'Entry not found'},
+        ),
+      });
+
+      expect(
+        () => client.fetchBacklinks<Map<String, dynamic>>(id: 'nonexistent'),
+        throwsA(isA<DioException>()),
+      );
+    });
+
+    // ---- fetchEntryLinks ----
+
+    test('fetchEntryLinks sends GET /entries/{id}/links with default direction',
+        () async {
+      client = createTestClient({
+        'GET /entries/e-1/links': {
+          'links': [
+            {'id': 'l-1', 'target_id': 'e-2', 'relation_type': 'reference'},
+          ],
+        },
+      });
+
+      final response = await client.fetchEntryLinks<Map<String, dynamic>>(
+        id: 'e-1',
+      );
+
+      final links = response.data!['links'] as List;
+      expect(links.length, 1);
+      expect(adapter.requests[0].method, 'GET');
+      expect(adapter.requests[0].path, '/entries/e-1/links');
+      expect(adapter.requests[0].queryParameters?['direction'], 'both');
+    });
+
+    test('fetchEntryLinks sends direction=in parameter', () async {
+      client = createTestClient({
+        'GET /entries/e-1/links': {'links': []},
+      });
+
+      await client.fetchEntryLinks<Map<String, dynamic>>(
+        id: 'e-1',
+        direction: 'in',
+      );
+
+      expect(adapter.requests[0].queryParameters?['direction'], 'in');
+    });
+
+    test('fetchEntryLinks sends direction=out parameter', () async {
+      client = createTestClient({
+        'GET /entries/e-1/links': {'links': []},
+      });
+
+      await client.fetchEntryLinks<Map<String, dynamic>>(
+        id: 'e-1',
+        direction: 'out',
+      );
+
+      expect(adapter.requests[0].queryParameters?['direction'], 'out');
+    });
+
+    test('fetchEntryLinks returns 422 for invalid direction', () async {
+      client = createTestClient({
+        'GET /entries/e-1/links': _MockResponse(
+          statusCode: 422,
+          data: {
+            'detail': [
+              {
+                'loc': ['query', 'direction'],
+                'msg': 'Value error, direction must be one of: in, out, both',
+                'type': 'value_error',
+              },
+            ],
+          },
+        ),
+      });
+
+      try {
+        await client.fetchEntryLinks<Map<String, dynamic>>(
+          id: 'e-1',
+          direction: 'invalid',
+        );
+        fail('Expected DioException');
+      } on DioException catch (e) {
+        expect(e.response?.statusCode, 422);
+        // Verify the invalid direction was actually sent
+        expect(adapter.requests[0].queryParameters?['direction'], 'invalid');
+      }
+    });
+
+    test('fetchEntryLinks returns 404 for nonexistent entry', () async {
+      client = createTestClient({
+        'GET /entries/nonexistent/links': _MockResponse(
+          statusCode: 404,
+          data: {'detail': 'Entry not found'},
+        ),
+      });
+
+      expect(
+        () => client.fetchEntryLinks<Map<String, dynamic>>(id: 'nonexistent'),
+        throwsA(isA<DioException>()),
+      );
+    });
+
+    // ---- createEntryLink ----
+
+    test('createEntryLink sends POST /entries/{id}/links and returns 201',
+        () async {
+      client = createTestClient({
+        'POST /entries/e-1/links': _MockResponse(
+          statusCode: 201,
+          data: {
+            'id': 'link-1',
+            'source_id': 'e-1',
+            'target_id': 'e-2',
+            'relation_type': 'reference',
+          },
+        ),
+      });
+
+      final response = await client.createEntryLink<Map<String, dynamic>>(
+        id: 'e-1',
+        targetId: 'e-2',
+        relationType: 'reference',
+      );
+
+      expect(response.statusCode, 201);
+      expect(response.data!['id'], 'link-1');
+      expect(response.data!['target_id'], 'e-2');
+      expect(adapter.requests[0].method, 'POST');
+      expect(adapter.requests[0].path, '/entries/e-1/links');
+      expect(adapter.requests[0].data['target_id'], 'e-2');
+      expect(adapter.requests[0].data['relation_type'], 'reference');
+    });
+
+    test('createEntryLink self-reference returns 400', () async {
+      client = createTestClient({
+        'POST /entries/e-1/links': _MockResponse(
+          statusCode: 400,
+          data: {'detail': 'Cannot create self-referencing link'},
+        ),
+      });
+
+      try {
+        await client.createEntryLink<Map<String, dynamic>>(
+          id: 'e-1',
+          targetId: 'e-1',
+          relationType: 'reference',
+        );
+        fail('Expected DioException');
+      } on DioException catch (e) {
+        expect(e.response?.statusCode, 400);
+        // Verify the request body contained self-referencing target_id
+        expect(adapter.requests[0].data['target_id'], 'e-1');
+        expect(adapter.requests[0].data['relation_type'], 'reference');
+      }
+    });
+
+    test('createEntryLink duplicate link returns 409', () async {
+      client = createTestClient({
+        'POST /entries/e-1/links': _MockResponse(
+          statusCode: 409,
+          data: {'detail': 'Link already exists'},
+        ),
+      });
+
+      try {
+        await client.createEntryLink<Map<String, dynamic>>(
+          id: 'e-1',
+          targetId: 'e-2',
+          relationType: 'reference',
+        );
+        fail('Expected DioException');
+      } on DioException catch (e) {
+        expect(e.response?.statusCode, 409);
+        // Verify the duplicate link was for the same target
+        expect(adapter.requests[0].data['target_id'], 'e-2');
+        expect(adapter.requests[0].data['relation_type'], 'reference');
+      }
+    });
+
+    test('createEntryLink returns 404 for nonexistent target', () async {
+      client = createTestClient({
+        'POST /entries/e-1/links': _MockResponse(
+          statusCode: 404,
+          data: {'detail': 'Target entry not found'},
+        ),
+      });
+
+      try {
+        await client.createEntryLink<Map<String, dynamic>>(
+          id: 'e-1',
+          targetId: 'nonexistent',
+          relationType: 'reference',
+        );
+        fail('Expected DioException');
+      } on DioException catch (e) {
+        expect(e.response?.statusCode, 404);
+        // Verify the request targeted a nonexistent entry
+        expect(adapter.requests[0].data['target_id'], 'nonexistent');
+      }
+    });
+
+    // ---- deleteEntryLink ----
+
+    test('deleteEntryLink sends DELETE /entries/{id}/links/{linkId}', () async {
+      client = createTestClient({
+        'DELETE /entries/e-1/links/link-1': _MockResponse(
+          statusCode: 204,
+          data: null,
+        ),
+      });
+
+      final response = await client.deleteEntryLink<Map<String, dynamic>>(
+        id: 'e-1',
+        linkId: 'link-1',
+      );
+
+      expect(response.statusCode, 204);
+      expect(adapter.requests[0].method, 'DELETE');
+      expect(adapter.requests[0].path, '/entries/e-1/links/link-1');
+    });
+
+    test('deleteEntryLink returns 404 for nonexistent link', () async {
+      client = createTestClient({
+        'DELETE /entries/e-1/links/nonexistent': _MockResponse(
+          statusCode: 404,
+          data: {'detail': 'Link not found'},
+        ),
+      });
+
+      expect(
+        () => client.deleteEntryLink<Map<String, dynamic>>(
+          id: 'e-1',
+          linkId: 'nonexistent',
+        ),
+        throwsA(isA<DioException>()),
+      );
+    });
+
+    // ---- fetchKnowledgeContext ----
+
+    test('fetchKnowledgeContext sends GET /entries/{id}/knowledge-context',
+        () async {
+      client = createTestClient({
+        'GET /entries/e-1/knowledge-context': {
+          'nodes': [
+            {'id': 'c-1', 'label': 'Flutter', 'type': 'concept'},
+            {'id': 'c-2', 'label': 'Dart', 'type': 'concept'},
+          ],
+          'edges': [
+            {'source': 'c-2', 'target': 'c-1', 'relation': 'related_to'},
+          ],
+          'center_concepts': ['Flutter'],
+        },
+      });
+
+      final response = await client.fetchKnowledgeContext<Map<String, dynamic>>(
+        id: 'e-1',
+      );
+
+      final nodes = response.data!['nodes'] as List;
+      final edges = response.data!['edges'] as List;
+      final centerConcepts = response.data!['center_concepts'] as List;
+      expect(nodes.length, 2);
+      expect(edges.length, 1);
+      expect(centerConcepts, ['Flutter']);
+      expect(adapter.requests[0].method, 'GET');
+      expect(adapter.requests[0].path, '/entries/e-1/knowledge-context');
+    });
+
+    test('fetchKnowledgeContext returns 404 for nonexistent entry', () async {
+      client = createTestClient({
+        'GET /entries/nonexistent/knowledge-context': _MockResponse(
+          statusCode: 404,
+          data: {'detail': 'Entry not found'},
+        ),
+      });
+
+      expect(
+        () => client.fetchKnowledgeContext<Map<String, dynamic>>(
+          id: 'nonexistent',
+        ),
+        throwsA(isA<DioException>()),
+      );
+    });
+
+    test('fetchKnowledgeContext returns 500 on server error', () async {
+      client = createTestClient({
+        'GET /entries/e-1/knowledge-context': _MockResponse(
+          statusCode: 500,
+          data: {'detail': 'Internal server error'},
+        ),
+      });
+
+      expect(
+        () => client.fetchKnowledgeContext<Map<String, dynamic>>(id: 'e-1'),
+        throwsA(isA<DioException>()),
+      );
+    });
+
+    // ---- generateAISummary ----
+
+    test('generateAISummary sends POST /entries/{id}/ai-summary', () async {
+      client = createTestClient({
+        'POST /entries/e-1/ai-summary': {
+          'summary': 'This entry discusses Flutter development patterns.',
+          'cached': false,
+          'generated_at': '2025-06-15T10:30:00Z',
+        },
+      });
+
+      final response = await client.generateAISummary<Map<String, dynamic>>(
+        id: 'e-1',
+      );
+
+      expect(response.data!['summary'], 'This entry discusses Flutter development patterns.');
+      expect(response.data!['cached'], false);
+      expect(response.data!['generated_at'], '2025-06-15T10:30:00Z');
+      expect(adapter.requests[0].method, 'POST');
+      expect(adapter.requests[0].path, '/entries/e-1/ai-summary');
+    });
+
+    test('generateAISummary returns cached summary', () async {
+      client = createTestClient({
+        'POST /entries/e-1/ai-summary': {
+          'summary': 'Cached summary content.',
+          'cached': true,
+          'generated_at': '2025-06-14T08:00:00Z',
+        },
+      });
+
+      final response = await client.generateAISummary<Map<String, dynamic>>(
+        id: 'e-1',
+      );
+
+      expect(response.data!['cached'], true);
+    });
+
+    test('generateAISummary empty content returns summary=null', () async {
+      client = createTestClient({
+        'POST /entries/e-1/ai-summary': {
+          'summary': null,
+          'cached': false,
+          'generated_at': null,
+        },
+      });
+
+      final response = await client.generateAISummary<Map<String, dynamic>>(
+        id: 'e-1',
+      );
+
+      expect(response.data!['summary'], isNull);
+      expect(response.data!['cached'], false);
+    });
+
+    test('generateAISummary returns 404 for nonexistent entry', () async {
+      client = createTestClient({
+        'POST /entries/nonexistent/ai-summary': _MockResponse(
+          statusCode: 404,
+          data: {'detail': 'Entry not found'},
+        ),
+      });
+
+      expect(
+        () => client.generateAISummary<Map<String, dynamic>>(id: 'nonexistent'),
+        throwsA(isA<DioException>()),
+      );
+    });
+
+    test('generateAISummary returns 500 on server error', () async {
+      client = createTestClient({
+        'POST /entries/e-1/ai-summary': _MockResponse(
+          statusCode: 500,
+          data: {'detail': 'Internal server error'},
+        ),
+      });
+
+      expect(
+        () => client.generateAISummary<Map<String, dynamic>>(id: 'e-1'),
         throwsA(isA<DioException>()),
       );
     });

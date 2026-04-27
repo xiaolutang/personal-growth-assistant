@@ -182,6 +182,83 @@ class ApiClient {
     return _dio.post<T>('/entries', data: data);
   }
 
+  // ---- Entry Interaction API Methods (F172) ----
+
+  /// 更新条目（PUT /entries/{id}）
+  /// [id] 条目 ID
+  /// [data] 更新数据（title, content, category, tags, status 等）
+  /// 返回 SuccessResponse（非 EntryResponse）
+  Future<Response<T>> updateEntry<T>({
+    required String id,
+    required Map<String, dynamic> data,
+  }) {
+    return _dio.put<T>('/entries/$id', data: data);
+  }
+
+  /// 获取条目的反向链接（GET /entries/{id}/backlinks）
+  /// [id] 条目 ID
+  /// 返回 BacklinksResponse
+  Future<Response<T>> fetchBacklinks<T>({required String id}) {
+    return _dio.get<T>('/entries/$id/backlinks');
+  }
+
+  /// 获取条目的关联链接（GET /entries/{id}/links）
+  /// [id] 条目 ID
+  /// [direction] 关联方向：in/out/both，默认 both
+  Future<Response<T>> fetchEntryLinks<T>({
+    required String id,
+    String direction = 'both',
+  }) {
+    return _dio.get<T>(
+      '/entries/$id/links',
+      queryParameters: {'direction': direction},
+    );
+  }
+
+  /// 创建条目关联链接（POST /entries/{id}/links）
+  /// [id] 源条目 ID
+  /// [targetId] 目标条目 ID
+  /// [relationType] 关联类型
+  /// 返回 201 EntryLinkResponse
+  Future<Response<T>> createEntryLink<T>({
+    required String id,
+    required String targetId,
+    required String relationType,
+  }) {
+    return _dio.post<T>(
+      '/entries/$id/links',
+      data: {
+        'target_id': targetId,
+        'relation_type': relationType,
+      },
+    );
+  }
+
+  /// 删除条目关联链接（DELETE /entries/{id}/links/{linkId}）
+  /// [id] 条目 ID
+  /// [linkId] 链接 ID
+  /// 返回 204
+  Future<Response<T>> deleteEntryLink<T>({
+    required String id,
+    required String linkId,
+  }) {
+    return _dio.delete<T>('/entries/$id/links/$linkId');
+  }
+
+  /// 获取条目的知识上下文（GET /entries/{id}/knowledge-context）
+  /// [id] 条目 ID
+  /// 返回 KnowledgeContextResponse（含 nodes/edges/center_concepts）
+  Future<Response<T>> fetchKnowledgeContext<T>({required String id}) {
+    return _dio.get<T>('/entries/$id/knowledge-context');
+  }
+
+  /// 生成 AI 摘要（POST /entries/{id}/ai-summary）
+  /// [id] 条目 ID
+  /// 返回对象含 summary/cached/generated_at
+  Future<Response<T>> generateAISummary<T>({required String id}) {
+    return _dio.post<T>('/entries/$id/ai-summary');
+  }
+
   // ---- Goals API Methods ----
 
   /// 获取目标列表

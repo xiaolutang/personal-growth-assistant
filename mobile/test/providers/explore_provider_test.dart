@@ -831,4 +831,82 @@ class _FakeApiClient implements ApiClient {
       requestOptions: RequestOptions(path: '/review/insights'),
     );
   }
+
+  // ---- F172: Entry Interaction API Methods mock ----
+
+  @override
+  Future<Response<T>> updateEntry<T>({
+    required String id,
+    required Map<String, dynamic> data,
+  }) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: '/entries/$id'),
+    );
+  }
+
+  @override
+  Future<Response<T>> fetchBacklinks<T>({required String id}) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: '/entries/$id/backlinks'),
+    );
+  }
+
+  @override
+  Future<Response<T>> fetchEntryLinks<T>({
+    required String id,
+    String direction = 'both',
+  }) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: '/entries/$id/links'),
+    );
+  }
+
+  @override
+  Future<Response<T>> createEntryLink<T>({
+    required String id,
+    required String targetId,
+    required String relationType,
+  }) async {
+    return Response<T>(
+      data: null,
+      statusCode: 201,
+      requestOptions: RequestOptions(path: '/entries/$id/links'),
+    );
+  }
+
+  @override
+  Future<Response<T>> deleteEntryLink<T>({
+    required String id,
+    required String linkId,
+  }) async {
+    return Response<T>(
+      data: null,
+      statusCode: 204,
+      requestOptions: RequestOptions(path: '/entries/$id/links/$linkId'),
+    );
+  }
+
+  @override
+  Future<Response<T>> fetchKnowledgeContext<T>({required String id}) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: '/entries/$id/knowledge-context'),
+    );
+  }
+
+  @override
+  Future<Response<T>> generateAISummary<T>({required String id}) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: '/entries/$id/ai-summary'),
+    );
+  }
 }
