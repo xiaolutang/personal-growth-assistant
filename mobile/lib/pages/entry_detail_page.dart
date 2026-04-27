@@ -51,6 +51,7 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadEntry();
       _loadKnowledgeContext();
+      _loadLinks();
     });
   }
 
@@ -68,6 +69,11 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
 
   void _loadKnowledgeContext() {
     ref.read(entryDetailProvider(widget.entryId).notifier).fetchKnowledgeContext();
+  }
+
+  void _loadLinks() {
+    ref.read(entryDetailProvider(widget.entryId).notifier).loadEntryLinks();
+    ref.read(entryDetailProvider(widget.entryId).notifier).loadBacklinks();
   }
 
   /// 进入编辑模式：初始化本地控制器
@@ -329,6 +335,16 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
 
           // 知识上下文 Section
           _buildKnowledgeContextCard(detailState, theme),
+
+          const SizedBox(height: AppSpacing.lg),
+
+          // 关联条目 Section
+          _buildEntryLinksSection(detailState, theme),
+
+          const SizedBox(height: AppSpacing.lg),
+
+          // 反向引用 Section
+          _buildBacklinksSection(detailState, theme),
 
           const SizedBox(height: AppSpacing.lg),
 
@@ -870,6 +886,551 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
         ),
       ),
     );
+  }
+
+  // ============================================================
+  // 关联条目 Section
+  // ============================================================
+  Widget _buildEntryLinksSection(EntryDetailState state, ThemeData theme) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section 标题行 + 添加按钮
+            Row(
+              children: [
+                const Icon(
+                  Icons.link_outlined,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  '关联条目',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                _buildAddLinkButton(theme),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            // 关联列表
+            if (state.entryLinks.isEmpty)
+              Text(
+                '暂无关联条目，点击右上角添加',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              )
+            else
+              ...state.entryLinks.map(
+                (link) => _buildLinkItem(link, state, theme),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddLinkButton(ThemeData theme) {
+    return SizedBox(
+      height: 32,
+      child: TextButton.icon(
+        onPressed: () => _showAddLinkDialog(theme),
+        icon: const Icon(Icons.add_link, size: 16),
+        label: const Text('添加关联', style: TextStyle(fontSize: AppFontSize.caption)),
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLinkItem(
+      EntryLinkItem link,
+      EntryDetailState state,
+      ThemeData theme,) {
+    // 确定 display entry: 优先用 targetEntry
+    final displayEntry = link.targetEntry;
+    final displayTitle = displayEntry?.title ?? '已删除的条目';
+    final displayCategory = displayEntry?.category;
+    final relationLabel = _relationTypeLabel(link.relationType);
+
+    return Dismissible(
+      key: ValueKey(link.linkId),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) => _confirmDeleteLink(link.linkId),
+      onDismissed: (_) {
+        ref.read(entryDetailProvider(widget.entryId).notifier).deleteLink(
+              linkId: link.linkId,
+            );
+      },
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: AppColors.error.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(AppRadius.button),
+        ),
+        child: const Icon(Icons.delete_outline, color: AppColors.error),
+      ),
+      child: InkWell(
+        onTap: displayEntry != null
+            ? () => _navigateToEntry(displayEntry.id)
+            : null,
+        borderRadius: BorderRadius.circular(AppRadius.button),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.sm,
+            horizontal: AppSpacing.xs,
+          ),
+          child: Row(
+            children: [
+              // 分类图标
+              if (displayCategory != null)
+                Icon(
+                  CategoryMeta.iconOf(displayCategory),
+                  size: 18,
+                  color: CategoryMeta.colorOf(displayCategory),
+                )
+              else
+                const Icon(Icons.article_outlined, size: 18),
+              const SizedBox(width: AppSpacing.sm),
+
+              // 标题
+              Expanded(
+                child: Text(
+                  displayTitle,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    decoration: displayEntry == null
+                        ? TextDecoration.lineThrough
+                        : null,
+                    color: displayEntry == null
+                        ? theme.colorScheme.onSurfaceVariant
+                        : null,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+
+              // 关联类型标签
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(AppRadius.button),
+                ),
+                child: Text(
+                  relationLabel,
+                  style: const TextStyle(
+                    fontSize: AppFontSize.caption,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // 反向引用 Section
+  // ============================================================
+  Widget _buildBacklinksSection(EntryDetailState state, ThemeData theme) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section 标题行
+            Row(
+              children: [
+                const Icon(
+                  Icons.reply_outlined,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  '反向引用',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (state.backlinks.isNotEmpty) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(AppRadius.button),
+                    ),
+                    child: Text(
+                      '${state.backlinks.length}',
+                      style: TextStyle(
+                        fontSize: AppFontSize.caption,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            // 反向引用列表
+            if (state.backlinks.isEmpty)
+              Text(
+                '暂无其他条目引用此条目',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              )
+            else
+              ...state.backlinks.map(
+                (backlink) => _buildBacklinkItem(backlink, theme),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBacklinkItem(BacklinkItem backlink, ThemeData theme) {
+    return InkWell(
+      onTap: () => _navigateToEntry(backlink.id),
+      borderRadius: BorderRadius.circular(AppRadius.button),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.xs,
+        ),
+        child: Row(
+          children: [
+            // 分类图标
+            if (backlink.category != null)
+              Icon(
+                CategoryMeta.iconOf(backlink.category!),
+                size: 18,
+                color: CategoryMeta.colorOf(backlink.category!),
+              )
+            else
+              const Icon(Icons.article_outlined, size: 18),
+            const SizedBox(width: AppSpacing.sm),
+
+            // 标题
+            Expanded(
+              child: Text(
+                backlink.title,
+                style: theme.textTheme.bodyMedium,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+
+            // 关联类型标签
+            if (backlink.relationType != null)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(AppRadius.button),
+                ),
+                child: Text(
+                  _relationTypeLabel(backlink.relationType!),
+                  style: TextStyle(
+                    fontSize: AppFontSize.caption,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // 添加关联对话框
+  // ============================================================
+  void _showAddLinkDialog(ThemeData theme) {
+    final searchController = TextEditingController();
+    String selectedRelationType = 'related';
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: const Text('添加关联'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 搜索框
+                    TextField(
+                      controller: searchController,
+                      decoration: InputDecoration(
+                        hintText: '搜索条目...',
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                        suffixIcon: searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 18),
+                                onPressed: () {
+                                  searchController.clear();
+                                  // 清除搜索结果
+                                  ref
+                                      .read(entryDetailProvider(widget.entryId)
+                                          .notifier,)
+                                      .searchEntriesForLink(query: '');
+                                  setDialogState(() {});
+                                },
+                              )
+                            : null,
+                        isDense: true,
+                        border: const OutlineInputBorder(),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.sm,
+                        ),
+                      ),
+                      onChanged: (value) {
+                        setDialogState(() {});
+                        if (value.trim().isNotEmpty) {
+                          ref
+                              .read(entryDetailProvider(widget.entryId)
+                                  .notifier,)
+                              .searchEntriesForLink(query: value.trim());
+                        }
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    // 关联类型选择
+                    Text(
+                      '关联类型',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    DropdownButtonFormField<String>(
+                      value: selectedRelationType,
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.sm,
+                        ),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'related',
+                          child: Text('相关'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'depends_on',
+                          child: Text('依赖'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'derived_from',
+                          child: Text('来源'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'references',
+                          child: Text('引用'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          selectedRelationType = value;
+                          setDialogState(() {});
+                        }
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    // 搜索结果列表
+                    Consumer(
+                      builder: (ctx, ref, _) {
+                        final detailState = ref
+                            .watch(entryDetailProvider(widget.entryId));
+                        if (detailState.isSearching) {
+                          return const Padding(
+                            padding: EdgeInsets.all(AppSpacing.lg),
+                            child: Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                          );
+                        }
+                        if (searchController.text.trim().isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+                        if (detailState.searchResults.isEmpty) {
+                          return Padding(
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            child: Text(
+                              '未找到匹配条目',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          );
+                        }
+                        return ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: detailState.searchResults.length,
+                            separatorBuilder: (_, __) => const Divider(height: 1),
+                            itemBuilder: (ctx, index) {
+                              final entry = detailState.searchResults[index];
+                              // 排除自身
+                              if (entry.id == widget.entryId) {
+                                return const SizedBox.shrink();
+                              }
+                              return ListTile(
+                                dense: true,
+                                leading: Icon(
+                                  CategoryMeta.iconOf(entry.category),
+                                  size: 18,
+                                  color: CategoryMeta.colorOf(entry.category),
+                                ),
+                                title: Text(
+                                  entry.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                trailing: const Icon(Icons.add_circle_outline, size: 20),
+                                onTap: () async {
+                                  final notifier = ref.read(
+                                    entryDetailProvider(widget.entryId)
+                                        .notifier,
+                                  );
+                                  final success = await notifier.createLink(
+                                    targetId: entry.id,
+                                    relationType: selectedRelationType,
+                                  );
+                                  if (ctx.mounted) {
+                                    Navigator.of(ctx).pop();
+                                  }
+                                  if (!mounted) return;
+                                  if (success) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('关联创建成功'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                  } else {
+                                    final errMsg = ref
+                                        .read(entryDetailProvider(widget.entryId))
+                                        .error;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(errMsg ?? '关联创建失败'),
+                                        backgroundColor: AppColors.error,
+                                        duration: const Duration(seconds: 3),
+                                      ),
+                                    );
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('取消'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ).then((_) {
+      searchController.dispose();
+    });
+  }
+
+  /// 跳转到条目详情页
+  void _navigateToEntry(String entryId) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => EntryDetailPage(entryId: entryId),
+      ),
+    );
+  }
+
+  /// 确认删除关联
+  Future<bool?> _confirmDeleteLink(String linkId) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('删除关联'),
+        content: const Text('确定删除此关联吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _relationTypeLabel(String relationType) {
+    switch (relationType) {
+      case 'related':
+        return '相关';
+      case 'depends_on':
+        return '依赖';
+      case 'derived_from':
+        return '来源';
+      case 'references':
+        return '引用';
+      default:
+        return relationType;
+    }
   }
 
   Widget _buildConceptNode(Map<String, dynamic> node, ThemeData theme) {
