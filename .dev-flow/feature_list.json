@@ -3,6 +3,39 @@
   "project": "personal-growth-assistant",
   "status": "active",
   "updated_at": "2026-04-27",
+  "active_requirement_cycle": {
+    "id": "R042",
+    "name": "flutter-entry-detail-upgrade",
+    "branch": "feat/R042-flutter-entry-detail",
+    "status": "planning",
+    "started_at": "2026-04-27"
+  },
+  "workflow": {
+    "name": "XLFoundry",
+    "mode": "B",
+    "runtime": "skill_orchestrated",
+    "review_provider": "codex_plugin",
+    "audit_provider": "codex_plugin",
+    "risk_provider": "codex_plugin",
+    "stop_hook_enabled": false
+  },
+  "summary": {
+    "total": 6,
+    "by_status": {
+      "pending": 6,
+      "in_progress": 0,
+      "completed": 0
+    },
+    "by_priority": {
+      "P0": 1,
+      "P1": 3,
+      "P2": 2
+    },
+    "by_module": {
+      "flutter": 5,
+      "shared": 1
+    }
+  },
   "archived_requirement_cycles": [
     {
       "id": "R041",
@@ -52,5 +85,184 @@
     }
   ],
   "archived_phases": [],
-  "features": []
+  "features": [
+    {
+      "id": "F172",
+      "phase": 1,
+      "module": "flutter",
+      "name": "api_client.dart 条目交互 API",
+      "description": "在 ApiClient 中补齐条目详情交互所需的 8 个 API 方法：updateEntry（PUT /entries/{id}）、fetchRelatedEntries（GET /entries/{id}/related）、fetchBacklinks（GET /entries/{id}/backlinks）、fetchEntryLinks（GET /entries/{id}/links，支持 direction 参数 in/out/both）、createEntryLink（POST /entries/{id}/links）、deleteEntryLink（DELETE /entries/{id}/links/{linkId}）、fetchKnowledgeContext（GET /entries/{id}/knowledge-context）、generateAISummary（POST /entries/{id}/ai-summary）。配套单元测试",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "ApiClient 新增 8 个业务方法覆盖条目编辑/关联/AI摘要/知识上下文",
+        "每个方法有对应单元测试（mock Dio adapter）",
+        "flutter analyze 无错误",
+        "flutter test 通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "每个新增 API 方法的正常响应测试",
+        "404/500 错误处理测试",
+        "flutter analyze + flutter test 通过"
+      ],
+      "contract_refs": [
+        "PUT /entries/{id}",
+        "GET /entries/{id}/related",
+        "GET /entries/{id}/backlinks",
+        "GET /entries/{id}/links",
+        "POST /entries/{id}/links",
+        "DELETE /entries/{id}/links/{link_id}",
+        "GET /entries/{id}/knowledge-context",
+        "POST /entries/{id}/ai-summary"
+      ],
+      "files": [
+        "mobile/lib/services/api_client.dart",
+        "mobile/test/services/api_client_test.dart"
+      ]
+    },
+    {
+      "id": "F173",
+      "phase": 1,
+      "module": "flutter",
+      "name": "entry_detail_provider.dart 扩展",
+      "description": "扩展 EntryDetailNotifier 支持编辑、保存、AI 摘要、关联操作、反向引用加载。新增状态字段：isEditing、isSaving、isGeneratingSummary、relatedEntries、backlinks、entryLinks、knowledgeContext。方法：updateEntry、generateSummary、loadRelatedEntries、loadBacklinks、loadEntryLinks、createLink、deleteLink、toggleEdit",
+      "verification": "F1",
+      "depends_on": ["F172"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "EntryDetailState 新增编辑/保存/AI摘要/关联/反向引用状态字段",
+        "EntryDetailNotifier 新增 updateEntry/generateSummary/loadRelatedEntries/loadBacklinks/loadEntryLinks/createLink/deleteLink/toggleEdit 方法",
+        "编辑操作：保存后刷新 entry 数据",
+        "所有 List 类型状态通过 copyWith 替换创建新实例，不直接修改（遵守 architecture.md 禁止 Provider 持可变 List）",
+        "flutter analyze 无错误，flutter test 通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "编辑状态切换测试",
+        "updateEntry 成功/失败状态转换",
+        "generateSummary 成功/失败",
+        "loadRelatedEntries/loadBacklinks 数据加载",
+        "createLink/deleteLink 操作后列表刷新"
+      ],
+      "files": [
+        "mobile/lib/providers/entry_provider.dart",
+        "mobile/test/providers/entry_detail_provider_test.dart"
+      ]
+    },
+    {
+      "id": "F174",
+      "phase": 2,
+      "module": "flutter",
+      "name": "EntryDetail 编辑模式",
+      "description": "将 EntryDetailPage 从只读升级为可编辑。AppBar 添加编辑/保存按钮，点击编辑进入编辑态：标题 TextField、内容 TextField（多行）、状态 DropdownButton、优先级 DropdownButton、标签 Chip 输入（行末 + 按钮，点击弹出输入框，长按 Chip 弹出删除确认）。分类(category)不可编辑。保存调用 provider.updateEntry，成功后退出编辑态并刷新",
+      "verification": "F2",
+      "depends_on": ["F173"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "AppBar 右侧添加编辑图标按钮，点击进入编辑态",
+        "编辑态：标题可编辑（TextField）、内容可编辑（多行 TextField）、状态可切换（DropdownButton）、优先级可切换、标签可增删",
+        "保存按钮：调用 updateEntry API，loading 态，成功后退出编辑+SnackBar 提示",
+        "保存失败：保持编辑态 + 错误提示",
+        "未修改时保存按钮不可点击",
+        "flutter analyze 无错误"
+      ],
+      "risk_tags": ["first_use"],
+      "test_tasks": [
+        "widget 测试：编辑按钮点击进入编辑态",
+        "widget 测试：修改标题/内容/状态后保存成功",
+        "widget 测试：保存失败时保持编辑态",
+        "widget 测试：未修改时保存按钮 disabled",
+        "首次编辑 smoke：从列表进入详情→编辑→保存→验证列表数据一致"
+      ],
+      "files": [
+        "mobile/lib/pages/entry_detail_page.dart"
+      ]
+    },
+    {
+      "id": "F175",
+      "phase": 2,
+      "module": "flutter",
+      "name": "EntryDetail AI 摘要 + 知识上下文",
+      "description": "在 EntryDetailPage 内容区域下方新增两个 Section：AI 摘要卡片（生成按钮 + loading + 摘要文本展示）和知识上下文卡片（相关概念列表、掌握度指示器）。AI 摘要调用 POST /entries/{id}/ai-summary，知识上下文调用 GET /entries/{id}/knowledge-context",
+      "verification": "F2",
+      "depends_on": ["F173", "F174"],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "内容下方新增 AI 摘要 Section：生成按钮 + loading 态 + 摘要文本展示",
+        "AI 摘要生成失败时展示错误提示+重试按钮",
+        "内容下方新增知识上下文 Section：相关概念列表（概念名 + 掌握度百分比）",
+        "无知识上下文数据时展示空提示'暂无知识关联'",
+        "flutter analyze 无错误"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        "widget 测试：AI 摘要生成按钮点击 → loading → 文本展示",
+        "widget 测试：AI 摘要生成失败 → 错误提示 + 重试",
+        "widget 测试：知识上下文数据展示（概念名 + 进度条）",
+        "widget 测试：空数据时展示引导文案",
+        "网络异常 smoke：关闭网络后点击生成摘要→错误提示正常"
+      ],
+      "files": [
+        "mobile/lib/pages/entry_detail_page.dart"
+      ]
+    },
+    {
+      "id": "F176",
+      "phase": 2,
+      "module": "flutter",
+      "name": "EntryDetail 关联条目 + 反向引用",
+      "description": "在 EntryDetailPage 底部新增两个 Section：关联条目列表（GET /entries/{id}/links，支持删除关联）和反向引用列表（GET /entries/{id}/backlinks，只读展示）。新增手动关联功能：底部弹出搜索框，搜索条目后创建关联（POST /entries/{id}/links）",
+      "verification": "F2",
+      "depends_on": ["F175"],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "底部新增关联条目 Section：关联条目列表（标题+分类图标），每项可点击跳转详情",
+        "关联条目支持删除（滑动删除或长按菜单）",
+        "底部新增反向引用 Section：引用当前条目的其他条目列表，只读",
+        "新增'添加关联'按钮，弹出搜索框，搜索后选择条目创建关联",
+        "空状态引导文案",
+        "flutter analyze 无错误"
+      ],
+      "risk_tags": ["first_use", "network"],
+      "test_tasks": [
+        "widget 测试：关联条目列表渲染",
+        "widget 测试：滑动删除关联",
+        "widget 测试：反向引用列表渲染",
+        "widget 测试：添加关联弹窗 → 搜索 → 选择 → 创建成功",
+        "flutter analyze 通过"
+      ],
+      "files": [
+        "mobile/lib/pages/entry_detail_page.dart"
+      ]
+    },
+    {
+      "id": "S43",
+      "phase": 3,
+      "module": "shared",
+      "name": "flutter test + analyze + build + Docker smoke",
+      "description": "质量收口：flutter analyze、flutter test 全量、flutter build ios --no-codesign --debug、pytest 全量、vitest 全量、npm run build、Docker smoke",
+      "verification": "L3",
+      "depends_on": ["F174", "F175", "F176"],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "flutter analyze 0 errors",
+        "flutter test 全量通过（0 failed）",
+        "flutter build 无错误",
+        "pytest 全量通过",
+        "vitest 全量通过",
+        "npm run build 成功",
+        "Docker 容器启动 + 健康检查通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": []
+    }
+  ]
 }

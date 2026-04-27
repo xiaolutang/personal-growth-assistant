@@ -1,53 +1,42 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.41.0
-> 状态：规划中（R041）
-> 活跃分支：feat/R041-health-flutter-pages
+> 版本：v0.42.0
+> 状态：规划中（R042）
+> 活跃分支：feat/R042-flutter-entry-detail
 
 ## 当前范围
 
-R041 工程健康 + Flutter 页面补齐：修复已知代码质量问题，补齐 Flutter 移动端缺失的 4 个核心页面。
+R042 Flutter 条目详情交互升级：将移动端 EntryDetailPage 从只读展示升级为完整交互页面，支持编辑、AI 摘要、关联条目和反向引用。
 
-### Phase 1: 工程健康修复（3 tasks）
+### Phase 1: API + Provider 层（2 tasks）
 
-1. **B117 Fix flaky test + 收窄异常**：test_isolation_user_data 改用随机 ID；knowledge_service.py(2处) + qdrant_client.py(1处) except Exception: pass 收窄
-2. **F163 修复 eslint-disable**：审查 5 处 react-hooks/exhaustive-deps 抑制
-3. **F164 Flutter 死代码清理**：删除 placeholder_page.dart
+1. **F172 api_client.dart 条目交互 API**：补齐 8 个 API 方法（updateEntry/fetchRelatedEntries/fetchBacklinks/fetchEntryLinks/createEntryLink/deleteEntryLink/fetchKnowledgeContext/generateAISummary）+ 单元测试
+2. **F173 entry_detail_provider.dart 扩展**：编辑状态管理/保存/AI摘要/关联操作/反向引用加载 + Provider 测试
 
-### Phase 2: Flutter API + Providers（2 tasks）
+### Phase 2: EntryDetail UI 升级（3 tasks）
 
-4. **F165 api_client.dart 扩展**：添加 createEntry/fetchGoals/fetchMilestones/fetchReviewSummary/fetchTrends 等方法
-5. **F166 创建 4 个 Provider**：notes_provider + inbox_provider + review_provider + goals_provider
+3. **F174 EntryDetail 编辑模式**：标题/内容/状态/标签可编辑，保存到后端
+4. **F175 EntryDetail AI 摘要 + 知识上下文**：AI 摘要生成按钮+展示，知识上下文卡片
+5. **F176 EntryDetail 关联条目 + 反向引用**：关联条目列表/手动关联/反向引用展示
 
-### Phase 3: Flutter 页面（4 tasks）
+### Phase 3: 质量收口（1 task）
 
-6. **F167 NotesPage**：笔记列表 + 搜索 + 详情跳转
-7. **F168 InboxPage**：灵感列表 + 快速录入 + 转分类
-8. **F169 ReviewPage**：统计回顾 + 趋势图 + AI 洞察
-9. **F170 GoalsPage**：目标列表 + 里程碑管理
-
-### Phase 4: 导航集成（1 task）
-
-10. **F171 路由注册 + 底部导航扩展**：GoRouter 新路由 + 5 Tab 布局 + 更多菜单
-
-### Phase 5: 质量收口（1 task）
-
-11. **S42 全量测试 + flutter test + build + Docker smoke**
+6. **S43 flutter test + analyze + build + Docker smoke**
 
 ## 统计
 
 | 指标 | 值 |
 |------|-----|
-| 总任务数 | 11 |
-| P0 | 1（S42 质量收口）|
-| P1 | 4（B117, F165, F166, F171）|
-| P2 | 6（F163, F164, F167-F170）|
+| 总任务数 | 6 |
+| P0 | 1（S43 质量收口）|
+| P1 | 3（F172, F173, F174）|
+| P2 | 2（F175, F176）|
 
 ## 技术约束
 
-- Flutter 页面遵循现有 Riverpod State+Notifier+Provider 三件套模式
-- Flutter 页面使用 ConsumerStatefulWidget + 三态渲染
-- 底部导航采用 5 Tab + 更多菜单布局
-- ReviewPage 趋势图使用纯 Widget 实现（不引入 fl_chart）
+- 后端 API 全部就绪，无需后端改动
+- EntryDetail 遵循 ConsumerStatefulWidget + Riverpod 模式
+- 编辑模式在 AppBar 切换，不新增页面
+- AI 摘要 / 知识上下文 / 关联条目以 Section 形式嵌入同一页面
 - workflow: B/codex_plugin/skill_orchestrated
