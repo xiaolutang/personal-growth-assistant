@@ -595,8 +595,7 @@ class SQLiteStorageBase:
                 "edge_count": int
             }
         """
-        conn = self._get_conn()
-        try:
+        with self._conn() as conn:
             # 标签计数
             tag_rows = conn.execute("""
                 SELECT t.name AS tag_name, COUNT(DISTINCT e.id) AS entry_count
@@ -630,8 +629,6 @@ class SQLiteStorageBase:
                 "tags": tags,
                 "edge_count": edge_row["edge_count"] if edge_row else 0,
             }
-        finally:
-            conn.close()
 
     def get_tag_stats_for_subgraph(
         self, seed_concepts: list[str], user_id: str = "_default"
@@ -655,8 +652,7 @@ class SQLiteStorageBase:
 
         thirty_days_ago = (datetime.now() - timedelta(days=30)).isoformat()
         seed_placeholders = ",".join("?" * len(seed_concepts))
-        conn = self._get_conn()
-        try:
+        with self._conn() as conn:
             # 1. 标签统计：只统计包含至少一个种子概念的条目
             tag_rows = conn.execute(f"""
                 SELECT t.name AS tag_name,
@@ -712,5 +708,3 @@ class SQLiteStorageBase:
                 "tags": tags,
                 "co_occurrence_pairs": co_occurrence_pairs,
             }
-        finally:
-            conn.close()

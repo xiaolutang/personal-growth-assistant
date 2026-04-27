@@ -62,8 +62,8 @@ class SQLiteFeedbackMixin:
         log_service_issue_id: int | None = None,
     ) -> bool:
         """更新反馈状态（后台同步后调用）"""
-        with self._conn() as conn:
-            try:
+        try:
+            with self._conn() as conn:
                 if log_service_issue_id is not None:
                     conn.execute(
                         "UPDATE feedback SET status = ?, log_service_issue_id = ? WHERE id = ?",
@@ -75,9 +75,9 @@ class SQLiteFeedbackMixin:
                         (status, feedback_id),
                     )
                 return True
-            except Exception as e:
-                logger.error("更新反馈状态失败: %s", e)
-                return False
+        except Exception as e:
+            logger.error("更新反馈状态失败: %s", e)
+            return False
 
     def list_feedbacks_with_issue_id(self, user_id: str) -> list[dict[str, Any]]:
         """列出有 log_service_issue_id 的反馈（用于同步）"""
@@ -95,13 +95,13 @@ class SQLiteFeedbackMixin:
         updated_at: str | None = None,
     ) -> bool:
         """同步远程状态到本地反馈记录（status + updated_at 同时写入）"""
-        with self._conn() as conn:
-            try:
+        try:
+            with self._conn() as conn:
                 conn.execute(
                     "UPDATE feedback SET status = ?, updated_at = ? WHERE id = ?",
                     (status, updated_at, feedback_id),
                 )
                 return True
-            except Exception as e:
-                logger.error("同步反馈状态失败: %s", e)
-                return False
+        except Exception as e:
+            logger.error("同步反馈状态失败: %s", e)
+            return False

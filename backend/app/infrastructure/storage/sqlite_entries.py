@@ -59,8 +59,8 @@ class SQLiteEntriesMixin:
 
     def upsert_entry(self, entry: Task, user_id: str = "_default") -> bool:
         """插入或更新条目"""
-        with self._conn() as conn:
-            try:
+        try:
+            with self._conn() as conn:
                 # 插入或更新主表
                 conn.execute("""
                     INSERT INTO entries (id, type, title, status, priority, file_path, created_at, updated_at,
@@ -99,9 +99,9 @@ class SQLiteEntriesMixin:
                 self._update_tags(conn, entry.id, entry.tags)
 
                 return True
-            except Exception as e:
-                logger.error("SQLite upsert 失败: %s", e)
-                return False
+        except Exception as e:
+            logger.error("SQLite upsert 失败: %s", e)
+            return False
 
     def _update_tags(self, conn: sqlite3.Connection, entry_id: str, tags: List[str]):
         """更新条目标签"""
@@ -126,14 +126,14 @@ class SQLiteEntriesMixin:
 
     def delete_entry(self, entry_id: str, user_id: str = "_default") -> bool:
         """删除条目"""
-        with self._conn() as conn:
-            try:
+        try:
+            with self._conn() as conn:
                 # 由于有外键约束，删除 entries 会级联删除 entry_tags
                 conn.execute("DELETE FROM entries WHERE id = ? AND user_id = ?", (entry_id, user_id,))
                 return True
-            except Exception as e:
-                logger.error("SQLite delete 失败: %s", e)
-                return False
+        except Exception as e:
+            logger.error("SQLite delete 失败: %s", e)
+            return False
 
     def get_entry(self, entry_id: str, user_id: str = "_default") -> Optional[Dict[str, Any]]:
         """获取单个条目"""
@@ -414,15 +414,15 @@ class SQLiteEntriesMixin:
 
     def clear_all(self) -> bool:
         """清空所有数据"""
-        with self._conn() as conn:
-            try:
+        try:
+            with self._conn() as conn:
                 conn.execute("DELETE FROM entry_tags")
                 conn.execute("DELETE FROM entries")
                 conn.execute("DELETE FROM tags")
                 return True
-            except Exception as e:
-                logger.error("清空失败: %s", e)
-                return False
+        except Exception as e:
+            logger.error("清空失败: %s", e)
+            return False
 
     # === AI 摘要操作 ===
 
@@ -444,13 +444,13 @@ class SQLiteEntriesMixin:
         """保存 AI 摘要到条目"""
         if generated_at is None:
             generated_at = datetime.now().isoformat()
-        with self._conn() as conn:
-            try:
+        try:
+            with self._conn() as conn:
                 conn.execute(
                     "UPDATE entries SET ai_summary = ?, ai_summary_generated_at = ? WHERE id = ? AND user_id = ?",
                     (summary, generated_at, entry_id, user_id),
                 )
                 return conn.total_changes > 0
-            except Exception as e:
-                logger.error("保存 AI 摘要失败: %s", e)
-                return False
+        except Exception as e:
+            logger.error("保存 AI 摘要失败: %s", e)
+            return False

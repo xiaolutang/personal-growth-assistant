@@ -11,8 +11,8 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.infrastructure.storage.neo4j_client import Neo4jClient
-from app.services.knowledge_service import (
-    KnowledgeService,
+from app.services.knowledge_service import KnowledgeService
+from app.models.knowledge import (
     KnowledgeMapResponse,
     ConceptStatsResponse,
     KnowledgeGraphResponse,

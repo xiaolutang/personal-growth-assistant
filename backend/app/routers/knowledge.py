@@ -6,9 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.routers.deps import get_knowledge_service, get_recommendation_service, get_current_user
 from app.models.user import User
-from app.services.knowledge_service import (
+from app.models.knowledge import (
     ConceptNode,
-    ConceptRelation,
     KnowledgeGraphResponse,
     RelatedConceptsResponse,
     LearningPathResponse,
