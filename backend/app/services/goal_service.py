@@ -173,6 +173,13 @@ class GoalService:
                 return None, 404, "目标不存在"
             linked_count = self._sqlite.count_goal_entries(goal_id, user_id)
             result = self._row_to_response(updated, linked_entries_count=linked_count)
+
+            # 进度相关字段变更时写入快照
+            progress_fields = {"title", "description", "status", "target_value", "start_date", "end_date"}
+            if progress_fields.intersection(fields):
+                current_value = result.get("current_value", 0)
+                self._write_snapshot(goal_id, user_id, current_value, updated["target_value"])
+
             return result, 200, "目标更新成功"
         except Exception as e:
             logger.error("更新目标失败: %s", e)
@@ -268,6 +275,10 @@ class GoalService:
         # 重新计算进度（但不自动回退状态）
         linked_count = self._sqlite.count_goal_entries(goal_id, user_id)
         updated_goal = self._sqlite.get_goal(goal_id, user_id)
+
+        # 写入进度快照
+        self._write_snapshot(goal_id, user_id, linked_count, updated_goal["target_value"])
+
         result = self._row_to_response(updated_goal, linked_entries_count=linked_count)
 
         return result, 200, "取消关联成功"
@@ -581,6 +592,10 @@ class GoalService:
         if progress >= 100.0 and goal["status"] == "active":
             self._sqlite.update_goal_status(goal_id, user_id, "completed")
 
+        # 里程碑取消完成时，目标从 completed 恢复为 active
+        if progress < 100.0 and goal["status"] == "completed":
+            self._sqlite.update_goal_status(goal_id, user_id, "active")
+
         # 写入进度快照
         self._write_snapshot(goal_id, user_id, completed, target_value)
 
@@ -596,9 +611,8 @@ class GoalService:
             return None, 400, "仅 milestone 类型目标支持里程碑操作"
 
         milestone_id = uuid.uuid4().hex
-        # 获取当前最大 sort_order
-        existing = self._sqlite.get_milestones(goal_id, user_id)
-        next_sort = len(existing)
+        # 获取当前最大 sort_order，避免删除后产生重复值
+        next_sort = self._sqlite.get_max_milestone_sort_order(goal_id, user_id) + 1
 
         try:
             row = self._sqlite.create_milestone(

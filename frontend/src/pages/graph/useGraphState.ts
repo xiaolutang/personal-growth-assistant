@@ -124,7 +124,7 @@ export function useGraphState(focusConcept: string | null): GraphState {
   }, [setNodes, setEdges]);
 
   useEffect(() => {
-    if (activeView === "capability") return; // 能力地图由 CapabilityMapView 独立加载
+    if (activeView === "capability" || activeView === "recommend") return; // 能力地图/推荐由独立组件加载
     loadMap(activeView);
   }, [activeView, loadMap]);
 

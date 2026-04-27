@@ -472,6 +472,8 @@ class EntryService:
         offset: int = 0,
         user_id: str = "_default",
         due: Optional[str] = None,
+        priority: Optional[str] = None,
+        sort_by: Optional[str] = None,
     ) -> EntryListResponse:
         """列出条目"""
         # 优先使用 SQLite 索引
@@ -488,6 +490,8 @@ class EntryService:
                 offset=offset,
                 user_id=user_id,
                 due=due,
+                priority=priority,
+                sort_by=sort_by,
             )
             total = self.storage.sqlite.count_entries(
                 type=type,
@@ -498,6 +502,7 @@ class EntryService:
                 end_date=end_date,
                 user_id=user_id,
                 due=due,
+                priority=priority,
             )
             return EntryListResponse(
                 entries=[EntryResponse(**EntryMapper.dict_to_response(e)) for e in entries],

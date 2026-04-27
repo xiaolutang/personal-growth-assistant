@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { ProgressRing } from "@/components/ProgressRing";
+import { getUrgency } from "@/utils/goalUrgency";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -212,6 +213,16 @@ export function GoalDetail() {
                   {goal.end_date && (
                     <span className="text-xs text-muted-foreground">截止 {goal.end_date}</span>
                   )}
+                  {(() => {
+                    const urgency = getUrgency(goal.end_date);
+                    if (!urgency) return null;
+                    return (
+                      <Badge variant="secondary" className={`text-xs ${urgency.color}`}>
+                        <urgency.icon className="h-3 w-3 mr-1" />
+                        {urgency.label}
+                      </Badge>
+                    );
+                  })()}
                 </div>
                 <div className="mt-3">
                   <Progress value={goal.progress_percentage} className="h-2" />

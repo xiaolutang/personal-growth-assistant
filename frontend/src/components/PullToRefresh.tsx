@@ -20,6 +20,9 @@ export function PullToRefresh({
   children,
 }: PullToRefreshProps) {
   const [state, setState] = useState<RefreshState>("idle");
+  // Use ref for pullDistance to avoid useCallback rebuilds on every pixel change;
+  // derive the render value via a separate state that only updates when needed.
+  const pullDistanceRef = useRef(0);
   const [pullDistance, setPullDistance] = useState(0);
 
   const startY = useRef(0);
@@ -31,6 +34,7 @@ export function PullToRefresh({
     if (state !== "success") return;
     const timer = setTimeout(() => {
       setState("idle");
+      pullDistanceRef.current = 0;
       setPullDistance(0);
     }, SUCCESS_DURATION);
     return () => clearTimeout(timer);
@@ -63,27 +67,33 @@ export function PullToRefresh({
 
       // Only respond to downward pull when at the top
       if (delta <= 0 || !isScrolledToTop()) {
-        if (pullDistance > 0) setPullDistance(0);
+        if (pullDistanceRef.current > 0) {
+          pullDistanceRef.current = 0;
+          setPullDistance(0);
+        }
         return;
       }
 
       // Apply rubber-band resistance so it gets harder to pull further
       const resisted = Math.min(MAX_PULL, delta * 0.5);
+      pullDistanceRef.current = resisted;
       setPullDistance(resisted);
       setState(resisted >= pullThreshold ? "pulling" : "idle");
 
       // Prevent native pull-to-refresh (overscroll bounce)
       e.preventDefault();
     },
-    [getTouchY, isScrolledToTop, pullDistance, pullThreshold],
+    [getTouchY, isScrolledToTop, pullThreshold],
   );
 
   const handleTouchEnd = useCallback(async () => {
     if (refreshing.current) return;
 
-    if (pullDistance >= pullThreshold) {
+    const currentDistance = pullDistanceRef.current;
+    if (currentDistance >= pullThreshold) {
       refreshing.current = true;
       setState("refreshing");
+      pullDistanceRef.current = pullThreshold;
       setPullDistance(pullThreshold);
 
       try {
@@ -92,16 +102,18 @@ export function PullToRefresh({
       } catch {
         // On error, return to refreshable state
         setState("idle");
+        pullDistanceRef.current = 0;
         setPullDistance(0);
       } finally {
         refreshing.current = false;
       }
     } else {
       // Below threshold, snap back
+      pullDistanceRef.current = 0;
       setPullDistance(0);
       setState("idle");
     }
-  }, [pullDistance, pullThreshold, onRefresh]);
+  }, [pullThreshold, onRefresh]);
 
   // Indicator content based on state
   const renderIndicator = () => {

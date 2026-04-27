@@ -117,12 +117,23 @@ async def test_invalid_priority_ignored(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_isolation_user_data(client: AsyncClient):
-    """隔离：不同用户的条目互不可见，筛选/排序仅返回当前用户数据"""
+    """隔离：验证返回数据确实属于当前用户"""
     # 当前用户创建条目
     await _create_entries_with_priority(client)
 
-    # 验证当前用户能拿到自己的数据
+    # 验证返回的所有条目都属于当前用户（client fixture 使用固定 user_id）
     response = await client.get("/entries", params={"priority": "high"})
     assert response.status_code == 200
     data = response.json()
     assert data["total"] >= 2
+
+    # 验证返回的条目标题包含我们创建的高优先级条目标题
+    returned_titles = {e["title"] for e in data["entries"]}
+    expected_titles = {"高优先级任务", "高优先级笔记"}
+    assert expected_titles.issubset(returned_titles), (
+        f"期望包含 {expected_titles}，实际返回 {returned_titles}"
+    )
+
+    # 验证所有返回条目都是高优先级
+    for entry in data["entries"]:
+        assert entry["priority"] == "high"

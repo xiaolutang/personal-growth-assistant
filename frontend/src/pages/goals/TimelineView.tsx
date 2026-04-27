@@ -20,6 +20,7 @@ export function TimelineView({ goals }: TimelineViewProps) {
   const [milestonesMap, setMilestonesMap] = useState<Record<string, Milestone[]>>({});
   const [loading, setLoading] = useState(true);
 
+  const goalsIdKey = goals.map(g => g.id).join(',');
   const fetchMilestones = useCallback(async () => {
     const map: Record<string, Milestone[]> = {};
     await Promise.all(
@@ -34,7 +35,7 @@ export function TimelineView({ goals }: TimelineViewProps) {
     );
     setMilestonesMap(map);
     setLoading(false);
-  }, [goals]);
+  }, [goalsIdKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (goals.length === 0) {
@@ -91,7 +92,7 @@ export function TimelineView({ goals }: TimelineViewProps) {
     }
 
     // Generate month markers
-    const markers: { pct: number; label: string }[] = [];
+    const markers: { pct: number; label: string; key: string }[] = [];
     const d = new Date(start);
     d.setDate(1);
     d.setHours(0, 0, 0, 0);
@@ -104,6 +105,7 @@ export function TimelineView({ goals }: TimelineViewProps) {
       markers.push({
         pct,
         label: `${d.getMonth() + 1}月`,
+        key: `${d.getFullYear()}-${d.getMonth() + 1}`,
       });
       d.setMonth(d.getMonth() + 1);
     }
@@ -138,9 +140,9 @@ export function TimelineView({ goals }: TimelineViewProps) {
       <div className="min-w-[600px]">
         {/* Month header */}
         <div className="flex items-center h-8 ml-40 relative">
-          {monthMarkers.map((m, i) => (
+          {monthMarkers.map((m) => (
             <span
-              key={i}
+              key={m.key}
               className="absolute text-xs text-muted-foreground"
               style={{ left: `${m.pct}%`, transform: "translateX(-50%)" }}
             >

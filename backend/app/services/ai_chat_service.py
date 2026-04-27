@@ -10,7 +10,6 @@ from pydantic import BaseModel
 from app.graphs.task_parser_graph import (
     MAX_MESSAGES,
     MAX_TOKENS,
-    estimate_tokens,
     truncate_messages,
 )
 
@@ -165,12 +164,10 @@ class AIChatService:
         if thread_id and self._checkpointer:
             # 持久化模式：从 checkpointer 加载历史
             history_msgs = await self.load_history(thread_id)
-            # 截断
-            history_msgs = history_msgs[-MAX_MESSAGES:]
-            total_tokens = sum(estimate_tokens(m.content) for m in history_msgs)
-            while total_tokens > MAX_TOKENS and len(history_msgs) > 1:
-                removed = history_msgs.pop(0)
-                total_tokens -= estimate_tokens(removed.content)
+            # 截断：复用 task_parser_graph 的统一截断函数
+            history_msgs = truncate_messages(
+                history_msgs, max_messages=MAX_MESSAGES, max_tokens=MAX_TOKENS,
+            )
             for m in history_msgs:
                 messages.append({"role": m.role, "content": m.content})
         else:

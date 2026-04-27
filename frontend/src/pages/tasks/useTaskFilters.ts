@@ -3,7 +3,16 @@ import { useSearchParams } from "react-router-dom";
 import { useTaskStore } from "@/stores/taskStore";
 import type { Task, TaskStatus, Category, Priority } from "@/types/task";
 import { toast } from "sonner";
-import { TASK_QUERY_PARAMS, type SortOption } from "./constants";
+import { TASK_QUERY_PARAMS, STATUS_OPTIONS, SORT_OPTIONS, type SortOption } from "./constants";
+
+// === URL 参数合法性校验 ===
+const VALID_PRIORITIES: Priority[] = ["high", "medium", "low"];
+const VALID_SORT_OPTIONS: SortOption[] = SORT_OPTIONS.map(o => o.value);
+
+function validateUrlParam<T>(value: string | null, validValues: readonly T[]): T | null {
+  if (!value) return null;
+  return validValues.includes(value as T) ? (value as T) : null;
+}
 
 // 获取日期范围
 function getDateRange(option: string) {
@@ -82,10 +91,10 @@ export function useTaskFilters(): UseTaskFiltersReturn {
   const storeUpdateEntry = useTaskStore((state) => state.updateEntry);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // 从 URL 初始化筛选状态
-  const initStatus = searchParams.get("status") as TaskStatus | null;
-  const initPriority = searchParams.get("priority") as Priority | null;
-  const initSort = (searchParams.get("sort_by") ?? "") as SortOption;
+  // 从 URL 初始化筛选状态（带合法性校验，防止 URL 篡改产生幽灵筛选）
+  const initStatus = validateUrlParam<TaskStatus>(searchParams.get("status"), STATUS_OPTIONS);
+  const initPriority = validateUrlParam<Priority>(searchParams.get("priority"), VALID_PRIORITIES);
+  const initSort = validateUrlParam<SortOption>(searchParams.get("sort_by"), VALID_SORT_OPTIONS) ?? "";
 
   // 筛选状态
   const [showFilters, setShowFilters] = useState(false);

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Header } from "@/components/layout/Header";
-import { Plus, Target, Calendar, Archive, CheckCircle2, ListChecks, Tag, AlertTriangle, Clock, LayoutGrid, GanttChart } from "lucide-react";
+import { Plus, Target, Calendar, Archive, CheckCircle2, ListChecks, Tag, LayoutGrid, GanttChart } from "lucide-react";
 import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { ProgressRing } from "@/components/ProgressRing";
@@ -20,6 +20,7 @@ import {
 } from "@/services/api";
 import { getKnowledgeSearch } from "@/services/api";
 import { TimelineView } from "./goals/TimelineView";
+import { getUrgency } from "@/utils/goalUrgency";
 
 // === 度量类型配置 ===
 const metricTypeConfig: Record<MetricType, { label: string; icon: typeof Target; color: string }> = {
@@ -27,22 +28,6 @@ const metricTypeConfig: Record<MetricType, { label: string; icon: typeof Target;
   checklist: { label: "检查清单", icon: ListChecks, color: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" },
   tag_auto: { label: "Tag 追踪", icon: Tag, color: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300" },
 };
-
-// === 截止日期紧迫性 ===
-type UrgencyLevel = "overdue" | "urgent" | "soon" | "safe";
-
-function getUrgency(endDate: string | null): { level: UrgencyLevel; label: string; icon: typeof AlertTriangle; color: string } | null {
-  if (!endDate) return null;
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const end = new Date(endDate + "T00:00:00");
-  const diffMs = end.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays < 0) return { level: "overdue", label: "已逾期", icon: AlertTriangle, color: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300" };
-  if (diffDays < 3) return { level: "urgent", label: `${diffDays}天后截止`, icon: AlertTriangle, color: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300" };
-  if (diffDays < 7) return { level: "soon", label: `${diffDays}天后截止`, icon: Clock, color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300" };
-  return null;
-}
 
 // === 创建弹窗 ===
 function CreateGoalDialog({ open, onClose, onCreated }: {

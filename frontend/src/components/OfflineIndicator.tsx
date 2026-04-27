@@ -64,7 +64,7 @@ export function OfflineIndicator() {
         setState("syncing");
       } else if (event.type === "completed") {
         setSyncProgress(null);
-        setSyncedCount((prev) => prev + (manualSyncRef.current ? 0 : 0));
+        setSyncedCount((prev) => prev + 1);
         setState("recovered");
         manualSyncRef.current = false;
         refreshQueueCount();
@@ -166,12 +166,6 @@ export function OfflineIndicator() {
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
         <span>同步失败，请重新登录</span>
-        <button
-          onClick={handleManualSync}
-          className="ml-2 rounded bg-white/20 px-2 py-0.5 text-xs font-medium hover:bg-white/30 transition-colors"
-        >
-          重试
-        </button>
       </div>
     );
   }

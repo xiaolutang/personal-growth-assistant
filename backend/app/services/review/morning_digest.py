@@ -465,13 +465,8 @@ class MorningDigestMixin:
             knowledge_recommendations = None
             try:
                 if self._knowledge_service is not None:
-                    from app.services.recommendation_service import RecommendationService
-                    neo4j_client = getattr(self, "_neo4j_client", None)
-                    sqlite_storage = self._sqlite
-                    rec_svc = RecommendationService(
-                        neo4j_client=neo4j_client,
-                        sqlite_storage=sqlite_storage,
-                    )
+                    from app.routers import deps
+                    rec_svc = deps.get_recommendation_service()
                     rec_resp = await rec_svc.get_recommendations(user_id=user_id)
                     knowledge_recommendations = rec_resp.model_dump()
             except Exception:

@@ -110,7 +110,7 @@ describe("OfflineIndicator", () => {
     act(() => {
       syncCallback?.({ type: "completed" });
     });
-    expect(screen.getByText("已恢复连接")).toBeInTheDocument();
+    expect(screen.getByText("已恢复连接，已同步 1 条")).toBeInTheDocument();
 
     // 3 秒后消失
     act(() => {

@@ -254,6 +254,35 @@ class SQLiteStorage:
         finally:
             conn.close()
 
+    def get_tag_last_seen_batch(
+        self, user_id: str, tag_names: list[str],
+    ) -> dict[str, str]:
+        """批量获取标签最后一次出现的日期
+
+        Args:
+            user_id: 用户 ID
+            tag_names: 标签名列表
+
+        Returns:
+            {tag_name: last_created_at_iso} 字典，未找到的标签不在结果中
+        """
+        if not tag_names:
+            return {}
+        conn = self._get_conn()
+        try:
+            placeholders = ",".join("?" for _ in tag_names)
+            rows = conn.execute(f"""
+                SELECT t.name AS tag_name, MAX(e.created_at) AS last_seen
+                FROM tags t
+                JOIN entry_tags et ON t.id = et.tag_id
+                JOIN entries e ON et.entry_id = e.id
+                WHERE e.user_id = ? AND t.name IN ({placeholders})
+                GROUP BY t.name
+            """, (user_id, *tag_names)).fetchall()
+            return {row["tag_name"]: row["last_seen"] for row in rows}
+        finally:
+            conn.close()
+
     def search_tags_by_keyword(
         self, keyword: str, limit: int = 20, user_id: str = "_default"
     ) -> list[dict]:
@@ -1831,15 +1860,22 @@ class SQLiteStorage:
         user_id: str,
         days: int = 30,
     ) -> list[dict[str, Any]]:
-        """获取目标最近 N 天的进度历史"""
+        """获取目标最近 N 天的进度历史
+
+        Args:
+            goal_id: 目标 ID
+            user_id: 用户 ID
+            days: 回溯天数，使用 WHERE snapshot_date >= date('now', '-N days') 过滤
+        """
         conn = self._get_conn()
         try:
             cursor = conn.execute(
                 """SELECT * FROM goal_progress_snapshots
                    WHERE goal_id = ? AND user_id = ?
+                     AND snapshot_date >= date('now', ? || ' days')
                    ORDER BY snapshot_date DESC
-                   LIMIT ?""",
-                (goal_id, user_id, days),
+                   LIMIT 1000""",
+                (goal_id, user_id, f"-{days}"),
             )
             return [dict(row) for row in cursor.fetchall()]
         finally:
@@ -1870,6 +1906,18 @@ class SQLiteStorage:
             conn.commit()
             row = conn.execute("SELECT * FROM milestones WHERE id = ?", (milestone_id,)).fetchone()
             return dict(row)
+        finally:
+            conn.close()
+
+    def get_max_milestone_sort_order(self, goal_id: str, user_id: str) -> int:
+        """获取目标下里程碑的最大 sort_order，无记录时返回 -1"""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT COALESCE(MAX(sort_order), -1) as max_sort FROM milestones WHERE goal_id = ? AND user_id = ?",
+                (goal_id, user_id),
+            ).fetchone()
+            return row["max_sort"] if row else -1
         finally:
             conn.close()
 

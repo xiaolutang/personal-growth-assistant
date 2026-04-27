@@ -603,7 +603,7 @@ export async function deleteMilestone(goalId: string, milestoneId: string): Prom
   const response = await authFetch(`${API_BASE}/goals/${goalId}/milestones/${milestoneId}`, {
     method: "DELETE",
   });
-  if (!response.ok && response.status !== 204) throw new ApiError(response.status, `删除里程碑失败: ${response.status}`);
+  if (!response.ok) throw new ApiError(response.status, `删除里程碑失败: ${response.status}`);
 }
 
 // === Goal 进度历史 ===

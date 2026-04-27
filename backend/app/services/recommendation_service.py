@@ -1,4 +1,5 @@
 """知识推荐服务 — 提供知识缺口检测、复习推荐、共现推荐三种能力"""
+import asyncio
 import logging
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional
@@ -135,12 +136,24 @@ class RecommendationService:
         recent_tag_set = {t[0] for t in recent_tags}
 
         # 找出：有使用过但最近未出现的标签
+        stale_tags = [(name, freq) for name, freq in tag_stats if name not in recent_tag_set]
+        stale_tag_names = [name for name, _ in stale_tags]
+
+        # 批量查询所有待复习标签的最后出现日期（替代逐个查询的 N+1 问题）
+        last_seen_map: dict[str, str] = {}
+        if stale_tag_names:
+            try:
+                last_seen_map = self._sqlite.get_tag_last_seen_batch(
+                    user_id=user_id, tag_names=stale_tag_names,
+                )
+            except Exception as e:
+                logger.warning("review_suggestions 批量查询最后出现日期失败: %s", e)
+
         suggestions = []
-        for tag_name, freq in tag_stats:
-            if tag_name in recent_tag_set:
-                continue
-            # 尝试估算上次出现距今天数
-            last_seen_days = self._estimate_last_seen_days(tag_name, user_id, today)
+        for tag_name, freq in stale_tags:
+            last_seen_days = self._estimate_last_seen_from_batch(
+                tag_name, last_seen_map, today,
+            )
             suggestions.append(ReviewSuggestionItem(
                 concept=tag_name,
                 category="tag",
@@ -151,42 +164,32 @@ class RecommendationService:
         suggestions.sort(key=lambda s: s.last_seen_days_ago, reverse=True)
         return suggestions[:limit]
 
-    def _estimate_last_seen_days(self, tag_name: str, user_id: str, today: date) -> int:
-        """估算标签最后一次出现在多少天前
+    def _estimate_last_seen_from_batch(
+        self, tag_name: str, last_seen_map: dict[str, str], today: date,
+    ) -> int:
+        """从批量查询结果中估算标签最后一次出现在多少天前
 
-        使用 SQLite 的 search_tags_by_keyword 间接估算，
-        如果无法获取精确日期则返回一个默认值。
+        Args:
+            tag_name: 标签名
+            last_seen_map: 批量查询结果 {tag_name: last_created_at_iso}
+            today: 今天日期
+
+        Returns:
+            距今天数，未找到返回 999
         """
+        last_seen = last_seen_map.get(tag_name)
+        if not last_seen:
+            return 999
         try:
-            entries = self._sqlite.find_entries_by_concept(
-                concept=tag_name, days=365, user_id=user_id,
-            )
-            if not entries:
+            if isinstance(last_seen, str):
+                d = datetime.fromisoformat(last_seen.replace("Z", "").replace("+00:00", ""))
+            elif isinstance(last_seen, datetime):
+                d = last_seen
+            else:
                 return 999
-
-            latest_date = None
-            for e in entries:
-                created = e.get("created_at", "")
-                if not created:
-                    continue
-                try:
-                    if isinstance(created, str):
-                        d = datetime.fromisoformat(created.replace("Z", "").replace("+00:00", ""))
-                    elif isinstance(created, datetime):
-                        d = created
-                    else:
-                        continue
-                    d = d.replace(tzinfo=None)
-                    if latest_date is None or d > latest_date:
-                        latest_date = d
-                except (ValueError, TypeError):
-                    continue
-
-            if latest_date:
-                return (today - latest_date.date()).days
-        except Exception:
-            pass
-        return 999
+            return (today - d.date()).days
+        except (ValueError, TypeError):
+            return 999
 
     # ==================== 共现推荐 ====================
 
@@ -261,9 +264,11 @@ class RecommendationService:
             review_limit: 复习推荐最大返回数
             related_limit: 共现推荐最大返回数
         """
-        gaps = await self.knowledge_gaps(user_id=user_id)
-        review = await self.review_suggestions(user_id=user_id, limit=review_limit)
-        related = await self.related_concepts(user_id=user_id, limit=related_limit)
+        gaps, review, related = await asyncio.gather(
+            self.knowledge_gaps(user_id=user_id),
+            self.review_suggestions(user_id=user_id, limit=review_limit),
+            self.related_concepts(user_id=user_id, limit=related_limit),
+        )
 
         source = "neo4j" if self.is_neo4j_available() else "sqlite"
 
