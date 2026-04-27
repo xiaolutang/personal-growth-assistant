@@ -1,5 +1,43 @@
 # 对齐清单
 
+## R042: Flutter 条目详情交互升级
+
+### 契约对齐
+
+- [ ] F172: CONTRACT-ENTRY-UPDATE — 消费已有 PUT /entries/{id}
+- [ ] F172: CONTRACT-ENTRY-BACKLINKS — 消费已有 GET /entries/{id}/backlinks
+- [ ] F172: CONTRACT-ENTRY-LINKS — 消费已有 GET /entries/{id}/links（direction 参数 in/out/both）
+- [ ] F172: CONTRACT-ENTRY-LINK-CREATE — 消费已有 POST /entries/{id}/links（body: target_id + relation_type）
+- [ ] F172: CONTRACT-ENTRY-LINK-DELETE — 消费已有 DELETE /entries/{id}/links/{link_id}
+- [ ] F172: CONTRACT-ENTRY-KNOWLEDGE — 消费已有 GET /entries/{id}/knowledge-context
+- [ ] F172: CONTRACT-ENTRY-AI-SUMMARY — 消费已有 POST /entries/{id}/ai-summary
+- [ ] F173: CONTRACT-ENTRY-SEARCH — 消费已有 GET /entries/search/query（关联搜索用）
+
+### 依赖对齐
+
+- [ ] F172 无外部依赖（纯 Flutter API 层扩展）
+- [ ] F173 depends_on F172 ✓（需 api_client 新方法先就绪）
+- [ ] F174 depends_on F173 ✓（需 provider 编辑状态管理先就绪）
+- [ ] F175 depends_on F173 ✓ + F174 ✓（需 provider + 编辑 UI 先就绪）
+- [ ] F176 depends_on F175 ✓（严格顺序，在同一 entry_detail_page.dart 上增量开发）
+- [ ] S43 depends_on F174 ✓ + F175 ✓ + F176 ✓
+
+### 架构对齐
+
+- [ ] F173: createLink 方法接收 target_id + relation_type，relation_type 默认 'related'
+- [ ] F173: searchEntriesForLink 搜索状态由 Provider 管理，Widget 不直接调用 ApiClient.searchEntries
+- [ ] F173: 编辑保存后通过 ref.invalidate 刷新 EntryListProvider（列表刷新 owner）
+- [ ] F174: 保存成功后 invalidate EntryListProvider，确保返回列表时数据一致
+- [ ] 所有页面使用 ConsumerStatefulWidget + Riverpod 模式
+- [ ] 所有 List 类型状态通过 copyWith 替换，不直接修改
+- [ ] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫、MVVM 分层（Widget→Provider→ApiClient）
+
+### 执行顺序
+
+- [ ] Phase 1: F172 → F173（API 层 + Provider 层）
+- [ ] Phase 2: F174 → F175 → F176（UI 增量链式开发）
+- [ ] Phase 3: S43（质量收口）
+
 ## R041: Flutter 页面补齐 + 工程健康
 
 ### 契约对齐

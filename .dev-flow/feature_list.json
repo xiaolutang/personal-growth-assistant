@@ -91,13 +91,13 @@
       "phase": 1,
       "module": "flutter",
       "name": "api_client.dart 条目交互 API",
-      "description": "在 ApiClient 中补齐条目详情交互所需的 8 个 API 方法：updateEntry（PUT /entries/{id}）、fetchRelatedEntries（GET /entries/{id}/related）、fetchBacklinks（GET /entries/{id}/backlinks）、fetchEntryLinks（GET /entries/{id}/links，支持 direction 参数 in/out/both）、createEntryLink（POST /entries/{id}/links）、deleteEntryLink（DELETE /entries/{id}/links/{linkId}）、fetchKnowledgeContext（GET /entries/{id}/knowledge-context）、generateAISummary（POST /entries/{id}/ai-summary）。配套单元测试",
+      "description": "在 ApiClient 中补齐条目详情交互所需的 7 个 API 方法：updateEntry（PUT /entries/{id}）、fetchBacklinks（GET /entries/{id}/backlinks）、fetchEntryLinks（GET /entries/{id}/links，支持 direction 参数 in/out/both）、createEntryLink（POST /entries/{id}/links，body 含 target_id + relation_type）、deleteEntryLink（DELETE /entries/{id}/links/{linkId}）、fetchKnowledgeContext（GET /entries/{id}/knowledge-context）、generateAISummary（POST /entries/{id}/ai-summary）。配套单元测试",
       "verification": "F1",
       "depends_on": [],
       "status": "pending",
       "priority": "P1",
       "acceptance_criteria": [
-        "ApiClient 新增 8 个业务方法覆盖条目编辑/关联/AI摘要/知识上下文",
+        "ApiClient 新增 7 个业务方法覆盖条目编辑/关联/AI摘要/知识上下文",
         "每个方法有对应单元测试（mock Dio adapter）",
         "flutter analyze 无错误",
         "flutter test 通过"
@@ -110,7 +110,6 @@
       ],
       "contract_refs": [
         "PUT /entries/{id}",
-        "GET /entries/{id}/related",
         "GET /entries/{id}/backlinks",
         "GET /entries/{id}/links",
         "POST /entries/{id}/links",
@@ -128,15 +127,17 @@
       "phase": 1,
       "module": "flutter",
       "name": "entry_detail_provider.dart 扩展",
-      "description": "扩展 EntryDetailNotifier 支持编辑、保存、AI 摘要、关联操作、反向引用加载。新增状态字段：isEditing、isSaving、isGeneratingSummary、relatedEntries、backlinks、entryLinks、knowledgeContext。方法：updateEntry、generateSummary、loadRelatedEntries、loadBacklinks、loadEntryLinks、createLink、deleteLink、toggleEdit",
+      "description": "扩展 EntryDetailNotifier 支持编辑、保存、AI 摘要、关联操作、反向引用加载、关联搜索。新增状态字段：isEditing、isSaving、isGeneratingSummary、backlinks、entryLinks、knowledgeContext、searchResults（用于添加关联时搜索条目）、isSearching。方法：updateEntry、generateSummary、loadBacklinks、loadEntryLinks、createLink（接收 target_id + relation_type）、deleteLink、toggleEdit、searchEntriesForLink（搜索条目供关联选择）",
       "verification": "F1",
       "depends_on": ["F172"],
       "status": "pending",
       "priority": "P1",
       "acceptance_criteria": [
-        "EntryDetailState 新增编辑/保存/AI摘要/关联/反向引用状态字段",
-        "EntryDetailNotifier 新增 updateEntry/generateSummary/loadRelatedEntries/loadBacklinks/loadEntryLinks/createLink/deleteLink/toggleEdit 方法",
-        "编辑操作：保存后刷新 entry 数据",
+        "EntryDetailState 新增编辑/保存/AI摘要/关联/反向引用/搜索状态字段（含 searchResults + isSearching）",
+        "EntryDetailNotifier 新增 updateEntry/generateSummary/loadBacklinks/loadEntryLinks/createLink/deleteLink/toggleEdit/searchEntriesForLink 方法",
+        "createLink 方法接收 target_id + relation_type 参数，默认 relation_type='related'",
+        "编辑操作：保存后刷新 entry 数据，并通过 ref.invalidate 通知 EntryListProvider 刷新列表",
+        "searchEntriesForLink：搜索结果通过 searchResults 状态字段暴露，Widget 不直接调用 ApiClient.searchEntries",
         "所有 List 类型状态通过 copyWith 替换创建新实例，不直接修改（遵守 architecture.md 禁止 Provider 持可变 List）",
         "flutter analyze 无错误，flutter test 通过"
       ],
@@ -145,8 +146,10 @@
         "编辑状态切换测试",
         "updateEntry 成功/失败状态转换",
         "generateSummary 成功/失败",
-        "loadRelatedEntries/loadBacklinks 数据加载",
-        "createLink/deleteLink 操作后列表刷新"
+        "loadBacklinks/loadEntryLinks 数据加载",
+        "createLink/deleteLink 操作后列表刷新",
+        "searchEntriesForLink 搜索结果写入 searchResults 状态",
+        "createLink 接收 target_id + relation_type 参数验证"
       ],
       "files": [
         "mobile/lib/providers/entry_provider.dart",
@@ -166,7 +169,7 @@
       "acceptance_criteria": [
         "AppBar 右侧添加编辑图标按钮，点击进入编辑态",
         "编辑态：标题可编辑（TextField）、内容可编辑（多行 TextField）、状态可切换（DropdownButton）、优先级可切换、标签可增删",
-        "保存按钮：调用 updateEntry API，loading 态，成功后退出编辑+SnackBar 提示",
+        "保存按钮：调用 updateEntry API，loading 态，成功后退出编辑+SnackBar 提示+invalidate EntryListProvider 刷新来源列表",
         "保存失败：保持编辑态 + 错误提示",
         "未修改时保存按钮不可点击",
         "flutter analyze 无错误"
@@ -177,10 +180,14 @@
         "widget 测试：修改标题/内容/状态后保存成功",
         "widget 测试：保存失败时保持编辑态",
         "widget 测试：未修改时保存按钮 disabled",
-        "首次编辑 smoke：从列表进入详情→编辑→保存→验证列表数据一致"
+        "widget 测试：标签添加（+按钮→输入框→输入→确认→Chip 出现）",
+        "widget 测试：标签删除（长按 Chip→确认删除→Chip 消失）",
+        "widget 测试：保存成功后 EntryListProvider 被 invalidate（列表刷新）",
+        "首次编辑 smoke：从列表进入详情→编辑→保存→返回列表→数据一致"
       ],
       "files": [
-        "mobile/lib/pages/entry_detail_page.dart"
+        "mobile/lib/pages/entry_detail_page.dart",
+        "mobile/test/pages/entry_detail_edit_test.dart"
       ]
     },
     {
@@ -217,7 +224,7 @@
       "phase": 2,
       "module": "flutter",
       "name": "EntryDetail 关联条目 + 反向引用",
-      "description": "在 EntryDetailPage 底部新增两个 Section：关联条目列表（GET /entries/{id}/links，支持删除关联）和反向引用列表（GET /entries/{id}/backlinks，只读展示）。新增手动关联功能：底部弹出搜索框，搜索条目后创建关联（POST /entries/{id}/links）",
+      "description": "在 EntryDetailPage 底部新增两个 Section：关联条目列表（GET /entries/{id}/links，支持删除关联）和反向引用列表（GET /entries/{id}/backlinks，只读展示）。新增手动关联功能：底部弹出搜索框（搜索由 F173 searchEntriesForLink 驱动），搜索条目后选择 relation_type（related/depends_on/derived_from/references，默认 related）创建关联（POST /entries/{id}/links，body 含 target_id + relation_type）",
       "verification": "F2",
       "depends_on": ["F175"],
       "status": "pending",
@@ -235,11 +242,16 @@
         "widget 测试：关联条目列表渲染",
         "widget 测试：滑动删除关联",
         "widget 测试：反向引用列表渲染",
-        "widget 测试：添加关联弹窗 → 搜索 → 选择 → 创建成功",
+        "widget 测试：添加关联弹窗 → 搜索（provider.searchEntriesForLink 被调用）→ 选择 → 创建成功",
+        "widget 测试：添加关联时网络失败 → 错误提示 + 重试",
+        "widget 测试：搜索结果为空 → 空提示",
+        "widget 测试：relation_type 选择（默认 related，可切换为其他类型）",
+        "首次添加关联 smoke：首次进入→添加关联→搜索→选择→relation_type=related→创建成功→列表刷新",
         "flutter analyze 通过"
       ],
       "files": [
-        "mobile/lib/pages/entry_detail_page.dart"
+        "mobile/lib/pages/entry_detail_page.dart",
+        "mobile/test/pages/entry_detail_links_test.dart"
       ]
     },
     {

@@ -2,6 +2,121 @@
 
 ## 契约索引
 
+### R042 消费的已有契约（Flutter EntryDetail 交互）
+
+| 契约 ID | 方法 | 端点 | 任务 | 状态 |
+|---------|------|------|------|------|
+| CONTRACT-ENTRY-UPDATE | PUT | /entries/{id} | F172, F173 | existing |
+| CONTRACT-ENTRY-BACKLINKS | GET | /entries/{id}/backlinks | F172, F173 | existing |
+| CONTRACT-ENTRY-LINKS | GET | /entries/{id}/links | F172, F173 | existing |
+| CONTRACT-ENTRY-LINK-CREATE | POST | /entries/{id}/links | F172, F173, F176 | existing |
+| CONTRACT-ENTRY-LINK-DELETE | DELETE | /entries/{id}/links/{link_id} | F172, F173 | existing |
+| CONTRACT-ENTRY-KNOWLEDGE | GET | /entries/{id}/knowledge-context | F172, F175 | existing |
+| CONTRACT-ENTRY-AI-SUMMARY | POST | /entries/{id}/ai-summary | F172, F175 | existing |
+| CONTRACT-ENTRY-SEARCH | GET | /entries/search/query | F173 | existing |
+
+### R042 契约详情
+
+#### CONTRACT-ENTRY-UPDATE: PUT /entries/{id}
+
+已有端点，F174 编辑保存消费。
+
+请求体（可更新字段）：
+```json
+{
+  "title": "string",
+  "content": "string",
+  "status": "string",
+  "priority": "string",
+  "tags": ["string"]
+}
+```
+
+响应（200）：更新后的完整条目对象
+
+#### CONTRACT-ENTRY-BACKLINKS: GET /entries/{id}/backlinks
+
+已有端点，F176 反向引用列表消费。
+
+请求：
+- `GET /entries/{id}/backlinks`
+- 需认证
+
+响应（200）：`BacklinksResponse` — 反向引用条目列表
+
+#### CONTRACT-ENTRY-LINKS: GET /entries/{id}/links
+
+已有端点，F176 关联条目列表消费。
+
+请求：
+- `GET /entries/{id}/links?direction=both`
+- `direction` 参数：`in`（入链）/ `out`（出链）/ `both`（默认）
+
+响应（200）：关联条目列表
+
+#### CONTRACT-ENTRY-LINK-CREATE: POST /entries/{id}/links
+
+已有端点，F176 添加关联消费。
+
+请求体：
+```json
+{
+  "target_id": "string (必填，目标条目 ID)",
+  "relation_type": "related | depends_on | derived_from | references (必填)"
+}
+```
+
+- `relation_type` 枚举值（Literal）：
+  - `related`：相关（默认值，UI 默认选中）
+  - `depends_on`：依赖
+  - `derived_from`：派生自
+  - `references`：引用
+
+响应（200）：创建成功
+
+#### CONTRACT-ENTRY-LINK-DELETE: DELETE /entries/{id}/links/{link_id}
+
+已有端点，F176 删除关联消费。
+
+请求：
+- `DELETE /entries/{id}/links/{link_id}`
+- 需认证
+
+响应（200）：删除成功
+
+#### CONTRACT-ENTRY-KNOWLEDGE: GET /entries/{id}/knowledge-context
+
+已有端点，F175 知识上下文卡片消费。
+
+请求：
+- `GET /entries/{id}/knowledge-context`
+- 需认证
+
+响应（200）：`KnowledgeContextResponse` — 相关概念列表（概念名 + 掌握度）
+
+#### CONTRACT-ENTRY-AI-SUMMARY: POST /entries/{id}/ai-summary
+
+已有端点，F175 AI 摘要生成消费。
+
+请求：
+- `POST /entries/{id}/ai-summary`
+- 需认证
+
+响应（200）：AI 生成的摘要文本（200字以内）
+错误（503）：AI 服务不可用
+
+#### CONTRACT-ENTRY-SEARCH: GET /entries/search/query
+
+已有端点，F173 关联搜索消费。
+
+请求：
+- `GET /entries/search/query?q={keyword}&limit={n}`
+- 需认证
+
+响应（200）：搜索结果条目列表
+
+## 契约索引（历史）
+
 ### R039 消费的已有契约（Flutter Explore 消费）
 
 | 契约 ID | 方法 | 端点 | 任务 | 状态 |
