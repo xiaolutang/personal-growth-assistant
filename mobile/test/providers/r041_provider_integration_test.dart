@@ -75,13 +75,13 @@ void main() {
               'id': 'g1',
               'title': 'Learn Dart',
               'status': 'active',
-              'progress_percentage': 0.3,
+              'progress_percentage': 30.0,
             },
             {
               'id': 'g2',
               'title': 'Build App',
               'status': 'active',
-              'progress_percentage': 0.6,
+              'progress_percentage': 60.0,
             },
           ],
         },
@@ -101,7 +101,7 @@ void main() {
       expect(state.goals, hasLength(2));
       expect(state.goals[0].id, 'g1');
       expect(state.goals[0].title, 'Learn Dart');
-      expect(state.goals[0].progress, 0.3);
+      expect(state.goals[0].progress, 30.0);
       expect(state.goals[1].id, 'g2');
       expect(state.goals[1].title, 'Build App');
     });
@@ -113,7 +113,7 @@ void main() {
           'title': 'Deep Dive Flutter',
           'description': 'Master Flutter framework',
           'status': 'active',
-          'progress_percentage': 0.45,
+          'progress_percentage': 45.0,
           'start_date': '2025-01-01',
           'end_date': '2025-12-31',
         },
@@ -132,7 +132,7 @@ void main() {
       expect(state.selectedGoal, isNotNull);
       expect(state.selectedGoal!.id, 'g-999');
       expect(state.selectedGoal!.title, 'Deep Dive Flutter');
-      expect(state.selectedGoal!.progress, 0.45);
+      expect(state.selectedGoal!.progress, 45.0);
     });
 
     test('createMilestone refreshes milestones and goal detail', () async {
@@ -162,7 +162,7 @@ void main() {
           'id': 'g-1',
           'title': 'My Goal',
           'status': 'active',
-          'progress_percentage': 0.5,
+          'progress_percentage': 50.0,
         },
       });
 
@@ -189,9 +189,9 @@ void main() {
       // selectedGoal should be refreshed
       expect(state.selectedGoal, isNotNull);
       expect(state.selectedGoal!.id, 'g-1');
-      expect(state.selectedGoal!.progress, 0.5);
+      expect(state.selectedGoal!.progress, 50.0);
       // Goal in list should also be refreshed
-      expect(state.goals[0].progress, 0.5);
+      expect(state.goals[0].progress, 50.0);
     });
 
     test('fetchGoals handles API error gracefully', () async {

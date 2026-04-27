@@ -174,6 +174,139 @@ class ApiClient {
     );
   }
 
+  // ---- Entries API Methods ----
+
+  /// 创建条目
+  /// [data] 条目数据（title, content, category, tags 等）
+  Future<Response<T>> createEntry<T>({required Map<String, dynamic> data}) {
+    return _dio.post<T>('/entries', data: data);
+  }
+
+  // ---- Goals API Methods ----
+
+  /// 获取目标列表
+  /// [status] 按状态过滤: active/completed/abandoned
+  /// [limit] 每页数量
+  Future<Response<T>> fetchGoals<T>({
+    String? status,
+    int? limit,
+  }) {
+    final queryParams = <String, dynamic>{};
+    if (status != null) queryParams['status'] = status;
+    if (limit != null) queryParams['limit'] = limit;
+
+    return _dio.get<T>(
+      '/goals',
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
+  }
+
+  /// 获取目标详情
+  /// [id] 目标 ID
+  Future<Response<T>> fetchGoal<T>({required String id}) {
+    return _dio.get<T>('/goals/$id');
+  }
+
+  /// 获取目标下的里程碑列表
+  /// [goalId] 目标 ID
+  Future<Response<T>> fetchMilestones<T>({required String goalId}) {
+    return _dio.get<T>('/goals/$goalId/milestones');
+  }
+
+  /// 创建里程碑
+  /// [goalId] 目标 ID
+  /// [data] 里程碑数据（title, due_date, description 等）
+  Future<Response<T>> createMilestone<T>({
+    required String goalId,
+    required Map<String, dynamic> data,
+  }) {
+    return _dio.post<T>('/goals/$goalId/milestones', data: data);
+  }
+
+  /// 更新里程碑
+  /// [goalId] 目标 ID
+  /// [milestoneId] 里程碑 ID
+  /// [data] 更新数据（title, status, due_date 等）
+  Future<Response<T>> updateMilestone<T>({
+    required String goalId,
+    required String milestoneId,
+    required Map<String, dynamic> data,
+  }) {
+    return _dio.put<T>('/goals/$goalId/milestones/$milestoneId', data: data);
+  }
+
+  /// 删除里程碑
+  /// [goalId] 目标 ID
+  /// [milestoneId] 里程碑 ID
+  Future<Response<T>> deleteMilestone<T>({
+    required String goalId,
+    required String milestoneId,
+  }) {
+    return _dio.delete<T>('/goals/$goalId/milestones/$milestoneId');
+  }
+
+  // ---- Review API Methods ----
+
+  /// 获取回顾报告（日报/周报/月报）
+  /// [period] 统计周期: daily/weekly/monthly，默认 weekly
+  /// [date] 日期参数（daily 时为 YYYY-MM-DD，weekly 时为 start_date，monthly 时为 YYYY-MM）
+  Future<Response<T>> fetchReviewSummary<T>({
+    String? period,
+    String? date,
+  }) {
+    // 根据周期选择不同端点
+    final path = switch (period) {
+      'daily' => '/review/daily',
+      'monthly' => '/review/monthly',
+      _ => '/review/weekly',
+    };
+
+    final queryParams = <String, dynamic>{};
+    if (date != null) {
+      if (period == 'monthly') {
+        queryParams['month'] = date;
+      } else if (period == 'daily') {
+        queryParams['date'] = date;
+      } else {
+        queryParams['start_date'] = date;
+      }
+    }
+
+    return _dio.get<T>(
+      path,
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
+  }
+
+  /// 获取趋势数据
+  /// [period] 统计周期: daily 或 weekly
+  /// [days] daily 模式天数
+  /// [weeks] weekly 模式周数
+  Future<Response<T>> fetchTrends<T>({
+    String? period,
+    int? days,
+    int? weeks,
+  }) {
+    final queryParams = <String, dynamic>{};
+    if (period != null) queryParams['period'] = period;
+    if (days != null) queryParams['days'] = days;
+    if (weeks != null) queryParams['weeks'] = weeks;
+
+    return _dio.get<T>(
+      '/review/trend',
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
+  }
+
+  /// 获取 AI 深度洞察
+  /// [period] 统计周期: weekly 或 monthly（必填）
+  Future<Response<T>> fetchInsights<T>({required String period}) {
+    return _dio.get<T>(
+      '/review/insights',
+      queryParameters: {'period': period},
+    );
+  }
+
   // ---- Interceptors ----
 
   /// 请求拦截：注入 JWT token

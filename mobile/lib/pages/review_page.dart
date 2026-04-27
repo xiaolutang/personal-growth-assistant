@@ -32,9 +32,9 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
     });
   }
 
-  void _loadAll() {
+  Future<void> _loadAll() {
     final notifier = ref.read(reviewProvider.notifier);
-    notifier.loadAll();
+    return notifier.loadAll();
   }
 
   @override
