@@ -91,8 +91,15 @@ def mock_graph():
 
 
 @pytest.fixture
-def chat_service(mock_graph, mock_entry_service):
-    return ChatService(graph=mock_graph, entry_service=mock_entry_service)
+def mock_intent_service():
+    svc = MagicMock()
+    svc.detect = AsyncMock()
+    return svc
+
+
+@pytest.fixture
+def chat_service(mock_graph, mock_entry_service, mock_intent_service):
+    return ChatService(graph=mock_graph, entry_service=mock_entry_service, intent_service=mock_intent_service)
 
 
 # ===========================================================================
@@ -330,8 +337,8 @@ class TestUserIsolation:
             _make_entry_response("e-b1", "用户B的任务")
         ]))
 
-        chat_a = ChatService(graph=mock_graph, entry_service=svc_a)
-        chat_b = ChatService(graph=mock_graph, entry_service=svc_b)
+        chat_a = ChatService(graph=mock_graph, entry_service=svc_a, intent_service=MagicMock())
+        chat_b = ChatService(graph=mock_graph, entry_service=svc_b, intent_service=MagicMock())
 
         events_a = []
         async for e in chat_a._handle_read('任务', 'user-a'):
@@ -371,9 +378,7 @@ class TestChatRouteUserIdThreading:
         mock_entry_svc.search_entries = AsyncMock(return_value=_make_search_result())
 
         mock_graph = MagicMock()
-        chat_svc = ChatService(graph=mock_graph, entry_service=mock_entry_svc)
-        chat_svc._intent_service = MagicMock()
-        chat_svc._intent_service.detect = AsyncMock()
+        chat_svc = ChatService(graph=mock_graph, entry_service=mock_entry_svc, intent_service=MagicMock())
 
         # 模拟 read 意图
         events = []
@@ -402,7 +407,7 @@ class TestChatRouteUserIdThreading:
         mock_entry_svc.search_entries = AsyncMock(return_value=_make_search_result())
 
         mock_graph = MagicMock()
-        chat_svc = ChatService(graph=mock_graph, entry_service=mock_entry_svc)
+        chat_svc = ChatService(graph=mock_graph, entry_service=mock_entry_svc, intent_service=MagicMock())
 
         async for _ in chat_svc.process_intent(
             intent='read',
@@ -426,7 +431,7 @@ class TestChatRouteUserIdThreading:
         mock_entry_svc.delete_entry = AsyncMock(return_value=(True, "已删除"))
 
         mock_graph = MagicMock()
-        chat_svc = ChatService(graph=mock_graph, entry_service=mock_entry_svc)
+        chat_svc = ChatService(graph=mock_graph, entry_service=mock_entry_svc, intent_service=MagicMock())
 
         async for _ in chat_svc.process_intent(
             intent='delete',
@@ -460,7 +465,7 @@ class TestChatRouteUserIdThreading:
 
         mock_graph = MagicMock()
         mock_graph.stream_parse = fake_stream
-        chat_svc = ChatService(graph=mock_graph, entry_service=mock_entry_svc)
+        chat_svc = ChatService(graph=mock_graph, entry_service=mock_entry_svc, intent_service=MagicMock())
 
         async for _ in chat_svc.process_intent(
             intent='create',

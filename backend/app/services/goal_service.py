@@ -39,6 +39,31 @@ class GoalService:
         except Exception as e:
             logger.warning("写入进度快照失败: %s", e)
 
+    def _row_to_response_with_current(
+        self, row: dict[str, Any], *, current_value: int, linked_entries_count: int = 0
+    ) -> dict[str, Any]:
+        """将数据库行转换为响应 dict，使用预计算的 current_value（跳过实时查询）"""
+        result = dict(row)
+
+        # 解析 JSON 字段
+        if result.get("auto_tags"):
+            if isinstance(result["auto_tags"], str):
+                result["auto_tags"] = json.loads(result["auto_tags"])
+        else:
+            result["auto_tags"] = None
+
+        if result.get("checklist_items"):
+            if isinstance(result["checklist_items"], str):
+                result["checklist_items"] = json.loads(result["checklist_items"])
+        else:
+            result["checklist_items"] = None
+
+        result["current_value"] = current_value
+        result["progress_percentage"] = _calculate_progress(current_value, result["target_value"])
+        result["linked_entries_count"] = linked_entries_count
+
+        return result
+
     def _row_to_response(self, row: dict[str, Any], linked_entries_count: int = 0) -> dict[str, Any]:
         """将数据库行转换为响应 dict，包含计算字段"""
         result = dict(row)
@@ -132,12 +157,60 @@ class GoalService:
     async def list_goals(
         self, user_id: str, status: Optional[str] = None, limit: int = 20
     ) -> tuple[list[dict], int, str]:
-        """列出目标"""
+        """列出目标（批量查询，N 个目标最多 3 次 SQL）"""
         rows = self._sqlite.list_goals(user_id, status=status, limit=limit)
-        results = []
+        if not rows:
+            return [], 200, "获取成功"
+
+        goal_ids = [row["id"] for row in rows]
+
+        # 批量查 1：关联条目数
+        linked_counts = self._sqlite.batch_count_goal_entries(goal_ids, user_id)
+
+        # 批量查 2：已完成里程碑数
+        milestone_goal_ids = [row["id"] for row in rows if row.get("metric_type") == "milestone"]
+        milestone_counts = self._sqlite.batch_count_completed_milestones(milestone_goal_ids, user_id) if milestone_goal_ids else {}
+
+        # 收集 tag_auto 参数
+        tag_auto_rows = []
         for row in rows:
-            linked_count = self._sqlite.count_goal_entries(row["id"], user_id)
-            results.append(self._row_to_response(row, linked_entries_count=linked_count))
+            if row.get("metric_type") == "tag_auto":
+                tags = row.get("auto_tags")
+                if isinstance(tags, str):
+                    tags = json.loads(tags)
+                start_date = row.get("start_date")
+                end_date = row.get("end_date")
+                tag_auto_rows.append((tags, user_id, start_date, end_date))
+            else:
+                tag_auto_rows.append(None)
+
+        # 批量查 3：tag_auto 条目计数
+        tag_auto_indices = [i for i, t in enumerate(tag_auto_rows) if t is not None]
+        if tag_auto_indices:
+            tag_auto_params = [tag_auto_rows[i] for i in tag_auto_indices]
+            tag_auto_counts = self._sqlite.batch_count_entries_by_tags(tag_auto_params, user_id)
+            tag_auto_count_map = dict(zip(tag_auto_indices, tag_auto_counts))
+        else:
+            tag_auto_count_map = {}
+
+        results = []
+        for i, row in enumerate(rows):
+            metric_type = row.get("metric_type")
+            linked_count = linked_counts.get(row["id"], 0)
+
+            if metric_type == "tag_auto":
+                current_value = tag_auto_count_map.get(i, 0)
+                result = self._row_to_response_with_current(
+                    row, current_value=current_value, linked_entries_count=linked_count
+                )
+            elif metric_type == "milestone":
+                current_value = milestone_counts.get(row["id"], 0)
+                result = self._row_to_response_with_current(
+                    row, current_value=current_value, linked_entries_count=linked_count
+                )
+            else:
+                result = self._row_to_response(row, linked_entries_count=linked_count)
+            results.append(result)
         return results, 200, "获取成功"
 
     async def update_goal(self, goal_id: str, request, user_id: str) -> tuple[Optional[dict], int, str]:

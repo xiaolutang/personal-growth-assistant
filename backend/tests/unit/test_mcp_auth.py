@@ -85,7 +85,7 @@ class TestCallToolWithAuth:
         mock_storage = MagicMock()
         mock_handler = AsyncMock(return_value=[])
 
-        with patch("app.mcp.server.storage", mock_storage), \
+        with patch("app.routers.deps.storage", mock_storage), \
              patch("app.mcp.server.authenticated_user_id", "user-42"), \
              patch("app.mcp.server.TOOL_HANDLERS", {"list_entries": mock_handler}):
             await call_tool("list_entries", {"limit": 5})
@@ -132,7 +132,7 @@ class TestHandleGetReviewSummary:
         mock_review_svc = MagicMock()
         mock_review_svc.get_daily_report = AsyncMock(return_value=mock_report)
 
-        with patch("app.services.review_service.ReviewService", return_value=mock_review_svc):
+        with patch("app.routers.deps.get_review_service", return_value=mock_review_svc):
             result = await handle_get_review_summary(mock_storage, {"period": "daily"}, "user-1")
             assert len(result) == 1
             assert "日报" in result[0].text
@@ -154,7 +154,7 @@ class TestHandleGetReviewSummary:
         mock_review_svc = MagicMock()
         mock_review_svc.get_weekly_report = AsyncMock(return_value=mock_report)
 
-        with patch("app.services.review_service.ReviewService", return_value=mock_review_svc):
+        with patch("app.routers.deps.get_review_service", return_value=mock_review_svc):
             result = await handle_get_review_summary(mock_storage, {"period": "weekly"}, "user-1")
             assert len(result) == 1
             assert "周报" in result[0].text
@@ -186,9 +186,10 @@ class TestHandleGetKnowledgeStats:
             top_concepts=[{"name": "Python", "entry_count": 5}, {"name": "Rust", "entry_count": 3}],
         )
 
-        with patch("app.services.knowledge_service.KnowledgeService") as MockSvc:
-            instance = MockSvc.return_value
-            instance.get_knowledge_stats = AsyncMock(return_value=mock_stats)
+        mock_svc = MagicMock()
+        mock_svc.get_knowledge_stats = AsyncMock(return_value=mock_stats)
+
+        with patch("app.routers.deps.get_knowledge_service", return_value=mock_svc):
             result = await handle_get_knowledge_stats(mock_storage, {}, "user-1")
             assert len(result) == 1
             assert "15" in result[0].text
@@ -208,9 +209,10 @@ class TestHandleGetKnowledgeStats:
             top_concepts=[],
         )
 
-        with patch("app.services.knowledge_service.KnowledgeService") as MockSvc:
-            instance = MockSvc.return_value
-            instance.get_knowledge_stats = AsyncMock(return_value=mock_stats)
+        mock_svc = MagicMock()
+        mock_svc.get_knowledge_stats = AsyncMock(return_value=mock_stats)
+
+        with patch("app.routers.deps.get_knowledge_service", return_value=mock_svc):
             result = await handle_get_knowledge_stats(mock_storage, {}, "user-1")
             assert len(result) == 1
             assert "0" in result[0].text

@@ -35,11 +35,15 @@ _chat_service: Optional[ChatService] = None
 _session_meta_store: Optional[SessionMetaStore] = None
 
 
-def set_graph(graph: TaskParserGraph):
-    """设置 TaskParserGraph 实例"""
+def set_graph(graph: TaskParserGraph, entry_service=None, intent_service=None):
+    """设置 TaskParserGraph 实例并注入 ChatService 依赖"""
     global _graph, _chat_service, _session_meta_store
     _graph = graph
-    _chat_service = ChatService(graph=graph)
+    _chat_service = ChatService(
+        graph=graph,
+        intent_service=intent_service,
+        entry_service=entry_service,
+    )
     # 初始化会话元数据存储
     settings = get_settings()
     _session_meta_store = SessionMetaStore(settings.sqlite_checkpoints_path.replace('.db', '_meta.db'))

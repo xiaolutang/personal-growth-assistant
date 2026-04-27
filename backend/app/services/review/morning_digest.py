@@ -464,10 +464,8 @@ class MorningDigestMixin:
             # 7. 知识推荐（B115）
             knowledge_recommendations = None
             try:
-                if self._knowledge_service is not None:
-                    from app.routers import deps
-                    rec_svc = deps.get_recommendation_service()
-                    rec_resp = await rec_svc.get_recommendations(user_id=user_id)
+                if self._recommendation_service is not None:
+                    rec_resp = await self._recommendation_service.get_recommendations(user_id=user_id)
                     knowledge_recommendations = rec_resp.model_dump()
             except Exception:
                 logger.debug("B115: 晨报知识推荐获取失败，跳过", exc_info=True)

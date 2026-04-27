@@ -6,8 +6,6 @@ from typing import AsyncGenerator, Optional, TYPE_CHECKING
 
 from app.api.schemas import EntryCreate, EntryUpdate
 from app.graphs.task_parser_graph import TaskParserGraph
-from app.routers import intent as intent_module
-from app.routers.deps import get_entry_service
 from app.services.entry_service import EntryService
 from app.services.intent_service import IntentService
 
@@ -35,8 +33,8 @@ class ChatService:
     def __init__(
         self,
         graph: TaskParserGraph,
-        intent_service: Optional[IntentService] = None,
-        entry_service: Optional[EntryService] = None,
+        intent_service: IntentService,
+        entry_service: EntryService,
     ):
         self.graph = graph
         self._intent_service = intent_service
@@ -44,14 +42,10 @@ class ChatService:
 
     @property
     def intent_service(self) -> IntentService:
-        if self._intent_service is None:
-            self._intent_service = intent_module.get_intent_service()
         return self._intent_service
 
     @property
     def entry_service(self) -> EntryService:
-        if self._entry_service is None:
-            self._entry_service = get_entry_service()
         return self._entry_service
 
     async def detect_intent(

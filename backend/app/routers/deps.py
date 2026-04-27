@@ -52,6 +52,9 @@ def get_entry_service() -> "EntryService":
             raise HTTPException(status_code=503, detail="存储服务未初始化")
         from app.services.entry_service import EntryService
         _entry_service = EntryService(storage)
+    # 延迟注入 GoalService（EntryService 先创建，GoalService 后初始化的情况）
+    if _goal_service and _entry_service._goal_service is None:
+        _entry_service.set_goal_service(_goal_service)
     return _entry_service
 
 
@@ -87,12 +90,19 @@ def get_review_service() -> "ReviewService":
         # 注入 KnowledgeService（避免 ReviewService 反向依赖路由层 deps）
         if _knowledge_service:
             _review_service.set_knowledge_service(_knowledge_service)
+        # 注入 RecommendationService（避免 ReviewService 反向依赖路由层 deps）
+        # 主动触发懒初始化，确保 RecommendationService 可用
+        rec_svc = get_recommendation_service()
+        if rec_svc:
+            _review_service.set_recommendation_service(rec_svc)
     else:
         # 延迟注入：ReviewService 先创建，GoalService 后初始化的情况
         if _goal_service and _review_service.goal_service is None:
             _review_service.set_goal_service(_goal_service)
         if _knowledge_service and _review_service.knowledge_service is None:
             _review_service.set_knowledge_service(_knowledge_service)
+        if _recommendation_service and _review_service._recommendation_service is None:
+            _review_service.set_recommendation_service(_recommendation_service)
     return _review_service
 
 

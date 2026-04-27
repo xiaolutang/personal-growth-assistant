@@ -444,9 +444,8 @@ export interface RecommendationResponse {
   source: string;
 }
 export async function fetchRecommendations(): Promise<RecommendationResponse> {
-  const response = await authFetch(`${API_BASE}/knowledge/recommendations`);
-  if (!response.ok) throw new ApiError(response.status, `推荐 API 错误: ${response.status}`);
-  return await response.json() as RecommendationResponse;
+  const { data, error, response } = await client.GET("/knowledge/recommendations");
+  return handleOpenApiResponse<RecommendationResponse>(data as RecommendationResponse | undefined, error, response);
 }
 
 // === 知识图谱增强 ===
@@ -570,40 +569,37 @@ export interface MilestoneListResponse {
 }
 
 export async function getMilestones(goalId: string): Promise<MilestoneListResponse> {
-  const response = await authFetch(`${API_BASE}/goals/${goalId}/milestones`);
-  if (!response.ok) throw new ApiError(response.status, `获取里程碑失败: ${response.status}`);
-  return await response.json() as MilestoneListResponse;
+  const { data, error, response } = await client.GET("/goals/{goal_id}/milestones", {
+    params: { path: { goal_id: goalId } },
+  });
+  return handleOpenApiResponse<MilestoneListResponse>(data as MilestoneListResponse | undefined, error, response);
 }
 
 export async function createMilestone(goalId: string, payload: {
   title: string; description?: string; due_date?: string;
 }): Promise<Milestone> {
-  const response = await authFetch(`${API_BASE}/goals/${goalId}/milestones`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+  const { data, error, response } = await client.POST("/goals/{goal_id}/milestones", {
+    params: { path: { goal_id: goalId } },
+    body: payload as S["MilestoneCreate"],
   });
-  if (!response.ok) throw new ApiError(response.status, `创建里程碑失败: ${response.status}`);
-  return await response.json() as Milestone;
+  return handleOpenApiResponse<Milestone>(data as Milestone | undefined, error, response);
 }
 
 export async function updateMilestone(goalId: string, milestoneId: string, payload: {
   title?: string; description?: string; due_date?: string; status?: "pending" | "completed";
 }): Promise<Milestone> {
-  const response = await authFetch(`${API_BASE}/goals/${goalId}/milestones/${milestoneId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+  const { data, error, response } = await client.PUT("/goals/{goal_id}/milestones/{milestone_id}", {
+    params: { path: { goal_id: goalId, milestone_id: milestoneId } },
+    body: payload as S["MilestoneUpdate"],
   });
-  if (!response.ok) throw new ApiError(response.status, `更新里程碑失败: ${response.status}`);
-  return await response.json() as Milestone;
+  return handleOpenApiResponse<Milestone>(data as Milestone | undefined, error, response);
 }
 
 export async function deleteMilestone(goalId: string, milestoneId: string): Promise<void> {
-  const response = await authFetch(`${API_BASE}/goals/${goalId}/milestones/${milestoneId}`, {
-    method: "DELETE",
+  const { error, response } = await client.DELETE("/goals/{goal_id}/milestones/{milestone_id}", {
+    params: { path: { goal_id: goalId, milestone_id: milestoneId } },
   });
-  if (!response.ok) throw new ApiError(response.status, `删除里程碑失败: ${response.status}`);
+  handleOpenApiResponse(undefined, error, response);
 }
 
 // === Goal 进度历史 ===
@@ -621,9 +617,10 @@ export interface ProgressHistoryResponse {
 }
 
 export async function fetchProgressHistory(goalId: string): Promise<ProgressHistoryResponse> {
-  const response = await authFetch(`${API_BASE}/goals/${goalId}/progress-history`);
-  if (!response.ok) throw new ApiError(response.status, `Progress history API error: ${response.status}`);
-  return await response.json() as ProgressHistoryResponse;
+  const { data, error, response } = await client.GET("/goals/{goal_id}/progress-history", {
+    params: { path: { goal_id: goalId } },
+  });
+  return handleOpenApiResponse<ProgressHistoryResponse>(data as ProgressHistoryResponse | undefined, error, response);
 }
 
 // === 反向引用（backlinks） ===

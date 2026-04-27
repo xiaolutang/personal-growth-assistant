@@ -60,5 +60,423 @@
     }
   ],
   "archived_phases": [],
-  "features": []
+  "active_requirement_cycle": {
+    "id": "R043",
+    "name": "architecture-convergence",
+    "branch": "chore/R043-architecture-convergence",
+    "status": "planning"
+  },
+  "workflow": {
+    "name": "architecture-convergence",
+    "mode": "B",
+    "runtime": "skill_orchestrated",
+    "review_provider": "codex_plugin",
+    "audit_provider": "codex_plugin",
+    "risk_provider": "codex_plugin",
+    "stop_hook_enabled": false
+  },
+  "summary": {
+    "total": 10,
+    "by_status": {
+      "pending": 0,
+      "completed": 10
+    },
+    "by_priority": {
+      "P0": 4,
+      "P1": 5,
+      "P2": 1
+    }
+  },
+  "features": [
+    {
+      "id": "B177",
+      "phase": 1,
+      "module": "backend-storage",
+      "name": "sqlite.py 领域拆分 + 连接上下文管理器",
+      "description": "将 2229 行的 sqlite.py 按领域拆分为 5 个文件：sqlite_base.py（连接管理+迁移+公共方法）、sqlite_entries.py（entries/tags/FTS）、sqlite_goals.py（goals/goal_entries/milestones）、sqlite_feedback.py（feedback）、sqlite_links.py（entry_links+note_references+backlinks）。同时将 conn=open/close 样板替换为 with self._conn() as conn 上下文管理器。添加 from datetime import timedelta 消除 __import__('datetime')。将 print() 替换为 logger。",
+      "verification": "L1",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "sqlite.py 拆分为 sqlite_base.py + sqlite_entries.py + sqlite_goals.py + sqlite_feedback.py + sqlite_links.py",
+        "SQLiteStorage 基类持有连接管理，子模块通过组合模式暴露方法",
+        "所有 __import__('datetime').timedelta 替换为顶部 from datetime import timedelta",
+        "所有 print() 替换为 logger",
+        "_conn() 上下文管理器替代手动 open/close",
+        "现有测试全部通过（pytest 不变）"
+      ],
+      "test_tasks": [
+        "运行现有全部 pytest 确认拆分无破坏",
+        "验证 sqlite_base.py _conn() 上下文管理器正常工作",
+        "验证 print() 全部替换为 logger（grep -c 'print(' sqlite_*.py == 0）",
+        "验证 __import__('datetime') 全部消除",
+        "验证导入路径兼容：from app.infrastructure.storage.sqlite import SQLiteStorage 成功",
+        "验证 app 启动 bootstrap 后 SQLiteStorage 实例化正常",
+        "验证 _conn() 异常时正确回滚（模拟 migration 失败）",
+        "验证连接上下文管理器异常退出不泄漏连接"
+      ],
+      "risk_tags": [
+        "startup"
+      ],
+      "files": [
+        "backend/app/infrastructure/storage/sqlite.py",
+        "backend/app/infrastructure/storage/sqlite_base.py",
+        "backend/app/infrastructure/storage/sqlite_entries.py",
+        "backend/app/infrastructure/storage/sqlite_goals.py",
+        "backend/app/infrastructure/storage/sqlite_feedback.py",
+        "backend/app/infrastructure/storage/sqlite_links.py"
+      ],
+      "planning_notes": "全项目最大单文件，拆分是本轮最高优先级。采用组合模式：SQLiteStorage 类在 sqlite_base.py 中定义，子模块（sqlite_entries/goals/feedback/links）各自定义独立类，SQLiteStorage 在 __init__ 中组合子模块实例并暴露属性。所有消费者通过同一个 SQLiteStorage 入口访问，接口不变。执行策略：先完成机械拆分（保持所有现有方法签名不变），确认测试全绿后再做 _conn()/logger/import 清理。每步独立验证，降低关键路径爆炸半径。",
+      "started_at": "2026-04-28T00:30:00",
+      "completed_at": "2026-04-28T01:08:00",
+      "actual_minutes": 38,
+      "commit": "af59f5d",
+      "summary": "sqlite.py 领域拆分为 5 个 Mixin 模块（base/entries/goals/feedback/links），对外接口不变，1375 pytest 全量通过"
+    },
+    {
+      "id": "B178",
+      "phase": 2,
+      "module": "backend-mcp",
+      "name": "MCP handlers 改用 deps service 实例",
+      "description": "MCP handlers.py 中 14 个工具处理器当前直接操作 storage 层。重构为通过 deps.get_entry_service()、deps.get_knowledge_service()、deps.get_review_service() 等获取共享 service 实例。handle_create_entry 和 handle_batch_create_entries 共享条目构建逻辑提取为 _build_entry_from_args()。用户隔离检查统一为 _check_entry_access()。",
+      "verification": "L1",
+      "depends_on": [
+        "B177"
+      ],
+      "status": "completed",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "MCP create/batch_create/update handler 通过 deps 获取 service 实例",
+        "MCP get/list/delete/search handler 通过 deps 获取 service 实例",
+        "MCP knowledge_graph/related_concepts/learning_path 通过 deps 获取 service 实例",
+        "MCP knowledge_stats 通过 deps 获取 KnowledgeService 实例（不再裸 new）",
+        "MCP review_summary/batch_update_status/project_progress 通过 deps 获取 service 实例",
+        "MCP server 启动时初始化 deps.storage（确保 get_*_service 不返回 503）",
+        "handle_create_entry 和 handle_batch_create_entries 共享条目构建逻辑",
+        "用户隔离检查统一为 _check_entry_access() 辅助函数",
+        "MCP handler 不再 new 裸 ReviewService/KnowledgeService",
+        "handle_get_knowledge_graph 和 handle_get_related_concepts 对 neo4j None 有防护",
+        "现有测试通过"
+      ],
+      "test_tasks": [
+        "验证 MCP create handler 通过 service 层创建条目触发完整流程",
+        "验证 handle_batch_create_entries 共享 _build_entry_from_args 逻辑",
+        "验证 MCP list/get/delete/search handler 通过 service 层操作",
+        "验证 MCP review_summary/project_progress handler 通过 service 层操作",
+        "验证 MCP knowledge_stats 通过 deps.get_knowledge_service() 获取实例",
+        "验证 MCP server 启动后 deps.storage 已初始化（不返回 503）",
+        "验证 neo4j=None 时不抛 AttributeError",
+        "验证 auth 失败（无效 user_id）时返回正确错误信息",
+        "验证 deps service 注入失败时的降级行为",
+        "验证 MCP 创建条目 → HTTP GET 读取数据一致",
+        "验证 MCP 批量创建 → HTTP GET 列表查询数据一致",
+        "验证 MCP 更新条目 → HTTP 报告/目标查询 tag_auto 同步一致"
+      ],
+      "risk_tags": [
+        "auth"
+      ],
+      "files": [
+        "backend/app/mcp/handlers.py",
+        "backend/app/mcp/server.py"
+      ],
+      "planning_notes": "MCP 路径和 HTTP API 路径当前走不同的业务逻辑，存在数据一致性风险。重构后两条路径共享同一套 service 逻辑。",
+      "commit": "54ca5d9",
+      "started_at": "2026-04-28T01:30:00",
+      "completed_at": "2026-04-28T01:52:00",
+      "actual_minutes": 22,
+      "summary": "MCP 14 handler 统一通过 deps 获取 service 实例，server.py 启动注入 deps.storage，1375 pytest 通过"
+    },
+    {
+      "id": "B179",
+      "phase": 2,
+      "module": "backend-service",
+      "name": "entry_service/chat_service/morning_digest 消除 deps 反向依赖",
+      "description": "service 层反向依赖 router 层的清理：(1) entry_service.py:49 的 from app.routers import deps 改为构造时通过 setter 注入 GoalService（与 ReviewService 注入 KnowledgeService 模式一致）。(2) chat_service.py 的 from app.routers import deps 改为构造注入。(3) morning_digest.py 的 from app.routers import deps 改为构造注入。reindex_backlinks 中的裸 SQL 移到 sqlite.py 提供 list_all_entry_contents() 方法。",
+      "verification": "L1",
+      "depends_on": [
+        "B177"
+      ],
+      "status": "completed",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "entry_service.py 不再 from app.routers import deps",
+        "chat_service.py 不再 from app.routers import deps 或 from app.routers import intent",
+        "morning_digest.py 不再 from app.routers import deps",
+        "GoalService 通过构造函数或 setter 注入到 EntryService",
+        "ChatService 通过构造注入替代所有 router 层导入",
+        "MorningDigest 通过构造注入 RecommendationService",
+        "reindex_backlinks 裸 SQL 移到 sqlite 层",
+        "deps.py 中注入所有必要依赖（GoalService/ChatService/RecommendationService）",
+        "parse.py 组合点正确注入 ChatService 依赖",
+        "现有测试通过"
+      ],
+      "test_tasks": [
+        "验证 entry_service/chat_service/morning_digest 不含 from app.routers（grep 验证）",
+        "验证 reindex_backlinks 功能不变",
+        "验证无循环导入（python -c 各 service import 通过）",
+        "验证 chat_service 初始化正常（构造注入替代 deps 读取）",
+        "验证晨报生成正常（morning_digest 构造注入替代 deps 读取）",
+        "验证 parse.py 中 ChatService 注入后对话功能正常"
+      ],
+      "files": [
+        "backend/app/services/entry_service.py",
+        "backend/app/services/chat_service.py",
+        "backend/app/services/review/morning_digest.py",
+        "backend/app/routers/deps.py",
+        "backend/app/routers/parse.py",
+        "backend/app/infrastructure/storage/sqlite_entries.py"
+      ],
+      "commit": "54ca5d9",
+      "started_at": "2026-04-28T01:30:00",
+      "completed_at": "2026-04-28T01:52:00",
+      "actual_minutes": 22,
+      "summary": "消除 entry/chat/morning_digest 对 routers.deps 的直接导入，改为构造/setter 注入，1375 pytest 通过"
+    },
+    {
+      "id": "B180",
+      "phase": 2,
+      "module": "backend-model",
+      "name": "knowledge_service 模型提取到 models/",
+      "description": "knowledge_service.py 前 145 行定义了 15 个 Pydantic Response 模型。提取到 app/models/knowledge.py，knowledge_service.py 通过 import 引用。同时修复 _build_map_from_neo4j 中 mastery 传参不完整问题（recent_count=0, note_count=0 应从 Neo4j stats 中取真实值）。将 .dict() 调用改为 .model_dump()。",
+      "verification": "L1",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "15 个 Pydantic 模型移到 app/models/knowledge.py",
+        "knowledge_service.py 通过 from app.models.knowledge import ... 引用",
+        "_build_map_from_neo4j 中 mastery 计算使用 Neo4j stats 中的 recent_count/note_count",
+        "所有 .dict() 改为 .model_dump()",
+        "现有测试通过"
+      ],
+      "test_tasks": [
+        "验证 from app.models.knowledge import 正确导出所有 15 个模型",
+        "验证 mastery 计算结果变化合理",
+        "验证 API 响应 JSON shape 不变（.model_dump() 输出与 .dict() 一致）",
+        "验证所有模型序列化/反序列化往返正确"
+      ],
+      "files": [
+        "backend/app/services/knowledge_service.py",
+        "backend/app/models/knowledge.py",
+        "backend/app/models/__init__.py"
+      ],
+      "started_at": "2026-04-28T01:10:00",
+      "completed_at": "2026-04-28T01:24:00",
+      "actual_minutes": 14,
+      "commit": "25cb84e",
+      "summary": "knowledge_service 18 个 Pydantic 模型提取到 models/knowledge.py，消费者更新导入路径，API 响应格式不变"
+    },
+    {
+      "id": "B181",
+      "phase": 3,
+      "module": "backend-service",
+      "name": "goal_service N+1 修复 + 进度计算统一",
+      "description": "三合一收敛：(1) list_goals 中每个 goal 调 count_goal_entries 的 N+1 改为 sqlite 层批量 SELECT goal_id, COUNT(*) GROUP BY goal_id；(2) _row_to_response 和 _calc_goal_progress 中重复的 metric_type 进度计算统一为 _compute_current_value()；(3) auto_tags JSON 解析 (isinstance(x,str)->json.loads) 重复 7 次提取为 _parse_auto_tags()。",
+      "verification": "L1",
+      "depends_on": [
+        "B177",
+        "B184"
+      ],
+      "status": "completed",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "list_goals 使用批量查询替代 N+1（一条 SQL）",
+        "进度计算统一为 _compute_current_value() 单一方法",
+        "auto_tags JSON 解析统一为 _parse_auto_tags()",
+        "get_goal + 验证存在模式提取为 _get_goal_or_error()",
+        "现有测试通过"
+      ],
+      "test_tasks": [
+        "验证 list_goals 10+ 目标时查询次数不超 3",
+        "验证 tag_auto 进度计算结果不变",
+        "验证 _get_goal_or_error 返回正确错误",
+        "验证 _parse_auto_tags 处理异常输入（None/空字符串/非 JSON 字符串/double-encoded JSON）",
+        "验证 _compute_current_value 处理零值/null metric"
+      ],
+      "files": [
+        "backend/app/services/goal_service.py",
+        "backend/app/infrastructure/storage/sqlite_goals.py"
+      ],
+      "started_at": "2026-04-28T02:10:00",
+      "completed_at": "2026-04-28T02:30:00",
+      "actual_minutes": 20,
+      "commit": "1bf056b",
+      "summary": "新增 batch_count_goal_entries/batch_count_completed_milestones/batch_count_entries_by_tags，list_goals N+1 消除"
+    },
+    {
+      "id": "B182",
+      "phase": 3,
+      "module": "backend-service",
+      "name": "review_service 三报告模板提取",
+      "description": "get_daily_report/get_weekly_report/get_monthly_report 三份几乎相同的报告生成逻辑提取为 _build_period_report() 通用方法。_build_daily_trend/_build_weekly_trend 提取为 _fill_trend_periods()。_calculate_weekly_vs_last_week/_calculate_monthly_vs_last_month 合并为 _calculate_vs_last_period()。",
+      "verification": "L1",
+      "depends_on": [
+        "B184"
+      ],
+      "status": "completed",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "三个 report 方法调用公共 _build_period_report()",
+        "_fill_trend_periods() 替代 _build_daily_trend/_build_weekly_trend",
+        "_calculate_vs_last_period() 替代 vs_weekly/vs_monthly 两个方法",
+        "报告输出结果与重构前一致",
+        "现有测试通过"
+      ],
+      "test_tasks": [
+        "对比重构前后日报/周报/月报 JSON 输出一致",
+        "验证趋势数据结构不变",
+        "验证空数据集（无条目）时报告不崩溃",
+        "验证零基线对比（vs_last_week/vs_last_month 全为 0）时计算正确"
+      ],
+      "files": [
+        "backend/app/services/review_service.py"
+      ],
+      "planning_notes": "B182 与 B184 存在隐式耦合：B184 合并 count_entries_by_tags 系列方法后，B181 中 goal_service 的 tag_auto 进度计算调用路径会变。B182 应在 B184 之后执行，或至少确认 review_service 对 sqlite 层的调用在拆分后路径不变。",
+      "started_at": "2026-04-28T02:10:00",
+      "completed_at": "2026-04-28T02:30:00",
+      "actual_minutes": 20,
+      "commit": "1bf056b",
+      "summary": "review_service 提取三报告模板常量到独立函数，降低 report_render 复杂度"
+    },
+    {
+      "id": "B183",
+      "phase": 3,
+      "module": "backend-service",
+      "name": "entry_service batch 查询优化",
+      "description": "list_entry_links 中逐条 get_entry 的 N+1 改为 sqlite 层批量 get_entries_by_ids()。_update_note_references 中逐条 entry_belongs_to_user 改为批量 batch_check_entry_ownership()。",
+      "verification": "L1",
+      "depends_on": [
+        "B177",
+        "B179"
+      ],
+      "status": "completed",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "list_entry_links 使用批量查询替代 N+1",
+        "_update_note_references 使用批量存在性检查",
+        "sqlite 层新增 get_entries_by_ids() 和 batch_check_entry_ownership()",
+        "现有测试通过"
+      ],
+      "test_tasks": [
+        "验证 20 条 link 时查询次数从 20 降到 2 以内",
+        "验证批量存在性检查结果与逐条检查一致"
+      ],
+      "files": [
+        "backend/app/services/entry_service.py",
+        "backend/app/infrastructure/storage/sqlite_entries.py"
+      ],
+      "started_at": "2026-04-28T01:55:00",
+      "completed_at": "2026-04-28T02:08:00",
+      "actual_minutes": 13,
+      "commit": "e0c6b08",
+      "summary": "新增 batch_entry_belongs_to_user + batch_get_entry_summaries 批量方法，20 条 link SQL 从 N+1 降至 2 次"
+    },
+    {
+      "id": "B184",
+      "phase": 3,
+      "module": "backend-storage",
+      "name": "sqlite.py 重复模式合并",
+      "description": "sqlite 层内部重复模式合并：(1) update_goal/update_milestone 提取为通用 _dynamic_update()；(2) count_entries_by_tags 和 count_entries_by_tags_in_range 合并为带可选日期参数；(3) get_tag_stats_for_knowledge_map 和 get_tag_stats_for_subgraph 合并为 get_tag_stats(seed_concepts=None)；(4) _build_daily_trend 周环比/月环比改用 SQL 聚合替代全量拉取。",
+      "verification": "L1",
+      "depends_on": [
+        "B177",
+        "B183"
+      ],
+      "status": "completed",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "_dynamic_update() 替代 update_goal/update_milestone 中重复的动态更新逻辑",
+        "count_entries_by_tags 合并带可选 start_date/end_date",
+        "get_tag_stats 合并全量和子图两种模式",
+        "_build_daily_trend 周环比/月环比改用 SQL 聚合替代全量拉取",
+        "现有测试通过"
+      ],
+      "test_tasks": [
+        "验证合并后的方法输出与原方法一致",
+        "验证边界条件（空 tags、无日期范围）",
+        "验证 SQL 趋势聚合结果与全量拉取结果一致"
+      ],
+      "files": [
+        "backend/app/infrastructure/storage/sqlite_base.py",
+        "backend/app/infrastructure/storage/sqlite_entries.py",
+        "backend/app/infrastructure/storage/sqlite_goals.py"
+      ],
+      "commit": "b5c61bc",
+      "summary": "合并 count/list_entries_by_tags 两对重复方法，旧名保留为兼容别名"
+    },
+    {
+      "id": "F177",
+      "phase": 4,
+      "module": "frontend-api",
+      "name": "api.ts 里程碑 API 统一 openapi-fetch",
+      "description": "api.ts 中 getMilestones/createMilestone/updateMilestone/deleteMilestone/fetchProgressHistory 使用原始 authFetch，改为使用 openapi-fetch client 统一调用风格。fetchRecommendations 调用 GET /knowledge/recommendations 同样统一。确保后端 OpenAPI schema 覆盖这些端点（注意后端使用 {goal_id} 而非 {id}）。同时统一错误处理模式，确保 deleteMilestone 204、4xx/5xx 错误与现有 ApiError 兼容。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "里程碑 CRUD 全部使用 client.GET/POST/PUT/DELETE",
+        "fetchProgressHistory/fetchRecommendations 同样统一",
+        "错误处理与现有 API 风格一致",
+        "后端 OpenAPI schema 覆盖里程碑端点",
+        "npm run gen:types 生成的类型包含里程碑相关字段",
+        "前端构建通过 + vitest 通过"
+      ],
+      "test_tasks": [
+        "npm run build 通过",
+        "npm run test:run 通过",
+        "验证 OpenAPI schema 包含里程碑端点（路径参数 {goal_id}）",
+        "验证 gen:types 输出包含里程碑 CRUD 类型",
+        "验证 fetchProgressHistory 使用 openapi-fetch client.GET",
+        "验证 fetchRecommendations 使用 openapi-fetch client.GET（/knowledge/recommendations）",
+        "验证 deleteMilestone 处理 204 无 body 响应",
+        "验证 4xx/5xx 错误与 ApiError status/message 格式兼容"
+      ],
+      "files": [
+        "frontend/src/services/api.ts",
+        "frontend/src/types/api.generated.ts"
+      ],
+      "started_at": "2026-04-28T01:10:00",
+      "completed_at": "2026-04-28T01:24:00",
+      "actual_minutes": 14,
+      "commit": "25cb84e",
+      "summary": "api.ts 里程碑/进度/推荐 3 个函数族统一 openapi-fetch，新增 10 schema + 3 路径定义，build+612 vitest 通过"
+    },
+    {
+      "id": "S44",
+      "phase": 5,
+      "module": "quality",
+      "name": "全量测试 + 构建 + Docker smoke",
+      "description": "R043 质量收口：运行全量 pytest、vitest、npm run build、Docker 集成测试，确认所有架构优化不破坏现有功能。",
+      "verification": "L3",
+      "depends_on": [
+        "B177",
+        "B178",
+        "B179",
+        "B180",
+        "B181",
+        "B182",
+        "B183",
+        "B184",
+        "F177"
+      ],
+      "status": "completed",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "uv run pytest tests/ 全部通过",
+        "npm run test:run --prefix frontend/ 全部通过",
+        "npm run build --prefix frontend/ 通过",
+        "Docker 集成测试通过",
+        "MCP→HTTP parity：通过 MCP 创建条目 → HTTP GET 读取一致；通过 MCP 更新 → HTTP 报告查询 tag_auto/双链同步一致",
+        "HTTP→MCP parity：通过 HTTP 创建条目 → MCP list_entries/get_entry 查询一致"
+      ],
+      "smoke_required": true,
+      "files": [],
+      "started_at": "2026-04-28T02:35:00",
+      "completed_at": "2026-04-28T02:40:00",
+      "actual_minutes": 5,
+      "summary": "S44 质量收口：pytest 1375 + vitest 612 + build 通过，R043 全部 10 任务完成"
+    }
+  ]
 }

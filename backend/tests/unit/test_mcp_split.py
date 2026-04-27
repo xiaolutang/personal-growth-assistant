@@ -114,7 +114,7 @@ class TestCallToolDispatch:
         mock_storage = MagicMock()
         mock_handler = AsyncMock(return_value=[])
 
-        with patch("app.mcp.server.storage", mock_storage), \
+        with patch("app.routers.deps.storage", mock_storage), \
              patch("app.mcp.server.authenticated_user_id", "user-123"), \
              patch("app.mcp.server.TOOL_HANDLERS", {"list_entries": mock_handler}):
             result = await call_tool("list_entries", {"limit": 10})
@@ -125,7 +125,7 @@ class TestCallToolDispatch:
         """未知工具名返回错误消息"""
         from app.mcp.server import call_tool
 
-        with patch("app.mcp.server.storage", MagicMock()), \
+        with patch("app.routers.deps.storage", MagicMock()), \
              patch("app.mcp.server.authenticated_user_id", "user-123"):
             result = await call_tool("nonexistent_tool", {})
             assert len(result) == 1
@@ -137,7 +137,7 @@ class TestCallToolDispatch:
         from app.mcp.server import call_tool
 
         mock_handler = AsyncMock(side_effect=ValueError("test error"))
-        with patch("app.mcp.server.storage", MagicMock()), \
+        with patch("app.routers.deps.storage", MagicMock()), \
              patch("app.mcp.server.authenticated_user_id", "user-123"), \
              patch("app.mcp.server.TOOL_HANDLERS", {"list_entries": mock_handler}):
             result = await call_tool("list_entries", {})
@@ -151,7 +151,7 @@ class TestCallToolDispatch:
 
         mock_handler = AsyncMock(return_value=[])
 
-        with patch("app.mcp.server.storage", None), \
+        with patch("app.routers.deps.storage", None), \
              patch("app.mcp.server.authenticated_user_id", "user-123"), \
              patch("app.mcp.server.init", new_callable=AsyncMock) as mock_init, \
              patch("app.mcp.server.TOOL_HANDLERS", {"list_entries": mock_handler}):

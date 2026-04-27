@@ -453,6 +453,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/knowledge/recommendations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Knowledge Recommendations
+         * @description 获取知识推荐
+         */
+        get: operations["get_knowledge_recommendations_knowledge_recommendations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/review/daily": {
         parameters: {
             query?: never;
@@ -1241,6 +1261,74 @@ export interface paths {
          * @description 切换检查清单项的勾选状态
          */
         patch: operations["toggle_checklist_item_goals__goal_id__checklist__item_id__patch"];
+        trace?: never;
+    };
+    "/goals/{goal_id}/milestones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Milestones
+         * @description 列出目标下的里程碑
+         */
+        get: operations["list_milestones_goals__goal_id__milestones_get"];
+        put?: never;
+        /**
+         * Create Milestone
+         * @description 创建里程碑
+         */
+        post: operations["create_milestone_goals__goal_id__milestones_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/goals/{goal_id}/milestones/{milestone_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Milestone
+         * @description 更新里程碑
+         */
+        put: operations["update_milestone_goals__goal_id__milestones__milestone_id__put"];
+        post?: never;
+        /**
+         * Delete Milestone
+         * @description 删除里程碑
+         */
+        delete: operations["delete_milestone_goals__goal_id__milestones__milestone_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/goals/{goal_id}/progress-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Progress History
+         * @description 获取目标进度历史快照
+         */
+        get: operations["get_progress_history_goals__goal_id__progress_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/health": {
@@ -2214,6 +2302,176 @@ export interface components {
              * @description 结束日期 (YYYY-MM-DD)
              */
             end_date?: string | null;
+        };
+        /**
+         * KnowledgeGapItem
+         * @description 知识缺口项
+         */
+        KnowledgeGapItem: {
+            concept: string;
+            /**
+             * Missing Prerequisites
+             * @default []
+             */
+            missing_prerequisites: string[];
+        };
+        /**
+         * ReviewSuggestionItem
+         * @description 复习推荐项
+         */
+        ReviewSuggestionItem: {
+            concept: string;
+            category?: string | null;
+            /**
+             * Last Seen Days Ago
+             * @default 0
+             */
+            last_seen_days_ago: number;
+            /**
+             * Entry Count
+             * @default 0
+             */
+            entry_count: number;
+        };
+        /**
+         * RelatedConceptItem
+         * @description 共现推荐项
+         */
+        RelatedConceptItem: {
+            concept: string;
+            /**
+             * Score
+             * @default 0
+             */
+            score: number;
+            /**
+             * Source
+             * @default tag
+             */
+            source: string;
+        };
+        /**
+         * RecommendationResponse
+         * @description 推荐响应
+         */
+        RecommendationResponse: {
+            /**
+             * Knowledge Gaps
+             * @default []
+             */
+            knowledge_gaps: components["schemas"]["KnowledgeGapItem"][];
+            /**
+             * Review Suggestions
+             * @default []
+             */
+            review_suggestions: components["schemas"]["ReviewSuggestionItem"][];
+            /**
+             * Related Concepts
+             * @default []
+             */
+            related_concepts: components["schemas"]["RelatedConceptItem"][];
+            /**
+             * Source
+             * @default sqlite
+             */
+            source: string;
+        };
+        /**
+         * MilestoneCreate
+         * @description 创建里程碑请求
+         */
+        MilestoneCreate: {
+            /**
+             * Title
+             * @description 里程碑标题
+             */
+            title: string;
+            /**
+             * Description
+             * @description 里程碑描述
+             */
+            description?: string | null;
+            /**
+             * Due Date
+             * @description 截止日期 (YYYY-MM-DD)
+             */
+            due_date?: string | null;
+        };
+        /**
+         * MilestoneUpdate
+         * @description 更新里程碑请求
+         */
+        MilestoneUpdate: {
+            /**
+             * Title
+             * @description 里程碑标题
+             */
+            title?: string | null;
+            /**
+             * Description
+             * @description 里程碑描述
+             */
+            description?: string | null;
+            /**
+             * Due Date
+             * @description 截止日期 (YYYY-MM-DD)
+             */
+            due_date?: string | null;
+            /**
+             * Status
+             * @description 里程碑状态
+             */
+            status?: ("pending" | "completed") | null;
+        };
+        /**
+         * MilestoneResponse
+         * @description 里程碑响应
+         */
+        MilestoneResponse: {
+            id: string;
+            goal_id: string;
+            title: string;
+            description?: string | null;
+            due_date?: string | null;
+            /**
+             * Status
+             * @default pending
+             */
+            status: string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+            created_at: string;
+            updated_at: string;
+        };
+        /**
+         * MilestoneListResponse
+         * @description 里程碑列表响应
+         */
+        MilestoneListResponse: {
+            milestones: components["schemas"]["MilestoneResponse"][];
+        };
+        /**
+         * ProgressSnapshotItem
+         * @description 进度快照项
+         */
+        ProgressSnapshotItem: {
+            id: string;
+            goal_id: string;
+            current_value: number;
+            target_value: number;
+            percentage: number;
+            snapshot_date: string;
+            created_at: string;
+        };
+        /**
+         * ProgressHistoryResponse
+         * @description 进度历史响应
+         */
+        ProgressHistoryResponse: {
+            snapshots: components["schemas"]["ProgressSnapshotItem"][];
         };
         /**
          * GrowthCurvePoint
@@ -5370,6 +5628,189 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_milestones_goals__goal_id__milestones_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_milestone_goals__goal_id__milestones_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MilestoneCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_milestone_goals__goal_id__milestones__milestone_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+                milestone_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MilestoneUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_milestone_goals__goal_id__milestones__milestone_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+                milestone_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_progress_history_goals__goal_id__progress_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressHistoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_knowledge_recommendations_knowledge_recommendations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecommendationResponse"];
                 };
             };
         };

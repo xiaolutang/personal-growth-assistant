@@ -9,7 +9,8 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent
 
-from app.services import init_storage, SyncService
+from app.services import init_storage
+from app.routers import deps
 from app.mcp.tools import TOOLS
 from app.mcp.handlers import (
     handle_list_entries,
@@ -36,9 +37,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
-
-# 全局存储服务
-storage: SyncService = None
 
 # 认证后的用户 ID
 authenticated_user_id: str | None = None
@@ -94,9 +92,9 @@ TOOL_HANDLERS = {
 
 
 async def init():
-    """初始化存储服务"""
-    global storage, authenticated_user_id
-    storage = await init_storage(
+    """初始化存储服务，注入 deps.storage"""
+    global authenticated_user_id
+    deps.storage = await init_storage(
         data_dir=os.getenv("DATA_DIR", "./data"),
         neo4j_uri=os.getenv("NEO4J_URI"),
         neo4j_username=os.getenv("NEO4J_USERNAME"),
@@ -122,9 +120,9 @@ async def list_tools() -> tuple:
 @server.call_tool()
 async def call_tool(name: str, arguments: Any) -> list[TextContent]:
     """调用工具"""
-    global storage, authenticated_user_id
+    global authenticated_user_id
 
-    if not storage:
+    if deps.storage is None:
         await init()
 
     handler = TOOL_HANDLERS.get(name)
@@ -132,6 +130,7 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
         return [TextContent(type="text", text=f"未知工具: {name}")]
 
     try:
+        storage = deps.get_storage()
         return await handler(storage, arguments, authenticated_user_id)
     except Exception as e:
         logger.error(f"工具调用失败: {e}")
