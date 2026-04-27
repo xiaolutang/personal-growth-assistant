@@ -6,6 +6,17 @@
 
 ## 已完成需求包
 
+### R042: Flutter 条目详情交互升级
+
+- 状态: 已完成
+- 分支: `feat/R042-flutter-entry-detail`
+- 主题: Flutter EntryDetail 页面完整交互 — 编辑/AI摘要/知识上下文/关联条目/反向引用
+- 目录: `R042_flutter-entry-detail-upgrade/`
+- 完成时间: 2026-04-27
+- 任务数: 6 (F172, F173, F174, F175, F176, S43)
+- Code Review: codex_plugin 多轮，所有 finding 全部修复
+- 验证: flutter analyze 0 + flutter test 423 + pytest 1276 + vitest 612 + Docker 集成测试 20/20 + build
+
 ### R041: Flutter 页面补齐 + 工程健康
 
 - 状态: 已完成

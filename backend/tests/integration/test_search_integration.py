@@ -253,11 +253,11 @@ class TestDimensionMismatch:
 class TestSearchAPIE2E:
     """搜索 API 端到端测试（通过 Traefik 网关）"""
 
-    async def test_search_api_returns_200(self, api_base_url, auth_token):
+    async def test_search_api_returns_200(self, app_base_url, auth_token):
         """测试搜索 API 返回 200"""
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
-                f"{api_base_url}/search",
+                f"{app_base_url}/search",
                 json={"query": "测试查询", "limit": 5},
                 headers={"Authorization": f"Bearer {auth_token}"},
             )
@@ -270,11 +270,11 @@ class TestSearchAPIE2E:
                 assert "results" in data
                 assert isinstance(data["results"], list)
 
-    async def test_search_api_empty_query_returns_results(self, api_base_url, auth_token):
+    async def test_search_api_empty_query_returns_results(self, app_base_url, auth_token):
         """测试搜索 API 空查询返回结果（走列表+过滤模式）"""
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
-                f"{api_base_url}/search",
+                f"{app_base_url}/search",
                 json={"query": "", "limit": 5},
                 headers={"Authorization": f"Bearer {auth_token}"},
             )
@@ -282,12 +282,12 @@ class TestSearchAPIE2E:
             # 空查询允许，返回 200（走列表+过滤模式）或 503（Qdrant 未配置）
             assert response.status_code in [200, 503]
 
-    async def test_search_api_limit_validation(self, api_base_url, auth_token):
+    async def test_search_api_limit_validation(self, app_base_url, auth_token):
         """测试搜索 API limit 参数验证"""
         async with httpx.AsyncClient(timeout=30.0) as client:
             # limit 超过最大值
             response = await client.post(
-                f"{api_base_url}/search",
+                f"{app_base_url}/search",
                 json={"query": "测试", "limit": 100},
                 headers={"Authorization": f"Bearer {auth_token}"},
             )

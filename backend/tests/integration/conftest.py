@@ -12,6 +12,17 @@ def pytest_configure(config):
 
 # 通过 Traefik 网关访问（本地 Docker 部署后可用）
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost/growth/api")
+# Auth 路由挂载在 /auth（无 /api 前缀），需要独立的 base URL
+# 容器内直接访问 uvicorn（host:port），宿主机通过 Traefik 网关（带 path 前缀）
+_in_container = os.path.exists("/.dockerenv")
+if _in_container:
+    # 容器内: 从 API_BASE_URL 提取 scheme://host:port 部分
+    from urllib.parse import urlparse
+    _parsed = urlparse(API_BASE_URL)
+    _DEFAULT_AUTH_BASE = f"{_parsed.scheme}://{_parsed.netloc}"
+else:
+    _DEFAULT_AUTH_BASE = API_BASE_URL.replace("/api", "")
+AUTH_BASE_URL = os.getenv("AUTH_BASE_URL", _DEFAULT_AUTH_BASE)
 
 # 直连数据库配置（需要在 pga 容器网络内执行，或基础设施 debug 模式）
 QDRANT_URL = os.getenv("QDRANT_URL", "http://qdrant:6333")
@@ -27,13 +38,21 @@ def api_base_url():
 
 
 @pytest.fixture(scope="module")
-def auth_token(api_base_url):
+def app_base_url():
+    """应用根 URL（不含 /api 前缀），用于 auth/search 等无前缀路由"""
+    return AUTH_BASE_URL
+
+
+@pytest.fixture(scope="module")
+def auth_token(app_base_url):
     """获取集成测试用的 auth token"""
     import uuid
     username = f"e2e_test_{uuid.uuid4().hex[:6]}"
+    # Auth 路由挂载在 /auth（无 /api 前缀），使用 AUTH_BASE_URL
+    auth_base = AUTH_BASE_URL
     # 注册
     resp = httpx.post(
-        f"{api_base_url}/auth/register",
+        f"{auth_base}/auth/register",
         json={"username": username, "email": f"{username}@test.com", "password": "testpass123"},
         timeout=10,
     )
@@ -41,7 +60,7 @@ def auth_token(api_base_url):
         pytest.skip("认证服务不可用，跳过集成测试")
     # 登录
     resp = httpx.post(
-        f"{api_base_url}/auth/login",
+        f"{auth_base}/auth/login",
         json={"username": username, "password": "testpass123"},
         timeout=10,
     )
