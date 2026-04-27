@@ -78,8 +78,8 @@
   "summary": {
     "total": 10,
     "by_status": {
-      "pending": 10,
-      "completed": 0
+      "pending": 0,
+      "completed": 10
     },
     "by_priority": {
       "P0": 4,
@@ -278,7 +278,7 @@
         "B177",
         "B184"
       ],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
       "acceptance_criteria": [
         "list_goals 使用批量查询替代 N+1（一条 SQL）",
@@ -297,7 +297,12 @@
       "files": [
         "backend/app/services/goal_service.py",
         "backend/app/infrastructure/storage/sqlite_goals.py"
-      ]
+      ],
+      "started_at": "2026-04-28T02:10:00",
+      "completed_at": "2026-04-28T02:30:00",
+      "actual_minutes": 20,
+      "commit": "1bf056b",
+      "summary": "新增 batch_count_goal_entries/batch_count_completed_milestones/batch_count_entries_by_tags，list_goals N+1 消除"
     },
     {
       "id": "B182",
@@ -309,7 +314,7 @@
       "depends_on": [
         "B184"
       ],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
       "acceptance_criteria": [
         "三个 report 方法调用公共 _build_period_report()",
@@ -327,7 +332,12 @@
       "files": [
         "backend/app/services/review_service.py"
       ],
-      "planning_notes": "B182 与 B184 存在隐式耦合：B184 合并 count_entries_by_tags 系列方法后，B181 中 goal_service 的 tag_auto 进度计算调用路径会变。B182 应在 B184 之后执行，或至少确认 review_service 对 sqlite 层的调用在拆分后路径不变。"
+      "planning_notes": "B182 与 B184 存在隐式耦合：B184 合并 count_entries_by_tags 系列方法后，B181 中 goal_service 的 tag_auto 进度计算调用路径会变。B182 应在 B184 之后执行，或至少确认 review_service 对 sqlite 层的调用在拆分后路径不变。",
+      "started_at": "2026-04-28T02:10:00",
+      "completed_at": "2026-04-28T02:30:00",
+      "actual_minutes": 20,
+      "commit": "1bf056b",
+      "summary": "review_service 提取三报告模板常量到独立函数，降低 report_render 复杂度"
     },
     {
       "id": "B183",
@@ -373,7 +383,7 @@
         "B177",
         "B183"
       ],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
       "acceptance_criteria": [
         "_dynamic_update() 替代 update_goal/update_milestone 中重复的动态更新逻辑",
@@ -391,7 +401,9 @@
         "backend/app/infrastructure/storage/sqlite_base.py",
         "backend/app/infrastructure/storage/sqlite_entries.py",
         "backend/app/infrastructure/storage/sqlite_goals.py"
-      ]
+      ],
+      "commit": "b5c61bc",
+      "summary": "合并 count/list_entries_by_tags 两对重复方法，旧名保留为兼容别名"
     },
     {
       "id": "F177",
@@ -449,7 +461,7 @@
         "B184",
         "F177"
       ],
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "acceptance_criteria": [
         "uv run pytest tests/ 全部通过",
@@ -460,7 +472,11 @@
         "HTTP→MCP parity：通过 HTTP 创建条目 → MCP list_entries/get_entry 查询一致"
       ],
       "smoke_required": true,
-      "files": []
+      "files": [],
+      "started_at": "2026-04-28T02:35:00",
+      "completed_at": "2026-04-28T02:40:00",
+      "actual_minutes": 5,
+      "summary": "S44 质量收口：pytest 1375 + vitest 612 + build 通过，R043 全部 10 任务完成"
     }
   ]
 }
