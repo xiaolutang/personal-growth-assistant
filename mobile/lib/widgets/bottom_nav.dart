@@ -1,35 +1,95 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class BottomNavShell extends StatelessWidget {
+class BottomNavShell extends StatefulWidget {
   final Widget child;
 
   const BottomNavShell({super.key, required this.child});
 
-  int _currentIndex(BuildContext context) {
+  @override
+  State<BottomNavShell> createState() => _BottomNavShellState();
+}
+
+class _BottomNavShellState extends State<BottomNavShell> {
+  void _showMoreMenu() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.bar_chart),
+              title: const Text('回顾'),
+              onTap: () {
+                Navigator.pop(context);
+                this.context.go('/review');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.flag),
+              title: const Text('目标'),
+              onTap: () {
+                Navigator.pop(context);
+                this.context.go('/goals');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.lightbulb),
+              title: const Text('灵感'),
+              onTap: () {
+                Navigator.pop(context);
+                this.context.go('/inbox');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.chat_bubble),
+              title: const Text('对话'),
+              onTap: () {
+                Navigator.pop(context);
+                this.context.go('/chat');
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  int _currentIndex() {
     final location = GoRouterState.of(context).uri.path;
-    if (location == '/chat') return 1;
-    if (location == '/explore') return 2;
-    if (location == '/tasks') return 3;
-    return 0;
+    if (location.startsWith('/chat')) return 1;
+    if (location.startsWith('/tasks')) return 2;
+    if (location.startsWith('/notes')) return 3;
+    return 0; // default: today
+  }
+
+  bool _isOnMoreRoute() {
+    final location = GoRouterState.of(context).uri.path;
+    return location.startsWith('/review') ||
+        location.startsWith('/goals') ||
+        location.startsWith('/inbox');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: child,
+      body: widget.child,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex(context),
+        selectedIndex: _isOnMoreRoute() ? 4 : _currentIndex(),
         onDestinationSelected: (index) {
+          if (index == 4) {
+            _showMoreMenu();
+            return;
+          }
           switch (index) {
             case 0:
               context.go('/');
             case 1:
               context.go('/chat');
             case 2:
-              context.go('/explore');
-            case 3:
               context.go('/tasks');
+            case 3:
+              context.go('/notes');
           }
         },
         destinations: const [
@@ -44,14 +104,19 @@ class BottomNavShell extends StatelessWidget {
             label: '日知',
           ),
           NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore),
-            label: '探索',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.check_circle_outline),
             selectedIcon: Icon(Icons.check_circle),
             label: '任务',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.note_outlined),
+            selectedIcon: Icon(Icons.note),
+            label: '笔记',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.more_horiz),
+            selectedIcon: Icon(Icons.more_horiz),
+            label: '更多',
           ),
         ],
       ),

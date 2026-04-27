@@ -5,7 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../pages/chat_page.dart';
 import '../pages/entry_detail_page.dart';
 import '../pages/explore_page.dart';
+import '../pages/goals_page.dart';
+import '../pages/inbox_page.dart';
 import '../pages/login_page.dart';
+import '../pages/notes_page.dart';
+import '../pages/review_page.dart';
 import '../pages/tasks_page.dart';
 import '../pages/today_page.dart';
 import '../providers/auth_provider.dart';
@@ -78,6 +82,26 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/tasks',
             name: 'tasks',
             builder: (context, state) => const TasksPage(),
+          ),
+          GoRoute(
+            path: '/notes',
+            name: 'notes',
+            builder: (context, state) => const NotesPage(),
+          ),
+          GoRoute(
+            path: '/inbox',
+            name: 'inbox',
+            builder: (context, state) => const InboxPage(),
+          ),
+          GoRoute(
+            path: '/review',
+            name: 'review',
+            builder: (context, state) => const ReviewPage(),
+          ),
+          GoRoute(
+            path: '/goals',
+            name: 'goals',
+            builder: (context, state) => const GoalsPage(),
           ),
         ],
       ),
