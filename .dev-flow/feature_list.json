@@ -3,6 +3,41 @@
   "project": "personal-growth-assistant",
   "status": "active",
   "updated_at": "2026-04-27",
+  "active_requirement_cycle": {
+    "id": "R041",
+    "name": "health-flutter-pages",
+    "branch": "feat/R041-health-flutter-pages",
+    "status": "in_progress",
+    "started_at": "2026-04-27"
+  },
+  "workflow": {
+    "name": "XLFoundry",
+    "mode": "B",
+    "runtime": "skill_orchestrated",
+    "review_provider": "codex_plugin",
+    "audit_provider": "codex_plugin",
+    "risk_provider": "codex_plugin",
+    "stop_hook_enabled": false
+  },
+  "summary": {
+    "total": 11,
+    "by_status": {
+      "pending": 11,
+      "in_progress": 0,
+      "completed": 0
+    },
+    "by_priority": {
+      "P0": 1,
+      "P1": 4,
+      "P2": 6
+    },
+    "by_module": {
+      "backend": 1,
+      "frontend": 1,
+      "flutter": 8,
+      "shared": 1
+    }
+  },
   "archived_requirement_cycles": [
     {
       "id": "R040",
@@ -44,5 +79,320 @@
     }
   ],
   "archived_phases": [],
-  "features": []
+  "features": [
+    {
+      "id": "B117",
+      "phase": 1,
+      "module": "backend",
+      "name": "Fix flaky test + 收窄异常捕获",
+      "description": "修复 test_isolation_user_data flaky 问题（改用随机 ID 替代固定 ID）；收窄 knowledge_service.py 2 处 + qdrant_client.py 1 处 `except Exception: pass` 为具体异常类型 + logger.warning",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "test_isolation_user_data 使用 uuid4 生成条目 ID，连续运行 5 次不失败",
+        "knowledge_service.py 第 420 行和第 1005 行的 except Exception 收窄为具体异常（Neo4j 相关 + 日志记录）",
+        "qdrant_client.py 第 81 行的 except Exception 收窄为具体异常 + 日志记录",
+        "pytest 全量通过，无 regression"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "test_isolation_user_data 连续执行 5 次全部通过",
+        "收窄后的异常处理在 Neo4j/Qdrant 连接失败时仍正确降级",
+        "收窄后的异常处理在配置错误时不静默吞掉"
+      ],
+      "files": [
+        "backend/tests/unit/api/test_entries_priority.py",
+        "backend/app/services/knowledge_service.py",
+        "backend/app/infrastructure/storage/qdrant_client.py"
+      ]
+    },
+    {
+      "id": "F163",
+      "phase": 1,
+      "module": "frontend",
+      "name": "修复 eslint-disable react-hooks/exhaustive-deps",
+      "description": "审查并修复 5 处 eslint-disable react-hooks/exhaustive-deps：App.tsx(160)、TimelineView.tsx(38)、useTaskFilters.ts(147)、useExploreSearch.ts(96)、PageChatPanel.tsx(84)。每处修复依赖数组或添加合理解释注释",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "5 处 eslint-disable 全部审查完毕",
+        "不合理的依赖抑制已修复，eslint-disable 移除",
+        "确实安全的抑制保留注释说明原因",
+        "npm run build 通过，vitest 全量通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "修复后 npm run build 成功",
+        "修复后 vitest 全量通过，无 regression"
+      ],
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/pages/goals/TimelineView.tsx",
+        "frontend/src/pages/tasks/useTaskFilters.ts",
+        "frontend/src/pages/explore/useExploreSearch.ts",
+        "frontend/src/components/PageChatPanel.tsx"
+      ]
+    },
+    {
+      "id": "F164",
+      "phase": 1,
+      "module": "flutter",
+      "name": "Flutter 死代码清理",
+      "description": "删除不再被任何路由引用的 placeholder_page.dart，清理 import 引用",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "placeholder_page.dart 已删除",
+        "无其他文件引用 PlaceholderPage",
+        "flutter analyze 无错误",
+        "flutter test 通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "flutter analyze 通过",
+        "flutter test 通过",
+        "grep 确认无 PlaceholderPage 引用残留"
+      ],
+      "files": [
+        "mobile/lib/pages/placeholder_page.dart"
+      ]
+    },
+    {
+      "id": "F165",
+      "phase": 2,
+      "module": "flutter",
+      "name": "api_client.dart 扩展 — Notes/Inbox/Review/Goals API",
+      "description": "在 ApiClient 中添加新页面所需的 API 方法：createEntry、fetchGoals、fetchGoal(id)、fetchMilestones(goalId)、createMilestone(goalId, data)、updateMilestone(goalId, milestoneId, data)、deleteMilestone(goalId, milestoneId)、fetchReviewSummary、fetchTrends、fetchInsights。配套单元测试",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "ApiClient 新增 10+ 业务方法覆盖 Notes/Inbox/Review/Goals 所需 API",
+        "每个方法有对应单元测试（mock Dio）",
+        "flutter analyze 无错误",
+        "flutter test 通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "每个新增 API 方法的正常响应测试",
+        "401/403/500 错误处理测试",
+        "flutter analyze + flutter test 通过"
+      ],
+      "contract_refs": [
+        "GET /entries (createEntry 内部用 POST /entries)",
+        "GET /goals",
+        "GET /goals/{id}",
+        "GET /goals/{id}/milestones",
+        "POST /goals/{id}/milestones",
+        "PUT /goals/{id}/milestones/{mid}",
+        "DELETE /goals/{id}/milestones/{mid}",
+        "GET /review/weekly (fetchReviewSummary 内部映射)",
+        "GET /review/trend (fetchTrends 内部映射)",
+        "GET /review/insights"
+      ],
+      "files": [
+        "mobile/lib/services/api_client.dart",
+        "mobile/test/services/api_client_test.dart"
+      ]
+    },
+    {
+      "id": "F166",
+      "phase": 2,
+      "module": "flutter",
+      "name": "创建 Notes/Inbox/Review/Goals Provider",
+      "description": "创建 4 个 Provider：notes_provider（笔记列表+搜索）、inbox_provider（灵感列表+快速录入+转分类）、review_provider（回顾统计+趋势+洞察）、goals_provider（目标列表+里程碑 CRUD）。遵循现有 Riverpod State+Notifier 模式",
+      "verification": "F1",
+      "depends_on": ["F165"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "4 个 Provider 文件创建，遵循现有 State+Notifier+Provider 三件套模式",
+        "notes_provider: fetchNotes/searchNotes",
+        "inbox_provider: fetchInbox/createInboxItem/convertCategory",
+        "review_provider: loadSummary/loadTrends/loadInsights",
+        "goals_provider: fetchGoals/fetchGoalDetail/createMilestone/updateMilestone/deleteMilestone",
+        "flutter analyze 无错误，flutter test 通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "每个 Provider 的状态初始化测试",
+        "数据加载成功/失败状态转换测试",
+        "flutter analyze + flutter test 通过"
+      ],
+      "files": [
+        "mobile/lib/providers/notes_provider.dart",
+        "mobile/lib/providers/inbox_provider.dart",
+        "mobile/lib/providers/review_provider.dart",
+        "mobile/lib/providers/goals_provider.dart",
+        "mobile/test/providers/"
+      ]
+    },
+    {
+      "id": "F167",
+      "phase": 3,
+      "module": "flutter",
+      "name": "NotesPage 笔记列表页",
+      "description": "创建笔记列表页：展示笔记条目列表，支持搜索、分类标签筛选、点击跳转详情。遵循 ConsumerStatefulWidget 模式，三态渲染（loading/error/data）",
+      "verification": "F2",
+      "depends_on": ["F166"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "NotesPage 展示笔记列表，每项显示标题、摘要、标签、时间",
+        "搜索框支持按标题/内容搜索",
+        "点击笔记跳转 EntryDetailPage",
+        "空状态、加载态、错误态正确展示",
+        "flutter analyze 无错误"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "widget 测试：列表渲染、搜索交互、空状态展示",
+        "flutter analyze 通过"
+      ],
+      "files": [
+        "mobile/lib/pages/notes_page.dart"
+      ]
+    },
+    {
+      "id": "F168",
+      "phase": 3,
+      "module": "flutter",
+      "name": "InboxPage 灵感收集页",
+      "description": "创建灵感收集页：展示灵感条目列表，支持快速录入（底部输入框）、一键转分类（task/note/project）。遵循 ConsumerStatefulWidget 模式",
+      "verification": "F2",
+      "depends_on": ["F166"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "InboxPage 展示灵感列表，每项显示标题、时间",
+        "底部输入框支持快速录入灵感（category=inbox）",
+        "长按/滑动弹出转分类菜单（task/note/project）",
+        "空状态引导文案'随时记录灵感'",
+        "转分类操作有 loading 态，成功后列表自动刷新",
+        "转分类失败时展示 SnackBar 错误提示",
+        "flutter analyze 无错误"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "widget 测试：列表渲染、快速录入、转分类交互",
+        "flutter analyze 通过"
+      ],
+      "files": [
+        "mobile/lib/pages/inbox_page.dart"
+      ]
+    },
+    {
+      "id": "F169",
+      "phase": 3,
+      "module": "flutter",
+      "name": "ReviewPage 统计回顾页",
+      "description": "创建统计回顾页：展示本周/本月回顾统计（数据来源 GET /review/weekly）、趋势折线图（数据来源 GET /review/trend）、AI 洞察卡片（数据来源 GET /review/insights）。使用纯 Widget 实现简易趋势图，不引入第三方图表库",
+      "verification": "F2",
+      "depends_on": ["F166"],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "ReviewPage 展示回顾概览（条目数、任务完成率、学习天数）",
+        "趋势图展示最近 7 天/30 天活动",
+        "AI 洞察卡片展示关键洞察",
+        "周/月 Tab 切换",
+        "flutter analyze 无错误"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "widget 测试：概览数据展示、Tab 切换、洞察卡片渲染",
+        "空状态：无数据时展示引导文案",
+        "flutter analyze 通过"
+      ],
+      "files": [
+        "mobile/lib/pages/review_page.dart"
+      ]
+    },
+    {
+      "id": "F170",
+      "phase": 3,
+      "module": "flutter",
+      "name": "GoalsPage 目标管理页",
+      "description": "创建目标管理页：展示目标列表（含进度条）、点击展开里程碑管理（添加/完成/删除里程碑）。遵循 ConsumerStatefulWidget 模式",
+      "verification": "F2",
+      "depends_on": ["F166"],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "GoalsPage 展示目标列表，每项显示标题、进度条、截止日期",
+        "点击目标展开里程碑列表",
+        "支持添加里程碑（标题+日期）",
+        "支持标记里程碑完成/删除（删除前弹出确认对话框）",
+        "添加里程碑时空标题有输入校验提示",
+        "空状态引导文案",
+        "flutter analyze 无错误"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "widget 测试：目标列表渲染、展开里程碑、添加/完成/删除里程碑",
+        "flutter analyze 通过"
+      ],
+      "files": [
+        "mobile/lib/pages/goals_page.dart"
+      ]
+    },
+    {
+      "id": "F171",
+      "phase": 4,
+      "module": "flutter",
+      "name": "路由注册 + 底部导航扩展",
+      "description": "在 GoRouter 注册 4 个新页面路由，重新编排底部导航栏。采用 5 Tab 布局：Today | 日知 | Tasks | Notes | 更多（Review/Goals/Inbox/Chat）。更新 bottom_nav.dart",
+      "verification": "F2",
+      "depends_on": ["F167", "F168", "F169", "F170"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "GoRouter 新增 /notes、/inbox、/review、/goals 路由",
+        "底部导航扩展为 5 Tab + 更多菜单",
+        "更多菜单包含 Review、Goals、Inbox、Chat 入口",
+        "认证重定向对新路由生效",
+        "flutter analyze 无错误，flutter test 通过"
+      ],
+      "risk_tags": ["first_use"],
+      "test_tasks": [
+        "路由导航测试：各 Tab 点击跳转正确",
+        "更多菜单展开/收起测试",
+        "未认证访问新路由重定向到 /login",
+        "冷启动后直接访问 /notes、/review 等新路由正常加载",
+        "flutter analyze + flutter test 通过"
+      ],
+      "files": [
+        "mobile/lib/config/routes.dart",
+        "mobile/lib/widgets/bottom_nav.dart"
+      ]
+    },
+    {
+      "id": "S42",
+      "phase": 5,
+      "module": "shared",
+      "name": "全量测试 + flutter test + build + Docker smoke",
+      "description": "质量收口：pytest 全量、vitest 全量、flutter test 全量、npm run build、Docker smoke 验证",
+      "verification": "L3",
+      "depends_on": ["B117", "F163", "F164", "F171"],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "pytest 全量通过（0 failed）",
+        "vitest 全量通过（0 failed）",
+        "flutter test 全量通过（0 failed）",
+        "npm run build 成功",
+        "flutter build 无错误",
+        "Docker 容器启动 + 健康检查通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": []
+    }
+  ]
 }
