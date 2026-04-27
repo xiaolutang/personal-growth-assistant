@@ -4,6 +4,17 @@
 
 （无）
 
+### R043: 架构收敛
+
+- 状态: 已完成
+- 分支: `chore/R043-architecture-convergence`
+- 主题: sqlite 拆分 + 依赖注入 + N+1 优化 + 模板提取 + 前端 API 统一
+- 目录: `R043_architecture-convergence/`
+- 完成时间: 2026-04-28
+- 任务数: 10 (B177-B184, F177, S44)
+- 新增测试: 60 个单元测试覆盖全部重构代码
+- 验证: pytest 1336 + vitest 612 + build 通过
+
 ## 已完成需求包
 
 ### R042: Flutter 条目详情交互升级
