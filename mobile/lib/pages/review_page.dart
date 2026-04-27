@@ -197,7 +197,7 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
         ),
         _buildStatCard(
           '完成率',
-          '${(completionRate * 100).toStringAsFixed(0)}%',
+          '${completionRate.toStringAsFixed(0)}%',
           Icons.check_circle_outline,
           theme,
         ),

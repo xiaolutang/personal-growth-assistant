@@ -75,7 +75,8 @@ class _BottomNavShellState extends State<BottomNavShell> {
     final location = GoRouterState.of(context).uri.path;
     return location.startsWith('/review') ||
         location.startsWith('/goals') ||
-        location.startsWith('/inbox');
+        location.startsWith('/inbox') ||
+        location.startsWith('/explore');
   }
 
   @override

@@ -199,7 +199,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   Widget _buildGoalCard(Goal goal, GoalsState state, ThemeData theme) {
     final isSelected = state.selectedGoal?.id == goal.id;
     final milestones = isSelected ? state.milestones : <Milestone>[];
-    final progress = goal.progress ?? 0.0;
+    final progress = (goal.progress ?? 0.0) / 100.0; // backend returns percentage
 
     return Card(
       margin: const EdgeInsets.symmetric(
