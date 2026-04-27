@@ -133,6 +133,14 @@ class GoalsNotifier extends Notifier<GoalsState> {
     return const GoalsState();
   }
 
+  /// 收起选中的目标（清空 selectedGoal 和 milestones）
+  void deselectGoal() {
+    state = state.copyWith(
+      selectedGoal: null,
+      milestones: const [],
+    );
+  }
+
   /// 获取目标列表
   Future<void> fetchGoals({String? status}) async {
     state = state.copyWith(isLoading: true, error: null);
