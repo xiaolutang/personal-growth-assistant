@@ -9,6 +9,7 @@ from mcp.types import TextContent
 from app.models import Task, Category, TaskStatus, Priority
 from app.services import SyncService
 from app.infrastructure.storage.markdown import MarkdownStorage
+from app.routers import deps
 
 logger = logging.getLogger(__name__)
 
@@ -402,7 +403,7 @@ async def handle_get_review_summary(storage: SyncService, args: dict, user_id: s
     if not storage.sqlite:
         return [TextContent(type="text", text="SQLite 索引不可用，无法生成回顾")]
 
-    review_svc = ReviewService(sqlite_storage=storage.sqlite)
+    review_svc = deps.get_review_service()
 
     if period == "weekly":
         target = ReviewService.parse_date(target_date_str) if target_date_str else None
@@ -442,12 +443,7 @@ async def handle_get_review_summary(storage: SyncService, args: dict, user_id: s
 
 async def handle_get_knowledge_stats(storage: SyncService, args: dict, user_id: str) -> list[TextContent]:
     """处理 get_knowledge_stats — 获取知识概念统计"""
-    from app.services.knowledge_service import KnowledgeService
-
-    svc = KnowledgeService(
-        neo4j_client=storage.neo4j if storage.neo4j else None,
-        sqlite_storage=storage.sqlite if storage.sqlite else None,
-    )
+    svc = deps.get_knowledge_service()
 
     stats = await svc.get_knowledge_stats(user_id=user_id)
 
@@ -600,14 +596,9 @@ async def handle_batch_update_status(storage: SyncService, args: dict, user_id: 
 
 async def handle_get_learning_path(storage: SyncService, args: dict, user_id: str) -> list[TextContent]:
     """处理 get_learning_path — 获取概念的学习路径"""
-    from app.services.knowledge_service import KnowledgeService
-
     concept = args["concept"]
 
-    svc = KnowledgeService(
-        neo4j_client=storage.neo4j if storage.neo4j else None,
-        sqlite_storage=storage.sqlite if storage.sqlite else None,
-    )
+    svc = deps.get_knowledge_service()
 
     path = await svc.get_learning_path(concept, user_id=user_id)
 

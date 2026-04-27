@@ -87,8 +87,15 @@ def mock_graph():
 
 
 @pytest.fixture
-def chat_service(mock_graph, mock_entry_service):
-    return ChatService(graph=mock_graph, entry_service=mock_entry_service)
+def mock_intent_service():
+    svc = MagicMock()
+    svc.detect = AsyncMock()
+    return svc
+
+
+@pytest.fixture
+def chat_service(mock_graph, mock_entry_service, mock_intent_service):
+    return ChatService(graph=mock_graph, entry_service=mock_entry_service, intent_service=mock_intent_service)
 
 
 # ===========================================================================

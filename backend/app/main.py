@@ -141,7 +141,9 @@ async def lifespan(app: FastAPI):
         # 注入 Graph 到解析模块
         from app.routers import parse as parse_module
 
-        parse_module.set_graph(graph)
+        entry_svc = deps.get_entry_service()
+        intent_svc = deps.get_intent_service()
+        parse_module.set_graph(graph, entry_service=entry_svc, intent_service=intent_svc)
 
         logger.info("存储服务初始化成功")
     except Exception as e:

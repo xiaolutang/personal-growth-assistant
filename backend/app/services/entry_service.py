@@ -40,15 +40,18 @@ class EntryService:
 
     def __init__(self, storage: SyncService):
         self.storage = storage
+        self._goal_service = None  # 通过 set_goal_service 注入
+
+    def set_goal_service(self, goal_service):
+        """设置目标服务（由 deps.py 注入）"""
+        self._goal_service = goal_service
 
     async def _trigger_tag_auto_recalc(self, user_id: str, tags: list[str]):
         """异步触发 tag_auto 目标进度重算（fire-and-forget）"""
-        if not tags:
+        if not tags or self._goal_service is None:
             return
         try:
-            from app.routers import deps
-            goal_service = deps.get_goal_service()
-            await goal_service.recalculate_tag_auto_goals(user_id, tags)
+            await self._goal_service.recalculate_tag_auto_goals(user_id, tags)
         except Exception as e:
             logger.warning("tag_auto 目标进度重算失败: %s", e)
 

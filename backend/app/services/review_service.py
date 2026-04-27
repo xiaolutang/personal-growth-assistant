@@ -82,6 +82,7 @@ class ReviewService(MorningDigestMixin, InsightsMixin):
         self._llm_caller: Optional["APICaller"] = None
         self._goal_service = None  # 通过 set_goal_service 注入
         self._knowledge_service = None  # 通过 set_knowledge_service 注入
+        self._recommendation_service = None  # 通过 set_recommendation_service 注入
 
     def set_sqlite_storage(self, storage):
         """设置 SQLite 存储"""
@@ -98,6 +99,10 @@ class ReviewService(MorningDigestMixin, InsightsMixin):
     def set_knowledge_service(self, knowledge_service):
         """设置知识图谱服务（由 deps.py 注入）"""
         self._knowledge_service = knowledge_service
+
+    def set_recommendation_service(self, recommendation_service):
+        """设置知识推荐服务（由 deps.py 注入）"""
+        self._recommendation_service = recommendation_service
 
     @property
     def goal_service(self):
