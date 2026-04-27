@@ -49,6 +49,14 @@ class _BottomNavShellState extends State<BottomNavShell> {
                 this.context.go('/chat');
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.explore),
+              title: const Text('探索'),
+              onTap: () {
+                Navigator.pop(context);
+                this.context.go('/explore');
+              },
+            ),
           ],
         ),
       ),

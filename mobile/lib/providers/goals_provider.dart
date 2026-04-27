@@ -37,7 +37,7 @@ class Goal {
       status: json['status'] as String?,
       startDate: json['start_date'] as String?,
       endDate: json['end_date'] as String?,
-      progress: (json['progress'] as num?)?.toDouble(),
+      progress: (json['progress_percentage'] as num?)?.toDouble(),
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
     );
@@ -152,7 +152,7 @@ class GoalsNotifier extends Notifier<GoalsState> {
       );
 
       final data = response.data;
-      final items = (data?['items'] as List<dynamic>?)
+      final items = (data?['goals'] as List<dynamic>?)
               ?.map((e) => Goal.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [];
@@ -193,7 +193,7 @@ class GoalsNotifier extends Notifier<GoalsState> {
       );
 
       final data = response.data;
-      final items = (data?['items'] as List<dynamic>?)
+      final items = (data?['milestones'] as List<dynamic>?)
               ?.map((e) => Milestone.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [];

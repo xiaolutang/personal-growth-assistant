@@ -52,8 +52,8 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     final goalId = ref.read(goalsProvider).selectedGoal?.id;
     if (goalId == null) return;
 
-    final isCompleted = milestone.status == 'complete';
-    final newStatus = isCompleted ? 'in_progress' : 'complete';
+    final isCompleted = milestone.status == 'completed';
+    final newStatus = isCompleted ? 'pending' : 'completed';
     ref.read(goalsProvider.notifier).updateMilestone(
           goalId,
           milestone.id,
@@ -299,7 +299,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
 
     return Column(
       children: milestones.map((m) {
-        final isCompleted = m.status == 'complete';
+        final isCompleted = m.status == 'completed';
         return ListTile(
           dense: true,
           leading: IconButton(

@@ -172,24 +172,39 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
   // 概览卡片行
   // ----------------------------------------------------------
   Widget _buildOverview(Map<String, dynamic> summary, ThemeData theme) {
+    // 后端 WeeklyReport / MonthlyReport 结构：
+    //   task_stats: { total, completed, doing, wait_start, completion_rate }
+    //   note_stats: { total, recent_titles }
+    //   start_date / end_date / month / ai_summary
+    final taskStats =
+        summary['task_stats'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final noteStats =
+        summary['note_stats'] as Map<String, dynamic>? ?? <String, dynamic>{};
+
+    final totalEntries =
+        ((taskStats['total'] as num?)?.toInt() ?? 0) +
+            ((noteStats['total'] as num?)?.toInt() ?? 0);
+    final completionRate =
+        (taskStats['completion_rate'] as num?)?.toDouble() ?? 0.0;
+
     return Row(
       children: [
         _buildStatCard(
-          '条目数',
-          '${summary['total_entries'] ?? 0}',
+          '总条目',
+          '$totalEntries',
           Icons.article_outlined,
           theme,
         ),
         _buildStatCard(
           '完成率',
-          '${((summary['task_completion_rate'] ?? 0) * 100).toStringAsFixed(0)}%',
+          '${(completionRate * 100).toStringAsFixed(0)}%',
           Icons.check_circle_outline,
           theme,
         ),
         _buildStatCard(
-          '学习天数',
-          '${summary['learning_days'] ?? 0}',
-          Icons.calendar_today_outlined,
+          '已完成',
+          '${taskStats['completed'] ?? 0}',
+          Icons.task_alt_outlined,
           theme,
         ),
       ],
@@ -221,17 +236,24 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
   // 趋势折线图
   // ----------------------------------------------------------
   Widget _buildTrendChart(Map<String, dynamic> trendsData, ThemeData theme) {
-    final points = trendsData['points'] as List<dynamic>? ?? [];
-    if (points.isEmpty) {
+    // 后端 TrendResponse 结构：
+    //   periods: [ { date, total, completed, completion_rate, notes_count, task_count, inbox_count } ]
+    final periods = trendsData['periods'] as List<dynamic>? ?? [];
+    if (periods.isEmpty) {
       return _buildEmptyHint('暂无趋势数据', theme);
     }
 
     final values = <double>[];
     final labels = <String>[];
-    for (final p in points) {
+    for (final p in periods) {
       final map = p as Map<String, dynamic>;
-      values.add((map['count'] as num?)?.toDouble() ?? 0.0);
-      labels.add('${map['label'] ?? ''}');
+      values.add((map['total'] as num?)?.toDouble() ?? 0.0);
+      // date 格式: "2026-04-27" 或 "2026-W17"，取最后部分作为标签
+      final rawDate = '${map['date'] ?? ''}';
+      final shortLabel = rawDate.length >= 10
+          ? rawDate.substring(5) // "04-27"
+          : rawDate;
+      labels.add(shortLabel);
     }
 
     return Card(
@@ -258,9 +280,25 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
   // AI 洞察卡片
   // ----------------------------------------------------------
   Widget _buildInsights(Map<String, dynamic> insightsData, ThemeData theme) {
-    final insightsList =
-        insightsData['insights'] as List<dynamic>? ?? [];
-    if (insightsList.isEmpty) {
+    // 后端 InsightsResponse 结构：
+    //   insights: {
+    //     behavior_patterns: [ { pattern, frequency, trend } ],
+    //     growth_suggestions: [ { suggestion, priority, related_area } ],
+    //     capability_changes: [ { capability, previous_level, current_level, change } ],
+    //   }
+    final deepInsights =
+        insightsData['insights'] as Map<String, dynamic>? ?? <String, dynamic>{};
+
+    final behaviorPatterns =
+        deepInsights['behavior_patterns'] as List<dynamic>? ?? [];
+    final growthSuggestions =
+        deepInsights['growth_suggestions'] as List<dynamic>? ?? [];
+    final capabilityChanges =
+        deepInsights['capability_changes'] as List<dynamic>? ?? [];
+
+    if (behaviorPatterns.isEmpty &&
+        growthSuggestions.isEmpty &&
+        capabilityChanges.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Text(
@@ -275,25 +313,78 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionTitle('AI 洞察', theme),
-        ...insightsList.map(
-          (insight) => Card(
-            margin: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, vertical: AppSpacing.xs,),
-            child: ListTile(
-              leading: const Icon(Icons.lightbulb_outline,
-                  color: Colors.amber,),
-              title: Text(
-                insight['title'] ?? '',
-                style: theme.textTheme.bodyMedium,
+        // 行为模式
+        ...behaviorPatterns.map(
+          (item) {
+            final map = item as Map<String, dynamic>;
+            final trendEmoji = switch (map['trend']) {
+              'improving' => '↑',
+              'declining' => '↓',
+              _ => '→',
+            };
+            return Card(
+              margin: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md, vertical: AppSpacing.xs,),
+              child: ListTile(
+                leading: const Icon(Icons.psychology_outlined,
+                    color: Colors.deepPurple,),
+                title: Text(
+                  '${map['pattern'] ?? ''}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                subtitle: Text(
+                  '频率: ${map['frequency'] ?? 0}  $trendEmoji',
+                  style: theme.textTheme.bodySmall,
+                ),
               ),
-              subtitle: insight['description'] != null
-                  ? Text(
-                      insight['description'],
-                      style: theme.textTheme.bodySmall,
-                    )
-                  : null,
-            ),
-          ),
+            );
+          },
+        ),
+        // 成长建议
+        ...growthSuggestions.map(
+          (item) {
+            final map = item as Map<String, dynamic>;
+            return Card(
+              margin: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md, vertical: AppSpacing.xs,),
+              child: ListTile(
+                leading: const Icon(Icons.lightbulb_outline,
+                    color: Colors.amber,),
+                title: Text(
+                  '${map['suggestion'] ?? ''}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                subtitle: Text(
+                  '优先级: ${map['priority'] ?? 'medium'}  领域: ${map['related_area'] ?? ''}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            );
+          },
+        ),
+        // 能力变化
+        ...capabilityChanges.map(
+          (item) {
+            final map = item as Map<String, dynamic>;
+            final change = (map['change'] as num?)?.toDouble() ?? 0.0;
+            final arrow = change >= 0 ? '+' : '';
+            return Card(
+              margin: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md, vertical: AppSpacing.xs,),
+              child: ListTile(
+                leading: const Icon(Icons.trending_up,
+                    color: Colors.green,),
+                title: Text(
+                  '${map['capability'] ?? ''}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                subtitle: Text(
+                  '$arrow${change.toStringAsFixed(2)} (${(map['previous_level'] as num?)?.toDouble().toStringAsFixed(2) ?? '0.00'} → ${(map['current_level'] as num?)?.toDouble().toStringAsFixed(2) ?? '0.00'})',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            );
+          },
         ),
       ],
     );

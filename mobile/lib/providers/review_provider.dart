@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/auth_provider.dart';
@@ -86,14 +87,26 @@ class ReviewNotifier extends Notifier<ReviewState> {
   }
 
   /// 加载趋势数据
+  /// weekly tab → period=daily, days=7（近 7 天每日趋势）
+  /// monthly tab → period=weekly, weeks=4（近 4 周每周趋势）
   Future<void> loadTrends([String? period]) async {
     final p = period ?? state.selectedPeriod;
 
     try {
       final apiClient = ref.read(apiClientProvider);
-      final response = await apiClient.fetchTrends<Map<String, dynamic>>(
-        period: p == 'daily' ? 'daily' : 'weekly',
-      );
+      final Response<Map<String, dynamic>> response;
+
+      if (p == 'monthly') {
+        response = await apiClient.fetchTrends<Map<String, dynamic>>(
+          period: 'weekly',
+          weeks: 4,
+        );
+      } else {
+        response = await apiClient.fetchTrends<Map<String, dynamic>>(
+          period: 'daily',
+          days: 7,
+        );
+      }
 
       state = state.copyWith(trends: response.data);
     } catch (e) {
