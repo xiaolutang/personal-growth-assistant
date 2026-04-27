@@ -36,12 +36,12 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
   }
 
   void _loadEntry() {
-    ref.read(entryDetailProvider.notifier).fetchEntry(widget.entryId);
+    ref.read(entryDetailProvider(widget.entryId).notifier).fetchEntry();
   }
 
   @override
   Widget build(BuildContext context) {
-    final detailState = ref.watch(entryDetailProvider);
+    final detailState = ref.watch(entryDetailProvider(widget.entryId));
     final theme = Theme.of(context);
 
     return Scaffold(

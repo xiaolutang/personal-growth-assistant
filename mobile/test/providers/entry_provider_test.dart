@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_assistant/models/entry.dart';
+import 'package:growth_assistant/providers/auth_provider.dart';
 import 'package:growth_assistant/providers/entry_provider.dart';
+import 'package:growth_assistant/services/api_client.dart';
 
 void main() {
   group('EntryListState', () {
@@ -91,10 +93,14 @@ void main() {
 
   group('EntryDetailNotifier', () {
     test('initial build returns default state', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [
+          apiClientProvider.overrideWithValue(_FakeApiClient()),
+        ],
+      );
       addTearDown(container.dispose);
 
-      final state = container.read(entryDetailProvider);
+      final state = container.read(entryDetailProvider('test-entry'));
 
       expect(state.entry, isNull);
       expect(state.isLoading, false);
@@ -111,4 +117,9 @@ Entry _makeEntry(String id, {String? status, String category = 'task'}) {
     category: category,
     status: status,
   );
+}
+
+/// Minimal fake ApiClient for tests that don't make API calls
+class _FakeApiClient extends ApiClient {
+  _FakeApiClient() : super(baseUrl: 'http://fake.test');
 }
