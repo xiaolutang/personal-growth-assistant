@@ -8,17 +8,20 @@
 - priority 值非法时忽略过滤
 - 不同用户数据隔离
 """
+import uuid
+
 import pytest
 from httpx import AsyncClient
 
 
 async def _create_entries_with_priority(client: AsyncClient):
-    """创建不同优先级的测试条目"""
+    """创建不同优先级的测试条目（使用随机 ID 避免 flaky）"""
+    prefix = uuid.uuid4().hex[:8]
     entries = [
-        ("high-task", "高优先级任务", "task", "high"),
-        ("medium-task", "中优先级任务", "task", "medium"),
-        ("low-task", "低优先级任务", "task", "low"),
-        ("high-note", "高优先级笔记", "note", "high"),
+        (f"{prefix}-high-task", "高优先级任务", "task", "high"),
+        (f"{prefix}-medium-task", "中优先级任务", "task", "medium"),
+        (f"{prefix}-low-task", "低优先级任务", "task", "low"),
+        (f"{prefix}-high-note", "高优先级笔记", "note", "high"),
     ]
     for eid, title, category, priority in entries:
         await client.post("/entries", json={

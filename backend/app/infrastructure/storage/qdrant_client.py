@@ -56,7 +56,8 @@ class QdrantClient:
         try:
             await self._client.get_collections()
             return True
-        except Exception:
+        except (OSError, ConnectionError, UnexpectedResponse) as e:
+            logger.debug(f"Qdrant 健康检查失败: {e}")
             return False
 
     async def connect(self):
@@ -77,7 +78,7 @@ class QdrantClient:
                 if new_client:
                     try:
                         await new_client.close()
-                    except Exception:
+                    except (OSError, ConnectionError):
                         pass
                 logger.warning(f"Qdrant 连接失败: {e}")
                 self._client = None

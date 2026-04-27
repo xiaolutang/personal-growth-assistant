@@ -415,9 +415,9 @@ class KnowledgeService:
                             category=node.get("category"),
                             description=node.get("description"),
                         ))
-            except Exception:
+            except (ConnectionError, OSError, ValueError) as e:
                 # Neo4j 查询失败，继续使用 SQLite 数据
-                pass
+                logger.warning(f"Neo4j 学习路径查询失败，降级到 SQLite: {e}")
 
         # 2. 从 SQLite 搜索相关内容
         if self._sqlite:
@@ -491,7 +491,8 @@ class KnowledgeService:
             matching_tags = self._sqlite.search_tags_by_keyword(
                 keyword=concept, limit=10, user_id=user_id
             )
-        except Exception:
+        except (ConnectionError, OSError, ValueError) as e:
+            logger.warning(f"SQLite 标签搜索失败，跳过推荐: {e}")
             return response
 
         seen = set()
@@ -744,7 +745,8 @@ class KnowledgeService:
         """从 Neo4j 获取时间线"""
         try:
             entries = await self._neo4j.get_entries_by_concept(concept, user_id=user_id)
-        except Exception:
+        except (ConnectionError, OSError, ValueError) as e:
+            logger.warning(f"Neo4j 时间线查询失败，降级为空列表: {e}")
             entries = []
 
         return self._build_timeline(concept, entries, days)
@@ -1001,15 +1003,16 @@ class KnowledgeService:
                 for cs in all_concepts_stats
                 if cs.get("name")
             }
-        except Exception:
-            pass
+        except (ConnectionError, OSError, ValueError) as e:
+            logger.warning(f"Neo4j 概念统计查询失败，跳过统计聚合: {e}")
 
         for concept in seed_concepts:
             try:
                 graph = await self._neo4j.get_knowledge_graph(
                     concept, depth=1, user_id=user_id
                 )
-            except Exception:
+            except (ConnectionError, OSError, ValueError) as e:
+                logger.warning(f"Neo4j 子图查询失败，跳过概念 '{concept}': {e}")
                 continue
 
             # 中心节点
