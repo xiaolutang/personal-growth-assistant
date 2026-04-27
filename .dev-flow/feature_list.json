@@ -601,7 +601,7 @@
         "B116",
         "F162"
       ],
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "acceptance_criteria": [
         "uv run pytest tests/ 全量通过",
@@ -613,7 +613,8 @@
       "risk_tags": [
         "startup"
       ],
-      "smoke_required": true
+      "smoke_required": true,
+      "summary": "质量收口通过：pytest 1276 + vitest 612 + build + Docker health OK"
     }
   ]
 }
