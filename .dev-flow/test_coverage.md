@@ -1,5 +1,19 @@
 # 测试覆盖清单
 
+## R041: Flutter 页面补齐 + 工程健康
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| Priority 后端 | B117 | unit | priority 筛选/排序/默认排序 | completed | — |
+| Inbox API 层 | F163 | unit+integration | fetchInbox/createInboxItem/convertCategory/error | completed | — |
+| Notes 页面 | F164 | widget+provider | 空态/错误/加载/列表/搜索/预览 | completed | — |
+| Inbox 页面 | F167 | widget+provider | 空态/错误/加载/列表/底部输入 | completed | — |
+| Review 页面 | F168 | widget+provider | 加载/错误/周期切换/概览卡片/趋势图 | completed | — |
+| Goals 页面 | F170 | widget+provider | 空态/错误/加载/列表/进度条/里程碑 | completed | — |
+| 路由+导航 | F171 | widget | 5 Tab/更多菜单/5 个菜单项/子路由状态 | completed | — |
+| Provider 集成 | F163-F170 | integration | GoalsNotifier CRUD/ReviewNotifier loadAll/NotesNotifier/InboxNotifier + mock HTTP | completed | — |
+| 质量收口 | S42 | integration+smoke | pytest 1375/vitest 612/flutter test 310/build/Docker | completed | — |
+
 ## R039: Flutter Explore + 工程维护
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |

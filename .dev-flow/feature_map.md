@@ -1,8 +1,8 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：R038 工程健康收口 + 小功能补齐
-> 最后更新：2026-04-26
+> 活跃需求包：R041 Flutter 页面补齐 + 工程健康
+> 最后更新：2026-04-27
 
 ## 活跃需求包
 
@@ -10,7 +10,9 @@
 |--------|------|--------|
 | R036 残留问题全面收口 | completed | 10 (全部 completed, pytest 1133, vitest 475) |
 | R037 全面补齐与功能增强 | completed | 18 completed, 4 cancelled (pytest 1299, vitest 597) |
-| R038 工程健康收口 + 小功能补齐 | in_progress | 8 tasks |
+| R038 工程健康收口 + 小功能补齐 | completed | 8 tasks (pytest 1299, vitest 597) |
+| R039 Flutter Explore + 工程维护 | completed | 6 tasks (flutter test 221) |
+| R041 Flutter 页面补齐 + 工程健康 | completed | 11 tasks (pytest 1375, vitest 612, flutter test 310) |
 
 ## 归档需求包
 
@@ -51,6 +53,6 @@
 
 | 项目 | 测试数 | 状态 |
 |------|--------|------|
-| 后端测试 | 1299 passed | 全绿 |
-| 前端测试 | 597 passed | 全绿 |
-| E2E 测试 | 113 passed | 全绿 |
+| 后端测试 | 1375 passed | 全绿 |
+| 前端测试 | 612 passed | 全绿 |
+| Flutter 测试 | 310 passed | 全绿 |

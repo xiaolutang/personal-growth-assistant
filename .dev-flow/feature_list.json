@@ -436,7 +436,7 @@
       "started_at": "2026-04-27",
       "completed_at": "2026-04-27",
       "evidence_file": "evidence/S42.md",
-      "summary": "pytest 1375 + vitest 612 + flutter test 221 + build + Docker smoke 全部通过",
+      "summary": "pytest 1375 passed + vitest 612 passed + flutter test 310 passed + build success + Docker smoke passed",
       "acceptance_criteria": [
         "pytest 全量通过（0 failed）",
         "vitest 全量通过（0 failed）",

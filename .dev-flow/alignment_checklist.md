@@ -1,5 +1,41 @@
 # 对齐清单
 
+## R041: Flutter 页面补齐 + 工程健康
+
+### 契约对齐
+
+- [x] F163: CONTRACT-INBOX — 消费已有 GET/POST /entries (type=inbox)
+- [x] F164: CONTRACT-NOTES — 消费已有 GET /entries (type=note)
+- [x] F167: CONTRACT-REVIEW — 消费已有 GET /review/summary + /review/insights
+- [x] F168: CONTRACT-GOALS — 消费已有 GET /goals + /goals/{id}/milestones
+- [x] F171: CONTRACT-ROUTES — GoRouter 新增 /notes, /inbox, /review, /goals 路由
+
+### 依赖对齐
+
+- [x] B117 无外部依赖（后端 priority 筛选/排序）
+- [x] F163 depends_on B117 ✓（后端 API 先就绪）
+- [x] F164 无外部依赖（纯 Flutter 页面）
+- [x] F167 depends_on F163 ✓（Inbox API 层先就绪）
+- [x] F168 depends_on F167 ✓（Review API 层先就绪）
+- [x] F170 depends_on F168 ✓（Goals API 层先就绪）
+- [x] F171 depends_on F163 ✓ + F164 ✓ + F167 ✓ + F170 ✓（路由注册最后）
+- [x] S42 depends_on 全部任务 ✓
+
+### 架构对齐
+
+- [x] 所有 Flutter Provider 使用 Riverpod Notifier 模式
+- [x] 所有页面使用 ConsumerStatefulWidget
+- [x] 底部导航 5 Tab + 更多菜单
+- [x] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫、MVVM 分层
+
+### 执行顺序
+
+- [x] Phase 1: B117（后端）
+- [x] Phase 2: F163 → F164（API 层 + 页面）
+- [x] Phase 3: F167 → F168 → F170（页面链式）
+- [x] Phase 4: F171（路由注册）
+- [x] Phase 5: S42（质量收口）
+
 ## R039: Flutter Explore + 工程维护
 
 ### 契约对齐
