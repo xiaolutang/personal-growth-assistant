@@ -719,4 +719,116 @@ class _FakeApiClient implements ApiClient {
       requestOptions: RequestOptions(path: path),
     );
   }
+
+  // ---- F165: 新增 API 方法的 mock 实现 ----
+
+  @override
+  Future<Response<T>> createEntry<T>({required Map<String, dynamic> data}) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: '/entries'),
+    );
+  }
+
+  @override
+  Future<Response<T>> fetchGoals<T>({
+    String? status,
+    int? limit,
+  }) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: '/goals'),
+    );
+  }
+
+  @override
+  Future<Response<T>> fetchGoal<T>({required String id}) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: '/goals/$id'),
+    );
+  }
+
+  @override
+  Future<Response<T>> fetchMilestones<T>({required String goalId}) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: '/goals/$goalId/milestones'),
+    );
+  }
+
+  @override
+  Future<Response<T>> createMilestone<T>({
+    required String goalId,
+    required Map<String, dynamic> data,
+  }) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: '/goals/$goalId/milestones'),
+    );
+  }
+
+  @override
+  Future<Response<T>> updateMilestone<T>({
+    required String goalId,
+    required String milestoneId,
+    required Map<String, dynamic> data,
+  }) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: '/goals/$goalId/milestones/$milestoneId'),
+    );
+  }
+
+  @override
+  Future<Response<T>> deleteMilestone<T>({
+    required String goalId,
+    required String milestoneId,
+  }) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: '/goals/$goalId/milestones/$milestoneId'),
+    );
+  }
+
+  @override
+  Future<Response<T>> fetchReviewSummary<T>({
+    String? period,
+    String? date,
+  }) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: '/review/${period ?? 'weekly'}'),
+    );
+  }
+
+  @override
+  Future<Response<T>> fetchTrends<T>({
+    String? period,
+    int? days,
+    int? weeks,
+  }) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: '/review/trend'),
+    );
+  }
+
+  @override
+  Future<Response<T>> fetchInsights<T>({required String period}) async {
+    return Response<T>(
+      data: null,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: '/review/insights'),
+    );
+  }
 }
