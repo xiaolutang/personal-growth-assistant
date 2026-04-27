@@ -137,81 +137,92 @@ class SQLiteGoalsMixin:
             ).fetchone()
             return row["cnt"]
 
-    def count_entries_by_tags(self, tags: list[str], user_id: str) -> int:
-        """统计匹配指定标签的条目数量"""
+    def count_entries_by_tags(
+        self,
+        tags: list[str],
+        user_id: str,
+        start_date: str | None = None,
+        end_date: str | None = None,
+    ) -> int:
+        """统计匹配指定标签的条目数量。
+
+        当 start_date 和 end_date 均提供时，限定在日期范围内统计。
+
+        Args:
+            tags: 标签名列表，为空时直接返回 0
+            user_id: 用户 ID
+            start_date: 可选，起始日期 (YYYY-MM-DD)，包含当天
+            end_date: 可选，结束日期 (YYYY-MM-DD)，created_at < end_date
+        """
         if not tags:
             return 0
         with self._conn() as conn:
             placeholders = ",".join("?" * len(tags))
-            row = conn.execute(f"""
-                SELECT COUNT(DISTINCT e.id) as cnt
-                FROM entries e
-                JOIN entry_tags et ON e.id = et.entry_id
-                JOIN tags t ON et.tag_id = t.id
-                WHERE t.name IN ({placeholders}) AND e.user_id = ?
-            """, (*tags, user_id)).fetchone()
+            conditions = f"t.name IN ({placeholders}) AND e.user_id = ?"
+            params: list = [*tags, user_id]
+            if start_date and end_date:
+                conditions += " AND e.created_at >= ? AND e.created_at < ?"
+                params.extend([start_date, end_date])
+            row = conn.execute(
+                f"SELECT COUNT(DISTINCT e.id) as cnt FROM entries e "
+                f"JOIN entry_tags et ON e.id = et.entry_id "
+                f"JOIN tags t ON et.tag_id = t.id "
+                f"WHERE {conditions}",
+                params,
+            ).fetchone()
             return row["cnt"]
 
     def count_entries_by_tags_in_range(
         self, tags: list[str], user_id: str, start_date: str, end_date: str
     ) -> int:
-        """统计指定时间范围内匹配标签的条目数量"""
-        if not tags:
-            return 0
-        with self._conn() as conn:
-            placeholders = ",".join("?" * len(tags))
-            row = conn.execute(f"""
-                SELECT COUNT(DISTINCT e.id) as cnt
-                FROM entries e
-                JOIN entry_tags et ON e.id = et.entry_id
-                JOIN tags t ON et.tag_id = t.id
-                WHERE t.name IN ({placeholders})
-                  AND e.user_id = ?
-                  AND e.created_at >= ?
-                  AND e.created_at < ?
-            """, (*tags, user_id, start_date, end_date)).fetchone()
-            return row["cnt"]
+        """统计指定时间范围内匹配标签的条目数量（兼容别名）"""
+        return self.count_entries_by_tags(tags, user_id, start_date=start_date, end_date=end_date)
 
     def list_entries_by_tags(
-        self, tags: list[str], user_id: str, limit: int = 50
+        self,
+        tags: list[str],
+        user_id: str,
+        limit: int = 50,
+        start_date: str | None = None,
+        end_date: str | None = None,
     ) -> list[dict[str, Any]]:
-        """获取匹配指定标签的条目列表（用于 tag_auto 目标展示）"""
+        """获取匹配指定标签的条目列表（用于 tag_auto 目标展示）。
+
+        当 start_date 和 end_date 均提供时，限定在日期范围内查询。
+
+        Args:
+            tags: 标签名列表，为空时直接返回空列表
+            user_id: 用户 ID
+            limit: 返回条目上限
+            start_date: 可选，起始日期 (YYYY-MM-DD)，包含当天
+            end_date: 可选，结束日期 (YYYY-MM-DD)，created_at < end_date
+        """
         if not tags:
             return []
         with self._conn() as conn:
             placeholders = ",".join("?" * len(tags))
-            rows = conn.execute(f"""
-                SELECT DISTINCT e.id, e.title, e.status, e.type as category, e.created_at
-                FROM entries e
-                JOIN entry_tags et ON e.id = et.entry_id
-                JOIN tags t ON et.tag_id = t.id
-                WHERE t.name IN ({placeholders}) AND e.user_id = ?
-                ORDER BY e.created_at DESC
-                LIMIT ?
-            """, (*tags, user_id, limit)).fetchall()
+            conditions = f"t.name IN ({placeholders}) AND e.user_id = ?"
+            params: list = [*tags, user_id]
+            if start_date and end_date:
+                conditions += " AND e.created_at >= ? AND e.created_at < ?"
+                params.extend([start_date, end_date])
+            rows = conn.execute(
+                f"SELECT DISTINCT e.id, e.title, e.status, e.type as category, e.created_at "
+                f"FROM entries e "
+                f"JOIN entry_tags et ON e.id = et.entry_id "
+                f"JOIN tags t ON et.tag_id = t.id "
+                f"WHERE {conditions} "
+                f"ORDER BY e.created_at DESC "
+                f"LIMIT ?",
+                (*params, limit),
+            ).fetchall()
             return [dict(r) for r in rows]
 
     def list_entries_by_tags_in_range(
         self, tags: list[str], user_id: str, start_date: str, end_date: str, limit: int = 50
     ) -> list[dict[str, Any]]:
-        """获取指定时间范围内匹配标签的条目列表"""
-        if not tags:
-            return []
-        with self._conn() as conn:
-            placeholders = ",".join("?" * len(tags))
-            rows = conn.execute(f"""
-                SELECT DISTINCT e.id, e.title, e.status, e.type as category, e.created_at
-                FROM entries e
-                JOIN entry_tags et ON e.id = et.entry_id
-                JOIN tags t ON et.tag_id = t.id
-                WHERE t.name IN ({placeholders})
-                  AND e.user_id = ?
-                  AND e.created_at >= ?
-                  AND e.created_at < ?
-                ORDER BY e.created_at DESC
-                LIMIT ?
-            """, (*tags, user_id, start_date, end_date, limit)).fetchall()
-            return [dict(r) for r in rows]
+        """获取指定时间范围内匹配标签的条目列表（兼容别名）"""
+        return self.list_entries_by_tags(tags, user_id, limit=limit, start_date=start_date, end_date=end_date)
 
     def create_goal_entry(
         self, goal_id: str, entry_id: str, user_id: str
