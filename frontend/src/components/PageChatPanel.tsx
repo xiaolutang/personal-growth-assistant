@@ -81,8 +81,7 @@ export function PageChatPanel({
       setHistoryLoaded(true);
     });
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageContext?.page]);
+  }, [pageContext?.page, greetingMessage, maxMessages]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);

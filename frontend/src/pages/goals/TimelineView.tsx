@@ -35,7 +35,8 @@ export function TimelineView({ goals }: TimelineViewProps) {
     );
     setMilestonesMap(map);
     setLoading(false);
-  }, [goalsIdKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- goalsIdKey 是 goals id 的稳定序列化，避免 goals 引用变化导致无限重取
+  }, [goalsIdKey]);
 
   useEffect(() => {
     if (goals.length === 0) {

@@ -144,7 +144,8 @@ export function useTaskFilters(): UseTaskFiltersReturn {
     if (state.tasks.length === 0 && !state.serviceUnavailable) {
       state.fetchEntries(TASK_QUERY_PARAMS);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 挂载时一次性检查 store 快照，无需响应 reactive 变化
+  }, []);
 
   // 当快捷时间选项改变时，更新日期范围
   useEffect(() => {

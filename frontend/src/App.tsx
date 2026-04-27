@@ -157,8 +157,7 @@ function App() {
   // 初始化用户状态（从 localStorage 恢复登录态）
   useEffect(() => {
     loadFromStorage();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadFromStorage]);
 
   // 认证校验完成且有效后才加载数据和同步
   const isLoading = useUserStore((state) => state.isLoading);

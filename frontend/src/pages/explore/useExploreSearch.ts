@@ -93,7 +93,7 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
   useEffect(() => {
     const t = searchParams.get("type") ?? "";
     if (t !== activeTab) setActiveTab(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅在 URL 参数变化时同步覆盖本地 state，故意不依赖 activeTab 以避免循环
   }, [searchParams]);
 
   // 搜索过滤器
