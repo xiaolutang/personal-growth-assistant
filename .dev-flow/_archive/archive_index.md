@@ -6,6 +6,17 @@
 
 ## 已完成需求包
 
+### R040: Web 功能增强 + 工程清理
+
+- 状态: 已完成
+- 分支: `feat/R040-web-enhancement`
+- 主题: 任务优先级筛选 + 目标进度可视化 + 里程碑系统 + 知识推荐引擎 + AI 上下文持久化 + 移动端体验 + 质量收口
+- 目录: `R040_web-enhancement-cleanup/`
+- 完成时间: 2026-04-27
+- 任务数: 15 (completed: 13, cancelled: 1, blocked: 1 → S40 cancelled)
+- Code Review: 13 任务逐个 Agent review + 16 项 finding 全部修复
+- 验证: pytest 1395(1 flaky) + vitest 612 + build + Docker smoke
+
 ### R039: Flutter Explore + 工程维护
 
 - 状态: 已完成
