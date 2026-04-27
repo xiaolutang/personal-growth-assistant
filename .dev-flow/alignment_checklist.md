@@ -24,10 +24,16 @@
 
 ### 架构对齐
 
-- [ ] F173: createLink 方法接收 target_id + relation_type，relation_type 默认 'related'
+- [ ] F173: entryDetailProvider 改为 family provider（接受 entryId），按 entryId 隔离状态
+- [ ] F173: 嵌套详情导航（详情A→关联详情B→返回详情A）状态不串页
+- [ ] F173: createLink 方法接收 target_id + relation_type，处理 400 自关联/409 重复关联
 - [ ] F173: searchEntriesForLink 搜索状态由 Provider 管理，Widget 不直接调用 ApiClient.searchEntries
-- [ ] F173: 编辑保存后通过 ref.invalidate 刷新 EntryListProvider（列表刷新 owner）
+- [ ] F173: updateEntry 保存后因 PUT 返回 SuccessResponse，需额外 GET 刷新 entry + invalidate EntryListProvider
 - [ ] F174: 保存成功后 invalidate EntryListProvider，确保返回列表时数据一致
+- [ ] F175: mastery 字符串等级映射（beginner/intermediate/advanced/null）→ 前端 UI 标签
+- [ ] F175: AI 摘要空内容（summary=null）时禁用按钮 + 提示；缓存（cached=true）直接展示
+- [ ] F176: 自关联（400）/ 重复关联（409）错误提示文案
+- [ ] F176: 关联条目点击跳转使用 family provider，状态隔离
 - [ ] 所有页面使用 ConsumerStatefulWidget + Riverpod 模式
 - [ ] 所有 List 类型状态通过 copyWith 替换，不直接修改
 - [ ] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫、MVVM 分层（Widget→Provider→ApiClient）

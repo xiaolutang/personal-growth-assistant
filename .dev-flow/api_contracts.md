@@ -19,7 +19,7 @@
 
 #### CONTRACT-ENTRY-UPDATE: PUT /entries/{id}
 
-已有端点，F174 编辑保存消费。
+已有端点，F174 编辑保存消费。**注意：返回 SuccessResponse 而非完整条目**。
 
 请求体（可更新字段）：
 ```json
@@ -32,7 +32,8 @@
 }
 ```
 
-响应（200）：更新后的完整条目对象
+响应（200）：`SuccessResponse` — `{"success": true, "message": "..."}`
+- 保存后需额外 GET /entries/{id} 刷新 entry 数据
 
 #### CONTRACT-ENTRY-BACKLINKS: GET /entries/{id}/backlinks
 
@@ -42,7 +43,7 @@
 - `GET /entries/{id}/backlinks`
 - 需认证
 
-响应（200）：`BacklinksResponse` — 反向引用条目列表
+响应（200）：`BacklinksResponse` — `{"backlinks": [{"id": "...", "title": "...", "category": "..."}]}`
 
 #### CONTRACT-ENTRY-LINKS: GET /entries/{id}/links
 
@@ -51,8 +52,9 @@
 请求：
 - `GET /entries/{id}/links?direction=both`
 - `direction` 参数：`in`（入链）/ `out`（出链）/ `both`（默认）
+- 非法 direction 值：返回 422
 
-响应（200）：关联条目列表
+响应（200）：关联条目列表（EntryLinkItem[]），每项含 id/target_id/target_entry(id,title,category)/relation_type
 
 #### CONTRACT-ENTRY-LINK-CREATE: POST /entries/{id}/links
 
@@ -72,7 +74,10 @@
   - `derived_from`：派生自
   - `references`：引用
 
-响应（200）：创建成功
+响应（201）：`EntryLinkResponse` — `{"id": "...", "source_id": "...", "target_id": "...", "relation_type": "...", "created_at": "...", "target_entry": {...}}`
+- 400：自关联（target_id == source_id）
+- 409：重复关联（已存在相同关联）
+- 404：条目不存在
 
 #### CONTRACT-ENTRY-LINK-DELETE: DELETE /entries/{id}/links/{link_id}
 
@@ -82,7 +87,8 @@
 - `DELETE /entries/{id}/links/{link_id}`
 - 需认证
 
-响应（200）：删除成功
+响应（204）：删除成功（无 body）
+- 404：关联不存在
 
 #### CONTRACT-ENTRY-KNOWLEDGE: GET /entries/{id}/knowledge-context
 
@@ -92,7 +98,15 @@
 - `GET /entries/{id}/knowledge-context`
 - 需认证
 
-响应（200）：`KnowledgeContextResponse` — 相关概念列表（概念名 + 掌握度）
+响应（200）：`KnowledgeContextResponse`：
+```json
+{
+  "nodes": [{"id": "...", "name": "...", "category": "...", "mastery": "beginner|intermediate|advanced|null", "entry_count": 0}],
+  "edges": [{"source": "...", "target": "...", "relationship": "RELATED_TO"}],
+  "center_concepts": ["..."]
+}
+```
+- `mastery` 是字符串等级（非百分比），前端映射：beginner→入门、intermediate→进阶、advanced→精通、null→未评估
 
 #### CONTRACT-ENTRY-AI-SUMMARY: POST /entries/{id}/ai-summary
 
@@ -102,7 +116,16 @@
 - `POST /entries/{id}/ai-summary`
 - 需认证
 
-响应（200）：AI 生成的摘要文本（200字以内）
+响应（200）：AI 摘要对象（非纯文本）
+```json
+{
+  "summary": "生成的摘要文本（200字以内）或 null（空内容）",
+  "generated_at": "ISO时间戳或 null",
+  "cached": true/false
+}
+```
+- 空内容时 `summary=null, generated_at=null, cached=false`
+- 缓存命中时 `cached=true`
 错误（503）：AI 服务不可用
 
 #### CONTRACT-ENTRY-SEARCH: GET /entries/search/query

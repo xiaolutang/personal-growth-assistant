@@ -4,11 +4,11 @@
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
 |--------|----------|-----------|--------------------|--------|------|
-| API Client 扩展 | F172 | unit | 7 个新增方法正常/404/500 + flutter analyze | pending | L1 |
-| Provider 扩展 | F173 | unit | 编辑切换/updateEntry 成功失败/generateSummary/loadBacklinks/loadEntryLinks/createLink(含 target_id+relation_type)/deleteLink/searchEntriesForLink | pending | L1 |
-| EntryDetail 编辑 | F174 | widget+smoke | 编辑进入/标题内容状态保存/保存失败/未修改 disabled/标签添加/标签删除/invalidate EntryListProvider/首次编辑 smoke | pending | F2 |
-| AI 摘要+知识上下文 | F175 | widget+smoke | 摘要生成 loading→展示/生成失败重试/知识上下文列表/空态/网络异常 smoke | pending | F2 |
-| 关联+反向引用 | F176 | widget+smoke | 关联列表/滑动删除/反向引用/添加关联搜索→选择→创建/网络失败重试/搜索空结果/relation_type 选择/首次添加 smoke | pending | F2 |
+| API Client 扩展 | F172 | unit | 7 个新增方法正常/PUT 返回 SuccessResponse/POST links 201+400+409/DELETE links 204/direction 422/summary=null/404/500 | pending | L1 |
+| Provider 扩展 | F173 | unit | family provider 隔离/嵌套导航/编辑切换/updateEntry 成功后 GET 刷新+invalidate/generateSummary 成功失败 summary=null/loadBacklinks/loadEntryLinks/createLink 400+409/deleteLink 204/searchEntriesForLink | pending | L1 |
+| EntryDetail 编辑 | F174 | widget+smoke | 编辑进入/标题内容状态保存/保存失败/未修改 disabled/标题空白超长/标签添加重复/标签删除/invalidate EntryListProvider/首次编辑 smoke | pending | F2 |
+| AI 摘要+知识上下文 | F175 | widget+smoke | 摘要生成 loading→展示/503 失败重试/summary=null 禁用按钮/cached=true 直接展示/知识上下文 mastery 映射(beginner/intermediate/advanced/null)/entry_count/空态/网络异常 smoke | pending | F2 |
+| 关联+反向引用 | F176 | widget+smoke | 关联列表/删除 204/反向引用/添加关联搜索→选择→创建 201/网络失败/400 自关联/409 重复关联/搜索空结果/搜索空白不触发/relation_type 选择/嵌套导航返回状态恢复/首次添加 smoke | pending | F2 |
 | 质量收口 | S43 | integration+smoke | flutter analyze/flutter test/flutter build/pytest/vitest/npm build/Docker smoke | pending | L3 |
 
 ## R041: Flutter 页面补齐 + 工程健康
