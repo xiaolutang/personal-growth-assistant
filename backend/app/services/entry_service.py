@@ -841,23 +841,28 @@ class EntryService:
 
         # 去重（both 模式下，正向和反向可能指向同一对，需要用 id 去重）
         seen_ids: set[str] = set()
-        items: list[EntryLinkItem] = []
+        unique_links: list[dict] = []
         for lk in raw_links:
             if lk["id"] in seen_ids:
                 continue
             seen_ids.add(lk["id"])
+            unique_links.append(lk)
 
-            # target_id 根据 direction 决定
-            if lk["direction"] == "out":
-                tid = lk["target_id"]
-            else:
-                tid = lk["source_id"]
+        # 批量获取所有 target 条目摘要（单次 SQL IN 查询）
+        target_ids = [
+            lk["target_id"] if lk["direction"] == "out" else lk["source_id"]
+            for lk in unique_links
+        ]
+        target_summaries = sqlite.batch_get_entry_summaries(target_ids, user_id) if target_ids else {}
 
-            target_data = sqlite.get_entry(tid, user_id)
+        items: list[EntryLinkItem] = []
+        for lk in unique_links:
+            tid = lk["target_id"] if lk["direction"] == "out" else lk["source_id"]
+            td = target_summaries.get(tid)
             target_entry = LinkTargetEntry(
                 id=tid,
-                title=target_data.get("title", "") if target_data else "",
-                category=target_data.get("type", "") if target_data else "",
+                title=td.get("title", "") if td else "",
+                category=td.get("type", "") if td else "",
             )
             items.append(EntryLinkItem(
                 id=lk["id"],
@@ -906,13 +911,14 @@ class EntryService:
         target_ids = SQLiteStorage.parse_wikilinks(content)
         # 过滤自引用（再次确认）
         target_ids.discard(source_id)
-        # 过滤不存在的 target_id
-        valid_targets: Set[str] = set()
-        for tid in target_ids:
-            if '-' not in tid:
-                continue
-            if self.storage.sqlite.entry_belongs_to_user(tid, user_id):
-                valid_targets.add(tid)
+        # 过滤不存在的 target_id（批量查询，单次 SQL）
+        candidates = {tid for tid in target_ids if '-' in tid}
+        if candidates:
+            valid_targets = self.storage.sqlite.batch_entry_belongs_to_user(
+                list(candidates), user_id
+            )
+        else:
+            valid_targets: Set[str] = set()
         self.storage.sqlite.upsert_note_references(source_id, valid_targets, user_id)
 
     async def get_backlinks(self, entry_id: str, user_id: str = "_default") -> List[Dict[str, Any]]:

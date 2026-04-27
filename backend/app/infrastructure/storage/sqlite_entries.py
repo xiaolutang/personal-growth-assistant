@@ -24,6 +24,41 @@ class SQLiteEntriesMixin:
             ).fetchone()
             return row is not None
 
+    def batch_entry_belongs_to_user(
+        self, entry_ids: List[str], user_id: str
+    ) -> set[str]:
+        """批量检查条目是否属于指定用户，返回存在的 entry_id 集合。
+
+        单次 SQL IN 查询，替代多次 entry_belongs_to_user 循环调用。
+        """
+        if not entry_ids:
+            return set()
+        with self._conn() as conn:
+            placeholders = ",".join("?" * len(entry_ids))
+            rows = conn.execute(
+                f"SELECT id FROM entries WHERE id IN ({placeholders}) AND user_id = ?",
+                (*entry_ids, user_id),
+            ).fetchall()
+            return {row["id"] for row in rows}
+
+    def batch_get_entry_summaries(
+        self, entry_ids: List[str], user_id: str
+    ) -> Dict[str, Dict[str, Any]]:
+        """批量获取条目摘要信息（id, title, type）。
+
+        单次 SQL IN 查询，替代多次 get_entry 循环调用。
+        返回 {entry_id: {"id": ..., "title": ..., "type": ...}} 字典。
+        """
+        if not entry_ids:
+            return {}
+        with self._conn() as conn:
+            placeholders = ",".join("?" * len(entry_ids))
+            rows = conn.execute(
+                f"SELECT id, title, type FROM entries WHERE id IN ({placeholders}) AND user_id = ?",
+                (*entry_ids, user_id),
+            ).fetchall()
+            return {row["id"]: dict(row) for row in rows}
+
     def find_entries_by_tag_overlap(
         self, entry_id: str, tags: List[str], limit: int = 10, user_id: str = "_default"
     ) -> List[dict]:
