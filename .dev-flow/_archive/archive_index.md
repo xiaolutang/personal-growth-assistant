@@ -6,6 +6,17 @@
 
 ## 已完成需求包
 
+### R041: Flutter 页面补齐 + 工程健康
+
+- 状态: 已完成
+- 分支: `feat/R041-health-flutter-pages`
+- 主题: 后端 flaky 修复 + Flutter 4 页面补齐 (Notes/Inbox/Review/Goals) + 底部导航扩展 + 质量收口
+- 目录: `R041_health-flutter-pages/`
+- 完成时间: 2026-04-27
+- 任务数: 11 (B117, F163, F164, F165, F166, F167, F168, F169, F170, F171, S42)
+- Code Review: 4 轮 codex_plugin，所有 finding 全部修复
+- 验证: pytest 1375 + vitest 612 + flutter test 310 + build + Docker smoke
+
 ### R040: Web 功能增强 + 工程清理
 
 - 状态: 已完成
