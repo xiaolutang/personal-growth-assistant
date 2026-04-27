@@ -114,6 +114,120 @@ class ReviewService(MorningDigestMixin, InsightsMixin):
         """获取知识图谱服务实例"""
         return self._knowledge_service
 
+    # ------------------------------------------------------------------
+    # 共享报告模板函数
+    # ------------------------------------------------------------------
+
+    def _require_sqlite(self) -> None:
+        """检查 SQLite 存储是否已初始化，否则抛出 ValueError"""
+        if not self._sqlite:
+            raise ValueError("SQLite 存储未初始化")
+
+    def _fetch_tasks_and_notes(
+        self,
+        start_date: str,
+        end_date: str,
+        user_id: Optional[str],
+    ) -> tuple[List[dict], List[dict]]:
+        """在指定时间范围内查询任务和笔记列表
+
+        Returns:
+            (tasks, notes) 元组
+        """
+        tasks = self._sqlite.list_entries(
+            type="task",
+            start_date=start_date,
+            end_date=end_date,
+            limit=1000,
+            user_id=user_id,
+        )
+        notes = self._sqlite.list_entries(
+            type="note",
+            start_date=start_date,
+            end_date=end_date,
+            limit=1000,
+            user_id=user_id,
+        )
+        return tasks, notes
+
+    async def _build_report_ai_summary(
+        self,
+        report_type: str,
+        task_stats: TaskStats,
+        note_stats: NoteStats,
+        user_id: Optional[str],
+        **extra_fields: Any,
+    ) -> Optional[str]:
+        """构建报告的 AI 总结
+
+        将重复的 stats_data 组装 + _generate_ai_summary 调用抽取为共享函数。
+
+        Args:
+            report_type: "daily" / "weekly" / "monthly"
+            task_stats: 已计算的任务统计
+            note_stats: 已计算的笔记统计
+            user_id: 用户 ID
+            **extra_fields: 额外放入 stats_data 的字段（如 completed_tasks / daily_breakdown / weekly_breakdown）
+
+        Returns:
+            AI 总结文本，无 LLM caller 时返回 None
+        """
+        if not self._llm_caller:
+            return None
+
+        stats_data: Dict[str, Any] = {
+            "task_stats": task_stats.model_dump(),
+            "note_stats": note_stats.model_dump(),
+            "recent_note_titles": note_stats.recent_titles,
+        }
+        stats_data.update(extra_fields)
+
+        return await self._generate_ai_summary(
+            report_type, stats_data, user_id=user_id or "_default"
+        )
+
+    def _calculate_vs_last_period(
+        self,
+        prev_start: date,
+        prev_end: date,
+        current_task_stats: TaskStats,
+        user_id: Optional[str],
+    ) -> Optional[VsLastPeriod]:
+        """计算与上一周期的环比差值（周/月共享）
+
+        Args:
+            prev_start: 上一周期起始日期
+            prev_end: 上一周期结束日期
+            current_task_stats: 当前期任务统计
+            user_id: 用户 ID
+
+        Returns:
+            VsLastPeriod 或 None
+        """
+        last_tasks = self._sqlite.list_entries(
+            type="task",
+            start_date=prev_start.isoformat(),
+            end_date=prev_end.isoformat(),
+            limit=1000,
+            user_id=user_id,
+        )
+
+        last_total = len(last_tasks)
+        last_completed = sum(1 for t in last_tasks if t.get("status") == "complete")
+        last_completion_rate = (last_completed / last_total * 100) if last_total > 0 else 0.0
+
+        if last_total == 0 and current_task_stats.total == 0:
+            return VsLastPeriod(delta_completion_rate=None, delta_total=None)
+
+        return VsLastPeriod(
+            delta_completion_rate=round(current_task_stats.completion_rate - last_completion_rate, 1),
+            delta_total=current_task_stats.total - last_total,
+        )
+
+    # ------------------------------------------------------------------
+    # 静态统计计算
+    # ------------------------------------------------------------------
+
     @staticmethod
     def calculate_task_stats(tasks: List[dict]) -> TaskStats:
         """计算任务统计"""
@@ -140,49 +254,36 @@ class ReviewService(MorningDigestMixin, InsightsMixin):
             recent_titles=[n.get("title", "")[:50] for n in notes[:5]],
         )
 
+    # ------------------------------------------------------------------
+    # 三报告方法
+    # ------------------------------------------------------------------
+
     async def get_daily_report(self, target_date: Optional[date] = None, user_id: Optional[str] = None) -> DailyReport:
         """获取日报"""
-        if not self._sqlite:
-            raise ValueError("SQLite 存储未初始化")
+        self._require_sqlite()
 
         if target_date is None:
             target_date = date.today()
 
         date_str = target_date.isoformat()
 
-        tasks = self._sqlite.list_entries(
-            type="task",
-            start_date=date_str,
-            end_date=date_str,
-            limit=1000,
-            user_id=user_id,
-        )
-
-        notes = self._sqlite.list_entries(
-            type="note",
-            start_date=date_str,
-            end_date=date_str,
-            limit=1000,
-            user_id=user_id,
-        )
+        tasks, notes = self._fetch_tasks_and_notes(date_str, date_str, user_id)
 
         task_stats = self.calculate_task_stats(tasks)
         note_stats = self.calculate_note_stats(notes)
         completed_tasks = [t for t in tasks if t.get("status") == "complete"]
 
         # 生成 AI 总结
-        ai_summary = None
-        if self._llm_caller:
-            stats_data = {
-                "task_stats": task_stats.model_dump(),
-                "note_stats": note_stats.model_dump(),
-                "completed_tasks": [
-                    {"id": t.get("id"), "title": t.get("title")}
-                    for t in completed_tasks
-                ],
-                "recent_note_titles": note_stats.recent_titles,
-            }
-            ai_summary = await self._generate_ai_summary("daily", stats_data, user_id=user_id or "_default")
+        ai_summary = await self._build_report_ai_summary(
+            "daily",
+            task_stats,
+            note_stats,
+            user_id,
+            completed_tasks=[
+                {"id": t.get("id"), "title": t.get("title")}
+                for t in completed_tasks
+            ],
+        )
 
         return DailyReport(
             date=date_str,
@@ -194,8 +295,7 @@ class ReviewService(MorningDigestMixin, InsightsMixin):
 
     async def get_weekly_report(self, week_start: Optional[date] = None, user_id: Optional[str] = None) -> WeeklyReport:
         """获取周报"""
-        if not self._sqlite:
-            raise ValueError("SQLite 存储未初始化")
+        self._require_sqlite()
 
         if week_start is None:
             today = date.today()
@@ -206,48 +306,21 @@ class ReviewService(MorningDigestMixin, InsightsMixin):
         start_str = week_start.isoformat()
         end_str = week_end.isoformat()
 
-        tasks = self._sqlite.list_entries(
-            type="task",
-            start_date=start_str,
-            end_date=end_str,
-            limit=1000,
-            user_id=user_id,
-        )
-
-        notes = self._sqlite.list_entries(
-            type="note",
-            start_date=start_str,
-            end_date=end_str,
-            limit=1000,
-            user_id=user_id,
-        )
+        tasks, notes = self._fetch_tasks_and_notes(start_str, end_str, user_id)
 
         task_stats = self.calculate_task_stats(tasks)
         note_stats = self.calculate_note_stats(notes)
 
-        daily_breakdown = []
-        # 从已获取的 tasks 中按日聚合，避免 N+1 查询
-        for i in range(7):
-            day = week_start + timedelta(days=i)
-            day_str = day.isoformat()
-            day_tasks = [t for t in tasks if t.get("created_at", "")[:10] == day_str or t.get("updated_at", "")[:10] == day_str]
-            completed = sum(1 for t in day_tasks if t.get("status") == "complete")
-            daily_breakdown.append({
-                "date": day_str,
-                "total": len(day_tasks),
-                "completed": completed,
-            })
+        daily_breakdown = self._build_daily_breakdown(tasks, week_start)
 
         # 生成 AI 总结
-        ai_summary = None
-        if self._llm_caller:
-            stats_data = {
-                "task_stats": task_stats.model_dump(),
-                "note_stats": note_stats.model_dump(),
-                "daily_breakdown": daily_breakdown,
-                "recent_note_titles": note_stats.recent_titles,
-            }
-            ai_summary = await self._generate_ai_summary("weekly", stats_data, user_id=user_id or "_default")
+        ai_summary = await self._build_report_ai_summary(
+            "weekly",
+            task_stats,
+            note_stats,
+            user_id,
+            daily_breakdown=daily_breakdown,
+        )
 
         # 计算环比上周
         vs_last_week = self._calculate_weekly_vs_last_week(
@@ -264,108 +337,33 @@ class ReviewService(MorningDigestMixin, InsightsMixin):
             vs_last_week=vs_last_week,
         )
 
-    def _calculate_weekly_vs_last_week(
-        self, week_start: date, current_task_stats: TaskStats, user_id: Optional[str]
-    ) -> Optional[VsLastPeriod]:
-        """计算周环比差值"""
-        last_week_start = week_start - timedelta(weeks=1)
-        last_week_end = last_week_start + timedelta(days=6)
+    @staticmethod
+    def _build_daily_breakdown(tasks: List[dict], week_start: date) -> List[Dict[str, Any]]:
+        """从已获取的 tasks 中按日聚合，构建 daily_breakdown 列表"""
+        daily_breakdown: List[Dict[str, Any]] = []
+        for i in range(7):
+            day = week_start + timedelta(days=i)
+            day_str = day.isoformat()
+            day_tasks = [
+                t for t in tasks
+                if t.get("created_at", "")[:10] == day_str
+                or t.get("updated_at", "")[:10] == day_str
+            ]
+            completed = sum(1 for t in day_tasks if t.get("status") == "complete")
+            daily_breakdown.append({
+                "date": day_str,
+                "total": len(day_tasks),
+                "completed": completed,
+            })
+        return daily_breakdown
 
-        last_tasks = self._sqlite.list_entries(
-            type="task",
-            start_date=last_week_start.isoformat(),
-            end_date=last_week_end.isoformat(),
-            limit=1000,
-            user_id=user_id,
-        )
-
-        last_total = len(last_tasks)
-        last_completed = sum(1 for t in last_tasks if t.get("status") == "complete")
-        last_completion_rate = (last_completed / last_total * 100) if last_total > 0 else 0.0
-
-        if last_total == 0 and current_task_stats.total == 0:
-            return VsLastPeriod(delta_completion_rate=None, delta_total=None)
-
-        return VsLastPeriod(
-            delta_completion_rate=round(current_task_stats.completion_rate - last_completion_rate, 1),
-            delta_total=current_task_stats.total - last_total,
-        )
-
-    def _calculate_monthly_vs_last_month(
-        self, month_start: date, current_task_stats: TaskStats, user_id: Optional[str]
-    ) -> Optional[VsLastPeriod]:
-        """计算月环比差值"""
-        if month_start.month == 1:
-            last_month_start = date(month_start.year - 1, 12, 1)
-        else:
-            last_month_start = date(month_start.year, month_start.month - 1, 1)
-
-        if last_month_start.month == 12:
-            last_month_end = date(last_month_start.year + 1, 1, 1) - timedelta(days=1)
-        else:
-            last_month_end = date(last_month_start.year, last_month_start.month + 1, 1) - timedelta(days=1)
-
-        last_tasks = self._sqlite.list_entries(
-            type="task",
-            start_date=last_month_start.isoformat(),
-            end_date=last_month_end.isoformat(),
-            limit=1000,
-            user_id=user_id,
-        )
-
-        last_total = len(last_tasks)
-        last_completed = sum(1 for t in last_tasks if t.get("status") == "complete")
-        last_completion_rate = (last_completed / last_total * 100) if last_total > 0 else 0.0
-
-        if last_total == 0 and current_task_stats.total == 0:
-            return VsLastPeriod(delta_completion_rate=None, delta_total=None)
-
-        return VsLastPeriod(
-            delta_completion_rate=round(current_task_stats.completion_rate - last_completion_rate, 1),
-            delta_total=current_task_stats.total - last_total,
-        )
-
-    async def get_monthly_report(self, month_start: Optional[date] = None, user_id: Optional[str] = None) -> MonthlyReport:
-        """获取月报"""
-        if not self._sqlite:
-            raise ValueError("SQLite 存储未初始化")
-
-        if month_start is None:
-            today = date.today()
-            month_start = date(today.year, today.month, 1)
-
-        if month_start.month == 12:
-            month_end = date(month_start.year + 1, 1, 1) - timedelta(days=1)
-        else:
-            month_end = date(month_start.year, month_start.month + 1, 1) - timedelta(days=1)
-
-        start_str = month_start.isoformat()
-        end_str = month_end.isoformat()
-
-        tasks = self._sqlite.list_entries(
-            type="task",
-            start_date=start_str,
-            end_date=end_str,
-            limit=1000,
-            user_id=user_id,
-        )
-
-        notes = self._sqlite.list_entries(
-            type="note",
-            start_date=start_str,
-            end_date=end_str,
-            limit=1000,
-            user_id=user_id,
-        )
-
-        task_stats = self.calculate_task_stats(tasks)
-        note_stats = self.calculate_note_stats(notes)
-
-        weekly_breakdown = []
+    @staticmethod
+    def _build_weekly_breakdown(tasks: List[dict], month_start: date, month_end: date) -> List[Dict[str, Any]]:
+        """从已获取的 tasks 中按周聚合，构建 weekly_breakdown 列表"""
+        weekly_breakdown: List[Dict[str, Any]] = []
         current_week_start = month_start
         week_num = 1
 
-        # 从已获取的 tasks 中按周聚合，避免 N+1 查询
         while current_week_start <= month_end:
             week_end = min(current_week_start + timedelta(days=6), month_end)
             ws_str = current_week_start.isoformat()
@@ -389,16 +387,67 @@ class ReviewService(MorningDigestMixin, InsightsMixin):
             current_week_start = week_end + timedelta(days=1)
             week_num += 1
 
+        return weekly_breakdown
+
+    def _calculate_weekly_vs_last_week(
+        self, week_start: date, current_task_stats: TaskStats, user_id: Optional[str]
+    ) -> Optional[VsLastPeriod]:
+        """计算周环比差值"""
+        last_week_start = week_start - timedelta(weeks=1)
+        last_week_end = last_week_start + timedelta(days=6)
+        return self._calculate_vs_last_period(
+            last_week_start, last_week_end, current_task_stats, user_id
+        )
+
+    def _calculate_monthly_vs_last_month(
+        self, month_start: date, current_task_stats: TaskStats, user_id: Optional[str]
+    ) -> Optional[VsLastPeriod]:
+        """计算月环比差值"""
+        if month_start.month == 1:
+            last_month_start = date(month_start.year - 1, 12, 1)
+        else:
+            last_month_start = date(month_start.year, month_start.month - 1, 1)
+
+        if last_month_start.month == 12:
+            last_month_end = date(last_month_start.year + 1, 1, 1) - timedelta(days=1)
+        else:
+            last_month_end = date(last_month_start.year, last_month_start.month + 1, 1) - timedelta(days=1)
+
+        return self._calculate_vs_last_period(
+            last_month_start, last_month_end, current_task_stats, user_id
+        )
+
+    async def get_monthly_report(self, month_start: Optional[date] = None, user_id: Optional[str] = None) -> MonthlyReport:
+        """获取月报"""
+        self._require_sqlite()
+
+        if month_start is None:
+            today = date.today()
+            month_start = date(today.year, today.month, 1)
+
+        if month_start.month == 12:
+            month_end = date(month_start.year + 1, 1, 1) - timedelta(days=1)
+        else:
+            month_end = date(month_start.year, month_start.month + 1, 1) - timedelta(days=1)
+
+        start_str = month_start.isoformat()
+        end_str = month_end.isoformat()
+
+        tasks, notes = self._fetch_tasks_and_notes(start_str, end_str, user_id)
+
+        task_stats = self.calculate_task_stats(tasks)
+        note_stats = self.calculate_note_stats(notes)
+
+        weekly_breakdown = self._build_weekly_breakdown(tasks, month_start, month_end)
+
         # 生成 AI 总结
-        ai_summary = None
-        if self._llm_caller:
-            stats_data = {
-                "task_stats": task_stats.model_dump(),
-                "note_stats": note_stats.model_dump(),
-                "weekly_breakdown": weekly_breakdown,
-                "recent_note_titles": note_stats.recent_titles,
-            }
-            ai_summary = await self._generate_ai_summary("monthly", stats_data, user_id=user_id or "_default")
+        ai_summary = await self._build_report_ai_summary(
+            "monthly",
+            task_stats,
+            note_stats,
+            user_id,
+            weekly_breakdown=weekly_breakdown,
+        )
 
         # 计算环比上月
         vs_last_month = self._calculate_monthly_vs_last_month(

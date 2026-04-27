@@ -137,6 +137,80 @@ class SQLiteGoalsMixin:
             ).fetchone()
             return row["cnt"]
 
+    def batch_count_goal_entries(
+        self, goal_ids: list[str], user_id: str
+    ) -> dict[str, int]:
+        """批量统计多个目标关联的条目数量，返回 {goal_id: count}"""
+        if not goal_ids:
+            return {}
+        with self._conn() as conn:
+            placeholders = ",".join("?" * len(goal_ids))
+            rows = conn.execute(
+                f"SELECT goal_id, COUNT(*) as cnt FROM goal_entries "
+                f"WHERE goal_id IN ({placeholders}) AND user_id = ? "
+                f"GROUP BY goal_id",
+                (*goal_ids, user_id),
+            ).fetchall()
+            result = {row["goal_id"]: row["cnt"] for row in rows}
+            # 未出现在结果中的 goal_id 补 0
+            return {gid: result.get(gid, 0) for gid in goal_ids}
+
+    def batch_count_completed_milestones(
+        self, goal_ids: list[str], user_id: str
+    ) -> dict[str, int]:
+        """批量统计多个目标的已完成里程碑数，返回 {goal_id: count}"""
+        if not goal_ids:
+            return {}
+        with self._conn() as conn:
+            placeholders = ",".join("?" * len(goal_ids))
+            rows = conn.execute(
+                f"SELECT goal_id, COUNT(*) as cnt FROM milestones "
+                f"WHERE goal_id IN ({placeholders}) AND user_id = ? AND status = 'completed' "
+                f"GROUP BY goal_id",
+                (*goal_ids, user_id),
+            ).fetchall()
+            result = {row["goal_id"]: row["cnt"] for row in rows}
+            return {gid: result.get(gid, 0) for gid in goal_ids}
+
+    def batch_count_entries_by_tags(
+        self,
+        tags_params: list[tuple[list[str], str, str | None, str | None]],
+        user_id: str,
+    ) -> list[int]:
+        """批量统计多组标签匹配的条目数量。
+
+        Args:
+            tags_params: 每项为 (tags, user_id_ignored, start_date, end_date)
+                         user_id_ignored 参数保持签名兼容，实际使用外层 user_id
+            user_id: 统一用户 ID
+
+        Returns:
+            与 tags_params 等长的整数列表，对应每组的计数
+        """
+        if not tags_params:
+            return []
+        results = []
+        with self._conn() as conn:
+            for tags, _uid, start_date, end_date in tags_params:
+                if not tags:
+                    results.append(0)
+                    continue
+                placeholders = ",".join("?" * len(tags))
+                conditions = f"t.name IN ({placeholders}) AND e.user_id = ?"
+                params: list = [*tags, user_id]
+                if start_date and end_date:
+                    conditions += " AND e.created_at >= ? AND e.created_at < ?"
+                    params.extend([start_date, end_date])
+                row = conn.execute(
+                    f"SELECT COUNT(DISTINCT e.id) as cnt FROM entries e "
+                    f"JOIN entry_tags et ON e.id = et.entry_id "
+                    f"JOIN tags t ON et.tag_id = t.id "
+                    f"WHERE {conditions}",
+                    params,
+                ).fetchone()
+                results.append(row["cnt"])
+        return results
+
     def count_entries_by_tags(
         self,
         tags: list[str],
