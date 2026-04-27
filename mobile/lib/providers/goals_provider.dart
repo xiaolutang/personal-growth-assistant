@@ -216,8 +216,12 @@ class GoalsNotifier extends Notifier<GoalsState> {
         data: data,
       );
 
-      // 刷新里程碑列表
-      await fetchMilestones(goalId);
+      // 刷新里程碑列表 + 目标进度
+      await Future.wait([
+        fetchMilestones(goalId),
+        fetchGoalDetail(goalId),
+      ]);
+      _refreshGoalInList(goalId);
       return true;
     } catch (e) {
       state = state.copyWith(error: ApiClient.errorMessage(e));
@@ -239,8 +243,12 @@ class GoalsNotifier extends Notifier<GoalsState> {
         data: data,
       );
 
-      // 刷新里程碑列表
-      await fetchMilestones(goalId);
+      // 刷新里程碑列表 + 目标进度
+      await Future.wait([
+        fetchMilestones(goalId),
+        fetchGoalDetail(goalId),
+      ]);
+      _refreshGoalInList(goalId);
       return true;
     } catch (e) {
       state = state.copyWith(error: ApiClient.errorMessage(e));
@@ -257,15 +265,28 @@ class GoalsNotifier extends Notifier<GoalsState> {
         milestoneId: milestoneId,
       );
 
+      // 刷新目标进度
+      await fetchGoalDetail(goalId);
       // 从列表中移除已删除的里程碑
       final updated =
           state.milestones.where((m) => m.id != milestoneId).toList();
       state = state.copyWith(milestones: updated);
+      _refreshGoalInList(goalId);
       return true;
     } catch (e) {
       state = state.copyWith(error: ApiClient.errorMessage(e));
       return false;
     }
+  }
+
+  /// 将 selectedGoal 的进度同步回 goals 列表
+  void _refreshGoalInList(String goalId) {
+    final selected = state.selectedGoal;
+    if (selected == null || selected.id != goalId) return;
+    final updatedGoals = state.goals
+        .map((g) => g.id == goalId ? selected : g)
+        .toList();
+    state = state.copyWith(goals: updatedGoals);
   }
 }
 

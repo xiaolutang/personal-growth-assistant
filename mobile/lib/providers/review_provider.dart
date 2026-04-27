@@ -63,19 +63,28 @@ class ReviewNotifier extends Notifier<ReviewState> {
     return const ReviewState();
   }
 
-  /// 加载回顾报告
-  Future<void> loadSummary([String? period]) async {
+  /// 批量加载所有数据（统一管理 isLoading）
+  Future<void> loadAll([String? period]) async {
     final p = period ?? state.selectedPeriod;
-    state = state.copyWith(isLoading: true, error: null, selectedPeriod: p);
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      selectedPeriod: p,
+    );
 
     try {
       final apiClient = ref.read(apiClientProvider);
-      final response = await apiClient.fetchReviewSummary<Map<String, dynamic>>(
-        period: p,
-      );
+
+      final results = await Future.wait([
+        apiClient.fetchReviewSummary<Map<String, dynamic>>(period: p),
+        _fetchTrends(apiClient, p),
+        apiClient.fetchInsights<Map<String, dynamic>>(period: p),
+      ]);
 
       state = state.copyWith(
-        summary: response.data,
+        summary: results[0].data,
+        trends: results[1].data,
+        insights: results[2].data,
         isLoading: false,
       );
     } catch (e) {
@@ -86,52 +95,22 @@ class ReviewNotifier extends Notifier<ReviewState> {
     }
   }
 
-  /// 加载趋势数据
-  /// weekly tab → period=daily, days=7（近 7 天每日趋势）
-  /// monthly tab → period=weekly, weeks=4（近 4 周每周趋势）
-  Future<void> loadTrends([String? period]) async {
-    final p = period ?? state.selectedPeriod;
-
-    try {
-      final apiClient = ref.read(apiClientProvider);
-      final Response<Map<String, dynamic>> response;
-
-      if (p == 'monthly') {
-        response = await apiClient.fetchTrends<Map<String, dynamic>>(
-          period: 'weekly',
-          weeks: 4,
-        );
-      } else {
-        response = await apiClient.fetchTrends<Map<String, dynamic>>(
-          period: 'daily',
-          days: 7,
-        );
-      }
-
-      state = state.copyWith(trends: response.data);
-    } catch (e) {
-      state = state.copyWith(error: ApiClient.errorMessage(e));
-    }
-  }
-
-  /// 加载 AI 深度洞察
-  Future<void> loadInsights() async {
-    try {
-      final apiClient = ref.read(apiClientProvider);
-      final response = await apiClient.fetchInsights<Map<String, dynamic>>(
-        period: state.selectedPeriod,
+  Future<Response<Map<String, dynamic>>> _fetchTrends(
+    ApiClient apiClient,
+    String period,
+  ) {
+    if (period == 'monthly') {
+      return apiClient.fetchTrends<Map<String, dynamic>>(
+        period: 'weekly',
+        weeks: 4,
       );
-
-      state = state.copyWith(insights: response.data);
-    } catch (e) {
-      state = state.copyWith(error: ApiClient.errorMessage(e));
     }
+    return apiClient.fetchTrends<Map<String, dynamic>>(
+      period: 'daily',
+      days: 7,
+    );
   }
 
-  /// 设置统计周期
-  void setPeriod(String period) {
-    state = state.copyWith(selectedPeriod: period);
-  }
 }
 
 /// 回顾页 Provider

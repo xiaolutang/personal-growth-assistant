@@ -34,9 +34,7 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
 
   void _loadAll() {
     final notifier = ref.read(reviewProvider.notifier);
-    notifier.loadSummary();
-    notifier.loadTrends();
-    notifier.loadInsights();
+    notifier.loadAll();
   }
 
   @override
@@ -72,10 +70,7 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
         selected: {state.selectedPeriod},
         onSelectionChanged: (selected) {
           final notifier = ref.read(reviewProvider.notifier);
-          notifier.setPeriod(selected.first);
-          notifier.loadSummary();
-          notifier.loadTrends();
-          notifier.loadInsights();
+          notifier.loadAll(selected.first);
         },
       ),
     );

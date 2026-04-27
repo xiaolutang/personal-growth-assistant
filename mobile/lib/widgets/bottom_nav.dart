@@ -42,14 +42,6 @@ class _BottomNavShellState extends State<BottomNavShell> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.chat_bubble),
-              title: const Text('对话'),
-              onTap: () {
-                Navigator.pop(context);
-                this.context.go('/chat');
-              },
-            ),
-            ListTile(
               leading: const Icon(Icons.explore),
               title: const Text('探索'),
               onTap: () {
