@@ -7,7 +7,7 @@
     "id": "R042",
     "name": "flutter-entry-detail-upgrade",
     "branch": "feat/R042-flutter-entry-detail",
-    "status": "planning",
+    "status": "completed",
     "started_at": "2026-04-27"
   },
   "workflow": {
@@ -22,9 +22,9 @@
   "summary": {
     "total": 6,
     "by_status": {
-      "pending": 6,
+      "pending": 0,
       "in_progress": 0,
-      "completed": 0
+      "completed": 6
     },
     "by_priority": {
       "P0": 1,
@@ -94,7 +94,12 @@
       "description": "在 ApiClient 中补齐条目详情交互所需的 7 个 API 方法：updateEntry（PUT /entries/{id}）、fetchBacklinks（GET /entries/{id}/backlinks）、fetchEntryLinks（GET /entries/{id}/links，支持 direction 参数 in/out/both）、createEntryLink（POST /entries/{id}/links，body 含 target_id + relation_type）、deleteEntryLink（DELETE /entries/{id}/links/{linkId}）、fetchKnowledgeContext（GET /entries/{id}/knowledge-context）、generateAISummary（POST /entries/{id}/ai-summary）。配套单元测试",
       "verification": "F1",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-27T20:40:00",
+      "completed_at": "2026-04-27T20:52:00",
+      "commit": "6257fbe",
+      "evidence_file": ".dev-flow/evidence/F172.md",
+      "summary": "7个API方法 + 25个单元测试，覆盖SuccessResponse/201/204/400/409/422/summary=null/cached",
       "priority": "P1",
       "acceptance_criteria": [
         "ApiClient 新增 7 个业务方法覆盖条目编辑/关联/AI摘要/知识上下文",
@@ -137,7 +142,11 @@
       "description": "扩展 EntryDetailNotifier 支持编辑、保存、AI 摘要、关联操作、反向引用加载、关联搜索。将 entryDetailProvider 改为 entryDetailProvider(String entryId) family provider，按 entryId 隔离状态，避免嵌套详情导航时串页。新增状态字段：isEditing、isSaving、isGeneratingSummary、backlinks、entryLinks、knowledgeContext、searchResults（用于添加关联时搜索条目）、isSearching。方法：updateEntry（PUT 返回 SuccessResponse，成功后需重新 GET 刷新 entry）、generateSummary、loadBacklinks、loadEntryLinks、createLink（接收 target_id + relation_type，处理 400 自关联/409 重复关联）、deleteLink、toggleEdit、searchEntriesForLink（搜索条目供关联选择）",
       "verification": "F1",
       "depends_on": ["F172"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-27T21:10:00",
+      "completed_at": "2026-04-27T21:22:00",
+      "commit": "57120da",
+      "summary": "family provider + 8个方法 + 31个单元测试，覆盖隔离/嵌套导航/400/409/copyWith不可变",
       "priority": "P1",
       "acceptance_criteria": [
         "entryDetailProvider 改为 family provider（接受 entryId 参数），按 entryId 隔离状态，支持嵌套详情导航（详情→关联条目详情→返回→状态不串页）",
@@ -176,7 +185,10 @@
       "description": "将 EntryDetailPage 从只读升级为可编辑。AppBar 添加编辑/保存按钮，点击编辑进入编辑态：标题 TextField、内容 TextField（多行）、状态 DropdownButton、优先级 DropdownButton、标签 Chip 输入（行末 + 按钮，点击弹出输入框，长按 Chip 弹出删除确认）。分类(category)不可编辑。保存调用 provider.updateEntry，成功后退出编辑态并刷新",
       "verification": "F2",
       "depends_on": ["F173"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-27T21:23:00",
+      "completed_at": "2026-04-27T21:35:00",
+      "commit": "b6c4af4",
       "priority": "P1",
       "acceptance_criteria": [
         "AppBar 右侧添加编辑图标按钮，点击进入编辑态",
@@ -212,7 +224,11 @@
       "description": "在 EntryDetailPage 内容区域下方新增两个 Section：AI 摘要卡片（生成按钮 + loading + 摘要文本展示）和知识上下文卡片（相关概念列表、掌握度指示器）。AI 摘要调用 POST /entries/{id}/ai-summary（响应含 summary/cached/generated_at 字段），空内容时 summary=null，按钮显示禁用+提示'内容为空，无法生成摘要'。知识上下文调用 GET /entries/{id}/knowledge-context（响应含 nodes/edges/center_concepts，node 含 mastery: Optional[str] level 和 entry_count），前端将 mastery 字符串映射为 UI 等级标签（如 beginner→入门/intermediate→进阶/advanced→精通）+ entry_count 数字显示",
       "verification": "F2",
       "depends_on": ["F173", "F174"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-27T21:40:00",
+      "completed_at": "2026-04-27T21:55:00",
+      "commit": "e86efac",
+      "summary": "AI摘要+知识上下文卡片 + mastery映射 + 17个测试",
       "priority": "P2",
       "acceptance_criteria": [
         "内容下方新增 AI 摘要 Section：生成按钮 + loading 态 + 摘要文本展示",
@@ -247,7 +263,11 @@
       "description": "在 EntryDetailPage 底部新增两个 Section：关联条目列表（GET /entries/{id}/links，支持删除关联）和反向引用列表（GET /entries/{id}/backlinks，只读展示）。新增手动关联功能：底部弹出搜索框（搜索由 F173 searchEntriesForLink 驱动），搜索条目后选择 relation_type（related/depends_on/derived_from/references，默认 related）创建关联（POST /entries/{id}/links，body 含 target_id + relation_type）",
       "verification": "F2",
       "depends_on": ["F175"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-27T22:05:00",
+      "completed_at": "2026-04-27T22:18:00",
+      "commit": "8f5858e",
+      "summary": "关联条目列表+反向引用+添加关联对话框(搜索+relation_type)+Dismissible滑动删除+15个测试",
       "priority": "P2",
       "acceptance_criteria": [
         "底部新增关联条目 Section：关联条目列表（标题+分类图标），每项可点击跳转详情",
@@ -287,7 +307,10 @@
       "description": "质量收口：flutter analyze、flutter test 全量、flutter build ios --no-codesign --debug、pytest 全量、vitest 全量、npm run build、Docker smoke",
       "verification": "L3",
       "depends_on": ["F174", "F175", "F176"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-27T22:30:00",
+      "completed_at": "2026-04-27T22:40:00",
+      "summary": "flutter analyze 0 errors + flutter test 423 passed + flutter build ios ok + pytest 1276 + vitest 612 + npm build ok",
       "priority": "P0",
       "acceptance_criteria": [
         "flutter analyze 0 errors",
