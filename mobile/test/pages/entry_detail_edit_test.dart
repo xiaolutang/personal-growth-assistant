@@ -81,6 +81,17 @@ class _MockApiClient extends ApiClient {
         statusCode: 200,
       ) as Response<T>;
     }
+    if (path == '/entries/test-id/knowledge-context') {
+      return Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(path: path),
+        data: {
+          'nodes': <dynamic>[],
+          'edges': <dynamic>[],
+          'center_concepts': <dynamic>[],
+        },
+        statusCode: 200,
+      ) as Response<T>;
+    }
     throw UnimplementedError('Unexpected path: $path');
   }
 }
@@ -107,7 +118,8 @@ Future<ProviderContainer> _pumpDetailPage(
       ),
     ),
   );
-  await tester.pump();
+  // pumpAndSettle 等待所有异步操作（包括 fetchKnowledgeContext）完成
+  await tester.pumpAndSettle();
 
   return container;
 }

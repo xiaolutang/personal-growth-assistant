@@ -372,6 +372,25 @@ class EntryDetailNotifier extends FamilyNotifier<EntryDetailState, String> {
     }
   }
 
+  /// 获取知识上下文
+  Future<void> fetchKnowledgeContext() async {
+    try {
+      final response =
+          await _apiClient.fetchKnowledgeContext<Map<String, dynamic>>(
+        id: _entryId,
+      );
+      final data = response.data;
+      if (data != null) {
+        state = state.copyWith(
+          knowledgeContext: KnowledgeContextData.fromJson(data),
+        );
+      }
+    } catch (e) {
+      // 知识上下文加载失败不阻塞主流程，仅记录错误
+      state = state.copyWith(error: ApiClient.errorMessage(e));
+    }
+  }
+
   /// 生成 AI 摘要
   Future<void> generateSummary() async {
     state = state.copyWith(isGeneratingSummary: true, clearError: true);

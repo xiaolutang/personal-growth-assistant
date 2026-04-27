@@ -50,6 +50,7 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
     _contentController = TextEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadEntry();
+      _loadKnowledgeContext();
     });
   }
 
@@ -63,6 +64,10 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
 
   void _loadEntry() {
     ref.read(entryDetailProvider(widget.entryId).notifier).fetchEntry();
+  }
+
+  void _loadKnowledgeContext() {
+    ref.read(entryDetailProvider(widget.entryId).notifier).fetchKnowledgeContext();
   }
 
   /// 进入编辑模式：初始化本地控制器
@@ -275,6 +280,8 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
   // 只读模式
   // ============================================================
   Widget _buildReadOnlyBody(Entry entry, ThemeData theme) {
+    final detailState = ref.watch(entryDetailProvider(widget.entryId));
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -314,6 +321,16 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
             ),
 
           const SizedBox(height: AppSpacing.xl),
+
+          // AI 摘要 Section
+          _buildAISummaryCard(entry, detailState, theme),
+
+          const SizedBox(height: AppSpacing.lg),
+
+          // 知识上下文 Section
+          _buildKnowledgeContextCard(detailState, theme),
+
+          const SizedBox(height: AppSpacing.lg),
 
           // 底部元信息
           _buildMetaInfo(entry, theme),
@@ -662,6 +679,286 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
         ),
       ],
     );
+  }
+
+  // ============================================================
+  // AI 摘要卡片
+  // ============================================================
+  Widget _buildAISummaryCard(
+      Entry entry,
+      EntryDetailState state,
+      ThemeData theme,) {
+    final hasContent = entry.content != null && entry.content!.isNotEmpty;
+    final isLoading = state.isGeneratingSummary;
+    final summary = state.summaryText;
+    final cached = state.summaryCached;
+    final hasError = state.error != null && summary == null;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section 标题行
+            Row(
+              children: [
+                const Icon(
+                  Icons.auto_awesome_outlined,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  'AI 摘要',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                if (cached && summary != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(AppRadius.button),
+                    ),
+                    child: const Text(
+                      '已缓存',
+                      style: TextStyle(
+                        fontSize: AppFontSize.caption,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            // Loading 态
+            if (isLoading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.lg),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            // 错误态 + 重试
+            else if (hasError) ...[
+              Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 16,
+                    color: theme.colorScheme.error,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      state.error ?? '摘要生成失败',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () {
+                      ref
+                          .read(entryDetailProvider(widget.entryId).notifier)
+                          .generateSummary();
+                    },
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('重试'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ]
+            // 摘要文本展示
+            else if (summary != null)
+              MarkdownBody(
+                data: summary,
+                selectable: true,
+              )
+            // 空内容 - 禁用生成按钮
+            else if (!hasContent)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: null,
+                    icon: const Icon(Icons.auto_awesome, size: 18),
+                    label: const Text('生成摘要'),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    '内容为空，无法生成摘要',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              )
+            // 生成按钮
+            else
+              ElevatedButton.icon(
+                onPressed: () {
+                  ref
+                      .read(entryDetailProvider(widget.entryId).notifier)
+                      .generateSummary();
+                },
+                icon: const Icon(Icons.auto_awesome, size: 18),
+                label: const Text('生成摘要'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // 知识上下文卡片
+  // ============================================================
+  Widget _buildKnowledgeContextCard(
+      EntryDetailState state,
+      ThemeData theme,) {
+    final context = state.knowledgeContext;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section 标题行
+            Row(
+              children: [
+                const Icon(
+                  Icons.account_tree_outlined,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  '知识上下文',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            // 概念列表
+            if (context == null || context.nodes.isEmpty)
+              Text(
+                '暂无知识关联',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              )
+            else
+              ...context.nodes.map((node) => _buildConceptNode(node, theme)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConceptNode(Map<String, dynamic> node, ThemeData theme) {
+    final name = node['name'] as String? ?? '未知概念';
+    final mastery = node['mastery'] as String?;
+    final entryCount = node['entry_count'] as int? ?? 0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Row(
+        children: [
+          // 概念名
+          Expanded(
+            child: Text(
+              name,
+              style: theme.textTheme.bodyMedium,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+
+          // mastery 等级标签
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: 2,
+            ),
+            decoration: BoxDecoration(
+              color: _masteryColor(mastery).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.button),
+            ),
+            child: Text(
+              _masteryLabel(mastery),
+              style: TextStyle(
+                fontSize: AppFontSize.caption,
+                color: _masteryColor(mastery),
+              ),
+            ),
+          ),
+
+          // entry_count 数字
+          if (entryCount > 0) ...[
+            const SizedBox(width: AppSpacing.xs),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(AppRadius.button),
+              ),
+              child: Text(
+                '$entryCount 篇',
+                style: TextStyle(
+                  fontSize: AppFontSize.caption,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _masteryLabel(String? mastery) {
+    switch (mastery) {
+      case 'beginner':
+        return '入门';
+      case 'intermediate':
+        return '进阶';
+      case 'advanced':
+        return '精通';
+      default:
+        return '未评估';
+    }
+  }
+
+  Color _masteryColor(String? mastery) {
+    switch (mastery) {
+      case 'beginner':
+        return AppColors.waitStart;
+      case 'intermediate':
+        return AppColors.doing;
+      case 'advanced':
+        return AppColors.completed;
+      default:
+        return AppColors.waitStart;
+    }
   }
 
   // ============================================================

@@ -705,6 +705,59 @@ void main() {
       expect(state.entryLinks, isEmpty);
     });
 
+    // ---- fetchKnowledgeContext ----
+    test('fetchKnowledgeContext loads data into state', () async {
+      mockApiClient.fetchKnowledgeContextFn = ({required id}) async {
+        return Response<Map<String, dynamic>>(
+          requestOptions:
+              RequestOptions(path: '/entries/$id/knowledge-context'),
+          data: {
+            'nodes': [
+              {'name': 'Flutter', 'mastery': 'intermediate', 'entry_count': 5},
+              {'name': 'Dart', 'mastery': 'advanced', 'entry_count': 3},
+            ],
+            'edges': [
+              {'source': 'Flutter', 'target': 'Dart', 'type': 'related'},
+            ],
+            'center_concepts': ['Flutter'],
+          },
+          statusCode: 200,
+        );
+      };
+
+      await container
+          .read(entryDetailProvider('test-id').notifier)
+          .fetchKnowledgeContext();
+
+      final state = container.read(entryDetailProvider('test-id'));
+      expect(state.knowledgeContext, isNotNull);
+      expect(state.knowledgeContext!.nodes, hasLength(2));
+      expect(state.knowledgeContext!.edges, hasLength(1));
+      expect(state.knowledgeContext!.centerConcepts, ['Flutter']);
+    });
+
+    test('fetchKnowledgeContext failure sets error', () async {
+      mockApiClient.fetchKnowledgeContextFn = ({required id}) async {
+        throw DioException(
+          requestOptions:
+              RequestOptions(path: '/entries/$id/knowledge-context'),
+          response: Response(
+            requestOptions:
+                RequestOptions(path: '/entries/$id/knowledge-context'),
+            statusCode: 500,
+            data: {'detail': 'Server Error'},
+          ),
+        );
+      };
+
+      await container
+          .read(entryDetailProvider('test-id').notifier)
+          .fetchKnowledgeContext();
+
+      final state = container.read(entryDetailProvider('test-id'));
+      expect(state.error, isNotNull);
+    });
+
     // ---- searchEntriesForLink ----
     test('searchEntriesForLink writes results to searchResults state', () async {
       mockApiClient.searchEntriesFn = ({required query, int? limit}) async {
@@ -797,6 +850,9 @@ class MockApiClient extends ApiClient {
   Future<Response<Map<String, dynamic>>> Function({required String id})?
       fetchBacklinksFn;
 
+  Future<Response<Map<String, dynamic>>> Function({required String id})?
+      fetchKnowledgeContextFn;
+
   Future<Response<Map<String, dynamic>>> Function({
     required String id,
     String direction,
@@ -861,6 +917,15 @@ class MockApiClient extends ApiClient {
       return (await fetchBacklinksFn!(id: id)) as Response<T>;
     }
     throw UnimplementedError('MockApiClient.fetchBacklinks not configured');
+  }
+
+  @override
+  Future<Response<T>> fetchKnowledgeContext<T>({required String id}) async {
+    if (fetchKnowledgeContextFn != null) {
+      return (await fetchKnowledgeContextFn!(id: id)) as Response<T>;
+    }
+    throw UnimplementedError(
+        'MockApiClient.fetchKnowledgeContext not configured');
   }
 
   @override
