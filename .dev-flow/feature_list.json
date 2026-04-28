@@ -87,9 +87,9 @@
   "archived_phases": [],
   "summary": {
     "total": 14,
-    "pending": 14,
+    "pending": 13,
     "in_progress": 0,
-    "completed": 0,
+    "completed": 1,
     "cancelled": 0
   },
   "features": [
@@ -144,7 +144,11 @@
       "description": "新建 backend/app/agent/react_agent.py，实现 LangGraph ReAct Agent。使用 StateGraph(MessagesState) 构建 Agent Node + ToolNode 循环。条件边判断：LLM 无 tool_calls→END；有 tool_calls 且包含 ask_user→执行 ToolNode 后路由到 END（中断等待用户回复）；其他 tool_calls→继续循环。循环上限 5 轮。System prompt 支持页面上下文注入。保留 AsyncSqliteSaver checkpointer。现有 TaskParserGraph 不受影响。",
       "verification": "L1",
       "depends_on": ["B185"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-28T19:55:00",
+      "completed_at": "2026-04-28T20:10:00",
+      "evidence_file": ".dev-flow/evidence/B186.md",
+      "execution_notes": "23 tests passed, 3 new files. OpenAICompatibleChatModel + ReActAgentGraph + prompts",
       "priority": "P0",
       "acceptance_criteria": [
         "react_agent.py 使用 LangGraph StateGraph + MessagesState",
