@@ -6,3 +6,5 @@ export { ToolCallCard } from "./ToolCallCard";
 export { ThinkingIndicator } from "./ThinkingIndicator";
 export { ChatInput } from "./ChatInput";
 export { AgentPrompt } from "./AgentPrompt";
+export { FeedbackButtons } from "./FeedbackButtons";
+export type { FeedbackData } from "./FeedbackButtons";

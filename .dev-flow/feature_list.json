@@ -87,9 +87,9 @@
   "archived_phases": [],
   "summary": {
     "total": 14,
-    "pending": 2,
+    "pending": 1,
     "in_progress": 1,
-    "completed": 11,
+    "completed": 12,
     "cancelled": 0
   },
   "features": [
@@ -449,8 +449,14 @@
       "description": "采集关键指标（工具选择准确率、参数提取准确率、平均延迟、token 消耗、追问准确率），配置告警规则。",
       "verification": "L1",
       "depends_on": ["S45", "B189"],
-      "status": "in_progress",
+      "status": "completed",
       "started_at": "2026-04-29T00:20:00",
+      "completed_at": "2026-04-29T00:35:00",
+      "actual_minutes": 15,
+      "evidence_file": ".dev-flow/evidence/S46.md",
+      "commit": "35b427d",
+      "summary": "AgentMetrics + AlertEngine + MetricsReport。39 个单元测试通过。",
+      "execution_notes": "2 new files, 1217 insertions",
       "priority": "P1",
       "acceptance_criteria": [
         "指标采集：工具选择准确率、参数提取准确率、平均延迟、token 消耗、追问准确率",
@@ -469,7 +475,8 @@
       "description": "每条 Agent 回复右侧显示 👍👎⚑ 按钮。👎 点击展开反馈面板（6 选项 + 其他）。反馈提交调用 API。",
       "verification": "F1",
       "depends_on": ["F186"],
-      "status": "pending",
+      "status": "in_progress",
+      "started_at": "2026-04-29T00:40:00",
       "priority": "P2",
       "acceptance_criteria": [
         "每条 Agent 回复右侧显示 👍👎⚑ 按钮",

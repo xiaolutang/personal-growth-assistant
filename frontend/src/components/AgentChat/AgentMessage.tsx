@@ -1,5 +1,9 @@
+import { useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { ToolCallCard } from "./ToolCallCard";
+import { FeedbackButtons } from "./FeedbackButtons";
+import type { FeedbackData } from "./FeedbackButtons";
+import { submitFeedback } from "@/services/api";
 import type { AgentMessage as AgentMessageType } from "@/stores/agentStore";
 
 interface AgentMessageProps {
@@ -7,7 +11,62 @@ interface AgentMessageProps {
   className?: string;
 }
 
+/** 将 FeedbackData 映射为 API payload */
+function buildFeedbackPayload(messageId: string, feedback: FeedbackData) {
+  const reasonMap: Record<string, string> = {
+    understanding_wrong: "理解错了",
+    action_incorrect: "操作不正确",
+    not_helpful: "回复没帮助",
+    should_ask_didnt: "应该追问没追问",
+    shouldnt_ask_did: "不该追问追问了",
+    other: "其他",
+  };
+
+  if (feedback.type === "positive") {
+    return {
+      title: `[Agent 反馈] 赞 - ${messageId}`,
+      description: "用户对 Agent 回复表示满意",
+      severity: "low" as const,
+    };
+  }
+
+  if (feedback.type === "flag") {
+    return {
+      title: `[Agent 标记] 不当内容 - ${messageId}`,
+      description: "用户标记此回复为不当内容",
+      severity: "high" as const,
+    };
+  }
+
+  // negative
+  const reasonLabel = feedback.reason
+    ? reasonMap[feedback.reason] || feedback.reason
+    : "未知原因";
+  const detail = feedback.detail
+    ? `${reasonLabel}：${feedback.detail}`
+    : reasonLabel;
+
+  return {
+    title: `[Agent 反馈] 踩 - ${messageId}`,
+    description: detail,
+    severity: "medium" as const,
+  };
+}
+
 export function AgentMessage({ message, className }: AgentMessageProps) {
+  const handleFeedback = useCallback(
+    async (feedback: FeedbackData) => {
+      try {
+        const payload = buildFeedbackPayload(message.id, feedback);
+        await submitFeedback(payload);
+      } catch (err) {
+        // 静默失败，不影响用户体验
+        console.error("[FeedbackButtons] 反馈提交失败:", err);
+      }
+    },
+    [message.id],
+  );
+
   // 工具调用类型 → 渲染 ToolCallCard
   if (message.type === "tool_call" && message.toolCall) {
     return (
@@ -23,7 +82,7 @@ export function AgentMessage({ message, className }: AgentMessageProps) {
     );
   }
 
-  // 文本类型 → 渲染文本气泡
+  // 文本类型 → 渲染文本气泡 + 反馈按钮
   if (message.type === "text" && message.content) {
     return (
       <div className={cn("flex items-start gap-2.5", className)}>
@@ -47,6 +106,14 @@ export function AgentMessage({ message, className }: AgentMessageProps) {
               )}
             </div>
           )}
+
+          {/* 反馈按钮 */}
+          <div className="mt-1.5">
+            <FeedbackButtons
+              messageId={message.id}
+              onSubmit={handleFeedback}
+            />
+          </div>
         </div>
       </div>
     );
