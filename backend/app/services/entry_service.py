@@ -232,13 +232,22 @@ class EntryService:
         return self.storage.sqlite.entry_belongs_to_user(entry_id, user_id)
 
     async def get_entry(self, entry_id: str, user_id: str = "_default") -> Optional[EntryResponse]:
-        """获取单个条目"""
+        """获取单个条目（Markdown 优先，SQLite 兜底）"""
         if not self._verify_entry_owner(entry_id, user_id):
             return None
-        entry = self._get_markdown_storage(user_id).read_entry(entry_id)
-        if not entry:
-            return None
-        return EntryResponse(**EntryMapper.task_to_response(entry))
+        try:
+            entry = self._get_markdown_storage(user_id).read_entry(entry_id)
+        except Exception:
+            logger.warning("Markdown 读取 entry_id=%s 异常，尝试 SQLite 兜底", entry_id, exc_info=True)
+            entry = None
+        if entry:
+            return EntryResponse(**EntryMapper.task_to_response(entry))
+        # Markdown 文件缺失或异常，从 SQLite 兜底
+        if self.storage.sqlite:
+            row = self.storage.sqlite.get_entry_by_id(entry_id, user_id)
+            if row:
+                return EntryResponse(**EntryMapper.task_to_response(row))
+        return None
 
     async def get_related_entries(
         self, entry_id: str, user_id: str = "_default", limit: int = 5

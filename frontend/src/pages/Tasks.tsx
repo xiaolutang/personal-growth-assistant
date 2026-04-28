@@ -44,7 +44,7 @@ export function Tasks() {
   return (
     <>
       <Header title="任务列表" />
-      <main className="flex-1 p-6 pb-32">
+      <main className="flex-1 overflow-y-auto p-6 pb-32">
         {serviceUnavailable ? (
           <ServiceUnavailable onRetry={() => fetchEntries(TASK_QUERY_PARAMS)} />
         ) : (

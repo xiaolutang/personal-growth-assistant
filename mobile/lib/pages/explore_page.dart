@@ -457,7 +457,7 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
     // 普通模式：直接显示卡片
     return EntryCard(
       entry: entry,
-      onTap: () => context.go('/entries/${entry.id}'),
+      onTap: () => context.push('/entries/${entry.id}'),
     );
   }
 

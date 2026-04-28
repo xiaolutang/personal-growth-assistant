@@ -251,7 +251,7 @@ class _TodayPageState extends ConsumerState<TodayPage> {
             (entry) => EntryCard(
               entry: entry,
               onTap: () {
-                context.go('/entries/${entry.id}');
+                context.push('/entries/${entry.id}');
               },
             ),
           ),
@@ -308,7 +308,7 @@ class _TodayPageState extends ConsumerState<TodayPage> {
             (entry) => EntryCard(
               entry: entry,
               onTap: () {
-                context.go('/entries/${entry.id}');
+                context.push('/entries/${entry.id}');
               },
             ),
           ),

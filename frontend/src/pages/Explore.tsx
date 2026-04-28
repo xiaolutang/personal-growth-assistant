@@ -95,7 +95,7 @@ export function Explore() {
   const showPanel = showSuggestions && !searchQuery.trim();
 
   return (
-    <main className="flex-1 p-4 md:p-6 pb-32">
+    <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-32">
       <Header title="探索" />
 
       {serviceUnavailable ? (

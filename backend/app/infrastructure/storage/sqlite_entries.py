@@ -24,6 +24,24 @@ class SQLiteEntriesMixin:
             ).fetchone()
             return row is not None
 
+    def get_entry_by_id(self, entry_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+        """按 ID 获取单条目（含 content 和 tags），Markdown 文件缺失时的兜底"""
+        with self._conn() as conn:
+            row = conn.execute(
+                "SELECT * FROM entries WHERE id = ? AND user_id = ? LIMIT 1",
+                (entry_id, user_id),
+            ).fetchone()
+            if not row:
+                return None
+            entry = dict(row)
+            # 获取标签
+            tag_rows = conn.execute(
+                "SELECT t.name FROM entry_tags et JOIN tags t ON et.tag_id = t.id WHERE et.entry_id = ?",
+                (entry_id,),
+            ).fetchall()
+            entry["tags"] = [r["name"] for r in tag_rows]
+            return entry
+
     def batch_entry_belongs_to_user(
         self, entry_ids: List[str], user_id: str
     ) -> set[str]:
