@@ -442,7 +442,7 @@ class ReActAgentGraph:
         all_messages = [SystemMessage(content=system_prompt)] + messages
 
         try:
-            response = await self.bound_model.ainvoke(all_messages)
+            response = await self.bound_model.ainvoke(all_messages, config=config)
         except Exception as e:
             logger.error("ReAct Agent LLM 调用异常: %s", e, exc_info=True)
             return {

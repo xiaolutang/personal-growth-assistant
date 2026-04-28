@@ -88,8 +88,8 @@
   "summary": {
     "total": 14,
     "pending": 0,
-    "in_progress": 1,
-    "completed": 13,
+    "in_progress": 0,
+    "completed": 14,
     "cancelled": 0
   },
   "features": [
@@ -502,8 +502,14 @@
       "description": "扩展 POST /feedback 端点支持 Agent 反馈类型。反馈存储 + Langfuse trace 标记 + 自动创建 Issue。bad case 补充到 Golden Dataset 流程。",
       "verification": "L2",
       "depends_on": ["F187"],
-      "status": "in_progress",
+      "status": "completed",
       "started_at": "2026-04-29T01:00:00",
+      "completed_at": "2026-04-29T01:15:00",
+      "actual_minutes": 15,
+      "evidence_file": ".dev-flow/evidence/B192.md",
+      "commit": "1dec1cf",
+      "summary": "Agent 反馈 API + 自动 Issue + Langfuse 标记 + bad case 导出。19 个测试通过。",
+      "execution_notes": "4 files modified, 1 new test file, 766 insertions",
       "priority": "P2",
       "acceptance_criteria": [
         "POST /feedback 支持 Agent 反馈类型（message_id + type + reason + detail）",

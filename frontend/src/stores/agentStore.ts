@@ -124,6 +124,7 @@ interface AgentStore {
   currentToolCalls: Map<string, ToolCallInfo>;
   error: string | null;
   pageContext: AgentPageContext | null;
+  panelHeight: number;
 
   // ── 会话管理 ──
   createSession: () => string;
@@ -137,6 +138,7 @@ interface AgentStore {
 
   // ── 状态操作 ──
   setPageContext: (ctx: AgentPageContext | null) => void;
+  setPanelHeight: (height: number) => void;
   clearError: () => void;
   setFollowUpCallback: (cb: FollowUpCallback) => void;
 }
@@ -250,6 +252,24 @@ let _activeAbortController: AbortController | null = null;
 /** 追问回调 */
 let _followUpCallback: FollowUpCallback = null;
 
+// 面板高度持久化
+const DEFAULT_PANEL_HEIGHT = 300;
+function loadPanelHeight(): number {
+  try {
+    const saved = localStorage.getItem("chat-panel-height");
+    return saved ? Number(saved) : DEFAULT_PANEL_HEIGHT;
+  } catch {
+    return DEFAULT_PANEL_HEIGHT;
+  }
+}
+function savePanelHeight(height: number): void {
+  try {
+    localStorage.setItem("chat-panel-height", String(height));
+  } catch {
+    // 忽略存储错误
+  }
+}
+
 export const useAgentStore = create<AgentStore>()((set, get) => ({
   // ── 初始状态 ──
   sessions: [],
@@ -260,6 +280,7 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
   currentToolCalls: new Map<string, ToolCallInfo>(),
   error: null,
   pageContext: null,
+  panelHeight: loadPanelHeight(),
 
   // ── 会话管理 ──
 
@@ -498,6 +519,29 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
                 }));
               }
 
+              // ask_user 追问处理：提取 question 创建追问消息
+              if (existing.tool === "ask_user" && resultData.success) {
+                const askResult = resultData.result as Record<string, unknown> | undefined;
+                const question = (askResult?.question as string) || (existing.args?.question as string) || "";
+                if (question) {
+                  const followUpMsg: AgentMessage = {
+                    id: generateId("followup"),
+                    type: "text",
+                    role: "assistant",
+                    content: question,
+                    timestamp: Date.now(),
+                    isFollowUp: true,
+                  };
+                  set((state) => ({
+                    sessions: state.sessions.map((s) =>
+                      s.id === sid
+                        ? { ...s, messages: [...s.messages, followUpMsg], updatedAt: Date.now() }
+                        : s
+                    ),
+                  }));
+                }
+              }
+
               pendingToolCallMsgIds.delete(resultData.tool_call_id);
             }
             break;
@@ -674,6 +718,11 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
 
   setPageContext: (ctx: AgentPageContext | null) => {
     set({ pageContext: ctx });
+  },
+
+  setPanelHeight: (height: number) => {
+    set({ panelHeight: height });
+    savePanelHeight(height);
   },
 
   clearError: () => {

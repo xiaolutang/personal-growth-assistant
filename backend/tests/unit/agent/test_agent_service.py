@@ -354,12 +354,12 @@ class TestAgentServiceNoToolCalls:
 
         event_types = [e[0] for e in result]
 
-        # 只有 thinking（因为 AIMessage content 发为 thinking） + done
+        # 纯对话回复：content（最终回复） + done，无 tool_call/tool_result
         assert "tool_call" not in event_types
         assert "tool_result" not in event_types
         assert event_types[-1] == "done"
-        # 应该有 thinking 事件（因为 AIMessage 有 content 且无 tool_calls）
-        assert "thinking" in event_types
+        # 应该有 content 事件（AIMessage 有 content 且无 tool_calls → content 而非 thinking）
+        assert "content" in event_types
 
     @pytest.mark.asyncio
     async def test_empty_agent_response(self):

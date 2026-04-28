@@ -11,15 +11,17 @@ interface AgentMessageProps {
   className?: string;
 }
 
-/** 将 FeedbackData 映射为 API payload */
+/** 将 FeedbackData 映射为 API payload（匹配后端 FeedbackRequest） */
 function buildFeedbackPayload(messageId: string, feedback: FeedbackData) {
+  // 后端 _NEGATIVE_REASONS 词表：理解错了、操作不正确、信息不准确、不相关、不完整、格式错误、other_negative
   const reasonMap: Record<string, string> = {
     understanding_wrong: "理解错了",
     action_incorrect: "操作不正确",
-    not_helpful: "回复没帮助",
-    should_ask_didnt: "应该追问没追问",
-    shouldnt_ask_did: "不该追问追问了",
-    other: "其他",
+    inaccurate_info: "信息不准确",
+    irrelevant: "不相关",
+    incomplete: "不完整",
+    format_error: "格式错误",
+    other: "other_negative",
   };
 
   if (feedback.type === "positive") {
@@ -27,6 +29,10 @@ function buildFeedbackPayload(messageId: string, feedback: FeedbackData) {
       title: `[Agent 反馈] 赞 - ${messageId}`,
       description: "用户对 Agent 回复表示满意",
       severity: "low" as const,
+      feedback_type: "agent" as const,
+      message_id: messageId,
+      reason: null,
+      detail: null,
     };
   }
 
@@ -35,10 +41,17 @@ function buildFeedbackPayload(messageId: string, feedback: FeedbackData) {
       title: `[Agent 标记] 不当内容 - ${messageId}`,
       description: "用户标记此回复为不当内容",
       severity: "high" as const,
+      feedback_type: "agent" as const,
+      message_id: messageId,
+      reason: null,
+      detail: null,
     };
   }
 
   // negative
+  const mappedReason = feedback.reason
+    ? reasonMap[feedback.reason] || feedback.reason
+    : "other_negative";
   const reasonLabel = feedback.reason
     ? reasonMap[feedback.reason] || feedback.reason
     : "未知原因";
@@ -50,6 +63,10 @@ function buildFeedbackPayload(messageId: string, feedback: FeedbackData) {
     title: `[Agent 反馈] 踩 - ${messageId}`,
     description: detail,
     severity: "medium" as const,
+    feedback_type: "agent" as const,
+    message_id: messageId,
+    reason: mappedReason,
+    detail: feedback.detail || null,
   };
 }
 

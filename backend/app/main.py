@@ -180,6 +180,7 @@ async def lifespan(app: FastAPI):
                 agent_service = AgentService()
                 agent_service.set_react_agent(react_agent)
                 agent_service.set_dependencies(tool_deps)
+                agent_service.set_session_meta_store(session_meta_store)
                 from app.routers import parse as parse_module
                 parse_module.set_agent_service(agent_service)
 

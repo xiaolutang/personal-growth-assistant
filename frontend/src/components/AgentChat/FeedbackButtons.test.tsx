@@ -40,12 +40,13 @@ describe("FeedbackButtons", () => {
     render(<FeedbackButtons {...defaultProps} />);
     fireEvent.click(screen.getByLabelText("踩"));
     expect(screen.getByText("请选择问题类型：")).toBeInTheDocument();
-    // 应该有 6 个预设选项
+    // 应该有 7 个预设选项（与后端 _NEGATIVE_REASONS 一致）
     expect(screen.getByText("理解错了")).toBeInTheDocument();
     expect(screen.getByText("操作不正确")).toBeInTheDocument();
-    expect(screen.getByText("回复没帮助")).toBeInTheDocument();
-    expect(screen.getByText("应该追问没追问")).toBeInTheDocument();
-    expect(screen.getByText("不该追问追问了")).toBeInTheDocument();
+    expect(screen.getByText("信息不准确")).toBeInTheDocument();
+    expect(screen.getByText("不相关")).toBeInTheDocument();
+    expect(screen.getByText("不完整")).toBeInTheDocument();
+    expect(screen.getByText("格式错误")).toBeInTheDocument();
     expect(screen.getByText("其他")).toBeInTheDocument();
   });
 

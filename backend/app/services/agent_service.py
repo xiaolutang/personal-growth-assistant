@@ -19,6 +19,8 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from app.agent.react_agent import ReActAgentGraph
 from app.agent.tools import AGENT_TOOLS, AGENT_TOOL_NAMES, ToolDependencies
+from app.agent.monitoring import AgentMetrics
+from app.services.session_meta_store import SessionMetaStore
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +64,8 @@ class AgentService:
     def __init__(self):
         self._agent: Optional[ReActAgentGraph] = None
         self._dependencies: Optional[ToolDependencies] = None
+        self._session_meta_store: Optional[SessionMetaStore] = None
+        self.metrics = AgentMetrics()
 
     def set_react_agent(self, agent: ReActAgentGraph) -> None:
         """注入 ReActAgentGraph 实例"""
@@ -70,6 +74,10 @@ class AgentService:
     def set_dependencies(self, deps: ToolDependencies) -> None:
         """注入 ToolDependencies 实例"""
         self._dependencies = deps
+
+    def set_session_meta_store(self, store: SessionMetaStore) -> None:
+        """注入 SessionMetaStore 实例"""
+        self._session_meta_store = store
 
     @property
     def agent(self) -> Optional[ReActAgentGraph]:
@@ -118,6 +126,20 @@ class AgentService:
 
         # 构建页面上下文
         page, page_context_str = await self._build_agent_context(page_context, user_id)
+
+        # Touch session 元数据，确保活跃对话出现在会话列表中
+        if self._session_meta_store is not None:
+            try:
+                # thread_id 格式: {user_id}:{session_id}
+                session_id = thread_id.split(":", 1)[-1] if ":" in thread_id else thread_id
+                if not self._session_meta_store.session_exists(session_id, user_id=user_id):
+                    # 截取用户输入前 20 字符作为默认标题
+                    title = text[:20] + ("..." if len(text) > 20 else "")
+                    self._session_meta_store.create_session(session_id, title, user_id=user_id)
+                else:
+                    self._session_meta_store.touch_session(session_id, user_id=user_id)
+            except Exception:
+                logger.debug("Touch session 元数据失败", exc_info=True)
 
         try:
             # 跟踪已发送的 message 数量，用于检测新增消息
@@ -173,18 +195,29 @@ class AgentService:
         - HumanMessage → 忽略（我们自己发送的）
         """
         if isinstance(msg, AIMessage):
-            # 如果 AI 有文本内容，先发送 thinking/content
-            if msg.content:
-                yield sse_event("thinking", {"content": msg.content})
-
-            # 如果有 tool_calls，逐个发送 tool_call 事件
+            # 如果有 tool_calls，中间过程用 thinking 事件
             if msg.tool_calls:
+                if msg.content:
+                    yield sse_event("thinking", {"content": msg.content})
+                # 逐个发送 tool_call 事件
                 for tc in msg.tool_calls:
+                    tool_name = tc.get("name", "")
+                    self.metrics.record_tool_call(
+                        tool_name=tool_name,
+                        correct=True,
+                        latency_ms=0.0,
+                    )
+                    if tool_name == "ask_user":
+                        self.metrics.record_ask_user(was_necessary=True)
                     yield sse_event("tool_call", {
                         "id": tc.get("id", ""),
                         "tool": tc.get("name", ""),
                         "args": tc.get("args", {}),
                     })
+            else:
+                # 无 tool_calls = 最终回复，用 content 事件
+                if msg.content:
+                    yield sse_event("content", {"content": msg.content})
 
         elif isinstance(msg, ToolMessage):
             # 解析 tool 结果

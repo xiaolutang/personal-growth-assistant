@@ -12,13 +12,14 @@ export interface FeedbackData {
   detail?: string;
 }
 
-/** 负面反馈预设选项 */
+/** 负面反馈预设选项 — 与后端 _NEGATIVE_REASONS 保持一致 */
 const NEGATIVE_OPTIONS = [
   { key: "understanding_wrong", label: "理解错了" },
   { key: "action_incorrect", label: "操作不正确" },
-  { key: "not_helpful", label: "回复没帮助" },
-  { key: "should_ask_didnt", label: "应该追问没追问" },
-  { key: "shouldnt_ask_did", label: "不该追问追问了" },
+  { key: "inaccurate_info", label: "信息不准确" },
+  { key: "irrelevant", label: "不相关" },
+  { key: "incomplete", label: "不完整" },
+  { key: "format_error", label: "格式错误" },
   { key: "other", label: "其他" },
 ] as const;
 

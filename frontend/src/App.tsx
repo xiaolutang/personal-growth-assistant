@@ -9,7 +9,7 @@ import { FeedbackButton } from "@/components/FeedbackButton";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ThemeProvider } from "@/lib/theme";
-import { useChatStore } from "@/stores/chatStore";
+import { useAgentStore } from "@/stores/agentStore";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUserStore } from "@/stores/userStore";
 import { initFetchInterceptor } from "@/lib/uid";
@@ -69,7 +69,7 @@ initFetchInterceptor();
 const TABLET_BREAKPOINT = 1024;
 
 function AppLayout() {
-  const panelHeight = useChatStore((state) => state.panelHeight);
+  const panelHeight = useAgentStore((state) => state.panelHeight);
   const { isOpen, close } = useSidebar();
   const navigate = useNavigate();
   const location = useLocation();

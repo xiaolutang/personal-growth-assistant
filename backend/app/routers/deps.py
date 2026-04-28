@@ -1,4 +1,5 @@
 """共享依赖"""
+import re
 from typing import TYPE_CHECKING
 
 from fastapi import Depends, HTTPException, status
@@ -181,6 +182,19 @@ def get_current_user(
 
     user_storage = get_user_storage()
     return get_current_user_from_token(credentials.credentials, user_storage)
+
+
+# ── Thread ID 命名空间 ──
+
+# session_id 合法字符约束：仅允许字母数字和连字符（UUID 格式），防止冒号分隔符冲突
+_SESSION_ID_RE = re.compile(r"^[a-zA-Z0-9-]+$")
+
+
+def namespaced_thread_id(user_id: str, session_id: str) -> str:
+    """将 session_id 命名空间化为 '{user_id}:{session_id}'，实现 LangGraph checkpoint 天然隔离"""
+    if not _SESSION_ID_RE.match(session_id):
+        raise HTTPException(status_code=400, detail="session_id 仅允许字母数字和连字符")
+    return f"{user_id}:{session_id}"
 
 
 def reset_all_services():

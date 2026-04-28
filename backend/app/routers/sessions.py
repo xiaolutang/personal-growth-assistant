@@ -1,6 +1,5 @@
 """会话管理 API 路由"""
 import logging
-import re
 from datetime import datetime
 from typing import Optional
 
@@ -9,22 +8,12 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from pydantic import BaseModel, Field
 
 from app.services.session_meta_store import SessionMetaStore
-from app.routers.deps import get_current_user
+from app.routers.deps import get_current_user, namespaced_thread_id
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["sessions"])
-
-# session_id 合法字符约束：仅允许字母数字和连字符（UUID 格式），防止冒号分隔符冲突
-_SESSION_ID_RE = re.compile(r"^[a-zA-Z0-9-]+$")
-
-
-def _namespaced_thread_id(user_id: str, session_id: str) -> str:
-    """将 session_id 命名空间化为 '{user_id}:{session_id}'，实现 LangGraph checkpoint 天然隔离"""
-    if not _SESSION_ID_RE.match(session_id):
-        raise HTTPException(status_code=400, detail="session_id 仅允许字母数字和连字符")
-    return f"{user_id}:{session_id}"
 
 
 # 全局实例（由 main.py 注入）
@@ -85,7 +74,7 @@ async def clear_session(session_id: str, user: User = Depends(get_current_user))
     """
     if not _checkpointer:
         raise HTTPException(status_code=503, detail="服务未初始化")
-    thread_id = _namespaced_thread_id(user.id, session_id)
+    thread_id = namespaced_thread_id(user.id, session_id)
     await _checkpointer.adelete_thread(thread_id)
     return {"status": "ok", "message": f"会话 {session_id} 已清空"}
 
@@ -124,7 +113,7 @@ async def get_session_messages(session_id: str, user: User = Depends(get_current
     if not _checkpointer:
         raise HTTPException(status_code=503, detail="服务未初始化")
 
-    thread_id = _namespaced_thread_id(user.id, session_id)
+    thread_id = namespaced_thread_id(user.id, session_id)
     messages = []
     try:
         # 从 checkpointer 获取会话状态
@@ -196,7 +185,7 @@ async def delete_session(session_id: str, user: User = Depends(get_current_user)
     if not _checkpointer or not _session_meta_store:
         raise HTTPException(status_code=503, detail="服务未初始化")
 
-    thread_id = _namespaced_thread_id(user.id, session_id)
+    thread_id = namespaced_thread_id(user.id, session_id)
 
     # 删除对话历史
     await _checkpointer.adelete_thread(thread_id)
