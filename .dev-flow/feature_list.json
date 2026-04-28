@@ -87,9 +87,9 @@
   "archived_phases": [],
   "summary": {
     "total": 14,
-    "pending": 1,
+    "pending": 2,
     "in_progress": 1,
-    "completed": 10,
+    "completed": 11,
     "cancelled": 0
   },
   "features": [
@@ -419,8 +419,14 @@
       "description": "Docker Compose 添加 Langfuse 自部署服务。LangGraph CallbackHandler 接入 ReAct Agent，记录每次 LLM 调用的 input/output/token 统计/延迟。",
       "verification": "L3",
       "depends_on": ["B186"],
-      "status": "in_progress",
+      "status": "completed",
       "started_at": "2026-04-29T00:00:00",
+      "completed_at": "2026-04-29T00:15:00",
+      "actual_minutes": 15,
+      "evidence_file": ".dev-flow/evidence/S45.md",
+      "commit": "10fe5ef",
+      "summary": "Langfuse 自部署 + CallbackHandler 可选接入。14 个新增测试通过。",
+      "execution_notes": "docker-compose + react_agent + config + pyproject.toml + .env.example",
       "priority": "P1",
       "acceptance_criteria": [
         "deploy/docker-compose.yml 添加 Langfuse 服务",
@@ -443,7 +449,8 @@
       "description": "采集关键指标（工具选择准确率、参数提取准确率、平均延迟、token 消耗、追问准确率），配置告警规则。",
       "verification": "L1",
       "depends_on": ["S45", "B189"],
-      "status": "pending",
+      "status": "in_progress",
+      "started_at": "2026-04-29T00:20:00",
       "priority": "P1",
       "acceptance_criteria": [
         "指标采集：工具选择准确率、参数提取准确率、平均延迟、token 消耗、追问准确率",
