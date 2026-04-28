@@ -108,7 +108,7 @@ class EntryCreatedCard extends StatelessWidget {
   }
 
   void _navigateToDetail(BuildContext context) {
-    context.go('/entries/${entry.id}');
+    context.push('/entries/${entry.id}');
   }
 
   IconData get _categoryIcon {

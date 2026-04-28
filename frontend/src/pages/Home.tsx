@@ -9,7 +9,6 @@ import {
   RotateCcw,
   HelpCircle,
 } from "lucide-react";
-import { PageChatPanel } from "@/components/PageChatPanel";
 
 // Hooks
 import { useHomeData } from "./home/useHomeData";
@@ -28,8 +27,6 @@ export function Home() {
     isEmpty,
     navigate,
     fetchEntries,
-    onboardingCompleted,
-    handleOnboardingFirstResponse,
     todayTasks,
     unprocessedInbox,
     recentInbox,
@@ -160,42 +157,6 @@ export function Home() {
           </>
         )}
 
-        {/* ====== AI 对话面板 ====== */}
-        <PageChatPanel
-              key={onboardingCompleted ? "normal" : "onboarding"}
-              title="晨报助手"
-              welcomeMessage={onboardingCompleted ? "有什么想聊的？我可以帮你规划今天" : undefined}
-              greetingMessage={onboardingCompleted ? undefined : "你好！我是日知，你的个人成长助手。你可以试试和我聊天来记录灵感、管理任务或写笔记。"}
-              suggestions={
-                onboardingCompleted
-                  ? [
-                      { label: "今日复盘", message: "帮我复盘一下今天的任务完成情况" },
-                      { label: "查看进度", message: "本周的学习进度怎么样？" },
-                      { label: "推荐优先级", message: "帮我看看今天哪些任务最该优先做" },
-                    ]
-                  : [
-                      { label: "记灵感", message: "想到一个有趣的想法" },
-                      { label: "做任务", message: "今天要完成阅读" },
-                      { label: "记笔记", message: "读了《深度工作》的体会" },
-                    ]
-              }
-              pageContext={onboardingCompleted ? { page: "home" } : { page: "home", is_new_user: true }}
-              pageData={{
-                todo_count: todayTasks.length,
-                completed_today: todayStats.completed,
-                total_tasks: todayStats.total,
-                inbox_count: unprocessedInbox.length,
-                doing_count: todayStats.doing,
-                wait_start_count: todayStats.waitStart,
-                completion_rate: todayCompletionRate,
-                overdue_count: digest?.overdue?.length ?? 0,
-                stale_inbox_count: digest?.stale_inbox?.length ?? 0,
-                learning_streak: digest?.learning_streak ?? 0,
-                active_goals_count: activeGoals.length,
-              }}
-              defaultCollapsed={onboardingCompleted}
-              onFirstResponse={onboardingCompleted ? undefined : handleOnboardingFirstResponse}
-            />
       </main>
     </>
   );

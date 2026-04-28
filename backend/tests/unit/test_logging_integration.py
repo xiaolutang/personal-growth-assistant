@@ -3,7 +3,7 @@ B010/B011 集成验证：本地日志模块移除 + SDK 接入
 """
 import logging
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
 import pytest
 
@@ -37,16 +37,18 @@ class TestB010RemoveLocalLogging:
         from app.main import lifespan
 
         # Mock 所有 lifespan 依赖
-        async def mock_graph_create(*args, **kwargs):
-            g = MagicMock()
-            g.caller = MagicMock()
-            return g
+        mock_conn = MagicMock()
+        mock_checkpointer = MagicMock()
+        mock_checkpointer.setup = AsyncMock()
+
+        async def mock_connect(*args, **kwargs):
+            return mock_conn
 
         with patch("app.main.setup_remote_logging", return_value=MagicMock()), \
-             patch("app.main.TaskParserGraph") as mock_graph_cls, \
+             patch("aiosqlite.connect", side_effect=mock_connect), \
+             patch("langgraph.checkpoint.sqlite.aio.AsyncSqliteSaver", return_value=mock_checkpointer), \
              patch("app.main.init_storage", return_value=MagicMock()), \
              patch("app.main.deps"):
-            mock_graph_cls.create = mock_graph_create
 
             async with lifespan(None):
                 pass  # startup 成功，到达 yield 后继续 shutdown

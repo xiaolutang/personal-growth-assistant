@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../config/constants.dart';
 import '../config/theme.dart';
@@ -262,12 +263,12 @@ Future<void> showBatchFailureDialog(
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
           child: const Text('关闭'),
         ),
         FilledButton(
           onPressed: () {
-            Navigator.of(context).pop();
+            context.pop();
             info.onRetry();
           },
           child: const Text('重试失败项'),

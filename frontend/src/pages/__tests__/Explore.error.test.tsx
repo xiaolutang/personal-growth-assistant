@@ -63,11 +63,6 @@ vi.mock("@/components/TaskList", () => ({
   ),
 }));
 
-// Mock PageChatPanel
-vi.mock("@/components/PageChatPanel", () => ({
-  PageChatPanel: () => <div data-testid="page-chat-panel" />,
-}));
-
 // Mock Header
 vi.mock("@/components/layout/Header", () => ({
   Header: ({ title }: { title: string }) => <h1>{title}</h1>,

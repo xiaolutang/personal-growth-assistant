@@ -103,14 +103,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'goals',
             builder: (context, state) => const GoalsPage(),
           ),
+          GoRoute(
+            path: '/entries/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return EntryDetailPage(entryId: id);
+            },
+          ),
         ],
-      ),
-      GoRoute(
-        path: '/entries/:id',
-        builder: (context, state) {
-          final id = state.pathParameters['id']!;
-          return EntryDetailPage(entryId: id);
-        },
       ),
     ],
   );

@@ -7,7 +7,6 @@ import { TaskList } from "@/components/TaskList";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Header } from "@/components/layout/Header";
-import { PageChatPanel } from "@/components/PageChatPanel";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { useTaskStore } from "@/stores/taskStore";
 import type { EntryTemplate } from "@/services/api";
@@ -35,7 +34,6 @@ export function Explore() {
   const {
     activeTab,
     handleTabChange,
-    entries,
     isLoading,
     entriesError,
     loadEntries,
@@ -57,7 +55,6 @@ export function Explore() {
     setShowSuggestions,
     popularTags,
     filteredTasks,
-    autoExpandAssistant,
     emptyMessage,
     serviceUnavailable,
     retryService,
@@ -277,24 +274,6 @@ export function Explore() {
         </div>
       )}
 
-      {/* 搜索助手 AI */}
-      <PageChatPanel
-        title="搜索助手"
-        welcomeMessage="找不到想要的内容？让我帮你"
-        suggestions={[
-          { label: "最近内容", message: "最近我记录了哪些内容？" },
-          { label: "按类型浏览", message: "帮我看看我的笔记有哪些" },
-          { label: "知识关联", message: "帮我找出不同条目之间的关联" },
-        ]}
-        pageContext={{ page: "explore" }}
-        pageData={{
-          current_query: searchQuery || "无",
-          active_tab: activeTab || "全部",
-          result_count: filteredTasks.length,
-          total_entries: entries.length,
-        }}
-        defaultCollapsed={!autoExpandAssistant}
-      />
       </PullToRefresh>
       )}
     </main>

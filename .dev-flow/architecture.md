@@ -1,15 +1,15 @@
 # 架构文档
 
-> 项目：personal-growth-assistant | 版本：v0.39.0 | 更新：2026-04-26
+> 项目：personal-growth-assistant | 版本：v0.44.0 | 更新：2026-04-28
 
 ## 系统总览
 
 ```
-FastAPI 后端 (routers/services/infrastructure/graphs) ──SDK──> log-service (FastAPI+SQLite)
+FastAPI 后端 (routers/services/infrastructure/agent) ──SDK──> log-service (FastAPI+SQLite)
 React 前端 (pages/stores)   │                                 logs-ui (React SPA)
-Flutter 移动端 (lib/, MVVM) │
+Flutter 移动端 (lib/, MVVM) │                                 Langfuse (自部署可观测性)
 ```
-协议：HTTP REST (JSON)，不使用 gRPC，不依赖外部消息队列。
+协议：HTTP REST (JSON) + SSE 流式，不使用 gRPC，不依赖外部消息队列。
 
 ## 三层存储架构
 
@@ -32,32 +32,23 @@ SyncService 负责三层同步，所有操作按 user_id 隔离。
 ```
 backend/app/
 ├── main.py              # FastAPI 入口 + 生命周期
-├── routers/             # entries, search, knowledge, intent, parse, review, chat
-├── services/            # sync_service, entry_service, ai_chat_service
-│   └── review/          # R037: review 子模块 (insights.py, morning_digest.py)
+├── routers/             # entries, search, knowledge, parse, review, feedback, goals
+├── services/            # agent_service, sync_service, entry_service, review/
+├── agent/               # R044: ReAct Agent (react_agent, tools, prompts, schemas)
 ├── infrastructure/
-│   ├── storage/         # R043: 按领域拆分 (base/entries/goals/feedback/links)
+│   ├── storage/         # 按领域拆分 (base/entries/goals/feedback/links)
 │   └── llm/
-├── graphs/              # task_parser_graph (LangGraph)
 ├── models/              # Task, Category, Status, Review, Knowledge
 └── mcp/                 # MCP Server (14 Tools) — 必须通过 deps 获取 service
 ```
 
-### 分层不变量（R043 新增）
+### 分层不变量
 
 - **调用方向**：`routers/mcp → services → infrastructure`，严格单向
-- **MCP = 另一种 router**：MCP handlers 必须通过 `deps.get_*_service()` 获取 service 实例，禁止直接操作 storage
+- **Agent 调用链**：`routers → AgentService → ReAct Agent → Tools → Services → Infrastructure`
+- **MCP = 另一种 router**：MCP handlers 必须通过 `deps.get_*_service()` 获取 service 实例
 - **service 不依赖 router**：service 层禁止 `from app.routers import deps`，依赖通过构造函数/setter 注入
-- **sqlite 按领域拆分**：SQLiteStorage 入口类不变，内部按领域分模块（entries/goals/feedback/links）
-
-### R037 新增
-
-**note_references 表**：source_id (TEXT), target_id (TEXT), user_id (TEXT) — 存储笔记双向引用关系，由 MarkdownStorage 解析 `[[id]]` 语法时写入。
-
-**新增端点**：
-- `GET /entries/{id}/backlinks` — 返回引用当前条目的其他条目列表
-- `GET /entries?due=today` — 过滤今日截止条目
-- `GET /entries?due=overdue` — 过滤已逾期条目
+- **Tools 不直接访问 storage**：Tools 封装 service 调用，不绕过 service 层
 
 ## 关键设计模式
 
@@ -65,31 +56,31 @@ backend/app/
 |------|------|
 | 依赖注入 | deps.py 全局变量 + getter + get_current_user |
 | 存储工厂 | StorageFactory 按 user_id 创建隔离存储实例 |
-| LangGraph | AsyncSqliteSaver + thread_id 会话隔离 + SSE 流式 |
+| ReAct Agent | LangGraph StateGraph + Agent/ToolNode 循环，循环上限 5 轮，AsyncSqliteSaver 持久化 |
+| Tools 模式 | 7 个 Tools 封装 service 调用，Pydantic schema 校验，function calling 驱动 |
+| SSE 流式 | thinking/tool_call/tool_result/content/created/updated/error/done 8 种事件 |
 | OpenAPI 同步 | 后端 schema → openapi-typescript → 前端类型 |
 
 ## 前端结构
 
 ```
 frontend/src/
-├── pages/          # Home, Tasks, Projects, Notes, Inbox, Review, EntryDetail
-├── stores/         # Zustand (chatStore, taskStore)
-├── lib/dueDate.ts  # R037: 截止日期工具函数
-└── types/          # TypeScript (含 OpenAPI 生成)
+├── pages/               # Home, Tasks, Projects, Notes, Inbox, Review, EntryDetail
+├── components/AgentChat/ # R044: AgentChat, MessageList, ToolCallCard, ThinkingIndicator
+├── stores/              # Zustand (agentStore, taskStore)
+└── types/               # TypeScript (含 OpenAPI 生成)
 ```
 
-## Flutter 移动端（R024）
+## Flutter 移动端
 
 | 维度 | 方案 |
 |------|------|
 | 框架 | Flutter (iOS + Android) |
 | 状态管理 | Riverpod |
 | 网络层 | Dio + SSE 客户端 |
-| 路由 | go_router |
-| 本地存储 | flutter_secure_storage (JWT) |
 | 认证 | JWT Bearer，与 Web 端共享 |
 
-MVVM：View → ViewModel(Riverpod) → Model(Services+API)。**禁止**：Widget 调 ApiClient；Provider 含 UI 导航；页面间传对象；Provider 持可变 List；多 Provider 监听同一 SSE。设计约束：纯 API 消费层；5 Tab 底栏（今天/日知/任务/笔记/更多）+ 更多菜单（回顾/目标/灵感/对话）；AI 对话核心；零摩擦输入；MVP 无本地缓存。例外：搜索历史使用内存 List<String> 存储（会话级生命周期），MVP 阶段不引入 SharedPreferences 等本地持久化依赖。
+MVVM：View → ViewModel(Riverpod) → Model(Services+API)。**禁止**：Widget 调 ApiClient；Provider 含 UI 导航；页面间传对象；Provider 持可变 List；多 Provider 监听同一 SSE。
 
 ## 技术栈
 
@@ -99,7 +90,7 @@ MVVM：View → ViewModel(Riverpod) → Model(Services+API)。**禁止**：Widge
 | 存储 | SQLite（默认）/ Neo4j / Qdrant |
 | Web 前端 | React 18 / Tailwind / Vite / Zustand |
 | 移动端 | Flutter / Riverpod / Dio / go_router |
-| LLM | LangGraph / LangSmith |
+| LLM | LangGraph ReAct / Langfuse |
 | 部署 | Docker Compose |
 
 ## 环境变量
@@ -121,3 +112,4 @@ Traefik (:80) → /growth/api/* (priority=100) → FastAPI
 
 - 反馈：后端双写（本地 SQLite + log-service 异步上报），前端 FeedbackButton
 - 移动端：独立安装，BaseURL 配置连接后端，复用同一套 FastAPI
+- 可观测性：Langfuse 自部署，LangGraph CallbackHandler 接入

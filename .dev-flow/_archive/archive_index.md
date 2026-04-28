@@ -2,7 +2,17 @@
 
 ## 进行中需求包
 
-（无）
+### R044: 统一智能体重构
+
+- 状态: 进行中
+- 分支: `feat/R044-unified-react-agent`
+- 主题: 两套并行对话系统合并为 LangGraph ReAct Agent 统一智能体
+- 目录: `R044_unified-react-agent/`
+- 开始时间: 2026-04-28
+- 任务数: 14 (B185-B192, F185-F187, S45-S47)
+- 决策来源: `.dev-flow/decisions/2026-04-28--agent-refactoring.md`
+
+## 已完成需求包
 
 ### R043: 架构收敛
 

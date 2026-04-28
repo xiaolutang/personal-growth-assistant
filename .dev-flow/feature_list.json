@@ -87,9 +87,9 @@
   "archived_phases": [],
   "summary": {
     "total": 14,
-    "pending": 9,
+    "pending": 8,
     "in_progress": 0,
-    "completed": 5,
+    "completed": 6,
     "cancelled": 0
   },
   "features": [
@@ -286,7 +286,11 @@
       "description": "删除被 AgentService 替代的旧代码：ChatService, AIChatService, IntentService, TaskParserGraph, /parse 端点, /ai/chat 端点。清理 deps.py 和 main.py 中的旧注册。删除前端旧 chatStore。会话管理端点（GET/DELETE/PATCH /sessions/*）和 SessionMetaStore 从 parse.py 迁移到独立 router 文件（routers/sessions.py）保留。",
       "verification": "L2",
       "depends_on": ["B187", "F186"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-28T21:20:00",
+      "completed_at": "2026-04-28T21:40:00",
+      "evidence_file": ".dev-flow/evidence/B188.md",
+      "execution_notes": "1298 tests passed. Deleted 6 service/router files + 9 test files. Created sessions.py router",
       "priority": "P0",
       "acceptance_criteria": [
         "删除 backend/app/services/chat_service.py",

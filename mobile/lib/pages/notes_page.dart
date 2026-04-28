@@ -210,7 +210,7 @@ class _NotesPageState extends ConsumerState<NotesPage> {
             ),
           ],
         ),
-        onTap: () => context.go('/entries/${entry.id}'),
+        onTap: () => context.push('/entries/${entry.id}'),
       ),
     );
   }

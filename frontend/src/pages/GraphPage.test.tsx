@@ -66,12 +66,9 @@ vi.mock("@/services/api", () => ({
   getConceptTimeline: (...args: unknown[]) => mockGetConceptTimeline(...args),
 }));
 
-// ── Mock: Header & PageChatPanel ────────────────────────
+// ── Mock: Header ────────────────────────
 vi.mock("@/components/layout/Header", () => ({
   Header: ({ title }: { title: string }) => <header>{title}</header>,
-}));
-vi.mock("@/components/PageChatPanel", () => ({
-  PageChatPanel: ({ title }: { title: string }) => <div>{title}</div>,
 }));
 
 // ── Mock: CSS import ─────────────────────────────────────

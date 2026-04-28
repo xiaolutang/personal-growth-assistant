@@ -7,7 +7,6 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 if TYPE_CHECKING:
     from app.services.sync_service import SyncService
     from app.services.entry_service import EntryService
-    from app.services.intent_service import IntentService
     from app.services.review_service import ReviewService
     from app.services.knowledge_service import KnowledgeService
     from app.services.notification_service import NotificationService
@@ -25,7 +24,6 @@ storage: "SyncService" = None
 
 # 全局服务实例
 _entry_service: "EntryService" = None
-_intent_service: "IntentService" = None
 _review_service: "ReviewService" = None
 _knowledge_service: "KnowledgeService" = None
 _notification_service: "NotificationService" = None
@@ -56,18 +54,6 @@ def get_entry_service() -> "EntryService":
     if _goal_service and _entry_service._goal_service is None:
         _entry_service.set_goal_service(_goal_service)
     return _entry_service
-
-
-def get_intent_service() -> "IntentService":
-    """获取意图识别服务的依赖函数"""
-    global _intent_service, storage
-    if _intent_service is None:
-        from app.services.intent_service import IntentService
-        _intent_service = IntentService()
-        # 如果有 LLM caller，设置它
-        if storage and hasattr(storage, "llm_caller") and storage.llm_caller:
-            _intent_service.set_llm_caller(storage.llm_caller)
-    return _intent_service
 
 
 def get_review_service() -> "ReviewService":
@@ -199,9 +185,8 @@ def get_current_user(
 
 def reset_all_services():
     """重置所有服务缓存（用于测试）"""
-    global _entry_service, _intent_service, _review_service, _knowledge_service, _notification_service, _goal_service, _hybrid_search_service, _analytics_service, _recommendation_service
+    global _entry_service, _review_service, _knowledge_service, _notification_service, _goal_service, _hybrid_search_service, _analytics_service, _recommendation_service
     _entry_service = None
-    _intent_service = None
     _review_service = None
     _knowledge_service = None
     _notification_service = None

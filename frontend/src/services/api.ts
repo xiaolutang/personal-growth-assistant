@@ -7,7 +7,6 @@ import { ApiError } from "@/lib/errors";
 import { authFetch } from "@/lib/authFetch";
 import createClient from "openapi-fetch";
 import type { paths, components } from "@/types/api.generated";
-import { detectIntent as detectIntentLocal } from "@/lib/intentDetection";
 const client = createClient<paths>({
   baseUrl: API_BASE,
   fetch: async (request) => authFetch(request),
@@ -121,7 +120,6 @@ export type ConceptTimelineEntry = S["TimelineEntry"];
 export type ConceptTimelineDay = S["TimelineDay"];
 export type TrendPeriod = S["TrendPeriod"];
 export interface ReviewTrendResponse { periods: TrendPeriod[] }
-export type IntentResponse = S["IntentResponse"];
 export type ChecklistItem = S["ChecklistItem"];
 export interface Goal {
   id: string; title: string; description: string | null;
@@ -139,11 +137,6 @@ export type MetricType = "count" | "checklist" | "tag_auto";
 export type GoalStatus = "active" | "completed" | "abandoned";
 // === 手动保留的类型（api.generated.ts 中不存在） ===
 export interface SearchFilterOptions { startTime?: string; endTime?: string; tags?: string[] }
-export interface AIChatContext {
-  page?: string; is_new_user?: boolean; selected_items?: string[];
-  filters?: Record<string, string>; page_data?: Record<string, string | number>;
-  messages?: Array<{ role: string; content: string }>;
-}
 export interface ExportOptions { format: "markdown" | "json"; type?: string; startDate?: string; endDate?: string }
 export interface DailyBreakdown { date: string; total: number; completed: number }
 export interface WeeklyBreakdown { week: string; start_date: string; end_date: string; total: number; completed: number }
@@ -248,21 +241,6 @@ export async function getKnowledgeStats(): Promise<ConceptStatsResponse> {
   return handleOpenApiResponse<ConceptStatsResponse>(data as ConceptStatsResponse | undefined, error, response);
 }
 
-// === 解析/SSE（原始 fetch，无法用 openapi-fetch）===
-export async function parseText(text: string, sessionId?: string): Promise<Response> {
-  const response = await authFetch(`${API_BASE}/parse`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, session_id: sessionId }),
-  });
-  if (!response.ok) throw new ApiError(response.status, `Parse API error: ${response.status}`);
-  return response;
-}
-
-export async function clearSession(sessionId: string): Promise<void> {
-  const { error, response } = await client.DELETE("/session/{session_id}", { params: { path: { session_id: sessionId } } });
-  handleOpenApiResponse(undefined, error, response);
-}
-
 // === 项目进度 ===
 export async function getProjectProgress(projectId: string): Promise<ProjectProgressResponse> {
   const { data, error, response } = await client.GET("/entries/{entry_id}/progress", { params: { path: { entry_id: projectId } } });
@@ -288,41 +266,6 @@ export async function getFeedbackDetail(id: number): Promise<FeedbackItem> {
 export async function syncFeedback(): Promise<FeedbackSyncResponse> {
   const { data, error, response } = await client.POST("/feedback/sync");
   return handleOpenApiResponse(data, error, response) as FeedbackSyncResponse;
-}
-
-// === AI 对话（SSE，原始 fetch）===
-export async function sendAIChat(message: string, context?: AIChatContext): Promise<Response> {
-  const response = await authFetch(`${API_BASE}/ai/chat`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, context }),
-  });
-  if (!response.ok) throw new ApiError(response.status, `AI Chat error: ${response.status}`);
-  return response;
-}
-
-/** 从后端加载页面级对话历史 */
-export async function fetchChatHistory(page: string, limit = 20): Promise<Array<{ role: string; content: string }>> {
-  try {
-    const params = new URLSearchParams({ page, limit: String(limit) });
-    const response = await authFetch(`${API_BASE}/ai/chat/history?${params}`);
-    if (!response.ok) return [];
-    return await response.json() as Array<{ role: string; content: string }>;
-  } catch {
-    return [];
-  }
-}
-
-// === 意图识别（带回退）===
-const localIntentFallback = (text: string): IntentResponse => ({
-  intent: detectIntentLocal(text), confidence: 0.8, entities: {}, query: text,
-});
-
-export async function detectIntent(text: string): Promise<IntentResponse> {
-  try {
-    const { data, error, response } = await client.POST("/intent", { body: { text } });
-    if (error || !response.ok) { console.warn("Intent API 不可用，回退到本地检测"); return localIntentFallback(text); }
-    return handleOpenApiResponse<IntentResponse>(data as IntentResponse | undefined, error, response);
-  } catch { console.warn("Intent API 不可用，回退到本地检测"); return localIntentFallback(text); }
 }
 
 // === 回顾报告 ===

@@ -58,7 +58,7 @@ async def test_user(storage):
     # 保存之前的全局状态，确保 teardown 后完整恢复
     _DEPS_GLOBALS = [
         'storage', '_user_storage',
-        '_entry_service', '_intent_service',
+        '_entry_service',
         '_review_service', '_knowledge_service',
         '_notification_service', '_goal_service',
     ]

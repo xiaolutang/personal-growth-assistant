@@ -1,18 +1,16 @@
-"""中间件模块 - 错误处理、请求日志、请求追踪"""
+"""中间件模块 - 请求日志、请求追踪
+
+全部使用纯 ASGI 实现，避免 BaseHTTPMiddleware 的 body 消费 bug。
+错误处理由 main.py 的 @app.exception_handler(Exception) 负责。
+"""
 
 import logging
 import time
-import traceback
 import uuid
 from contextvars import ContextVar
 from typing import Optional
 
-from app.core.config import get_settings
-
-from fastapi import Request, Response
-from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 # 请求 ID 上下文变量
 request_id_var: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
@@ -39,212 +37,148 @@ def get_uid() -> Optional[str]:
 logger = logging.getLogger(__name__)
 
 
-class RequestIDMiddleware(BaseHTTPMiddleware):
-    """请求 ID 中间件 - 为每个请求分配唯一 ID"""
+class RequestIDMiddleware:
+    """请求 ID 中间件 - 纯 ASGI 实现"""
 
-    async def dispatch(self, request: Request, call_next):
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        if scope["type"] not in ("http", "websocket"):
+            await self.app(scope, receive, send)
+            return
+
         # 从请求头获取或生成新的 request_id
-        request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+        request_id = None
+        uid = None
+        for key, value in scope.get("headers", []):
+            if key == b"x-request-id":
+                request_id = value.decode("latin-1")
+            elif key == b"x-uid":
+                uid = value.decode("latin-1")
 
-        # 从请求头获取 uid（匿名用户标识）
-        uid = request.headers.get("X-UID")
+        if not request_id:
+            request_id = str(uuid.uuid4())
 
         # 设置到上下文
         set_request_id(request_id)
         uid_var.set(uid)
 
-        # 执行请求
-        response = await call_next(request)
+        # 包装 send 以添加响应头
+        async def send_with_request_id(message: Message):
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                headers.append((b"x-request-id", request_id.encode("latin-1")))
+                message["headers"] = headers
+            await send(message)
 
-        # 添加到响应头
-        response.headers["X-Request-ID"] = request_id
-
-        return response
+        await self.app(scope, receive, send_with_request_id)
 
 
-class RequestLoggingMiddleware(BaseHTTPMiddleware):
-    """请求日志中间件"""
+class RequestLoggingMiddleware:
+    """请求日志中间件 - 纯 ASGI 实现"""
 
-    # 不记录日志的路径前缀
-    SKIP_PATH_PREFIXES = (
-        "/health",  # 健康检查
-        "/favicon",  # 图标
-    )
+    SKIP_PATH_PREFIXES = ("/health", "/favicon")
+    SKIP_SUFFIXES = (".js", ".css", ".ico", ".png", ".jpg", ".svg", ".woff", ".woff2")
 
-    # 不记录日志的路径后缀（静态资源）
-    SKIP_SUFFIXES = (
-        ".js",
-        ".css",
-        ".ico",
-        ".png",
-        ".jpg",
-        ".svg",
-        ".woff",
-        ".woff2",
-    )
+    def __init__(self, app: ASGIApp):
+        self.app = app
 
-    async def dispatch(self, request: Request, call_next):
-        # 记录请求开始时间
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
         start_time = time.time()
-
-        # 获取请求信息
+        path = scope.get("path", "")
+        method = scope.get("method", "")
         request_id = get_request_id()
-        client_ip = self._get_client_ip(request)
-        path = request.url.path
 
-        # 检查是否跳过日志记录
+        # 获取客户端 IP
+        headers_dict = dict(scope.get("headers", []))
+        client_ip = "unknown"
+        forwarded = headers_dict.get(b"x-forwarded-for")
+        if forwarded:
+            client_ip = forwarded.decode("latin-1").split(",")[0].strip()
+        else:
+            real_ip = headers_dict.get(b"x-real-ip")
+            if real_ip:
+                client_ip = real_ip.decode("latin-1")
+            elif scope.get("client"):
+                client_ip = scope["client"][0]
+
         should_skip = self._should_skip_logging(path)
 
         if not should_skip:
-            # 设置日志额外信息
             extra = {
                 "request_id": request_id,
-                "method": request.method,
+                "method": method,
                 "path": path,
                 "client_ip": client_ip,
                 "uid": uid_var.get(),
             }
+            logger.info(f"Request started: {method} {path}", extra=extra)
 
-            # 记录请求信息
-            logger.info(
-                f"Request started: {request.method} {path}",
-                extra=extra,
-            )
+        status_code = None
+
+        async def send_with_logging(message: Message):
+            nonlocal status_code
+            if message["type"] == "http.response.start":
+                status_code = message.get("status")
+                # 添加处理时间头
+                pt = int((time.time() - start_time) * 1000)
+                headers = list(message.get("headers", []))
+                headers.append((b"x-process-time", f"{pt}ms".encode()))
+                message["headers"] = headers
+            await send(message)
 
         try:
-            response = await call_next(request)
-
-            # 计算处理时间
-            process_time_ms = int((time.time() - start_time) * 1000)
-
-            if not should_skip:
-                # 更新日志额外信息
-                extra = {
-                    "request_id": request_id,
-                    "method": request.method,
-                    "path": path,
-                    "client_ip": client_ip,
-                    "status_code": response.status_code,
-                    "process_time_ms": process_time_ms,
-                    "uid": uid_var.get(),
-                }
-
-                # 记录响应信息
-                logger.info(
-                    f"Request completed: {request.method} {path} - {response.status_code} ({process_time_ms}ms)",
-                    extra=extra,
-                )
-
-            # 添加处理时间头
-            response.headers["X-Process-Time"] = f"{process_time_ms}ms"
-
-            return response
-
+            await self.app(scope, receive, send_with_logging)
         except Exception as e:
             process_time_ms = int((time.time() - start_time) * 1000)
-
             if not should_skip:
                 extra = {
                     "request_id": request_id,
-                    "method": request.method,
+                    "method": method,
                     "path": path,
                     "client_ip": client_ip,
                     "status_code": 500,
                     "process_time_ms": process_time_ms,
                     "uid": uid_var.get(),
                 }
-
                 logger.error(
-                    f"Request failed: {request.method} {path} - Error after {process_time_ms}ms: {e}",
+                    f"Request failed: {method} {path} - Error after {process_time_ms}ms: {e}",
                     extra=extra,
                     exc_info=True,
                 )
             raise
 
+        process_time_ms = int((time.time() - start_time) * 1000)
+        if not should_skip and status_code is not None:
+            extra = {
+                "request_id": request_id,
+                "method": method,
+                "path": path,
+                "client_ip": client_ip,
+                "status_code": status_code,
+                "process_time_ms": process_time_ms,
+                "uid": uid_var.get(),
+            }
+            logger.info(
+                f"Request completed: {method} {path} - {status_code} ({process_time_ms}ms)",
+                extra=extra,
+            )
+
     def _should_skip_logging(self, path: str) -> bool:
         """检查是否应该跳过日志记录"""
         return (
-            any(path.startswith(p) for p in self.SKIP_PATH_PREFIXES) or
-            any(path.endswith(s) for s in self.SKIP_SUFFIXES)
+            any(path.startswith(p) for p in self.SKIP_PATH_PREFIXES)
+            or any(path.endswith(s) for s in self.SKIP_SUFFIXES)
         )
-
-    def _get_client_ip(self, request: Request) -> str:
-        """获取客户端 IP"""
-        # 优先从代理头获取
-        forwarded = request.headers.get("X-Forwarded-For")
-        if forwarded:
-            return forwarded.split(",")[0].strip()
-
-        # 从真实 IP 头获取
-        real_ip = request.headers.get("X-Real-IP")
-        if real_ip:
-            return real_ip
-
-        # 直接获取
-        if request.client:
-            return request.client.host
-
-        return "unknown"
-
-
-class ErrorHandlerMiddleware(BaseHTTPMiddleware):
-    """统一错误处理中间件"""
-
-    async def dispatch(self, request: Request, call_next):
-        try:
-            response = await call_next(request)
-            return response
-        except Exception as e:
-            # 获取请求信息
-            request_id = get_request_id()
-            client_ip = getattr(request, "client", None)
-            client_ip = client_ip.host if client_ip else "unknown"
-
-            # 设置日志额外信息
-            extra = {
-                "request_id": request_id,
-                "method": request.method,
-                "path": request.url.path,
-                "status_code": 500,
-                "client_ip": client_ip,
-                "uid": uid_var.get(),
-            }
-
-            # 记录错误日志
-            logger.error(
-                f"Unhandled exception: {request.method} {request.url.path}: {e}",
-                extra=extra,
-                exc_info=True,
-            )
-
-            # 返回标准错误响应（生产环境不暴露内部异常详情）
-            debug = get_settings().DEBUG
-            if debug:
-                error_message = str(e)
-                error_type = type(e).__name__
-            else:
-                error_message = "Internal Server Error"
-                error_type = "INTERNAL_ERROR"
-
-            return JSONResponse(
-                status_code=500,
-                content={
-                    "success": False,
-                    "error": {
-                        "code": "INTERNAL_ERROR",
-                        "message": error_message,
-                        "type": error_type,
-                        "request_id": request_id,
-                    },
-                },
-                headers={"X-Request-ID": request_id} if request_id else None,
-            )
 
 
 def setup_middlewares(app):
-    """配置中间件"""
+    """配置中间件（全部纯 ASGI，无 BaseHTTPMiddleware）"""
     # 注意：FastAPI 的中间件顺序是后添加的先执行
-    # 所以错误处理应该最后添加
-    app.add_middleware(ErrorHandlerMiddleware)
     app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(RequestIDMiddleware)

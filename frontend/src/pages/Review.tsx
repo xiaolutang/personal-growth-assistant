@@ -19,7 +19,6 @@ import { HeatmapCard } from "@/components/review/HeatmapCard";
 import { GrowthCurveCard } from "@/components/review/GrowthCurveCard";
 import { AiSummaryCard } from "@/components/review/AiSummaryCard";
 import { InsightCard } from "@/components/review/InsightCard";
-import { PageChatPanel } from "@/components/PageChatPanel";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { ErrorState } from "@/components/ErrorState";
 
@@ -100,35 +99,6 @@ export function Review() {
 
             <AiSummaryCard reportType={reportType} isLoading={isLoading} aiSummary={aiSummary} insightsData={insightsData} insightsLoading={insightsLoading} />
             <InsightCard reportType={reportType} insightsData={insightsData} insightsLoading={insightsLoading} />
-
-            <PageChatPanel
-              title="分析助手"
-              welcomeMessage="想深入了解哪些数据？我可以帮你分析"
-              suggestions={[
-                { label: "分析趋势", message: "帮我分析最近的任务完成趋势" },
-                { label: "比较环比", message: "这周和上周相比有什么变化？" },
-                { label: "学习模式", message: "从数据中能看到什么学习模式？" },
-              ]}
-              pageContext={{ page: "review" }}
-              pageData={{
-                report_type: reportType,
-                total_tasks: taskStats?.total ?? 0,
-                completed: taskStats?.completed ?? 0,
-                completion_rate: taskStats?.completion_rate ?? 0,
-                doing: taskStats?.doing ?? 0,
-                wait_start: taskStats?.wait_start ?? 0,
-                note_count: noteStats?.total ?? 0,
-                recent_notes: noteStats?.recent_titles?.slice(0, 3).join(", ") ?? "",
-                ai_summary_available: aiSummary ? "yes" : "no",
-                weekly_delta_completion_rate: weeklyReport?.vs_last_week?.delta_completion_rate ?? "N/A",
-                weekly_delta_total: weeklyReport?.vs_last_week?.delta_total ?? "N/A",
-                monthly_delta_completion_rate: monthlyReport?.vs_last_month?.delta_completion_rate ?? "N/A",
-                monthly_delta_total: monthlyReport?.vs_last_month?.delta_total ?? "N/A",
-                goal_active_count: goalSummary?.active_count ?? 0,
-                goal_completed_count: goalSummary?.completed_count ?? 0,
-              }}
-              defaultCollapsed
-            />
 
             {(reportType === "weekly" || reportType === "monthly") && goalSummary && (goalSummary.active_count + goalSummary.completed_count > 0) && (
               <GoalProgressCard goalSummary={goalSummary} />

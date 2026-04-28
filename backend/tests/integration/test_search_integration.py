@@ -255,7 +255,7 @@ class TestSearchAPIE2E:
 
     async def test_search_api_returns_200(self, app_base_url, auth_token):
         """测试搜索 API 返回 200"""
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
             response = await client.post(
                 f"{app_base_url}/search",
                 json={"query": "测试查询", "limit": 5},
@@ -272,7 +272,7 @@ class TestSearchAPIE2E:
 
     async def test_search_api_empty_query_returns_results(self, app_base_url, auth_token):
         """测试搜索 API 空查询返回结果（走列表+过滤模式）"""
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
             response = await client.post(
                 f"{app_base_url}/search",
                 json={"query": "", "limit": 5},
@@ -284,7 +284,7 @@ class TestSearchAPIE2E:
 
     async def test_search_api_limit_validation(self, app_base_url, auth_token):
         """测试搜索 API limit 参数验证"""
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
             # limit 超过最大值
             response = await client.post(
                 f"{app_base_url}/search",
@@ -294,3 +294,55 @@ class TestSearchAPIE2E:
 
             # 应该返回 422 (Validation Error)
             assert response.status_code == 422
+
+    async def test_search_api_utc_time_filter(self, app_base_url, auth_token):
+        """浏览器场景：UTC 时区时间过滤不触发 500"""
+        async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
+            response = await client.post(
+                f"{app_base_url}/search",
+                json={
+                    "query": "",
+                    "start_time": "2026-04-27T16:00:00.000Z",
+                    "end_time": "2026-04-28T15:59:59.999Z",
+                    "limit": 20,
+                },
+                headers={"Authorization": f"Bearer {auth_token}"},
+            )
+            # 不应该是 500，必须 200
+            assert response.status_code == 200
+            data = response.json()
+            assert "results" in data
+            assert isinstance(data["results"], list)
+
+    async def test_search_api_null_query_with_time(self, app_base_url, auth_token):
+        """浏览器场景：query=null + UTC 时间过滤"""
+        async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
+            response = await client.post(
+                f"{app_base_url}/search",
+                json={
+                    "query": None,
+                    "start_time": "2026-04-27T16:00:00.000Z",
+                    "end_time": "2026-04-28T15:59:59.999Z",
+                    "limit": 20,
+                },
+                headers={"Authorization": f"Bearer {auth_token}"},
+            )
+            assert response.status_code == 200
+            data = response.json()
+            assert "results" in data
+
+    async def test_search_api_time_filter_with_filter_type(self, app_base_url, auth_token):
+        """浏览器场景：时间过滤 + filter_type 组合"""
+        async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
+            response = await client.post(
+                f"{app_base_url}/search",
+                json={
+                    "query": None,
+                    "filter_type": "task",
+                    "start_time": "2026-01-01T00:00:00.000Z",
+                    "end_time": "2026-12-31T23:59:59.999Z",
+                    "limit": 20,
+                },
+                headers={"Authorization": f"Bearer {auth_token}"},
+            )
+            assert response.status_code == 200

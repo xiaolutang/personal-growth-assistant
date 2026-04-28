@@ -14,18 +14,16 @@ from pydantic import BaseModel
 
 from app.callers import APICaller
 from app.core.config import get_settings
-from app.graphs.task_parser_graph import TaskParserGraph
 from app.routers import (
     entries_router,
     search_router,
     knowledge_router,
     review_router,
-    intent_router,
     parse_router,
     playground_router,
     feedback_router,
     auth_router,
-    ai_chat_router,
+    sessions_router,
     notifications_router,
     goals_router,
     analytics_router,
@@ -40,7 +38,6 @@ from log_service_sdk import setup_remote_logging
 logger = logging.getLogger(__name__)
 
 # 全局实例
-graph = None
 storage = None
 _log_handler = None
 
@@ -48,7 +45,7 @@ _log_handler = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
-    global graph, storage, _log_handler
+    global storage, _log_handler
 
     settings = get_settings()
 
@@ -81,8 +78,12 @@ async def lifespan(app: FastAPI):
         os.environ["LANGSMITH_PROJECT"] = settings.LANGSMITH_PROJECT
         logger.info("LangSmith tracing enabled, project=%s", settings.LANGSMITH_PROJECT)
 
-    # 初始化解析图（使用工厂方法，异步创建）
-    graph = await TaskParserGraph.create(caller=APICaller())
+    # 初始化 checkpointer（会话管理和 Agent 共享）
+    import aiosqlite
+    from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+    checkpointer_conn = await aiosqlite.connect(settings.sqlite_checkpoints_path)
+    checkpointer = AsyncSqliteSaver(checkpointer_conn)
+    await checkpointer.setup()
 
     # 初始化存储服务（可选，依赖环境变量）
     try:
@@ -93,7 +94,7 @@ async def lifespan(app: FastAPI):
             neo4j_password=settings.NEO4J_PASSWORD,
             qdrant_url=settings.QDRANT_URL,
             qdrant_api_key=settings.QDRANT_API_KEY,
-            llm_caller=graph.caller,
+            llm_caller=APICaller(),
             embedding_model=settings.EMBEDDING_MODEL,
         )
 
@@ -130,9 +131,6 @@ async def lifespan(app: FastAPI):
             )
         except Exception as e:
             logger.warning("onboarding_completed 迁移失败（不影响启动）: %s", e)
-        intent_service = deps.get_intent_service()
-        if graph.caller:
-            intent_service.set_llm_caller(graph.caller)
 
         # 初始化 Analytics 埋点表（幂等，失败不影响启动）
         try:
@@ -142,12 +140,19 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.warning("analytics_events 表创建失败（不影响启动）: %s", e)
 
-        # 注入 Graph 到解析模块
-        from app.routers import parse as parse_module
+        # 注入 checkpointer 到会话管理模块
+        from app.routers import sessions as sessions_module
+        from app.services.session_meta_store import SessionMetaStore
+
+        sessions_module.set_checkpointer(checkpointer)
+
+        # 初始化 SessionMetaStore
+        session_meta_store = SessionMetaStore(
+            settings.sqlite_checkpoints_path.replace('.db', '_meta.db')
+        )
+        sessions_module.set_session_meta_store(session_meta_store)
 
         entry_svc = deps.get_entry_service()
-        intent_svc = deps.get_intent_service()
-        parse_module.set_graph(graph, entry_service=entry_svc, intent_service=intent_svc)
 
         # 初始化 AgentService（ReAct Agent 路径）
         try:
@@ -175,6 +180,7 @@ async def lifespan(app: FastAPI):
                 agent_service = AgentService()
                 agent_service.set_react_agent(react_agent)
                 agent_service.set_dependencies(tool_deps)
+                from app.routers import parse as parse_module
                 parse_module.set_agent_service(agent_service)
 
                 logger.info("AgentService 初始化成功")
@@ -304,12 +310,11 @@ app.include_router(entries_router)
 app.include_router(search_router)
 app.include_router(knowledge_router)
 app.include_router(review_router)
-app.include_router(intent_router)
 app.include_router(parse_router)
 app.include_router(playground_router)
 app.include_router(feedback_router)
 app.include_router(auth_router)
-app.include_router(ai_chat_router)
+app.include_router(sessions_router)
 app.include_router(notifications_router)
 app.include_router(goals_router)
 app.include_router(analytics_router)

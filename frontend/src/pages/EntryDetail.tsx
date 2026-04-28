@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { exportSingleEntry, getBacklinks } from "@/services/api";
 import type { BacklinkItem } from "@/services/api";
-import { PageChatPanel } from "@/components/PageChatPanel";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 
 // Hooks
@@ -237,38 +236,6 @@ export function EntryDetail() {
           </Card>
         )}
 
-        {!editing.isEditing && entry && (
-          <PageChatPanel
-            title="编辑助手"
-            welcomeMessage="需要帮忙整理内容吗？"
-            suggestions={
-              entry.category === "task" ? [
-                { label: "拆解子任务", message: "帮我把这个任务拆解为可执行的子任务" },
-                { label: "生成摘要", message: "帮我生成一段摘要" },
-                { label: "整理内容", message: "帮我整理和优化这段内容" },
-              ] : entry.category === "note" ? [
-                { label: "整理笔记", message: "帮我把这段笔记整理一下" },
-                { label: "提取要点", message: "帮我提取关键知识点" },
-                { label: "关联知识", message: "帮我看看还有哪些相关知识" },
-              ] : [
-                { label: "整理内容", message: "帮我整理和优化这段内容" },
-                { label: "生成摘要", message: "帮我生成一段摘要" },
-                { label: "关联知识", message: "帮我看看还有哪些相关知识" },
-              ]
-            }
-            pageContext={{ page: "entry_detail" }}
-            pageData={{
-              entry_title: entry.title,
-              category: entry.category,
-              tags: (entry.tags || []).join(", "),
-              status: entry.status,
-              priority: entry.priority ?? "",
-              content_preview: (entry.content || "").slice(0, 500),
-            }}
-            className="mt-6"
-            defaultCollapsed
-          />
-        )}
       </div>
     </div>
   );

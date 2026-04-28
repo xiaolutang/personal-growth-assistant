@@ -237,7 +237,7 @@ export function GoalsPage() {
   return (
     <>
       <Header title="目标追踪" />
-      <main className="flex-1 p-6 pb-32">
+      <main className="flex-1 overflow-y-auto p-6 pb-32">
         {serviceUnavailable ? (
           <ServiceUnavailable onRetry={() => retryService(fetchGoals)} />
         ) : (

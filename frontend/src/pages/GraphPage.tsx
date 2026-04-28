@@ -8,7 +8,6 @@ import "@xyflow/react/dist/style.css";
 import { Link, useSearchParams } from "react-router-dom";
 import { Loader2, AlertCircle, Compass, Plus, Layers, Search, BarChart3 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
-import { PageChatPanel } from "@/components/PageChatPanel";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { useGraphState } from "./graph/useGraphState";
 import { DetailPanel } from "./graph/DetailPanel";
@@ -297,25 +296,6 @@ export function GraphPage() {
         )}
       </div>
 
-      {/* F110: 图谱 AI 助手 */}
-      <PageChatPanel
-        title="图谱助手"
-        welcomeMessage="想了解图谱中的知识关系？我可以帮你分析"
-        suggestions={[
-          { label: "擅长领域", message: "我最擅长的领域是什么？" },
-          { label: "薄弱方向", message: "哪些领域需要加强？" },
-          { label: "学习建议", message: "基于我的知识图谱，有什么学习建议？" },
-        ]}
-        pageContext={{ page: "graph" }}
-        pageData={{
-          current_view: state.activeView,
-          selected_concept: state.selectedNode?.name ?? "",
-          total_concepts: state.stats?.concept_count ?? 0,
-          total_relations: state.stats?.relation_count ?? 0,
-          domain_count: 0,
-        }}
-        defaultCollapsed
-      />
     </div>
   );
 }

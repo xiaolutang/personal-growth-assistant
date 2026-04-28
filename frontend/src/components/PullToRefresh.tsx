@@ -47,6 +47,17 @@ export function PullToRefresh({
   const isScrolledToTop = useCallback((): boolean => {
     const el = containerRef.current;
     if (!el) return true;
+    // Scroll happens on an ancestor (e.g. <main overflow-y-auto>), not on this div.
+    // Walk up to find the nearest scrollable container.
+    let parent: HTMLElement | null = el.parentElement;
+    while (parent) {
+      const style = window.getComputedStyle(parent);
+      const oy = style.overflowY;
+      if (oy === "auto" || oy === "scroll") {
+        return parent.scrollTop <= 0;
+      }
+      parent = parent.parentElement;
+    }
     return el.scrollTop <= 0;
   }, []);
 
@@ -165,11 +176,9 @@ export function PullToRefresh({
   return (
     <div
       ref={containerRef}
-      className="h-full overflow-y-auto overscroll-none"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      style={{ WebkitOverflowScrolling: "touch" }}
     >
       {/* Pull indicator area */}
       <div

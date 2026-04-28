@@ -27,11 +27,20 @@ interface UserState {
   updateMe: (data: { onboarding_completed?: boolean }) => Promise<UserInfo>;
 }
 
-export const useUserStore = create<UserState>((set, get) => ({
-  user: null,
-  token: null,
-  isAuthenticated: false,
-  isLoading: false,
+export const useUserStore = create<UserState>((set, get) => {
+  // 同步恢复 localStorage 中的 token，避免 ProtectedRoute 首次渲染时竞态
+  const _storedToken = localStorage.getItem(TOKEN_KEY);
+  const _storedUser = localStorage.getItem(USER_KEY);
+  let _initUser: UserInfo | null = null;
+  if (_storedUser) {
+    try { _initUser = JSON.parse(_storedUser); } catch { /* ignore */ }
+  }
+
+  return {
+  user: _initUser,
+  token: _storedToken,
+  isAuthenticated: !!_storedToken,
+  isLoading: !!_storedToken, // 有 token 时标记 loading，等 fetchMe 完成再置 false
 
   login: async (username: string, password: string) => {
     const res = await fetch(`${API_BASE}/auth/login`, {
@@ -94,19 +103,9 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   loadFromStorage: () => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    const userStr = localStorage.getItem(USER_KEY);
+    // create() 已同步恢复 localStorage，此处仅验证 token 有效性
+    const { token } = get();
     if (token) {
-      let user = null;
-      if (userStr) {
-        try {
-          user = JSON.parse(userStr);
-        } catch {
-          // ignore
-        }
-      }
-      set({ token, user, isAuthenticated: true, isLoading: true });
-      // 验证 token 是否仍然有效
       return get().fetchMe().finally(() => {
         set({ isLoading: false });
       });
@@ -154,4 +153,5 @@ export const useUserStore = create<UserState>((set, get) => ({
     set({ user });
     return user as UserInfo;
   },
-}));
+}});
+

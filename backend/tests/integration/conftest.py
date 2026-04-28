@@ -47,14 +47,18 @@ def app_base_url():
 def auth_token(app_base_url):
     """获取集成测试用的 auth token"""
     import uuid
+    import ssl
     username = f"e2e_test_{uuid.uuid4().hex[:6]}"
     # Auth 路由挂载在 /auth（无 /api 前缀），使用 AUTH_BASE_URL
     auth_base = AUTH_BASE_URL
+    # 自签名证书环境需要禁用 SSL 验证
+    _verify = False if auth_base.startswith("https://localhost") else True
     # 注册
     resp = httpx.post(
         f"{auth_base}/auth/register",
         json={"username": username, "email": f"{username}@test.com", "password": "testpass123"},
         timeout=10,
+        verify=_verify,
     )
     if resp.status_code not in (200, 201, 409):
         pytest.skip("认证服务不可用，跳过集成测试")
@@ -63,6 +67,7 @@ def auth_token(app_base_url):
         f"{auth_base}/auth/login",
         json={"username": username, "password": "testpass123"},
         timeout=10,
+        verify=_verify,
     )
     if resp.status_code == 200:
         return resp.json().get("access_token")

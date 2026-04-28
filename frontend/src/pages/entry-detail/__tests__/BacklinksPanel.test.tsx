@@ -31,10 +31,6 @@ vi.mock("@/services/api", () => ({
   exportSingleEntry: vi.fn().mockResolvedValue(new Blob()),
 }));
 
-vi.mock("@/components/PageChatPanel", () => ({
-  PageChatPanel: () => <div data-testid="page-chat-panel" />,
-}));
-
 vi.mock("@/components/ServiceUnavailable", () => ({
   ServiceUnavailable: () => <div>Service Unavailable</div>,
 }));

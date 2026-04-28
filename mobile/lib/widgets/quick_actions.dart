@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../config/theme.dart';
 
@@ -206,7 +207,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
     if (!mounted) return;
 
     if (success) {
-      Navigator.of(context).pop();
+      context.pop();
     } else {
       setState(() => _isSubmitting = false);
     }
