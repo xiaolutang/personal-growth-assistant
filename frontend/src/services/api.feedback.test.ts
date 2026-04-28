@@ -33,6 +33,7 @@ describe("submitFeedback", () => {
       title: "搜索功能响应慢",
       description: "任务列表卡顿",
       severity: "medium",
+      feedback_type: "general",
     });
 
     expect(result.success).toBe(true);
@@ -50,6 +51,7 @@ describe("submitFeedback", () => {
     await expect(submitFeedback({
       title: "后端不可用",
       severity: "high",
+      feedback_type: "general",
     })).rejects.toMatchObject({
       status: 503,
       message: "反馈服务暂时不可用，请稍后重试",
@@ -67,6 +69,7 @@ describe("submitFeedback", () => {
     await expect(submitFeedback({
       title: "",
       severity: "low",
+      feedback_type: "general",
     })).rejects.toMatchObject({
       status: 422,
       message: "title 不能为空",

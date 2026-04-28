@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Sparkles, RotateCcw } from "lucide-react";
 import { useAgentStore } from "@/stores/agentStore";
 import { MessageList } from "./MessageList";
-import { ChatInput } from "./ChatInput";
+import { ChatInput, type ChatInputHandle } from "./ChatInput";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { AgentPrompt } from "./AgentPrompt";
 
@@ -24,6 +24,7 @@ export function AgentChat({
   className,
 }: AgentChatProps) {
   const [input, setInput] = useState("");
+  const chatInputRef = useRef<ChatInputHandle>(null);
 
   const {
     isLoading,
@@ -35,7 +36,16 @@ export function AgentChat({
     resetCurrentSession,
     clearError,
     currentSessionId,
+    setFollowUpCallback,
   } = useAgentStore();
+
+  // 注册 ask_user 追问后的自动聚焦回调
+  useEffect(() => {
+    setFollowUpCallback(() => {
+      chatInputRef.current?.focus();
+    });
+    return () => setFollowUpCallback(null);
+  }, [setFollowUpCallback]);
 
   const currentSession = getCurrentSession();
   const messages = currentSession?.messages ?? [];
@@ -139,6 +149,7 @@ export function AgentChat({
 
       {/* 输入框 */}
       <ChatInput
+        ref={chatInputRef}
         value={input}
         onChange={setInput}
         onSend={handleSend}

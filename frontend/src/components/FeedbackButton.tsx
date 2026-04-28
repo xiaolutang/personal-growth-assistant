@@ -154,6 +154,7 @@ export function FeedbackButton() {
         title: form.title.trim(),
         description: form.description.trim() || undefined,
         severity: form.severity,
+        feedback_type: "general",
       });
       setIsSuccess(true);
     } catch (error) {

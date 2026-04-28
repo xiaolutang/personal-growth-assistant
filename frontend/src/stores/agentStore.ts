@@ -16,6 +16,7 @@
 import { create } from "zustand";
 import { API_BASE } from "@/config/api";
 import { authFetch } from "@/lib/authFetch";
+import { sessionApi, type MessageInfo } from "@/services/sessionApi";
 
 // ═══════════════════════════════════════════
 // 类型定义
@@ -133,6 +134,7 @@ interface AgentStore {
   deleteSession: (id: string) => Promise<void>;
   updateSessionTitle: (id: string, title: string) => Promise<void>;
   fetchSessions: () => Promise<void>;
+  loadSessionMessages: (sessionId: string) => Promise<void>;
 
   // ── 对话操作 ──
   sendMessage: (params: SendMessageParams) => Promise<void>;
@@ -306,6 +308,11 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
 
   switchSession: (id: string) => {
     set({ currentSessionId: id });
+    // 如果该会话没有消息，从后端加载历史
+    const session = get().sessions.find((s) => s.id === id);
+    if (session && session.messages.length === 0) {
+      get().loadSessionMessages(id);
+    }
   },
 
   getCurrentSession: () => {
@@ -314,7 +321,8 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
   },
 
   resetCurrentSession: () => {
-    // 创建新会话替代清空旧会话，确保后端 thread/checkpointer 也重置
+    // 先保存旧 sessionId，再创建新会话
+    const oldId = get().currentSessionId;
     const newId = get().createSession();
     // 清理流状态
     set({
@@ -323,9 +331,8 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
       error: null,
     });
     // 后台清理旧会话的后端状态（不阻塞 UI）
-    const oldId = get().currentSessionId;
     if (oldId && oldId !== newId) {
-      authFetch(`${API_BASE}/session/${oldId}`, { method: "DELETE" }).catch(() => {
+      sessionApi.delete(oldId).catch(() => {
         // 静默失败，不阻塞 UI
       });
     }
@@ -730,7 +737,7 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
 
   deleteSession: async (id: string) => {
     try {
-      await authFetch(`${API_BASE}/sessions/${id}`, { method: "DELETE" });
+      await sessionApi.delete(id);
       set((state) => {
         const sessions = state.sessions.filter((s) => s.id !== id);
         const currentSessionId =
@@ -740,32 +747,26 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
         return { sessions, currentSessionId };
       });
     } catch {
-      // 静默处理删除失败
+      // 删除失败不修改本地状态，避免前后端分叉
     }
   },
 
   updateSessionTitle: async (id: string, title: string) => {
     try {
-      await authFetch(`${API_BASE}/sessions/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
-      });
+      await sessionApi.updateTitle(id, title);
       set((state) => ({
         sessions: state.sessions.map((s) =>
           s.id === id ? { ...s, title } : s
         ),
       }));
     } catch {
-      // 静默处理更新失败
+      // 更新失败不修改本地状态，避免前后端分叉
     }
   },
 
   fetchSessions: async () => {
     try {
-      const res = await authFetch(`${API_BASE}/sessions`);
-      if (!res.ok) return;
-      const data = await res.json() as Array<{ id: string; title: string; created_at: string; updated_at: string }>;
+      const data = await sessionApi.list();
       const sessions: AgentSession[] = data.map((s) => ({
         id: s.id,
         title: s.title,
@@ -776,6 +777,28 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
       set({ sessions });
     } catch {
       // 静默处理获取失败
+    }
+  },
+
+  loadSessionMessages: async (sessionId: string) => {
+    try {
+      const msgs = await sessionApi.getMessages(sessionId);
+      const agentMessages: AgentMessage[] = msgs.map((m: MessageInfo, i: number) => ({
+        id: m.id || `hist-${i}`,
+        type: "text" as const,
+        role: m.role as "user" | "assistant",
+        content: m.content,
+        timestamp: new Date(m.timestamp).getTime(),
+      }));
+      set((state) => ({
+        sessions: state.sessions.map((s) =>
+          s.id === sessionId
+            ? { ...s, messages: agentMessages }
+            : s
+        ),
+      }));
+    } catch {
+      // 加载历史消息失败不影响当前会话
     }
   },
 

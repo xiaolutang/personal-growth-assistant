@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useImperativeHandle, forwardRef } from "react";
 import { Send, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +12,11 @@ interface ChatInputProps {
   className?: string;
 }
 
-export function ChatInput({
+export interface ChatInputHandle {
+  focus: () => void;
+}
+
+export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function ChatInput({
   value,
   onChange,
   onSend,
@@ -20,8 +24,12 @@ export function ChatInput({
   placeholder = "输入消息...",
   disabled = false,
   className,
-}: ChatInputProps) {
+}, ref) {
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => inputRef.current?.focus(),
+  }));
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -66,7 +74,7 @@ export function ChatInput({
       </div>
     </div>
   );
-}
+});
 
 /** 暴露 focus 方法给父组件 */
 export function useChatInputFocus() {

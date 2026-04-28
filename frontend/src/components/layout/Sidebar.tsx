@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import {
   MessageSquare,
@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { SessionList } from "@/components/SessionList";
 import { useUserStore } from "@/stores/userStore";
+import { useAgentStore } from "@/stores/agentStore";
 import { ExportDialog } from "@/components/ExportDialog";
 import { navItems } from "@/components/layout/navConfig";
 
@@ -28,6 +29,12 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onToggleCo
   const [showExport, setShowExport] = useState(false);
   const user = useUserStore((s) => s.user);
   const logout = useUserStore((s) => s.logout);
+  const fetchSessions = useAgentStore((s) => s.fetchSessions);
+
+  // 组件挂载时从后端加载会话列表
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
 
   // 点击导航项后关闭移动端抽屉
   const handleNavClick = () => {

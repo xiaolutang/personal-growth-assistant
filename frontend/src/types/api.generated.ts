@@ -28,6 +28,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/entries/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Templates
+         * @description 获取可用模板列表
+         */
+        get: operations["list_templates_entries_templates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/entries/export": {
         parameters: {
             query?: never;
@@ -111,6 +131,26 @@ export interface paths {
          * @description 删除条目
          */
         delete: operations["delete_entry_entries__entry_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/entries/{entry_id}/backlinks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Backlinks
+         * @description 获取条目的反向引用列表（谁引用了这个条目）
+         */
+        get: operations["get_backlinks_entries__entry_id__backlinks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -463,6 +503,11 @@ export interface paths {
         /**
          * Get Knowledge Recommendations
          * @description 获取知识推荐
+         *
+         *     返回三类推荐：
+         *     - knowledge_gaps: 知识缺口（PREREQUISITE 关系链中未涉足的概念）
+         *     - review_suggestions: 复习推荐（间隔重复策略，推荐近期未复习的概念）
+         *     - related_concepts: 共现推荐（基于标签共现或概念中心度）
          */
         get: operations["get_knowledge_recommendations_knowledge_recommendations_get"];
         put?: never;
@@ -673,81 +718,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/intent": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Detect Intent
-         * @description 检测用户输入的意图
-         *
-         *     使用 LLM 进行智能意图识别，支持：
-         *     - create: 创建任务/笔记
-         *     - read: 搜索/查询
-         *     - update: 更新条目
-         *     - delete: 删除条目
-         *     - knowledge: 知识图谱
-         *     - review: 回顾总结
-         *     - help: 帮助说明
-         */
-        post: operations["detect_intent_intent_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/parse": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Parse
-         * @description 解析自然语言文本，流式返回结果（SSE）
-         *
-         *     使用 LangGraph Checkpointer 管理对话历史，
-         *     通过 thread_id（{user_id}:{session_id}）实现多轮对话隔离。
-         */
-        post: operations["parse_parse_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/session/{session_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Clear Session
-         * @description 清空指定会话的对话历史
-         *
-         *     Args:
-         *         session_id: 会话 ID（对应 LangGraph thread_id）
-         */
-        delete: operations["clear_session_session__session_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/chat": {
         parameters: {
             query?: never;
@@ -759,97 +729,23 @@ export interface paths {
         put?: never;
         /**
          * Chat
-         * @description 统一聊天接口（一站式处理意图识别和操作执行）
-         *
-         *     一次请求完成：
-         *     1. 意图检测（可跳过）
-         *     2. 根据意图执行操作（create/update/delete/read 等）
-         *     3. 多选场景返回 confirm 事件，前端确认后携带 confirm 参数再次调用
+         * @description 统一聊天接口（ReAct Agent 路径）
          *
          *     SSE 事件：
-         *     - event: intent  - 意图检测结果
-         *     - event: content - 流式内容（create 意图）
-         *     - event: created - 创建成功
-         *     - event: updated - 更新成功
-         *     - event: deleted - 删除成功
-         *     - event: confirm - 需要用户确认（多选场景）
-         *     - event: results - 搜索结果（read 意图）
-         *     - event: done    - 完成
-         *     - event: error   - 错误
+         *     - event: thinking   - Agent 思考内容
+         *     - event: tool_call  - Agent 调用工具
+         *     - event: tool_result - 工具执行结果
+         *     - event: content    - 流式内容
+         *     - event: created    - 创建成功
+         *     - event: updated    - 更新成功
+         *     - event: done       - 完成
+         *     - event: error      - 错误
          */
         post: operations["chat_chat_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
-        trace?: never;
-    };
-    "/sessions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Sessions
-         * @description 获取当前用户的所有会话列表
-         *
-         *     返回会话 ID、标题、创建时间、更新时间
-         */
-        get: operations["list_sessions_sessions_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/sessions/{session_id}/messages": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Session Messages
-         * @description 获取指定会话的消息历史
-         *
-         *     从 LangGraph checkpointer 读取消息
-         */
-        get: operations["get_session_messages_sessions__session_id__messages_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/sessions/{session_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete Session
-         * @description 删除会话（包括元数据和对话历史）
-         */
-        delete: operations["delete_session_sessions__session_id__delete"];
-        options?: never;
-        head?: never;
-        /**
-         * Update Session
-         * @description 更新会话元数据（如标题）
-         */
-        patch: operations["update_session_sessions__session_id__patch"];
         trace?: never;
     };
     "/playground/llm-test": {
@@ -890,7 +786,16 @@ export interface paths {
         put?: never;
         /**
          * Submit Feedback
-         * @description 提交反馈：本地先写入，后台异步上报 log-service
+         * @description 提交反馈：本地先写入，后台异步上报 log-service。
+         *
+         *     支持两种反馈类型：
+         *     - general: 通用反馈（原有逻辑）
+         *     - agent: Agent 回复反馈（需 message_id）
+         *
+         *     Agent 负面反馈会：
+         *     1. 自动创建 Issue（medium severity）
+         *     2. 标记 Langfuse trace 评分（可选）
+         *     3. 导出到 Golden Dataset bad case 目录
          */
         post: operations["submit_feedback_feedback_post"];
         delete?: never;
@@ -1043,7 +948,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/ai/chat": {
+    "/session/{session_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1052,15 +957,86 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        post?: never;
         /**
-         * Ai Chat
-         * @description AI 对话端点 — SSE 流式返回
+         * Clear Session
+         * @description 清空指定会话的对话历史
+         *
+         *     Args:
+         *         session_id: 会话 ID（对应 LangGraph thread_id）
          */
-        post: operations["ai_chat_ai_chat_post"];
+        delete: operations["clear_session_session__session_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Sessions
+         * @description 获取当前用户的所有会话列表
+         *
+         *     返回会话 ID、标题、创建时间、更新时间
+         */
+        get: operations["list_sessions_sessions_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/sessions/{session_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Session Messages
+         * @description 获取指定会话的消息历史
+         *
+         *     从 LangGraph checkpointer 读取消息
+         */
+        get: operations["get_session_messages_sessions__session_id__messages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Session
+         * @description 删除会话（包括元数据和对话历史）
+         */
+        delete: operations["delete_session_sessions__session_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Session
+         * @description 更新会话元数据（如标题）
+         */
+        patch: operations["update_session_sessions__session_id__patch"];
         trace?: never;
     };
     "/notifications": {
@@ -1199,6 +1175,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/goals/{goal_id}/progress-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Progress History
+         * @description 获取目标进度历史快照
+         */
+        get: operations["get_progress_history_goals__goal_id__progress_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/goals/{goal_id}/entries": {
         parameters: {
             query?: never;
@@ -1272,7 +1268,7 @@ export interface paths {
         };
         /**
          * List Milestones
-         * @description 列出目标下的里程碑
+         * @description 列出目标下所有里程碑
          */
         get: operations["list_milestones_goals__goal_id__milestones_get"];
         put?: never;
@@ -1311,20 +1307,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/goals/{goal_id}/progress-history": {
+    "/goals/{goal_id}/milestones/reorder": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get Progress History
-         * @description 获取目标进度历史快照
-         */
-        get: operations["get_progress_history_goals__goal_id__progress_history_get"];
+        get?: never;
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Reorder Milestones
+         * @description 重排序里程碑（拖拽排序）
+         */
+        patch: operations["reorder_milestones_goals__goal_id__milestones_reorder_patch"];
+        trace?: never;
+    };
+    "/analytics/event": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Event
+         * @description 记录前端埋点事件（best-effort）
+         */
+        post: operations["record_event_analytics_event_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1374,6 +1390,52 @@ export interface components {
              * @default []
              */
             items: components["schemas"]["ActivityHeatmapItem"][];
+        };
+        /**
+         * AnalyticsEventCreate
+         * @description 埋点事件创建请求
+         */
+        AnalyticsEventCreate: {
+            /**
+             * Event Type
+             * @enum {string}
+             */
+            event_type: "entry_created" | "entry_viewed" | "chat_message_sent" | "search_performed" | "page_viewed" | "onboarding_completed";
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * AnalyticsEventResponse
+         * @description 埋点事件响应
+         */
+        AnalyticsEventResponse: {
+            /**
+             * Ok
+             * @default true
+             */
+            ok: boolean;
+        };
+        /**
+         * BacklinkItem
+         * @description 反向引用条目
+         */
+        BacklinkItem: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Category */
+            category: string;
+        };
+        /**
+         * BacklinksResponse
+         * @description 反向引用列表响应
+         */
+        BacklinksResponse: {
+            /** Backlinks */
+            backlinks: components["schemas"]["BacklinkItem"][];
         };
         /**
          * BehaviorPattern
@@ -1492,17 +1554,6 @@ export interface components {
              */
             source: "neo4j" | "sqlite";
         };
-        /** ChatMessage */
-        ChatMessage: {
-            /** Message */
-            message: string;
-            /** Context */
-            context?: {
-                [key: string]: unknown;
-            } | null;
-            /** Conversation Id */
-            conversation_id?: string | null;
-        };
         /**
          * ChatRequest
          * @description 统一聊天请求
@@ -1519,21 +1570,8 @@ export interface components {
              * @default default
              */
             session_id: string;
-            /**
-             * Skip Intent
-             * @description 跳过意图检测（前端已确认为 create）
-             * @default false
-             */
-            skip_intent: boolean;
-            /** @description 确认操作（多选场景） */
-            confirm?: components["schemas"]["ConfirmAction"] | null;
             /** @description 页面级上下文 */
             page_context?: components["schemas"]["PageContext"] | null;
-            /**
-             * Force Intent
-             * @description 测试用：强制指定意图（跳过意图检测）
-             */
-            force_intent?: string | null;
         };
         /**
          * ChecklistItem
@@ -1642,22 +1680,6 @@ export interface components {
              * @default []
              */
             items: components["schemas"]["TimelineDay"][];
-        };
-        /**
-         * ConfirmAction
-         * @description 确认操作
-         */
-        ConfirmAction: {
-            /**
-             * Action
-             * @description 操作类型: update/delete
-             */
-            action: string;
-            /**
-             * Item Id
-             * @description 用户选择的条目 ID
-             */
-            item_id: string;
         };
         /**
          * DailyFocus
@@ -1792,6 +1814,11 @@ export interface components {
              * @description 耗时（分钟）
              */
             time_spent?: number | null;
+            /**
+             * Template Id
+             * @description 笔记模板ID（如 learning/reading/meeting）
+             */
+            template_id?: string | null;
         };
         /**
          * EntryInfo
@@ -1934,6 +1961,30 @@ export interface components {
             cached: boolean;
         };
         /**
+         * EntryTemplate
+         * @description 条目模板
+         */
+        EntryTemplate: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Category */
+            category: string;
+            /** Description */
+            description: string;
+            /** Content */
+            content: string;
+        };
+        /**
+         * EntryTemplateListResponse
+         * @description 模板列表响应
+         */
+        EntryTemplateListResponse: {
+            /** Templates */
+            templates: components["schemas"]["EntryTemplate"][];
+        };
+        /**
          * EntryUpdate
          * @description 更新条目请求
          */
@@ -2018,6 +2069,17 @@ export interface components {
             created_at: string;
             /** Updated At */
             updated_at?: string | null;
+            /**
+             * Feedback Type
+             * @default general
+             */
+            feedback_type: string;
+            /** Message Id */
+            message_id?: string | null;
+            /** Reason */
+            reason?: string | null;
+            /** Detail */
+            detail?: string | null;
         };
         /**
          * FeedbackListResponse
@@ -2044,6 +2106,18 @@ export interface components {
              * @enum {string}
              */
             severity: "low" | "medium" | "high" | "critical";
+            /**
+             * Feedback Type
+             * @default general
+             * @enum {string}
+             */
+            feedback_type: "general" | "agent";
+            /** Message Id */
+            message_id?: string | null;
+            /** Reason */
+            reason?: string | null;
+            /** Detail */
+            detail?: string | null;
         };
         /**
          * FeedbackResponse
@@ -2088,10 +2162,10 @@ export interface components {
             description?: string | null;
             /**
              * Metric Type
-             * @description 衡量方式: count(手动计数)/checklist(检查清单)/tag_auto(基于tag自动追踪)
+             * @description 衡量方式: count(手动计数)/checklist(检查清单)/tag_auto(基于tag自动追踪)/milestone(里程碑)
              * @enum {string}
              */
-            metric_type: "count" | "checklist" | "tag_auto";
+            metric_type: "count" | "checklist" | "tag_auto" | "milestone";
             /**
              * Target Value
              * @description 目标值（必须 >= 1）
@@ -2304,176 +2378,6 @@ export interface components {
             end_date?: string | null;
         };
         /**
-         * KnowledgeGapItem
-         * @description 知识缺口项
-         */
-        KnowledgeGapItem: {
-            concept: string;
-            /**
-             * Missing Prerequisites
-             * @default []
-             */
-            missing_prerequisites: string[];
-        };
-        /**
-         * ReviewSuggestionItem
-         * @description 复习推荐项
-         */
-        ReviewSuggestionItem: {
-            concept: string;
-            category?: string | null;
-            /**
-             * Last Seen Days Ago
-             * @default 0
-             */
-            last_seen_days_ago: number;
-            /**
-             * Entry Count
-             * @default 0
-             */
-            entry_count: number;
-        };
-        /**
-         * RelatedConceptItem
-         * @description 共现推荐项
-         */
-        RelatedConceptItem: {
-            concept: string;
-            /**
-             * Score
-             * @default 0
-             */
-            score: number;
-            /**
-             * Source
-             * @default tag
-             */
-            source: string;
-        };
-        /**
-         * RecommendationResponse
-         * @description 推荐响应
-         */
-        RecommendationResponse: {
-            /**
-             * Knowledge Gaps
-             * @default []
-             */
-            knowledge_gaps: components["schemas"]["KnowledgeGapItem"][];
-            /**
-             * Review Suggestions
-             * @default []
-             */
-            review_suggestions: components["schemas"]["ReviewSuggestionItem"][];
-            /**
-             * Related Concepts
-             * @default []
-             */
-            related_concepts: components["schemas"]["RelatedConceptItem"][];
-            /**
-             * Source
-             * @default sqlite
-             */
-            source: string;
-        };
-        /**
-         * MilestoneCreate
-         * @description 创建里程碑请求
-         */
-        MilestoneCreate: {
-            /**
-             * Title
-             * @description 里程碑标题
-             */
-            title: string;
-            /**
-             * Description
-             * @description 里程碑描述
-             */
-            description?: string | null;
-            /**
-             * Due Date
-             * @description 截止日期 (YYYY-MM-DD)
-             */
-            due_date?: string | null;
-        };
-        /**
-         * MilestoneUpdate
-         * @description 更新里程碑请求
-         */
-        MilestoneUpdate: {
-            /**
-             * Title
-             * @description 里程碑标题
-             */
-            title?: string | null;
-            /**
-             * Description
-             * @description 里程碑描述
-             */
-            description?: string | null;
-            /**
-             * Due Date
-             * @description 截止日期 (YYYY-MM-DD)
-             */
-            due_date?: string | null;
-            /**
-             * Status
-             * @description 里程碑状态
-             */
-            status?: ("pending" | "completed") | null;
-        };
-        /**
-         * MilestoneResponse
-         * @description 里程碑响应
-         */
-        MilestoneResponse: {
-            id: string;
-            goal_id: string;
-            title: string;
-            description?: string | null;
-            due_date?: string | null;
-            /**
-             * Status
-             * @default pending
-             */
-            status: string;
-            /**
-             * Sort Order
-             * @default 0
-             */
-            sort_order: number;
-            created_at: string;
-            updated_at: string;
-        };
-        /**
-         * MilestoneListResponse
-         * @description 里程碑列表响应
-         */
-        MilestoneListResponse: {
-            milestones: components["schemas"]["MilestoneResponse"][];
-        };
-        /**
-         * ProgressSnapshotItem
-         * @description 进度快照项
-         */
-        ProgressSnapshotItem: {
-            id: string;
-            goal_id: string;
-            current_value: number;
-            target_value: number;
-            percentage: number;
-            snapshot_date: string;
-            created_at: string;
-        };
-        /**
-         * ProgressHistoryResponse
-         * @description 进度历史响应
-         */
-        ProgressHistoryResponse: {
-            snapshots: components["schemas"]["ProgressSnapshotItem"][];
-        };
-        /**
          * GrowthCurvePoint
          * @description 成长曲线点
          */
@@ -2621,58 +2525,6 @@ export interface components {
             source: "llm" | "rule_based";
         };
         /**
-         * IntentRequest
-         * @description 意图识别请求
-         */
-        IntentRequest: {
-            /**
-             * Text
-             * @description 用户输入文本
-             */
-            text: string;
-            /**
-             * Context
-             * @description 上下文信息
-             */
-            context?: {
-                [key: string]: unknown;
-            } | null;
-        };
-        /**
-         * IntentResponse
-         * @description 意图识别响应
-         */
-        IntentResponse: {
-            /**
-             * Intent
-             * @description 识别的意图类型
-             */
-            intent: string;
-            /**
-             * Confidence
-             * @description 置信度
-             * @default 1
-             */
-            confidence: number;
-            /**
-             * Entities
-             * @description 提取的实体
-             */
-            entities?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Query
-             * @description 搜索/操作关键词
-             */
-            query?: string | null;
-            /**
-             * Response Hint
-             * @description 响应提示
-             */
-            response_hint?: string | null;
-        };
-        /**
          * KnowledgeContextEdge
          * @description 知识上下文边
          */
@@ -2726,6 +2578,19 @@ export interface components {
              * @default []
              */
             center_concepts: string[];
+        };
+        /**
+         * KnowledgeGapItem
+         * @description 知识缺口项
+         */
+        KnowledgeGapItem: {
+            /** Concept */
+            concept: string;
+            /**
+             * Missing Prerequisites
+             * @default []
+             */
+            missing_prerequisites: string[];
         };
         /**
          * KnowledgeGraphResponse
@@ -2901,6 +2766,102 @@ export interface components {
             timestamp: string;
         };
         /**
+         * MilestoneCreate
+         * @description 创建里程碑请求
+         */
+        MilestoneCreate: {
+            /**
+             * Title
+             * @description 里程碑标题
+             */
+            title: string;
+            /**
+             * Description
+             * @description 里程碑描述
+             */
+            description?: string | null;
+            /**
+             * Due Date
+             * @description 截止日期 (YYYY-MM-DD)
+             */
+            due_date?: string | null;
+        };
+        /**
+         * MilestoneListResponse
+         * @description 里程碑列表响应
+         */
+        MilestoneListResponse: {
+            /** Milestones */
+            milestones: components["schemas"]["MilestoneResponse"][];
+        };
+        /**
+         * MilestoneReorderRequest
+         * @description 里程碑重排序请求
+         */
+        MilestoneReorderRequest: {
+            /**
+             * Milestone Ids
+             * @description 按新顺序排列的里程碑 ID 列表
+             */
+            milestone_ids: string[];
+        };
+        /**
+         * MilestoneResponse
+         * @description 里程碑响应
+         */
+        MilestoneResponse: {
+            /** Id */
+            id: string;
+            /** Goal Id */
+            goal_id: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            /**
+             * Status
+             * @default pending
+             */
+            status: string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /**
+         * MilestoneUpdate
+         * @description 更新里程碑请求
+         */
+        MilestoneUpdate: {
+            /**
+             * Title
+             * @description 里程碑标题
+             */
+            title?: string | null;
+            /**
+             * Description
+             * @description 里程碑描述
+             */
+            description?: string | null;
+            /**
+             * Due Date
+             * @description 截止日期 (YYYY-MM-DD)
+             */
+            due_date?: string | null;
+            /**
+             * Status
+             * @description 里程碑状态
+             */
+            status?: ("pending" | "completed") | null;
+        };
+        /**
          * MonthlyReport
          * @description 月报响应
          */
@@ -2971,6 +2932,10 @@ export interface components {
              * @default []
              */
             pattern_insights: string[];
+            /** Knowledge Recommendations */
+            knowledge_recommendations?: {
+                [key: string]: unknown;
+            } | null;
             /** Cached At */
             cached_at?: string | null;
         };
@@ -3077,21 +3042,12 @@ export interface components {
             } | null;
         };
         /**
-         * ParseRequest
-         * @description 解析请求
+         * ProgressHistoryResponse
+         * @description 进度历史响应
          */
-        ParseRequest: {
-            /**
-             * Text
-             * @description 自然语言文本
-             */
-            text: string;
-            /**
-             * Session Id
-             * @description 会话 ID（对应 LangGraph thread_id）
-             * @default default
-             */
-            session_id: string;
+        ProgressHistoryResponse: {
+            /** Snapshots */
+            snapshots: components["schemas"]["ProgressSnapshotItem"][];
         };
         /**
          * ProgressItem
@@ -3106,6 +3062,26 @@ export interface components {
             progress_percentage: number;
             /** Progress Delta */
             progress_delta?: number | null;
+        };
+        /**
+         * ProgressSnapshotItem
+         * @description 进度快照项
+         */
+        ProgressSnapshotItem: {
+            /** Id */
+            id: string;
+            /** Goal Id */
+            goal_id: string;
+            /** Current Value */
+            current_value: number;
+            /** Target Value */
+            target_value: number;
+            /** Percentage */
+            percentage: number;
+            /** Snapshot Date */
+            snapshot_date: string;
+            /** Created At */
+            created_at: string;
         };
         /**
          * ProgressSummaryResponse
@@ -3138,6 +3114,50 @@ export interface components {
             };
         };
         /**
+         * RecommendationResponse
+         * @description 推荐响应
+         */
+        RecommendationResponse: {
+            /**
+             * Knowledge Gaps
+             * @default []
+             */
+            knowledge_gaps: components["schemas"]["KnowledgeGapItem"][];
+            /**
+             * Review Suggestions
+             * @default []
+             */
+            review_suggestions: components["schemas"]["ReviewSuggestionItem"][];
+            /**
+             * Related Concepts
+             * @default []
+             */
+            related_concepts: components["schemas"]["RelatedConceptItem"][];
+            /**
+             * Source
+             * @default sqlite
+             */
+            source: string;
+        };
+        /**
+         * RelatedConceptItem
+         * @description 共现推荐项
+         */
+        RelatedConceptItem: {
+            /** Concept */
+            concept: string;
+            /**
+             * Score
+             * @default 0
+             */
+            score: number;
+            /**
+             * Source
+             * @default tag
+             */
+            source: string;
+        };
+        /**
          * RelatedConceptsResponse
          * @description 相关概念响应
          */
@@ -3168,6 +3188,26 @@ export interface components {
             category: string;
             /** Relevance Reason */
             relevance_reason: string;
+        };
+        /**
+         * ReviewSuggestionItem
+         * @description 复习推荐项
+         */
+        ReviewSuggestionItem: {
+            /** Concept */
+            concept: string;
+            /** Category */
+            category?: string | null;
+            /**
+             * Last Seen Days Ago
+             * @default 0
+             */
+            last_seen_days_ago: number;
+            /**
+             * Entry Count
+             * @default 0
+             */
+            entry_count: number;
         };
         /**
          * SearchRequest
@@ -3563,6 +3603,12 @@ export interface operations {
                 start_date?: string | null;
                 /** @description 结束日期 (YYYY-MM-DD) */
                 end_date?: string | null;
+                /** @description 到期过滤: today(今日到期) / overdue(已过期) */
+                due?: string | null;
+                /** @description 优先级筛选: high/medium/low */
+                priority?: string | null;
+                /** @description 排序字段: priority */
+                sort_by?: string | null;
                 /** @description 返回数量限制 */
                 limit?: number;
                 /** @description 偏移量 */
@@ -3614,6 +3660,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EntryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_templates_entries_templates_get: {
+        parameters: {
+            query?: {
+                /** @description 按类型过滤模板（如 note） */
+                category?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntryTemplateListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3814,6 +3892,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SuccessResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_backlinks_entries__entry_id__backlinks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BacklinksResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4353,6 +4462,26 @@ export interface operations {
             };
         };
     };
+    get_knowledge_recommendations_knowledge_recommendations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecommendationResponse"];
+                };
+            };
+        };
+    };
     get_daily_report_review_daily_get: {
         parameters: {
             query?: {
@@ -4641,103 +4770,6 @@ export interface operations {
             };
         };
     };
-    detect_intent_intent_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["IntentRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IntentResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    parse_parse_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ParseRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    clear_session_session__session_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                session_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     chat_chat_post: {
         parameters: {
             query?: never;
@@ -4758,123 +4790,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_sessions_sessions_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionInfo"][];
-                };
-            };
-        };
-    };
-    get_session_messages_sessions__session_id__messages_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                session_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageInfo"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_session_sessions__session_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                session_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_session_sessions__session_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                session_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SessionUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionInfo"];
                 };
             };
             /** @description Validation Error */
@@ -5171,16 +5086,131 @@ export interface operations {
             };
         };
     };
-    ai_chat_ai_chat_post: {
+    clear_session_session__session_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sessions_sessions_get: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionInfo"][];
+                };
+            };
+        };
+    };
+    get_session_messages_sessions__session_id__messages_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageInfo"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_session_sessions__session_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_session_sessions__session_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ChatMessage"];
+                "application/json": components["schemas"]["SessionUpdate"];
             };
         };
         responses: {
@@ -5190,7 +5220,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["SessionInfo"];
                 };
             };
             /** @description Validation Error */
@@ -5504,6 +5534,40 @@ export interface operations {
             };
         };
     };
+    get_progress_history_goals__goal_id__progress_history_get: {
+        parameters: {
+            query?: {
+                /** @description 回溯天数 */
+                days?: number;
+            };
+            header?: never;
+            path: {
+                goal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressHistoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_goal_entries_goals__goal_id__entries_get: {
         parameters: {
             query?: never;
@@ -5764,7 +5828,7 @@ export interface operations {
             };
         };
     };
-    get_progress_history_goals__goal_id__progress_history_get: {
+    reorder_milestones_goals__goal_id__milestones_reorder_patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -5773,7 +5837,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MilestoneReorderRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -5781,7 +5849,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProgressHistoryResponse"];
+                    "application/json": components["schemas"]["MilestoneListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -5795,14 +5863,18 @@ export interface operations {
             };
         };
     };
-    get_knowledge_recommendations_knowledge_recommendations_get: {
+    record_event_analytics_event_post: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalyticsEventCreate"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -5810,7 +5882,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RecommendationResponse"];
+                    "application/json": components["schemas"]["AnalyticsEventResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
