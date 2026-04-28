@@ -3,6 +3,23 @@
   "project": "personal-growth-assistant",
   "status": "active",
   "updated_at": "2026-04-28",
+  "workflow": {
+    "name": "unified-react-agent",
+    "mode": "B",
+    "runtime": "skill_orchestrated",
+    "review_provider": "codex_plugin",
+    "audit_provider": "codex_plugin",
+    "risk_provider": "codex_plugin",
+    "stop_hook_enabled": false
+  },
+  "active_requirement_cycle": {
+    "id": "R044",
+    "name": "unified-react-agent",
+    "status": "active",
+    "branch": "feat/R044-unified-react-agent",
+    "total_tasks": 14,
+    "started_at": "2026-04-28"
+  },
   "archived_requirement_cycles": [
     {
       "id": "R043",
@@ -68,5 +85,402 @@
     }
   ],
   "archived_phases": [],
-  "features": []
+  "summary": {
+    "total": 14,
+    "pending": 14,
+    "in_progress": 0,
+    "completed": 0,
+    "cancelled": 0
+  },
+  "features": [
+    {
+      "id": "B185",
+      "phase": 1,
+      "module": "backend",
+      "name": "Agent Tools 定义与实现",
+      "description": "新建 backend/app/agent/ 模块，定义 7 个 Agent Tools 的 Pydantic schema 和函数实现。每个 tool 封装现有 service 调用：create_entry→entry_service, update_entry→entry_service, delete_entry→entry_service, search_entries→entry_service, get_entry→entry_service, get_review_summary→review_service。ask_user tool 传入追问文本，返回包含 question 字段的结构化结果，触发 ReAct 图条件边路由到 END（中断循环），前端通过 content 事件展示追问，用户下次 POST /chat（同 session_id）时 checkpointer 自动恢复上下文继续对话。",
+      "verification": "L1",
+      "depends_on": [],
+      "status": "completed",
+      "started_at": "2026-04-28T19:00:00",
+      "completed_at": "2026-04-28T19:10:00",
+      "evidence_file": ".dev-flow/evidence/B185.md",
+      "execution_notes": "47 tests passed, 5 new files, 0 existing files modified",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "backend/app/agent/__init__.py 和 tools.py 创建完成",
+        "7 个 tools 各有完整 Pydantic input/output schema",
+        "create_entry 封装 entry_service.create_entry()",
+        "update_entry 封装 entry_service.update_entry()",
+        "delete_entry 封装 entry_service.delete_entry()",
+        "search_entries 封装 entry_service.search_entries()",
+        "get_entry 封装 entry_service.get_entry()",
+        "get_review_summary 封装 review_service.get_summary()",
+        "ask_user 接受 question 参数，返回 {type:'ask', question:'...'} 结构",
+        "ask_user 返回后触发 ReAct 图条件边路由到 END，中断 Agent 循环",
+        "所有 tools 可独立调用并通过参数校验"
+      ],
+      "risk_tags": ["startup"],
+      "test_tasks": [
+        "正常：每个 tool 传入合法参数，验证返回格式正确",
+        "边界：create_entry 缺少必填字段、search_entries 空关键词",
+        "边界：ask_user 传入空 question 时的处理",
+        "异常：service 抛出异常时 tool 返回错误结果（不抛出，包装为 error）",
+        "异常：entry_service.create_entry() 返回 None 或空结果时 tool 的处理",
+        "首次使用：所有 tools 在空数据库状态下可正常调用"
+      ],
+      "smoke_required": true,
+      "files": [
+        "backend/app/agent/__init__.py",
+        "backend/app/agent/tools.py",
+        "backend/app/agent/schemas.py"
+      ]
+    },
+    {
+      "id": "B186",
+      "phase": 1,
+      "module": "backend",
+      "name": "LangGraph ReAct Agent 图",
+      "description": "新建 backend/app/agent/react_agent.py，实现 LangGraph ReAct Agent。使用 StateGraph(MessagesState) 构建 Agent Node + ToolNode 循环。条件边判断：LLM 无 tool_calls→END；有 tool_calls 且包含 ask_user→执行 ToolNode 后路由到 END（中断等待用户回复）；其他 tool_calls→继续循环。循环上限 5 轮。System prompt 支持页面上下文注入。保留 AsyncSqliteSaver checkpointer。现有 TaskParserGraph 不受影响。",
+      "verification": "L1",
+      "depends_on": ["B185"],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "react_agent.py 使用 LangGraph StateGraph + MessagesState",
+        "Agent Node 调用 LLM，ToolNode 执行 tools",
+        "条件边路由：LLM 无 tool_calls→END；有 ask_user→ToolNode→END；其他→ToolNode→继续循环",
+        "ask_user 执行后 Agent 循环中断，等待用户下次 POST /chat 恢复",
+        "循环上限 5 轮，超出自动结束并返回已收集信息",
+        "System prompt 模板支持页面上下文变量注入",
+        "保留 AsyncSqliteSaver checkpointer",
+        "现有 TaskParserGraph 不受影响（共存）"
+      ],
+      "risk_tags": ["startup"],
+      "test_tasks": [
+        "正常：简单输入触发 tool 调用并返回结果",
+        "正常：纯对话输入不触发 tool 直接回复",
+        "正常：ask_user 调用后循环中断，下次输入在同 thread_id 恢复上下文",
+        "边界：连续 5 轮 tool 调用后自动结束",
+        "异常：LLM 返回无法解析的响应时优雅降级（返回 error content）",
+        "异常：ToolNode 执行 tool 抛出异常时，错误信息回传 Agent 继续推理",
+        "首次使用：空 checkpointer（新用户首次对话）可正常工作"
+      ],
+      "smoke_required": true,
+      "files": [
+        "backend/app/agent/react_agent.py",
+        "backend/app/agent/prompts.py"
+      ]
+    },
+    {
+      "id": "B187",
+      "phase": 1,
+      "module": "backend",
+      "name": "AgentService + 统一 Router",
+      "description": "新建 AgentService 管理会话、注入页面上下文、编排 SSE 事件。扩展 POST /chat 统一入口，新增 SSE 事件类型（thinking/tool_call/tool_result）。请求体移除旧 IntentService 字段（confirm/skip_intent/force_intent），保留 text/session_id/page_context。会话管理端点（GET/DELETE/PATCH /sessions/*）保留在 parse.py 中不被删除。保留现有 /chat 向后兼容直到 Phase 3 清理。",
+      "verification": "L2",
+      "depends_on": ["B186"],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "backend/app/services/agent_service.py 创建完成",
+        "AgentService 管理 Agent 会话和页面上下文注入",
+        "POST /chat 请求体精简为 {text, session_id, page_context?}，旧字段（confirm/skip_intent/force_intent）不再接受",
+        "POST /chat 返回扩展的 SSE 事件流",
+        "新增 SSE 事件：event:thinking/data:{content}, event:tool_call/data:{tool,args}, event:tool_result/data:{tool,result,success}",
+        "保留现有 content/created/updated/error/done 事件",
+        "会话管理端点（GET/DELETE/PATCH /sessions/*）保留在 parse.py，不受影响",
+        "现有 /chat 调用向后兼容（忽略未知字段）"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        "正常：curl 调用 /chat 触发 Agent，返回完整 SSE 流",
+        "正常：SSE 流包含 thinking→tool_call→tool_result→content→done 完整序列",
+        "正常：ask_user 场景 SSE 流为 tool_call(ask_user)→tool_result→content→done",
+        "边界：Agent 无 tool 调用时只返回 content→done",
+        "边界：请求含旧字段（confirm等）时忽略不报错",
+        "异常：LLM 超时时返回 error 事件并优雅关闭 SSE 连接",
+        "异常：SSE 连接中断时 Agent 继续执行（不依赖客户端连接状态）",
+        "首次使用：新 session_id 首次调用可正常工作"
+      ],
+      "contract_refs": ["CONTRACT-AGENT-CHAT"],
+      "files": [
+        "backend/app/services/agent_service.py",
+        "backend/app/routers/parse.py",
+        "backend/app/main.py"
+      ]
+    },
+    {
+      "id": "F185",
+      "phase": 2,
+      "module": "frontend",
+      "name": "agentStore + SSE 解析",
+      "description": "新建 frontend/src/stores/agentStore.ts，统一替换 chatStore。支持解析新 SSE 事件类型（thinking/tool_call/tool_result），管理对话状态（messages, isLoading, currentToolCalls）。当 Agent 调用 ask_user 时，SSE 流正常结束（done 事件），前端在 ChatInput 中展示追问提示，用户回复通过同 session_id 再次 POST /chat 发送，checkpointer 自动恢复上下文。",
+      "verification": "F1",
+      "depends_on": ["B187"],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "agentStore.ts 创建完成，包含完整对话状态管理",
+        "正确解析 8 种 SSE 事件类型（thinking/tool_call/tool_result/content/created/updated/error/done）",
+        "isLoading 状态在 thinking 时为 true，done 时为 false",
+        "currentToolCalls 跟踪当前进行中的工具调用",
+        "messages 数组支持混合内容（文本 + 工具调用卡片）",
+        "Agent 追问场景：done 后输入框自动聚焦，用户回复通过同 session_id 发送"
+      ],
+      "files": [
+        "frontend/src/stores/agentStore.ts"
+      ]
+    },
+    {
+      "id": "F186",
+      "phase": 2,
+      "module": "frontend",
+      "name": "AgentChat 组件族",
+      "description": "新建 frontend/src/components/AgentChat/ 目录，包含完整对话 UI 组件：AgentChat 主容器、MessageList、UserMessage、AgentMessage、ToolCallCard（loading/success/fail 三态）、ThinkingIndicator、ChatInput、AgentPrompt。",
+      "verification": "F2",
+      "depends_on": ["F185"],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "AgentChat.tsx 主容器渲染完整对话界面",
+        "AgentMessage 展示 Agent 回复文本 + 工具调用卡片",
+        "ToolCallCard 支持 loading/success/fail 三态展示",
+        "ThinkingIndicator 展示思考动画",
+        "ChatInput 支持文本输入和发送",
+        "AgentPrompt 展示追问提示（复用输入框）",
+        "组件遵循 design-system.md 规范（主色 #6366F1、圆角 12px、Lucide 图标）"
+      ],
+      "files": [
+        "frontend/src/components/AgentChat/AgentChat.tsx",
+        "frontend/src/components/AgentChat/MessageList.tsx",
+        "frontend/src/components/AgentChat/UserMessage.tsx",
+        "frontend/src/components/AgentChat/AgentMessage.tsx",
+        "frontend/src/components/AgentChat/ToolCallCard.tsx",
+        "frontend/src/components/AgentChat/ThinkingIndicator.tsx",
+        "frontend/src/components/AgentChat/ChatInput.tsx",
+        "frontend/src/components/AgentChat/AgentPrompt.tsx"
+      ]
+    },
+    {
+      "id": "B188",
+      "phase": 3,
+      "module": "backend",
+      "name": "删除旧服务和路由",
+      "description": "删除被 AgentService 替代的旧代码：ChatService, AIChatService, IntentService, TaskParserGraph, /parse 端点, /ai/chat 端点。清理 deps.py 和 main.py 中的旧注册。删除前端旧 chatStore。会话管理端点（GET/DELETE/PATCH /sessions/*）和 SessionMetaStore 从 parse.py 迁移到独立 router 文件（routers/sessions.py）保留。",
+      "verification": "L2",
+      "depends_on": ["B187", "F186"],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "删除 backend/app/services/chat_service.py",
+        "删除 backend/app/services/ai_chat_service.py",
+        "删除 backend/app/services/intent_service.py",
+        "删除 backend/app/graphs/task_parser_graph.py",
+        "删除 backend/app/routers/ai_chat.py",
+        "POST /parse 端点已移除",
+        "POST /ai/chat 和 GET /ai/chat/history 端点已移除",
+        "会话管理端点（GET/DELETE/PATCH /sessions/*）已迁移到 routers/sessions.py",
+        "SessionMetaStore 初始化已从 parse.py 迁移到 main.py",
+        "deps.py 中 _intent_service 相关代码已清理",
+        "main.py 中旧初始化逻辑已清理",
+        "前端旧 chatStore 已删除",
+        "所有删除后现有功能不受影响（/chat 统一入口工作正常）",
+        "后端和前端构建无错误"
+      ],
+      "files": [
+        "backend/app/services/chat_service.py",
+        "backend/app/services/ai_chat_service.py",
+        "backend/app/services/intent_service.py",
+        "backend/app/graphs/task_parser_graph.py",
+        "backend/app/routers/ai_chat.py",
+        "backend/app/routers/deps.py",
+        "backend/app/main.py",
+        "backend/app/routers/parse.py",
+        "frontend/src/stores/chatStore.ts"
+      ]
+    },
+    {
+      "id": "B189",
+      "phase": 4,
+      "module": "backend",
+      "name": "Golden Dataset 框架",
+      "description": "搭建评估测试框架：JSON 格式测试用例加载器、pass@k/pass^k 执行器、环境隔离（每次 trial 重置 mock 数据）。编写单轮 63 条 + 负面 24 条测试数据。",
+      "verification": "L1",
+      "depends_on": ["B186"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "测试框架可加载 JSON 格式测试用例",
+        "实现 pass@k 和 pass^k 执行器（默认 k=3）",
+        "单轮测试数据 63 条（工具选择15+参数提取12+多步推理10+追问决策8+纯对话10+边界8）",
+        "负面测试数据 24 条（不该调tool10+不该追问8+不该多步6）",
+        "每条用例包含 reference_solution + acceptable_alternatives + unacceptable",
+        "环境隔离：每次 trial 重置 mock 数据，多轮评估使用独立 thread_id",
+        "可输出通过率统计报告（各维度 pass@3 / pass^3）"
+      ],
+      "files": [
+        "backend/tests/eval/framework.py",
+        "backend/tests/eval/datasets/single_turn_63.json",
+        "backend/tests/eval/datasets/negative_24.json"
+      ]
+    },
+    {
+      "id": "B190",
+      "phase": 4,
+      "module": "backend",
+      "name": "LLM-as-Judge + 多轮评估",
+      "description": "实现 LLM-as-Judge 评分器（9 维度 1-5 分）、多轮评估数据集 30 条、模拟用户（预设回复 + LLM 模拟）、部分评分和 outcome grading（state_check grader）。",
+      "verification": "L1",
+      "depends_on": ["B189"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "9 维评分 prompt 定义完整（6 基础 + 3 多轮专用）",
+        "LLM-as-Judge 执行器可运行并输出各维度分数",
+        "多轮测试数据 30 条（追问→行动10+上下文引用8+对话穿插6+错误恢复6）",
+        "模拟用户实现：预设回复模式 + LLM 模拟用户模式",
+        "部分评分支持：60%/70%/100% 等梯度得分",
+        "outcome grading：state_check grader 验证最终环境状态"
+      ],
+      "files": [
+        "backend/tests/eval/judge.py",
+        "backend/tests/eval/datasets/multi_turn_30.json",
+        "backend/tests/eval/simulated_user.py"
+      ]
+    },
+    {
+      "id": "B191",
+      "phase": 4,
+      "module": "backend",
+      "name": "评估转录系统",
+      "description": "实现评估转录记录（完整 Agent trace）、存储管理、审查流程工具、饱和度监控。",
+      "verification": "L1",
+      "depends_on": ["B190"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "评估转录 JSON 格式定义（含完整 LLM trace：input/output/tool_calls/token/延迟）",
+        "存储到 data/eval_transcripts/YYYY-MM-DD/eval-NNN.json",
+        "审查工具：筛选失败/低分（<3.0）评估",
+        "人工判定标签支持：pass/agent_error/judge_error/ambiguous",
+        "饱和度监控：各维度通过率趋势，>90% 自动建议加难度"
+      ],
+      "files": [
+        "backend/tests/eval/transcript.py"
+      ]
+    },
+    {
+      "id": "S45",
+      "phase": 5,
+      "module": "shared",
+      "name": "Langfuse 自部署 + 接入",
+      "description": "Docker Compose 添加 Langfuse 自部署服务。LangGraph CallbackHandler 接入 ReAct Agent，记录每次 LLM 调用的 input/output/token 统计/延迟。",
+      "verification": "L3",
+      "depends_on": ["B186"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "deploy/docker-compose.yml 添加 Langfuse 服务",
+        "LangGraph CallbackHandler 接入 react_agent.py",
+        "每次 LLM 调用记录 input/output/token/延迟",
+        "Langfuse UI 可查看完整 ReAct 循环 trace"
+      ],
+      "risk_tags": ["config"],
+      "contract_refs": ["CONTRACT-LANGFUSE"],
+      "files": [
+        "deploy/docker-compose.yml",
+        "backend/app/agent/react_agent.py"
+      ]
+    },
+    {
+      "id": "S46",
+      "phase": 5,
+      "module": "shared",
+      "name": "监控指标 + 告警",
+      "description": "采集关键指标（工具选择准确率、参数提取准确率、平均延迟、token 消耗、追问准确率），配置告警规则。",
+      "verification": "L1",
+      "depends_on": ["S45", "B189"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "指标采集：工具选择准确率、参数提取准确率、平均延迟、token 消耗、追问准确率",
+        "告警规则：准确率<85%、延迟>3s、token突增>2x",
+        "评估日报/周报可生成"
+      ],
+      "files": [
+        "backend/app/agent/monitoring.py"
+      ]
+    },
+    {
+      "id": "F187",
+      "phase": 6,
+      "module": "frontend",
+      "name": "反馈 UI",
+      "description": "每条 Agent 回复右侧显示 👍👎⚑ 按钮。👎 点击展开反馈面板（6 选项 + 其他）。反馈提交调用 API。",
+      "verification": "F1",
+      "depends_on": ["F186"],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "每条 Agent 回复右侧显示 👍👎⚑ 按钮",
+        "👎 点击展开反馈面板（理解错了/操作不正确/回复没帮助/应该追问没追问/不该追问追问了/其他）",
+        "反馈提交调用 POST /feedback API"
+      ],
+      "files": [
+        "frontend/src/components/AgentChat/FeedbackButtons.tsx",
+        "frontend/src/components/AgentChat/AgentMessage.tsx"
+      ]
+    },
+    {
+      "id": "B192",
+      "phase": 6,
+      "module": "backend",
+      "name": "反馈 API + 闭环",
+      "description": "扩展 POST /feedback 端点支持 Agent 反馈类型。反馈存储 + Langfuse trace 标记 + 自动创建 Issue。bad case 补充到 Golden Dataset 流程。",
+      "verification": "L2",
+      "depends_on": ["F187"],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "POST /feedback 支持 Agent 反馈类型（message_id + type + reason + detail）",
+        "反馈存储到 feedback 表",
+        "Langfuse 标记对应 trace 评分",
+        "👎 反馈自动创建 Issue (medium)",
+        "bad case 可补充到 Golden Dataset 流程"
+      ],
+      "contract_refs": ["CONTRACT-FEEDBACK"],
+      "files": [
+        "backend/app/routers/feedback.py"
+      ]
+    },
+    {
+      "id": "S47",
+      "phase": 7,
+      "module": "shared",
+      "name": "全量测试 + E2E 验证",
+      "description": "后端单元测试（Tools + Agent + AgentService）+ 集成测试（端到端 CRUD + 多轮对话 + SSE 流式）+ Golden Dataset 回归基线 + 构建 + Docker smoke。",
+      "verification": "L4",
+      "depends_on": ["B188", "B189"],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "后端单元测试覆盖 agent/tools.py、agent/react_agent.py、agent_service.py",
+        "集成测试覆盖端到端 CRUD（创建/更新/删除/搜索）",
+        "集成测试覆盖多轮对话（追问→回答→操作）",
+        "集成测试覆盖 SSE 流式输出完整序列",
+        "Golden Dataset 回归基线建立（pass@3 统计）",
+        "npm run build 通过",
+        "Docker build + smoke 通过",
+        "所有现有测试仍然通过"
+      ],
+      "risk_tags": ["first_use"],
+      "files": [
+        "backend/tests/unit/agent/test_tools.py",
+        "backend/tests/unit/agent/test_react_agent.py",
+        "backend/tests/unit/agent/test_agent_service.py",
+        "backend/tests/integration/test_agent_e2e.py"
+      ]
+    }
+  ]
 }
