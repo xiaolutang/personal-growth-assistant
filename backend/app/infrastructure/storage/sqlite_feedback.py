@@ -16,16 +16,22 @@ class SQLiteFeedbackMixin:
         title: str,
         description: str | None = None,
         severity: str = "medium",
+        feedback_type: str = "general",
+        message_id: str | None = None,
+        reason: str | None = None,
+        detail: str | None = None,
     ) -> dict[str, Any]:
         """创建本地反馈记录，返回新记录"""
         with self._conn() as conn:
             now = datetime.now(timezone.utc).isoformat()
             cursor = conn.execute(
                 """
-                INSERT INTO feedback (user_id, title, description, severity, status, created_at)
-                VALUES (?, ?, ?, ?, 'pending', ?)
+                INSERT INTO feedback (user_id, title, description, severity, status, created_at,
+                                      feedback_type, message_id, reason, detail)
+                VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)
                 """,
-                (user_id, title, description, severity, now),
+                (user_id, title, description, severity, now,
+                 feedback_type, message_id, reason, detail),
             )
             feedback_id = cursor.lastrowid
 

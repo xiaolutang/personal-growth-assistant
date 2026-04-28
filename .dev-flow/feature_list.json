@@ -87,9 +87,9 @@
   "archived_phases": [],
   "summary": {
     "total": 14,
-    "pending": 1,
+    "pending": 0,
     "in_progress": 1,
-    "completed": 12,
+    "completed": 13,
     "cancelled": 0
   },
   "features": [
@@ -475,8 +475,14 @@
       "description": "每条 Agent 回复右侧显示 👍👎⚑ 按钮。👎 点击展开反馈面板（6 选项 + 其他）。反馈提交调用 API。",
       "verification": "F1",
       "depends_on": ["F186"],
-      "status": "in_progress",
+      "status": "completed",
       "started_at": "2026-04-29T00:40:00",
+      "completed_at": "2026-04-29T00:55:00",
+      "actual_minutes": 15,
+      "evidence_file": ".dev-flow/evidence/F187.md",
+      "commit": "cad15a1",
+      "summary": "FeedbackButtons 组件 + AgentMessage 集成。9 个测试通过。",
+      "execution_notes": "3 new files, 475 insertions",
       "priority": "P2",
       "acceptance_criteria": [
         "每条 Agent 回复右侧显示 👍👎⚑ 按钮",
@@ -496,7 +502,8 @@
       "description": "扩展 POST /feedback 端点支持 Agent 反馈类型。反馈存储 + Langfuse trace 标记 + 自动创建 Issue。bad case 补充到 Golden Dataset 流程。",
       "verification": "L2",
       "depends_on": ["F187"],
-      "status": "pending",
+      "status": "in_progress",
+      "started_at": "2026-04-29T01:00:00",
       "priority": "P2",
       "acceptance_criteria": [
         "POST /feedback 支持 Agent 反馈类型（message_id + type + reason + detail）",

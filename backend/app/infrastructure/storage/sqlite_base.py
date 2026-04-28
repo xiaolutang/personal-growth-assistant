@@ -75,15 +75,27 @@ class SQLiteStorageBase:
                 except Exception as e:
                     logger.warning("迁移失败 %s: %s", col_name, e)
 
-        # feedback 表 updated_at 列迁移
+        # feedback 表迁移在 _migrate_feedback_schema 中执行（在 feedback 表创建后调用）
+
+    def _migrate_feedback_schema(self, conn: sqlite3.Connection):
+        """feedback 表迁移：为已有数据库添加新列"""
         fb_cursor = conn.execute("PRAGMA table_info(feedback)")
         fb_columns = {row[1] for row in fb_cursor.fetchall()}
-        if "updated_at" not in fb_columns:
-            try:
-                conn.execute("ALTER TABLE feedback ADD COLUMN updated_at TEXT")
-                logger.info("数据库迁移: feedback 表添加 updated_at 列")
-            except Exception as e:
-                logger.warning("迁移失败 feedback.updated_at: %s", e)
+
+        fb_migrations = {
+            "updated_at": "TEXT",
+            "feedback_type": "TEXT DEFAULT 'general'",
+            "message_id": "TEXT",
+            "reason": "TEXT",
+            "detail": "TEXT",
+        }
+        for col_name, col_def in fb_migrations.items():
+            if col_name not in fb_columns:
+                try:
+                    conn.execute(f"ALTER TABLE feedback ADD COLUMN {col_name} {col_def}")
+                    logger.info("数据库迁移: feedback 表添加 %s 列", col_name)
+                except Exception as e:
+                    logger.warning("迁移失败 feedback.%s: %s", col_name, e)
 
     def _init_db(self):
         """初始化数据库表结构"""
@@ -189,10 +201,18 @@ class SQLiteStorageBase:
                     log_service_issue_id INTEGER,
                     status TEXT DEFAULT 'pending',
                     created_at TEXT NOT NULL,
-                    updated_at TEXT
+                    updated_at TEXT,
+                    feedback_type TEXT DEFAULT 'general',
+                    message_id TEXT,
+                    reason TEXT,
+                    detail TEXT
                 )
             """)
             conn.execute("CREATE INDEX IF NOT EXISTS idx_feedback_user_id ON feedback(user_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_feedback_type ON feedback(feedback_type)")
+
+            # feedback 表迁移：为已有数据库添加新列
+            self._migrate_feedback_schema(conn)
 
             # 通知已读记录表（复合主键保证用户隔离）
             conn.execute("""
