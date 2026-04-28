@@ -87,9 +87,9 @@
   "archived_phases": [],
   "summary": {
     "total": 14,
-    "pending": 6,
+    "pending": 5,
     "in_progress": 1,
-    "completed": 7,
+    "completed": 8,
     "cancelled": 0
   },
   "features": [
@@ -360,7 +360,8 @@
       "description": "实现 LLM-as-Judge 评分器（9 维度 1-5 分）、多轮评估数据集 30 条、模拟用户（预设回复 + LLM 模拟）、部分评分和 outcome grading（state_check grader）。",
       "verification": "L1",
       "depends_on": ["B189"],
-      "status": "pending",
+      "status": "in_progress",
+      "started_at": "2026-04-28T23:15:00",
       "priority": "P1",
       "acceptance_criteria": [
         "9 维评分 prompt 定义完整（6 基础 + 3 多轮专用）",
@@ -489,8 +490,14 @@
       "description": "后端单元测试（Tools + Agent + AgentService）+ 集成测试（端到端 CRUD + 多轮对话 + SSE 流式）+ Golden Dataset 回归基线 + 构建 + Docker smoke。",
       "verification": "L4",
       "depends_on": ["B188", "B189"],
-      "status": "in_progress",
+      "status": "completed",
       "started_at": "2026-04-28T22:50:00",
+      "completed_at": "2026-04-28T23:10:00",
+      "actual_minutes": 20,
+      "evidence_file": ".dev-flow/evidence/S47.md",
+      "commit": "0bb7963",
+      "summary": "14 个 E2E 集成测试 + 全量 1457 后端 + 627 前端测试通过。构建和 Docker smoke 通过。",
+      "execution_notes": "新增 test_agent_e2e.py，覆盖 CRUD/多轮/SSE/错误处理",
       "priority": "P0",
       "acceptance_criteria": [
         "后端单元测试覆盖 agent/tools.py、agent/react_agent.py、agent_service.py",

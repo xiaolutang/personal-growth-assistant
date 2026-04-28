@@ -1,0 +1,626 @@
+[
+  {
+    "id": "MT-001",
+    "category": "follow_up_to_action",
+    "turns": [
+      {"role": "user", "content": "帮我记录一个想法"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["什么想法"]},
+      {"role": "user", "content": "今天学习了 LangGraph 的 ReAct 模式"},
+      {"role": "agent", "expected_tools": ["create_entry"], "expected_args": {"category": "inbox"}}
+    ],
+    "final_state_check": {"tool": "create_entry", "args_contain": ["LangGraph"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 5,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 5,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-002",
+    "category": "follow_up_to_action",
+    "turns": [
+      {"role": "user", "content": "帮我创建一个笔记"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["什么内容", "什么笔记"]},
+      {"role": "user", "content": "关于 Docker Compose 网络配置的学习心得"},
+      {"role": "agent", "expected_tools": ["create_entry"], "expected_args": {"category": "note"}}
+    ],
+    "final_state_check": {"tool": "create_entry", "args_contain": ["Docker"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 5,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-003",
+    "category": "follow_up_to_action",
+    "turns": [
+      {"role": "user", "content": "帮我记个东西"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["什么", "内容"]},
+      {"role": "user", "content": "前端性能优化：使用 React.memo 减少 re-render"},
+      {"role": "agent", "expected_tools": ["create_entry"], "expected_args": {"category": "inbox"}}
+    ],
+    "final_state_check": {"tool": "create_entry", "args_contain": ["React.memo"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 5,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 5,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-004",
+    "category": "follow_up_to_action",
+    "turns": [
+      {"role": "user", "content": "帮我更新一下之前的笔记"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["哪个", "什么笔记"]},
+      {"role": "user", "content": "就是关于 TypeScript 泛型的那条"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {}},
+      {"role": "user", "content": "对，第一条，帮我把状态改成已完成"},
+      {"role": "agent", "expected_tools": ["update_entry"], "expected_args": {"status": "done"}}
+    ],
+    "final_state_check": {"tool": "update_entry", "args_contain": ["done"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 4,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-005",
+    "category": "follow_up_to_action",
+    "turns": [
+      {"role": "user", "content": "我想搜索一下之前记录的内容"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["搜索什么", "关键词"]},
+      {"role": "user", "content": "关于微服务架构的内容"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {"query": "微服务"}}
+    ],
+    "final_state_check": {"tool": "search_entries", "args_contain": ["微服务"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 5,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 5,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-006",
+    "category": "follow_up_to_action",
+    "turns": [
+      {"role": "user", "content": "帮我删除一条记录"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["哪条", "什么记录"]},
+      {"role": "user", "content": "昨天记的关于测试的那条想法"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {}},
+      {"role": "user", "content": "第一条就行"},
+      {"role": "agent", "expected_tools": ["delete_entry"], "expected_args": {}}
+    ],
+    "final_state_check": {"tool": "delete_entry", "args_contain": []},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 4,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-007",
+    "category": "follow_up_to_action",
+    "turns": [
+      {"role": "user", "content": "帮我添加一个项目进度"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["什么项目", "项目名"]},
+      {"role": "user", "content": "个人成长助手项目"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["进度", "描述"]},
+      {"role": "user", "content": "完成了评估框架的开发"},
+      {"role": "agent", "expected_tools": ["create_entry"], "expected_args": {"category": "project"}}
+    ],
+    "final_state_check": {"tool": "create_entry", "args_contain": ["项目"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 5,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-008",
+    "category": "follow_up_to_action",
+    "turns": [
+      {"role": "user", "content": "帮我看看这周的回顾"},
+      {"role": "agent", "expected_tools": ["get_review_summary"], "expected_args": {"period": "week"}},
+      {"role": "user", "content": "看起来不错，帮我把其中关于 Docker 的那条标记为已完成"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {}},
+      {"role": "user", "content": "第一条"},
+      {"role": "agent", "expected_tools": ["update_entry"], "expected_args": {"status": "done"}}
+    ],
+    "final_state_check": {"tool": "update_entry", "args_contain": ["done"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 4,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-009",
+    "category": "follow_up_to_action",
+    "turns": [
+      {"role": "user", "content": "记录一下今天学的东西"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["什么", "学了"]},
+      {"role": "user", "content": "学了 Python 的 asyncio 异步编程"},
+      {"role": "agent", "expected_tools": ["create_entry"], "expected_args": {"category": "inbox"}}
+    ],
+    "final_state_check": {"tool": "create_entry", "args_contain": ["asyncio"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 5,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 5,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-010",
+    "category": "follow_up_to_action",
+    "turns": [
+      {"role": "user", "content": "帮我整理一下最近的灵感"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {}},
+      {"role": "user", "content": "能不能把这些归类到一个项目里"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["什么项目"]},
+      {"role": "user", "content": "AI 辅助开发工具项目"},
+      {"role": "agent", "expected_tools": ["create_entry"], "expected_args": {"category": "project"}}
+    ],
+    "final_state_check": {"tool": "create_entry", "args_contain": ["项目"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 5,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-011",
+    "category": "context_reference",
+    "turns": [
+      {"role": "user", "content": "帮我记录一条关于 Rust 所有权的学习笔记"},
+      {"role": "agent", "expected_tools": ["create_entry"], "expected_args": {"category": "inbox"}},
+      {"role": "user", "content": "再帮我记录一条，也是关于这个话题的"},
+      {"role": "agent", "expected_tools": ["create_entry"], "expected_args": {"category": "inbox"}}
+    ],
+    "final_state_check": {"tool": "create_entry", "args_contain": ["Rust"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 4,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-012",
+    "category": "context_reference",
+    "turns": [
+      {"role": "user", "content": "搜索一下我之前记录的关于数据库的内容"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {"query": "数据库"}},
+      {"role": "user", "content": "把这些都归到后端开发项目里"},
+      {"role": "agent", "expected_tools": ["update_entry"], "expected_args": {}}
+    ],
+    "final_state_check": {"tool": "update_entry", "args_contain": []},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 3,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 4,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-013",
+    "category": "context_reference",
+    "turns": [
+      {"role": "user", "content": "帮我创建一个关于 k8s 部署的笔记"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["内容"]},
+      {"role": "user", "content": "学习 Kubernetes 的 Deployment 和 Service 配置"},
+      {"role": "agent", "expected_tools": ["create_entry"], "expected_args": {}},
+      {"role": "user", "content": "另外再帮我搜索一下之前有没有记录过类似的内容"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {"query": "Kubernetes"}}
+    ],
+    "final_state_check": {"tool": "search_entries", "args_contain": ["Kubernetes"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 5,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 4,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-014",
+    "category": "context_reference",
+    "turns": [
+      {"role": "user", "content": "我之前记录了一条关于 GraphQL 的笔记，帮我找到它"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {"query": "GraphQL"}},
+      {"role": "user", "content": "对，就是那条，帮我把内容更新一下"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["更新成什么", "新内容"]},
+      {"role": "user", "content": "加上 Apollo Client 的缓存策略"},
+      {"role": "agent", "expected_tools": ["update_entry"], "expected_args": {}}
+    ],
+    "final_state_check": {"tool": "update_entry", "args_contain": ["Apollo"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 5,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-015",
+    "category": "context_reference",
+    "turns": [
+      {"role": "user", "content": "帮我看看昨天的回顾"},
+      {"role": "agent", "expected_tools": ["get_review_summary"], "expected_args": {"period": "day"}},
+      {"role": "user", "content": "这里面提到的 CI/CD 是哪个项目的"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {"query": "CI/CD"}}
+    ],
+    "final_state_check": {"tool": "search_entries", "args_contain": ["CI/CD"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 4,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-016",
+    "category": "context_reference",
+    "turns": [
+      {"role": "user", "content": "帮我创建一条关于设计模式的想法"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["什么想法"]},
+      {"role": "user", "content": "观察者模式在事件驱动架构中的应用"},
+      {"role": "agent", "expected_tools": ["create_entry"], "expected_args": {}},
+      {"role": "user", "content": "再看看我之前关于设计模式还记录了什么"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {"query": "设计模式"}}
+    ],
+    "final_state_check": {"tool": "search_entries", "args_contain": ["设计模式"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 5,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 4,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-017",
+    "category": "context_reference",
+    "turns": [
+      {"role": "user", "content": "删除那条关于 React Hooks 的笔记"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {"query": "React Hooks"}},
+      {"role": "user", "content": "不，我说的是想法，不是笔记"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {"query": "React Hooks"}},
+      {"role": "user", "content": "对，就是这条，删掉吧"},
+      {"role": "agent", "expected_tools": ["delete_entry"], "expected_args": {}}
+    ],
+    "final_state_check": {"tool": "delete_entry", "args_contain": []},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 4,
+      "conversation_coherence": 4
+    }
+  },
+  {
+    "id": "MT-018",
+    "category": "context_reference",
+    "turns": [
+      {"role": "user", "content": "帮我把上周关于 WebAssembly 的笔记找出来"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {"query": "WebAssembly"}},
+      {"role": "user", "content": "现在帮我把它的状态改成进行中"},
+      {"role": "agent", "expected_tools": ["update_entry"], "expected_args": {"status": "in_progress"}}
+    ],
+    "final_state_check": {"tool": "update_entry", "args_contain": ["in_progress"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 4,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-019",
+    "category": "interleaved_chat",
+    "turns": [
+      {"role": "user", "content": "你好啊"},
+      {"role": "agent", "expected_tools": [], "expected_response_contains": ["你好"]},
+      {"role": "user", "content": "帮我记个想法"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["什么想法"]},
+      {"role": "user", "content": "今天天气不错"},
+      {"role": "agent", "expected_tools": [], "expected_response_contains": ["天气"]},
+      {"role": "user", "content": "对了，我那个想法是关于 Serverless 架构的"},
+      {"role": "agent", "expected_tools": ["create_entry"], "expected_args": {"category": "inbox"}}
+    ],
+    "final_state_check": {"tool": "create_entry", "args_contain": ["Serverless"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 5,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-020",
+    "category": "interleaved_chat",
+    "turns": [
+      {"role": "user", "content": "最近学习进度怎么样"},
+      {"role": "agent", "expected_tools": ["get_review_summary"], "expected_args": {}},
+      {"role": "user", "content": "看起来挺好的，对了帮我把那条关于 Git 的笔记更新一下"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {"query": "Git"}},
+      {"role": "user", "content": "第一条，加个标签叫版本控制"},
+      {"role": "agent", "expected_tools": ["update_entry"], "expected_args": {}}
+    ],
+    "final_state_check": {"tool": "update_entry", "args_contain": []},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 4,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-021",
+    "category": "interleaved_chat",
+    "turns": [
+      {"role": "user", "content": "你觉得学习编程最重要的是什么"},
+      {"role": "agent", "expected_tools": [], "expected_response_contains": ["实践", "练习"]},
+      {"role": "user", "content": "有道理，那帮我记录一下今天的学习心得"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["什么心得"]},
+      {"role": "user", "content": "编程需要刻意练习，每天坚持写代码"},
+      {"role": "agent", "expected_tools": ["create_entry"], "expected_args": {"category": "inbox"}}
+    ],
+    "final_state_check": {"tool": "create_entry", "args_contain": ["编程"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 5,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-022",
+    "category": "interleaved_chat",
+    "turns": [
+      {"role": "user", "content": "今天心情不错"},
+      {"role": "agent", "expected_tools": [], "expected_response_contains": ["心情"]},
+      {"role": "user", "content": "想记录一下，最近在研究 WebSocket 协议"},
+      {"role": "agent", "expected_tools": ["create_entry"], "expected_args": {"category": "inbox"}},
+      {"role": "user", "content": "谢谢，另外帮我看看这周的学习统计"},
+      {"role": "agent", "expected_tools": ["get_review_summary"], "expected_args": {"period": "week"}}
+    ],
+    "final_state_check": {"tool": "get_review_summary", "args_contain": []},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 4,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-023",
+    "category": "interleaved_chat",
+    "turns": [
+      {"role": "user", "content": "嗨"},
+      {"role": "agent", "expected_tools": [], "expected_response_contains": ["你好", "嗨"]},
+      {"role": "user", "content": "你能帮我做什么"},
+      {"role": "agent", "expected_tools": [], "expected_response_contains": ["记录", "搜索", "帮助"]},
+      {"role": "user", "content": "好的，帮我搜索一下关于 AI Agent 的笔记"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {"query": "AI Agent"}}
+    ],
+    "final_state_check": {"tool": "search_entries", "args_contain": ["AI Agent"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 5,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 5,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-024",
+    "category": "interleaved_chat",
+    "turns": [
+      {"role": "user", "content": "我想重新整理一下我的知识库"},
+      {"role": "agent", "expected_tools": [], "expected_response_contains": ["好的", "整理"]},
+      {"role": "user", "content": "先帮我把所有关于 Python 的内容搜索出来"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {"query": "Python"}},
+      {"role": "user", "content": "不错，再帮我看看最近的学习回顾"},
+      {"role": "agent", "expected_tools": ["get_review_summary"], "expected_args": {}}
+    ],
+    "final_state_check": {"tool": "get_review_summary", "args_contain": []},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "context_retention": 5,
+      "follow_up_quality": 4,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-025",
+    "category": "error_recovery",
+    "turns": [
+      {"role": "user", "content": "帮我更新笔记 ABC123"},
+      {"role": "agent", "expected_tools": ["update_entry"], "expected_args": {"entry_id": "ABC123"}},
+      {"role": "user", "content": "出错了，那个 ID 不对"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_response_contains": ["搜索", "找"]},
+      {"role": "user", "content": "对，帮我搜一下关于机器学习的笔记"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {"query": "机器学习"}}
+    ],
+    "final_state_check": {"tool": "search_entries", "args_contain": ["机器学习"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "error_handling": 5,
+      "context_retention": 5,
+      "follow_up_quality": 4,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-026",
+    "category": "error_recovery",
+    "turns": [
+      {"role": "user", "content": "删除那条关于 Hibernate 的记录"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {"query": "Hibernate"}},
+      {"role": "user", "content": "不是这条，是另一条"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {}},
+      {"role": "user", "content": "对，就是这条，删除吧"},
+      {"role": "agent", "expected_tools": ["delete_entry"], "expected_args": {}}
+    ],
+    "final_state_check": {"tool": "delete_entry", "args_contain": []},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "error_handling": 4,
+      "context_retention": 5,
+      "follow_up_quality": 4,
+      "conversation_coherence": 4
+    }
+  },
+  {
+    "id": "MT-027",
+    "category": "error_recovery",
+    "turns": [
+      {"role": "user", "content": "帮我搜索"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["搜索什么", "关键词"]},
+      {"role": "user", "content": "算了，还是帮我记录一个想法吧"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["什么想法"]},
+      {"role": "user", "content": "关于 Event Sourcing 模式的应用场景"},
+      {"role": "agent", "expected_tools": ["create_entry"], "expected_args": {"category": "inbox"}}
+    ],
+    "final_state_check": {"tool": "create_entry", "args_contain": ["Event Sourcing"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 5,
+      "response_quality": 4,
+      "error_handling": 4,
+      "context_retention": 5,
+      "follow_up_quality": 5,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-028",
+    "category": "error_recovery",
+    "turns": [
+      {"role": "user", "content": "帮我查看笔记 XYZ999 的详情"},
+      {"role": "agent", "expected_tools": ["get_entry"], "expected_args": {"entry_id": "XYZ999"}},
+      {"role": "user", "content": "系统说找不到，可能 ID 记错了"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_response_contains": ["搜索", "帮你找"]},
+      {"role": "user", "content": "内容是关于 Redis 缓存策略的"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {"query": "Redis"}}
+    ],
+    "final_state_check": {"tool": "search_entries", "args_contain": ["Redis"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "error_handling": 5,
+      "context_retention": 5,
+      "follow_up_quality": 4,
+      "conversation_coherence": 5
+    }
+  },
+  {
+    "id": "MT-029",
+    "category": "error_recovery",
+    "turns": [
+      {"role": "user", "content": "更新笔记状态为已完成"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["哪条", "什么笔记"]},
+      {"role": "user", "content": "哦等等，我记错状态了，应该是进行中"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["哪条"]},
+      {"role": "user", "content": "关于 TDD 测试驱动开发的那条"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {"query": "TDD"}},
+      {"role": "user", "content": "对，更新为进行中"},
+      {"role": "agent", "expected_tools": ["update_entry"], "expected_args": {"status": "in_progress"}}
+    ],
+    "final_state_check": {"tool": "update_entry", "args_contain": ["in_progress"]},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "error_handling": 5,
+      "context_retention": 5,
+      "follow_up_quality": 4,
+      "conversation_coherence": 4
+    }
+  },
+  {
+    "id": "MT-030",
+    "category": "error_recovery",
+    "turns": [
+      {"role": "user", "content": "帮我删除所有笔记"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["确认", "所有"]},
+      {"role": "user", "content": "不对不对，我只是想删除一条"},
+      {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["哪条"]},
+      {"role": "user", "content": "关于旧项目的那条"},
+      {"role": "agent", "expected_tools": ["search_entries"], "expected_args": {}},
+      {"role": "user", "content": "对，第一条删掉"},
+      {"role": "agent", "expected_tools": ["delete_entry"], "expected_args": {}}
+    ],
+    "final_state_check": {"tool": "delete_entry", "args_contain": []},
+    "reference_scores": {
+      "tool_selection": 5,
+      "param_extraction": 4,
+      "response_quality": 4,
+      "error_handling": 5,
+      "context_retention": 5,
+      "follow_up_quality": 5,
+      "conversation_coherence": 5
+    }
+  }
+]
