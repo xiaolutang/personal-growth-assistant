@@ -57,6 +57,11 @@ class Settings(BaseSettings):
     LANGSMITH_TRACING: bool = False
     LANGSMITH_PROJECT: str = "personal-growth-assistant"
 
+    # Langfuse 可观测性配置（可选）
+    LANGFUSE_PUBLIC_KEY: Optional[str] = None
+    LANGFUSE_SECRET_KEY: Optional[str] = None
+    LANGFUSE_HOST: str = "http://localhost:3010"
+
     # JWT 认证配置
     JWT_SECRET: str = ""  # 必须通过环境变量设置
     JWT_ALGORITHM: str = "HS256"

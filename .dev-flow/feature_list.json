@@ -87,9 +87,9 @@
   "archived_phases": [],
   "summary": {
     "total": 14,
-    "pending": 3,
+    "pending": 1,
     "in_progress": 1,
-    "completed": 9,
+    "completed": 10,
     "cancelled": 0
   },
   "features": [
@@ -391,8 +391,14 @@
       "description": "实现评估转录记录（完整 Agent trace）、存储管理、审查流程工具、饱和度监控。",
       "verification": "L1",
       "depends_on": ["B190"],
-      "status": "in_progress",
+      "status": "completed",
       "started_at": "2026-04-28T23:40:00",
+      "completed_at": "2026-04-28T23:55:00",
+      "actual_minutes": 15,
+      "evidence_file": ".dev-flow/evidence/B191.md",
+      "commit": "700fc06",
+      "summary": "EvalTranscript + TranscriptStore + TranscriptReviewer + SaturationMonitor。54 个单元测试通过。",
+      "execution_notes": "2 new files, 1675 insertions",
       "priority": "P1",
       "acceptance_criteria": [
         "评估转录 JSON 格式定义（含完整 LLM trace：input/output/tool_calls/token/延迟）",
@@ -413,7 +419,8 @@
       "description": "Docker Compose 添加 Langfuse 自部署服务。LangGraph CallbackHandler 接入 ReAct Agent，记录每次 LLM 调用的 input/output/token 统计/延迟。",
       "verification": "L3",
       "depends_on": ["B186"],
-      "status": "pending",
+      "status": "in_progress",
+      "started_at": "2026-04-29T00:00:00",
       "priority": "P1",
       "acceptance_criteria": [
         "deploy/docker-compose.yml 添加 Langfuse 服务",

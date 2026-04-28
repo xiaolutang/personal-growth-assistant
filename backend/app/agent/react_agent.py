@@ -8,10 +8,16 @@
 
 循环上限 5 轮。System prompt 支持页面上下文注入。
 保留 AsyncSqliteSaver checkpointer。
+
+Langfuse 集成（可选）：
+- 设置 LANGFUSE_PUBLIC_KEY + LANGFUSE_SECRET_KEY 后自动启用
+- 每次 LLM 调用记录 input/output/token 统计/延迟
+- Langfuse UI 可查看完整 ReAct 循环 trace
 """
 
 import json
 import logging
+import os
 from datetime import datetime
 from typing import Any, Callable, Optional, Sequence
 
@@ -36,6 +42,40 @@ from langgraph.graph import END, START, MessagesState, StateGraph
 from app.agent.prompts import build_system_prompt
 
 logger = logging.getLogger(__name__)
+
+
+# ── Langfuse Callback Handler（可选依赖）──
+
+
+def _get_langfuse_handler() -> Any | None:
+    """尝试创建 Langfuse CallbackHandler。
+
+    仅在 LANGFUSE_PUBLIC_KEY 和 LANGFUSE_SECRET_KEY 均已设置时启用。
+    如果 langfuse 包未安装或配置不完整，返回 None（不影响正常运行）。
+    """
+    public_key = os.environ.get("LANGFUSE_PUBLIC_KEY", "").strip()
+    secret_key = os.environ.get("LANGFUSE_SECRET_KEY", "").strip()
+
+    if not public_key or not secret_key:
+        return None
+
+    try:
+        from langfuse.callback import CallbackHandler
+
+        host = os.environ.get("LANGFUSE_HOST", "http://localhost:3010").strip()
+        handler = CallbackHandler(
+            public_key=public_key,
+            secret_key=secret_key,
+            host=host,
+        )
+        logger.info("Langfuse CallbackHandler 已启用 (host=%s)", host)
+        return handler
+    except ImportError:
+        logger.debug("langfuse 包未安装，跳过 Langfuse 集成")
+        return None
+    except Exception as e:
+        logger.warning("Langfuse CallbackHandler 初始化失败: %s", e)
+        return None
 
 # ── 循环上限 ──
 MAX_ITERATIONS = 5
@@ -251,11 +291,20 @@ class ReActAgentGraph:
         tools: list[BaseTool],
         checkpointer: AsyncSqliteSaver,
         max_iterations: int = MAX_ITERATIONS,
+        callbacks: list[Any] | None = None,
     ):
         self.chat_model = chat_model
         self.tools = tools
         self.checkpointer = checkpointer
         self.max_iterations = max_iterations
+
+        # 初始化 callbacks（合并 Langfuse handler）
+        self._callbacks: list[Any] = []
+        langfuse_handler = _get_langfuse_handler()
+        if langfuse_handler is not None:
+            self._callbacks.append(langfuse_handler)
+        if callbacks:
+            self._callbacks.extend(callbacks)
 
         # 将 tools 绑定到 chat_model
         self.bound_model = chat_model.bind_tools(tools)
@@ -272,6 +321,7 @@ class ReActAgentGraph:
         tools: list[BaseTool],
         db_path: str | None = None,
         max_iterations: int = MAX_ITERATIONS,
+        callbacks: list[Any] | None = None,
     ) -> "ReActAgentGraph":
         """工厂方法：创建 ReActAgentGraph 实例。
 
@@ -282,6 +332,7 @@ class ReActAgentGraph:
             tools: Tool 列表
             db_path: SQLite 数据库路径（checkpointer 用）
             max_iterations: 最大迭代次数
+            callbacks: 额外的 callback 列表（如 Langfuse handler）
         """
         import aiosqlite
         from openai import AsyncOpenAI
@@ -309,6 +360,7 @@ class ReActAgentGraph:
             tools=tools,
             checkpointer=checkpointer,
             max_iterations=max_iterations,
+            callbacks=callbacks,
         )
 
     def _build_graph(self):
@@ -592,6 +644,10 @@ class ReActAgentGraph:
             }
         }
 
+        # 注入 Langfuse 等 callbacks
+        if self._callbacks:
+            config["callbacks"] = list(self._callbacks)
+
         result = await self.graph.ainvoke(
             {"messages": [HumanMessage(content=message)]},
             config,
@@ -633,6 +689,10 @@ class ReActAgentGraph:
                 "is_new_user": is_new_user,
             }
         }
+
+        # 注入 Langfuse 等 callbacks
+        if self._callbacks:
+            config["callbacks"] = list(self._callbacks)
 
         async for event in self.graph.astream(
             {"messages": [HumanMessage(content=message)]},

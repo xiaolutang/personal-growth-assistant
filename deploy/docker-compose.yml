@@ -22,6 +22,10 @@ services:
       - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}
       - LANGSMITH_TRACING=${LANGSMITH_TRACING:-false}
       - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-personal-growth-assistant}
+      # Langfuse 可观测性（可选）
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-}
+      - LANGFUSE_HOST=${LANGFUSE_HOST:-http://langfuse:3000}
     ports:
       # 本地开发/调试用：允许 Flutter 等移动端直连后端（绕过 Traefik TLS）
       - "127.0.0.1:8001:8001"
@@ -61,8 +65,46 @@ services:
       retries: 3
       start_period: 10s
 
+  langfuse:
+    image: langfuse/langfuse:2
+    container_name: langfuse
+    restart: unless-stopped
+    ports:
+      - "3010:3000"
+    environment:
+      - DATABASE_URL=postgresql://langfuse:langfuse@langfuse-db:5432/langfuse
+      - NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET:-changeme-langfuse-secret}
+      - SALT=${LANGFUSE_SALT:-changeme-langfuse-salt}
+      - NEXTAUTH_URL=${LANGFUSE_NEXTAUTH_URL:-http://localhost:3010}
+    depends_on:
+      langfuse-db:
+        condition: service_healthy
+    networks:
+      - infra-network
+
+  langfuse-db:
+    image: postgres:15-alpine
+    container_name: langfuse-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=langfuse
+      - POSTGRES_PASSWORD=langfuse
+      - POSTGRES_DB=langfuse
+    volumes:
+      - langfuse-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langfuse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - infra-network
+
 networks:
   gateway:
     external: true
   infra-network:
     external: true
+
+volumes:
+  langfuse-db-data:
