@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { ToolCallCard } from "./ToolCallCard";
-import { FeedbackButtons } from "./FeedbackButtons";
+import { FeedbackButtons, NEGATIVE_OPTIONS } from "./FeedbackButtons";
 import type { FeedbackData } from "./FeedbackButtons";
 import { submitFeedback } from "@/services/api";
 import type { AgentMessage as AgentMessageType } from "@/stores/agentStore";
@@ -13,16 +13,9 @@ interface AgentMessageProps {
 
 /** 将 FeedbackData 映射为 API payload（匹配后端 FeedbackRequest） */
 function buildFeedbackPayload(messageId: string, feedback: FeedbackData) {
-  // 后端 _NEGATIVE_REASONS 词表：理解错了、操作不正确、信息不准确、不相关、不完整、格式错误、other_negative
-  const reasonMap: Record<string, string> = {
-    understanding_wrong: "理解错了",
-    action_incorrect: "操作不正确",
-    inaccurate_info: "信息不准确",
-    irrelevant: "不相关",
-    incomplete: "不完整",
-    format_error: "格式错误",
-    other: "other_negative",
-  };
+  const reasonMap = Object.fromEntries(
+    NEGATIVE_OPTIONS.map((o) => [o.key, o.key === "other" ? "other_negative" : o.key])
+  );
 
   if (feedback.type === "positive") {
     return {

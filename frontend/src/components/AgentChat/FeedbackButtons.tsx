@@ -13,7 +13,7 @@ export interface FeedbackData {
 }
 
 /** 负面反馈预设选项 — 与后端 _NEGATIVE_REASONS 保持一致 */
-const NEGATIVE_OPTIONS = [
+export const NEGATIVE_OPTIONS = [
   { key: "understanding_wrong", label: "理解错了" },
   { key: "action_incorrect", label: "操作不正确" },
   { key: "inaccurate_info", label: "信息不准确" },

@@ -75,10 +75,3 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
     </div>
   );
 });
-
-/** 暴露 focus 方法给父组件 */
-export function useChatInputFocus() {
-  // 这个 hook 不再持有 ref，由 ChatInput 内部管理
-  // 外部可通过重新渲染触发自动聚焦
-  return null;
-}
