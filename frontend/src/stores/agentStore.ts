@@ -103,8 +103,6 @@ export interface SendMessageParams {
   text: string;
   sessionId?: string;
   pageContext?: AgentPageContext | null;
-  confirm?: { action: string; item_id: string } | null;
-  skipIntent?: boolean;
 }
 
 /** Agent 追问回调（done 后输入框聚焦） */
@@ -124,6 +122,7 @@ interface AgentStore {
   currentToolCalls: Map<string, ToolCallInfo>;
   error: string | null;
   pageContext: AgentPageContext | null;
+  pageExtra: Record<string, string | number> | null;
   panelHeight: number;
 
   // ── 会话管理 ──
@@ -131,6 +130,9 @@ interface AgentStore {
   switchSession: (id: string) => void;
   getCurrentSession: () => AgentSession | null;
   resetCurrentSession: () => void;
+  deleteSession: (id: string) => Promise<void>;
+  updateSessionTitle: (id: string, title: string) => Promise<void>;
+  fetchSessions: () => Promise<void>;
 
   // ── 对话操作 ──
   sendMessage: (params: SendMessageParams) => Promise<void>;
@@ -138,6 +140,7 @@ interface AgentStore {
 
   // ── 状态操作 ──
   setPageContext: (ctx: AgentPageContext | null) => void;
+  setPageExtra: (extra: Record<string, string | number> | null) => void;
   setPanelHeight: (height: number) => void;
   clearError: () => void;
   setFollowUpCallback: (cb: FollowUpCallback) => void;
@@ -280,12 +283,13 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
   currentToolCalls: new Map<string, ToolCallInfo>(),
   error: null,
   pageContext: null,
+  pageExtra: null,
   panelHeight: loadPanelHeight(),
 
   // ── 会话管理 ──
 
   createSession: () => {
-    const id = generateId("agent-session");
+    const id = generateId("s");
     const newSession: AgentSession = {
       id,
       title: "新对话",
@@ -310,25 +314,27 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
   },
 
   resetCurrentSession: () => {
-    const sessionId = get().currentSessionId;
-    if (!sessionId) return;
-
-    set((state) => ({
-      sessions: state.sessions.map((s) =>
-        s.id === sessionId
-          ? { ...s, messages: [], updatedAt: Date.now() }
-          : s
-      ),
+    // 创建新会话替代清空旧会话，确保后端 thread/checkpointer 也重置
+    const newId = get().createSession();
+    // 清理流状态
+    set({
       thinkingContent: "",
       currentToolCalls: new Map(),
       error: null,
-    }));
+    });
+    // 后台清理旧会话的后端状态（不阻塞 UI）
+    const oldId = get().currentSessionId;
+    if (oldId && oldId !== newId) {
+      authFetch(`${API_BASE}/session/${oldId}`, { method: "DELETE" }).catch(() => {
+        // 静默失败，不阻塞 UI
+      });
+    }
   },
 
   // ── 对话操作 ──
 
   sendMessage: async (params: SendMessageParams) => {
-    const { text, pageContext, confirm, skipIntent } = params;
+    const { text, pageContext } = params;
     const sessionId = params.sessionId || get().currentSessionId;
 
     if (!text.trim()) return;
@@ -373,19 +379,17 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
       // 构建 POST /chat 请求
       const requestBody: Record<string, unknown> = {
         text,
-        session_id: sid.replace("agent-session-", ""), // 去掉前缀，使用原始 session_id
+        session_id: sid,
       };
 
-      if (pageContext || get().pageContext) {
-        requestBody.page_context = pageContext || get().pageContext;
-      }
-
-      if (confirm) {
-        requestBody.confirm = confirm;
-      }
-
-      if (skipIntent) {
-        requestBody.skip_intent = true;
+      // 合并 pageContext 和 pageExtra
+      const ctx = pageContext || get().pageContext;
+      const extra = get().pageExtra;
+      if (ctx || extra) {
+        requestBody.page_context = {
+          ...ctx,
+          ...(extra ? { extra } : {}),
+        };
       }
 
       const response = await authFetch(`${API_BASE}/chat`, {
@@ -718,6 +722,61 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
 
   setPageContext: (ctx: AgentPageContext | null) => {
     set({ pageContext: ctx });
+  },
+
+  setPageExtra: (extra: Record<string, string | number> | null) => {
+    set({ pageExtra: extra });
+  },
+
+  deleteSession: async (id: string) => {
+    try {
+      await authFetch(`${API_BASE}/sessions/${id}`, { method: "DELETE" });
+      set((state) => {
+        const sessions = state.sessions.filter((s) => s.id !== id);
+        const currentSessionId =
+          state.currentSessionId === id
+            ? sessions[0]?.id || null
+            : state.currentSessionId;
+        return { sessions, currentSessionId };
+      });
+    } catch {
+      // 静默处理删除失败
+    }
+  },
+
+  updateSessionTitle: async (id: string, title: string) => {
+    try {
+      await authFetch(`${API_BASE}/sessions/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      set((state) => ({
+        sessions: state.sessions.map((s) =>
+          s.id === id ? { ...s, title } : s
+        ),
+      }));
+    } catch {
+      // 静默处理更新失败
+    }
+  },
+
+  fetchSessions: async () => {
+    try {
+      const res = await authFetch(`${API_BASE}/sessions`);
+      if (!res.ok) return;
+      const data = await res.json() as Array<{ id: string; title: string; created_at: string; updated_at: string }>;
+      const sessions: AgentSession[] = data.map((s) => ({
+        id: s.id,
+        title: s.title,
+        messages: [],
+        createdAt: new Date(s.created_at).getTime(),
+        updatedAt: new Date(s.updated_at).getTime(),
+      }));
+      set({ sessions });
+    } catch {
+      // 静默处理获取失败
+    }
   },
 
   setPanelHeight: (height: number) => {

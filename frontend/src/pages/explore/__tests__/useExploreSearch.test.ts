@@ -19,10 +19,10 @@ vi.mock("@/services/api", () => ({
   getEntries: (...args: unknown[]) => mockGetEntries(...args),
 }));
 
-// Mock chatStore (selector pattern)
+// Mock agentStore (selector pattern)
 const mockSetPageExtra = vi.fn();
-vi.mock("@/stores/chatStore", () => ({
-  useChatStore: (selector: (state: { setPageExtra: typeof mockSetPageExtra }) => unknown) => selector({ setPageExtra: mockSetPageExtra }),
+vi.mock("@/stores/agentStore", () => ({
+  useAgentStore: (selector: (state: { setPageExtra: typeof mockSetPageExtra }) => unknown) => selector({ setPageExtra: mockSetPageExtra }),
 }));
 
 // Mock useServiceUnavailable

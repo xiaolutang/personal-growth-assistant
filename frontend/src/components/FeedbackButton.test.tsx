@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { FeedbackButton } from "./FeedbackButton";
-import { useChatStore } from "@/stores/chatStore";
+import { useAgentStore } from "@/stores/agentStore";
 import { ApiError } from "@/services/api";
 
 const { submitFeedbackMock, getFeedbackListMock, syncFeedbackMock } = vi.hoisted(() => ({
@@ -27,7 +27,7 @@ describe("FeedbackButton", () => {
     submitFeedbackMock.mockReset();
     getFeedbackListMock.mockReset();
     syncFeedbackMock.mockReset();
-    useChatStore.setState({ panelHeight: 300 });
+    useAgentStore.setState({ panelHeight: 300 });
     vi.useRealTimers();
   });
 
@@ -95,7 +95,7 @@ describe("FeedbackButton", () => {
   });
 
   it("根据 FloatingChat 高度应用避让偏移", async () => {
-    useChatStore.setState({ panelHeight: 360 });
+    useAgentStore.setState({ panelHeight: 360 });
 
     render(<FeedbackButton />);
 

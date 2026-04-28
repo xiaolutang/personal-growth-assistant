@@ -87,7 +87,7 @@ describe("agentStore", () => {
       const sessionId = useAgentStore.getState().createSession();
 
       expect(sessionId).toBeDefined();
-      expect(sessionId.startsWith("agent-session-")).toBe(true);
+      expect(sessionId.startsWith("s-")).toBe(true);
 
       const session = useAgentStore.getState().sessions.find((s) => s.id === sessionId);
       expect(session).toBeDefined();

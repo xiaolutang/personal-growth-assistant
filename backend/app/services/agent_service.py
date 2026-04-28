@@ -12,6 +12,7 @@
 
 import json
 import logging
+import time
 from datetime import date
 from typing import Any, AsyncGenerator, Optional
 
@@ -146,6 +147,8 @@ class AgentService:
             prev_message_count = 0
             has_content = False
             has_error = False
+            # 跟踪工具调用时间，用于计算延迟
+            tool_call_timestamps: dict[str, float] = {}
 
             async for state in self._agent.stream(
                 message=text,
@@ -162,7 +165,7 @@ class AgentService:
                 prev_message_count = len(messages)
 
                 for msg in new_messages:
-                    async for event in self._process_message(msg):
+                    async for event in self._process_message(msg, tool_call_timestamps):
                         # 检测是否有实际内容事件
                         event_type = self._extract_event_type(event)
                         if event_type == "content":
@@ -185,7 +188,7 @@ class AgentService:
             yield sse_event("error", {"message": f"处理失败: {str(e)}"})
             yield sse_event("done", {})
 
-    async def _process_message(self, msg: Any) -> AsyncGenerator[str, None]:
+    async def _process_message(self, msg: Any, tool_call_timestamps: dict[str, float]) -> AsyncGenerator[str, None]:
         """将单条 LangChain message 转换为 SSE 事件。
 
         处理规则：
@@ -202,11 +205,9 @@ class AgentService:
                 # 逐个发送 tool_call 事件
                 for tc in msg.tool_calls:
                     tool_name = tc.get("name", "")
-                    self.metrics.record_tool_call(
-                        tool_name=tool_name,
-                        correct=True,
-                        latency_ms=0.0,
-                    )
+                    tc_id = tc.get("id", "")
+                    # 记录 tool_call 开始时间
+                    tool_call_timestamps[tc_id] = time.monotonic()
                     if tool_name == "ask_user":
                         self.metrics.record_ask_user(was_necessary=True)
                     yield sse_event("tool_call", {
@@ -224,6 +225,12 @@ class AgentService:
             tool_name = ""
             success = True
             result_data = msg.content
+
+            # 计算工具执行延迟
+            latency_ms = 0.0
+            call_start = tool_call_timestamps.pop(msg.tool_call_id, None)
+            if call_start is not None:
+                latency_ms = (time.monotonic() - call_start) * 1000
 
             # 尝试解析 JSON 结果
             try:
@@ -258,6 +265,13 @@ class AgentService:
                 "result": result_data if isinstance(result_data, (dict, list)) else {"raw": str(result_data)},
                 "success": success,
             })
+
+            # 记录工具调用指标（使用真实延迟和成功状态）
+            self.metrics.record_tool_call(
+                tool_name=tool_name or msg.name or "unknown",
+                correct=success,
+                latency_ms=latency_ms,
+            )
 
         elif isinstance(msg, HumanMessage):
             # 忽略用户消息（是我们自己注入的）

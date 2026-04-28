@@ -37,17 +37,34 @@ class SessionMetaStore:
         cursor = conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS session_meta (
-                id TEXT PRIMARY KEY,
-                title TEXT NOT NULL DEFAULT '新对话',
+                id TEXT NOT NULL,
                 user_id TEXT NOT NULL DEFAULT '_default',
+                title TEXT NOT NULL DEFAULT '新对话',
                 created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (id, user_id)
             )
         """)
-        # 迁移：为已有表添加 user_id 列
+        # 迁移：为旧表（单一主键）升级为复合主键
         existing = {row[1] for row in cursor.execute("PRAGMA table_info(session_meta)").fetchall()}
         if "user_id" not in existing:
-            cursor.execute("ALTER TABLE session_meta ADD COLUMN user_id TEXT NOT NULL DEFAULT '_default'")
+            # 旧表没有 user_id 列，需要重建
+            cursor.execute("ALTER TABLE session_meta RENAME TO session_meta_old")
+            cursor.execute("""
+                CREATE TABLE session_meta (
+                    id TEXT NOT NULL,
+                    user_id TEXT NOT NULL DEFAULT '_default',
+                    title TEXT NOT NULL DEFAULT '新对话',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    PRIMARY KEY (id, user_id)
+                )
+            """)
+            cursor.execute("""
+                INSERT OR IGNORE INTO session_meta (id, user_id, title, created_at, updated_at)
+                SELECT id, '_default', title, created_at, updated_at FROM session_meta_old
+            """)
+            cursor.execute("DROP TABLE session_meta_old")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_session_meta_user_id ON session_meta(user_id)")
         conn.commit()
         conn.close()

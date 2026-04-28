@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { MessageSquare, Plus, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useChatStore } from "@/stores/chatStore";
+import { useAgentStore } from "@/stores/agentStore";
 import { cn } from "@/lib/utils";
 
 interface SessionListProps {
@@ -28,12 +28,12 @@ export function SessionList({
   maxHeight = "320px",
 }: SessionListProps) {
   // 使用选择器避免过度订阅
-  const sessions = useChatStore((state) => state.sessions);
-  const currentSessionId = useChatStore((state) => state.currentSessionId);
-  const createSession = useChatStore((state) => state.createSession);
-  const deleteSession = useChatStore((state) => state.deleteSession);
-  const switchSession = useChatStore((state) => state.switchSession);
-  const updateSessionTitle = useChatStore((state) => state.updateSessionTitle);
+  const sessions = useAgentStore((state) => state.sessions);
+  const currentSessionId = useAgentStore((state) => state.currentSessionId);
+  const createSession = useAgentStore((state) => state.createSession);
+  const deleteSession = useAgentStore((state) => state.deleteSession);
+  const switchSession = useAgentStore((state) => state.switchSession);
+  const updateSessionTitle = useAgentStore((state) => state.updateSessionTitle);
 
   // 编辑状态
   const [editingId, setEditingId] = useState<string | null>(null);

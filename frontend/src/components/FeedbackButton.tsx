@@ -9,7 +9,7 @@ import {
   type FeedbackItem,
   ApiError,
 } from "@/services/api";
-import { useChatStore } from "@/stores/chatStore";
+import { useAgentStore } from "@/stores/agentStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -61,7 +61,7 @@ function formatTime(iso: string): string {
 }
 
 export function FeedbackButton() {
-  const panelHeight = useChatStore((state) => state.panelHeight);
+  const panelHeight = useAgentStore((state) => state.panelHeight);
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>("submit");

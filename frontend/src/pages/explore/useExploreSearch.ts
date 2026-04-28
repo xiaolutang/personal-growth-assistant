@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { getEntries, searchEntries } from "@/services/api";
 import type { SearchFilterOptions } from "@/services/api";
-import { useChatStore } from "@/stores/chatStore";
+import { useAgentStore } from "@/stores/agentStore";
 import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
 import type { Task } from "@/types/task";
 import { normalizeSearchResult, computeTimeRange, filterByCategory, getPopularTags, addToSearchHistory, TABS } from "./utils";
@@ -64,7 +64,7 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
   const [searchResults, setSearchResults] = useState<Task[] | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [entriesError, setEntriesError] = useState<string | null>(null);
-  const setPageExtra = useChatStore((state) => state.setPageExtra);
+  const setPageExtra = useAgentStore((state) => state.setPageExtra);
   const { serviceUnavailable, runWith503, retry: retryService } = useServiceUnavailable();
 
   // 同步 activeTab/searchQuery 到 chatStore.pageExtra
