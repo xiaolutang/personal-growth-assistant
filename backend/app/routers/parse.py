@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from app.core.config import get_settings
 from app.graphs.task_parser_graph import TaskParserGraph
 from app.services.chat_service import ChatService
+from app.services.agent_service import AgentService
 from app.services.session_meta_store import SessionMetaStore, SessionMeta
 from app.routers.deps import get_current_user
 from app.models.user import User
@@ -32,6 +33,7 @@ def _namespaced_thread_id(user_id: str, session_id: str) -> str:
 # 全局 Graph 实例（由 main.py 注入）
 _graph: Optional[TaskParserGraph] = None
 _chat_service: Optional[ChatService] = None
+_agent_service: Optional[AgentService] = None
 _session_meta_store: Optional[SessionMetaStore] = None
 
 
@@ -47,6 +49,12 @@ def set_graph(graph: TaskParserGraph, entry_service=None, intent_service=None):
     # 初始化会话元数据存储
     settings = get_settings()
     _session_meta_store = SessionMetaStore(settings.sqlite_checkpoints_path.replace('.db', '_meta.db'))
+
+
+def set_agent_service(agent_service: AgentService) -> None:
+    """设置 AgentService 实例（由 main.py 在 Agent 初始化完成后调用）"""
+    global _agent_service
+    _agent_service = agent_service
 
 
 # === 响应模型 ===
@@ -164,22 +172,49 @@ async def chat(request: ChatRequest, user: User = Depends(get_current_user)):
     """
     统一聊天接口（一站式处理意图识别和操作执行）
 
-    一次请求完成：
-    1. 意图检测（可跳过）
-    2. 根据意图执行操作（create/update/delete/read 等）
-    3. 多选场景返回 confirm 事件，前端确认后携带 confirm 参数再次调用
+    优先使用 AgentService（ReAct Agent 路径），回退到 ChatService（意图识别路径）。
 
-    SSE 事件：
-    - event: intent  - 意图检测结果
-    - event: content - 流式内容（create 意图）
-    - event: created - 创建成功
-    - event: updated - 更新成功
-    - event: deleted - 删除成功
-    - event: confirm - 需要用户确认（多选场景）
-    - event: results - 搜索结果（read 意图）
-    - event: done    - 完成
-    - event: error   - 错误
+    SSE 事件（Agent 路径）：
+    - event: thinking   - Agent 思考内容
+    - event: tool_call  - Agent 调用工具
+    - event: tool_result - 工具执行结果
+    - event: content    - 流式内容
+    - event: created    - 创建成功
+    - event: updated    - 更新成功
+    - event: done       - 完成
+    - event: error      - 错误
+
+    SSE 事件（ChatService 回退路径）：
+    - event: intent   - 意图检测结果
+    - event: content  - 流式内容（create 意图）
+    - event: created  - 创建成功
+    - event: updated  - 更新成功
+    - event: deleted  - 删除成功
+    - event: confirm  - 需要用户确认（多选场景）
+    - event: results  - 搜索结果（read 意图）
+    - event: done     - 完成
+    - event: error    - 错误
     """
+    # 优先使用 AgentService（ReAct Agent 路径）
+    if _agent_service and _agent_service.agent is not None:
+        thread_id = _namespaced_thread_id(user.id, request.session_id)
+
+        async def agent_generate():
+            async for event in _agent_service.chat(
+                text=request.text,
+                thread_id=thread_id,
+                user_id=user.id,
+                page_context=request.page_context,
+            ):
+                yield event
+
+        return StreamingResponse(
+            agent_generate(),
+            media_type="text/event-stream",
+            headers=SSE_HEADERS,
+        )
+
+    # 回退到 ChatService（意图识别路径）
     if not _chat_service:
         raise HTTPException(status_code=503, detail="服务未初始化")
 

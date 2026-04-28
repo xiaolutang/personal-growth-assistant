@@ -149,6 +149,40 @@ async def lifespan(app: FastAPI):
         intent_svc = deps.get_intent_service()
         parse_module.set_graph(graph, entry_service=entry_svc, intent_service=intent_svc)
 
+        # 初始化 AgentService（ReAct Agent 路径）
+        try:
+            from app.services.agent_service import AgentService
+            from app.agent.react_agent import ReActAgentGraph
+            from app.agent.tools import ToolDependencies, AGENT_TOOLS
+
+            if settings.LLM_API_KEY and settings.LLM_BASE_URL and settings.LLM_MODEL:
+                # 构建 ToolDependencies
+                tool_deps = ToolDependencies()
+                tool_deps.set_entry_service(entry_svc)
+                review_svc = deps.get_review_service()
+                if review_svc:
+                    tool_deps.set_review_service(review_svc)
+
+                # 创建 ReActAgentGraph
+                react_agent = await ReActAgentGraph.create(
+                    api_key=settings.LLM_API_KEY,
+                    base_url=settings.LLM_BASE_URL,
+                    model=settings.LLM_MODEL,
+                    tools=AGENT_TOOLS,
+                )
+
+                # 创建并注入 AgentService
+                agent_service = AgentService()
+                agent_service.set_react_agent(react_agent)
+                agent_service.set_dependencies(tool_deps)
+                parse_module.set_agent_service(agent_service)
+
+                logger.info("AgentService 初始化成功")
+            else:
+                logger.info("LLM 配置不完整，跳过 AgentService 初始化")
+        except Exception as e:
+            logger.warning("AgentService 初始化失败（不影响启动）: %s", e)
+
         logger.info("存储服务初始化成功")
     except Exception as e:
         logger.error("存储服务初始化失败（部分功能不可用）: %s", e)
