@@ -1,0 +1,821 @@
+[
+  {
+    "id": "ST-001",
+    "category": "tool_selection",
+    "user_input": "帮我记录一个想法：今天学了 Python 装饰器",
+    "expected_tools": ["create_entry"],
+    "expected_args": {"category": "inbox"},
+    "reference_solution": {
+      "tool": "create_entry",
+      "args": {"content": "今天学了 Python 装饰器", "category": "inbox", "title": "今天学了 Python 装饰器"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["ask_user", "delete_entry"]
+  },
+  {
+    "id": "ST-002",
+    "category": "tool_selection",
+    "user_input": "搜索一下关于机器学习的笔记",
+    "expected_tools": ["search_entries"],
+    "expected_args": {"query": "机器学习"},
+    "reference_solution": {
+      "tool": "search_entries",
+      "args": {"query": "机器学习"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry"]
+  },
+  {
+    "id": "ST-003",
+    "category": "tool_selection",
+    "user_input": "我想看看今天的成长日报",
+    "expected_tools": ["get_review_summary"],
+    "expected_args": {"period": "daily"},
+    "reference_solution": {
+      "tool": "get_review_summary",
+      "args": {"period": "daily"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry"]
+  },
+  {
+    "id": "ST-004",
+    "category": "tool_selection",
+    "user_input": "帮我删除那条不需要的笔记",
+    "expected_tools": ["delete_entry"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "delete_entry",
+      "args": {}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry"]
+  },
+  {
+    "id": "ST-005",
+    "category": "tool_selection",
+    "user_input": "查看条目 entry-12345 的详细内容",
+    "expected_tools": ["get_entry"],
+    "expected_args": {"entry_id": "entry-12345"},
+    "reference_solution": {
+      "tool": "get_entry",
+      "args": {"entry_id": "entry-12345"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry"]
+  },
+  {
+    "id": "ST-006",
+    "category": "tool_selection",
+    "user_input": "把这周的任务总结一下",
+    "expected_tools": ["get_review_summary"],
+    "expected_args": {"period": "weekly"},
+    "reference_solution": {
+      "tool": "get_review_summary",
+      "args": {"period": "weekly"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry"]
+  },
+  {
+    "id": "ST-007",
+    "category": "tool_selection",
+    "user_input": "新建一个任务：完成项目报告，优先级高",
+    "expected_tools": ["create_entry"],
+    "expected_args": {"category": "task", "priority": "high"},
+    "reference_solution": {
+      "tool": "create_entry",
+      "args": {"category": "task", "title": "完成项目报告", "priority": "high"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry", "search_entries"]
+  },
+  {
+    "id": "ST-008",
+    "category": "tool_selection",
+    "user_input": "找找关于 React Hooks 的内容",
+    "expected_tools": ["search_entries"],
+    "expected_args": {"query": "React Hooks"},
+    "reference_solution": {
+      "tool": "search_entries",
+      "args": {"query": "React Hooks"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-009",
+    "category": "tool_selection",
+    "user_input": "更新任务状态为已完成",
+    "expected_tools": ["update_entry"],
+    "expected_args": {"status": "complete"},
+    "reference_solution": {
+      "tool": "update_entry",
+      "args": {"status": "complete"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry"]
+  },
+  {
+    "id": "ST-010",
+    "category": "tool_selection",
+    "user_input": "记录一个学习笔记：Docker 容器网络原理",
+    "expected_tools": ["create_entry"],
+    "expected_args": {"category": "note"},
+    "reference_solution": {
+      "tool": "create_entry",
+      "args": {"category": "note", "title": "Docker 容器网络原理"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-011",
+    "category": "tool_selection",
+    "user_input": "写一个反思：今天面试表现不好，需要加强算法",
+    "expected_tools": ["create_entry"],
+    "expected_args": {"category": "reflection"},
+    "reference_solution": {
+      "tool": "create_entry",
+      "args": {"category": "reflection", "title": "今天面试表现不好，需要加强算法"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-012",
+    "category": "tool_selection",
+    "user_input": "我昨天写的那条笔记改一下标题",
+    "expected_tools": ["update_entry"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "update_entry",
+      "args": {}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry", "create_entry"]
+  },
+  {
+    "id": "ST-013",
+    "category": "tool_selection",
+    "user_input": "创建一个新项目：个人博客重构",
+    "expected_tools": ["create_entry"],
+    "expected_args": {"category": "project"},
+    "reference_solution": {
+      "tool": "create_entry",
+      "args": {"category": "project", "title": "个人博客重构"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-014",
+    "category": "tool_selection",
+    "user_input": "查看 2024-01-15 的日报",
+    "expected_tools": ["get_review_summary"],
+    "expected_args": {"period": "daily", "target_date": "2024-01-15"},
+    "reference_solution": {
+      "tool": "get_review_summary",
+      "args": {"period": "daily", "target_date": "2024-01-15"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry"]
+  },
+  {
+    "id": "ST-015",
+    "category": "tool_selection",
+    "user_input": "帮我搜索所有关于 TypeScript 高级类型的内容",
+    "expected_tools": ["search_entries"],
+    "expected_args": {"query": "TypeScript 高级类型"},
+    "reference_solution": {
+      "tool": "search_entries",
+      "args": {"query": "TypeScript 高级类型"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-016",
+    "category": "param_extraction",
+    "user_input": "记录想法：微服务架构中服务发现的最佳实践，标签加上 architecture 和 microservice",
+    "expected_tools": ["create_entry"],
+    "expected_args": {"category": "inbox", "tags": ["architecture", "microservice"]},
+    "reference_solution": {
+      "tool": "create_entry",
+      "args": {"category": "inbox", "title": "微服务架构中服务发现的最佳实践", "tags": ["architecture", "microservice"]}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-017",
+    "category": "param_extraction",
+    "user_input": "创建任务：准备周五的技术分享演示，优先级中等，计划日期 2024-03-15",
+    "expected_tools": ["create_entry"],
+    "expected_args": {"category": "task", "priority": "medium", "planned_date": "2024-03-15"},
+    "reference_solution": {
+      "tool": "create_entry",
+      "args": {"category": "task", "title": "准备周五的技术分享演示", "priority": "medium", "planned_date": "2024-03-15"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-018",
+    "category": "param_extraction",
+    "user_input": "把 entry-abc123 的状态改成进行中",
+    "expected_tools": ["update_entry"],
+    "expected_args": {"entry_id": "entry-abc123", "status": "doing"},
+    "reference_solution": {
+      "tool": "update_entry",
+      "args": {"entry_id": "entry-abc123", "status": "doing"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry", "create_entry"]
+  },
+  {
+    "id": "ST-019",
+    "category": "param_extraction",
+    "user_input": "搜索关于 kubernetes 的笔记，只返回 5 条",
+    "expected_tools": ["search_entries"],
+    "expected_args": {"query": "kubernetes", "limit": 5},
+    "reference_solution": {
+      "tool": "search_entries",
+      "args": {"query": "kubernetes", "limit": 5}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-020",
+    "category": "param_extraction",
+    "user_input": "新建笔记：GraphQL 入门指南，内容写上 GraphQL 是一种 API 查询语言，标签加 graphql 和 api",
+    "expected_tools": ["create_entry"],
+    "expected_args": {"category": "note", "tags": ["graphql", "api"]},
+    "reference_solution": {
+      "tool": "create_entry",
+      "args": {"category": "note", "title": "GraphQL 入门指南", "content": "GraphQL 是一种 API 查询语言", "tags": ["graphql", "api"]}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-021",
+    "category": "param_extraction",
+    "user_input": "更新 entry-xyz789，标题改为 Rust 所有权模型，优先级设为高",
+    "expected_tools": ["update_entry"],
+    "expected_args": {"entry_id": "entry-xyz789", "title": "Rust 所有权模型", "priority": "high"},
+    "reference_solution": {
+      "tool": "update_entry",
+      "args": {"entry_id": "entry-xyz789", "title": "Rust 所有权模型", "priority": "high"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry", "create_entry"]
+  },
+  {
+    "id": "ST-022",
+    "category": "param_extraction",
+    "user_input": "看看上周的成长周报",
+    "expected_tools": ["get_review_summary"],
+    "expected_args": {"period": "weekly"},
+    "reference_solution": {
+      "tool": "get_review_summary",
+      "args": {"period": "weekly"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry"]
+  },
+  {
+    "id": "ST-023",
+    "category": "param_extraction",
+    "user_input": "创建任务：学习 AWS Lambda，添加标签 cloud 和 serverless，优先级低",
+    "expected_tools": ["create_entry"],
+    "expected_args": {"category": "task", "tags": ["cloud", "serverless"], "priority": "low"},
+    "reference_solution": {
+      "tool": "create_entry",
+      "args": {"category": "task", "title": "学习 AWS Lambda", "tags": ["cloud", "serverless"], "priority": "low"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-024",
+    "category": "param_extraction",
+    "user_input": "获取 entry-test001 的详细信息",
+    "expected_tools": ["get_entry"],
+    "expected_args": {"entry_id": "entry-test001"},
+    "reference_solution": {
+      "tool": "get_entry",
+      "args": {"entry_id": "entry-test001"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry"]
+  },
+  {
+    "id": "ST-025",
+    "category": "param_extraction",
+    "user_input": "删除 entry-del-999",
+    "expected_tools": ["delete_entry"],
+    "expected_args": {"entry_id": "entry-del-999"},
+    "reference_solution": {
+      "tool": "delete_entry",
+      "args": {"entry_id": "entry-del-999"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry"]
+  },
+  {
+    "id": "ST-026",
+    "category": "param_extraction",
+    "user_input": "查看 2024-06-01 到 2024-06-07 的周报",
+    "expected_tools": ["get_review_summary"],
+    "expected_args": {"period": "weekly", "target_date": "2024-06-01"},
+    "reference_solution": {
+      "tool": "get_review_summary",
+      "args": {"period": "weekly", "target_date": "2024-06-01"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry"]
+  },
+  {
+    "id": "ST-027",
+    "category": "param_extraction",
+    "user_input": "更新 entry-proj-001 的状态为已完成，耗时 120 分钟",
+    "expected_tools": ["update_entry"],
+    "expected_args": {"entry_id": "entry-proj-001", "status": "complete", "time_spent": 120},
+    "reference_solution": {
+      "tool": "update_entry",
+      "args": {"entry_id": "entry-proj-001", "status": "complete", "time_spent": 120}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry", "create_entry"]
+  },
+  {
+    "id": "ST-028",
+    "category": "multi_step",
+    "user_input": "先搜索一下关于设计模式的内容，然后帮我创建一条笔记记录今天的设计模式学习心得",
+    "expected_tools": ["search_entries", "create_entry"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "search_entries",
+      "args": {"query": "设计模式"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-029",
+    "category": "multi_step",
+    "user_input": "找到关于数据库优化的笔记，然后把它标记为已完成",
+    "expected_tools": ["search_entries", "update_entry"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "search_entries",
+      "args": {"query": "数据库优化"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-030",
+    "category": "multi_step",
+    "user_input": "查看今天的日报，然后帮我创建一条反思记录今天的表现",
+    "expected_tools": ["get_review_summary", "create_entry"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "get_review_summary",
+      "args": {"period": "daily"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-031",
+    "category": "multi_step",
+    "user_input": "搜索 Redis 相关的笔记，然后更新其中优先级最高的那条为高优先级",
+    "expected_tools": ["search_entries", "update_entry"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "search_entries",
+      "args": {"query": "Redis"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-032",
+    "category": "multi_step",
+    "user_input": "帮我查看 entry-multi-001 的内容，如果状态是进行中就改成已完成",
+    "expected_tools": ["get_entry", "update_entry"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "get_entry",
+      "args": {"entry_id": "entry-multi-001"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-033",
+    "category": "multi_step",
+    "user_input": "查看这周的周报，然后根据完成情况创建下周的任务计划",
+    "expected_tools": ["get_review_summary", "create_entry"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "get_review_summary",
+      "args": {"period": "weekly"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-034",
+    "category": "multi_step",
+    "user_input": "先找到关于 CI/CD 的笔记，再创建一条相关的新任务",
+    "expected_tools": ["search_entries", "create_entry"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "search_entries",
+      "args": {"query": "CI/CD"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-035",
+    "category": "multi_step",
+    "user_input": "获取 entry-step-002 的详情，然后删除它",
+    "expected_tools": ["get_entry", "delete_entry"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "get_entry",
+      "args": {"entry_id": "entry-step-002"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry"]
+  },
+  {
+    "id": "ST-036",
+    "category": "multi_step",
+    "user_input": "搜索所有标签包含 go 的条目，然后给其中类型为 task 的条目都加上 golang 标签",
+    "expected_tools": ["search_entries", "update_entry"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "search_entries",
+      "args": {"query": "go"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-037",
+    "category": "multi_step",
+    "user_input": "看看今天的日报数据，然后创建一条笔记总结今天的学习内容",
+    "expected_tools": ["get_review_summary", "create_entry"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "get_review_summary",
+      "args": {"period": "daily"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-038",
+    "category": "ask_user",
+    "user_input": "帮我创建一个任务",
+    "expected_tools": ["ask_user"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "ask_user",
+      "args": {"question": "请问任务标题是什么？"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-039",
+    "category": "ask_user",
+    "user_input": "删除一条笔记",
+    "expected_tools": ["ask_user"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "ask_user",
+      "args": {"question": "请问要删除哪条笔记？请提供笔记 ID。"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry"]
+  },
+  {
+    "id": "ST-040",
+    "category": "ask_user",
+    "user_input": "更新一下那个条目",
+    "expected_tools": ["ask_user"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "ask_user",
+      "args": {"question": "请问要更新哪个条目？需要提供条目 ID 和要修改的内容。"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry"]
+  },
+  {
+    "id": "ST-041",
+    "category": "ask_user",
+    "user_input": "搜索笔记",
+    "expected_tools": ["ask_user"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "ask_user",
+      "args": {"question": "请问要搜索什么关键词？"}
+    },
+    "acceptable_alternatives": ["search_entries"],
+    "unacceptable": ["delete_entry", "create_entry"]
+  },
+  {
+    "id": "ST-042",
+    "category": "ask_user",
+    "user_input": "帮我改一下",
+    "expected_tools": ["ask_user"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "ask_user",
+      "args": {"question": "请问要修改哪个条目？需要修改什么内容？"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry", "create_entry"]
+  },
+  {
+    "id": "ST-043",
+    "category": "ask_user",
+    "user_input": "我想创建一个新条目",
+    "expected_tools": ["ask_user"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "ask_user",
+      "args": {"question": "请问要创建什么类型的条目？标题是什么？"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-044",
+    "category": "ask_user",
+    "user_input": "查看某个条目",
+    "expected_tools": ["ask_user"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "ask_user",
+      "args": {"question": "请问要查看哪个条目？请提供条目 ID。"}
+    },
+    "acceptable_alternatives": ["get_entry"],
+    "unacceptable": ["delete_entry", "create_entry"]
+  },
+  {
+    "id": "ST-045",
+    "category": "ask_user",
+    "user_input": "删除",
+    "expected_tools": ["ask_user"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "ask_user",
+      "args": {"question": "请问要删除哪个条目？请提供条目 ID。"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry"]
+  },
+  {
+    "id": "ST-046",
+    "category": "pure_chat",
+    "user_input": "你好，你是什么？",
+    "expected_tools": [],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "",
+      "args": {}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry", "update_entry", "search_entries", "get_entry", "get_review_summary"]
+  },
+  {
+    "id": "ST-047",
+    "category": "pure_chat",
+    "user_input": "什么是微服务架构？",
+    "expected_tools": [],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "",
+      "args": {}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry", "update_entry", "search_entries"]
+  },
+  {
+    "id": "ST-048",
+    "category": "pure_chat",
+    "user_input": "谢谢你的帮助！",
+    "expected_tools": [],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "",
+      "args": {}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry", "update_entry", "search_entries", "get_entry"]
+  },
+  {
+    "id": "ST-049",
+    "category": "pure_chat",
+    "user_input": "你能帮我做什么？",
+    "expected_tools": [],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "",
+      "args": {}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry", "update_entry"]
+  },
+  {
+    "id": "ST-050",
+    "category": "pure_chat",
+    "user_input": "解释一下什么是 REST API",
+    "expected_tools": [],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "",
+      "args": {}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry", "update_entry", "search_entries"]
+  },
+  {
+    "id": "ST-051",
+    "category": "pure_chat",
+    "user_input": "今天天气怎么样？",
+    "expected_tools": [],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "",
+      "args": {}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry", "update_entry", "search_entries", "get_review_summary"]
+  },
+  {
+    "id": "ST-052",
+    "category": "pure_chat",
+    "user_input": "你觉得 Python 和 Go 哪个更好？",
+    "expected_tools": [],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "",
+      "args": {}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry", "update_entry", "search_entries"]
+  },
+  {
+    "id": "ST-053",
+    "category": "pure_chat",
+    "user_input": " bye bye ",
+    "expected_tools": [],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "",
+      "args": {}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry", "update_entry", "search_entries"]
+  },
+  {
+    "id": "ST-054",
+    "category": "pure_chat",
+    "user_input": "给我讲个笑话吧",
+    "expected_tools": [],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "",
+      "args": {}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry", "update_entry", "search_entries", "get_review_summary"]
+  },
+  {
+    "id": "ST-055",
+    "category": "pure_chat",
+    "user_input": "推荐一些学习编程的资源",
+    "expected_tools": [],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "",
+      "args": {}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["create_entry", "delete_entry", "update_entry", "search_entries"]
+  },
+  {
+    "id": "ST-056",
+    "category": "boundary",
+    "user_input": "",
+    "expected_tools": [],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "",
+      "args": {}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry", "update_entry"]
+  },
+  {
+    "id": "ST-057",
+    "category": "boundary",
+    "user_input": "   ",
+    "expected_tools": [],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "",
+      "args": {}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry", "update_entry"]
+  },
+  {
+    "id": "ST-058",
+    "category": "boundary",
+    "user_input": "帮我记录一条想法但是不告诉我内容",
+    "expected_tools": ["ask_user"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "ask_user",
+      "args": {"question": "请问想法的具体内容是什么？"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-059",
+    "category": "boundary",
+    "user_input": "帮我创建一条笔记同时删除一条笔记同时更新一条笔记",
+    "expected_tools": ["create_entry"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "ask_user",
+      "args": {}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": []
+  },
+  {
+    "id": "ST-060",
+    "category": "boundary",
+    "user_input": "ajsdfhkajsdfhkajsdhfkjahsdkjfhaskdjfh",
+    "expected_tools": [],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "",
+      "args": {}
+    },
+    "acceptable_alternatives": ["ask_user"],
+    "unacceptable": ["delete_entry", "update_entry"]
+  },
+  {
+    "id": "ST-061",
+    "category": "boundary",
+    "user_input": "12345",
+    "expected_tools": [],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "",
+      "args": {}
+    },
+    "acceptable_alternatives": ["ask_user"],
+    "unacceptable": ["delete_entry", "update_entry"]
+  },
+  {
+    "id": "ST-062",
+    "category": "boundary",
+    "user_input": "帮我做一个不存在类型的条目创建操作",
+    "expected_tools": ["create_entry"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "create_entry",
+      "args": {}
+    },
+    "acceptable_alternatives": ["ask_user"],
+    "unacceptable": ["delete_entry"]
+  },
+  {
+    "id": "ST-063",
+    "category": "boundary",
+    "user_input": "搜索",
+    "expected_tools": ["ask_user"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "ask_user",
+      "args": {"question": "请问要搜索什么内容？请提供搜索关键词。"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry", "create_entry"]
+  }
+]

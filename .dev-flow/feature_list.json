@@ -87,8 +87,8 @@
   "archived_phases": [],
   "summary": {
     "total": 14,
-    "pending": 8,
-    "in_progress": 0,
+    "pending": 7,
+    "in_progress": 1,
     "completed": 6,
     "cancelled": 0
   },
@@ -328,7 +328,8 @@
       "description": "搭建评估测试框架：JSON 格式测试用例加载器、pass@k/pass^k 执行器、环境隔离（每次 trial 重置 mock 数据）。编写单轮 63 条 + 负面 24 条测试数据。",
       "verification": "L1",
       "depends_on": ["B186"],
-      "status": "pending",
+      "status": "in_progress",
+      "started_at": "2026-04-28T22:30:00",
       "priority": "P1",
       "acceptance_criteria": [
         "测试框架可加载 JSON 格式测试用例",

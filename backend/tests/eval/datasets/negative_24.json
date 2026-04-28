@@ -1,0 +1,170 @@
+[
+  {
+    "id": "NEG-001",
+    "category": "no_tool",
+    "user_input": "你好，今天心情不错",
+    "should_not_call": ["create_entry", "update_entry", "delete_entry", "search_entries", "get_entry", "get_review_summary"],
+    "reason": "用户只是日常闲聊打招呼，不需要调用任何工具"
+  },
+  {
+    "id": "NEG-002",
+    "category": "no_tool",
+    "user_input": "什么是敏捷开发？",
+    "should_not_call": ["create_entry", "update_entry", "delete_entry", "search_entries", "get_entry", "get_review_summary"],
+    "reason": "用户询问概念性问题，Agent 应直接回答，不需要工具"
+  },
+  {
+    "id": "NEG-003",
+    "category": "no_tool",
+    "user_input": "谢谢你的帮助，再见",
+    "should_not_call": ["create_entry", "update_entry", "delete_entry", "search_entries", "get_entry", "get_review_summary"],
+    "reason": "用户在告别，不需要任何工具调用"
+  },
+  {
+    "id": "NEG-004",
+    "category": "no_tool",
+    "user_input": "我想了解一下你们系统的功能",
+    "should_not_call": ["create_entry", "update_entry", "delete_entry", "search_entries", "get_entry", "get_review_summary"],
+    "reason": "用户在了解系统能力，Agent 应描述功能，不需要工具"
+  },
+  {
+    "id": "NEG-005",
+    "category": "no_tool",
+    "user_input": "编程语言有哪些？",
+    "should_not_call": ["create_entry", "update_entry", "delete_entry", "search_entries", "get_entry", "get_review_summary"],
+    "reason": "常识性问题，Agent 应直接回答"
+  },
+  {
+    "id": "NEG-006",
+    "category": "no_tool",
+    "user_input": "你的名字是什么？",
+    "should_not_call": ["create_entry", "update_entry", "delete_entry", "search_entries", "get_entry", "get_review_summary"],
+    "reason": "关于 Agent 自身的问题，直接回答即可"
+  },
+  {
+    "id": "NEG-007",
+    "category": "no_tool",
+    "user_input": "你能同时处理多个请求吗？",
+    "should_not_call": ["create_entry", "update_entry", "delete_entry", "search_entries", "get_entry", "get_review_summary"],
+    "reason": "关于系统能力的问题，不需要工具"
+  },
+  {
+    "id": "NEG-008",
+    "category": "no_tool",
+    "user_input": "讲一下 SOLID 原则",
+    "should_not_call": ["create_entry", "update_entry", "delete_entry", "search_entries", "get_entry", "get_review_summary"],
+    "reason": "知识性问题，Agent 直接解释即可"
+  },
+  {
+    "id": "NEG-009",
+    "category": "no_tool",
+    "user_input": "比较一下 Vue 和 React",
+    "should_not_call": ["create_entry", "update_entry", "delete_entry", "search_entries", "get_entry", "get_review_summary"],
+    "reason": "技术对比问题，Agent 直接分析回答"
+  },
+  {
+    "id": "NEG-010",
+    "category": "no_tool",
+    "user_input": "给我推荐几本关于系统设计的书",
+    "should_not_call": ["create_entry", "update_entry", "delete_entry", "search_entries", "get_entry", "get_review_summary"],
+    "reason": "推荐类问题，Agent 直接回答，不应创建条目"
+  },
+  {
+    "id": "NEG-011",
+    "category": "no_ask",
+    "user_input": "帮我创建一个任务：明天去买牛奶，优先级低",
+    "should_not_call": ["ask_user"],
+    "reason": "信息充足：有标题、有优先级，不需要追问"
+  },
+  {
+    "id": "NEG-012",
+    "category": "no_ask",
+    "user_input": "搜索关于 Docker 容器化的笔记",
+    "should_not_call": ["ask_user"],
+    "reason": "搜索关键词明确，直接执行搜索即可"
+  },
+  {
+    "id": "NEG-013",
+    "category": "no_ask",
+    "user_input": "删除 entry-del-001",
+    "should_not_call": ["ask_user"],
+    "reason": "条目 ID 明确，不需要追问"
+  },
+  {
+    "id": "NEG-014",
+    "category": "no_ask",
+    "user_input": "查看今天的日报",
+    "should_not_call": ["ask_user"],
+    "reason": "日报请求明确，直接获取即可"
+  },
+  {
+    "id": "NEG-015",
+    "category": "no_ask",
+    "user_input": "记录一个想法：今天跑步了 5 公里",
+    "should_not_call": ["ask_user"],
+    "reason": "内容完整明确，不需要追问"
+  },
+  {
+    "id": "NEG-016",
+    "category": "no_ask",
+    "user_input": "获取 entry-get-003 的内容",
+    "should_not_call": ["ask_user"],
+    "reason": "条目 ID 明确，不需要追问"
+  },
+  {
+    "id": "NEG-017",
+    "category": "no_ask",
+    "user_input": "创建一个笔记：Git 分支管理策略，内容是关于 Git Flow 和 Trunk Based 的对比",
+    "should_not_call": ["ask_user"],
+    "reason": "标题和内容都明确，不需要追问"
+  },
+  {
+    "id": "NEG-018",
+    "category": "no_ask",
+    "user_input": "看看这周的周报",
+    "should_not_call": ["ask_user"],
+    "reason": "本周周报请求明确，不需要追问"
+  },
+  {
+    "id": "NEG-019",
+    "category": "no_multi_step",
+    "user_input": "帮我记录一个想法：学习了 CSS Grid 布局",
+    "should_not_call": ["search_entries", "get_entry", "get_review_summary", "update_entry", "delete_entry"],
+    "reason": "简单的创建想法操作，不需要先搜索或查看其他条目"
+  },
+  {
+    "id": "NEG-020",
+    "category": "no_multi_step",
+    "user_input": "查看 entry-simple-001 的内容",
+    "should_not_call": ["create_entry", "update_entry", "delete_entry", "search_entries"],
+    "reason": "只是查看条目，不需要额外操作"
+  },
+  {
+    "id": "NEG-021",
+    "category": "no_multi_step",
+    "user_input": "今天的日报怎么样",
+    "should_not_call": ["create_entry", "update_entry", "delete_entry", "search_entries", "get_entry"],
+    "reason": "只需要获取日报，不需要其他操作"
+  },
+  {
+    "id": "NEG-022",
+    "category": "no_multi_step",
+    "user_input": "搜索 Kubernetes 入门",
+    "should_not_call": ["create_entry", "update_entry", "delete_entry", "get_entry", "get_review_summary"],
+    "reason": "只是搜索，不需要创建或修改任何条目"
+  },
+  {
+    "id": "NEG-023",
+    "category": "no_multi_step",
+    "user_input": "删除 entry-rm-001",
+    "should_not_call": ["create_entry", "update_entry", "search_entries", "get_entry", "get_review_summary"],
+    "reason": "删除操作只需要一个 delete_entry 调用，不需要多步"
+  },
+  {
+    "id": "NEG-024",
+    "category": "no_multi_step",
+    "user_input": "创建一个项目：个人网站改版",
+    "should_not_call": ["search_entries", "get_entry", "get_review_summary", "update_entry", "delete_entry"],
+    "reason": "简单创建操作，不需要先搜索或查看其他内容"
+  }
+]
