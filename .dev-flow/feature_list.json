@@ -87,9 +87,9 @@
   "archived_phases": [],
   "summary": {
     "total": 14,
-    "pending": 11,
+    "pending": 9,
     "in_progress": 0,
-    "completed": 3,
+    "completed": 5,
     "cancelled": 0
   },
   "features": [
@@ -252,7 +252,11 @@
       "description": "新建 frontend/src/components/AgentChat/ 目录，包含完整对话 UI 组件：AgentChat 主容器、MessageList、UserMessage、AgentMessage、ToolCallCard（loading/success/fail 三态）、ThinkingIndicator、ChatInput、AgentPrompt。",
       "verification": "F2",
       "depends_on": ["F185"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-28T21:00:00",
+      "completed_at": "2026-04-28T21:15:00",
+      "evidence_file": ".dev-flow/evidence/F186.md",
+      "execution_notes": "9 files created. 8 components + index. Build passed",
       "priority": "P0",
       "acceptance_criteria": [
         "AgentChat.tsx 主容器渲染完整对话界面",
