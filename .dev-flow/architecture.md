@@ -35,11 +35,20 @@ backend/app/
 ├── routers/             # entries, search, knowledge, intent, parse, review, chat
 ├── services/            # sync_service, entry_service, ai_chat_service
 │   └── review/          # R037: review 子模块 (insights.py, morning_digest.py)
-├── infrastructure/      # storage/, llm/
+├── infrastructure/
+│   ├── storage/         # R043: 按领域拆分 (base/entries/goals/feedback/links)
+│   └── llm/
 ├── graphs/              # task_parser_graph (LangGraph)
-├── models/              # Task, Category, Status
-└── mcp/                 # MCP Server (14 Tools)
+├── models/              # Task, Category, Status, Review, Knowledge
+└── mcp/                 # MCP Server (14 Tools) — 必须通过 deps 获取 service
 ```
+
+### 分层不变量（R043 新增）
+
+- **调用方向**：`routers/mcp → services → infrastructure`，严格单向
+- **MCP = 另一种 router**：MCP handlers 必须通过 `deps.get_*_service()` 获取 service 实例，禁止直接操作 storage
+- **service 不依赖 router**：service 层禁止 `from app.routers import deps`，依赖通过构造函数/setter 注入
+- **sqlite 按领域拆分**：SQLiteStorage 入口类不变，内部按领域分模块（entries/goals/feedback/links）
 
 ### R037 新增
 

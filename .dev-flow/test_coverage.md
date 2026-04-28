@@ -1,5 +1,20 @@
 # 测试覆盖清单
 
+## R043: 架构收敛
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| sqlite 拆分 | B177 | unit+startup | 现有 pytest 全量回归/_conn() 上下文管理器正常+异常回滚/连接迁移失败恢复/print 全消除/__import__ 消除/导入路径兼容（from storage.sqlite import SQLiteStorage）/app 启动 bootstrap 兼容 | pending | L1 |
+| MCP deps | B178 | unit+auth | MCP handler 通过 service 层创建条目触发完整流程/batch_create 共享 _build_entry_from_args/neo4j=None 防护/auth 失败无效 user_id/deps service 注入失败降级/MCP 单条创建→HTTP 读取一致/MCP 批量创建→HTTP 列表一致/MCP 更新→HTTP 报告 tag_auto 同步 | pending | L1 |
+| entry_service deps | B179 | unit | 无 from routers.deps/GoalService setter 注入/reindex_backlinks 功能不变/无循环导入 | pending | L1 |
+| knowledge 模型提取 | B180 | unit | 15 个模型正确导出/mastery 计算结果合理/.dict()→.model_dump() | pending | L1 |
+| goal_service N+1 | B181 | unit | list_goals 10+ 目标查询 ≤3 次/tag_auto 进度不变/_get_goal_or_error 错误返回 | pending | L1 |
+| review_service 模板 | B182 | unit | 日报/周报/月报 JSON 输出与重构前一致/趋势数据结构不变 | pending | L1 |
+| entry_service batch | B183 | unit | 20 条 link 查询 ≤2 次/批量存在性检查结果与逐条一致 | pending | L1 |
+| sqlite 重复合并 | B184 | unit | 合并后方法输出与原方法一致/边界条件（空 tags/无日期范围）/SQL 趋势聚合与全量拉取结果一致 | pending | L1 |
+| api.ts 统一 | F177 | F1 | npm run build/npm run test:run/里程碑 CRUD openapi-fetch/fetchProgressHistory openapi-fetch/fetchRecommendations openapi-fetch（/knowledge/recommendations）/schema 覆盖验证/gen:types 类型验证 | pending | F1 |
+| 质量收口 | S44 | L3+smoke | pytest 全量/vitest 全量/npm build/Docker smoke + MCP→HTTP + HTTP→MCP 双向 parity 验证 | pending | L3 |
+
 ## R042: Flutter 条目详情交互升级
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |

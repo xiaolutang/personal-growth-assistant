@@ -2,6 +2,30 @@
 
 ## 契约索引
 
+### R043 消费的已有契约（架构收敛 — 接口不变）
+
+| 契约 ID | 方法 | 端点 | 任务 | 说明 |
+|---------|------|------|------|------|
+| CONTRACT-SQLITE-INTERNAL | — | — | B177 | SQLiteStorage 入口类接口不变，内部按领域拆分 |
+| CONTRACT-MCP-DEPS | — | — | B178 | MCP 14 Tools 外部行为不变，内部改用 deps service |
+| CONTRACT-ENTRY-SERVICE | — | — | B179 | EntryService 公开方法不变，依赖注入方式变更 |
+| CONTRACT-KNOWLEDGE-MODELS | — | — | B180 | 15 个 Pydantic 模型位置变更，API 响应格式不变 |
+| CONTRACT-GOAL-SERVICE | — | — | B181 | goal_service 公开方法不变，内部查询优化 |
+| CONTRACT-REVIEW-SERVICE | — | — | B182 | review_service 日报/周报/月报 API 响应不变 |
+| CONTRACT-ENTRY-BATCH | — | — | B183 | entry_service 公开方法不变，内部批量优化 |
+| CONTRACT-SQLITE-MERGE | — | — | B184 | sqlite 公开方法合并，调用签名兼容 |
+| CONTRACT-FRONTEND-MILESTONE | GET/POST/PUT/DELETE | /goals/{goal_id}/milestones | F177 | 前端统一使用 openapi-fetch，注意路径参数为 goal_id |
+| CONTRACT-FRONTEND-PROGRESS | GET | /goals/{goal_id}/progress-history | F177 | fetchProgressHistory 统一 openapi-fetch |
+| CONTRACT-FRONTEND-RECOMMENDATIONS | GET | /knowledge/recommendations | F177 | fetchRecommendations 统一 openapi-fetch（已有端点） |
+
+### R043 类型同步（F177）
+
+F177 需验证：
+- [ ] 后端 OpenAPI schema 覆盖里程碑 CRUD 端点（/goals/{goal_id}/milestones，路径参数为 goal_id）
+- [ ] 后端 OpenAPI schema 覆盖 progress-history（/goals/{goal_id}/progress-history）
+- [ ] 后端 OpenAPI schema 覆盖 knowledge/recommendations（/knowledge/recommendations）
+- [ ] `npm run gen:types` 生成的 TypeScript 类型包含上述端点相关类型
+
 ### R042 消费的已有契约（Flutter EntryDetail 交互）
 
 | 契约 ID | 方法 | 端点 | 任务 | 状态 |

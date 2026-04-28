@@ -1,5 +1,57 @@
 # 对齐清单
 
+## R043: 架构收敛
+
+### 契约对齐
+
+- [ ] F177: CONTRACT-MILESTONE-CRUD — 里程碑 CRUD 统一使用 openapi-fetch client（GET/POST/PUT/DELETE /goals/{goal_id}/milestones，注意路径参数为 goal_id）
+- [ ] F177: CONTRACT-PROGRESS-HISTORY — fetchProgressHistory 统一 openapi-fetch（GET /goals/{goal_id}/progress-history）
+- [ ] F177: CONTRACT-RECOMMENDATIONS — fetchRecommendations 统一 openapi-fetch（GET /knowledge/recommendations，已有端点）
+- [ ] F177: 验证后端 OpenAPI schema 覆盖里程碑 CRUD + progress-history + knowledge/recommendations 端点
+
+### 依赖对齐
+
+- [ ] B177 无外部依赖（基础设施拆分）
+- [ ] B178 depends_on B177 ✓（MCP 重构依赖 sqlite 拆分后结构）
+- [ ] B179 depends_on B177 ✓（entry_service 依赖 sqlite 拆分）
+- [ ] B180 无外部依赖（模型提取，独立）
+- [ ] B181 depends_on B177 ✓（goal_service 依赖 sqlite 拆分）
+- [ ] B182 depends_on B184 ✓（review_service 三报告提取依赖 sqlite 重复合并完成）
+- [ ] B183 depends_on B177 ✓（entry_service batch 依赖 sqlite 拆分）
+- [ ] B184 depends_on B177 ✓（sqlite 重复合并依赖拆分先完成）
+- [ ] F177 无外部依赖（前端 API 层统一）
+- [ ] S44 depends_on B177+B178+B179+B180+B181+B182+B183+B184+F177 ✓
+
+### 架构对齐
+
+- [ ] B177: SQLiteStorage 入口类不变，采用组合模式暴露子模块方法
+- [ ] B177: 所有消费者通过同一个 SQLiteStorage 访问，接口不变
+- [ ] B178: MCP server 启动时初始化 deps.storage（确保 MCP 进程内 get_*_service 不返回 503）
+- [ ] B178: MCP knowledge_stats handler 通过 deps 获取 KnowledgeService（不再裸 new）
+- [ ] B179: entry_service/chat_service/morning_digest 禁止 from app.routers import deps/intent，通过构造注入
+- [ ] B179: ChatService 通过构造注入替代所有 router 层导入（含 intent module）
+- [ ] B179: MorningDigest 通过构造注入 RecommendationService
+- [ ] B179: parse.py 组合点正确注入 ChatService 依赖
+- [ ] B180: knowledge_service 模型提取后通过 from app.models.knowledge import 引用
+- [ ] B181-B184: services → infrastructure 单向调用不变
+- [ ] F177: openapi-fetch 统一后错误处理与现有 API 风格一致
+- [ ] 不违反 architecture.md 分层不变量（R043 新增）
+
+### 执行顺序
+
+- [ ] Phase 1: B177（基础设施拆分）
+- [ ] Phase 2: B178 + B179 + B180（架构正确性，B178/B179/B180 可并行）
+- [ ] Phase 3: B183 → B184 → B181 → B182（严格串行，文件冲突约束）
+- [ ] Phase 4: F177（前端一致性）
+- [ ] Phase 5: S44（质量收口）
+
+### MCP-HTTP 收敛验证路径
+
+- [ ] MCP 创建条目 → HTTP GET 读取 → 数据一致
+- [ ] MCP 批量创建 → HTTP GET 列表查询 → 数据一致
+- [ ] MCP 更新条目 → HTTP 报告/目标查询 → tag_auto/双链同步一致
+- [ ] HTTP 创建条目 → MCP list_entries/get_entry → 数据一致（反向 parity）
+
 ## R042: Flutter 条目详情交互升级
 
 ### 契约对齐
