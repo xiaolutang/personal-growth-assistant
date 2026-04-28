@@ -22,6 +22,11 @@ services:
       - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}
       - LANGSMITH_TRACING=${LANGSMITH_TRACING:-false}
       - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-personal-growth-assistant}
+    ports:
+      # 本地开发/调试用：允许 Flutter 等移动端直连后端（绕过 Traefik TLS）
+      - "127.0.0.1:8001:8001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ../data:/app/data
     networks:

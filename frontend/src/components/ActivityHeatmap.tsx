@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, type MouseEvent } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getActivityHeatmap, type ActivityHeatmapItem } from "@/services/api";
@@ -28,7 +28,8 @@ export function ActivityHeatmap() {
   const [year, setYear] = useState(currentYear);
   const [items, setItems] = useState<ActivityHeatmapItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [hovered, setHovered] = useState<{ date: string; count: number } | null>(null);
+  const [hovered, setHovered] = useState<{ date: string; count: number; x: number } | null>(null);
+  const tooltipContainerRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -93,6 +94,17 @@ export function ActivityHeatmap() {
     navigate(`/explore?start_date=${date}&end_date=${date}`);
   }
 
+  function handleMouseEnter(
+    event: MouseEvent<HTMLDivElement>,
+    day: { date: string; count: number; inYear: boolean },
+  ) {
+    if (!day.inYear || !tooltipContainerRef.current) return;
+    const containerRect = tooltipContainerRef.current.getBoundingClientRect();
+    const cellRect = event.currentTarget.getBoundingClientRect();
+    const x = cellRect.left - containerRect.left + cellRect.width / 2;
+    setHovered({ date: day.date, count: day.count, x });
+  }
+
   const { totalActivity, activeDays } = useMemo(() => ({
     totalActivity: items.reduce((s, i) => s + i.count, 0),
     activeDays: items.filter((i) => i.count > 0).length,
@@ -127,66 +139,70 @@ export function ActivityHeatmap() {
       {loading ? (
         <div className="text-sm text-muted-foreground py-8 text-center">加载中...</div>
       ) : (
-        <div className="relative overflow-x-auto">
-          {/* 月份标签 */}
-          <div className="flex mb-1" style={{ paddingLeft: "20px" }}>
-            {monthPositions.map((m, i) => (
-              <span
-                key={i}
-                className="text-[10px] text-muted-foreground"
-                style={{
-                  position: "relative",
-                  left: `${(m.col - (i > 0 ? monthPositions[i - 1].col : 0)) * 13}px`,
-                }}
-              >
-                {m.label}
-              </span>
-            ))}
-          </div>
-          <div className="flex">
-            {/* 日标签 */}
-            <div className="flex flex-col mr-1">
-              {DAY_LABELS.map((label, i) => (
-                <div key={i} className="h-[13px] flex items-center">
-                  <span className="text-[10px] text-muted-foreground w-4 text-right">{label}</span>
-                </div>
-              ))}
+        <div ref={tooltipContainerRef} className="relative">
+          {hovered && (
+            <div
+              className="absolute top-0 bg-popover text-popover-foreground text-xs rounded px-2 py-1 shadow-md border pointer-events-none whitespace-nowrap z-20"
+              style={{
+                left: `${hovered.x}px`,
+                transform: "translate(-50%, calc(-100% - 8px))",
+              }}
+            >
+              {hovered.date} · {hovered.count} 条记录
             </div>
-            {/* 热力格子 */}
-            <div className="flex gap-[2px] relative">
-              {weeks.map((week, wi) => (
-                <div key={wi} className="flex flex-col gap-[2px]">
-                  {week.map((day, di) => (
-                    <div
-                      key={di}
-                      data-date={day.inYear ? day.date : undefined}
-                      data-count={day.inYear ? day.count : undefined}
-                      className={`w-[11px] h-[11px] rounded-[2px] cursor-pointer transition-colors ${day.inYear ? LEVELS[getCountLevel(day.count)] : "bg-transparent"}`}
-                      onMouseEnter={() => day.inYear && setHovered({ date: day.date, count: day.count })}
-                      onMouseLeave={() => setHovered(null)}
-                      onClick={() => day.inYear && day.count > 0 && handleClick(day.date)}
-                    />
-                  ))}
-                </div>
-              ))}
-              {/* Tooltip */}
-              {hovered && (
-                <div
-                  className="absolute bottom-full mb-2 bg-popover text-popover-foreground text-xs rounded px-2 py-1 shadow-md border pointer-events-none whitespace-nowrap z-10"
-                  style={{ left: "50%", transform: "translateX(-50%)" }}
+          )}
+
+          <div className="overflow-x-auto pb-2">
+            {/* 月份标签 — 绝对定位，精确对齐对应列 */}
+            <div className="relative mb-1" style={{ paddingLeft: "20px", height: "16px" }}>
+              {monthPositions.map((m, i) => (
+                <span
+                  key={i}
+                  className="absolute text-[10px] text-muted-foreground"
+                  style={{
+                    left: `${m.col * 13}px`,
+                  }}
                 >
-                  {hovered.date} · {hovered.count} 条记录
-                </div>
-              )}
+                  {m.label}
+                </span>
+              ))}
             </div>
-          </div>
-          {/* 图例 */}
-          <div className="flex items-center justify-end gap-1 mt-2 text-[10px] text-muted-foreground">
-            <span>少</span>
-            {LEVELS.map((_, i) => (
-              <div key={i} className={`w-[11px] h-[11px] rounded-[2px] ${LEVELS[i]}`} />
-            ))}
-            <span>多</span>
+            <div className="flex">
+              {/* 日标签 */}
+              <div className="flex flex-col mr-1">
+                {DAY_LABELS.map((label, i) => (
+                  <div key={i} className="h-[13px] flex items-center">
+                    <span className="text-[10px] text-muted-foreground w-4 text-right">{label}</span>
+                  </div>
+                ))}
+              </div>
+              {/* 热力格子 */}
+              <div className="flex gap-[2px]">
+                {weeks.map((week, wi) => (
+                  <div key={wi} className="flex flex-col gap-[2px]">
+                    {week.map((day, di) => (
+                      <div
+                        key={di}
+                        data-date={day.inYear ? day.date : undefined}
+                        data-count={day.inYear ? day.count : undefined}
+                        className={`w-[11px] h-[11px] rounded-[2px] cursor-pointer transition-colors ${day.inYear ? LEVELS[getCountLevel(day.count)] : "bg-transparent"}`}
+                        onMouseEnter={(event) => handleMouseEnter(event, day)}
+                        onMouseLeave={() => setHovered(null)}
+                        onClick={() => day.inYear && day.count > 0 && handleClick(day.date)}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* 图例 */}
+            <div className="flex items-center justify-end gap-1 mt-2 text-[10px] text-muted-foreground">
+              <span>少</span>
+              {LEVELS.map((_, i) => (
+                <div key={i} className={`w-[11px] h-[11px] rounded-[2px] ${LEVELS[i]}`} />
+              ))}
+              <span>多</span>
+            </div>
           </div>
         </div>
       )}
