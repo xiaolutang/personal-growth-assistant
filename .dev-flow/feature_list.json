@@ -87,9 +87,9 @@
   "archived_phases": [],
   "summary": {
     "total": 14,
-    "pending": 7,
+    "pending": 6,
     "in_progress": 1,
-    "completed": 6,
+    "completed": 7,
     "cancelled": 0
   },
   "features": [
@@ -328,8 +328,14 @@
       "description": "搭建评估测试框架：JSON 格式测试用例加载器、pass@k/pass^k 执行器、环境隔离（每次 trial 重置 mock 数据）。编写单轮 63 条 + 负面 24 条测试数据。",
       "verification": "L1",
       "depends_on": ["B186"],
-      "status": "in_progress",
+      "status": "completed",
       "started_at": "2026-04-28T22:30:00",
+      "completed_at": "2026-04-28T22:45:00",
+      "actual_minutes": 15,
+      "evidence_file": ".dev-flow/evidence/B189.md",
+      "commit": "b919c4b",
+      "summary": "完成 Golden Dataset 框架搭建：framework.py 实现 TestCase/DatasetLoader/pass@k/pass^k/GoldenDatasetRunner/EvaluationReport。编写 63+24 条测试数据。46 条框架测试全部通过。",
+      "execution_notes": "5 new files, 2312 insertions. All 1298 backend + 627 frontend tests passed.",
       "priority": "P1",
       "acceptance_criteria": [
         "测试框架可加载 JSON 格式测试用例",
@@ -483,7 +489,8 @@
       "description": "后端单元测试（Tools + Agent + AgentService）+ 集成测试（端到端 CRUD + 多轮对话 + SSE 流式）+ Golden Dataset 回归基线 + 构建 + Docker smoke。",
       "verification": "L4",
       "depends_on": ["B188", "B189"],
-      "status": "pending",
+      "status": "in_progress",
+      "started_at": "2026-04-28T22:50:00",
       "priority": "P0",
       "acceptance_criteria": [
         "后端单元测试覆盖 agent/tools.py、agent/react_agent.py、agent_service.py",
