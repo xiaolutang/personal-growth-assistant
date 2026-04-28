@@ -87,9 +87,9 @@
   "archived_phases": [],
   "summary": {
     "total": 14,
-    "pending": 5,
+    "pending": 3,
     "in_progress": 1,
-    "completed": 8,
+    "completed": 9,
     "cancelled": 0
   },
   "features": [
@@ -360,8 +360,14 @@
       "description": "实现 LLM-as-Judge 评分器（9 维度 1-5 分）、多轮评估数据集 30 条、模拟用户（预设回复 + LLM 模拟）、部分评分和 outcome grading（state_check grader）。",
       "verification": "L1",
       "depends_on": ["B189"],
-      "status": "in_progress",
+      "status": "completed",
       "started_at": "2026-04-28T23:15:00",
+      "completed_at": "2026-04-28T23:35:00",
+      "actual_minutes": 20,
+      "evidence_file": ".dev-flow/evidence/B190.md",
+      "commit": "06ce0a0",
+      "summary": "9 维度评分系统 + 30 条多轮数据 + 模拟用户 + PartialScorer + OutcomeGrader。94 条新增测试通过。",
+      "execution_notes": "4 new files, 3202 insertions",
       "priority": "P1",
       "acceptance_criteria": [
         "9 维评分 prompt 定义完整（6 基础 + 3 多轮专用）",
@@ -385,7 +391,8 @@
       "description": "实现评估转录记录（完整 Agent trace）、存储管理、审查流程工具、饱和度监控。",
       "verification": "L1",
       "depends_on": ["B190"],
-      "status": "pending",
+      "status": "in_progress",
+      "started_at": "2026-04-28T23:40:00",
       "priority": "P1",
       "acceptance_criteria": [
         "评估转录 JSON 格式定义（含完整 LLM trace：input/output/tool_calls/token/延迟）",
