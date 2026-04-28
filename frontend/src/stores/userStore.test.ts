@@ -210,20 +210,11 @@ describe("useUserStore", () => {
 
   describe("loadFromStorage", () => {
     it("有 token 时应恢复登录态并验证", async () => {
-      localStorageMock.getItem.mockImplementation(
-        (key: string) =>
-          key === "pga_token"
-            ? "saved-token"
-            : key === "pga_user"
-              ? JSON.stringify({
-                  id: "1",
-                  username: "u",
-                  email: "e@t.com",
-                  is_active: true,
-                  onboarding_completed: true,
-                })
-              : (null as unknown as string)
-      );
+      useUserStore.setState({
+        token: "saved-token",
+        isAuthenticated: true,
+        isLoading: true,
+      });
 
       const mockUser = {
         id: "1",
@@ -242,6 +233,7 @@ describe("useUserStore", () => {
       const state = useUserStore.getState();
       expect(state.isAuthenticated).toBe(true);
       expect(state.token).toBe("saved-token");
+      expect(state.user).toEqual(mockUser);
     });
 
     it("无 token 时不应设置登录态", async () => {
@@ -254,9 +246,18 @@ describe("useUserStore", () => {
     });
 
     it("token 无效时应清除登录态", async () => {
-      localStorageMock.getItem.mockImplementation(
-        (key: string) => (key === "pga_token" ? "expired-token" : (null as unknown as string))
-      );
+      useUserStore.setState({
+        token: "expired-token",
+        user: {
+          id: "1",
+          username: "u",
+          email: "e@t.com",
+          is_active: true,
+          onboarding_completed: true,
+        },
+        isAuthenticated: true,
+        isLoading: true,
+      });
 
       mockFetch.mockResolvedValueOnce({
         ok: false,

@@ -222,7 +222,7 @@ function normalizeSearchItem(e: { id?: string; title?: string; score?: number; t
 }
 
 export async function searchEntries(query: string, limit: number = 10, filterType?: string, filters?: SearchFilterOptions): Promise<SearchResponse> {
-  const body: { query: string | null; limit: number; filter_type?: string | null; start_time?: string | null; end_time?: string | null; tags?: string[] | null } = { query: query || null, limit };
+  const body: { query: string; limit: number; filter_type?: string | null; start_time?: string | null; end_time?: string | null; tags?: string[] | null } = { query, limit };
   if (filterType) body.filter_type = filterType;
   if (filters?.startTime) body.start_time = filters.startTime;
   if (filters?.endTime) body.end_time = filters.endTime;

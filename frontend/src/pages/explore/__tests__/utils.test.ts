@@ -134,6 +134,14 @@ describe("utils", () => {
       expect(computeTimeRange("")).toEqual({});
     });
 
+    it("返回本地无时区时间字符串，避免 UTC 跨天偏移", () => {
+      const result = computeTimeRange("today");
+      expect(result.startTime).toBeTruthy();
+      expect(result.endTime).toBeTruthy();
+      expect(result.startTime).not.toContain("Z");
+      expect(result.endTime).not.toContain("Z");
+    });
+
     it("today 返回今天的起止时间", () => {
       const result = computeTimeRange("today");
       expect(result.startTime).toBeTruthy();
@@ -166,6 +174,7 @@ describe("utils", () => {
       expect(start.getDate()).toBe(1);
       // endTime 是当月最后一天
       const end = new Date(result.endTime!);
+      expect(end.getMilliseconds()).toBe(999);
       const nextDay = new Date(end);
       nextDay.setDate(nextDay.getDate() + 1);
       expect(nextDay.getDate()).toBe(1); // 下一天是下月1号

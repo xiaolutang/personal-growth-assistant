@@ -14,8 +14,14 @@ function getOrCreateUid(): string {
   return uid;
 }
 
-export function buildAuthHeaders(init?: RequestInit): Headers {
-  const headers = new Headers(init?.headers);
+export function buildAuthHeaders(input?: RequestInfo | URL, init?: RequestInit): Headers {
+  const headers =
+    input instanceof Request
+      ? new Headers(input.headers)
+      : new Headers();
+  new Headers(init?.headers).forEach((value, key) => {
+    headers.set(key, value);
+  });
   const token = localStorage.getItem(TOKEN_KEY);
 
   if (token && !headers.has("Authorization")) {
@@ -32,6 +38,6 @@ export function buildAuthHeaders(init?: RequestInit): Headers {
 export async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   return fetch(input, {
     ...init,
-    headers: buildAuthHeaders(init),
+    headers: buildAuthHeaders(input, init),
   });
 }

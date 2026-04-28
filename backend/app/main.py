@@ -2,10 +2,14 @@
 import logging
 import os
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Any, Optional
 
-from fastapi import FastAPI
+from fastapi.encoders import jsonable_encoder
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.responses import Response as FastAPIResponse
 from pydantic import BaseModel
 
 from app.callers import APICaller
@@ -167,6 +171,86 @@ app = FastAPI(
     lifespan=lifespan,
     root_path=os.getenv("ROOT_PATH", ""),
 )
+
+
+def _json_safe(value: Any) -> Any:
+    """将异常细节递归转换为可 JSON 序列化的数据。"""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    if isinstance(value, dict):
+        return {str(k): _json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_json_safe(item) for item in value]
+    try:
+        return jsonable_encoder(value)
+    except Exception:
+        return str(value)
+
+
+# 422 验证错误日志
+@app.exception_handler(RequestValidationError)
+async def debug_validation_error(request: Request, exc: RequestValidationError):
+    safe_errors = _json_safe(exc.errors())
+    safe_body = _json_safe(exc.body)
+    logger.error("VALIDATION_422 path=%s errors=%s body=%s", request.url.path, safe_errors, safe_body)
+    return JSONResponse(status_code=422, content={"detail": safe_errors, "body": safe_body})
+
+# ResponseValidationError 捕获（response_model 验证失败时触发 500）
+from fastapi.exceptions import ResponseValidationError
+
+@app.exception_handler(ResponseValidationError)
+async def response_validation_error(request: Request, exc: ResponseValidationError):
+    safe_errors = _json_safe(exc.errors())
+    logger.error("RESPONSE_VALIDATION_500 path=%s errors=%s", request.url.path, safe_errors)
+    return JSONResponse(status_code=500, content={"detail": safe_errors})
+
+# 兜底异常处理（替代原 ErrorHandlerMiddleware，避免 BaseHTTPMiddleware 的 body 消费 bug）
+from app.middleware import get_request_id, uid_var
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """统一未捕获异常处理 — 生产环境脱敏，DEBUG 模式暴露详情"""
+    from app.core.config import get_settings
+
+    request_id = get_request_id()
+    client_ip = getattr(request, "client", None)
+    client_ip = client_ip.host if client_ip else "unknown"
+
+    extra = {
+        "request_id": request_id,
+        "method": request.method,
+        "path": request.url.path,
+        "status_code": 500,
+        "client_ip": client_ip,
+        "uid": uid_var.get(),
+    }
+    logger.error(
+        f"Unhandled exception: {request.method} {request.url.path}: {exc}",
+        extra=extra,
+        exc_info=True,
+    )
+
+    debug = get_settings().DEBUG
+    if debug:
+        error_message = str(exc)
+        error_type = type(exc).__name__
+    else:
+        error_message = "Internal Server Error"
+        error_type = "INTERNAL_ERROR"
+
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "error": {
+                "code": "INTERNAL_ERROR",
+                "message": error_message,
+                "type": error_type,
+                "request_id": request_id,
+            },
+        },
+        headers={"X-Request-ID": request_id} if request_id else None,
+    )
 
 # CORS 中间件
 settings = get_settings()

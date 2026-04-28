@@ -9,10 +9,6 @@ from unittest.mock import MagicMock, AsyncMock
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-# Mock langgraph before importing app modules
-import sys
-import types
-
 if "langgraph.checkpoint.sqlite.aio" not in sys.modules:
     sqlite_pkg = types.ModuleType("langgraph.checkpoint.sqlite")
     aio_pkg = types.ModuleType("langgraph.checkpoint.sqlite.aio")
@@ -173,6 +169,24 @@ class TestSearchTimeFilter:
         })
         assert resp.status_code == 200
         assert len(resp.json()["results"]) == 3
+
+    def test_hybrid_search_receives_parsed_datetimes(self, mock_deps):
+        """非空 query + 时间过滤时，传给 hybrid service 的应是 datetime 而不是字符串"""
+        tc, mock_storage, _, mock_hybrid = mock_deps
+        mock_storage.qdrant = MagicMock()
+        mock_storage.sqlite = MagicMock()
+        mock_hybrid.search.return_value = []
+
+        resp = tc.post("/search", json={
+            "query": "test",
+            "start_time": "2026-04-20T00:00:00",
+            "end_time": "2026-04-22T23:59:59",
+        })
+
+        assert resp.status_code == 200
+        kwargs = mock_hybrid.search.await_args.kwargs
+        assert kwargs["start_time"] == datetime(2026, 4, 20, 0, 0, 0)
+        assert kwargs["end_time"] == datetime(2026, 4, 22, 23, 59, 59)
 
 
 class TestSearchTagFilter:
@@ -352,14 +366,114 @@ class TestSearchSqliteFallback:
 class TestSearchValidation:
     """参数校验测试"""
 
-    def test_invalid_start_time_422(self, mock_deps):
-        """start_time 格式非法 → 422"""
+    def test_invalid_start_time_ignored(self, mock_deps):
+        """start_time 格式非法 → 忽略过滤，返回 200"""
         tc, _, _, _ = mock_deps
         resp = tc.post("/search", json={"query": "test", "start_time": "not-a-date"})
-        assert resp.status_code == 422
+        assert resp.status_code == 200
 
-    def test_invalid_end_time_422(self, mock_deps):
-        """end_time 格式非法 → 422"""
+    def test_invalid_end_time_ignored(self, mock_deps):
+        """end_time 格式非法 → 忽略过滤，返回 200"""
         tc, _, _, _ = mock_deps
         resp = tc.post("/search", json={"query": "test", "end_time": "2026/04/20"})
-        assert resp.status_code == 422
+        assert resp.status_code == 200
+
+
+class TestSearchBrowserPayload:
+    """浏览器真实 payload 格式测试（UTC 时区 + null query + 毫秒）"""
+
+    def test_utc_timezone_start_time(self, mock_deps):
+        """start_time 带 Z 后缀（浏览器 computeTimeRange 格式）→ 正确过滤"""
+        tc, mock_storage, _, mock_hybrid = mock_deps
+        mock_storage.qdrant = MagicMock()
+        mock_storage.sqlite = MagicMock()
+
+        mock_hybrid.search.return_value = [
+            EntryResponse(**_entry(id="1", created_at="2026-04-27T20:00:00")),
+            EntryResponse(**_entry(id="2", created_at="2026-04-26T10:00:00")),
+        ]
+
+        # 浏览器发的是 UTC 时间 "2026-04-27T16:00:00.000Z"（东八区 → 本地 2026-04-28 00:00）
+        resp = tc.post("/search", json={
+            "query": "test",
+            "start_time": "2026-04-27T16:00:00.000Z",
+        })
+        assert resp.status_code == 200
+        results = resp.json()["results"]
+        assert len(results) == 1
+        assert results[0]["id"] == "1"
+
+    def test_utc_timezone_end_time(self, mock_deps):
+        """end_time 带 Z 后缀和毫秒 → 正确过滤"""
+        tc, mock_storage, _, mock_hybrid = mock_deps
+        mock_storage.qdrant = MagicMock()
+        mock_storage.sqlite = MagicMock()
+
+        mock_hybrid.search.return_value = [
+            EntryResponse(**_entry(id="1", created_at="2026-04-28T10:00:00")),
+            EntryResponse(**_entry(id="2", created_at="2026-04-28T20:00:00")),
+        ]
+
+        resp = tc.post("/search", json={
+            "query": "test",
+            "end_time": "2026-04-28T15:59:59.999Z",
+        })
+        assert resp.status_code == 200
+        results = resp.json()["results"]
+        assert len(results) == 1
+        assert results[0]["id"] == "1"
+
+    def test_null_query_with_utc_time_filter(self, mock_deps):
+        """query=null + UTC 时间过滤（浏览器 Explore 页面"今天"场景）→ 200"""
+        tc, _, mock_entry_svc, _ = mock_deps
+
+        mock_entry_svc.list_entries.return_value = EntryListResponse(entries=[
+            EntryResponse(**_entry(id="1", created_at="2026-04-28T10:00:00")),
+            EntryResponse(**_entry(id="2", created_at="2026-04-25T10:00:00")),
+        ], total=2)
+
+        # 完全模拟浏览器 Explore 页面选择"今天"时间过滤的请求
+        resp = tc.post("/search", json={
+            "query": None,
+            "start_time": "2026-04-27T16:00:00.000Z",
+            "end_time": "2026-04-28T15:59:59.999Z",
+            "limit": 20,
+        })
+        assert resp.status_code == 200
+        results = resp.json()["results"]
+        assert len(results) == 1
+        assert results[0]["id"] == "1"
+
+    def test_null_query_with_utc_time_no_match(self, mock_deps):
+        """query=null + UTC 时间过滤，无匹配 → 返回空结果而非 500"""
+        tc, _, mock_entry_svc, _ = mock_deps
+
+        mock_entry_svc.list_entries.return_value = EntryListResponse(entries=[
+            EntryResponse(**_entry(id="1", created_at="2026-03-01T10:00:00")),
+        ], total=1)
+
+        resp = tc.post("/search", json={
+            "query": None,
+            "start_time": "2026-04-27T16:00:00.000Z",
+            "end_time": "2026-04-28T15:59:59.999Z",
+            "limit": 20,
+        })
+        assert resp.status_code == 200
+        assert resp.json()["results"] == []
+
+    def test_utc_timezone_with_offset(self, mock_deps):
+        """start_time 带 +08:00 时区偏移 → 正确过滤"""
+        tc, mock_storage, _, mock_hybrid = mock_deps
+        mock_storage.qdrant = MagicMock()
+        mock_storage.sqlite = MagicMock()
+
+        mock_hybrid.search.return_value = [
+            EntryResponse(**_entry(id="1", created_at="2026-04-20T10:00:00")),
+        ]
+
+        resp = tc.post("/search", json={
+            "query": "test",
+            "start_time": "2026-04-20T00:00:00+08:00",
+        })
+        assert resp.status_code == 200
+        assert len(resp.json()["results"]) == 1

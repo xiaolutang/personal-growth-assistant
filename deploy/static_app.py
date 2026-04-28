@@ -65,5 +65,33 @@ class TrailingSlashRedirectMiddleware:
         await self.app(scope, receive, send)
 
 
+class CacheControlMiddleware:
+    """为 HTML 和 service worker 关键入口添加 no-store，避免浏览器卡在旧版本。"""
+
+    NO_STORE_PATHS = {"/", "/index.html", "/sw.js", "/registerSW.js", "/manifest.webmanifest"}
+
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        if scope.get("type") != "http":
+            await self.app(scope, receive, send)
+            return
+
+        path = scope.get("path", "")
+        if path not in self.NO_STORE_PATHS and not path.endswith(".html"):
+            await self.app(scope, receive, send)
+            return
+
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start":
+                headers = MutableHeaders(scope=message)
+                headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
+
 # 在最外层包装中间件，确保在路由匹配之前生效
 app.add_middleware(TrailingSlashRedirectMiddleware)
+app.add_middleware(CacheControlMiddleware)

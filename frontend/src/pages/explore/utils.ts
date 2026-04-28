@@ -44,15 +44,24 @@ export const TIME_RANGE_LABELS: Record<TimeRange, string> = {
   "": "全部",
 };
 
+function formatLocalDateTime(date: Date): string {
+  const pad = (value: number, width = 2) => value.toString().padStart(width, "0");
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+  ].join("-") + `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${pad(date.getMilliseconds(), 3)}`;
+}
+
 export function computeTimeRange(range: TimeRange): { startTime?: string; endTime?: string } {
   const now = new Date();
   const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
+  const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
 
   if (range === "today") {
     const s = startOfDay(now);
     const e = endOfDay(now);
-    return { startTime: s.toISOString(), endTime: e.toISOString() };
+    return { startTime: formatLocalDateTime(s), endTime: formatLocalDateTime(e) };
   }
   if (range === "week") {
     const day = now.getDay() || 7;
@@ -60,12 +69,18 @@ export function computeTimeRange(range: TimeRange): { startTime?: string; endTim
     monday.setDate(now.getDate() - day + 1);
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-    return { startTime: startOfDay(monday).toISOString(), endTime: endOfDay(sunday).toISOString() };
+    return {
+      startTime: formatLocalDateTime(startOfDay(monday)),
+      endTime: formatLocalDateTime(endOfDay(sunday)),
+    };
   }
   if (range === "month") {
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return { startTime: startOfDay(firstDay).toISOString(), endTime: endOfDay(lastDay).toISOString() };
+    return {
+      startTime: formatLocalDateTime(startOfDay(firstDay)),
+      endTime: formatLocalDateTime(endOfDay(lastDay)),
+    };
   }
   return {};
 }

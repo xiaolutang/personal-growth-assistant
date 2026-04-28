@@ -1,7 +1,7 @@
 """搜索 API 路由"""
 import logging
-from datetime import datetime
-from typing import List, Optional
+from datetime import datetime, timezone
+from typing import List, Optional, Set
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
@@ -23,8 +23,8 @@ class SearchRequest(BaseModel):
     query: Optional[str] = Field("", description="搜索查询（空时走列表+过滤模式）")
     limit: int = Field(10, ge=1, le=20, description="返回数量")
     filter_type: Optional[str] = Field(None, description="按类型过滤")
-    start_time: Optional[datetime] = Field(None, description="ISO 格式起始时间")
-    end_time: Optional[datetime] = Field(None, description="ISO 格式结束时间")
+    start_time: Optional[str] = Field(None, description="ISO 格式起始时间")
+    end_time: Optional[str] = Field(None, description="ISO 格式结束时间")
     tags: Optional[List[str]] = Field(None, description="标签数组筛选")
 
 
@@ -56,37 +56,67 @@ def _snippet(content: str, max_len: int = 100) -> str:
     return text[:max_len] + ("..." if len(text) > max_len else "")
 
 
+def _parse_time(value: Optional[str]) -> Optional[datetime]:
+    """安全解析 ISO 时间字符串，统一返回 naive UTC datetime"""
+    if not value:
+        return None
+    try:
+        normalized = value.replace("Z", "+00:00")
+        return _normalize_datetime(datetime.fromisoformat(normalized))
+    except (ValueError, TypeError):
+        return None
+
+
+def _normalize_datetime(value: datetime) -> datetime:
+    """统一转换为 naive UTC datetime，避免 aware/naive 混用。"""
+    if value.tzinfo is not None:
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value
+
+
+def _matches_time_window(
+    created_at: str,
+    start_time: Optional[datetime],
+    end_time: Optional[datetime],
+) -> bool:
+    """检查 created_at 是否落在时间过滤闭区间内。"""
+    try:
+        created = _normalize_datetime(datetime.fromisoformat(created_at))
+    except (ValueError, TypeError):
+        return True  # 无法解析时间时不过滤
+
+    if start_time and created < start_time:
+        return False
+    if end_time and created > end_time:
+        return False
+    return True
+
+
+def _matches_tags(entry_tags: List[str], tags: Optional[Set[str]]) -> bool:
+    """检查条目 tags 是否与过滤 tag 集合有交集。"""
+    if not tags:
+        return True
+    return bool(set(entry_tags) & tags)
+
+
 def _entry_matches_filters(
     entry: EntryResponse,
     start_time: Optional[datetime],
     end_time: Optional[datetime],
-    tags: Optional[List[str]],
+    tags: Optional[Set[str]],
 ) -> bool:
     """检查 EntryResponse 是否匹配时间和标签过滤条件"""
-    # 时间过滤：created_at 在 [start_time, end_time] 闭区间内
-    if start_time or end_time:
-        try:
-            created = datetime.fromisoformat(entry.created_at)
-        except (ValueError, TypeError):
-            return True  # 无法解析时间时不过滤
-        if start_time and created < start_time:
-            return False
-        if end_time and created > end_time:
-            return False
+    if (start_time or end_time) and not _matches_time_window(entry.created_at, start_time, end_time):
+        return False
 
-    # 标签过滤：entry 的 tags 与请求 tags 有交集
-    if tags:  # tags 为空列表 [] 时 if 不成立，等价于不筛选
-        if not set(entry.tags) & set(tags):
-            return False
-
-    return True
+    return _matches_tags(entry.tags or [], tags)
 
 
 def _filter_entries(
     entries: List[EntryResponse],
     start_time: Optional[datetime],
     end_time: Optional[datetime],
-    tags: Optional[List[str]],
+    tags: Optional[Set[str]],
 ) -> List[EntryResponse]:
     """对 EntryResponse 列表应用时间和标签后过滤"""
     if not start_time and not end_time and not tags:
@@ -98,28 +128,17 @@ def _raw_matches_filters(
     raw: dict,
     start_time: Optional[datetime],
     end_time: Optional[datetime],
-    tags: Optional[List[str]],
+    tags: Optional[Set[str]],
 ) -> bool:
     """检查原始 dict 结果是否匹配过滤条件（SQLite 降级路径）"""
-    if start_time or end_time:
-        created_at = raw.get("created_at", "")
-        try:
-            created = datetime.fromisoformat(created_at)
-        except (ValueError, TypeError):
-            return True
-        if start_time and created < start_time:
-            return False
-        if end_time and created > end_time:
-            return False
+    if (start_time or end_time) and not _matches_time_window(raw.get("created_at", ""), start_time, end_time):
+        return False
 
-    if tags:
-        entry_tags = raw.get("tags", [])
-        if isinstance(entry_tags, str):
-            entry_tags = [t.strip() for t in entry_tags.split(",") if t.strip()]
-        if not set(entry_tags) & set(tags):
-            return False
+    entry_tags = raw.get("tags", [])
+    if isinstance(entry_tags, str):
+        entry_tags = [t.strip() for t in entry_tags.split(",") if t.strip()]
 
-    return True
+    return _matches_tags(entry_tags, tags)
 
 
 # === API 端点 ===
@@ -127,8 +146,14 @@ def _raw_matches_filters(
 @router.post("/search", response_model=SearchResponse)
 async def search_entries(request: SearchRequest, user: User = Depends(get_current_user)):
     """混合搜索条目（向量 + 全文），支持时间和标签过滤，空 query 走列表+过滤模式"""
+    return await _search_entries_impl(request, user)
+
+async def _search_entries_impl(request: SearchRequest, user: User):
     storage = get_storage()
     query = request.query or ""
+    start_dt = _parse_time(request.start_time)
+    end_dt = _parse_time(request.end_time)
+    tag_set = set(request.tags) if request.tags else None
 
     # === 空 query 路径：getEntries + 后过滤 ===
     if not query:
@@ -140,7 +165,7 @@ async def search_entries(request: SearchRequest, user: User = Depends(get_curren
             user_id=user.id,
         )
         filtered = _filter_entries(
-            list_response.entries, request.start_time, request.end_time, request.tags,
+            list_response.entries, start_dt, end_dt, tag_set,
         )
         filtered = filtered[:request.limit]
         results = [
@@ -160,14 +185,14 @@ async def search_entries(request: SearchRequest, user: User = Depends(get_curren
             entries = await hybrid.search(
                 query, user_id=user.id, limit=request.limit * 2,
                 filter_type=request.filter_type,
-                start_time=request.start_time, end_time=request.end_time,
+                start_time=start_dt, end_time=end_dt,
                 tags=request.tags,
             )
             # 路由层后过滤（兜底，确保过滤总是生效）
             if request.filter_type:
                 entries = [e for e in entries if e.category == request.filter_type]
             entries = _filter_entries(
-                entries, request.start_time, request.end_time, request.tags,
+                entries, start_dt, end_dt, tag_set,
             )
             entries = entries[:request.limit]
             results = [
@@ -180,7 +205,7 @@ async def search_entries(request: SearchRequest, user: User = Depends(get_curren
             ]
             return SearchResponse(results=results, query=query)
         except Exception as exc:
-            logger.warning(f"混合搜索失败，降级到纯全文: {exc}")
+            logger.warning(f"混合搜索失败，降级到纯全文: {exc}", exc_info=True)
 
     # === SQLite 降级 ===
     if storage.sqlite:
@@ -189,7 +214,7 @@ async def search_entries(request: SearchRequest, user: User = Depends(get_curren
             raw = [r for r in raw if r.get("type") == request.filter_type]
         if request.start_time or request.end_time or request.tags:
             raw = [r for r in raw if _raw_matches_filters(
-                r, request.start_time, request.end_time, request.tags,
+                r, start_dt, end_dt, tag_set,
             )]
         raw = raw[:request.limit]
         results = [
