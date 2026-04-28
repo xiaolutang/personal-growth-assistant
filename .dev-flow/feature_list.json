@@ -226,7 +226,11 @@
       "description": "新建 frontend/src/stores/agentStore.ts，统一替换 chatStore。支持解析新 SSE 事件类型（thinking/tool_call/tool_result），管理对话状态（messages, isLoading, currentToolCalls）。当 Agent 调用 ask_user 时，SSE 流正常结束（done 事件），前端在 ChatInput 中展示追问提示，用户回复通过同 session_id 再次 POST /chat 发送，checkpointer 自动恢复上下文。",
       "verification": "F1",
       "depends_on": ["B187"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-28T20:40:00",
+      "completed_at": "2026-04-28T20:55:00",
+      "evidence_file": ".dev-flow/evidence/F185.md",
+      "execution_notes": "26 tests passed, 2 new files. Zustand store + SSE parser",
       "priority": "P0",
       "acceptance_criteria": [
         "agentStore.ts 创建完成，包含完整对话状态管理",
