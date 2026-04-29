@@ -24,7 +24,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { FeedbackPanel } from "@/components/FeedbackPanel";
 import { SessionList } from "@/components/SessionList";
 import { useAgentStore, type AgentPageContext } from "@/stores/agentStore";
-import { useUserStore } from "@/stores/userStore";
+
 import { cn } from "@/lib/utils";
 import { MessageList } from "@/components/AgentChat/MessageList";
 import { ChatInput } from "@/components/AgentChat/ChatInput";
@@ -40,6 +40,7 @@ const MOBILE_NAV_HEIGHT = 56; // h-14 = 56px
 const MOBILE_MAX_RATIO = 0.7; // 移动端面板不超过可视区域 70%
 const PANEL_WIDTH = 400; // 桌面端面板宽度
 const BASE_URL = (import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL?.replace(/\/$/, "") || "";
+const GREETING_SEEN_KEY = "chat-greeting-seen";
 
 /** 路由路径 → AgentPageContext 纯函数映射 */
 function parsePageContext(pathname: string): AgentPageContext | null {
@@ -57,7 +58,6 @@ function parsePageContext(pathname: string): AgentPageContext | null {
 
 export function FloatingChat() {
   const isMobile = useIsMobile();
-  const user = useUserStore((state) => state.user);
   const [input, setInput] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -107,12 +107,6 @@ export function FloatingChat() {
   // 路由感知
   const location = useLocation();
 
-  // 新用户首页隐藏 FloatingChat，避免双入口混淆
-  const isNewUser = user ? !user.onboarding_completed : false;
-  if (isNewUser && parsePageContext(location.pathname)?.page_type === "home") {
-    return null;
-  }
-
   // 挂载时加载会话列表数据（不依赖面板展开）
   useEffect(() => {
     fetchSessions();
@@ -130,40 +124,33 @@ export function FloatingChat() {
     }
   }, [location.pathname]);
 
-  // 首次展开面板时自动发送 greeting（新用户无历史会话）
+  // 首次展开面板时自动发送 greeting（localStorage 标记，所有用户只触发一次）
   useEffect(() => {
     if (!isExpanded || greetingSentRef.current) return;
 
-    // 快照当前 sessionId，用于检测 preload 期间是否有用户手动操作
-    const sessionIdBeforePreload = currentSessionId;
+    // 已看过引导，跳过
+    try {
+      if (localStorage.getItem(GREETING_SEEN_KEY)) return;
+    } catch {
+      return; // SSR 或隐私模式下 localStorage 不可用
+    }
 
-    // 先确保 sessions 数据已加载，避免因 sessions 尚未从后端加载完而误判为新用户
-    fetchSessions().then(() => {
-      // 如果用户在 preload 期间已手动操作（创建了新 session），放弃 greeting
-      const stateAfterPreload = useAgentStore.getState();
-      if (stateAfterPreload.currentSessionId !== sessionIdBeforePreload) return;
+    greetingSentRef.current = true;
+    try {
+      localStorage.setItem(GREETING_SEEN_KEY, "1");
+    } catch {
+      // 静默降级
+    }
 
-      // fetchSessions 成功后才标记，防止 preload 失败时永远不重试
-      greetingSentRef.current = true;
-
-      // 通过 getState 获取最新的 sessions 状态，而非闭包中的旧值
-      if (stateAfterPreload.sessions.length > 0) return; // 老用户，不发 greeting
-
-      // 新用户，创建会话并发送隐藏 greeting
-      const sid = createSession();
-      sendMessage({
-        text: "__greeting__",
-        sessionId: sid,
-        pageContext: stateAfterPreload.pageContext ?? undefined,
-        hidden: true,
-        onDone: () => {
-          fetchSessions().catch(() => {});
-        },
-      }).catch(() => {
-        // 发送失败静默降级，不阻塞面板使用
-      });
+    // 创建会话并发送隐藏 greeting
+    const sid = createSession();
+    sendMessage({
+      text: "__greeting__",
+      sessionId: sid,
+      pageContext: useAgentStore.getState().pageContext ?? undefined,
+      hidden: true,
     }).catch(() => {
-      // fetchSessions 失败不设 greetingSentRef，下次展开面板可重试
+      // 发送失败静默降级，不阻塞面板使用
     });
   }, [isExpanded]); // eslint-disable-line react-hooks/exhaustive-deps
 
