@@ -84,9 +84,6 @@ export function FloatingChat() {
     fetchSessions,
   } = useAgentStore();
 
-  // greeting 防重复发送标记
-  const greetingSentRef = useRef(false);
-
   const currentSession = getCurrentSession();
   const messages = currentSession?.messages ?? [];
   const hasMessages = messages.length > 0;
@@ -126,7 +123,7 @@ export function FloatingChat() {
 
   // 首次展开面板时自动发送 greeting（localStorage 标记，所有用户只触发一次）
   useEffect(() => {
-    if (!isExpanded || greetingSentRef.current) return;
+    if (!isExpanded) return;
 
     // 已看过引导，跳过
     try {
@@ -135,7 +132,6 @@ export function FloatingChat() {
       return; // SSR 或隐私模式下 localStorage 不可用
     }
 
-    greetingSentRef.current = true;
     try {
       localStorage.setItem(GREETING_SEEN_KEY, "1");
     } catch {
