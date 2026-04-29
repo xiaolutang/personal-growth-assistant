@@ -5,14 +5,15 @@ import { TaskList } from "@/components/TaskList";
 import { Header } from "@/components/layout/Header";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { PullToRefresh } from "@/components/PullToRefresh";
-import { Filter, X, Calendar, Loader2, Pencil, Trash2, FolderInput, ClipboardList, SearchX, ArrowUpDown } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Filter, X, Calendar, Loader2, Pencil, Trash2, ClipboardList, SearchX, ArrowUpDown } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { statusConfig } from "@/config/constants";
 import { useTaskStore } from "@/stores/taskStore";
 
 // Constants & Hooks
-import { STATUS_OPTIONS, TASK_QUERY_PARAMS, QUICK_DATE_OPTIONS, PRIORITY_OPTIONS, SORT_OPTIONS } from "./tasks/constants";
+import { STATUS_OPTIONS, TASK_QUERY_PARAMS, QUICK_DATE_OPTIONS, PRIORITY_OPTIONS, SORT_OPTIONS, TASK_SUB_TABS } from "./tasks/constants";
 import { useTaskFilters } from "./tasks/useTaskFilters";
+import { useEffect, useRef } from "react";
 
 export function Tasks() {
   const {
@@ -25,19 +26,33 @@ export function Tasks() {
     sortBy, setSortBy,
     clearFilters, hasActiveFilters,
     filteredTasks,
+    activeSubTab, setActiveSubTab,
     selectMode, selectedIds, batchLoading,
     enterSelectMode, exitSelectMode,
     toggleSelect, selectAll,
-    handleBatchDelete, handleBatchCategory,
+    handleBatchDelete,
     serviceUnavailable, fetchEntries,
   } = useTaskFilters();
   const isLoading = useTaskStore((state) => state.isLoading);
   const allTasks = useTaskStore((state) => state.tasks);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // F03: 路由切换回时自动刷新数据
+  const prevPathname = useRef(location.pathname);
+  useEffect(() => {
+    if (prevPathname.current !== location.pathname && location.pathname === "/tasks") {
+      fetchEntries(TASK_QUERY_PARAMS);
+    }
+    prevPathname.current = location.pathname;
+  }, [location.pathname, fetchEntries]);
 
   // 区分两种空状态：真正无任务 vs 筛选无结果
   const isTotallyEmpty = !isLoading && allTasks.length === 0;
   const isFilterEmpty = !isLoading && allTasks.length > 0 && filteredTasks.length === 0;
+
+  // F03: 返回 100 条时显示「可能还有更多」提示
+  const mayHaveMore = allTasks.length === TASK_QUERY_PARAMS.limit;
 
   const handleRefresh = () => fetchEntries(TASK_QUERY_PARAMS);
 
@@ -85,6 +100,24 @@ export function Tasks() {
               )}
             </div>
           </CardHeader>
+
+          {/* F03: 类型子 Tab 栏 */}
+          <div className="border-b px-6 py-2 flex gap-1">
+            {TASK_SUB_TABS.map((tab) => (
+              <button
+                key={tab.key}
+                data-active={activeSubTab === tab.key}
+                onClick={() => setActiveSubTab(tab.key)}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  activeSubTab === tab.key
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
           {/* 筛选面板 */}
           {showFilters && (
@@ -189,22 +222,23 @@ export function Tasks() {
             ) : (
               <TaskList tasks={filteredTasks} selectable={selectMode} selectedIds={selectedIds} onSelect={toggleSelect} />
             )}
+
+            {/* F03: 返回数量 == limit 时底部显示「可能还有更多条目」提示 */}
+            {mayHaveMore && !isLoading && (
+              <div className="text-center text-sm text-muted-foreground py-3 border-t mt-2">
+                可能还有更多条目
+              </div>
+            )}
           </CardContent>
         </Card>
         </PullToRefresh>
         )}
 
-        {/* 底部批量操作栏 */}
+        {/* 底部批量操作栏 — F03: 移除「转笔记」「转灵感」，只保留删除 */}
         {selectMode && selectedIds.size > 0 && (
           <div className="fixed bottom-16 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur px-4 py-3 flex items-center justify-between">
             <span className="text-sm text-muted-foreground">已选 {selectedIds.size} 项</span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => handleBatchCategory("note")} disabled={batchLoading}>
-                {batchLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <FolderInput className="h-4 w-4 mr-1" />}转笔记
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleBatchCategory("inbox")} disabled={batchLoading}>
-                {batchLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <FolderInput className="h-4 w-4 mr-1" />}转灵感
-              </Button>
               <Button variant="destructive" size="sm" onClick={handleBatchDelete} disabled={batchLoading}>
                 {batchLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}删除
               </Button>

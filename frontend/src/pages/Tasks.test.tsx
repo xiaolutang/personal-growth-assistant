@@ -99,7 +99,7 @@ describe("Tasks 页面 503 降级集成", () => {
 
     await userEvent.click(screen.getByText("重试"));
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy).toHaveBeenCalledWith({ type: "task", limit: 100 });
+    expect(fetchSpy).toHaveBeenCalledWith({ category_group: "actionable", limit: 100 });
   });
 });
 

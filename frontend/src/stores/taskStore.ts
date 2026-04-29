@@ -32,6 +32,7 @@ interface TaskStore {
   // Actions
   fetchEntries: (params?: {
     type?: string;
+    category_group?: string;
     status?: string;
     parent_id?: string;
     tags?: string[];

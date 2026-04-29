@@ -155,12 +155,13 @@ function handleOpenApiResponse<T>(data: T | undefined, error: unknown, response:
 }
 // === 条目 CRUD ===
 export async function getEntries(params?: {
-  type?: string; status?: string; parent_id?: string; tags?: string[];
+  type?: string; category_group?: string; status?: string; parent_id?: string; tags?: string[];
   start_date?: string; end_date?: string; limit?: number;
 }): Promise<EntryListResponse> {
   const { data, error, response } = await client.GET("/entries", {
     params: { query: {
-      type: params?.type, status: params?.status, parent_id: params?.parent_id,
+      type: params?.type, category_group: params?.category_group,
+      status: params?.status, parent_id: params?.parent_id,
       tags: params?.tags && params.tags.length > 0 ? params.tags.join(",") : undefined,
       start_date: params?.start_date, end_date: params?.end_date, limit: params?.limit,
     }},
