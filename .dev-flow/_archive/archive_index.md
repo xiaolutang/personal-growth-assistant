@@ -2,6 +2,16 @@
 
 ## 已完成需求包
 
+### R046: 聊天面板重构
+
+- 状态: 已完成
+- 分支: `feat/R046-chat-panel-refactor`
+- 主题: FloatingChat 悬浮按钮折叠 + 反馈收敛 + 首次引导 + 会话列表集成
+- 目录: `R046_chat-panel-refactor/`
+- 完成时间: 2026-04-29
+- 任务数: 5 (B196, F188, F189, F190, F191)
+- 验证: pytest 1394 + vitest 577 + build + Docker healthy
+
 ### R045: 评估 HTML 报告
 
 - 状态: 已完成

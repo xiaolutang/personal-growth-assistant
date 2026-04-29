@@ -3,19 +3,7 @@
   "project": "personal-growth-assistant",
   "status": "active",
   "updated_at": "2026-04-29",
-  "active_requirement_cycle": {
-    "id": "R046",
-    "name": "chat-panel-refactor",
-    "status": "completed",
-    "branch": "feat/R046-chat-panel-refactor",
-    "total_tasks": 4,
-    "summary": {
-      "total": 4,
-      "completed": 4,
-      "in_progress": 0,
-      "pending": 0
-    }
-  },
+  "active_requirement_cycle": null,
   "workflow": {
     "name": "XLFoundry",
     "mode": "A",
@@ -26,6 +14,14 @@
     "stop_hook_enabled": false
   },
   "archived_requirement_cycles": [
+    {
+      "id": "R046",
+      "name": "chat-panel-refactor",
+      "status": "completed",
+      "archive_dir": "_archive/R046_chat-panel-refactor",
+      "total_tasks": 5,
+      "completed_at": "2026-04-29"
+    },
     {
       "id": "R045",
       "name": "eval-html-report",
@@ -106,161 +102,5 @@
     }
   ],
   "archived_phases": [],
-  "features": [
-    {
-      "id": "B196",
-      "phase": 1,
-      "module": "agent",
-      "name": "greeting 消息识别 + is_new_user 判断",
-      "description": "parse.py 识别 __greeting__ 特殊消息，查询 SessionMetaStore 获取用户历史会话数（count_sessions），count=0 时设 is_new_user=True，透传到 AgentService → ReActAgentGraph → build_system_prompt，激活现有 ONBOARDING_PROMPT。is_new_user 传递链已存在于 AgentService/ReActAgentGraph 层，本任务主要工作在 parse.py 的消息识别 + 会话数查询 + 不存历史的处理。__greeting__ 拦截策略：在 parse.py 中识别后，跳过 AgentService.chat() 的 touch_session 和 HumanMessage 持久化，直接构造 SSE 流返回 Agent 回复。",
-      "verification": "L2",
-      "depends_on": [],
-      "status": "completed",
-      "started_at": "2026-04-29T18:20:00",
-      "completed_at": "2026-04-29T18:35:00",
-      "commit": "e6708cf",
-      "summary": "完成 greeting 消息识别 + is_new_user 判断。SessionMetaStore.count_sessions、AgentService.is_new_user、parse.py __greeting__ 拦截，18 个测试通过。",
-      "priority": "P0",
-      "acceptance_criteria": [
-        "POST /chat 收到 text='__greeting__' 时，后端查询该用户历史会话数",
-        "会话数=0 时 is_new_user=True，>0 时 is_new_user=False",
-        "is_new_user 正确透传到 build_system_prompt()，ONBOARDING_PROMPT 被注入 system prompt",
-        "__greeting__ 消息不存入对话历史（作为隐藏触发消息）",
-        "Agent 回复包含自我介绍和使用示例（记灵感、做任务、记笔记）",
-        "已有会话的老用户发 __greeting__ 不会触发 ONBOARDING_PROMPT",
-        "__greeting__ 请求超时或后端 503 时，SSE 返回 error 事件，前端静默降级不阻塞面板使用"
-      ],
-      "risk_tags": ["first_use", "network"],
-      "test_tasks": [
-        "新用户（0 会话）发送 __greeting__，验证 system prompt 包含 ONBOARDING_PROMPT",
-        "老用户（>0 会话）发送 __greeting__，验证 system prompt 不包含 ONBOARDING_PROMPT",
-        "正常消息不受 __greeting__ 逻辑影响",
-        "__greeting__ 不出现在 checkpointer 对话历史中",
-        "SessionMetaStore.count_sessions(user_id) 返回正确会话数",
-        "后端 Agent 服务不可用时 __greeting__ 返回 SSE error 事件，前端不崩溃"
-      ],
-      "smoke_required": true,
-      "files": [
-        "backend/app/routers/parse.py",
-        "backend/app/services/agent_service.py",
-        "backend/app/services/session_meta_store.py",
-        "backend/app/agent/react_agent.py",
-        "backend/app/agent/prompts.py"
-      ]
-    },
-    {
-      "id": "F188",
-      "phase": 2,
-      "module": "chat-ui",
-      "name": "FloatingChat 折叠为悬浮按钮模式",
-      "description": "将 FloatingChat 从全宽底部常驻面板改为右下角悬浮按钮 + 点击展开模式。默认收起为 Sparkles 图标悬浮按钮，点击展开聊天面板。App.tsx 内容区不再需要 paddingBottom 预留空间。保留拖拽调高、消息列表、输入框等现有功能。",
-      "verification": "F2",
-      "depends_on": [],
-      "status": "completed",
-      "started_at": "2026-04-29T18:40:00",
-      "completed_at": "2026-04-29T18:55:00",
-      "commit": "c7a7601",
-      "summary": "FloatingChat 从底部常驻面板改为悬浮按钮+展开模式。App.tsx 移除 paddingBottom，FeedbackButton 改固定定位。11 个新测试通过。",
-      "priority": "P0",
-      "acceptance_criteria": [
-        "默认状态为右下角 Sparkles 悬浮按钮（48x48 圆形），不占页面内容空间",
-        "点击按钮展开聊天面板，再次点击面板内关闭按钮或点击外部区域收起",
-        "展开面板包含完整聊天功能：消息列表、输入框、拖拽调高",
-        "App.tsx 内容区移除 paddingBottom: panelHeight，FeedbackButton 底部定位改为固定值（不依赖 panelHeight），为 F189 移除 FeedbackButton 做准备",
-        "移动端：悬浮按钮在 MobileNavBar 上方，展开面板不超过可视区域 70%",
-        "桌面端：面板宽度固定（如 400px），右下角定位，不遮挡侧边栏",
-        "有未读消息或正在对话时，悬浮按钮可显示视觉提示（如脉冲动画）"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "收起状态：悬浮按钮可见，点击后展开面板",
-        "展开状态：面板完整显示消息列表和输入框",
-        "收起操作：点击关闭按钮收起，点击外部区域收起",
-        "拖拽调高：展开面板仍可拖拽调整高度",
-        "移动端适配：面板不超出屏幕，NavBar 不被遮挡"
-      ],
-      "files": [
-        "frontend/src/components/FloatingChat.tsx",
-        "frontend/src/App.tsx",
-        "frontend/src/stores/agentStore.ts"
-      ]
-    },
-    {
-      "id": "F189",
-      "phase": 2,
-      "module": "chat-ui",
-      "name": "反馈表单集成到聊天面板",
-      "description": "移除独立的 FeedbackButton 浮动按钮，将反馈表单提取为独立组件集成到聊天面板 header 中。聊天面板 header 区域增加反馈图标，点击展开反馈表单（提交反馈 + 我的反馈两个 tab）。FeedbackButton.tsx 的浮动按钮逻辑删除，App.tsx 移除 FeedbackButton 组件。",
-      "verification": "F2",
-      "depends_on": ["F188"],
-      "status": "completed",
-      "started_at": "2026-04-29T18:58:00",
-      "completed_at": "2026-04-29T19:08:00",
-      "commit": "8517c09",
-      "summary": "反馈表单集成到聊天面板 header。FeedbackPanel 组件提取、Popover 集成、FeedbackButton 删除。",
-      "priority": "P0",
-      "acceptance_criteria": [
-        "聊天面板 header 区域（会话标题旁）显示反馈图标（MessageSquare）",
-        "点击反馈图标展开反馈表单（提交反馈 + 我的反馈两个 tab），复用现有 FeedbackButton 表单 UI",
-        "反馈表单以 Popover 弹出层方式展示，锚定在反馈图标下方，不挤压聊天消息区域",
-        "App.tsx 中 <FeedbackButton /> 组件移除",
-        "右下角只剩一个悬浮入口（聊天按钮），不再有两个浮动按钮",
-        "反馈提交、同步、列表加载等功能不受影响"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "聊天面板 header 反馈图标可见且可点击",
-        "点击展开反馈表单，提交反馈功能正常",
-        "切换到'我的反馈' tab，列表加载和同步正常",
-        "关闭反馈表单后聊天功能不受影响",
-        "右下角不再有独立的反馈悬浮按钮"
-      ],
-      "files": [
-        "frontend/src/components/FloatingChat.tsx",
-        "frontend/src/components/FeedbackButton.tsx",
-        "frontend/src/components/FeedbackPanel.tsx",
-        "frontend/src/components/ui/popover.tsx",
-        "frontend/src/App.tsx"
-      ]
-    },
-    {
-      "id": "F190",
-      "phase": 3,
-      "module": "chat-ui",
-      "name": "前端首次打开聊天自动发送 greeting",
-      "description": "用户首次展开聊天面板且无历史会话时，前端自动发送 __greeting__ 隐藏消息触发后端 Agent 自我介绍。通过 agentStore 的 session 列表判断是否首次（sessions.length === 0），无需额外 localStorage。greeting 触发的 Agent 回复正常显示在消息列表中。发送失败时静默降级，不阻塞面板使用。",
-      "verification": "F2",
-      "depends_on": ["F188", "B196"],
-      "status": "completed",
-      "started_at": "2026-04-29T19:10:00",
-      "completed_at": "2026-04-29T19:20:00",
-      "commit": "4c7b20e",
-      "summary": "新用户首次展开聊天面板自动发 __greeting__ 触发 Agent 自我介绍。hidden 消息机制、onDone 回调刷新会话、竞态修复。",
-      "priority": "P0",
-      "acceptance_criteria": [
-        "新用户首次展开聊天面板时，自动发送 __greeting__ 消息",
-        "Agent 回复（自我介绍 + 示例）正常显示在聊天消息列表中",
-        "__greeting__ 消息不显示在用户消息列表中（隐藏触发）",
-        "关闭再打开面板不会重复发送 greeting",
-        "有历史会话的老用户展开面板不会触发 greeting",
-        "与前端 OnboardingFlow 弹窗衔接：弹窗完成后聊天面板才可见，首次展开即触发",
-        "greeting 发送失败时静默降级，面板正常可用，不显示错误提示",
-        "greeting 完成后（SSE done 事件）调用 fetchSessions() 刷新会话列表，防止重复发送"
-      ],
-      "risk_tags": ["first_use", "network"],
-      "test_tasks": [
-        "新用户（无会话）首次展开面板，Agent 自动回复自我介绍",
-        "新用户关闭面板再展开，不重复发送 greeting（sessions.length > 0）",
-        "老用户（有会话）展开面板，不触发 greeting",
-        "__greeting__ 不显示在用户可见消息列表中",
-        "网络异常时 greeting 发送失败，面板仍可正常输入和发送消息",
-        "SSE 连接超时时前端不卡死，greeting 请求被静默丢弃"
-      ],
-      "smoke_required": true,
-      "files": [
-        "frontend/src/components/FloatingChat.tsx",
-        "frontend/src/stores/agentStore.ts"
-      ]
-    }
-  ]
+  "features": []
 }
