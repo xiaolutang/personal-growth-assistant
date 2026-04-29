@@ -81,6 +81,21 @@ def escape_for_js(value: str) -> str:
     return serialized
 
 
+def _safe_json_for_script(obj: Any) -> str:
+    """将 Python 对象序列化为可安全嵌入 <script> 标签的 JSON 字符串
+
+    统一使用此函数替代手写 json.dumps + replace，确保 </script> 转义不遗漏。
+
+    Args:
+        obj: 可 JSON 序列化的 Python 对象
+
+    Returns:
+        安全的 JSON 字符串
+    """
+    serialized = json.dumps(obj, ensure_ascii=False, indent=2)
+    return serialized.replace("</script", "<\\/script")
+
+
 # ── 数据模型 ──
 
 
@@ -389,73 +404,24 @@ def append_history(
 # ── HTML 报告生成 ──
 
 
-_DEFAULT_TEMPLATE = Template("""<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<title>Eval Report - $eval_time</title>
-<style>
-body { font-family: -apple-system, sans-serif; margin: 2rem; color: #333; }
-h1 { color: #6366F1; }
-table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
-th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-th { background: #f5f5f5; }
-.pass { color: green; }
-.fail { color: red; }
-.stats { margin: 1rem 0; }
-.metric { display: inline-block; margin-right: 2rem; }
-.metric-value { font-size: 1.5rem; font-weight: bold; }
-</style>
-</head>
-<body>
-<h1>Evaluation Report</h1>
-<div class="stats">
-<p>Time: $eval_time</p>
-<p>Dataset Mode: $dataset_mode</p>
-<div class="metric">
-<span>Pass Rate:</span>
-<span class="metric-value $pass_rate_class">$pass_rate_display</span>
-<span>($total_passed / $total_positive cases)</span>
-</div>
-<div class="metric">
-<span>Violation Rate:</span>
-<span class="metric-value $violation_rate_class">$violation_rate_display</span>
-<span>($total_violations / $total_negative cases)</span>
-</div>
-</div>
-
-<h2>Category Stats</h2>
-$category_stats_html
-
-<h2>Failed Cases</h2>
-$failed_cases_html
-
-<h2>Negative Violations</h2>
-$negative_violations_html
-
-<h2>Efficiency</h2>
-$efficiency_html
-
-<h2>Environment</h2>
-$env_info_html
-
-<script>
-const reportData = $report_data_json;
-</script>
-</body>
-</html>""")
+# B194 模板文件名，与 report_generator.py 同目录
+_TEMPLATE_FILENAME = "report_template.html"
 
 
-def _render_category_stats(stats: Dict[str, Dict[str, Any]]) -> str:
-    """渲染分类统计表格"""
+def _render_category_stats_table(
+    stats: Dict[str, Dict[str, Any]], dataset_mode: str,
+) -> str:
+    """渲染分类统计表格（用于新模板 Section 3）"""
+    if dataset_mode == "negative":
+        return '<div class="empty-state">Positive evaluation not run (negative mode).</div>'
     if not stats:
-        return "<p>No data</p>"
+        return '<div class="empty-state">No category data available.</div>'
 
     rows = []
     for cat, s in sorted(stats.items()):
         rate = s.get("pass_rate", 0.0)
         rate_str = f"{rate:.1%}"
-        cls = "pass" if rate >= 0.8 else "fail"
+        cls = "pass-text" if rate >= 0.8 else "fail-text"
         rows.append(
             f"<tr><td>{escape_for_html(cat)}</td>"
             f"<td>{s.get('total', 0)}</td>"
@@ -469,61 +435,148 @@ def _render_category_stats(stats: Dict[str, Dict[str, Any]]) -> str:
     )
 
 
-def _render_cases(cases: List[Dict[str, Any]], case_type: str) -> str:
-    """渲染用例表格"""
+def _render_failed_cases(
+    cases: List[Dict[str, Any]], dataset_mode: str,
+) -> str:
+    """渲染失败用例为可展开的 details 元素（用于新模板 Section 4）"""
+    if dataset_mode == "negative":
+        return '<div class="empty-state">Positive evaluation not run (negative mode).</div>'
     if not cases:
-        return "<p>None</p>"
+        return '<div class="empty-state">All cases passed!</div>'
 
-    if case_type == "failed":
-        rows = []
-        for c in cases:
-            status = "FAIL"
-            reply = str(c.get("agent_reply", ""))
-            # 截断过长的回复以保持表格可读性
-            if len(reply) > 200:
-                reply = reply[:200] + "..."
-            rows.append(
-                f"<tr>"
-                f"<td>{escape_for_html(str(c.get('input', '')))}</td>"
-                f"<td>{escape_for_html(str(c.get('expected_tools', [])))}</td>"
-                f"<td>{escape_for_html(str(c.get('actual_tools', [])))}</td>"
-                f"<td>{escape_for_html(reply)}</td>"
-                f'<td class="fail">{status}</td></tr>'
-            )
-        return (
-            "<table><tr><th>Input</th><th>Expected</th><th>Actual</th>"
-            f"<th>Agent Reply</th><th>Status</th></tr>{''.join(rows)}</table>"
-        )
-    else:  # negative
-        rows = []
-        for c in cases:
-            reply = str(c.get("agent_reply", ""))
-            if len(reply) > 200:
-                reply = reply[:200] + "..."
-            rows.append(
-                f"<tr>"
-                f"<td>{escape_for_html(str(c.get('input', '')))}</td>"
-                f"<td>{escape_for_html(str(c.get('should_not_call', [])))}</td>"
-                f"<td>{escape_for_html(str(c.get('violated_tools', [])))}</td>"
-                f"<td>{escape_for_html(reply)}</td>"
-                f'<td class="fail">VIOLATED</td></tr>'
-            )
-        return (
-            "<table><tr><th>Input</th><th>Should Not Call</th>"
-            f"<th>Violated Tools</th><th>Agent Reply</th><th>Status</th></tr>"
-            f"{''.join(rows)}</table>"
-        )
-
-
-def _render_dict(data: Dict[str, Any]) -> str:
-    """渲染字典为简单列表"""
-    if not data:
-        return "<p>N/A</p>"
     items = []
-    for k, v in data.items():
-        items.append(f"<li><strong>{escape_for_html(str(k))}</strong>: "
-                     f"{escape_for_html(str(v))}</li>")
-    return f"<ul>{''.join(items)}</ul>"
+    for i, c in enumerate(cases, 1):
+        inp = escape_for_html(str(c.get("input", "")))
+        expected = escape_for_html(str(c.get("expected_tools", [])))
+        actual = escape_for_html(str(c.get("actual_tools", [])))
+        reply = str(c.get("agent_reply", ""))
+        if len(reply) > 500:
+            reply = reply[:500] + "..."
+        reply_escaped = escape_for_html(reply)
+        items.append(
+            f"<details>"
+            f"<summary><span>#{i} {inp}</span> "
+            f'<span class="badge badge-fail">FAIL</span></summary>'
+            f'<div class="detail-body">'
+            f'<div class="field"><div class="field-label">Input</div>'
+            f'<div class="field-value">{inp}</div></div>'
+            f'<div class="field"><div class="field-label">Expected Tools</div>'
+            f'<div class="field-value">{expected}</div></div>'
+            f'<div class="field"><div class="field-label">Actual Tools</div>'
+            f'<div class="field-value">{actual}</div></div>'
+            f'<div class="field"><div class="field-label">Agent Reply</div>'
+            f'<div class="field-value">{reply_escaped}</div></div>'
+            f"</div></details>"
+        )
+    return "".join(items)
+
+
+def _render_negative_violations(
+    violations: List[Dict[str, Any]],
+    total_negative: int,
+    violation_rate: float,
+    dataset_mode: str,
+) -> str:
+    """渲染负面违规板块（用于新模板 Section 5）"""
+    # 条件渲染：single 模式未运行负面评估
+    if dataset_mode == "single":
+        return '<div class="empty-state">Negative evaluation not run (single mode).</div>'
+
+    parts = []
+    parts.append(
+        f'<p>Violation Rate: <strong>{violation_rate:.1%}</strong> '
+        f"({len(violations)} / {total_negative} negative cases)</p>"
+    )
+
+    if not violations:
+        parts.append('<div class="empty-state">No violations detected.</div>')
+        return "".join(parts)
+
+    rows = []
+    for c in violations:
+        inp = escape_for_html(str(c.get("input", "")))
+        should_not = escape_for_html(str(c.get("should_not_call", [])))
+        violated_tools = escape_for_html(str(c.get("violated_tools", [])))
+        reply = str(c.get("agent_reply", ""))
+        if len(reply) > 200:
+            reply = reply[:200] + "..."
+        reply_escaped = escape_for_html(reply)
+        rows.append(
+            f"<tr>"
+            f"<td>{inp}</td>"
+            f"<td>{should_not}</td>"
+            f"<td>{violated_tools}</td>"
+            f"<td>{reply_escaped}</td>"
+            f'<td class="fail-text">VIOLATED</td></tr>'
+        )
+    parts.append(
+        "<table><tr><th>Input</th><th>Should Not Call</th>"
+        "<th>Violated Tools</th><th>Agent Reply</th><th>Status</th></tr>"
+        f"{''.join(rows)}</table>"
+    )
+    return "".join(parts)
+
+
+def _render_history_trend(
+    history_data: Optional[List[Dict[str, Any]]],
+) -> str:
+    """渲染历史趋势板块（用于新模板 Section 6）"""
+    if not history_data:
+        return '<div class="empty-state">First run — no historical data yet.</div>'
+    count = len(history_data)
+    return f"<p>Showing trend across {count} historical run(s).</p>"
+
+
+def _render_env_info(env_info: Dict[str, Any]) -> str:
+    """渲染环境信息为列表项（用于新模板 Section 1）"""
+    if not env_info:
+        return '      <li><span class="env-key">N/A</span></li>'
+    items = []
+    for k, v in env_info.items():
+        items.append(
+            f'      <li><span class="env-key">{escape_for_html(str(k))}</span>: '
+            f"{escape_for_html(str(v))}</li>"
+        )
+    return "\n".join(items)
+
+
+def _render_tool_call_distribution(
+    failed_cases: List[Dict[str, Any]],
+    negative_violations: List[Dict[str, Any]],
+) -> str:
+    """渲染工具调用次数分布表（用于新模板 Section 7）
+
+    基于 failed_cases + negative_violations 统计工具调用分布。
+    注意：通过的用例不在 EvalReportData 中，因此分布仅覆盖异常用例。
+    """
+    all_visible = failed_cases + negative_violations
+    if not all_visible:
+        return '<h3>Tool Call Count Distribution</h3><div class="empty-state">No tool call data available.</div>'
+    # 收集每个用例的工具调用次数
+    tool_counts: Dict[int, int] = {}
+    for c in all_visible:
+        actual = c.get("actual_tools", [])
+        count = len(actual) if isinstance(actual, list) else 0
+        tool_counts[count] = tool_counts.get(count, 0) + 1
+
+    rows = []
+    for n_calls in sorted(tool_counts.keys()):
+        rows.append(
+            f"<tr><td>{n_calls} tool(s) called</td>"
+            f"<td>{tool_counts[n_calls]}</td></tr>"
+        )
+    return (
+        '<h3>Tool Call Count Distribution (Failed/Violated Cases)</h3>'
+        "<table><tr><th>Tool Calls</th><th>Count</th></tr>"
+        f"{''.join(rows)}</table>"
+    )
+
+
+def _render_positive_empty_notice(dataset_mode: str) -> str:
+    """渲染正向板块空态提示"""
+    if dataset_mode == "negative":
+        return '<div class="empty-state">Positive evaluation not run (negative mode).</div>'
+    return ""
 
 
 def generate_html_report(
@@ -533,27 +586,36 @@ def generate_html_report(
 ) -> str:
     """生成 HTML 报告
 
-    使用 string.Template 渲染。暂用简单默认模板，
-    完整模板由 B194 实现。
-
-    函数签名接受 EvalReportData、可选模板路径和可选历史数据，
-    返回完整 HTML 字符串。
+    使用 string.Template 渲染 report_template.html。
+    支持自定义模板路径，默认使用同目录下的 report_template.html。
 
     Args:
         report_data: 评估报告数据
-        template_path: 可选模板文件路径
-        history_data: 可选历史记录列表（供 B194 趋势图使用）
+        template_path: 可选模板文件路径（默认使用同目录 report_template.html）
+        history_data: 可选历史记录列表（用于趋势图）
 
     Returns:
         完整 HTML 字符串
-    """
-    if template_path:
-        template_str = Path(template_path).read_text(encoding="utf-8")
-        tmpl = Template(template_str)
-    else:
-        tmpl = _DEFAULT_TEMPLATE
 
-    # 序列化 report data 为 JSON（嵌入 script 标签供前端使用）
+    Raises:
+        FileNotFoundError: 模板文件不存在
+    """
+    # 确定模板路径
+    if template_path:
+        tpl_path = Path(template_path)
+    else:
+        tpl_path = Path(__file__).parent / _TEMPLATE_FILENAME
+
+    if not tpl_path.exists():
+        raise FileNotFoundError(
+            f"Report template not found: {tpl_path}. "
+            f"Ensure report_template.html exists in the same directory as report_generator.py."
+        )
+
+    template_str = tpl_path.read_text(encoding="utf-8")
+    tmpl = Template(template_str)
+
+    # 序列化 report data 为 JSON（嵌入 script 标签供 Chart.js 使用）
     report_dict = {
         "eval_time": report_data.eval_time,
         "dataset_mode": report_data.dataset_mode,
@@ -593,26 +655,58 @@ def generate_html_report(
         "env_info": report_data.env_info,
         "history": history_data or [],
     }
-    report_data_json = json.dumps(report_dict, ensure_ascii=False, indent=2)
-    # 防止 JSON 内的 </script> 被浏览器解析为 script 标签闭合
-    report_data_json = report_data_json.replace("</script", "<\\/script")
+    report_data_json = _safe_json_for_script(report_dict)
+
+    # 计算派生值
+    total_failed = report_data.total_positive - report_data.total_passed
+    efficiency = report_data.efficiency
+
+    # 计算派生值
+    total_failed = report_data.total_positive - report_data.total_passed
+    efficiency = report_data.efficiency
 
     html = tmpl.safe_substitute(
+        # Header
         eval_time=escape_for_html(report_data.eval_time),
         dataset_mode=escape_for_html(report_data.dataset_mode),
+        # Section 1: Assessment Methodology
+        env_info_items=_render_env_info(report_data.env_info),
+        # Section 2: Overview Dashboard
         pass_rate_display=f"{report_data.pass_rate:.1%}",
-        pass_rate_class="pass" if report_data.pass_rate >= 0.8 else "fail",
+        pass_rate_card_class="pass" if report_data.pass_rate >= 0.8 else "fail",
         total_passed=str(report_data.total_passed),
+        total_failed=str(total_failed),
         total_positive=str(report_data.total_positive),
-        violation_rate_display=f"{report_data.violation_rate:.1%}",
-        violation_rate_class="pass" if report_data.violation_rate <= 0.1 else "fail",
-        total_violations=str(report_data.total_violations),
+        positive_empty_notice=_render_positive_empty_notice(report_data.dataset_mode),
+        # Section 3: Category Statistics
+        category_stats_content=_render_category_stats_table(
+            report_data.category_stats, report_data.dataset_mode,
+        ),
+        # Section 4: Failed Cases
+        failed_cases_content=_render_failed_cases(
+            report_data.failed_cases, report_data.dataset_mode,
+        ),
+        # Section 5: Negative Violations
+        negative_violations_content=_render_negative_violations(
+            report_data.negative_violations,
+            report_data.total_negative,
+            report_data.violation_rate,
+            report_data.dataset_mode,
+        ),
+        # Section 6: History Trend
+        history_trend_content=_render_history_trend(history_data),
+        # Section 7: Efficiency Metrics
+        efficiency_total_cases=str(efficiency.get("total_cases", 0)),
+        efficiency_total_elapsed=f"{efficiency.get('total_elapsed', 0.0):.2f}",
+        efficiency_avg_elapsed=f"{efficiency.get('avg_elapsed', 0.0):.2f}",
+        efficiency_median_elapsed=f"{efficiency.get('median_elapsed', 0.0):.2f}",
+        tool_call_distribution=_render_tool_call_distribution(
+            report_data.failed_cases, report_data.negative_violations,
+        ),
+        # Negative stats (for Section 1)
         total_negative=str(report_data.total_negative),
-        category_stats_html=_render_category_stats(report_data.category_stats),
-        failed_cases_html=_render_cases(report_data.failed_cases, "failed"),
-        negative_violations_html=_render_cases(report_data.negative_violations, "negative"),
-        efficiency_html=_render_dict(report_data.efficiency),
-        env_info_html=_render_dict(report_data.env_info),
+        total_violations=str(report_data.total_violations),
+        # Chart.js data
         report_data_json=report_data_json,
     )
 

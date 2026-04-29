@@ -440,11 +440,22 @@ class TestGenerateHtmlReport:
         records = _make_negative_records()
         report = build_report_data(records, dataset_mode="negative", env_info=_default_env_info())
         html = generate_html_report(report)
-        # 从 script 块中提取 JSON
-        script_blocks = re.findall(r"<script>\s*const reportData = (.*?);\s*</script>", html, re.DOTALL)
-        assert len(script_blocks) == 1
-        # 解析时需要将转义还原
-        json_str = script_blocks[0].replace("<\\/script", "</script")
+        # 在 HTML 中查找嵌入的 JSON 对象（var/const reportData/RD = {...}）
+        m = re.search(r"(?:var|const)\s+(?:reportData|RD)\s*=\s*(\{)", html)
+        assert m is not None, "Could not find report data variable in HTML"
+        # 用花括号平衡法提取完整 JSON 对象
+        start = m.start(1)
+        depth = 0
+        end = start
+        for i in range(start, len(html)):
+            if html[i] == "{":
+                depth += 1
+            elif html[i] == "}":
+                depth -= 1
+                if depth == 0:
+                    end = i + 1
+                    break
+        json_str = html[start:end].replace("<\\/script", "</script")
         data = json.loads(json_str)
         assert "total_negative" in data
         assert data["total_negative"] == 2

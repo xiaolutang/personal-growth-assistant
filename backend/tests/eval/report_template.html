@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eval Report - $eval_time</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1f2937; background: #f9fafb; line-height: 1.6; padding: 2rem;
+  }
+  a { color: #6366F1; }
+
+  /* ── Layout ── */
+  .container { max-width: 1100px; margin: 0 auto; }
+  .header {
+    text-align: center; margin-bottom: 2rem; padding-bottom: 1.5rem;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  .header h1 { color: #6366F1; font-size: 1.75rem; margin-bottom: 0.25rem; }
+  .header .subtitle { color: #6b7280; font-size: 0.9rem; }
+
+  /* ── Section Card ── */
+  .section {
+    background: #fff; border-radius: 12px; padding: 1.5rem;
+    margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .section h2 {
+    font-size: 1.15rem; color: #6366F1; margin-bottom: 1rem;
+    padding-bottom: 0.5rem; border-bottom: 1px solid #e5e7eb;
+  }
+  .section h3 { font-size: 1rem; color: #374151; margin: 0.75rem 0 0.5rem; }
+
+  /* ── Stat Cards (Section 2) ── */
+  .dashboard { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
+  .dashboard .chart-wrap { flex: 0 0 220px; height: 220px; }
+  .dashboard .cards { flex: 1; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+  .stat-card {
+    flex: 1 1 140px; background: #f0f0ff; border-radius: 8px; padding: 0.75rem 1rem;
+    text-align: center;
+  }
+  .stat-card .label { font-size: 0.8rem; color: #6b7280; }
+  .stat-card .value { font-size: 1.5rem; font-weight: 700; }
+  .stat-card.pass .value { color: #059669; }
+  .stat-card.fail .value { color: #dc2626; }
+  .stat-card.neutral .value { color: #6366F1; }
+
+  /* ── Chart Containers ── */
+  .chart-container { position: relative; width: 100%; max-width: 700px; margin: 0 auto; }
+  .chart-container.trend { max-width: 100%; height: 280px; }
+  .chart-placeholder {
+    text-align: center; padding: 2rem; color: #9ca3af;
+    border: 1px dashed #d1d5db; border-radius: 8px;
+  }
+
+  /* ── Tables ── */
+  table { border-collapse: collapse; width: 100%; margin: 0.5rem 0; font-size: 0.875rem; }
+  th, td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; }
+  th { background: #f3f4f6; color: #374151; font-weight: 600; }
+  td { vertical-align: top; }
+  tr:hover td { background: #f9fafb; }
+  .pass-text { color: #059669; font-weight: 600; }
+  .fail-text { color: #dc2626; font-weight: 600; }
+
+  /* ── Collapsible (Section 4) ── */
+  details { margin-bottom: 0.5rem; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+  summary {
+    cursor: pointer; padding: 0.75rem 1rem; background: #fef2f2;
+    font-weight: 600; color: #991b1b; list-style: none;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  summary::after { content: "\25BC"; font-size: 0.75rem; transition: transform 0.2s; }
+  details[open] summary::after { transform: rotate(180deg); }
+  details .detail-body { padding: 1rem; background: #fff; }
+  details .detail-body .field { margin-bottom: 0.5rem; }
+  details .detail-body .field-label { font-weight: 600; color: #4b5563; font-size: 0.8rem; text-transform: uppercase; }
+  details .detail-body .field-value { background: #f9fafb; padding: 0.5rem; border-radius: 4px; margin-top: 0.25rem; white-space: pre-wrap; word-break: break-word; }
+
+  /* ── Empty State ── */
+  .empty-state { text-align: center; padding: 1.5rem; color: #6b7280; font-style: italic; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+  .badge-pass { background: #d1fae5; color: #065f46; }
+  .badge-fail { background: #fee2e2; color: #991b1b; }
+
+  /* ── Environment Info List ── */
+  .env-list { list-style: none; }
+  .env-list li { padding: 0.25rem 0; border-bottom: 1px solid #f3f4f6; }
+  .env-list li:last-child { border-bottom: none; }
+  .env-key { font-weight: 600; color: #4b5563; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    body { padding: 1rem; }
+    .dashboard { flex-direction: column; }
+    .dashboard .chart-wrap { flex: none; width: 100%; height: 200px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <h1>AI Agent Evaluation Report</h1>
+    <div class="subtitle">Generated at $eval_time | Mode: $dataset_mode</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 1: Assessment Methodology                         -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-methodology">
+    <h2>1. Assessment Methodology</h2>
+    <h3>Dataset Composition</h3>
+    <p>The evaluation dataset contains test cases across multiple intent categories, designed to verify that the AI Agent correctly selects and invokes tools based on user input.</p>
+    <table>
+      <tr><th>Metric</th><th>Description</th></tr>
+      <tr><td>Dataset Mode</td><td>$dataset_mode</td></tr>
+      <tr><td>Total Cases Evaluated</td><td>$efficiency_total_cases</td></tr>
+      <tr><td>Positive Cases</td><td>$total_positive</td></tr>
+      <tr><td>Negative Cases</td><td>$total_negative</td></tr>
+    </table>
+
+    <h3>Classification Dimensions</h3>
+    <p>Each test case is classified into a category (e.g., tool_selection, no_tool, boundary). Categories map to common user intent patterns the Agent should handle.</p>
+
+    <h3>Pass/Fail Criteria</h3>
+    <ul>
+      <li><strong>Positive case:</strong> PASS if <code>actual_tools</code> matches <code>expected_tools</code>; FAIL otherwise.</li>
+      <li><strong>Negative case:</strong> PASS if Agent does NOT call any tool in <code>should_not_call</code>; VIOLATED otherwise.</li>
+    </ul>
+
+    <h3>Environment</h3>
+    <ul class="env-list">
+$env_info_items
+    </ul>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 2: Overview Dashboard (Donut Chart + Stat Cards)  -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-overview">
+    <h2>2. Overview Dashboard</h2>
+    <div class="dashboard">
+      <div class="chart-wrap">
+        <canvas id="overviewChart"></canvas>
+        <div class="chart-placeholder" id="overviewChartFallback" style="display:none;">
+          Chart requires internet (Chart.js CDN).<br>Pass Rate: $pass_rate_display
+        </div>
+      </div>
+      <div class="cards">
+        <div class="stat-card $pass_rate_card_class">
+          <div class="label">Pass Rate</div>
+          <div class="value">$pass_rate_display</div>
+        </div>
+        <div class="stat-card pass">
+          <div class="label">Passed</div>
+          <div class="value">$total_passed</div>
+        </div>
+        <div class="stat-card fail">
+          <div class="label">Failed</div>
+          <div class="value">$total_failed</div>
+        </div>
+        <div class="stat-card neutral">
+          <div class="label">Total Positive</div>
+          <div class="value">$total_positive</div>
+        </div>
+        <div class="stat-card neutral">
+          <div class="label">Total Elapsed</div>
+          <div class="value">${efficiency_total_elapsed}s</div>
+        </div>
+      </div>
+    </div>
+    $positive_empty_notice
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 3: Category Statistics (Bar Chart)                -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-categories">
+    <h2>3. Category Statistics</h2>
+    $category_stats_content
+    <div class="chart-container">
+      <canvas id="categoryChart"></canvas>
+      <div class="chart-placeholder" id="categoryChartFallback" style="display:none;">
+        Category chart requires internet.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 4: Failed Cases Detail (Collapsible)              -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-failed-cases">
+    <h2>4. Failed Cases Detail</h2>
+    $failed_cases_content
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 5: Negative Violations                            -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-negative-violations">
+    <h2>5. Negative Violations</h2>
+    $negative_violations_content
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 6: History Trend (Line Chart)                     -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-history-trend">
+    <h2>6. History Trend</h2>
+    $history_trend_content
+    <div class="chart-container trend">
+      <canvas id="trendChart"></canvas>
+      <div class="chart-placeholder" id="trendChartFallback" style="display:none;">
+        Trend chart requires internet.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 7: Efficiency Metrics                             -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-efficiency">
+    <h2>7. Efficiency Metrics</h2>
+    <table>
+      <tr><th>Metric</th><th>Value</th></tr>
+      <tr><td>Total Cases</td><td>$efficiency_total_cases</td></tr>
+      <tr><td>Total Elapsed</td><td>${efficiency_total_elapsed}s</td></tr>
+      <tr><td>Average Elapsed</td><td>${efficiency_avg_elapsed}s</td></tr>
+      <tr><td>Median Elapsed</td><td>${efficiency_median_elapsed}s</td></tr>
+    </table>
+    $tool_call_distribution
+  </div>
+
+</div>
+
+<!-- ── Chart.js CDN ── -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function() {
+  /* ── Embedded report data ── */
+  var RD = $report_data_json;
+
+  /* ── Graceful fallback if Chart.js is not loaded (offline) ── */
+  if (typeof Chart === "undefined") {
+    var ids = ["overviewChartFallback","categoryChartFallback","trendChartFallback"];
+    ids.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = "block";
+    });
+    var canvases = ["overviewChart","categoryChart","trendChart"];
+    canvases.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
+    return;
+  }
+
+  /* ── Common chart defaults ── */
+  Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  Chart.defaults.color = "#374151";
+
+  /* ── Section 2: Overview Donut Chart ── */
+  var overviewCtx = document.getElementById("overviewChart");
+  if (overviewCtx && RD.total_positive > 0) {
+    new Chart(overviewCtx, {
+      type: "doughnut",
+      data: {
+        labels: ["Passed", "Failed"],
+        datasets: [{
+          data: [RD.total_passed, RD.total_positive - RD.total_passed],
+          backgroundColor: ["#059669", "#dc2626"],
+          borderWidth: 2,
+          borderColor: "#fff"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: "65%",
+        plugins: {
+          legend: { position: "bottom" },
+          title: { display: false }
+        }
+      }
+    });
+  } else if (overviewCtx) {
+    overviewCtx.style.display = "none";
+    var fb = document.getElementById("overviewChartFallback");
+    if (fb) { fb.style.display = "block"; fb.textContent = "No positive cases to display."; }
+  }
+
+  /* ── Section 3: Category Bar Chart ── */
+  var catCtx = document.getElementById("categoryChart");
+  if (catCtx && RD.category_stats && Object.keys(RD.category_stats).length > 0) {
+    var catLabels = Object.keys(RD.category_stats);
+    var catRates = catLabels.map(function(k) { return Math.round(RD.category_stats[k].pass_rate * 100); });
+    var catBgColors = catRates.map(function(r) { return r >= 80 ? "#059669" : "#dc2626"; });
+    new Chart(catCtx, {
+      type: "bar",
+      data: {
+        labels: catLabels,
+        datasets: [{
+          label: "Pass Rate (%)",
+          data: catRates,
+          backgroundColor: catBgColors,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + "%"; } } }
+        },
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: "Pass Rate by Category" }
+        }
+      }
+    });
+  } else if (catCtx) {
+    catCtx.style.display = "none";
+    var fb2 = document.getElementById("categoryChartFallback");
+    if (fb2) { fb2.style.display = "block"; fb2.textContent = "No category data available."; }
+  }
+
+  /* ── Section 6: History Trend Line Chart ── */
+  var trendCtx = document.getElementById("trendChart");
+  if (trendCtx && RD.history && RD.history.length > 0) {
+    var trendLabels = RD.history.map(function(h) { return h.eval_time || ""; });
+    var isNeg = RD.dataset_mode === "negative";
+    var trendKey = isNeg ? "violation_rate" : "pass_rate";
+    var trendTitle = isNeg ? "Violation Rate Trend" : "Pass Rate Trend";
+    var trendRates = RD.history.map(function(h) { return Math.round((h[trendKey] || 0) * 100); });
+    new Chart(trendCtx, {
+      type: "line",
+      data: {
+        labels: trendLabels,
+        datasets: [{
+          label: isNeg ? "Violation Rate (%)" : "Pass Rate (%)",
+          data: trendRates,
+          borderColor: "#6366F1",
+          backgroundColor: "rgba(99,102,241,0.1)",
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: "#6366F1"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + "%"; } } }
+        },
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: trendTitle }
+        }
+      }
+    });
+  } else if (trendCtx) {
+    trendCtx.style.display = "none";
+    var fb3 = document.getElementById("trendChartFallback");
+    if (fb3) { fb3.style.display = "block"; fb3.textContent = RD.history && RD.history.length === 0 ? "First run — no historical data yet." : "Trend chart requires internet."; }
+  }
+})();
+</script>
+</body>
+</html>

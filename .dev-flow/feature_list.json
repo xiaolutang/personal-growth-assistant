@@ -95,9 +95,9 @@
   "archived_phases": [],
   "summary": {
     "total": 3,
-    "pending": 2,
+    "pending": 1,
     "in_progress": 0,
-    "completed": 1,
+    "completed": 2,
     "cancelled": 0
   },
   "features": [
@@ -153,7 +153,7 @@
       "description": "新建 report_template.html（Python string.Template 占位符），包含 7 个板块：评估方法说明、概览仪表盘（环形图）、分类统计（柱状图）、失败用例详情（可展开）、负面违规列表、历史趋势（折线图）、效率指标。使用 Chart.js CDN 绘制图表（需网络，离线时图表不显示但文字内容正常）。模板接收 EvalReportData 数据渲染。模板中所有文本内容使用 B193 提供的 escape_for_html() 转义，Chart.js JSON 数据使用 escape_for_js() 序列化。模板本身不做转义逻辑，只负责布局和占位符。",
       "verification": "L1",
       "depends_on": ["B193"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "acceptance_criteria": [
         "report_template.html 创建完成",
