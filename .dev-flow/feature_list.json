@@ -6,14 +6,14 @@
   "active_requirement_cycle": {
     "id": "R047",
     "name": "task-explore-reboundary",
-    "status": "reviewed",
+    "status": "completed",
     "branch": "feat/R047-task-explore-reboundary",
     "total_tasks": 13,
     "summary": {
       "total": 13,
-      "completed": 9,
+      "completed": 13,
       "in_progress": 0,
-      "pending": 4
+      "pending": 0
     }
   },
   "workflow": {
@@ -492,7 +492,13 @@
       "description": "在视图选择器（F08 创建）中追加「时间线」选项，实现按 planned_date 排列的时间线视图。有 planned_date 的按日期分组（逾期/今天/明天/本周/下周/更远），无日期归入「未安排」。逾期条目高亮，页面顶部显示逾期提醒条。",
       "verification": "F2",
       "depends_on": ["F03", "F08"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-30T03:00:00Z",
+      "completed_at": "2026-04-30T05:20:00Z",
+      "actual_minutes": 30,
+      "evidence_file": "evidence/F09.md",
+      "commit": "pending",
+      "summary": "TimelineView + OverdueBanner + 逾期高亮 + URL 同步。视图选择器追加时间线选项。",
       "priority": "P2",
       "acceptance_criteria": [
         "视图选择器中新增「时间线」选项（F08 的选择器追加）",
@@ -566,7 +572,13 @@
       "description": "升级 EntryDetail 页面，根据条目类型渲染不同的操作栏：task 显示状态推进（完成后复用 F10 的 CompletionPrompt 弹出复盘提示），inbox 显示转化按钮（复用 F07 的 ConvertDialog），project 显示子任务列表，reflection 显示关联任务链接，question 显示「转为笔记」按钮（复用 ConvertDialog）。新增 type_history 时间线展示区域。",
       "verification": "F2",
       "depends_on": ["F03", "F06", "S01", "F07", "F10"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-30T03:00:00Z",
+      "completed_at": "2026-04-30T05:20:00Z",
+      "actual_minutes": 30,
+      "evidence_file": "evidence/F11.md",
+      "commit": "pending",
+      "summary": "TypeActionBar + TypeHistoryTimeline + inbox/project/task/reflection/question 类型专属操作栏。",
       "priority": "P1",
       "acceptance_criteria": [
         "EntryDetail 根据 category 渲染类型专属操作栏",
@@ -601,7 +613,13 @@
       "description": "优化探索页搜索结果展示，将不同类型条目按类型分组显示（任务/决策/项目/灵感/笔记/复盘/疑问），每组有类型标题和计数。task/decision/project 类型结果点击跳转任务 Tab（/tasks?tab={category}），inbox/note/reflection/question 类型结果点击跳转条目详情页。本任务在 F06 已实现搜索全类型基础上，优化分组 UI。",
       "verification": "F2",
       "depends_on": ["F06", "F03"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-30T03:00:00Z",
+      "completed_at": "2026-04-30T05:20:00Z",
+      "actual_minutes": 30,
+      "evidence_file": "evidence/F12.md",
+      "commit": "pending",
+      "summary": "搜索结果按 7 种类型分组展示 + 类型图标+标题+计数 + 跨 Tab 跳转。",
       "priority": "P1",
       "acceptance_criteria": [
         "搜索结果按类型分组显示，每组有类型图标 + 标题 + 数量",
@@ -637,7 +655,13 @@
       "description": "R047 所有任务完成后的集成验证和收尾。验证核心用户旅程：inbox→task 转化、decision 决策拆任务、task→reflection 复盘、搜索跨全类型、详情页类型感知。更新配套产物（api_contracts.md、alignment_checklist.md、test_coverage.md）为 R047 内容。执行全量前端测试确保无回归。",
       "verification": "L4",
       "depends_on": ["S01", "B02", "F03", "F04", "F05", "F06", "F07", "F08", "F09", "F10", "F11", "F12"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-30T05:25:00Z",
+      "completed_at": "2026-04-30T05:30:00Z",
+      "actual_minutes": 5,
+      "evidence_file": "evidence/S13.md",
+      "commit": "358ad45",
+      "summary": "集成验证通过。1431 pytest + 731 vitest + npm build 全通过。",
       "priority": "P0",
       "acceptance_criteria": [
         "用户旅程 1：探索页创建 inbox → 点击「转为任务」→ 任务页出现新条目 → 完成任务 → 写复盘 → 探索页出现 reflection",
