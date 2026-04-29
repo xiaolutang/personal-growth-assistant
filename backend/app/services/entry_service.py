@@ -39,6 +39,12 @@ from app.services.hybrid_search import HybridSearchService
 class EntryService:
     """条目业务逻辑服务"""
 
+    # 类型组映射：actionable = 行动项, knowledge = 知识类
+    CATEGORY_GROUPS: dict[str, set[str]] = {
+        "actionable": {"task", "decision", "project"},
+        "knowledge": {"inbox", "note", "reflection", "question"},
+    }
+
     # 合法的类型转换规则（from_category, to_category）
     VALID_CONVERSIONS: set[tuple[str, str]] = {
         ("inbox", "task"),
@@ -589,6 +595,7 @@ class EntryService:
     async def list_entries(
         self,
         type: Optional[str] = None,
+        category_group: Optional[str] = None,
         status: Optional[str] = None,
         tags: Optional[str] = None,
         parent_id: Optional[str] = None,
@@ -602,11 +609,17 @@ class EntryService:
         sort_by: Optional[str] = None,
     ) -> EntryListResponse:
         """列出条目"""
+        # 解析 category_group 为类型集合
+        category_types: Optional[set[str]] = None
+        if category_group:
+            category_types = self.CATEGORY_GROUPS.get(category_group)
+
         # 优先使用 SQLite 索引
         if self.storage.sqlite:
             tag_list = [t.strip() for t in tags.split(",")] if tags else None
             entries = self.storage.sqlite.list_entries(
                 type=type,
+                category_types=category_types,
                 status=status,
                 tags=tag_list,
                 parent_id=parent_id,
@@ -621,6 +634,7 @@ class EntryService:
             )
             total = self.storage.sqlite.count_entries(
                 type=type,
+                category_types=category_types,
                 status=status,
                 tags=tag_list,
                 parent_id=parent_id,
@@ -641,6 +655,7 @@ class EntryService:
 
         entries = self._get_markdown_storage(user_id).list_entries(
             category=category,
+            category_types=category_types,
             status=task_status,
             limit=limit,
         )

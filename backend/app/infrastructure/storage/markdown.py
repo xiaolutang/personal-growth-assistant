@@ -317,6 +317,7 @@ class MarkdownStorage:
     def list_entries(
         self,
         category: Optional[Category] = None,
+        category_types: Optional[set[str]] = None,
         status: Optional[TaskStatus] = None,
         limit: int = 50,
     ) -> List[Task]:
@@ -325,6 +326,9 @@ class MarkdownStorage:
 
         if category:
             dirs = [self.CATEGORY_DIRS.get(category, "notes")]
+        elif category_types:
+            # category_group 模式：列出所有目录，后续按 category 过滤
+            dirs = ["projects", "tasks", "notes", "decisions", "reflections", "questions"]
         else:
             dirs = ["projects", "tasks", "notes", "decisions", "reflections", "questions"]
 
@@ -353,6 +357,10 @@ class MarkdownStorage:
                             entries.append(entry)
                     except Exception:
                         continue
+
+        # category_group 过滤：只保留匹配类型的条目
+        if category_types:
+            entries = [e for e in entries if e.category.value in category_types]
 
         entries.sort(key=lambda e: e.updated_at, reverse=True)
         return entries[:limit]

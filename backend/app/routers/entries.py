@@ -32,12 +32,14 @@ from app.models.user import User
 router = APIRouter(prefix="/entries", tags=["entries"])
 
 _VALID_EXPORT_TYPES = {"inbox", "task", "note", "project", "decision", "reflection", "question"}
+_VALID_CATEGORY_GROUPS = {"actionable", "knowledge"}
 _ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 @router.get("", response_model=EntryListResponse)
 async def list_entries(
     type: str | None = Query(None, description="条目类型: project/task/note/inbox/decision/reflection/question"),
+    category_group: str | None = Query(None, description="类型组: actionable(task+decision+project) / knowledge(inbox+note+reflection+question)"),
     status: str | None = Query(None, description="状态: waitStart/doing/complete/paused/cancelled"),
     tags: str | None = Query(None, description="标签筛选（逗号分隔）"),
     parent_id: str | None = Query(None, description="父条目ID（用于获取子任务）"),
@@ -51,12 +53,20 @@ async def list_entries(
     user: User = Depends(get_current_user),
 ):
     """列出条目（优先从 SQLite 索引读取）"""
+    # category_group 与 type 互斥
+    if category_group is not None and type is not None:
+        raise HTTPException(status_code=422, detail="category_group 和 type 参数不能同时使用")
+
+    if category_group is not None and category_group not in _VALID_CATEGORY_GROUPS:
+        raise HTTPException(status_code=422, detail=f"category_group 必须是 {', '.join(sorted(_VALID_CATEGORY_GROUPS))} 之一")
+
     if due is not None and due not in ("today", "overdue"):
         raise HTTPException(status_code=422, detail="due 参数必须是 today 或 overdue")
 
     service = get_entry_service()
     return await service.list_entries(
         type=type,
+        category_group=category_group,
         status=status,
         tags=tags,
         parent_id=parent_id,

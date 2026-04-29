@@ -3665,6 +3665,8 @@ export interface operations {
             query?: {
                 /** @description 条目类型: project/task/note/inbox/decision/reflection/question */
                 type?: string | null;
+                /** @description 类型组: actionable(task+decision+project) / knowledge(inbox+note+reflection+question) */
+                category_group?: string | null;
                 /** @description 状态: waitStart/doing/complete/paused/cancelled */
                 status?: string | null;
                 /** @description 标签筛选（逗号分隔） */

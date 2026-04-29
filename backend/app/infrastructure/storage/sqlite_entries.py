@@ -225,6 +225,7 @@ class SQLiteEntriesMixin:
         self,
         base_select: str,
         type: Optional[str] = None,
+        category_types: Optional[set[str]] = None,
         status: Optional[str] = None,
         tags: Optional[List[str]] = None,
         parent_id: Optional[str] = None,
@@ -237,6 +238,7 @@ class SQLiteEntriesMixin:
         """构建筛选查询（复用逻辑）
 
         Args:
+            category_types: 类型集合过滤（用于 category_group），使用 SQL IN 子句
             due: 到期过滤，可选 "today" 或 "overdue"
                 - today: planned_date == 今天 (UTC)
                 - overdue: planned_date < 今天 (UTC) 且 status != 'complete'
@@ -262,6 +264,11 @@ class SQLiteEntriesMixin:
         if type:
             conditions.append("e.type = ?")
             params.append(type)
+        elif category_types:
+            # category_group 映射到多个类型，使用 IN 子句
+            placeholders = ",".join("?" * len(category_types))
+            conditions.append(f"e.type IN ({placeholders})")
+            params.extend(sorted(category_types))
 
         if status:
             conditions.append("e.status = ?")
@@ -312,6 +319,7 @@ class SQLiteEntriesMixin:
     def list_entries(
         self,
         type: Optional[str] = None,
+        category_types: Optional[set[str]] = None,
         status: Optional[str] = None,
         tags: Optional[List[str]] = None,
         parent_id: Optional[str] = None,
@@ -327,7 +335,7 @@ class SQLiteEntriesMixin:
         """列出条目（支持筛选）"""
         with self._conn() as conn:
             query, params = self._build_filter_query(
-                "SELECT DISTINCT e.* FROM entries e", type, status, tags, parent_id, start_date, end_date, user_id, due, priority
+                "SELECT DISTINCT e.* FROM entries e", type, category_types, status, tags, parent_id, start_date, end_date, user_id, due, priority
             )
 
             # 排序逻辑
@@ -374,6 +382,7 @@ class SQLiteEntriesMixin:
     def count_entries(
         self,
         type: Optional[str] = None,
+        category_types: Optional[set[str]] = None,
         status: Optional[str] = None,
         tags: Optional[List[str]] = None,
         parent_id: Optional[str] = None,
@@ -386,7 +395,7 @@ class SQLiteEntriesMixin:
         """统计条目数量"""
         with self._conn() as conn:
             query, params = self._build_filter_query(
-                "SELECT COUNT(DISTINCT e.id) as cnt FROM entries e", type, status, tags, parent_id, start_date, end_date, user_id, due, priority
+                "SELECT COUNT(DISTINCT e.id) as cnt FROM entries e", type, category_types, status, tags, parent_id, start_date, end_date, user_id, due, priority
             )
             cursor = conn.execute(query, params)
             return cursor.fetchone()["cnt"]
