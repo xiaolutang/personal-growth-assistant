@@ -87,7 +87,7 @@ export function Home() {
                 digestLoading={digestLoading}
                 digestError={digestError}
                 onDismiss={handleDismissDigest}
-                onNavigateToEntry={(entryId) => navigate(`/entry/${entryId}`)}
+                onNavigateToEntry={(entryId) => navigate(`/entries/${entryId}`)}
               />
             )}
 

@@ -28,7 +28,7 @@ export function useRelatedEntries(
     return entry.content.replace(/\[\[([^\]|]+)(?:\|([^\]]*))?\]\]/g, (_match, noteId, displayTitle) => {
       const refNote = referencedNotes.get(noteId);
       const title = displayTitle || refNote?.title || noteId;
-      return `[${title}](/entry/${noteId})`;
+      return `[${title}](/entries/${noteId})`;
     });
   }, [entry?.content, referencedNotes]);
 

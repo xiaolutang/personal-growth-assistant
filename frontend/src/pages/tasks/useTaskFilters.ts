@@ -230,14 +230,14 @@ export function useTaskFilters(): UseTaskFiltersReturn {
       result = result.filter((task) => {
         const taskDate = task.planned_date || task.created_at;
         if (!taskDate) return false;
-        return taskDate.split("T")[0] >= startDate;
+        return toLocalDateString(new Date(taskDate)) >= startDate;
       });
     }
     if (endDate) {
       result = result.filter((task) => {
         const taskDate = task.planned_date || task.created_at;
         if (!taskDate) return false;
-        return taskDate.split("T")[0] <= endDate;
+        return toLocalDateString(new Date(taskDate)) <= endDate;
       });
     }
 

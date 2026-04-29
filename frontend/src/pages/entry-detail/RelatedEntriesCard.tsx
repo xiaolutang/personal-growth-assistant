@@ -66,7 +66,7 @@ export function RelatedEntriesCard({
                 >
                   <div
                     className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
-                    onClick={() => navigate(`/entry/${link.target_id}`)}
+                    onClick={() => navigate(`/entries/${link.target_id}`)}
                   >
                     <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className="text-sm truncate">{link.target_entry.title}</span>
