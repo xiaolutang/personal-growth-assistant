@@ -1,10 +1,17 @@
 """核心领域模型"""
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
 from app.models.enums import Category, Priority, TaskStatus
+
+
+class TypeHistoryRecord(BaseModel):
+    """类型变更历史记录"""
+    from_category: str = Field(..., description="原分类")
+    to_category: str = Field(..., description="目标分类")
+    at: str = Field(..., description="变更时间（ISO 时间戳）")
 
 
 class TaskBase(BaseModel):
@@ -32,6 +39,9 @@ class Task(TaskBase):
     planned_date: Optional[datetime] = Field(default=None, description="计划完成日期")
     completed_at: Optional[datetime] = Field(default=None, description="实际完成时间")
     time_spent: Optional[int] = Field(default=None, description="耗时（分钟）")
+
+    # 类型变更历史
+    type_history: List[Dict[str, Any]] = Field(default_factory=list, description="类型变更历史记录")
 
     # 关联关系
     parent_id: Optional[str] = Field(default=None, description="父条目ID（文件名）")

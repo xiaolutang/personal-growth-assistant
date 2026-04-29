@@ -40,6 +40,17 @@ class EntryUpdate(BaseModel):
     completed_at: Optional[str] = Field(None, description="完成时间")
 
 
+class ConvertRequest(BaseModel):
+    """条目类型转换请求"""
+    target_category: str = Field(
+        ...,
+        description="目标分类: task/decision/note（仅允许从 inbox 转换）",
+    )
+    priority: Optional[str] = Field(None, description="优先级: high/medium/low")
+    planned_date: Optional[str] = Field(None, description="计划日期")
+    parent_id: Optional[str] = Field(None, description="父条目ID")
+
+
 class EntryLinkCreate(BaseModel):
     """创建条目关联请求"""
     target_id: str = Field(..., min_length=1, description="目标条目 ID")
@@ -66,6 +77,7 @@ class EntryResponse(BaseModel):
     time_spent: Optional[int] = None
     parent_id: Optional[str] = None
     file_path: str
+    type_history: List[dict] = Field(default_factory=list, description="类型变更历史记录")
 
 
 class EntryListResponse(BaseModel):

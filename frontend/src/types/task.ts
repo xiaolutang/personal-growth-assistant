@@ -24,6 +24,8 @@ export interface Task {
   file_path: string;
   priority?: Priority;
   content_snippet?: string;
+  /** 类型变更历史记录 */
+  type_history?: Array<{ from_category: string; to_category: string; at: string }>;
   /** 离线创建的条目标识，同步完成后移除 */
   _offlinePending?: boolean;
 }

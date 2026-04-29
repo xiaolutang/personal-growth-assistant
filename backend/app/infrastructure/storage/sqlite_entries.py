@@ -1,4 +1,5 @@
 """SQLite 条目层 - entries/tags/FTS CRUD 操作"""
+import json
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Dict, Any
@@ -113,12 +114,18 @@ class SQLiteEntriesMixin:
     def upsert_entry(self, entry: Task, user_id: str = "_default") -> bool:
         """插入或更新条目"""
         try:
+            # 序列化 type_history 为 JSON 字符串
+            type_history_json = json.dumps(
+                entry.type_history if hasattr(entry, 'type_history') and entry.type_history else [],
+                ensure_ascii=False,
+            )
+
             with self._conn() as conn:
                 # 插入或更新主表
                 conn.execute("""
                     INSERT INTO entries (id, type, title, status, priority, file_path, created_at, updated_at,
-                                         parent_id, planned_date, time_spent, content, user_id)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                         parent_id, planned_date, time_spent, content, user_id, type_history)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(id) DO UPDATE SET
                         type = excluded.type,
                         title = excluded.title,
@@ -131,7 +138,8 @@ class SQLiteEntriesMixin:
                         planned_date = excluded.planned_date,
                         time_spent = excluded.time_spent,
                         content = excluded.content,
-                        user_id = excluded.user_id
+                        user_id = excluded.user_id,
+                        type_history = excluded.type_history
                 """, (
                     entry.id,
                     entry.category.value,
@@ -146,6 +154,7 @@ class SQLiteEntriesMixin:
                     entry.time_spent,
                     entry.content,
                     user_id,
+                    type_history_json,
                 ))
 
                 # 更新标签

@@ -176,6 +176,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/entries/{entry_id}/convert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Convert Entry
+         * @description 条目类型转换（仅允许 inbox → task/decision/note）
+         */
+        post: operations["convert_entry_entries__entry_id__convert_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/entries/{entry_id}/progress": {
         parameters: {
             query?: never;
@@ -1682,6 +1702,32 @@ export interface components {
             items: components["schemas"]["TimelineDay"][];
         };
         /**
+         * ConvertRequest
+         * @description 条目类型转换请求
+         */
+        ConvertRequest: {
+            /**
+             * Target Category
+             * @description 目标分类: task/decision/note（仅允许从 inbox 转换）
+             */
+            target_category: string;
+            /**
+             * Priority
+             * @description 优先级: high/medium/low
+             */
+            priority?: string | null;
+            /**
+             * Planned Date
+             * @description 计划日期
+             */
+            planned_date?: string | null;
+            /**
+             * Parent Id
+             * @description 父条目ID
+             */
+            parent_id?: string | null;
+        };
+        /**
          * DailyFocus
          * @description 每日聚焦
          */
@@ -1944,6 +1990,13 @@ export interface components {
             parent_id?: string | null;
             /** File Path */
             file_path: string;
+            /**
+             * Type History
+             * @description 类型变更历史记录
+             */
+            type_history?: {
+                [key: string]: unknown;
+            }[];
         };
         /**
          * EntrySummaryResponse
@@ -2764,6 +2817,8 @@ export interface components {
             content: string;
             /** Timestamp */
             timestamp: string;
+            /** Tool Calls */
+            tool_calls?: components["schemas"]["ToolCallInfo"][] | null;
         };
         /**
          * MilestoneCreate
@@ -3387,6 +3442,23 @@ export interface components {
             user: components["schemas"]["UserResponse"];
         };
         /**
+         * ToolCallInfo
+         * @description 工具调用信息
+         */
+        ToolCallInfo: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Args
+             * @default {}
+             */
+            args: {
+                [key: string]: unknown;
+            };
+        };
+        /**
          * TrendPeriod
          * @description 趋势统计周期
          */
@@ -3954,6 +4026,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    convert_entry_entries__entry_id__convert_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConvertRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntryResponse"];
                 };
             };
             /** @description Validation Error */

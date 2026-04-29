@@ -157,6 +157,9 @@ class MarkdownStorage:
             metadata['time_spent'] = task.time_spent
         if task.completed_at:
             metadata['completed_at'] = task.completed_at.isoformat()
+        # type_history
+        if task.type_history:
+            metadata['type_history'] = task.type_history
 
         yaml_str = yaml.dump(metadata, allow_unicode=True, sort_keys=False, default_flow_style=False)
         return f"---\n{yaml_str}---\n\n{body}"
@@ -261,6 +264,7 @@ class MarkdownStorage:
                 time_spent=metadata.get('time_spent'),
                 parent_id=metadata.get('parent_id'),
                 file_path=self._safe_relative_path(file_path),
+                type_history=metadata.get('type_history', []),
             )
         else:
             # 旧格式：从正文提取元数据

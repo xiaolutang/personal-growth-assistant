@@ -64,6 +64,7 @@ class SQLiteStorageBase:
             'user_id': 'TEXT NOT NULL DEFAULT "_default"',
             'ai_summary': 'TEXT',
             'ai_summary_generated_at': 'TEXT',
+            'type_history': 'TEXT DEFAULT "[]"',
         }
 
         # 添加缺失的列

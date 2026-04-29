@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from app.api.schemas import (
     EntryCreate,
     EntryUpdate,
+    ConvertRequest,
     EntryResponse,
     EntryListResponse,
     SearchResult,
@@ -246,6 +247,19 @@ async def update_entry(entry_id: str, request: EntryUpdate, user: User = Depends
         return SuccessResponse(success=success, message=message)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/{entry_id}/convert", response_model=EntryResponse)
+async def convert_entry(entry_id: str, request: ConvertRequest, user: User = Depends(get_current_user)):
+    """条目类型转换（仅允许 inbox → task/decision/note）"""
+    service = get_entry_service()
+    try:
+        return await service.convert_entry(entry_id, request, user_id=user.id)
+    except ValueError as e:
+        error_msg = str(e)
+        if "不存在" in error_msg:
+            raise HTTPException(status_code=404, detail=error_msg)
+        raise HTTPException(status_code=422, detail=error_msg)
 
 
 @router.delete("/{entry_id}", response_model=SuccessResponse)
