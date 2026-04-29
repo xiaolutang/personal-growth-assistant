@@ -13,7 +13,15 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+
+def _async_gen(items):
+    """辅助函数：将列表转换为 async generator"""
+    async def _gen():
+        for item in items:
+            yield item
+    return _gen()
 
 import pytest
 
@@ -308,3 +316,143 @@ class TestAgentUnavailable:
                     raise HTTPException(status_code=503, detail="Agent 服务未初始化")
 
             assert exc_info.value.status_code == 503
+
+
+# === Codex Review 补充测试 ===
+
+
+class TestGreetingPageContext:
+    """验证 greeting 路径透传 page_context"""
+
+    @pytest.mark.asyncio
+    async def test_greeting_passes_page_context(self):
+        """greeting 路径应将 page_context 传递到 AgentService.chat()"""
+        mock_agent_service = AsyncMock()
+        mock_agent_service.is_new_user = Mock(return_value=True)
+        mock_agent_service.chat = AsyncMock(return_value=_async_gen([]))
+        mock_agent_service.agent = Mock()
+
+        with patch("app.routers.parse._agent_service", mock_agent_service):
+            from app.routers.parse import _greeting_generate, PageContext
+
+            page_ctx = PageContext(page_type="home")
+            events = []
+            async for event in _greeting_generate("user1", "user1:default", page_ctx):
+                events.append(event)
+
+            # 验证 chat() 被调用时传入了 page_context
+            mock_agent_service.chat.assert_called_once()
+            call_kwargs = mock_agent_service.chat.call_args[1]
+            assert call_kwargs["page_context"] is page_ctx
+
+    @pytest.mark.asyncio
+    async def test_greeting_without_page_context(self):
+        """greeting 路径不传 page_context 时不崩溃"""
+        mock_agent_service = AsyncMock()
+        mock_agent_service.is_new_user = Mock(return_value=True)
+        mock_agent_service.chat = AsyncMock(return_value=_async_gen([]))
+        mock_agent_service.agent = Mock()
+
+        with patch("app.routers.parse._agent_service", mock_agent_service):
+            from app.routers.parse import _greeting_generate
+
+            events = []
+            async for event in _greeting_generate("user1", "user1:default"):
+                events.append(event)
+
+            call_kwargs = mock_agent_service.chat.call_args[1]
+            assert call_kwargs["page_context"] is None
+
+
+class TestGreetingCheckpointCleanup:
+    """验证 greeting 完成后清理 checkpoint"""
+
+    @pytest.mark.asyncio
+    async def test_greeting_clears_checkpoint_on_success(self):
+        """greeting 正常完成后应清理临时 checkpoint"""
+        mock_agent = Mock()
+        mock_agent.clear_thread = AsyncMock()
+        mock_agent_service = Mock()
+        mock_agent_service.is_new_user = Mock(return_value=True)
+        mock_agent_service.agent = mock_agent
+        mock_agent_service.chat = Mock(return_value=_async_gen([]))
+
+        with patch("app.routers.parse._agent_service", mock_agent_service):
+            from app.routers.parse import _greeting_generate
+
+            events = []
+            async for event in _greeting_generate("user1", "user1:default"):
+                events.append(event)
+
+            # 验证 clear_thread 被调用，参数为 greeting_thread_id
+            mock_agent.clear_thread.assert_called_once_with("__greeting__:user1:default")
+
+    @pytest.mark.asyncio
+    async def test_greeting_clears_checkpoint_on_error(self):
+        """greeting 异常时也应清理临时 checkpoint"""
+        mock_agent = Mock()
+        mock_agent.clear_thread = AsyncMock()
+        mock_agent_service = Mock()
+        mock_agent_service.is_new_user = Mock(return_value=True)
+        mock_agent_service.agent = mock_agent
+        mock_agent_service.chat = Mock(side_effect=RuntimeError("test error"))
+
+        with patch("app.routers.parse._agent_service", mock_agent_service):
+            from app.routers.parse import _greeting_generate
+
+            events = []
+            async for event in _greeting_generate("user1", "user1:default"):
+                events.append(event)
+
+            # 验证 clear_thread 被调用
+            mock_agent.clear_thread.assert_called_once_with("__greeting__:user1:default")
+
+    @pytest.mark.asyncio
+    async def test_greeting_cleanup_failure_does_not_crash(self):
+        """checkpoint 清理失败不影响 greeting 返回"""
+        mock_agent = Mock()
+        mock_agent.clear_thread = AsyncMock(side_effect=RuntimeError("cleanup failed"))
+        mock_agent_service = Mock()
+        mock_agent_service.is_new_user = Mock(return_value=True)
+        mock_agent_service.agent = mock_agent
+        mock_agent_service.chat = Mock(return_value=_async_gen([]))
+
+        with patch("app.routers.parse._agent_service", mock_agent_service):
+            from app.routers.parse import _greeting_generate
+
+            events = []
+            async for event in _greeting_generate("user1", "user1:default"):
+                events.append(event)
+
+            # 不应崩溃，正常结束
+            mock_agent.clear_thread.assert_called_once()
+
+
+class TestGreetingErrorSanitized:
+    """验证 greeting 异常时不暴露内部错误信息"""
+
+    @pytest.mark.asyncio
+    async def test_greeting_error_does_not_expose_exception_details(self):
+        """greeting SSE error 事件应使用通用错误消息"""
+        mock_agent = Mock()
+        mock_agent.clear_thread = AsyncMock()
+        mock_agent_service = Mock()
+        mock_agent_service.is_new_user = Mock(return_value=True)
+        mock_agent_service.agent = mock_agent
+        mock_agent_service.chat = Mock(side_effect=RuntimeError("internal db connection string leaked"))
+
+        with patch("app.routers.parse._agent_service", mock_agent_service):
+            from app.routers.parse import _greeting_generate
+
+            events = []
+            async for event in _greeting_generate("user1", "user1:default"):
+                events.append(event)
+
+            # 找到 error 事件
+            error_events = [e for e in events if "event: error" in e]
+            assert len(error_events) == 1
+            # 不应包含原始异常信息
+            assert "internal db connection string" not in error_events[0]
+            assert "leaked" not in error_events[0]
+            # 应包含通用错误消息
+            assert "Agent 服务暂时不可用" in error_events[0]

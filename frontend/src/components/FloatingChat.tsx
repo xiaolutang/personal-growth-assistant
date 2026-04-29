@@ -123,10 +123,12 @@ export function FloatingChat() {
   // 首次展开面板时自动发送 greeting（新用户无历史会话）
   useEffect(() => {
     if (!isExpanded || greetingSentRef.current) return;
-    greetingSentRef.current = true;
 
     // 先确保 sessions 数据已加载，避免因 sessions 尚未从后端加载完而误判为新用户
     fetchSessions().then(() => {
+      // fetchSessions 成功后才标记，防止 preload 失败时永远不重试
+      greetingSentRef.current = true;
+
       // 通过 getState 获取最新的 sessions 状态，而非闭包中的旧值
       const currentSessions = useAgentStore.getState().sessions;
       if (currentSessions.length > 0) return; // 老用户，不发 greeting
@@ -145,18 +147,18 @@ export function FloatingChat() {
         // 发送失败静默降级，不阻塞面板使用
       });
     }).catch(() => {
-      // fetchSessions 失败静默降级
+      // fetchSessions 失败不设 greetingSentRef，下次展开面板可重试
     });
   }, [isExpanded]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 点击面板外部收起（排除 Popover Portal 内容，避免点击反馈表单时关闭面板）
+  // 点击面板外部收起（使用 data-chat-boundary 自有属性标记，不依赖第三方内部 DOM 结构）
   useEffect(() => {
     if (!isExpanded) return;
 
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
-      // 忽略 Popover Portal 内的点击
-      if ((target as HTMLElement).closest?.("[data-radix-popper-content-wrapper]")) {
+      // 忽略自有边界内的点击（反馈 Popover 等）
+      if ((target as HTMLElement).closest?.("[data-chat-boundary]")) {
         return;
       }
       if (panelRef.current && !panelRef.current.contains(target)) {
@@ -353,14 +355,8 @@ export function FloatingChat() {
                 <PopoverContent
                   side="bottom"
                   align="end"
+                  data-chat-boundary
                   className="w-auto p-0 rounded-2xl border border-border bg-background/95 shadow-xl backdrop-blur"
-                  onInteractOutside={(e) => {
-                    // 允许用户在 Popover 内部正常交互
-                    const target = e.target as HTMLElement;
-                    if (target.closest("[data-radix-popper-content-wrapper]")) {
-                      e.preventDefault();
-                    }
-                  }}
                 >
                   <FeedbackPanel isOpen={feedbackOpen} />
                 </PopoverContent>

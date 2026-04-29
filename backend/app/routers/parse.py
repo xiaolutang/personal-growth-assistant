@@ -85,7 +85,7 @@ async def chat(request: ChatRequest, user: User = Depends(get_current_user)):
 
     if is_greeting:
         return StreamingResponse(
-            _greeting_generate(user.id, thread_id),
+            _greeting_generate(user.id, thread_id, request.page_context),
             media_type="text/event-stream",
             headers=SSE_HEADERS,
         )
@@ -106,14 +106,15 @@ async def chat(request: ChatRequest, user: User = Depends(get_current_user)):
     )
 
 
-async def _greeting_generate(user_id: str, thread_id: str):
+async def _greeting_generate(user_id: str, thread_id: str, page_context: Optional[PageContext] = None):
     """处理 __greeting__ 消息：查询会话数，判断 is_new_user，直接调用 Agent 生成回复。
 
     关键行为：
     - 通过 AgentService.is_new_user() 判断是否新用户
     - 跳过 touch_session（不创建会话记录）
-    - 使用临时 thread_id 避免污染用户的真实对话历史
+    - 使用临时 thread_id，完成后清理 checkpoint，避免孤儿状态
     - 通过 AgentService.chat(is_new_user=...) 透传 is_new_user
+    - 透传 page_context，与正常聊天路径保持一致
     """
     # 查询用户是否为新用户
     is_new_user = False
@@ -125,7 +126,6 @@ async def _greeting_generate(user_id: str, thread_id: str):
             is_new_user = False
 
     # 使用临时 thread_id，避免 __greeting__ 消息存入用户真实对话历史
-    # 格式：__greeting__:{user_id}:{original_thread_id}
     greeting_thread_id = f"__greeting__:{thread_id}"
 
     try:
@@ -133,11 +133,19 @@ async def _greeting_generate(user_id: str, thread_id: str):
             text=GREETING_MESSAGE,
             thread_id=greeting_thread_id,
             user_id=user_id,
+            page_context=page_context,
             is_new_user=is_new_user,
             skip_touch_session=True,
         ):
             yield event
     except Exception as e:
-        logger.error("__greeting__ 处理异常: %s", e, exc_info=True)
-        yield sse_event("error", {"message": f"处理失败: {str(e)}"})
+        logger.error("__greeting__ 处理异常", exc_info=True)
+        yield sse_event("error", {"message": "Agent 服务暂时不可用"})
         yield sse_event("done", {})
+    finally:
+        # 清理 greeting checkpoint，避免孤儿线程
+        if _agent_service and _agent_service.agent is not None:
+            try:
+                await _agent_service.agent.clear_thread(greeting_thread_id)
+            except Exception:
+                logger.debug("清理 greeting checkpoint 失败", exc_info=True)
