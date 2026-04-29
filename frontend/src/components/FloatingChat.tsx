@@ -124,21 +124,27 @@ export function FloatingChat() {
   useEffect(() => {
     if (!isExpanded || greetingSentRef.current) return;
 
+    // 快照当前 sessionId，用于检测 preload 期间是否有用户手动操作
+    const sessionIdBeforePreload = currentSessionId;
+
     // 先确保 sessions 数据已加载，避免因 sessions 尚未从后端加载完而误判为新用户
     fetchSessions().then(() => {
+      // 如果用户在 preload 期间已手动操作（创建了新 session），放弃 greeting
+      const stateAfterPreload = useAgentStore.getState();
+      if (stateAfterPreload.currentSessionId !== sessionIdBeforePreload) return;
+
       // fetchSessions 成功后才标记，防止 preload 失败时永远不重试
       greetingSentRef.current = true;
 
       // 通过 getState 获取最新的 sessions 状态，而非闭包中的旧值
-      const currentSessions = useAgentStore.getState().sessions;
-      if (currentSessions.length > 0) return; // 老用户，不发 greeting
+      if (stateAfterPreload.sessions.length > 0) return; // 老用户，不发 greeting
 
       // 新用户，创建会话并发送隐藏 greeting
       const sid = createSession();
       sendMessage({
         text: "__greeting__",
         sessionId: sid,
-        pageContext: useAgentStore.getState().pageContext ?? undefined,
+        pageContext: stateAfterPreload.pageContext ?? undefined,
         hidden: true,
         onDone: () => {
           fetchSessions().catch(() => {});

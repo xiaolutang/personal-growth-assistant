@@ -798,14 +798,32 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
   fetchSessions: async () => {
     try {
       const data = await sessionApi.list();
-      const sessions: AgentSession[] = data.map((s) => ({
+      const serverSessions: AgentSession[] = data.map((s) => ({
         id: s.id,
         title: s.title,
         messages: [],
         createdAt: new Date(s.created_at).getTime(),
         updatedAt: new Date(s.updated_at).getTime(),
       }));
-      set({ sessions });
+
+      // Merge：保留本地已有消息的会话，避免覆盖乐观创建的 greeting 会话
+      const localSessions = get().sessions;
+      const merged = serverSessions.map((server) => {
+        const local = localSessions.find((l) => l.id === server.id);
+        // 如果本地有该会话且已有消息，保留本地消息
+        if (local && local.messages.length > 0) {
+          return { ...server, messages: local.messages };
+        }
+        return server;
+      });
+
+      // 保留本地存在但服务端还没有的会话（如刚创建的乐观会话）
+      const serverIds = new Set(merged.map((s) => s.id));
+      const localOnly = localSessions.filter(
+        (l) => !serverIds.has(l.id) && l.messages.length > 0
+      );
+
+      set({ sessions: [...localOnly, ...merged] });
     } catch {
       // 静默处理获取失败
     }
