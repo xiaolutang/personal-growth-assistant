@@ -5,7 +5,6 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
 import { MobileNavBar } from "@/components/layout/MobileNavBar";
 import { FloatingChat } from "@/components/FloatingChat";
-import { FeedbackButton } from "@/components/FeedbackButton";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ThemeProvider } from "@/lib/theme";
@@ -139,7 +138,6 @@ function AppLayout() {
           </Suspense>
         </div>
       </div>
-      <FeedbackButton />
       <FloatingChat />
       <MobileNavBar />
     </div>

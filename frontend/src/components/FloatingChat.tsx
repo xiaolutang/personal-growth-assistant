@@ -17,7 +17,10 @@ import {
   GripHorizontal,
   RotateCcw,
   X,
+  MessageSquare,
 } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { FeedbackPanel } from "@/components/FeedbackPanel";
 import { useAgentStore, type AgentPageContext } from "@/stores/agentStore";
 import { useUserStore } from "@/stores/userStore";
 import { MessageList } from "@/components/AgentChat/MessageList";
@@ -40,6 +43,7 @@ export function FloatingChat() {
   const [input, setInput] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -111,12 +115,17 @@ export function FloatingChat() {
     }
   }, [location.pathname]);
 
-  // 点击面板外部收起
+  // 点击面板外部收起（排除 Popover Portal 内容，避免点击反馈表单时关闭面板）
   useEffect(() => {
     if (!isExpanded) return;
 
     const handleClickOutside = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      // 忽略 Popover Portal 内的点击
+      if ((target as HTMLElement).closest?.("[data-radix-popper-content-wrapper]")) {
+        return;
+      }
+      if (panelRef.current && !panelRef.current.contains(target)) {
         setIsExpanded(false);
       }
     };
@@ -297,6 +306,31 @@ export function FloatingChat() {
                   <RotateCcw className="h-3 w-3" />
                 </button>
               )}
+              <Popover open={feedbackOpen} onOpenChange={setFeedbackOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="h-6 w-6 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    aria-label="反馈"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  side="bottom"
+                  align="end"
+                  className="w-auto p-0 rounded-2xl border border-border bg-background/95 shadow-xl backdrop-blur"
+                  onInteractOutside={(e) => {
+                    // 允许用户在 Popover 内部正常交互
+                    const target = e.target as HTMLElement;
+                    if (target.closest("[data-radix-popper-content-wrapper]")) {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  <FeedbackPanel isOpen={feedbackOpen} />
+                </PopoverContent>
+              </Popover>
               <button
                 type="button"
                 onClick={handleClosePanel}
