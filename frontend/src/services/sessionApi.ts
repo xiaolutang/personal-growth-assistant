@@ -17,11 +17,18 @@ export interface SessionInfo {
   updated_at: string;
 }
 
+export interface ToolCallInfo {
+  id: string;
+  name: string;
+  args: Record<string, unknown>;
+}
+
 export interface MessageInfo {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: string;
+  tool_calls?: ToolCallInfo[];
 }
 
 export interface SessionUpdate {

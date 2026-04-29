@@ -783,13 +783,45 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
   loadSessionMessages: async (sessionId: string) => {
     try {
       const msgs = await sessionApi.getMessages(sessionId);
-      const agentMessages: AgentMessage[] = msgs.map((m: MessageInfo, i: number) => ({
-        id: m.id || `hist-${i}`,
-        type: "text" as const,
-        role: m.role as "user" | "assistant",
-        content: m.content,
-        timestamp: new Date(m.timestamp).getTime(),
-      }));
+      const agentMessages: AgentMessage[] = msgs.flatMap((m: MessageInfo, i: number) => {
+        const base = {
+          id: m.id || `hist-${i}`,
+          role: m.role as "user" | "assistant",
+          timestamp: new Date(m.timestamp).getTime(),
+        };
+
+        const results: AgentMessage[] = [];
+
+        // 有 tool_calls → 插入 tool_call 消息
+        if (m.tool_calls && m.tool_calls.length > 0) {
+          for (const tc of m.tool_calls) {
+            results.push({
+              ...base,
+              id: `${base.id}-tc-${tc.id}`,
+              type: "tool_call" as const,
+              content: "",
+              toolCall: {
+                id: tc.id,
+                tool: tc.name,
+                args: tc.args,
+                status: "success" as const,
+              },
+            });
+          }
+        }
+
+        // 有文本内容 → 插入文本消息
+        if (m.content) {
+          results.push({
+            ...base,
+            id: `${base.id}-text`,
+            type: "text" as const,
+            content: m.content,
+          });
+        }
+
+        return results;
+      });
       set((state) => ({
         sessions: state.sessions.map((s) =>
           s.id === sessionId

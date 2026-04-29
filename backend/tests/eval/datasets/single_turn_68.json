@@ -817,5 +817,95 @@
     },
     "acceptable_alternatives": [],
     "unacceptable": ["delete_entry", "create_entry"]
+  },
+  {
+    "id": "ST-064",
+    "category": "directness",
+    "user_input": "今天有哪些事情",
+    "expected_tools": ["search_entries", "get_review_summary"],
+    "expected_args": {},
+    "reference_solution": {
+      "tool": "search_entries",
+      "args": {"category": "task"}
+    },
+    "acceptable_alternatives": ["get_review_summary"],
+    "unacceptable": ["delete_entry"],
+    "behavior_checks": {
+      "no_greeting": true,
+      "must_show_details": true,
+      "no_ask_to_search": true
+    }
+  },
+  {
+    "id": "ST-065",
+    "category": "directness",
+    "user_input": "昨天完成了什么",
+    "expected_tools": ["get_review_summary", "search_entries"],
+    "expected_args": {"period": "daily"},
+    "reference_solution": {
+      "tool": "get_review_summary",
+      "args": {"period": "daily"}
+    },
+    "acceptable_alternatives": ["search_entries"],
+    "unacceptable": ["delete_entry", "create_entry"],
+    "behavior_checks": {
+      "no_greeting": true,
+      "must_show_details": true,
+      "no_ask_to_search": true
+    }
+  },
+  {
+    "id": "ST-066",
+    "category": "directness",
+    "user_input": "我还有哪些任务没做完",
+    "expected_tools": ["search_entries"],
+    "expected_args": {"category": "task"},
+    "reference_solution": {
+      "tool": "search_entries",
+      "args": {"category": "task", "status": "doing"}
+    },
+    "acceptable_alternatives": ["get_review_summary"],
+    "unacceptable": ["delete_entry", "create_entry"],
+    "behavior_checks": {
+      "no_greeting": true,
+      "must_show_details": true,
+      "no_ask_to_search": true
+    }
+  },
+  {
+    "id": "ST-067",
+    "category": "directness",
+    "user_input": "本周的学习情况怎么样",
+    "expected_tools": ["get_review_summary"],
+    "expected_args": {"period": "weekly"},
+    "reference_solution": {
+      "tool": "get_review_summary",
+      "args": {"period": "weekly"}
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": ["delete_entry", "create_entry"],
+    "behavior_checks": {
+      "no_greeting": true,
+      "must_show_details": true,
+      "no_ask_to_search": true
+    }
+  },
+  {
+    "id": "ST-068",
+    "category": "directness",
+    "user_input": "帮我看看项目进展",
+    "expected_tools": ["search_entries"],
+    "expected_args": {"category": "project"},
+    "reference_solution": {
+      "tool": "search_entries",
+      "args": {"category": "project"}
+    },
+    "acceptable_alternatives": ["get_review_summary"],
+    "unacceptable": ["delete_entry"],
+    "behavior_checks": {
+      "no_greeting": true,
+      "must_show_details": true,
+      "no_ask_to_search": true
+    }
   }
 ]

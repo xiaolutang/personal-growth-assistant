@@ -53,17 +53,18 @@ class TestJudgeDimension:
     """测试评分维度枚举"""
 
     def test_total_dimensions(self):
-        assert len(JudgeDimension) == 9
+        assert len(JudgeDimension) == 10
 
     def test_base_dimensions(self):
         base = JudgeDimension.base_dimensions()
-        assert len(base) == 6
+        assert len(base) == 7
         assert JudgeDimension.TOOL_SELECTION in base
         assert JudgeDimension.PARAM_EXTRACTION in base
         assert JudgeDimension.RESPONSE_QUALITY in base
         assert JudgeDimension.ERROR_HANDLING in base
         assert JudgeDimension.EFFICIENCY in base
         assert JudgeDimension.USER_EXPERIENCE in base
+        assert JudgeDimension.DIRECTNESS in base
 
     def test_multi_turn_dimensions(self):
         mt = JudgeDimension.multi_turn_dimensions()
@@ -74,10 +75,10 @@ class TestJudgeDimension:
 
     def test_all_dimensions(self):
         all_dims = JudgeDimension.all_dimensions()
-        assert len(all_dims) == 9
+        assert len(all_dims) == 10
         # 基础在前，多轮在后
-        assert all_dims[:6] == JudgeDimension.base_dimensions()
-        assert all_dims[6:] == JudgeDimension.multi_turn_dimensions()
+        assert all_dims[:7] == JudgeDimension.base_dimensions()
+        assert all_dims[7:] == JudgeDimension.multi_turn_dimensions()
 
     def test_dimension_values(self):
         expected_values = [
@@ -87,6 +88,7 @@ class TestJudgeDimension:
             "error_handling",
             "efficiency",
             "user_experience",
+            "directness",
             "context_retention",
             "follow_up_quality",
             "conversation_coherence",
@@ -96,7 +98,7 @@ class TestJudgeDimension:
 
     def test_no_overlap(self):
         all_list = JudgeDimension.all_dimensions()
-        assert len(set(all_list)) == 9
+        assert len(set(all_list)) == 10
 
 
 # ── JudgeScore 数据结构测试 ──
@@ -151,11 +153,11 @@ class TestJudgeResult:
 
     def test_total_score(self):
         result = self._make_result(4)
-        assert result.total_score == 9 * 4  # 36
+        assert result.total_score == 10 * 4  # 40
 
     def test_max_possible_score(self):
         result = self._make_result(5)
-        assert result.max_possible_score == 45
+        assert result.max_possible_score == 50
 
     def test_average_score(self):
         result = self._make_result(4)
@@ -168,7 +170,7 @@ class TestJudgeResult:
 
     def test_percentage(self):
         result = self._make_result(4)
-        expected_pct = (36 / 45) * 100
+        expected_pct = (40 / 50) * 100
         assert abs(result.percentage - expected_pct) < 0.1
 
     def test_percentage_full(self):
@@ -177,7 +179,7 @@ class TestJudgeResult:
 
     def test_percentage_zero(self):
         result = self._make_result(1)
-        expected_pct = (9 / 45) * 100
+        expected_pct = (10 / 50) * 100
         assert abs(result.percentage - expected_pct) < 0.1
 
     def test_get_score(self):
@@ -194,7 +196,7 @@ class TestJudgeResult:
     def test_empty_result(self):
         result = JudgeResult()
         assert result.total_score == 0
-        assert result.max_possible_score == 45  # 默认 9 维度 * 5 分
+        assert result.max_possible_score == 50  # 默认 9 维度 * 5 分
         assert result.average_score == 0.0
         assert result.weighted_average == 0.0
         assert result.percentage == 0.0  # 0 / 45 = 0%
@@ -203,9 +205,9 @@ class TestJudgeResult:
         result = self._make_result(3)
         d = result.to_dict()
         assert d["test_id"] == "TEST-001"
-        assert d["total_score"] == 27
+        assert d["total_score"] == 30
         assert "dimension_scores" in d
-        assert len(d["dimension_scores"]) == 9
+        assert len(d["dimension_scores"]) == 10
 
 
 # ── LLMJudge 评分逻辑测试 ──
@@ -235,8 +237,8 @@ class TestLLMJudge:
             test_id="TEST-MOCK",
         )
         assert result.test_id == "TEST-MOCK"
-        assert result.total_score == 45
-        assert len(result.scores) == 9
+        assert result.total_score == 50
+        assert len(result.scores) == 10
 
     @pytest.mark.asyncio
     async def test_evaluate_with_partial_scores(self):
@@ -247,7 +249,7 @@ class TestLLMJudge:
             agent_response="好的，搜索中...",
             tool_calls=[{"tool": "search_entries"}],
         )
-        assert result.total_score == 27  # 9 * 3
+        assert result.total_score == 30  # 10 * 3
         assert abs(result.percentage - 60.0) < 0.1
 
     @pytest.mark.asyncio
@@ -259,7 +261,7 @@ class TestLLMJudge:
             agent_response="response",
             tool_calls=[],
         )
-        assert result.total_score == 27  # 9 * 3（默认分）
+        assert result.total_score == 30  # 10 * 3（默认分）
 
     @pytest.mark.asyncio
     async def test_evaluate_custom_dimensions(self):
@@ -274,7 +276,7 @@ class TestLLMJudge:
             agent_response="response",
             tool_calls=[],
         )
-        assert len(result.scores) == 6
+        assert len(result.scores) == 7
 
     @pytest.mark.asyncio
     async def test_parse_markdown_wrapped_json(self):
@@ -318,9 +320,7 @@ class TestLLMJudge:
 
         result = await judge.evaluate_multi_turn(turns, test_id="MT-TEST")
         assert result.test_id == "MT-TEST"
-        assert len(result.scores) == 9
-
-    def test_build_prompt(self):
+        assert len(result.scores) == 10
         judge = LLMJudge()
         prompt = judge._build_prompt(
             user_input="帮我搜索",
@@ -386,7 +386,7 @@ class TestPartialScorer:
     def test_score_60_percent(self):
         """60% 阈值测试"""
         scorer = PartialScorer()
-        # 9 维度，每维度 3 分 = 27/45 = 60%
+        # 10 维度，每维度 3 分 = 30/50 = 60%
         result = self._make_result(3)
         score = scorer.score(result)
         assert abs(score["percentage"] - 60.0) < 0.1
@@ -400,12 +400,12 @@ class TestPartialScorer:
         scores = {}
         dims = JudgeDimension.all_dimensions()
         for i, dim in enumerate(dims):
-            # 前 6 个维度 4 分，后 3 个维度 2 分
-            s = 4 if i < 6 else 2
+            # 前 7 个维度 4 分，后 3 个维度 2 分
+            s = 4 if i < 7 else 2
             scores[dim.value] = JudgeScore(dimension=dim, score=s, reasoning="")
         result = JudgeResult(scores=scores, test_id="TEST")
         score = scorer.score(result)
-        # 总分 = 6*4 + 3*2 = 30, 30/45 = 66.7%
+        # 总分 = 7*4 + 3*2 = 34, 34/50 = 68%
         assert 60.0 <= score["percentage"] <= 70.0
 
     def test_grade(self):

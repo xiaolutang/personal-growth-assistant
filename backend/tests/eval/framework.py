@@ -52,6 +52,7 @@ class TestCase:
     reference_solution: ReferenceSolution = field(default_factory=lambda: ReferenceSolution(tool=""))
     acceptable_alternatives: List[str] = field(default_factory=list)
     unacceptable: List[str] = field(default_factory=list)
+    behavior_checks: Dict[str, bool] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TestCase":
@@ -69,6 +70,7 @@ class TestCase:
             reference_solution=reference,
             acceptable_alternatives=data.get("acceptable_alternatives", []),
             unacceptable=data.get("unacceptable", []),
+            behavior_checks=data.get("behavior_checks", {}),
         )
 
 
@@ -222,7 +224,7 @@ class DatasetLoader:
     @staticmethod
     def load_single_turn() -> List[TestCase]:
         """快捷方法：加载单轮 63 条测试数据"""
-        return DatasetLoader.load_test_cases("single_turn_63.json")
+        return DatasetLoader.load_test_cases("single_turn_68.json")
 
     @staticmethod
     def load_negative() -> List[NegativeTestCase]:
@@ -284,6 +286,7 @@ def judge_test_case(
     test_case: TestCase,
     actual_tools: List[str],
     actual_args: List[Dict[str, Any]],
+    agent_response: str = "",
 ) -> bool:
     """判定正向测试用例是否通过
 
@@ -292,15 +295,42 @@ def judge_test_case(
     2. 如果 reference_solution 的 tool 被调用 → 通过
     3. 如果调用了 unacceptable 中的 tool → 失败
     4. acceptable_alternatives 中的 tool 也算通过
+    5. 如果有 behavior_checks，额外检查回复文本的行为约束
 
     Args:
         test_case: 测试用例
         actual_tools: 实际调用的 tool 列表
         actual_args: 实际参数列表
+        agent_response: Agent 的文本回复（用于 behavior_checks 检查）
 
     Returns:
         是否通过
     """
+    # behavior_checks 检查（基于回复文本）
+    if test_case.behavior_checks:
+        checks = test_case.behavior_checks
+        resp = agent_response.strip()
+
+        if checks.get("no_greeting"):
+            # 用词边界匹配，避免 "this"/"highlight" 误判
+            import re
+            greeting_patterns = [
+                r"^你好", r"^嗨[，,！!]", r"^hello[!!,.\s]",
+                r"^hi[!!,.\s]", r"^嘿[，,！!]",
+            ]
+            resp_lower = resp.lower()
+            for pat in greeting_patterns:
+                if re.search(pat, resp_lower):
+                    return False
+        if checks.get("no_ask_to_search"):
+            ask_patterns = ["要不要帮你查", "需要我帮你查", "要不要查一下", "要不要搜索"]
+            if any(p in resp for p in ask_patterns):
+                return False
+        if checks.get("must_show_details"):
+            # 回复不能太短（说明没展示详细内容）
+            if len(resp) < 20:
+                return False
+
     if not actual_tools:
         # 没有调用任何 tool
         # 对于 pure_chat 类别，这是正确的
@@ -524,12 +554,14 @@ class GoldenDatasetRunner:
                     )
                     actual_tools = agent_output.get("tools", [])
                     actual_args = agent_output.get("args", [])
+                    agent_response = agent_output.get("content", "")
                 else:
                     # 无 invoke_fn：返回空结果（纯框架模式）
                     actual_tools = []
                     actual_args = []
+                    agent_response = ""
 
-                passed = judge_test_case(test_case, actual_tools, actual_args)
+                passed = judge_test_case(test_case, actual_tools, actual_args, agent_response)
 
                 results.append(
                     EvaluationResult(

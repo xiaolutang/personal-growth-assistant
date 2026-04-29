@@ -54,12 +54,20 @@ class SessionUpdate(BaseModel):
     title: str = Field(..., min_length=1, max_length=100, description="会话标题")
 
 
+class ToolCallInfo(BaseModel):
+    """工具调用信息"""
+    id: str
+    name: str
+    args: dict = {}
+
+
 class MessageInfo(BaseModel):
     """消息信息"""
     id: str
     role: str
     content: str
     timestamp: str
+    tool_calls: list[ToolCallInfo] | None = None
 
 
 # === 路由 ===
@@ -108,7 +116,11 @@ async def get_session_messages(session_id: str, user: User = Depends(get_current
 
     从 LangGraph checkpointer 读取消息
     """
-    from langchain_core.messages import HumanMessage as LCHumanMessage, AIMessage as LCAIMessage
+    from langchain_core.messages import (
+        HumanMessage as LCHumanMessage,
+        AIMessage as LCAIMessage,
+        ToolMessage as LCToolMessage,
+    )
 
     if not _checkpointer:
         raise HTTPException(status_code=503, detail="服务未初始化")
@@ -126,23 +138,37 @@ async def get_session_messages(session_id: str, user: User = Depends(get_current
             msgs = channel_values.get("messages", [])
 
             for i, msg in enumerate(msgs):
+                # 跳过 ToolMessage（工具结果通过 AIMessage.tool_calls 关联）
+                if isinstance(msg, LCToolMessage):
+                    continue
+
                 # 处理 LangChain 消息对象
                 if isinstance(msg, LCHumanMessage):
                     role = "user"
                     content = msg.content if isinstance(msg.content, str) else str(msg.content)
+                    tool_calls_list = None
                 elif isinstance(msg, LCAIMessage):
                     role = "assistant"
                     content = msg.content if isinstance(msg.content, str) else str(msg.content)
+                    # 提取 tool_calls
+                    tc = getattr(msg, "tool_calls", None)
+                    tool_calls_list = [
+                        ToolCallInfo(id=tc_item["id"], name=tc_item["name"], args=tc_item.get("args", {}))
+                        for tc_item in (tc or [])
+                    ] or None
                 else:
                     # 兼容字典格式
                     role = "user" if isinstance(msg, dict) and msg.get("type") == "human" else "assistant"
                     content = msg.get("content", "") if isinstance(msg, dict) else str(msg)
+                    tool_calls_list = None
 
+                # 有 tool_calls 的消息保留（前端需要渲染绿色标签）
                 messages.append(MessageInfo(
                     id=f"{session_id}-{i}",
                     role=role,
                     content=content,
                     timestamp=state.checkpoint.get("ts", datetime.now().isoformat()),
+                    tool_calls=tool_calls_list,
                 ))
     except Exception as e:
         # 会话不存在或读取失败时返回空列表
