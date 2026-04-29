@@ -36,6 +36,21 @@ const MAX_HEIGHT_DESKTOP = 600;
 const MOBILE_NAV_HEIGHT = 56; // h-14 = 56px
 const MOBILE_MAX_RATIO = 0.7; // 移动端面板不超过可视区域 70%
 const PANEL_WIDTH = 400; // 桌面端面板宽度
+const BASE_URL = (import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL?.replace(/\/$/, "") || "";
+
+/** 路由路径 → AgentPageContext 纯函数映射 */
+function parsePageContext(pathname: string): AgentPageContext | null {
+  const rp = BASE_URL ? pathname.replace(BASE_URL, "") || "/" : pathname;
+  if (rp === "/" || rp === "") return { page_type: "home" };
+  if (rp.startsWith("/explore")) return { page_type: "explore" };
+  if (rp.startsWith("/entries/")) {
+    const entryId = rp.split("/entries/")[1]?.split("/")[0] || undefined;
+    return { page_type: "entry", entry_id: entryId };
+  }
+  if (rp.startsWith("/review")) return { page_type: "review" };
+  if (rp.startsWith("/graph")) return { page_type: "graph" };
+  return null;
+}
 
 export function FloatingChat() {
   const isMobile = useIsMobile();
@@ -71,8 +86,14 @@ export function FloatingChat() {
   const messages = currentSession?.messages ?? [];
   const hasMessages = messages.length > 0;
 
-  // 最后一条 assistant 消息中 isFollowUp 标记
-  const lastAssistantMsg = [...messages].reverse().find((m) => m.role === "assistant" && m.type === "text");
+  // 最后一条 assistant 消息中 isFollowUp 标记（从末尾查找，避免 reverse 拷贝）
+  let lastAssistantMsg: typeof messages[0] | undefined;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === "assistant" && messages[i].type === "text") {
+      lastAssistantMsg = messages[i];
+      break;
+    }
+  }
   const followUpPrompt = lastAssistantMsg?.isFollowUp ? lastAssistantMsg.content : null;
 
   // 是否有活跃对话（正在流式传输或加载中）
@@ -83,33 +104,13 @@ export function FloatingChat() {
 
   // 新用户首页隐藏 FloatingChat，避免双入口混淆
   const isNewUser = user ? !user.onboarding_completed : false;
-  const base = (import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL?.replace(/\/$/, "") || "";
-  const relativePath = base ? location.pathname.replace(base, "") || "/" : location.pathname;
-  if (isNewUser && relativePath === "/") {
+  if (isNewUser && parsePageContext(location.pathname)?.page_type === "home") {
     return null;
   }
 
   // 路由变化时更新 pageContext
   useEffect(() => {
-    const path = location.pathname;
-    const base = (import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL?.replace(/\/$/, "") || "";
-    const rp = base ? path.replace(base, "") || "/" : path;
-
-    let ctx: AgentPageContext | null = null;
-
-    if (rp === "/" || rp === "") {
-      ctx = { page_type: "home" };
-    } else if (rp.startsWith("/explore")) {
-      ctx = { page_type: "explore" };
-    } else if (rp.startsWith("/entries/")) {
-      const entryId = rp.split("/entries/")[1]?.split("/")[0] || undefined;
-      ctx = { page_type: "entry", entry_id: entryId };
-    } else if (rp.startsWith("/review")) {
-      ctx = { page_type: "review" };
-    } else if (rp.startsWith("/graph")) {
-      ctx = { page_type: "graph" };
-    }
-
+    const ctx = parsePageContext(location.pathname);
     const current = pageContext;
     if (
       current?.page_type !== ctx?.page_type ||
@@ -135,7 +136,7 @@ export function FloatingChat() {
       sendMessage({
         text: "__greeting__",
         sessionId: sid,
-        pageContext: pageContext ?? undefined,
+        pageContext: useAgentStore.getState().pageContext ?? undefined,
         hidden: true,
         onDone: () => {
           fetchSessions().catch(() => {});
