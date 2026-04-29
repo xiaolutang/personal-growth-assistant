@@ -95,9 +95,9 @@
   "archived_phases": [],
   "summary": {
     "total": 3,
-    "pending": 1,
+    "pending": 0,
     "in_progress": 0,
-    "completed": 2,
+    "completed": 3,
     "cancelled": 0
   },
   "features": [
@@ -192,7 +192,7 @@
       "description": "修改 run_eval.py，在评估完成后自动调用 report_generator 生成 HTML 报告并保存到 data/eval_reports/YYYY-MM-DD_HHMMSS.html，同时追加 history.json。添加 --report-dir 参数控制报告输出目录。环境元数据来源：LLM_MODEL 从 os.environ.get('LLM_MODEL') 读取，git commit 从 subprocess 'git rev-parse --short HEAD' 获取，两者失败时降级为 'unknown'。\n\n重构契约：\n- run_single_turn() 返回 (EvaluationReport, list[dict]) 二元组，第二个元素为 per-case records 列表\n- run_negative() 返回 (NegativeReport, list[dict]) 二元组，第二个元素为 per-case records 列表\n- 每个 per-case record 按 B193 统一 schema 填充\n- agent_reply 来源：parse_sse_stream 返回的 content 字段（当前 SSE content 事件发送 {\"content\": text}，parse_sse_stream 第 78 行用 data.get(\"content\", \"\") 读取，二者一致）\n\n路径解析：默认 report-dir 为项目根目录下的 data/eval_reports/（通过 Path(__file__).resolve().parent.parent.parent.parent / \"data\" / \"eval_reports\" 获取），--report-dir 可覆盖。history.json 与 HTML 报告同目录。",
       "verification": "L1",
       "depends_on": ["B194"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "acceptance_criteria": [
         "run_eval.py 评估完成后自动生成 HTML 报告",

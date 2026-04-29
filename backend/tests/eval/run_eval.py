@@ -7,9 +7,10 @@
     uv run python -m tests.eval.run_eval --username <user> --password <pwd>
 
 参数:
-    --base-url   Agent 地址 (默认 http://localhost:8001)
-    --dataset    评估范围: single / negative / all (默认 all)
-    --output     报告输出路径 (默认输出到终端)
+    --base-url     Agent 地址 (默认 http://localhost:8001)
+    --dataset      评估范围: single / negative / all (默认 all)
+    --output       JSON 报告输出路径 (默认输出到终端)
+    --report-dir   HTML 报告输出目录 (默认项目根目录 data/eval_reports/)
 """
 
 from __future__ import annotations
@@ -17,10 +18,13 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
+import subprocess
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import httpx
 
@@ -36,6 +40,13 @@ from tests.eval.framework import (
     TestCase,
     judge_negative_case,
     judge_test_case,
+)
+from tests.eval.report_generator import (
+    EvalReportData,
+    append_history,
+    build_report_data,
+    generate_html_report,
+    load_history,
 )
 from tests.eval.transcript import (
     AgentTrace,
@@ -163,10 +174,17 @@ async def run_single_turn(
     client: RealAgentClient,
     cases: List[TestCase],
     transcript_store: TranscriptStore | None = None,
-) -> EvaluationReport:
-    """运行单轮正向评估"""
+) -> Tuple[EvaluationReport, List[Dict[str, Any]]]:
+    """运行单轮正向评估
 
-    # 缓存每次调用的完整结果（含 content），用于 transcript
+    Returns:
+        (EvaluationReport, per_case_records) 二元组。
+        每个 per_case_record 含:
+            input, expected_tools, actual_tools, agent_reply,
+            passed, category, elapsed_seconds
+    """
+
+    # 缓存每次调用的完整结果（含 content），用于 transcript 和 agent_reply
     _call_cache: Dict[str, dict] = {}
 
     async def invoke_fn(user_input: str, thread_id: str) -> dict:
@@ -178,6 +196,7 @@ async def run_single_turn(
 
     all_results = []
     category_results: Dict[str, list] = {}
+    per_case_records: List[Dict[str, Any]] = []
 
     total = len(cases)
     for idx, tc in enumerate(cases):
@@ -191,10 +210,24 @@ async def run_single_turn(
         tools_str = ",".join(actual_tools) if actual_tools else "(none)"
         print(f"{mark} [{elapsed:.1f}s] tools=[{tools_str}]")
 
+        # 获取 agent_reply
+        call_data = _call_cache.get(case_results[0].thread_id, {}) if case_results else {}
+        agent_reply = call_data.get("content", "")
+
+        # 构建 per-case record
+        per_case_records.append({
+            "input": tc.user_input,
+            "expected_tools": tc.expected_tools,
+            "actual_tools": actual_tools,
+            "agent_reply": agent_reply,
+            "passed": passed,
+            "category": tc.category,
+            "elapsed_seconds": round(elapsed, 4),
+        })
+
         # 保存 EvalTranscript
         if transcript_store and case_results:
             r = case_results[0]
-            call_data = _call_cache.get(r.thread_id, {})
             trace = AgentTrace(
                 input=tc.user_input,
                 output=call_data.get("content", ""),
@@ -256,16 +289,24 @@ async def run_single_turn(
         k=runner.k,
         category_stats=category_stats,
         results=all_results,
-    )
+    ), per_case_records
 
 
 async def run_negative(
     client: RealAgentClient,
     cases: List[NegativeTestCase],
-) -> NegativeReport:
-    """运行负面评估"""
+) -> Tuple[NegativeReport, List[Dict[str, Any]]]:
+    """运行负面评估
+
+    Returns:
+        (NegativeReport, per_case_records) 二元组。
+        每个 per_case_record 含:
+            input, should_not_call, actual_tools, agent_reply,
+            violated, violated_tools, category, elapsed_seconds
+    """
 
     all_results = []
+    per_case_records: List[Dict[str, Any]] = []
     total = len(cases)
 
     for idx, tc in enumerate(cases):
@@ -284,6 +325,18 @@ async def run_negative(
         else:
             print()
 
+        # 构建 per-case record
+        per_case_records.append({
+            "input": tc.user_input,
+            "should_not_call": tc.should_not_call,
+            "actual_tools": result["tools"],
+            "agent_reply": result.get("content", ""),
+            "violated": violated,
+            "violated_tools": violated_tools,
+            "category": tc.category,
+            "elapsed_seconds": round(elapsed, 4),
+        })
+
         from tests.eval.framework import NegativeEvalResult
 
         all_results.append(NegativeEvalResult(
@@ -299,7 +352,7 @@ async def run_negative(
         total_cases=len(cases),
         total_violations=total_violations,
         results=all_results,
-    )
+    ), per_case_records
 
 
 # ── 报告输出 ──
@@ -357,6 +410,43 @@ def print_negative_details(report: NegativeReport, cases: List[NegativeTestCase]
         print()
 
 
+# ── 环境信息 ──
+
+
+def _get_env_info() -> Dict[str, str]:
+    """获取环境信息：git commit hash + LLM_MODEL
+
+    失败时降级为 'unknown'。
+    """
+    env_info: Dict[str, str] = {}
+
+    # git commit hash
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        env_info["git_commit"] = result.stdout.strip() if result.returncode == 0 else "unknown"
+    except Exception:
+        env_info["git_commit"] = "unknown"
+
+    # LLM_MODEL
+    env_info["model"] = os.environ.get("LLM_MODEL", "unknown")
+
+    return env_info
+
+
+def _get_default_report_dir() -> Path:
+    """获取默认报告目录：项目根目录/data/eval_reports/
+
+    路径解析: run_eval.py 在 backend/tests/eval/ 下，
+    向上 4 级到项目根目录，再拼接 data/eval_reports/。
+    """
+    return Path(__file__).resolve().parent.parent.parent.parent / "data" / "eval_reports"
+
+
 # ── 主入口 ──
 
 
@@ -367,6 +457,10 @@ async def main():
     parser.add_argument("--password", required=True)
     parser.add_argument("--dataset", choices=["single", "negative", "all"], default="all")
     parser.add_argument("--output", help="报告输出 JSON 文件路径")
+    parser.add_argument(
+        "--report-dir",
+        help="HTML 报告输出目录 (默认项目根目录 data/eval_reports/)",
+    )
     args = parser.parse_args()
 
     # 1. 登录
@@ -397,12 +491,15 @@ async def main():
     # 初始化 TranscriptStore
     transcript_store = TranscriptStore()
 
+    # 收集所有 per-case records 用于 HTML 报告
+    all_case_records: List[Dict[str, Any]] = []
+
     # 3. 单轮正向评估
     if args.dataset in ("single", "all"):
         print("\n=== 单轮正向评估 (68 条) ===")
         cases = DatasetLoader.load_single_turn()
         start = time.time()
-        report = await run_single_turn(client, cases, transcript_store=transcript_store)
+        report, single_records = await run_single_turn(client, cases, transcript_store=transcript_store)
         elapsed = time.time() - start
 
         print(f"\n{report.to_text()}")
@@ -419,12 +516,14 @@ async def main():
             }),
         }
 
+        all_case_records.extend(single_records)
+
     # 4. 负面评估
     if args.dataset in ("negative", "all"):
         print("\n=== 负面评估 (24 条) ===")
         neg_cases = DatasetLoader.load_negative()
         start = time.time()
-        neg_report = await run_negative(client, neg_cases)
+        neg_report, neg_records = await run_negative(client, neg_cases)
         elapsed = time.time() - start
 
         print(f"\n{neg_report.to_text()}")
@@ -439,11 +538,59 @@ async def main():
             "violated_ids": [r.test_id for r in neg_report.results if r.violated],
         }
 
-    # 5. 输出 JSON 报告
+        all_case_records.extend(neg_records)
+
+    # 5. 输出 JSON 报告（兼容原有 --output）
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump(output_data, f, ensure_ascii=False, indent=2)
         print(f"\n报告已保存到: {args.output}")
+
+    # 6. 生成 HTML 报告并追加 history.json
+    reports_dir = Path(args.report_dir) if args.report_dir else _get_default_report_dir()
+    reports_dir.mkdir(parents=True, exist_ok=True)
+
+    env_info = _get_env_info()
+    eval_time = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    eval_time_iso = datetime.now().isoformat()
+
+    # 构建 report data
+    report_data = build_report_data(
+        case_records=all_case_records,
+        dataset_mode=args.dataset,
+        env_info=env_info,
+        eval_time=eval_time_iso,
+    )
+
+    # 生成 HTML 报告
+    html_filename = f"{eval_time}.html"
+    html_path = reports_dir / html_filename
+
+    history_data = load_history(reports_dir)
+    try:
+        html_content = generate_html_report(report_data, history_data=history_data)
+        html_path.write_text(html_content, encoding="utf-8")
+        print(f"\nHTML 报告已保存到: {html_path}")
+    except Exception as e:
+        print(f"\n[Warning] HTML 报告生成失败: {e}", file=sys.stderr)
+
+    # 追加 history.json
+    history_record = {
+        "eval_time": eval_time_iso,
+        "dataset_mode": args.dataset,
+        "pass_rate": report_data.pass_rate,
+        "total_positive": report_data.total_positive,
+        "total_passed": report_data.total_passed,
+        "total_negative": report_data.total_negative,
+        "total_violations": report_data.total_violations,
+        "violation_rate": report_data.violation_rate,
+        "html_file": html_filename,
+        "env_info": env_info,
+    }
+    try:
+        append_history(history_record, reports_dir)
+    except Exception as e:
+        print(f"[Warning] history.json 追加失败: {e}", file=sys.stderr)
 
     print("\n=== 评估完成 ===")
     return client
