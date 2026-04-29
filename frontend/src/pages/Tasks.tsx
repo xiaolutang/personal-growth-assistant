@@ -208,6 +208,7 @@ export function Tasks() {
                 selectable={selectMode}
                 selectedIds={selectedIds}
                 onSelect={toggleSelect}
+                activeSubTab={activeSubTab}
               />
             ) : isFilterEmpty ? (
               <TaskList
@@ -218,9 +219,10 @@ export function Tasks() {
                 selectable={selectMode}
                 selectedIds={selectedIds}
                 onSelect={toggleSelect}
+                activeSubTab={activeSubTab}
               />
             ) : (
-              <TaskList tasks={filteredTasks} selectable={selectMode} selectedIds={selectedIds} onSelect={toggleSelect} />
+              <TaskList tasks={filteredTasks} selectable={selectMode} selectedIds={selectedIds} onSelect={toggleSelect} activeSubTab={activeSubTab} />
             )}
 
             {/* F03: 返回数量 == limit 时底部显示「可能还有更多条目」提示 */}
