@@ -104,6 +104,10 @@ export interface SendMessageParams {
   text: string;
   sessionId?: string;
   pageContext?: AgentPageContext | null;
+  /** 为 true 时不将用户消息添加到消息列表（用于 __greeting__ 等隐藏触发） */
+  hidden?: boolean;
+  /** SSE done 事件触发后的回调（用于 greeting 完成后刷新会话列表） */
+  onDone?: () => void;
 }
 
 /** Agent 追问回调（done 后输入框聚焦） */
@@ -341,7 +345,7 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
   // ── 对话操作 ──
 
   sendMessage: async (params: SendMessageParams) => {
-    const { text, pageContext } = params;
+    const { text, pageContext, hidden, onDone } = params;
     const sessionId = params.sessionId || get().currentSessionId;
 
     if (!text.trim()) return;
@@ -359,8 +363,8 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
     _activeAbortController = new AbortController();
     const signal = _activeAbortController.signal;
 
-    // 添加用户消息
-    const userMsg: AgentMessage = {
+    // hidden 模式下不添加用户消息到消息列表
+    const userMsg: AgentMessage | null = hidden ? null : {
       id: generateId("msg"),
       type: "text",
       role: "user",
@@ -371,7 +375,11 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
     set((state) => ({
       sessions: state.sessions.map((s) =>
         s.id === sid
-          ? { ...s, messages: [...s.messages, userMsg], updatedAt: Date.now() }
+          ? {
+              ...s,
+              messages: userMsg ? [...s.messages, userMsg] : s.messages,
+              updatedAt: Date.now(),
+            }
           : s
       ),
       currentSessionId: sid,
@@ -379,7 +387,7 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
       isStreaming: true,
       thinkingContent: "",
       currentToolCalls: new Map(),
-      error: null,
+      error: null, // 重置错误状态
     }));
 
     try {
@@ -415,12 +423,22 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
         } catch {
           // 使用默认错误消息
         }
-        set({ isLoading: false, isStreaming: false, error: errorMessage });
+        // hidden 模式静默降级，不设置 error
+        if (hidden) {
+          set({ isLoading: false, isStreaming: false });
+        } else {
+          set({ isLoading: false, isStreaming: false, error: errorMessage });
+        }
         return;
       }
 
       if (!response.body) {
-        set({ isLoading: false, isStreaming: false, error: "响应体为空" });
+        // hidden 模式静默降级
+        if (hidden) {
+          set({ isLoading: false, isStreaming: false });
+        } else {
+          set({ isLoading: false, isStreaming: false, error: "响应体为空" });
+        }
         return;
       }
 
@@ -663,7 +681,10 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
 
           case "error": {
             const errorData = data as SSEEventData["error"];
-            set({ error: errorData.message });
+            // hidden 模式下静默处理错误，不设置 error 状态
+            if (!hidden) {
+              set({ error: errorData.message });
+            }
             // 不在这里设置 isLoading=false，等 done 事件
             break;
           }
@@ -675,6 +696,11 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
               thinkingContent: "",
               // 保留 currentToolCalls 用于 UI 展示，直到下次 sendMessage 时清空
             }));
+
+            // 触发 onDone 回调（greeting 完成后刷新会话列表等）
+            if (onDone) {
+              try { onDone(); } catch { /* 回调失败不影响主流程 */ }
+            }
 
             // 如果没有 assistant 消息被创建（例如只有 tool_call），
             // 且没有 error，说明 Agent 可能需要追问
@@ -704,8 +730,13 @@ export const useAgentStore = create<AgentStore>()((set, get) => ({
         // 用户主动取消，不视为错误
         return;
       }
-      const errorMessage = err instanceof Error ? err.message : "未知错误";
-      set({ isLoading: false, isStreaming: false, error: errorMessage });
+      // hidden 模式下静默降级，不设置 error
+      if (hidden) {
+        set({ isLoading: false, isStreaming: false });
+      } else {
+        const errorMessage = err instanceof Error ? err.message : "未知错误";
+        set({ isLoading: false, isStreaming: false, error: errorMessage });
+      }
     } finally {
       // 确保 loading 状态被重置
       set((state) => {

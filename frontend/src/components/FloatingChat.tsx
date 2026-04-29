@@ -61,7 +61,11 @@ export function FloatingChat() {
     setPanelHeight,
     pageContext,
     setPageContext,
+    fetchSessions,
   } = useAgentStore();
+
+  // greeting 防重复发送标记
+  const greetingSentRef = useRef(false);
 
   const currentSession = getCurrentSession();
   const messages = currentSession?.messages ?? [];
@@ -114,6 +118,35 @@ export function FloatingChat() {
       setPageContext(ctx);
     }
   }, [location.pathname]);
+
+  // 首次展开面板时自动发送 greeting（新用户无历史会话）
+  useEffect(() => {
+    if (!isExpanded || greetingSentRef.current) return;
+    greetingSentRef.current = true;
+
+    // 先确保 sessions 数据已加载，避免因 sessions 尚未从后端加载完而误判为新用户
+    fetchSessions().then(() => {
+      // 通过 getState 获取最新的 sessions 状态，而非闭包中的旧值
+      const currentSessions = useAgentStore.getState().sessions;
+      if (currentSessions.length > 0) return; // 老用户，不发 greeting
+
+      // 新用户，创建会话并发送隐藏 greeting
+      const sid = createSession();
+      sendMessage({
+        text: "__greeting__",
+        sessionId: sid,
+        pageContext: pageContext ?? undefined,
+        hidden: true,
+        onDone: () => {
+          fetchSessions().catch(() => {});
+        },
+      }).catch(() => {
+        // 发送失败静默降级，不阻塞面板使用
+      });
+    }).catch(() => {
+      // fetchSessions 失败静默降级
+    });
+  }, [isExpanded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 点击面板外部收起（排除 Popover Portal 内容，避免点击反馈表单时关闭面板）
   useEffect(() => {
