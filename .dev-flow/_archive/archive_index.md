@@ -1,18 +1,28 @@
 # 归档索引
 
-## 进行中需求包
+## 已完成需求包
+
+### R045: 评估 HTML 报告
+
+- 状态: 已完成
+- 分支: `feat/R045-eval-html-report`
+- 主题: 评估报告数据模型 + HTML 模板 + run_eval 集成 + Agent 优化 + 中文化
+- 目录: `R045_eval-html-report/`
+- 完成时间: 2026-04-29
+- 任务数: 3 (B193-B195)
+- 验证: pytest 1370 + vitest 565 + build + 评估通过率 88.24%
 
 ### R044: 统一智能体重构
 
-- 状态: 进行中
+- 状态: 已完成
 - 分支: `feat/R044-unified-react-agent`
 - 主题: 两套并行对话系统合并为 LangGraph ReAct Agent 统一智能体
 - 目录: `R044_unified-react-agent/`
-- 开始时间: 2026-04-28
+- 完成时间: 2026-04-29
 - 任务数: 14 (B185-B192, F185-F187, S45-S47)
-- 决策来源: `.dev-flow/decisions/2026-04-28--agent-refactoring.md`
+- 决策来源: `_archive/R044_unified-react-agent/decisions/`
 
-## 已完成需求包
+## 已完成需求包（历史）
 
 ### R043: 架构收敛
 
