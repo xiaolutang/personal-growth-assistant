@@ -19,10 +19,18 @@ function validateUrlParam<T>(value: string | null, validValues: readonly T[]): T
   return validValues.includes(value as T) ? (value as T) : null;
 }
 
+/** 获取本地日期字符串 YYYY-MM-DD */
+function toLocalDateString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 // 获取日期范围
 function getDateRange(option: string) {
   const now = new Date();
-  const today = now.toISOString().split("T")[0];
+  const today = toLocalDateString(now);
 
   switch (option) {
     case "today":
@@ -33,16 +41,16 @@ function getDateRange(option: string) {
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekStart.getDate() + 6);
       return {
-        start: weekStart.toISOString().split("T")[0],
-        end: weekEnd.toISOString().split("T")[0],
+        start: toLocalDateString(weekStart),
+        end: toLocalDateString(weekEnd),
       };
     }
     case "month": {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
       return {
-        start: monthStart.toISOString().split("T")[0],
-        end: monthEnd.toISOString().split("T")[0],
+        start: toLocalDateString(monthStart),
+        end: toLocalDateString(monthEnd),
       };
     }
     default:

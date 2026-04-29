@@ -1,8 +1,8 @@
-/** 共享的 Markdown 链接渲染器：/entry/ 走 SPA 导航，其他走原生跳转 */
+/** 共享的 Markdown 链接渲染器：/entries/ 走 SPA 导航，其他走原生跳转 */
 export function getMarkdownComponents(navigate: (path: string) => void) {
   return {
     a: ({ href, children }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { children?: React.ReactNode }) => {
-      if (href?.startsWith("/entry/")) {
+      if (href?.startsWith("/entries/")) {
         return (
           <span
             className="text-primary hover:underline cursor-pointer"

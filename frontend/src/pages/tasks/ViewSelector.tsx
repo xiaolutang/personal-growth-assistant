@@ -1,11 +1,11 @@
-import { List, FolderTree } from "lucide-react";
+import { List, FolderTree, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ViewKey, ViewOption } from "./constants";
 
-/** Default view options — F09 can extend with { key: "timeline", label: "时间线" } */
 const DEFAULT_VIEW_OPTIONS: ViewOption[] = [
   { key: "list", label: "列表", icon: <List className="h-4 w-4" /> },
   { key: "grouped", label: "按项目", icon: <FolderTree className="h-4 w-4" /> },
+  { key: "timeline", label: "时间线", icon: <Calendar className="h-4 w-4" /> },
 ];
 
 interface ViewSelectorProps {

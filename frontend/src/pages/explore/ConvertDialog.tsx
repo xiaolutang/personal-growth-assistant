@@ -62,7 +62,7 @@ export function ConvertDialog({ open, onClose, onSuccess, entry, defaultTarget =
         target_category: targetCategory,
         priority: priority || null,
         planned_date: plannedDate || null,
-        parent_id: null,
+        parent_id: entry.parent_id ?? null,
       });
       const label = targetCategory === "task" ? "任务" : "决策";
       toast.success(`已转为${label}：${entry.title}`);

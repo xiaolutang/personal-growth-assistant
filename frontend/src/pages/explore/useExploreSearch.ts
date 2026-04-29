@@ -124,10 +124,11 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
       setIsSearching(true);
       setSearchError(null);
       try {
+        // F12: 搜索模式不传 filter_type，让后端返回全类型结果
         const result = await searchEntries(
           searchQuery.trim() || "",
           20,
-          activeTab || undefined, // Tab 过滤透传到后端 filter_type
+          undefined,
           searchFilters,
         );
         if (!cancelled) {
@@ -216,10 +217,11 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
     setSearchError(null);
     setShowSuggestions(false);
     try {
+      // F12: 搜索模式不传 filter_type，让后端返回全类型结果
       const result = await searchEntries(
         searchQuery.trim() || "",
         20,
-        activeTab || undefined, // Tab 过滤透传到后端 filter_type
+        undefined,
         searchFilters,
       );
       const mapped: Task[] = (result.results ?? []).map(normalizeSearchResult);

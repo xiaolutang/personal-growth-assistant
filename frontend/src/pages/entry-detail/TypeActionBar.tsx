@@ -26,6 +26,7 @@ export function TypeActionBar({ entry, parentEntry, onReload }: TypeActionBarPro
   const [convertTarget, setConvertTarget] = useState<"task" | "decision">("task");
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [showCompletionPrompt, setShowCompletionPrompt] = useState(false);
+  const [convertingToNote, setConvertingToNote] = useState(false);
 
   const { category } = entry;
 
@@ -128,8 +129,6 @@ export function TypeActionBar({ entry, parentEntry, onReload }: TypeActionBarPro
 
   // question: 转为笔记（独立创建新 note，不走 convert API）
   if (category === "question") {
-    const [convertingToNote, setConvertingToNote] = useState(false);
-
     const handleConvertToNote = async () => {
       setConvertingToNote(true);
       try {
@@ -140,7 +139,7 @@ export function TypeActionBar({ entry, parentEntry, onReload }: TypeActionBarPro
           parent_id: entry.id,
         });
         toast.success("笔记已创建");
-        navigate(`/entry/${note.id}`);
+        navigate(`/entries/${note.id}`);
       } catch {
         toast.error("创建笔记失败，请重试");
       } finally {
@@ -181,7 +180,7 @@ export function TypeActionBar({ entry, parentEntry, onReload }: TypeActionBarPro
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">关联任务:</span>
             <button
-              onClick={() => navigate(`/entry/${parentEntry.id}`)}
+              onClick={() => navigate(`/entries/${parentEntry.id}`)}
               className="text-primary hover:underline font-medium"
             >
               {parentEntry.title}

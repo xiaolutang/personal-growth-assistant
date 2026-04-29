@@ -15,6 +15,7 @@ import { STATUS_OPTIONS, TASK_QUERY_PARAMS, QUICK_DATE_OPTIONS, PRIORITY_OPTIONS
 import { useTaskFilters } from "./tasks/useTaskFilters";
 import { ViewSelector } from "./tasks/ViewSelector";
 import { GroupedView } from "./tasks/GroupedView";
+import { TimelineView } from "./tasks/TimelineView";
 import { useEffect, useRef } from "react";
 
 export function Tasks() {
@@ -72,6 +73,21 @@ export function Tasks() {
       }
       return (
         <GroupedView
+          tasks={filteredTasks}
+          selectable={selectMode}
+          selectedIds={selectedIds}
+          onSelect={toggleSelect}
+        />
+      );
+    }
+
+    // Timeline view — F09
+    if (activeView === "timeline") {
+      if (isTotallyEmpty) {
+        return <TimelineView tasks={[]} />;
+      }
+      return (
+        <TimelineView
           tasks={filteredTasks}
           selectable={selectMode}
           selectedIds={selectedIds}

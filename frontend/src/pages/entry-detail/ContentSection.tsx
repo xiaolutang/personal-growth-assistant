@@ -308,7 +308,7 @@ export function ContentSection({
                       <div
                         key={noteId}
                         className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                        onClick={() => navigate(`/entry/${noteId}`)}
+                        onClick={() => navigate(`/entries/${noteId}`)}
                       >
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-muted-foreground" />

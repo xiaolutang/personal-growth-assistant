@@ -13,6 +13,14 @@ interface TimelineViewProps {
   onSelect?: (id: string) => void;
 }
 
+/** 获取本地日期字符串 YYYY-MM-DD */
+function toLocalDateString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 /** 判断一个日期字符串属于哪个时间线分组 */
 function getTimelineGroup(plannedDate: string | undefined, taskStatus: string): TimelineGroupKey {
   // 已完成或已取消的不算逾期
@@ -20,7 +28,7 @@ function getTimelineGroup(plannedDate: string | undefined, taskStatus: string): 
 
   const dateStr = plannedDate.split("T")[0];
   const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
+  const todayStr = toLocalDateString(now);
 
   // 逾期：日期 < 今天，且任务未完成
   if (dateStr < todayStr && taskStatus !== "complete" && taskStatus !== "cancelled") {
@@ -33,7 +41,7 @@ function getTimelineGroup(plannedDate: string | undefined, taskStatus: string): 
   // 明天
   const tomorrow = new Date(now);
   tomorrow.setDate(now.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split("T")[0];
+  const tomorrowStr = toLocalDateString(tomorrow);
   if (dateStr === tomorrowStr) return "tomorrow";
 
   // 本周（本周日 00:00 ~ 周六 23:59）
