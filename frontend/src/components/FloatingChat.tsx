@@ -18,11 +18,14 @@ import {
   RotateCcw,
   X,
   MessageSquare,
+  History,
 } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { FeedbackPanel } from "@/components/FeedbackPanel";
+import { SessionList } from "@/components/SessionList";
 import { useAgentStore, type AgentPageContext } from "@/stores/agentStore";
 import { useUserStore } from "@/stores/userStore";
+import { cn } from "@/lib/utils";
 import { MessageList } from "@/components/AgentChat/MessageList";
 import { ChatInput } from "@/components/AgentChat/ChatInput";
 import { ThinkingIndicator } from "@/components/AgentChat/ThinkingIndicator";
@@ -59,6 +62,7 @@ export function FloatingChat() {
   const [isDragging, setIsDragging] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [showSessionList, setShowSessionList] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -72,6 +76,7 @@ export function FloatingChat() {
     resetCurrentSession,
     clearError,
     createSession,
+    switchSession,
     panelHeight,
     setPanelHeight,
     pageContext,
@@ -107,6 +112,11 @@ export function FloatingChat() {
   if (isNewUser && parsePageContext(location.pathname)?.page_type === "home") {
     return null;
   }
+
+  // 挂载时加载会话列表数据（不依赖面板展开）
+  useEffect(() => {
+    fetchSessions();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 路由变化时更新 pageContext
   useEffect(() => {
@@ -169,6 +179,7 @@ export function FloatingChat() {
       }
       if (panelRef.current && !panelRef.current.contains(target)) {
         setIsExpanded(false);
+        setShowSessionList(false);
       }
     };
 
@@ -211,6 +222,12 @@ export function FloatingChat() {
     clearError();
   }, [resetCurrentSession, clearError]);
 
+  // 切换会话
+  const handleSwitchSession = useCallback((sessionId: string) => {
+    switchSession(sessionId);
+    setShowSessionList(false);
+  }, [switchSession]);
+
   // 展开/收起面板
   const handleToggleExpand = useCallback(() => {
     setIsExpanded((prev) => !prev);
@@ -218,6 +235,7 @@ export function FloatingChat() {
 
   const handleClosePanel = useCallback(() => {
     setIsExpanded(false);
+    setShowSessionList(false);
   }, []);
 
   // 移动端最大高度
@@ -338,14 +356,27 @@ export function FloatingChat() {
               )}
             </div>
             <div className="flex items-center gap-1 shrink-0">
-              {hasMessages && (
+              <button
+                type="button"
+                onClick={() => setShowSessionList(!showSessionList)}
+                className={cn(
+                  "h-6 w-6 inline-flex items-center justify-center rounded-md transition-colors",
+                  showSessionList
+                    ? "text-indigo-500 bg-indigo-50 dark:bg-indigo-950/30"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+                aria-label="对话历史"
+              >
+                <History className="h-3.5 w-3.5" />
+              </button>
+              {hasMessages && !showSessionList && (
                 <button
                   type="button"
                   onClick={handleReset}
                   className="h-6 w-6 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                   aria-label="重置对话"
                 >
-                  <RotateCcw className="h-3 w-3" />
+                  <RotateCcw className="h-3.5 w-3.5" />
                 </button>
               )}
               <Popover open={feedbackOpen} onOpenChange={setFeedbackOpen}>
@@ -379,26 +410,43 @@ export function FloatingChat() {
             </div>
           </div>
 
-          {/* 消息列表 */}
-          {(hasMessages || isLoading) && (
-            <MessageList messages={messages} footer={footer} className="flex-1 min-h-0" />
-          )}
-
-          {/* 错误提示 */}
-          {error && (
-            <div className="px-3 py-1.5 text-xs text-red-500 bg-red-50 dark:bg-red-950/20 border-t border-red-200 dark:border-red-800">
-              {error}
+          {/* 会话列表视图 */}
+          {showSessionList && (
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <SessionList
+                compact
+                showTitle={false}
+                maxHeight="100%"
+                onSwitchSession={handleSwitchSession}
+              />
             </div>
           )}
 
-          {/* 输入区域 */}
-          <ChatInput
-            value={input}
-            onChange={setInput}
-            onSend={handleSend}
-            isLoading={isLoading}
-            placeholder="输入消息..."
-          />
+          {/* 聊天视图 */}
+          {!showSessionList && (
+            <>
+              {/* 消息列表 */}
+              {(hasMessages || isLoading) && (
+                <MessageList messages={messages} footer={footer} className="flex-1 min-h-0" />
+              )}
+
+              {/* 错误提示 */}
+              {error && (
+                <div className="px-3 py-1.5 text-xs text-red-500 bg-red-50 dark:bg-red-950/20 border-t border-red-200 dark:border-red-800">
+                  {error}
+                </div>
+              )}
+
+              {/* 输入区域 */}
+              <ChatInput
+                value={input}
+                onChange={setInput}
+                onSend={handleSend}
+                isLoading={isLoading}
+                placeholder="输入消息..."
+              />
+            </>
+          )}
         </div>
       )}
     </>

@@ -1,9 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
-  MessageSquare,
-  ChevronDown,
-  ChevronRight,
   LogOut,
   User,
   Download,
@@ -11,9 +8,7 @@ import {
   PanelLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SessionList } from "@/components/SessionList";
 import { useUserStore } from "@/stores/userStore";
-import { useAgentStore } from "@/stores/agentStore";
 import { ExportDialog } from "@/components/ExportDialog";
 import { navItems } from "@/components/layout/navConfig";
 
@@ -25,16 +20,9 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen = false, onClose, collapsed = false, onToggleCollapse }: SidebarProps) {
-  const [isChatExpanded, setIsChatExpanded] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const user = useUserStore((s) => s.user);
   const logout = useUserStore((s) => s.logout);
-  const fetchSessions = useAgentStore((s) => s.fetchSessions);
-
-  // 组件挂载时从后端加载会话列表
-  useEffect(() => {
-    fetchSessions();
-  }, [fetchSessions]);
 
   // 点击导航项后关闭移动端抽屉
   const handleNavClick = () => {
@@ -110,32 +98,6 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onToggleCo
               </NavLink>
             ))}
           </nav>
-
-          {/* 对话历史 */}
-          {!collapsed && (
-            <div className="border-t">
-              <button
-                onClick={() => setIsChatExpanded(!isChatExpanded)}
-                className="flex items-center justify-between w-full px-4 py-3 text-sm hover:bg-accent transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <MessageSquare className="h-5 w-5" />
-                  <span className="font-medium">对话历史</span>
-                </div>
-                {isChatExpanded ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </button>
-
-              {isChatExpanded && (
-                <div className="border-t">
-                  <SessionList compact showTitle={false} maxHeight="320px" />
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Footer with user info */}
           <div className={cn("border-t", collapsed ? "p-2" : "p-4")}>

@@ -9,6 +9,7 @@ interface SessionListProps {
   compact?: boolean;
   showTitle?: boolean;
   maxHeight?: string;
+  onSwitchSession?: (sessionId: string) => void;
 }
 
 // 格式化相对时间
@@ -26,6 +27,7 @@ export function SessionList({
   compact = false,
   showTitle = true,
   maxHeight = "320px",
+  onSwitchSession,
 }: SessionListProps) {
   // 使用选择器避免过度订阅
   const sessions = useAgentStore((state) => state.sessions);
@@ -129,7 +131,14 @@ export function SessionList({
           sessions.map((session) => (
             <div
               key={session.id}
-              onClick={() => !editingId && switchSession(session.id)}
+              onClick={() => {
+                if (editingId) return;
+                if (onSwitchSession) {
+                  onSwitchSession(session.id);
+                } else {
+                  switchSession(session.id);
+                }
+              }}
               className={cn(
                 "flex items-center gap-2 px-4 py-2 cursor-pointer transition-colors group",
                 "hover:bg-accent",
