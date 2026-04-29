@@ -269,7 +269,7 @@
       "completed_at": "2026-04-30T02:20:00Z",
       "actual_minutes": 15,
       "evidence_file": "evidence/F04.md",
-      "commit": "pending",
+      "commit": "db55331",
       "summary": "DecisionCard + DecisionResultDialog 组件。14 个测试。YES/NO/延后 + 创建子任务。",
       "priority": "P0",
       "acceptance_criteria": [
@@ -362,7 +362,7 @@
       "completed_at": "2026-04-30T02:45:00Z",
       "actual_minutes": 15,
       "evidence_file": "evidence/F06.md",
-      "commit": "pending",
+      "commit": "db55331",
       "summary": "探索 Tab 精简为 5 个 + 搜索保留全类型 + 跨 Tab 跳转。",
       "priority": "P0",
       "acceptance_criteria": [
@@ -407,7 +407,7 @@
       "completed_at": "2026-04-30T03:00:00Z",
       "actual_minutes": 15,
       "evidence_file": "evidence/F07.md",
-      "commit": "pending",
+      "commit": "db55331",
       "summary": "ConvertDialog + inbox 转任务/决策 + 批量转化 + 卡片消失动画。14 个测试。",
       "priority": "P0",
       "acceptance_criteria": [
@@ -454,7 +454,7 @@
       "completed_at": "2026-04-30T03:10:00Z",
       "actual_minutes": 20,
       "evidence_file": "evidence/F08_view_selector.md",
-      "commit": "pending",
+      "commit": "db55331",
       "summary": "ViewSelector + GroupedView 按项目分组 + URL 同步。14 个测试。",
       "priority": "P1",
       "acceptance_criteria": [
@@ -497,7 +497,7 @@
       "completed_at": "2026-04-30T05:20:00Z",
       "actual_minutes": 30,
       "evidence_file": "evidence/F09.md",
-      "commit": "pending",
+      "commit": "358ad45",
       "summary": "TimelineView + OverdueBanner + 逾期高亮 + URL 同步。视图选择器追加时间线选项。",
       "priority": "P2",
       "acceptance_criteria": [
@@ -538,7 +538,7 @@
       "completed_at": "2026-04-30T03:10:00Z",
       "actual_minutes": 20,
       "evidence_file": "evidence/F10.md",
-      "commit": "pending",
+      "commit": "db55331",
       "summary": "CompletionPrompt + reflection 创建 + 跳转探索页 + entry_id 定位。18 个测试。",
       "priority": "P1",
       "acceptance_criteria": [
@@ -577,7 +577,7 @@
       "completed_at": "2026-04-30T05:20:00Z",
       "actual_minutes": 30,
       "evidence_file": "evidence/F11.md",
-      "commit": "pending",
+      "commit": "64d036b",
       "summary": "TypeActionBar + TypeHistoryTimeline + inbox/project/task/reflection/question 类型专属操作栏。",
       "priority": "P1",
       "acceptance_criteria": [
@@ -618,7 +618,7 @@
       "completed_at": "2026-04-30T05:20:00Z",
       "actual_minutes": 30,
       "evidence_file": "evidence/F12.md",
-      "commit": "pending",
+      "commit": "64d036b",
       "summary": "搜索结果按 7 种类型分组展示 + 类型图标+标题+计数 + 跨 Tab 跳转。",
       "priority": "P1",
       "acceptance_criteria": [
@@ -660,8 +660,8 @@
       "completed_at": "2026-04-30T05:30:00Z",
       "actual_minutes": 5,
       "evidence_file": "evidence/S13.md",
-      "commit": "358ad45",
-      "summary": "集成验证通过。1431 pytest + 731 vitest + npm build 全通过。",
+      "commit": "2968bdd",
+      "summary": "集成验证通过。1431 pytest + 731 vitest + npm build 全通过。codex_plugin code-review 修复后 2 轮 re-review 通过。",
       "priority": "P0",
       "acceptance_criteria": [
         "用户旅程 1：探索页创建 inbox → 点击「转为任务」→ 任务页出现新条目 → 完成任务 → 写复盘 → 探索页出现 reflection",
