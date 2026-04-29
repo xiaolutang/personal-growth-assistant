@@ -1,0 +1,40 @@
+{
+  "transcript_id": "eval-294",
+  "timestamp": "2026-04-29T16:37:00.295597",
+  "test_case_id": "ST-022",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "看看上周的成长周报",
+    "output": "这是你上周（4/26 ~ 5/2）的成长周报：\n\n---\n\n### 📊 任务概览\n- **总任务数**：30 项\n- **已完成**：0 项（完成率 0%）\n- **进行中**：16 项\n- **待开始**：14 项\n\n### 📝 笔记产出\n- 本周共记录了 **23 篇笔记**，内容涵盖 GraphQL、Docker、Git 等技术学习，以及跑步 5 公里等运动健康方面。\n\n---\n\n### 💡 周报总结\n\n本周在**记录和输入**方面做得不错，23 篇笔记说明你在持续学习和思考。但在**任务执行**上遇到了瓶颈——30 项任务没有一个完成，大量堆积在\"进行中\"和\"待开始\"状态。\n\n### 建议\n- **把重心从\"输入\"转向\"输出与交付\"**，这周试着先清掉一些进行中的任务\n- **大任务拆小**，拆成一天内能完成的小任务，完成一个划掉一个，重建成就感\n- **优先集中精力**，别同时开太多线，先收尾再开新\n\n完成率 0% 并不代表你没做事，可能只是任务粒度太大，不容易\"划掉\"。试试拆小之后，感受会不一样。",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "weekly",
+          "target_date": "2026-04-29"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "weekly",
+          "target_date": "2026-04-26"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 49720.31807899475,
+    "iteration_count": 2
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

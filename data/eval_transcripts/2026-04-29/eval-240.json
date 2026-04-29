@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-240",
+  "timestamp": "2026-04-29T16:07:52.287838",
+  "test_case_id": "ST-036",
+  "test_case_category": "multi_step",
+  "agent_trace": {
+    "input": "搜索所有标签包含 go 的条目，然后给其中类型为 task 的条目都加上 golang 标签",
+    "output": "搜索到了 3 条结果，不过它们都是 `note` 类型，没有 `task` 类型的条目，而且这些条目的标签里也没有 `go` 标签。\n\n搜索结果里出现这些条目是因为内容中包含了 \"go\" 这个词（比如 FastAPI 笔记中提到\"接近 Go/Node.js\"），并不是因为标签包含 go。\n\n可以帮你进一步确认一下：\n\n1. **标签 `go`**：你是指标签名是 `go`，还是标签名里包含 `go`（比如 `golang` 也算）？\n2. **搜索范围**：要不要我换个关键词再搜搜看，或者你记得那些 task 大概是什么内容吗？\n\n这样我能更准确地找到你想要的条目。",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 50,
+          "query": "go"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 21494.038105010986,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

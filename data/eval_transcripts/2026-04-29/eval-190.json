@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-190",
+  "timestamp": "2026-04-29T15:08:22.797619",
+  "test_case_id": "ST-054",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "给我讲个笑话吧",
+    "output": "好，来一个：\n\n> 程序员去面试，面试官问：\"你有什么特长？\"\n> \n> 程序员说：\"我特别擅长找 Bug。\"\n> \n> 面试官：\"太好了，你被录用了。\"\n> \n> 程序员回家后发现，自己写的简历里有三个错别字。\n\n😄 要是不好笑，我还有存货。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 11805.859088897705,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

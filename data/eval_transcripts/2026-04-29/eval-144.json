@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-144",
+  "timestamp": "2026-04-29T14:57:52.163017",
+  "test_case_id": "ST-008",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "找找关于 React Hooks 的内容",
+    "output": "搜了一下，找到一条和你搜索相关的内容：\n\n---\n\n**聊天→创建任务 API 调用优化** `task` · ✅ 已完成 · 标签：个人助手、API\n\n这条任务的内容中提到了前端 React Hooks 相关的开发工作，主要是：\n\n- **`useStreamParse` Hook** — 新增的流式解析 Hook，用于处理 SSE 流式响应\n- **`ChatBox` 组件** — 配合 Hook 使用的聊天组件\n- **`FloatingChat.tsx`** — 简化逻辑后的浮窗聊天组件\n\n这些是在你做「个人成长助手」项目中，Day 3 SSE 流式响应学习时产出的前端代码。\n\n---\n\n没有找到纯粹关于\"React Hooks 学习笔记\"之类的条目。你是在找这个项目里的具体实现，还是之前学 React Hooks 时记的笔记？如果是后者，可能当时没有记录进来。",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "React Hooks"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 15419.014930725098,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

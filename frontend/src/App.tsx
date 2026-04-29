@@ -130,7 +130,7 @@ function AppLayout() {
             <Route path="/goals/:id" element={<GoalDetail />} />
             <Route path="/inbox" element={<Navigate to="/explore?type=inbox" replace />} />
             <Route path="/notes" element={<Navigate to="/explore?type=note" replace />} />
-            <Route path="/projects" element={<Navigate to="/explore?type=project" replace />} />
+            <Route path="/projects" element={<Navigate to="/tasks?tab=project" replace />} />
             <Route path="/review" element={<Review />} />
             <Route path="/entries/:id" element={<EntryDetail />} />
             <Route path="/offline" element={<OfflineFallback />} />

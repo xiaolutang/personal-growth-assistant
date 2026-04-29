@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-198",
+  "timestamp": "2026-04-29T15:09:18.517858",
+  "test_case_id": "ST-062",
+  "test_case_category": "boundary",
+  "agent_trace": {
+    "input": "帮我做一个不存在类型的条目创建操作",
+    "output": "我理解你想试试看，不过目前支持的条目类型只有以下几种：\n\n| 分类 | 说明 |\n|------|------|\n| `project` | 项目 |\n| `task` | 任务 |\n| `note` | 笔记 |\n| `inbox` | 收件箱/待整理 |\n| `decision` | 决策记录 |\n| `reflection` | 反思 |\n| `question` | 问题 |\n\n这些之外的类型是无法创建的，系统会拒绝。\n\n如果你想试试创建条目，可以从上面的类型里选一个，告诉我你想创建什么内容就行 😄",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 8049.325942993164,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

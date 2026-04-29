@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-081",
+  "timestamp": "2026-04-29T14:26:02.027886",
+  "test_case_id": "ST-013",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "创建一个新项目：个人博客重构",
+    "output": "项目「个人博客重构」已创建好了，状态默认设为「进行中」。\n\n如果后续需要，可以随时：\n- 给项目拆分具体的**任务**（比如\"选型技术栈\"、\"设计页面\"等）\n- 设定**优先级**或**计划日期**\n- 用**标签**归类\n\n想进一步细化这个项目吗？",
+    "tool_calls": [
+      {
+        "tool": "create_entry",
+        "args": {
+          "category": "project",
+          "title": "个人博客重构"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 7133.971214294434,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

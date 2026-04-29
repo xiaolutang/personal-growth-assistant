@@ -1,4 +1,4 @@
-import { Lightbulb, FileText, Folder, Layers, Scale, RotateCcw, HelpCircle } from "lucide-react";
+import { Lightbulb, FileText, Layers, RotateCcw, HelpCircle } from "lucide-react";
 import type { Task, Category, TaskStatus, Priority, SearchResult } from "@/types/task";
 
 /**
@@ -25,14 +25,12 @@ export const TABS = [
   { key: "", label: "全部", icon: Layers },
   { key: "inbox", label: "灵感", icon: Lightbulb },
   { key: "note", label: "笔记", icon: FileText },
-  { key: "project", label: "项目", icon: Folder },
-  { key: "decision", label: "决策", icon: Scale },
   { key: "reflection", label: "复盘", icon: RotateCcw },
   { key: "question", label: "疑问", icon: HelpCircle },
 ] as const;
 
-// 探索页只展示 inbox/note/project/decision/reflection/question，不含 task
-export const EXPLORE_CATEGORIES = new Set(["inbox", "note", "project", "decision", "reflection", "question"]);
+// F06: 探索页只展示 inbox/note/reflection/question，不含 task/project/decision
+export const EXPLORE_CATEGORIES = new Set(["inbox", "note", "reflection", "question"]);
 
 // === 时间范围快选 ===
 export type TimeRange = "today" | "week" | "month" | "";

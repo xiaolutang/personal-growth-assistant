@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-028",
+  "timestamp": "2026-04-29T13:44:43.112004",
+  "test_case_id": "ST-028",
+  "test_case_category": "multi_step",
+  "agent_trace": {
+    "input": "先搜索一下关于设计模式的内容，然后帮我创建一条笔记记录今天的设计模式学习心得",
+    "output": "搜索到了一条和 AI 转型项目相关的条目，里面涉及一些软件架构和记忆系统的设计模式内容。不过你说的\"设计模式\"具体想记哪方面的学习心得呢？\n\n是软件设计模式（比如单例、工厂、观察者那些），还是 AI/Agent 相关的设计模式（比如 ReAct、RAG Pipeline 之类的）？已经学了哪些内容了？告诉我一声，我帮你把笔记整理好。",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "设计模式"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 10921.212911605835,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

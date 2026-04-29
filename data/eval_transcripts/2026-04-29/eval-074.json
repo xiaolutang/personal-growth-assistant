@@ -1,0 +1,48 @@
+{
+  "transcript_id": "eval-074",
+  "timestamp": "2026-04-29T14:23:55.193186",
+  "test_case_id": "ST-006",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "把这周的任务总结一下",
+    "output": "好的，这是你这周（4/27 ~ 5/3）的总结：\n\n---\n\n### 📊 总览\n\n| 指标 | 数据 |\n|------|------|\n| 任务总数 | 16 |\n| ✅ 已完成 | 0 |\n| 🔄 进行中 | 4 |\n| ⏳ 未开始 | 12 |\n| 📝 笔记 | 6 篇 |\n| 完成率 | 0% |\n\n---\n\n### 🔄 进行中的 4 项\n\n1. **灵感收集**（inbox）— 持续积累想法和待整理事项\n2. **Day 2：工作原则与Prompt优化**（笔记）— Prompt 工程学习笔记\n3. **AI 应用开发转型**（项目）— 客户端转 AI 应用开发工程师，当前 Week 2 阶段（约 70%）\n4. **个人成长助手开发**（项目）— 核心项目，包含 RAG + MCP Server + 记忆系统\n\n---\n\n### 📝 笔记产出（6 篇）\n\n本周记录了涵盖技术学习（Git、GraphQL、Prompt 工程、FastAPI）与运动健康方向的高质量笔记。\n\n---\n\n### 💡 观察\n\n坦率说，这周**规划很充分，执行还跟不上**——16 个任务，没有一个标记为完成。4 个\"进行中\"的项目和笔记，说明在学习方向上是明确的，但可能摊子铺得比较开。\n\n建议下周试试**每天只挑 3 件事**，先把进行中的往前推。尤其是 AI 转型计划的 Week 2 还剩 30%，CS146S Week 3 的 MCP Server 作业也还挂着，集中火力把这两个收掉，会比同时开新任务更有成就感。",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "weekly"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 10,
+          "query": "本周进行中的任务"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 20,
+          "query": "任务"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 47632.408142089844,
+    "iteration_count": 3
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

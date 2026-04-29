@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-071",
+  "timestamp": "2026-04-29T14:22:47.704054",
+  "test_case_id": "ST-003",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "我想看看今天的成长日报",
+    "output": "这是你今天的成长日报（2026-04-29）：\n\n---\n\n### 📊 任务概况\n| 状态 | 数量 |\n|------|------|\n| 总任务 | 12 |\n| 已完成 | 0 |\n| 进行中 | 2 |\n| 待开始 | 10 |\n| **完成率** | **0%** |\n\n### 📝 笔记记录\n今天写了 **6 条笔记**，涵盖 Git、GraphQL 以及跑步 5 公里等内容，学习和生活记录都挺丰富的。\n\n### 💡 AI 小结\n笔记产出不错，但任务执行上还没开张。建议从 12 项待办里挑出最核心的 1-2 件，今天先把进度从零打破，哪怕完成一件也是好的开始。\n\n---\n\n12 个任务一个都还没动，不过才早上六点多，时间还充裕。要不要看看具体有哪些任务，帮你挑一下优先级？",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "daily",
+          "target_date": "2026-04-29"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 21000.022888183594,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

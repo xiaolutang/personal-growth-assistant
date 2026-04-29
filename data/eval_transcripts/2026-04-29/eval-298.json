@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-298",
+  "timestamp": "2026-04-29T16:38:12.230848",
+  "test_case_id": "ST-026",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "查看 2024-06-01 到 2024-06-07 的周报",
+    "output": "查看的是 **2024-06-07 ~ 2024-06-13** 这一周的周报（系统以目标日期所在的自然周为单位生成）：\n\n---\n\n📊 **周报概览**\n\n| 项目 | 数据 |\n|------|------|\n| 任务总数 | 0 |\n| 已完成 | 0 |\n| 进行中 | 0 |\n| 待开始 | 0 |\n| 完成率 | 0% |\n| 笔记数 | 0 |\n\n---\n\n> **AI 总结**：本周任务完成数和笔记记录均为零，似乎度过了一个完全放空或十分忙碌的一周。建议下周尝试从设定 1-2 个简单的微任务或记录一篇小笔记开始，重新建立起日常的规划与复盘习惯。\n\n---\n\n需要说明的是，你提到的 2024-06-01 ~ 2024-06-07 跨了两周（6月1日是周六，6月3日是周一），系统只能按自然周查询。如果你还需要看 **5月27日~6月2日** 那一周的数据，我可以再帮你查一下。",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "weekly",
+          "target_date": "2024-06-07"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 25122.50280380249,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-229",
+  "timestamp": "2026-04-29T16:03:11.926586",
+  "test_case_id": "ST-025",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "删除 entry-del-999",
+    "output": "这条记录（`entry-del-999`）不存在，可能之前已经被删除了，或者 ID 有误。你可以确认一下要删除的是哪条记录？我也可以帮你搜索查找。",
+    "tool_calls": [
+      {
+        "tool": "delete_entry",
+        "args": {
+          "entry_id": "entry-del-999"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 18019.197940826416,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-197",
+  "timestamp": "2026-04-29T15:09:10.466943",
+  "test_case_id": "ST-061",
+  "test_case_category": "boundary",
+  "agent_trace": {
+    "input": "12345",
+    "output": "收到，需要我帮你做什么吗？",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 11015.630006790161,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

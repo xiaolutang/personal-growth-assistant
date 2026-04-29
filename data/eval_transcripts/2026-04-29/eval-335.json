@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-335",
+  "timestamp": "2026-04-29T16:48:20.004890",
+  "test_case_id": "ST-063",
+  "test_case_category": "boundary",
+  "agent_trace": {
+    "input": "搜索",
+    "output": "",
+    "tool_calls": [
+      {
+        "tool": "ask_user",
+        "args": {
+          "question": "想搜索什么内容？给我一个关键词或主题吧。"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 9829.402923583984,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

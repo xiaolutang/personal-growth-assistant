@@ -42,3 +42,13 @@ export const SORT_OPTIONS = [
 ] as const;
 
 export type SortOption = (typeof SORT_OPTIONS)[number]["value"];
+
+// F08: 视图选择器
+export type ViewKey = "list" | "grouped";
+export const VALID_VIEW_KEYS: ViewKey[] = ["list", "grouped"];
+
+export interface ViewOption {
+  key: string;
+  label: string;
+  icon?: React.ReactNode;
+}

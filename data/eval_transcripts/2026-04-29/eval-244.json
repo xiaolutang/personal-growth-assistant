@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-244",
+  "timestamp": "2026-04-29T16:09:02.660276",
+  "test_case_id": "ST-040",
+  "test_case_category": "ask_user",
+  "agent_trace": {
+    "input": "更新一下那个条目",
+    "output": "你提到\"那个条目\"，我不太确定具体是哪一个。能告诉我你想更新的是哪个条目吗？比如标题是什么，或者跟什么内容相关的？",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 23280.501127243042,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

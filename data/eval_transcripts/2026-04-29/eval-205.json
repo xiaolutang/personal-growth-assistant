@@ -1,0 +1,36 @@
+{
+  "transcript_id": "eval-205",
+  "timestamp": "2026-04-29T15:56:54.590442",
+  "test_case_id": "ST-001",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "帮我记录一个想法：今天学了 Python 装饰器",
+    "output": "已经帮你记下来了 📝\n\n**学习笔记：Python 装饰器**\n\n装饰器是 Python 里一个很实用的概念，本质就是在不改动原函数的情况下，给函数\"套一层\"额外功能。学通了之后，像日志记录、权限校验这些场景都能用上。\n\n如果你想补充更详细的学习内容，比如代码示例或者理解心得，随时告诉我，我可以帮你更新这条笔记。",
+    "tool_calls": [
+      {
+        "tool": "create_entry",
+        "args": {
+          "category": "note",
+          "content": "今天学了 Python 装饰器",
+          "tags": [
+            "Python",
+            "学习"
+          ],
+          "title": "学习笔记：Python 装饰器"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 26508.03017616272,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

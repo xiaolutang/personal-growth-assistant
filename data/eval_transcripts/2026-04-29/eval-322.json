@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-322",
+  "timestamp": "2026-04-29T16:46:20.657188",
+  "test_case_id": "ST-050",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "解释一下什么是 REST API",
+    "output": "REST API 是一种设计网络接口的风格，不是什么复杂的东西，核心思想就几条：\n\n**REST 是什么？**\n\nREST 全叫 \"Representational State Transfer\"，翻译过来就是\"表现层状态转化\"。听着唬人，其实就是一套约定——告诉你怎么设计一个让程序之间互相调用的接口。\n\n**几个关键原则：**\n\n1. **用 URL 表示资源**\n   比如 `/users` 代表用户列表，`/users/123` 代表 id 为 123 的那个用户。URL 里放的是\"什么东西\"，不放进\"做什么操作\"。\n\n2. **用 HTTP 方法表示操作**\n   - `GET` → 获取\n   - `POST` → 新建\n   - `PUT` → 更新（整体替换）\n   - `PATCH` → 部分更新\n   - `DELETE` → 删除\n\n   所以同样是 `/users/123`，用 GET 就是查，用 DELETE 就是删，动词交给 HTTP 方法来管。\n\n3. **无状态**\n   每次请求都得自带所有需要的信息（比如认证 token），服务器不依赖之前的请求记忆你是谁。这样好扩展，也简单。\n\n4. **统一的数据格式**\n   一般用 JSON，服务器返回结构化的数据，客户端拿到就能用。\n\n**举个例子：**\n\n```\nGET    /articles          → 获取文章列表\nGET    /articles/42       → 获取第 42 篇文章\nPOST   /articles          → 创建一篇新文章\nPUT    /articles/42       → 更新第 42 篇文章\nDELETE /articles/42       → 删除第 42 篇文章\n```\n\n一眼就能看出来在干什么，这就是 REST 的好处——**规范、直觉、好理解**。\n\n**不是所有接口都是 REST 的。** 比如你可以设计一个 `POST /doSomething` 的接口，也能用，但它不是 REST 风格。REST 只是一种被广泛采用的\"最佳实践\"风格，不是强制标准。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 29355.226755142212,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

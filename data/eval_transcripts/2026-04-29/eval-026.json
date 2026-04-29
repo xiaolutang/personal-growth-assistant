@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-026",
+  "timestamp": "2026-04-29T13:44:26.051526",
+  "test_case_id": "ST-026",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "查看 2024-06-01 到 2024-06-07 的周报",
+    "output": "查到了，不过要提醒一下：你给的时间范围是 2024-06-01 到 2024-06-07，但系统返回的是 **2024-06-07 ~ 2024-06-13** 这一周的数据（周报是以目标日期所在的自然周来统计的）。如果要看 6/1-6/7 那一周，目标日期应该落在那周内，比如 2024-06-03。\n\n以下是 **2024-06-07 ~ 2024-06-13** 的周报：\n\n---\n\n📊 **任务统计**\n- 总任务数：0\n- 完成：0 | 进行中：0 | 待开始：0\n- 完成率：0%\n\n📝 **笔记数量**：0\n\n🤖 **AI 小结**\n本周任务和笔记记录均为零，处于完全空白状态。建议从下周起设定 1-2 个最基础的小任务，或随手记录一条灵感，逐步恢复日常节奏。\n\n---\n\n看起来那一周没有记录任何内容。要不要我帮你查一下 **2024-06-03 所在的那一周**（即 6/3~6/9）的数据？",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "weekly",
+          "target_date": "2024-06-07"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 17741.82391166687,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-003",
+  "timestamp": "2026-04-29T13:39:17.640941",
+  "test_case_id": "ST-003",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "我想看看今天的成长日报",
+    "output": "今天的日报来了 📋\n\n**日期：2026-04-29（周三）**\n\n---\n\n**任务统计**\n- 总任务数：0\n- 已完成：0 | 进行中：0 | 待开始：0\n- 完成率：—\n\n**笔记统计**\n- 今日笔记：0\n\n---\n\n今天是完全空白的一天——没有待办，也没有记录。也许是难得的清闲，也可能是新一天还没开始安排。\n\n如果你有想做的事或者想记录的想法，随时告诉我，我帮你记上。",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "daily",
+          "target_date": "2026-04-29"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 13984.535932540894,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -14,9 +14,11 @@ interface DecisionCardProps {
   selectable?: boolean;
   selected?: boolean;
   onSelect?: (id: string) => void;
+  /** F06: 自定义卡片点击回调（搜索模式下跳转到任务页） */
+  onClickOverride?: (task: Task) => void;
 }
 
-export function DecisionCard({ decision, selectable = false, selected = false, onSelect }: DecisionCardProps) {
+export function DecisionCard({ decision, selectable = false, selected = false, onSelect, onClickOverride }: DecisionCardProps) {
   const storeUpdateEntry = useTaskStore((state) => state.updateEntry);
   const storeCreateEntry = useTaskStore((state) => state.createEntry);
 
@@ -99,6 +101,12 @@ export function DecisionCard({ decision, selectable = false, selected = false, o
   const handleCardClick = () => {
     if (selectable) {
       onSelect?.(decision.id);
+      return;
+    }
+    // F06: 搜索模式下支持自定义点击行为
+    if (onClickOverride) {
+      onClickOverride(decision);
+      return;
     }
   };
 

@@ -1,0 +1,55 @@
+{
+  "transcript_id": "eval-132",
+  "timestamp": "2026-04-29T14:39:51.115040",
+  "test_case_id": "ST-064",
+  "test_case_category": "directness",
+  "agent_trace": {
+    "input": "今天有哪些事情",
+    "output": "今天的状态概览：\n\n- **任务**：共 15 个，其中进行中 4 个，待开始 11 个，还没有完成的。\n- **笔记**：9 条\n\n不过搜索没找到具体关联今天的任务详情。要不要我帮你把那些进行中和待开始的任务都列出来看看？或者你想先关注哪些方面？",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "daily",
+          "target_date": "2026-04-29"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 20,
+          "query": "2026-04-29 计划任务"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 20,
+          "query": "今天要做的事"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 43541.78500175476,
+    "iteration_count": 3
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {
+    "behavior_checks": {
+      "no_greeting": true,
+      "must_show_details": true,
+      "no_ask_to_search": true
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "transcript_id": "eval-157",
+  "timestamp": "2026-04-29T15:00:28.500371",
+  "test_case_id": "ST-021",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "更新 entry-xyz789，标题改为 Rust 所有权模型，优先级设为高",
+    "output": "没找到 `entry-xyz789` 这个条目，可能 ID 有误或者它已经被删除了。\n\n你可以确认一下正确的条目 ID，或者告诉我关键词，我帮你搜一下。",
+    "tool_calls": [
+      {
+        "tool": "update_entry",
+        "args": {
+          "entry_id": "entry-xyz789",
+          "priority": "high",
+          "title": "Rust 所有权模型"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 6039.229154586792,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

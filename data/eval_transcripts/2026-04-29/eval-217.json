@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-217",
+  "timestamp": "2026-04-29T15:59:50.351509",
+  "test_case_id": "ST-013",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "创建一个新项目：个人博客重构",
+    "output": "项目「个人博客重构」已创建，状态默认设为进行中。如果后续需要拆分具体任务、设定优先级或添加备注，随时告诉我。",
+    "tool_calls": [
+      {
+        "tool": "create_entry",
+        "args": {
+          "category": "project",
+          "title": "个人博客重构"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 11287.156820297241,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

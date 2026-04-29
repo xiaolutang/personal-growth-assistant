@@ -1,0 +1,36 @@
+{
+  "transcript_id": "eval-159",
+  "timestamp": "2026-04-29T15:01:15.257688",
+  "test_case_id": "ST-023",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "创建任务：学习 AWS Lambda，添加标签 cloud 和 serverless，优先级低",
+    "output": "任务已创建 ✅\n\n- **标题**：学习 AWS Lambda\n- **标签**：cloud、serverless\n- **优先级**：低\n- **状态**：进行中\n\n需要的时候随时可以调整优先级或添加具体的学习计划。",
+    "tool_calls": [
+      {
+        "tool": "create_entry",
+        "args": {
+          "category": "task",
+          "priority": "low",
+          "tags": [
+            "cloud",
+            "serverless"
+          ],
+          "title": "学习 AWS Lambda"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 28964.285135269165,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

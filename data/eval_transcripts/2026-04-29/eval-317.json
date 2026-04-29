@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-317",
+  "timestamp": "2026-04-29T16:45:04.745761",
+  "test_case_id": "ST-045",
+  "test_case_category": "ask_user",
+  "agent_trace": {
+    "input": "删除",
+    "output": "",
+    "tool_calls": [
+      {
+        "tool": "ask_user",
+        "args": {
+          "question": "要删除哪个条目？可以告诉我关键词或标题，我帮你找一下。"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 12349.50590133667,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

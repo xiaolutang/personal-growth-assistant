@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-291",
+  "timestamp": "2026-04-29T16:35:48.856303",
+  "test_case_id": "ST-019",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "搜索关于 kubernetes 的笔记，只返回 5 条",
+    "output": "没有找到关于 Kubernetes 的笔记。可能还没有创建过相关内容，或者你当时用的是其他关键词（比如 \"k8s\"、\"K8s\"、\"容器编排\" 之类的）。\n\n要不要我用其他关键词再搜搜看？或者你想新建一条 Kubernetes 相关的笔记？",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 5,
+          "query": "kubernetes"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 15956.135034561157,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

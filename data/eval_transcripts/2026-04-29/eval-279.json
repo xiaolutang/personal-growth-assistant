@@ -1,0 +1,32 @@
+{
+  "transcript_id": "eval-279",
+  "timestamp": "2026-04-29T16:32:10.832914",
+  "test_case_id": "ST-007",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "新建一个任务：完成项目报告，优先级高",
+    "output": "已创建任务「完成项目报告」，优先级设为高，状态为进行中。\n\n需要补充具体内容或设定计划日期吗？",
+    "tool_calls": [
+      {
+        "tool": "create_entry",
+        "args": {
+          "category": "task",
+          "priority": "high",
+          "title": "完成项目报告"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 8866.99390411377,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

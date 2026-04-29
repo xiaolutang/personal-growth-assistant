@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-161",
+  "timestamp": "2026-04-29T15:01:26.208635",
+  "test_case_id": "ST-025",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "删除 entry-del-999",
+    "output": "这个条目（`entry-del-999`）不存在，可能已经被删除过了，或者 ID 有误。你可以确认一下要删除的是哪条，我可以帮你搜搜看。",
+    "tool_calls": [
+      {
+        "tool": "delete_entry",
+        "args": {
+          "entry_id": "entry-del-999"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 6451.276063919067,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

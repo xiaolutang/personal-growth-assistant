@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-194",
+  "timestamp": "2026-04-29T15:08:52.417119",
+  "test_case_id": "ST-058",
+  "test_case_category": "boundary",
+  "agent_trace": {
+    "input": "帮我记录一条想法但是不告诉我内容",
+    "output": "好的，那我需要知道你想记什么才能帮你记下来呀 😄 想法是什么？",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 12901.669263839722,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

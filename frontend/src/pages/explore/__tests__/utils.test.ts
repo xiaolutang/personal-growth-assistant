@@ -47,8 +47,8 @@ describe("utils", () => {
 
   // --- TABS constant ---
   describe("TABS", () => {
-    it("包含 7 个 tab 配置项", () => {
-      expect(TABS).toHaveLength(7);
+    it("F06: 包含 5 个 tab 配置项（全部/灵感/笔记/复盘/疑问）", () => {
+      expect(TABS).toHaveLength(5);
     });
 
     it("第一个 tab 是全部（key 为空字符串）", () => {
@@ -63,21 +63,39 @@ describe("utils", () => {
         expect(tab).toHaveProperty("icon");
       }
     });
+
+    it("F06: 不包含 project 和 decision tab", () => {
+      const keys = TABS.map(t => t.key);
+      expect(keys).not.toContain("project");
+      expect(keys).not.toContain("decision");
+    });
+
+    it("F06: 包含全部/灵感/笔记/复盘/疑问", () => {
+      const keys = TABS.map(t => t.key);
+      expect(keys).toEqual(["", "inbox", "note", "reflection", "question"]);
+    });
   });
 
   // --- EXPLORE_CATEGORIES ---
   describe("EXPLORE_CATEGORIES", () => {
-    it("包含 inbox, note, project, decision, reflection, question", () => {
+    it("F06: 只包含 inbox, note, reflection, question", () => {
       expect(EXPLORE_CATEGORIES.has("inbox")).toBe(true);
       expect(EXPLORE_CATEGORIES.has("note")).toBe(true);
-      expect(EXPLORE_CATEGORIES.has("project")).toBe(true);
-      expect(EXPLORE_CATEGORIES.has("decision")).toBe(true);
       expect(EXPLORE_CATEGORIES.has("reflection")).toBe(true);
       expect(EXPLORE_CATEGORIES.has("question")).toBe(true);
     });
 
-    it("不包含 task", () => {
+    it("F06: 不包含 task", () => {
       expect(EXPLORE_CATEGORIES.has("task")).toBe(false);
+    });
+
+    it("F06: 不包含 project 和 decision", () => {
+      expect(EXPLORE_CATEGORIES.has("project")).toBe(false);
+      expect(EXPLORE_CATEGORIES.has("decision")).toBe(false);
+    });
+
+    it("F06: 恰好包含 4 个类型", () => {
+      expect(EXPLORE_CATEGORIES.size).toBe(4);
     });
   });
 
@@ -270,7 +288,7 @@ describe("utils", () => {
 
   // --- filterByCategory ---
   describe("filterByCategory", () => {
-    it("空 tab 返回所有探索分类条目", () => {
+    it("空 tab 返回所有探索分类条目（不含 task/project/decision）", () => {
       const entries = [
         makeTask({ category: "note" }),
         makeTask({ category: "task" }),
@@ -290,28 +308,42 @@ describe("utils", () => {
       expect(result).toHaveLength(1);
       expect(result[0].category).toBe("note");
     });
+
+    it("F06: 灵感 tab 只显示 inbox 类型", () => {
+      const entries = [
+        makeTask({ category: "note" }),
+        makeTask({ category: "inbox" }),
+        makeTask({ category: "task" }),
+      ];
+      const result = filterByCategory(entries, "inbox");
+      expect(result).toHaveLength(1);
+      expect(result[0].category).toBe("inbox");
+    });
   });
 
   // --- filterByCategory 搜索模式跨类型混合展示 (F132) ---
   describe("filterByCategory — 搜索模式（tab=空）跨类型混合展示", () => {
-    it("tab 为空时排除 task 等非 Explore 类型", () => {
+    it("F06: tab 为空时排除 task/project/decision 等非 Explore 类型", () => {
       const entries = [
         makeTask({ category: "note" }),
         makeTask({ category: "task" }),
         makeTask({ category: "inbox" }),
         makeTask({ category: "project" }),
+        makeTask({ category: "decision" }),
       ];
       const result = filterByCategory(entries, "");
-      expect(result).toHaveLength(3);
+      expect(result).toHaveLength(2);
       expect(result.every((t) => t.category !== "task")).toBe(true);
+      expect(result.every((t) => t.category !== "project")).toBe(true);
+      expect(result.every((t) => t.category !== "decision")).toBe(true);
     });
 
-    it("tab 为空时保留所有 Explore 类型（混合展示）", () => {
+    it("F06: tab 为空时只保留 inbox/note/reflection/question", () => {
       const entries = [
         makeTask({ category: "note" }),
         makeTask({ category: "inbox" }),
-        makeTask({ category: "project" }),
-        makeTask({ category: "decision" }),
+        makeTask({ category: "reflection" }),
+        makeTask({ category: "question" }),
       ];
       const result = filterByCategory(entries, "");
       expect(result).toHaveLength(4);

@@ -605,5 +605,26 @@ export async function fetchTemplates(category?: string): Promise<EntryTemplateLi
   }
 }
 
+// === 条目类型转换（Convert） ===
+export interface ConvertRequest {
+  target_category: "task" | "decision" | "note";
+  priority?: string | null;
+  planned_date?: string | null;
+  parent_id?: string | null;
+}
+
+export async function convertEntry(id: string, request: ConvertRequest): Promise<Task> {
+  const { data, error, response } = await client.POST("/entries/{entry_id}/convert", {
+    params: { path: { entry_id: id } },
+    body: {
+      target_category: request.target_category,
+      priority: request.priority ?? null,
+      planned_date: request.planned_date ?? null,
+      parent_id: request.parent_id ?? null,
+    } as S["ConvertRequest"],
+  });
+  return handleOpenApiResponse<Task>(data as Task | undefined, error, response);
+}
+
 // 导出错误类供外部使用
 export { ApiError } from "@/lib/errors";

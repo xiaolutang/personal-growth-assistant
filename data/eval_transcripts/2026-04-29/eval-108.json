@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-108",
+  "timestamp": "2026-04-29T14:35:20.425208",
+  "test_case_id": "ST-040",
+  "test_case_category": "ask_user",
+  "agent_trace": {
+    "input": "更新一下那个条目",
+    "output": "我需要确认一下你想更新哪个条目，以及要修改什么内容。你能告诉我：\n\n1. **哪个条目**——比如标题或关键词是什么？\n2. **要改什么**——比如状态、内容、优先级、日期等？",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 4833.340883255005,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

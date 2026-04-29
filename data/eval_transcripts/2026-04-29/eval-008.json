@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-008",
+  "timestamp": "2026-04-29T13:40:17.622653",
+  "test_case_id": "ST-008",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "找找关于 React Hooks 的内容",
+    "output": "搜了一下，找到了一条和你提到的 React Hooks 相关的内容：\n\n---\n\n**聊天→创建任务 API 调用优化** `task` `已完成`\n- 标签：个人助手、API\n- 涉及 React Hooks 的部分主要是前端 `useStreamParse` Hook 的开发——用来处理 SSE 流式响应的事件解析\n- 相关文件：\n  - `frontend/src/hooks/useStreamParse.ts` — 新增的事件处理 Hook\n  - `frontend/src/components/FloatingChat.tsx` — 简化后的逻辑\n\n---\n\n就这一条。如果你记得还有其他笔记或灵感，可以给我更多关键词我再帮你翻翻。",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "React Hooks"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 17938.71808052063,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

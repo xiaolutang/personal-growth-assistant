@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-311",
+  "timestamp": "2026-04-29T16:44:23.785161",
+  "test_case_id": "ST-039",
+  "test_case_category": "ask_user",
+  "agent_trace": {
+    "input": "删除一条笔记",
+    "output": "",
+    "tool_calls": [
+      {
+        "tool": "ask_user",
+        "args": {
+          "question": "要删除哪一条笔记？能告诉我笔记的标题或关键词吗？我先帮你找一下。"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 3736.2990379333496,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

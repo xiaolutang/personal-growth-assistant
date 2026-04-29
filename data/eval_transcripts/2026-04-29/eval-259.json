@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-259",
+  "timestamp": "2026-04-29T16:11:17.180615",
+  "test_case_id": "ST-055",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "推荐一些学习编程的资源",
+    "output": "推荐几个不同阶段都适用的编程学习资源，按类型分一下：\n\n## 🎬 视频课程\n\n- **freeCodeCamp**（YouTube/B站都有）— 免费、系统，从零基础到项目实战都覆盖\n- **CS50（哈佛）** — 编程入门的经典课程，讲得生动有趣，B站有中文字幕版\n- **The Odin Project** — 侧重全栈Web开发，边学边做项目\n\n## 📖 文字教程\n\n- **MDN Web Docs** — 前端开发最权威的参考文档\n- **菜鸟教程** — 中文、简单直白，适合快速入门查语法\n- **廖雪峰的官方网站** — Python/JS/Git 等教程写得很通俗\n\n## 💻 刷题练习\n\n- **LeetCode** — 算法和数据结构必刷\n- **Codewars** — 游戏化闯关，适合新手培养手感\n- **Exercism** — 支持几十种语言，有导师review你的代码\n\n## 🛠 做中学\n\n- **GitHub** — 多看别人写的好代码，自己动手写小项目\n- **Kaggle** — 对数据科学/机器学习感兴趣的话非常值得用\n\n## 📚 书籍\n\n- 《Python编程：从入门到实践》— 零基础友好\n- 《Head First 系列》— 图多、互动性强，适合入门\n- 《代码整洁之道》— 写了一段时间代码后必读\n\n---\n\n几个实用建议：\n\n1. **先选一门语言扎进去**，不要同时学好几门。Python 适合入门，JavaScript 适合想做网页的\n2. **动手比看教程重要**，看完一段就自己写，哪怕只是照着敲一遍\n3. **做个小项目**比刷100道题更有成就感，也更容易坚持\n\n你现在有具体想学的方向吗？我可以给更有针对性的建议。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 23641.77179336548,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

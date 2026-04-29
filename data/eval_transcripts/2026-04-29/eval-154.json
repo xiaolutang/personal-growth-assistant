@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-154",
+  "timestamp": "2026-04-29T14:59:59.879488",
+  "test_case_id": "ST-018",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "把 entry-abc123 的状态改成进行中",
+    "output": "抱歉，`entry-abc123` 这个条目不存在，可能是 ID 记错了。你可以告诉我这个条目的大概内容或关键词，我帮你搜一下找到正确的 ID。",
+    "tool_calls": [
+      {
+        "tool": "update_entry",
+        "args": {
+          "entry_id": "entry-abc123",
+          "status": "doing"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 9244.083881378174,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-055",
+  "timestamp": "2026-04-29T13:52:36.682641",
+  "test_case_id": "ST-055",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "推荐一些学习编程的资源",
+    "output": "这个问题挺大的，我按不同阶段给你推荐一些实用的资源：\n\n## 零基础入门\n\n- **freeCodeCamp**（freecodecamp.org）—— 免费、有中文版，从 HTML/CSS 一路带你到 JavaScript，边学边练\n- **CS50（哈佛）** —— edx.org 上有免费版，David Malan 教授的课，讲得非常清楚，是很多人编程启蒙课\n- **Python 官方教程** —— 如果选 Python 入门（推荐），官方文档本身就很友好\n\n## 进阶提高\n\n- **MDN Web Docs** —— 前端开发的百科全书，查 HTML/CSS/JS 必备\n- **LeetCode / 力扣** —— 刷题练算法，面试也用得上\n- **动手写项目** —— 这比看再多课都有效。可以跟着 freeCodeCamp 的项目走，或者自己想做点什么就去做\n\n## 视频课程\n\n- **B站** —— 搜\"Python 入门\"\"前端入门\"能找到大量免费高质量课程（黑马、尚硅谷等）\n- **Coursera / edX** —— 体系化的大学课程，很多可以免费旁听\n\n## 几个实用建议\n\n1. **选一门语言先学透**，Python 或 JavaScript 都是好选择，别同时学好几门\n2. **多写少看**，看教程时一定跟着敲代码，光看不练等于没学\n3. **遇到问题先搜再问**，Stack Overflow 和 Google 是你最好的老师\n4. **做项目比刷课重要**，学到基础语法后尽快开始做小东西\n\n你目前是零基础想入门，还是已经有一些基础想往某个方向深入？我可以给更有针对性的建议。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 61435.93502044678,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

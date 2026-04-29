@@ -1,0 +1,46 @@
+{
+  "transcript_id": "eval-269",
+  "timestamp": "2026-04-29T16:12:42.490881",
+  "test_case_id": "ST-065",
+  "test_case_category": "directness",
+  "agent_trace": {
+    "input": "昨天完成了什么",
+    "output": "看起来昨天（4月28日）**没有完成任何任务**。当天的整体情况是：\n\n- 📋 共有 **4 项任务**\n- 🔄 **2 项进行中**（doing）\n- ⏳ **2 项待开始**（waitStart）\n- ❌ 完成率：**0%**\n- 📝 笔记：**0 条**\n\n简单说就是昨天任务都铺开了但没有收尾。要不要看看那 2 项进行中的任务，今天接着推进？",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "daily",
+          "target_date": "2026-04-28"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 10,
+          "query": "昨天完成的任务"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 35468.07789802551,
+    "iteration_count": 2
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {
+    "behavior_checks": {
+      "no_greeting": true,
+      "must_show_details": true,
+      "no_ask_to_search": true
+    }
+  }
+}

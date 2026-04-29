@@ -293,3 +293,47 @@ describe("F03: useTaskFilters - existing filters unaffected", () => {
     expect(deleteSpy).toHaveBeenCalledWith("1");
   });
 });
+
+describe("F08: useTaskFilters - view state", () => {
+  it("activeView defaults to 'list'", () => {
+    const { result } = renderHook(() => useTaskFilters());
+    expect(result.current.activeView).toBe("list");
+  });
+
+  it("setActiveView changes the view", () => {
+    const { result } = renderHook(() => useTaskFilters());
+    act(() => {
+      result.current.setActiveView("grouped");
+    });
+    expect(result.current.activeView).toBe("grouped");
+  });
+
+  it("setActiveView syncs to URL params", () => {
+    const { result } = renderHook(() => useTaskFilters());
+    act(() => {
+      result.current.setActiveView("grouped");
+    });
+    expect(mockSetSearchParams).toHaveBeenCalled();
+    // Verify the URL param was set
+    const lastCall = mockSetSearchParams.mock.calls[mockSetSearchParams.mock.calls.length - 1];
+    const updater = lastCall[0];
+    const prev = new URLSearchParams();
+    const result_params = updater(prev);
+    expect(result_params.get("view")).toBe("grouped");
+  });
+
+  it("setActiveView('list') removes view URL param", () => {
+    const { result } = renderHook(() => useTaskFilters());
+    act(() => {
+      result.current.setActiveView("grouped");
+    });
+    act(() => {
+      result.current.setActiveView("list");
+    });
+    const lastCall = mockSetSearchParams.mock.calls[mockSetSearchParams.mock.calls.length - 1];
+    const updater = lastCall[0];
+    const prev = new URLSearchParams();
+    const result_params = updater(prev);
+    expect(result_params.get("view")).toBeNull();
+  });
+});

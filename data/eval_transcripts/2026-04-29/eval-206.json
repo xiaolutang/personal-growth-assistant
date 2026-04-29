@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-206",
+  "timestamp": "2026-04-29T15:57:09.124329",
+  "test_case_id": "ST-002",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "搜索一下关于机器学习的笔记",
+    "output": "没有找到关于\"机器学习\"的笔记。可能还没有创建过相关内容，或者用了其他关键词（比如\"ML\"、\"深度学习\"等）。\n\n要不要我帮你：\n1. **换个关键词**再搜搜看？\n2. **创建一条**关于机器学习的新笔记？\n\n告诉我你的想法就行。",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "机器学习"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 14530.932903289795,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

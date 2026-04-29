@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import {
   TASK_QUERY_PARAMS, STATUS_OPTIONS, SORT_OPTIONS, type SortOption,
   TASK_SUB_TABS, type SubTabKey, ACTIONABLE_CATEGORIES,
+  VALID_VIEW_KEYS, type ViewKey,
 } from "./constants";
 
 // === URL 参数合法性校验 ===
@@ -72,6 +73,10 @@ interface UseTaskFiltersReturn {
   activeSubTab: SubTabKey;
   setActiveSubTab: (key: SubTabKey) => void;
 
+  // View state — F08
+  activeView: ViewKey;
+  setActiveView: (view: ViewKey) => void;
+
   // Filtered data
   filteredTasks: Task[];
 
@@ -102,6 +107,7 @@ export function useTaskFilters(): UseTaskFiltersReturn {
   const initPriority = validateUrlParam<Priority>(searchParams.get("priority"), VALID_PRIORITIES);
   const initSort = validateUrlParam<SortOption>(searchParams.get("sort_by"), VALID_SORT_OPTIONS) ?? "";
   const initSubTab = validateUrlParam<SubTabKey>(searchParams.get("tab"), VALID_SUB_TAB_KEYS) ?? "all";
+  const initView = validateUrlParam<ViewKey>(searchParams.get("view"), VALID_VIEW_KEYS) ?? "list";
 
   // 筛选状态
   const [showFilters, setShowFilters] = useState(false);
@@ -114,6 +120,9 @@ export function useTaskFilters(): UseTaskFiltersReturn {
 
   // F03: 子 Tab 状态
   const [activeSubTab, setActiveSubTabRaw] = useState<SubTabKey>(initSubTab);
+
+  // F08: 视图状态
+  const [activeView, setActiveViewRaw] = useState<ViewKey>(initView);
 
   // URL 同步的 setter
   const setSelectedStatus = useCallback((s: TaskStatus | null) => {
@@ -149,6 +158,16 @@ export function useTaskFilters(): UseTaskFiltersReturn {
     setSearchParams((prev) => {
       if (key && key !== "all") prev.set("tab", key);
       else prev.delete("tab");
+      return prev;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  // F08: view URL 同步
+  const setActiveView = useCallback((view: ViewKey) => {
+    setActiveViewRaw(view);
+    setSearchParams((prev) => {
+      if (view && view !== "list") prev.set("view", view);
+      else prev.delete("view");
       return prev;
     }, { replace: true });
   }, [setSearchParams]);
@@ -314,6 +333,8 @@ export function useTaskFilters(): UseTaskFiltersReturn {
     hasActiveFilters,
     activeSubTab,
     setActiveSubTab,
+    activeView,
+    setActiveView,
     filteredTasks,
     selectMode,
     selectedIds,

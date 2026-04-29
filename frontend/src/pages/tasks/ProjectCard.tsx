@@ -14,6 +14,8 @@ interface ProjectCardProps {
   selectable?: boolean;
   selected?: boolean;
   onSelect?: (id: string) => void;
+  /** F06: 自定义卡片点击回调（搜索模式下跳转到任务页） */
+  onClickOverride?: (task: Task) => void;
 }
 
 /** 进度条颜色：>80% 绿色，30-80% 蓝色，<30% 灰色 */
@@ -39,7 +41,7 @@ function formatUpdatedTime(isoString: string): string {
   return date.toLocaleDateString("zh-CN", { month: "short", day: "numeric" });
 }
 
-export function ProjectCard({ project, layout = "grid", selectable = false, selected = false, onSelect }: ProjectCardProps) {
+export function ProjectCard({ project, layout = "grid", selectable = false, selected = false, onSelect, onClickOverride }: ProjectCardProps) {
   const allTasks = useTaskStore((state) => state.tasks);
   const [expanded, setExpanded] = useState(false);
   const [progress, setProgress] = useState<ProjectProgressResponse | null>(null);
@@ -83,8 +85,14 @@ export function ProjectCard({ project, layout = "grid", selectable = false, sele
   const handleCardClick = useCallback(() => {
     if (selectable) {
       onSelect?.(project.id);
+      return;
     }
-  }, [selectable, onSelect, project.id]);
+    // F06: 搜索模式下支持自定义点击行为
+    if (onClickOverride) {
+      onClickOverride(project);
+      return;
+    }
+  }, [selectable, onSelect, project.id, onClickOverride]);
 
   const handleToggleExpand = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();

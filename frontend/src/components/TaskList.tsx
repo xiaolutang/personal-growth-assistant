@@ -16,9 +16,13 @@ interface TaskListProps {
   disableActions?: boolean;
   /** F05: 当前激活的子 Tab，用于决定 ProjectCard 的布局模式 */
   activeSubTab?: string;
+  /** F06: 自定义卡片点击回调（搜索模式下用于 task/decision/project 跳转到任务页） */
+  onCardClick?: (task: Task) => void;
+  /** F07: 转化成功后的回调（用于从列表移除卡片） */
+  onConvertSuccess?: (task: Task) => void;
 }
 
-export function TaskList({ tasks, emptyMessage = "暂无任务", emptyIcon, emptyAction, highlightKeyword, selectable = false, selectedIds, onSelect, disableActions = false, activeSubTab = "all" }: TaskListProps) {
+export function TaskList({ tasks, emptyMessage = "暂无任务", emptyIcon, emptyAction, highlightKeyword, selectable = false, selectedIds, onSelect, disableActions = false, activeSubTab = "all", onCardClick, onConvertSuccess }: TaskListProps) {
   if (tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-3">
@@ -69,6 +73,7 @@ export function TaskList({ tasks, emptyMessage = "暂无任务", emptyIcon, empt
                   selectable={selectable}
                   selected={selectedIds?.has(task.id)}
                   onSelect={onSelect}
+                  onClickOverride={onCardClick}
                 />
               );
             }
@@ -82,11 +87,12 @@ export function TaskList({ tasks, emptyMessage = "暂无任务", emptyIcon, empt
                   selectable={selectable}
                   selected={selectedIds?.has(task.id)}
                   onSelect={onSelect}
+                  onClickOverride={onCardClick}
                 />
               );
             }
             return (
-              <TaskCard key={task.id} task={task} highlightKeyword={highlightKeyword} selectable={selectable} selected={selectedIds?.has(task.id)} onSelect={onSelect} disableActions={disableActions} />
+              <TaskCard key={task.id} task={task} highlightKeyword={highlightKeyword} selectable={selectable} selected={selectedIds?.has(task.id)} onSelect={onSelect} disableActions={disableActions} onClickOverride={onCardClick} onConvertSuccess={onConvertSuccess} />
             );
           })}
         </div>

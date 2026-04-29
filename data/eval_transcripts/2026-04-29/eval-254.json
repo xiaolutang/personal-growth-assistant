@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-254",
+  "timestamp": "2026-04-29T16:10:21.590973",
+  "test_case_id": "ST-050",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "解释一下什么是 REST API",
+    "output": "REST API 是一种设计网络接口的风格，不是某个具体的技术或协议。简单说，它规定了**客户端和服务器之间怎么通过 HTTP 通信**。\n\n核心要点：\n\n**1. 用 URL 表示资源**\n每个 URL 代表一个\"东西\"（资源），比如：\n- `/users` → 用户列表\n- `/users/123` → 编号为 123 的用户\n\n**2. 用 HTTP 方法表示操作**\n- `GET` → 查\n- `POST` → 增\n- `PUT` → 改（整体替换）\n- `DELETE` → 删\n\n**3. 几个关键原则**\n- **无状态**：每次请求都自带所有必要信息，服务器不依赖之前的请求记忆\n- **统一接口**：大家都遵守同样的规则，上手成本低\n- **返回标准格式**：通常用 JSON，比如 `{ \"id\": 123, \"name\": \"张三\" }`\n\n**一个完整例子：**\n\n| 操作 | 方法 | URL |\n|------|------|-----|\n| 查所有用户 | GET | `/users` |\n| 查某个用户 | GET | `/users/123` |\n| 新建用户 | POST | `/users` |\n| 修改用户 | PUT | `/users/123` |\n| 删除用户 | DELETE | `/users/123` |\n\n就这么简单。它的好处是直观、通用、前后端解耦，所以现在绝大多数 Web 服务都采用这种风格。\n\n如果你在实际开发中遇到具体问题，可以再聊。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 10664.382934570312,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

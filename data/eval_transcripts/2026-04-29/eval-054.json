@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-054",
+  "timestamp": "2026-04-29T13:51:35.246138",
+  "test_case_id": "ST-054",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "给我讲个笑话吧",
+    "output": "好，来一个：\n\n---\n\n一个程序员去面试，面试官问：\"你有什么特长？\"\n\n程序员说：\"我能在任何截止日期前完成任务。\"\n\n面试官：\"真的吗？举个例子。\"\n\n程序员：\"比如这个面试，我昨天就放弃。\"\n\n---\n\n😄 希望博你一笑。要是心情不好想聊聊，我随时在。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 4572.79372215271,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

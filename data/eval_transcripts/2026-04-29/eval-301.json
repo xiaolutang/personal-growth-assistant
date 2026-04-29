@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-301",
+  "timestamp": "2026-04-29T16:38:52.762231",
+  "test_case_id": "ST-029",
+  "test_case_category": "multi_step",
+  "agent_trace": {
+    "input": "找到关于数据库优化的笔记，然后把它标记为已完成",
+    "output": "搜索了一下，没有找到关于\"数据库优化\"的笔记。可能是关键词不太一样，你记得笔记的大概标题或内容吗？比如：\n\n- 是\"SQL优化\"？\n- 是\"数据库性能调优\"？\n- 还是其他相关的表述？\n\n给我多一点线索，我再帮你找找。",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "数据库优化"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 12274.160861968994,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

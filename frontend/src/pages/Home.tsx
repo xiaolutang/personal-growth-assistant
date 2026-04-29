@@ -140,7 +140,7 @@ export function Home() {
                 <QuickActionButton
                   icon={<Scale className="h-5 w-5" />}
                   label="记决策"
-                  onClick={() => navigate("/explore?type=decision")}
+                  onClick={() => navigate("/tasks?tab=decision")}
                 />
                 <QuickActionButton
                   icon={<RotateCcw className="h-5 w-5" />}

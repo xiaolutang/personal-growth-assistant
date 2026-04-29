@@ -1,0 +1,64 @@
+{
+  "transcript_id": "eval-031",
+  "timestamp": "2026-04-29T13:45:58.994665",
+  "test_case_id": "ST-031",
+  "test_case_category": "multi_step",
+  "agent_trace": {
+    "input": "搜索 Redis 相关的笔记，然后更新其中优先级最高的那条为高优先级",
+    "output": "",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "Redis"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "update_entry",
+        "args": {
+          "entry_id": "note-80f732ea",
+          "priority": "high"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "前后端联调调试方法论"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "get_entry",
+        "args": {
+          "entry_id": "note-80f732ea"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "update_entry",
+        "args": {
+          "entry_id": "note-80f732ea",
+          "priority": "high"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 21492.685794830322,
+    "iteration_count": 5
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

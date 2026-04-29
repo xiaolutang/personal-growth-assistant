@@ -1,5 +1,6 @@
 import { AlertCircle, Loader2, Pencil, RefreshCw } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ErrorState } from "@/components/ErrorState";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
@@ -23,7 +24,8 @@ import { BatchActionBar } from "./explore/BatchActionBar";
 import { TemplateSelector } from "./explore/TemplateSelector";
 
 // Utils
-import { TABS } from "./explore/utils";
+import { TABS, EXPLORE_CATEGORIES } from "./explore/utils";
+import type { Task } from "@/types/task";
 
 export function Explore() {
   // 搜索历史
@@ -90,6 +92,42 @@ export function Explore() {
   });
 
   const showPanel = showSuggestions && !searchQuery.trim();
+
+  // F06: 搜索模式下 task/decision/project 点击跳转到任务页
+  const isSearchMode = searchResults !== null;
+  const handleSearchCardClick = (task: Task) => {
+    if (!EXPLORE_CATEGORIES.has(task.category)) {
+      navigate(`/tasks?tab=${task.category}`);
+    } else {
+      navigate(`/entries/${task.id}`);
+    }
+  };
+
+  // F07: 转化成功后从列表移除条目
+  const handleConvertSuccess = (task: Task) => {
+    setEntries((prev) => prev.filter((e) => e.id !== task.id));
+    setSearchResults((prev) => prev ? prev.filter((e) => e.id !== task.id) : null);
+  };
+
+  // F10: 识别 URL 中的 entry_id 参数，数据加载后定位并展开该条目
+  const [searchParams, setSearchParamsLocal] = useSearchParams();
+  const entryIdFromUrl = searchParams.get("entry_id");
+
+  // 加载完成后，如果 URL 有 entry_id，导航到该条目详情页
+  const handledEntryIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (entryIdFromUrl && !isLoading && filteredTasks.length > 0 && handledEntryIdRef.current !== entryIdFromUrl) {
+      const targetEntry = filteredTasks.find((e) => e.id === entryIdFromUrl);
+      if (targetEntry) {
+        handledEntryIdRef.current = entryIdFromUrl;
+        // 清除 URL 中的 entry_id 参数，保留 type
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete("entry_id");
+        setSearchParamsLocal(newParams, { replace: true });
+        navigate(`/entries/${entryIdFromUrl}`);
+      }
+    }
+  }, [entryIdFromUrl, isLoading, filteredTasks, navigate, searchParams, setSearchParamsLocal]);
 
   return (
     <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-32">
@@ -229,6 +267,8 @@ export function Explore() {
               selectedIds={batch.selectedIds}
               onSelect={batch.toggleSelect}
               disableActions={batch.selectMode}
+              onCardClick={isSearchMode ? handleSearchCardClick : undefined}
+              onConvertSuccess={handleConvertSuccess}
             />
           </div>
         )}
@@ -241,6 +281,8 @@ export function Explore() {
           batchLoading={batch.batchLoading}
           onBatchCategory={batch.handleBatchCategory}
           onBatchDelete={batch.handleBatchDelete}
+          onBatchConvert={batch.handleBatchConvert}
+          allSelectedInbox={batch.allSelectedInbox}
         />
       )}
 

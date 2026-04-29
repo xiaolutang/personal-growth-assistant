@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-119",
+  "timestamp": "2026-04-29T14:37:30.130315",
+  "test_case_id": "ST-051",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "今天天气怎么样？",
+    "output": "我是「日知」，一个帮你管理个人成长的小助手，查天气这事儿不太在我能力范围内 😄\n\n不过如果你想看看今天有什么任务或计划，或者想记点什么、做个复盘，随时跟我说！",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 11390.663146972656,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -13,6 +13,8 @@ import { useTaskStore } from "@/stores/taskStore";
 // Constants & Hooks
 import { STATUS_OPTIONS, TASK_QUERY_PARAMS, QUICK_DATE_OPTIONS, PRIORITY_OPTIONS, SORT_OPTIONS, TASK_SUB_TABS } from "./tasks/constants";
 import { useTaskFilters } from "./tasks/useTaskFilters";
+import { ViewSelector } from "./tasks/ViewSelector";
+import { GroupedView } from "./tasks/GroupedView";
 import { useEffect, useRef } from "react";
 
 export function Tasks() {
@@ -27,6 +29,7 @@ export function Tasks() {
     clearFilters, hasActiveFilters,
     filteredTasks,
     activeSubTab, setActiveSubTab,
+    activeView, setActiveView,
     selectMode, selectedIds, batchLoading,
     enterSelectMode, exitSelectMode,
     toggleSelect, selectAll,
@@ -56,6 +59,59 @@ export function Tasks() {
 
   const handleRefresh = () => fetchEntries(TASK_QUERY_PARAMS);
 
+  // F08: Render content based on active view
+  const renderContent = () => {
+    if (isLoading) {
+      return <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />加载中...</div>;
+    }
+
+    // Grouped view — F08
+    if (activeView === "grouped") {
+      if (isTotallyEmpty) {
+        return <GroupedView tasks={[]} />;
+      }
+      return (
+        <GroupedView
+          tasks={filteredTasks}
+          selectable={selectMode}
+          selectedIds={selectedIds}
+          onSelect={toggleSelect}
+        />
+      );
+    }
+
+    // Default list view
+    if (isTotallyEmpty) {
+      return (
+        <TaskList
+          tasks={filteredTasks}
+          emptyIcon={<ClipboardList className="h-12 w-12 opacity-20" />}
+          emptyMessage="还没有任务，开始记录你的第一个任务吧"
+          emptyAction={{ label: "去创建任务", onClick: () => navigate("/") }}
+          selectable={selectMode}
+          selectedIds={selectedIds}
+          onSelect={toggleSelect}
+          activeSubTab={activeSubTab}
+        />
+      );
+    }
+    if (isFilterEmpty) {
+      return (
+        <TaskList
+          tasks={filteredTasks}
+          emptyIcon={<SearchX className="h-10 w-10 opacity-30" />}
+          emptyMessage="当前筛选条件下没有匹配的任务"
+          emptyAction={{ label: "清除筛选", onClick: clearFilters }}
+          selectable={selectMode}
+          selectedIds={selectedIds}
+          onSelect={toggleSelect}
+          activeSubTab={activeSubTab}
+        />
+      );
+    }
+    return <TaskList tasks={filteredTasks} selectable={selectMode} selectedIds={selectedIds} onSelect={toggleSelect} activeSubTab={activeSubTab} />;
+  };
+
   return (
     <>
       <Header title="任务列表" />
@@ -67,7 +123,11 @@ export function Tasks() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">所有任务 ({filteredTasks.length})</CardTitle>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              {/* F08: View selector */}
+              {!selectMode && (
+                <ViewSelector activeView={activeView} onViewChange={setActiveView} />
+              )}
               {!selectMode ? (
                 <Button variant="outline" size="sm" onClick={enterSelectMode}>
                   <Pencil className="h-4 w-4 mr-1" />编辑
@@ -197,33 +257,7 @@ export function Tasks() {
           )}
 
           <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />加载中...</div>
-            ) : isTotallyEmpty ? (
-              <TaskList
-                tasks={filteredTasks}
-                emptyIcon={<ClipboardList className="h-12 w-12 opacity-20" />}
-                emptyMessage="还没有任务，开始记录你的第一个任务吧"
-                emptyAction={{ label: "去创建任务", onClick: () => navigate("/") }}
-                selectable={selectMode}
-                selectedIds={selectedIds}
-                onSelect={toggleSelect}
-                activeSubTab={activeSubTab}
-              />
-            ) : isFilterEmpty ? (
-              <TaskList
-                tasks={filteredTasks}
-                emptyIcon={<SearchX className="h-10 w-10 opacity-30" />}
-                emptyMessage="当前筛选条件下没有匹配的任务"
-                emptyAction={{ label: "清除筛选", onClick: clearFilters }}
-                selectable={selectMode}
-                selectedIds={selectedIds}
-                onSelect={toggleSelect}
-                activeSubTab={activeSubTab}
-              />
-            ) : (
-              <TaskList tasks={filteredTasks} selectable={selectMode} selectedIds={selectedIds} onSelect={toggleSelect} activeSubTab={activeSubTab} />
-            )}
+            {renderContent()}
 
             {/* F03: 返回数量 == limit 时底部显示「可能还有更多条目」提示 */}
             {mayHaveMore && !isLoading && (

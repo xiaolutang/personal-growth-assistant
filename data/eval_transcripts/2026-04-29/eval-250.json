@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-250",
+  "timestamp": "2026-04-29T16:09:42.295732",
+  "test_case_id": "ST-046",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "你好，你是什么？",
+    "output": "我是「日知」，你的个人成长助手，也可以说是一个博学但不多话的朋友 😄\n\n我能帮你做这些事：\n\n- **记录和管理**：创建任务、笔记、灵感、项目等条目，随时查阅和更新\n- **搜索回顾**：查找之前记下的内容，生成每日或每周的成长回顾\n- **规划建议**：帮你梳理想法、制定计划，给一些可执行的建议\n\n简单说，你可以把脑子里想记的、想做的、想不通的，都扔给我。有什么需要帮忙的，直接说就好。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 12563.493013381958,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

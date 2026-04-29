@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-090",
+  "timestamp": "2026-04-29T14:28:49.798499",
+  "test_case_id": "ST-022",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "看看上周的成长周报",
+    "output": "这是上周（4/26 ~ 5/2）的成长周报：\n\n---\n\n### 📊 任务完成情况\n| 指标 | 数据 |\n|------|------|\n| 总任务数 | 18 |\n| 已完成 | 0 |\n| 进行中 | 5 |\n| 待开始 | 13 |\n| 完成率 | 0% |\n\n### 📝 学习笔记\n本周记录了 **8 篇**笔记，涵盖前后端技术与日常锻炼（如 GraphQL、Docker 等），知识沉淀这块做得不错。\n\n### 💡 小结与建议\n\n任务规划了不少，但本周没有一项完成——这说明任务卡在了执行环节。目前有 5 项已经处于\"进行中\"状态，建议下周先把这 5 项作为突破口，集中精力逐一清掉，哪怕每天只完成一件，也比同时铺开 18 件要有效得多。\n\n简单说：**少铺摊子，先收口。**\n\n需要我帮你看看那 5 项进行中的任务具体是什么吗？可以一起理一理优先级。",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "weekly",
+          "target_date": "2026-04-26"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 25409.017086029053,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

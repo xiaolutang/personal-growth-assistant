@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-266",
+  "timestamp": "2026-04-29T16:11:40.835451",
+  "test_case_id": "ST-062",
+  "test_case_category": "boundary",
+  "agent_trace": {
+    "input": "帮我做一个不存在类型的条目创建操作",
+    "output": "这个操作我没法执行。\n\n条目的 `category`（分类）只支持以下几种类型：\n\n| 类型 | 说明 |\n|------|------|\n| `project` | 项目 |\n| `task` | 任务 |\n| `note` | 笔记 |\n| `inbox` | 收件箱 |\n| `decision` | 决策 |\n| `reflection` | 反思 |\n| `question` | 问题 |\n\n不存在你说的那个类型，所以创建不了。如果你想创建条目，可以从上面的类型里选一个，告诉我要创建什么内容就好。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 6135.13708114624,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

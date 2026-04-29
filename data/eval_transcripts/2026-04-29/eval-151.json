@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-151",
+  "timestamp": "2026-04-29T14:59:25.030300",
+  "test_case_id": "ST-015",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "帮我搜索所有关于 TypeScript 高级类型的内容",
+    "output": "搜了一圈，没有找到关于「TypeScript 高级类型」的记录。可能之前没有创建过相关笔记。\n\n你可以考虑：\n\n1. **现在记一条** — 如果你正在学习 TypeScript 高级类型，我可以帮你创建一条笔记，把目前掌握的内容先记下来。\n2. **换个关键词再搜** — 比如试试「TypeScript」「泛型」「类型体操」等相关的词，看看有没有其他记录。\n\n需要怎么做？",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 20,
+          "query": "TypeScript 高级类型"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 16083.523273468018,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-048",
+  "timestamp": "2026-04-29T13:50:48.634670",
+  "test_case_id": "ST-048",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "谢谢你的帮助！",
+    "output": "不客气！随时找我就好 😊",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 8679.573059082031,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

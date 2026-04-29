@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-310",
+  "timestamp": "2026-04-29T16:44:20.047508",
+  "test_case_id": "ST-038",
+  "test_case_category": "ask_user",
+  "agent_trace": {
+    "input": "帮我创建一个任务",
+    "output": "",
+    "tool_calls": [
+      {
+        "tool": "ask_user",
+        "args": {
+          "question": "好的，想创建什么内容的任务？请告诉我任务标题和相关细节（比如优先级、计划日期等，有的话可以一并说）。"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 4108.920097351074,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

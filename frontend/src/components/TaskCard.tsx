@@ -1,15 +1,16 @@
 import { useState, useRef, useEffect } from "react";
-import { Circle, CheckCircle, Clock, Trash2, Pause, XCircle, Folder, MoreHorizontal, Loader2, ArrowRightCircle, FileText, CheckSquare, Square, Calendar, AlertTriangle } from "lucide-react";
+import { Circle, CheckCircle, Clock, Trash2, Pause, XCircle, Folder, ArrowRightCircle, Scale, CheckSquare, Square, Calendar, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { Task, Category } from "@/types/task";
+import type { Task } from "@/types/task";
 import { useTaskStore } from "@/stores/taskStore";
 import { nextStatusMap, priorityConfig } from "@/config/constants";
-import { toast } from "sonner";
 import { getDueDateInfo } from "@/lib/dueDate";
+import { ConvertDialog } from "@/pages/explore/ConvertDialog";
+import { CompletionPrompt } from "@/pages/tasks/CompletionPrompt";
 
 interface TaskCardProps {
   task: Task;
@@ -19,6 +20,10 @@ interface TaskCardProps {
   selected?: boolean;
   onSelect?: (id: string) => void;
   disableActions?: boolean;
+  /** F06: 自定义卡片点击回调（搜索模式下用于 task 跳转到任务页） */
+  onClickOverride?: (task: Task) => void;
+  /** F07: 转化成功后的回调（用于从列表移除卡片） */
+  onConvertSuccess?: (task: Task) => void;
 }
 
 /** UTF-8 安全截取：确保不在 surrogate pair 中间断断 */
@@ -52,30 +57,30 @@ function HighlightText({ text, keyword }: { text: string; keyword: string }) {
   return <>{parts}</>;
 }
 
-export function TaskCard({ task, showParent = true, highlightKeyword, selectable = false, selected = false, onSelect, disableActions = false }: TaskCardProps) {
+export function TaskCard({ task, showParent = true, highlightKeyword, selectable = false, selected = false, onSelect, disableActions = false, onClickOverride, onConvertSuccess }: TaskCardProps) {
   const navigate = useNavigate();
   const updateTaskStatus = useTaskStore((state) => state.updateTaskStatus);
   const deleteTask = useTaskStore((state) => state.deleteTask);
-  const storeUpdateEntry = useTaskStore((state) => state.updateEntry);
   const tasks = useTaskStore((state) => state.tasks);
   const priority = task.priority ? priorityConfig[task.priority] : null;
 
-  // 灵感转化相关状态（条目级）
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [converting, setConverting] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  // F07: ConvertDialog 状态
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false);
+  const [convertTarget, setConvertTarget] = useState<"task" | "decision">("task");
+  // 条目消失动画
+  const [isVisible, setIsVisible] = useState(true);
+  const animTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // 点击外部关闭菜单
+  // F10: 复盘提示状态 — 记录已跳过提示的 task id，避免重复弹出
+  const [dismissedPromptIds, setDismissedPromptIds] = useState<Set<string>>(new Set());
+  const showCompletionPrompt = task.status === "complete" && !dismissedPromptIds.has(task.id);
+
+  // 清理动画 timer
   useEffect(() => {
-    if (!menuOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
+    return () => {
+      if (animTimerRef.current) clearTimeout(animTimerRef.current);
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [menuOpen]);
+  }, []);
 
   // 查找父项目
   const parentProject = showParent && task.parent_id
@@ -102,27 +107,27 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
       onSelect?.(task.id);
       return;
     }
+    // F06: 搜索模式下支持自定义点击行为（如 task 类型跳转到任务页）
+    if (onClickOverride) {
+      onClickOverride(task);
+      return;
+    }
     navigate(`/entries/${task.id}`);
   };
 
-  // 灵感转化处理
-  const handleConvert = async (e: React.MouseEvent, targetCategory: Category) => {
+  // F07: 打开 ConvertDialog
+  const handleOpenConvert = (e: React.MouseEvent, target: "task" | "decision") => {
     e.stopPropagation();
-    setMenuOpen(false);
-    setConverting(true);
-    try {
-      await storeUpdateEntry(task.id, { category: targetCategory });
-      const label = targetCategory === "task" ? "任务" : "笔记";
-      toast.success(`已转为${label}：${task.title}`);
-    } catch {
-      toast.error("转化失败，请重试");
-      setConverting(false);
-    }
+    setConvertTarget(target);
+    setConvertDialogOpen(true);
   };
 
-  const handleMenuToggle = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setMenuOpen((prev) => !prev);
+  const handleConvertSuccess = () => {
+    setIsVisible(false);
+    // 动画后通知父组件移除
+    animTimerRef.current = setTimeout(() => {
+      onConvertSuccess?.(task);
+    }, 300);
   };
 
   // 渲染状态图标
@@ -152,10 +157,12 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
   const remainingTags = (task.tags?.length || 0) - 2;
 
   return (
+    <>
     <Card
       className={cn(
         "flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-accent/50 transition-colors",
-        selectable && selected && "bg-accent/30"
+        selectable && selected && "bg-accent/30",
+        !isVisible && "opacity-0 scale-95 transition-all duration-300"
       )}
       onClick={handleCardClick}
     >
@@ -247,41 +254,28 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
             {priority.label}
           </Badge>
         )}
-        {/* Inbox 转化菜单 */}
+        {/* F07: Inbox 转化快捷按钮 */}
         {!disableActions && task.category === "inbox" && (
-          <div className="relative" ref={menuRef}>
+          <>
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 min-h-[44px] min-w-[44px] text-muted-foreground hover:text-primary"
-              onClick={handleMenuToggle}
-              disabled={converting}
+              className="h-6 w-6 min-h-[44px] min-w-[44px] text-muted-foreground hover:text-blue-500 dark:hover:text-blue-400"
+              onClick={(e) => handleOpenConvert(e, "task")}
+              title="转为任务"
             >
-              {converting ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <MoreHorizontal className="h-3 w-3" />
-              )}
+              <ArrowRightCircle className="h-3.5 w-3.5" />
             </Button>
-            {menuOpen && !converting && (
-              <div className="absolute right-0 top-full mt-1 z-50 min-w-[140px] rounded-lg border bg-popover p-1 shadow-md">
-                <button
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent transition-colors"
-                  onClick={(e) => handleConvert(e, "task")}
-                >
-                  <ArrowRightCircle className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
-                  <span>转为任务</span>
-                </button>
-                <button
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent transition-colors"
-                  onClick={(e) => handleConvert(e, "note")}
-                >
-                  <FileText className="h-3.5 w-3.5 text-green-500 dark:text-green-400" />
-                  <span>转为笔记</span>
-                </button>
-              </div>
-            )}
-          </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 min-h-[44px] min-w-[44px] text-muted-foreground hover:text-amber-500 dark:hover:text-amber-400"
+              onClick={(e) => handleOpenConvert(e, "decision")}
+              title="转为决策"
+            >
+              <Scale className="h-3.5 w-3.5" />
+            </Button>
+          </>
         )}
         {!disableActions && (
           <Button
@@ -294,6 +288,28 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
           </Button>
         )}
       </div>
+
+      {/* F07: ConvertDialog */}
+      {task.category === "inbox" && (
+        <ConvertDialog
+          open={convertDialogOpen}
+          onClose={() => setConvertDialogOpen(false)}
+          onSuccess={handleConvertSuccess}
+          entry={task}
+          defaultTarget={convertTarget}
+        />
+      )}
     </Card>
+
+      {/* F10: 完成复盘提示 */}
+      {showCompletionPrompt && (
+        <CompletionPrompt
+          task={task}
+          onDismiss={() => {
+            setDismissedPromptIds((prev) => new Set(prev).add(task.id));
+          }}
+        />
+      )}
+    </>
   );
 }

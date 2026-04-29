@@ -1,0 +1,38 @@
+{
+  "transcript_id": "eval-101",
+  "timestamp": "2026-04-29T14:33:39.317925",
+  "test_case_id": "ST-033",
+  "test_case_category": "multi_step",
+  "agent_trace": {
+    "input": "查看这周的周报，然后根据完成情况创建下周的任务计划",
+    "output": "",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "weekly"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "ask_user",
+        "args": {
+          "question": "下周你想聚焦在哪些方面？我建议从这周没推进的任务里挑出最关键的 3~5 个，集中火力完成。你可以告诉我：\n\n1. 下周最优先想推进的事是什么？\n2. 有没有这周的任务是可以直接砍掉的？（毕竟 19 个全堆着反而是负担）\n3. 有没有新的事情需要加进来？\n\n或者你希望我先把这周\"进行中\"和\"待开始\"的任务列出来，你挑选后再排计划？"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 25202.378034591675,
+    "iteration_count": 2
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

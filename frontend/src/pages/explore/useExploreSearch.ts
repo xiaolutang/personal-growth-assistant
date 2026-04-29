@@ -178,9 +178,11 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
 
   const filteredTasks = useMemo(() => {
     if (searchResults !== null) {
-      // 搜索模式：跨类型混合展示，仅过滤 Explore 类别边界（排除 task 等）
-      return filterByCategory(searchResults, "");
+      // F06: 搜索模式 — 全类型混合展示（不再过滤 task/project/decision）
+      // task/decision/project 在搜索结果中可点击跳转到任务页
+      return searchResults;
     }
+    // 非搜索模式：仅展示 EXPLORE_CATEGORIES 中的类型
     return filterByCategory(entries, activeTab);
   }, [entries, searchResults, activeTab]);
 

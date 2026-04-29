@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-185",
+  "timestamp": "2026-04-29T15:07:29.377931",
+  "test_case_id": "ST-049",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "你能帮我做什么？",
+    "output": "我可以帮你做这些事情：\n\n**📝 记录与管理**\n- 创建任务、笔记、灵感、项目等条目\n- 更新已有条目的内容、状态、优先级等\n- 删除不再需要的条目\n- 搜索和查看已有记录\n\n**📊 回顾与统计**\n- 查看日报或周报，了解自己的进展\n- 搜索特定主题的记录\n\n**💬 聊天与思考**\n- 帮你理清思路、讨论问题\n- 给出具体的行动建议\n- 做你反思时的\"镜子\"，帮你看到自己的想法\n\n简单来说，我是一个帮你记录、整理、回顾的伙伴。有什么想聊的或者需要帮忙的，直接说就行。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 14022.500276565552,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

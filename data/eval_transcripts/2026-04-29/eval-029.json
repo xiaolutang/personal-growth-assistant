@@ -1,0 +1,46 @@
+{
+  "transcript_id": "eval-029",
+  "timestamp": "2026-04-29T13:44:53.407002",
+  "test_case_id": "ST-029",
+  "test_case_category": "multi_step",
+  "agent_trace": {
+    "input": "找到关于数据库优化的笔记，然后把它标记为已完成",
+    "output": "搜了几种关键词都没有找到相关的笔记。可能的情况：\n\n1. **笔记的标题或内容没有用过这些关键词**——你还记得大概是用什么词记的吗？\n2. **这条笔记可能还没有创建**。\n\n你可以告诉我更多细节，比如大概的标题或者内容里提到过什么，我再帮你找找。",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "数据库优化"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "database optimization"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "SQL 性能 优化"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 10294.399976730347,
+    "iteration_count": 3
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

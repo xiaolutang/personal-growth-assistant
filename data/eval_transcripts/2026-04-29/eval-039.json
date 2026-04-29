@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-039",
+  "timestamp": "2026-04-29T13:49:49.515547",
+  "test_case_id": "ST-039",
+  "test_case_category": "ask_user",
+  "agent_trace": {
+    "input": "删除一条笔记",
+    "output": "你想删除哪条笔记？能不能告诉我它的标题或者关键词，我帮你找一下。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 54969.489097595215,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,67 @@
+{
+  "transcript_id": "eval-237",
+  "timestamp": "2026-04-29T16:06:42.574506",
+  "test_case_id": "ST-033",
+  "test_case_category": "multi_step",
+  "agent_trace": {
+    "input": "查看这周的周报，然后根据完成情况创建下周的任务计划",
+    "output": "",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "weekly",
+          "target_date": "2026-04-29"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 20,
+          "query": "本周任务"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 20,
+          "query": "进行中的任务"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 30,
+          "query": "任务 task"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 30,
+          "query": "doing 学习 开发 MCP RAG FastAPI"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 47699.30291175842,
+    "iteration_count": 5
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

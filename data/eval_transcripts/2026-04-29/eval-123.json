@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-123",
+  "timestamp": "2026-04-29T14:38:26.212071",
+  "test_case_id": "ST-055",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "推荐一些学习编程的资源",
+    "output": "这个问题挺常见的，我根据不同阶段给你整理一下：\n\n---\n\n## 🌱 零基础入门\n\n**互动式学习平台：**\n- **freeCodeCamp**（freecodecamp.org）—— 免费，从 HTML/CSS/JS 开始，边学边练\n- **Codecademy**（codecademy.com）—— 互动体验好，适合快速上手\n- **W3Schools**（w3schools.com）—— 当字典查，很实用\n\n**视频课程：**\n- **B站** 搜「黑马程序员」「尚硅谷」—— 中文免费课程，质量不错\n- **CS50（哈佛）** —— YouTube/B站都有中文字幕，计算机科学入门经典\n\n---\n\n## 📗 选一门语言开始\n\n- **Python** —— 语法简洁，适合新手，用途广（数据分析、AI、自动化）\n- **JavaScript** —— 想做网页/前端必学\n- **不建议一开始就啃 C/C++**，除非你目标是底层开发\n\n---\n\n## 🔧 进阶提升\n\n- **MDN Web Docs**（developer.mozilla.org）—— 前端开发权威文档\n- **LeetCode**（leetcode.com）—— 刷题练算法，面试也用得上\n- **GitHub** —— 学会用 Git，看看别人怎么写代码\n- **掘金 / InfoQ** —— 中文技术社区，了解行业动态\n\n---\n\n## 💡 几点建议\n\n1. **别只看视频不动手**，跟着敲代码比看10遍视频管用\n2. **做小项目**比刷课有效——比如做个待办清单、小爬虫、个人博客\n3. 遇到 bug 别慌，复制错误信息直接搜，99% 的前人都踩过坑\n4. 不用纠结学哪门语言，编程思维是通用的，先学一门再转不难\n\n你现在是什么基础？有明确方向的话我可以推荐更具体的资源。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 25560.034036636353,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

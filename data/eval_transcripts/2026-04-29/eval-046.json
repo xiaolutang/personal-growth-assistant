@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-046",
+  "timestamp": "2026-04-29T13:50:24.467060",
+  "test_case_id": "ST-046",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "你好，你是什么？",
+    "output": "我是「日知」——一个帮你管理个人成长的小助手。\n\n你可以把我当成一个有点记性的朋友，能帮你：\n\n- **记东西**——任务、灵感、笔记、想法，随时丢给我\n- **理思路**——把模糊的想法变成可执行的步骤\n- **看进展**——回顾你一段时间做了什么，有没有在往想去的方向走\n- **聊一聊**——遇到纠结的事，可以跟我聊聊，我帮你理清\n\n有什么想聊的，或者想让我帮你记点什么，直接说就行。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 7538.437843322754,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

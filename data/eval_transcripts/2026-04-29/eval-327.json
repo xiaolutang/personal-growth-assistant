@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-327",
+  "timestamp": "2026-04-29T16:47:28.451452",
+  "test_case_id": "ST-055",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "推荐一些学习编程的资源",
+    "output": "这个问题挺大的，编程的世界很广，推荐资源得看你从哪个方向入手。先给你一个按阶段的通用路线：\n\n---\n\n### 🌱 零基础入门\n\n**互动式学习平台（边学边练）：**\n- **freeCodeCamp** — 免费，内容全面，从 HTML/CSS/JS 到后端都有，适合完全零基础\n- **Codecademy** — 交互式课程体验好，基础课程免费\n- **W3Schools** — 轻量快速查阅，适合当字典用\n\n**视频课程：**\n- **B站** 搜对应语言的教学视频，很多优质免费内容（比如黑马程序员、尚硅谷等）\n- **Coursera** 上的 *Python for Everybody*（密歇根大学）—— 经典入门课\n\n### 🔤 选哪门语言起步？\n\n| 目标 | 推荐语言 |\n|------|---------|\n| 想快速上手、通用性强 | **Python** |\n| 想做网页/前端 | **JavaScript** |\n| 想做移动 App | **Swift**（iOS）/ **Kotlin**（Android） |\n| 想深入理解底层 | **C** 或 **C++** |\n\n大多数人从 **Python** 开始，语法简洁，生态丰富，后续转方向也方便。\n\n### 📈 进阶提升\n\n- **LeetCode** / **牛客网** — 刷题练算法，面试也用得上\n- **GitHub** — 阅读开源项目代码，参与贡献\n- **MDN Web Docs** — 前端开发的权威文档\n- **掘金 / Stack Overflow** — 技术问答社区\n\n### 📚 书籍推荐\n\n- 《Python编程：从入门到实践》— 非常友好的入门书\n- 《Head First 系列》— 图文并茂，适合视觉学习者\n- 《算法图解》— 算法入门，轻松好读\n\n---\n\n如果你能告诉我**你的具体目标**（比如想做什么方向、有没有编程基础），我可以给更精准的建议。\n\n要不要我帮你把学习计划记下来，方便后续跟进？",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 32789.35766220093,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

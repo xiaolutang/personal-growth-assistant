@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-038",
+  "timestamp": "2026-04-29T13:48:54.545549",
+  "test_case_id": "ST-038",
+  "test_case_category": "ask_user",
+  "agent_trace": {
+    "input": "帮我创建一个任务",
+    "output": "好的，没问题！请告诉我：\n\n1. **任务标题**是什么？\n2. 有没有其他补充信息，比如：\n   - 计划完成日期？\n   - 优先级（高/中/低）？\n   - 具体内容描述？\n   - 标签？\n\n至少告诉我标题就行，其他看你需要。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 4083.649158477783,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

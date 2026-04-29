@@ -1,0 +1,48 @@
+{
+  "transcript_id": "eval-012",
+  "timestamp": "2026-04-29T13:41:09.552629",
+  "test_case_id": "ST-012",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "我昨天写的那条笔记改一下标题",
+    "output": "搜索结果里没有找到分类为「笔记」的条目。你说的「昨天写的那条笔记」具体是哪一条？能告诉我更多信息吗，比如：\n\n- 标题大概是什么内容？\n- 或者是哪个分类下的？（任务、灵感、项目等）",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "昨天写的笔记"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "daily",
+          "target_date": "2026-04-28"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 20,
+          "query": "笔记"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 13915.216207504272,
+    "iteration_count": 3
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}
