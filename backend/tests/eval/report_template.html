@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Eval Report - $eval_time</title>
+<title>评估报告 - $eval_time</title>
 <style>
   /* ── Reset & Base ── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -103,35 +103,35 @@
 
   <!-- ── Header ── -->
   <div class="header">
-    <h1>AI Agent Evaluation Report</h1>
-    <div class="subtitle">Generated at $eval_time | Mode: $dataset_mode</div>
+    <h1>AI 智能体评估报告</h1>
+    <div class="subtitle">生成时间：$eval_time | 模式：$dataset_mode</div>
   </div>
 
   <!-- ══════════════════════════════════════════════════════════ -->
   <!-- Section 1: Assessment Methodology                         -->
   <!-- ══════════════════════════════════════════════════════════ -->
   <div class="section" id="section-methodology">
-    <h2>1. Assessment Methodology</h2>
-    <h3>Dataset Composition</h3>
-    <p>The evaluation dataset contains test cases across multiple intent categories, designed to verify that the AI Agent correctly selects and invokes tools based on user input.</p>
+    <h2>1. 评估方法说明</h2>
+    <h3>数据集构成</h3>
+    <p>评估数据集包含多个意图类别的测试用例，用于验证 AI 智能体能否根据用户输入正确选择和调用工具。</p>
     <table>
-      <tr><th>Metric</th><th>Description</th></tr>
-      <tr><td>Dataset Mode</td><td>$dataset_mode</td></tr>
-      <tr><td>Total Cases Evaluated</td><td>$efficiency_total_cases</td></tr>
-      <tr><td>Positive Cases</td><td>$total_positive</td></tr>
-      <tr><td>Negative Cases</td><td>$total_negative</td></tr>
+      <tr><th>指标</th><th>说明</th></tr>
+      <tr><td>数据集模式</td><td>$dataset_mode</td></tr>
+      <tr><td>评估用例总数</td><td>$efficiency_total_cases</td></tr>
+      <tr><td>正向用例数</td><td>$total_positive</td></tr>
+      <tr><td>负面用例数</td><td>$total_negative</td></tr>
     </table>
 
-    <h3>Classification Dimensions</h3>
-    <p>Each test case is classified into a category (e.g., tool_selection, no_tool, boundary). Categories map to common user intent patterns the Agent should handle.</p>
+    <h3>分类维度</h3>
+    <p>每条测试用例按意图类别分类（如 tool_selection、no_tool、boundary 等），对应智能体应处理的常见用户意图模式。</p>
 
-    <h3>Pass/Fail Criteria</h3>
+    <h3>判定逻辑</h3>
     <ul>
-      <li><strong>Positive case:</strong> PASS if <code>actual_tools</code> matches <code>expected_tools</code>; FAIL otherwise.</li>
-      <li><strong>Negative case:</strong> PASS if Agent does NOT call any tool in <code>should_not_call</code>; VIOLATED otherwise.</li>
+      <li><strong>正向用例：</strong>通过条件为 <code>actual_tools</code> 与 <code>expected_tools</code> 匹配；否则为失败。</li>
+      <li><strong>负面用例：</strong>通过条件为智能体未调用 <code>should_not_call</code> 中的任何工具；否则为违规。</li>
     </ul>
 
-    <h3>Environment</h3>
+    <h3>环境信息</h3>
     <ul class="env-list">
 $env_info_items
     </ul>
@@ -141,33 +141,33 @@ $env_info_items
   <!-- Section 2: Overview Dashboard (Donut Chart + Stat Cards)  -->
   <!-- ══════════════════════════════════════════════════════════ -->
   <div class="section" id="section-overview">
-    <h2>2. Overview Dashboard</h2>
+    <h2>2. 概览仪表盘</h2>
     <div class="dashboard">
       <div class="chart-wrap">
         <canvas id="overviewChart"></canvas>
         <div class="chart-placeholder" id="overviewChartFallback" style="display:none;">
-          Chart requires internet (Chart.js CDN).<br>Pass Rate: $pass_rate_display
+          图表需要网络连接（Chart.js CDN）。<br>通过率：$pass_rate_display
         </div>
       </div>
       <div class="cards">
         <div class="stat-card $pass_rate_card_class">
-          <div class="label">Pass Rate</div>
+          <div class="label">通过率</div>
           <div class="value">$pass_rate_display</div>
         </div>
         <div class="stat-card pass">
-          <div class="label">Passed</div>
+          <div class="label">通过</div>
           <div class="value">$total_passed</div>
         </div>
         <div class="stat-card fail">
-          <div class="label">Failed</div>
+          <div class="label">失败</div>
           <div class="value">$total_failed</div>
         </div>
         <div class="stat-card neutral">
-          <div class="label">Total Positive</div>
+          <div class="label">正向总数</div>
           <div class="value">$total_positive</div>
         </div>
         <div class="stat-card neutral">
-          <div class="label">Total Elapsed</div>
+          <div class="label">总耗时</div>
           <div class="value">${efficiency_total_elapsed}s</div>
         </div>
       </div>
@@ -179,12 +179,12 @@ $env_info_items
   <!-- Section 3: Category Statistics (Bar Chart)                -->
   <!-- ══════════════════════════════════════════════════════════ -->
   <div class="section" id="section-categories">
-    <h2>3. Category Statistics</h2>
+    <h2>3. 分类统计</h2>
     $category_stats_content
     <div class="chart-container">
       <canvas id="categoryChart"></canvas>
       <div class="chart-placeholder" id="categoryChartFallback" style="display:none;">
-        Category chart requires internet.
+        分类图表需要网络连接。
       </div>
     </div>
   </div>
@@ -193,7 +193,7 @@ $env_info_items
   <!-- Section 4: Failed Cases Detail (Collapsible)              -->
   <!-- ══════════════════════════════════════════════════════════ -->
   <div class="section" id="section-failed-cases">
-    <h2>4. Failed Cases Detail</h2>
+    <h2>4. 失败用例详情</h2>
     $failed_cases_content
   </div>
 
@@ -201,7 +201,7 @@ $env_info_items
   <!-- Section 5: Negative Violations                            -->
   <!-- ══════════════════════════════════════════════════════════ -->
   <div class="section" id="section-negative-violations">
-    <h2>5. Negative Violations</h2>
+    <h2>5. 负面违规</h2>
     $negative_violations_content
   </div>
 
@@ -209,12 +209,12 @@ $env_info_items
   <!-- Section 6: History Trend (Line Chart)                     -->
   <!-- ══════════════════════════════════════════════════════════ -->
   <div class="section" id="section-history-trend">
-    <h2>6. History Trend</h2>
+    <h2>6. 历史趋势</h2>
     $history_trend_content
     <div class="chart-container trend">
       <canvas id="trendChart"></canvas>
       <div class="chart-placeholder" id="trendChartFallback" style="display:none;">
-        Trend chart requires internet.
+        趋势图表需要网络连接。
       </div>
     </div>
   </div>
@@ -223,13 +223,13 @@ $env_info_items
   <!-- Section 7: Efficiency Metrics                             -->
   <!-- ══════════════════════════════════════════════════════════ -->
   <div class="section" id="section-efficiency">
-    <h2>7. Efficiency Metrics</h2>
+    <h2>7. 效率指标</h2>
     <table>
-      <tr><th>Metric</th><th>Value</th></tr>
-      <tr><td>Total Cases</td><td>$efficiency_total_cases</td></tr>
-      <tr><td>Total Elapsed</td><td>${efficiency_total_elapsed}s</td></tr>
-      <tr><td>Average Elapsed</td><td>${efficiency_avg_elapsed}s</td></tr>
-      <tr><td>Median Elapsed</td><td>${efficiency_median_elapsed}s</td></tr>
+      <tr><th>指标</th><th>值</th></tr>
+      <tr><td>用例总数</td><td>$efficiency_total_cases</td></tr>
+      <tr><td>总耗时</td><td>${efficiency_total_elapsed}s</td></tr>
+      <tr><td>平均耗时</td><td>${efficiency_avg_elapsed}s</td></tr>
+      <tr><td>中位耗时</td><td>${efficiency_median_elapsed}s</td></tr>
     </table>
     $tool_call_distribution
   </div>
@@ -268,7 +268,7 @@ $env_info_items
     new Chart(overviewCtx, {
       type: "doughnut",
       data: {
-        labels: ["Passed", "Failed"],
+        labels: ["\u901A\u8FC7", "\u5931\u8D25"],
         datasets: [{
           data: [RD.total_passed, RD.total_positive - RD.total_passed],
           backgroundColor: ["#059669", "#dc2626"],
@@ -289,7 +289,7 @@ $env_info_items
   } else if (overviewCtx) {
     overviewCtx.style.display = "none";
     var fb = document.getElementById("overviewChartFallback");
-    if (fb) { fb.style.display = "block"; fb.textContent = "No positive cases to display."; }
+    if (fb) { fb.style.display = "block"; fb.textContent = "\u65E0\u6B63\u5411\u7528\u4F8B\u6570\u636E\u3002"; }
   }
 
   /* ── Section 3: Category Bar Chart ── */
@@ -303,7 +303,7 @@ $env_info_items
       data: {
         labels: catLabels,
         datasets: [{
-          label: "Pass Rate (%)",
+          label: "\u901A\u8FC7\u7387 (%)",
           data: catRates,
           backgroundColor: catBgColors,
           borderRadius: 4
@@ -317,14 +317,14 @@ $env_info_items
         },
         plugins: {
           legend: { display: false },
-          title: { display: true, text: "Pass Rate by Category" }
+          title: { display: true, text: "\u5404\u5206\u7C7B\u901A\u8FC7\u7387" }
         }
       }
     });
   } else if (catCtx) {
     catCtx.style.display = "none";
     var fb2 = document.getElementById("categoryChartFallback");
-    if (fb2) { fb2.style.display = "block"; fb2.textContent = "No category data available."; }
+    if (fb2) { fb2.style.display = "block"; fb2.textContent = "\u65E0\u5206\u7C7B\u6570\u636E\u3002"; }
   }
 
   /* ── Section 6: History Trend Line Chart ── */
@@ -333,14 +333,14 @@ $env_info_items
     var trendLabels = RD.history.map(function(h) { return h.eval_time || ""; });
     var isNeg = RD.dataset_mode === "negative";
     var trendKey = isNeg ? "violation_rate" : "pass_rate";
-    var trendTitle = isNeg ? "Violation Rate Trend" : "Pass Rate Trend";
+    var trendTitle = isNeg ? "\u8FDD\u89C4\u7387\u8D8B\u52BF" : "\u901A\u8FC7\u7387\u8D8B\u52BF";
     var trendRates = RD.history.map(function(h) { return Math.round((h[trendKey] || 0) * 100); });
     new Chart(trendCtx, {
       type: "line",
       data: {
         labels: trendLabels,
         datasets: [{
-          label: isNeg ? "Violation Rate (%)" : "Pass Rate (%)",
+          label: isNeg ? "\u8FDD\u89C4\u7387 (%)" : "\u901A\u8FC7\u7387 (%)",
           data: trendRates,
           borderColor: "#6366F1",
           backgroundColor: "rgba(99,102,241,0.1)",
@@ -365,7 +365,7 @@ $env_info_items
   } else if (trendCtx) {
     trendCtx.style.display = "none";
     var fb3 = document.getElementById("trendChartFallback");
-    if (fb3) { fb3.style.display = "block"; fb3.textContent = RD.history && RD.history.length === 0 ? "First run — no historical data yet." : "Trend chart requires internet."; }
+    if (fb3) { fb3.style.display = "block"; fb3.textContent = RD.history && RD.history.length === 0 ? "\u9996\u6B21\u8FD0\u884C\u2014\u2014\u5C1A\u65E0\u5386\u53F2\u6570\u636E\u3002" : "\u8D8B\u52BF\u56FE\u8868\u9700\u8981\u7F51\u7EDC\u8FDE\u63A5\u3002"; }
   }
 })();
 </script>

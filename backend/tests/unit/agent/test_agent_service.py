@@ -107,85 +107,52 @@ class TestAgentServiceFullFlow:
         # 2. Tool 执行结果
         # 3. AI 最终回复（无 tool_calls）
         tool_call_id = "call_001"
+        # stream_mode="updates" 格式：每个 event 只包含本步新增的消息
         events = [
             {
-                "messages": [
-                    AIMessage(
-                        content="好的，我来帮你创建这个条目。",
-                        tool_calls=[
-                            {
-                                "id": tool_call_id,
-                                "name": "create_entry",
-                                "args": {
-                                    "category": "task",
-                                    "title": "测试任务",
-                                },
-                                "type": "tool_call",
-                            }
-                        ],
-                    )
-                ]
+                "agent": {
+                    "messages": [
+                        AIMessage(
+                            content="好的，我来帮你创建这个条目。",
+                            tool_calls=[
+                                {
+                                    "id": tool_call_id,
+                                    "name": "create_entry",
+                                    "args": {
+                                        "category": "task",
+                                        "title": "测试任务",
+                                    },
+                                    "type": "tool_call",
+                                }
+                            ],
+                        )
+                    ]
+                }
             },
             {
-                "messages": [
-                    AIMessage(
-                        content="好的，我来帮你创建这个条目。",
-                        tool_calls=[
-                            {
-                                "id": tool_call_id,
-                                "name": "create_entry",
-                                "args": {
-                                    "category": "task",
+                "tools": {
+                    "messages": [
+                        ToolMessage(
+                            content=json.dumps({
+                                "success": True,
+                                "data": {
+                                    "id": "entry-abc",
                                     "title": "测试任务",
+                                    "category": "task",
+                                    "status": "doing",
                                 },
-                                "type": "tool_call",
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content=json.dumps({
-                            "success": True,
-                            "data": {
-                                "id": "entry-abc",
-                                "title": "测试任务",
-                                "category": "task",
-                                "status": "doing",
-                            },
-                        }),
-                        tool_call_id=tool_call_id,
-                    ),
-                ]
+                            }),
+                            tool_call_id=tool_call_id,
+                        ),
+                    ]
+                }
             },
             {
-                "messages": [
-                    AIMessage(
-                        content="好的，我来帮你创建这个条目。",
-                        tool_calls=[
-                            {
-                                "id": tool_call_id,
-                                "name": "create_entry",
-                                "args": {
-                                    "category": "task",
-                                    "title": "测试任务",
-                                },
-                                "type": "tool_call",
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content=json.dumps({
-                            "success": True,
-                            "data": {
-                                "id": "entry-abc",
-                                "title": "测试任务",
-                                "category": "task",
-                                "status": "doing",
-                            },
-                        }),
-                        tool_call_id=tool_call_id,
-                    ),
-                    AIMessage(content="已为你创建了任务「测试任务」。"),
-                ]
+                "agent": {
+                    "messages": [
+                        AIMessage(content="已为你创建了任务「测试任务」。"),
+                    ]
+                }
             },
         ]
 

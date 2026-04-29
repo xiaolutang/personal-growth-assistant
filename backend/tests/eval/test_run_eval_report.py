@@ -339,7 +339,7 @@ class TestHTMLReportGeneration:
         assert html_path.exists()
         content = html_path.read_text()
         assert "<!DOCTYPE html>" in content
-        assert "AI Agent Evaluation Report" in content
+        assert "AI \u667a\u80fd\u4f53\u8bc4\u4f30\u62a5\u544a" in content
 
     @pytest.mark.asyncio
     async def test_negative_mode_generates_html(self, tmp_path):
@@ -393,7 +393,7 @@ class TestHTMLReportGeneration:
         content = html_path.read_text()
         # all 模式下 report_data_json 中包含正向和负面数据
         assert "tool_selection" in content  # category stats
-        assert "Violation Rate" in content  # 负面板块
+        assert "\u8FDD\u89C4\u7387" in content  # 负面板块
 
     @pytest.mark.asyncio
     async def test_failed_case_shows_agent_reply_in_html(self, tmp_path):
@@ -760,7 +760,7 @@ class TestFullFlowMocked:
         assert report_data.total_passed == 2
 
         html = generate_html_report(report_data)
-        assert "AI Agent Evaluation Report" in html
+        assert "AI \u667a\u80fd\u4f53\u8bc4\u4f30\u62a5\u544a" in html
 
         # 追加 history
         history_record = {
@@ -834,7 +834,7 @@ class TestFullFlowMocked:
         assert report_data.total_negative == 1
 
         html = generate_html_report(report_data)
-        assert "AI Agent Evaluation Report" in html
+        assert "AI \u667a\u80fd\u4f53\u8bc4\u4f30\u62a5\u544a" in html
 
         history_record = {
             "eval_time": "2026-04-29T10:00:00",

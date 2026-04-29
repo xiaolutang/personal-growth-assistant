@@ -413,9 +413,9 @@ def _render_category_stats_table(
 ) -> str:
     """渲染分类统计表格（用于新模板 Section 3）"""
     if dataset_mode == "negative":
-        return '<div class="empty-state">Positive evaluation not run (negative mode).</div>'
+        return '<div class="empty-state">未运行正向评估（负面模式）。</div>'
     if not stats:
-        return '<div class="empty-state">No category data available.</div>'
+        return '<div class="empty-state">无分类数据。</div>'
 
     rows = []
     for cat, s in sorted(stats.items()):
@@ -430,8 +430,8 @@ def _render_category_stats_table(
         )
 
     return (
-        "<table><tr><th>Category</th><th>Total</th><th>Passed</th>"
-        f"<th>Pass Rate</th></tr>{''.join(rows)}</table>"
+        "<table><tr><th>分类</th><th>总数</th><th>通过</th>"
+        f"<th>通过率</th></tr>{''.join(rows)}</table>"
     )
 
 
@@ -440,9 +440,9 @@ def _render_failed_cases(
 ) -> str:
     """渲染失败用例为可展开的 details 元素（用于新模板 Section 4）"""
     if dataset_mode == "negative":
-        return '<div class="empty-state">Positive evaluation not run (negative mode).</div>'
+        return '<div class="empty-state">未运行正向评估（负面模式）。</div>'
     if not cases:
-        return '<div class="empty-state">All cases passed!</div>'
+        return '<div class="empty-state">全部通过！</div>'
 
     items = []
     for i, c in enumerate(cases, 1):
@@ -456,15 +456,15 @@ def _render_failed_cases(
         items.append(
             f"<details>"
             f"<summary><span>#{i} {inp}</span> "
-            f'<span class="badge badge-fail">FAIL</span></summary>'
+            f'<span class="badge badge-fail">\u5931\u8D25</span></summary>'
             f'<div class="detail-body">'
-            f'<div class="field"><div class="field-label">Input</div>'
+            f'<div class="field"><div class="field-label">\u7528\u6237\u8F93\u5165</div>'
             f'<div class="field-value">{inp}</div></div>'
-            f'<div class="field"><div class="field-label">Expected Tools</div>'
+            f'<div class="field"><div class="field-label">\u671F\u671B\u5DE5\u5177</div>'
             f'<div class="field-value">{expected}</div></div>'
-            f'<div class="field"><div class="field-label">Actual Tools</div>'
+            f'<div class="field"><div class="field-label">\u5B9E\u9645\u5DE5\u5177</div>'
             f'<div class="field-value">{actual}</div></div>'
-            f'<div class="field"><div class="field-label">Agent Reply</div>'
+            f'<div class="field"><div class="field-label">\u667A\u80FD\u4F53\u56DE\u590D</div>'
             f'<div class="field-value">{reply_escaped}</div></div>'
             f"</div></details>"
         )
@@ -480,16 +480,16 @@ def _render_negative_violations(
     """渲染负面违规板块（用于新模板 Section 5）"""
     # 条件渲染：single 模式未运行负面评估
     if dataset_mode == "single":
-        return '<div class="empty-state">Negative evaluation not run (single mode).</div>'
+        return '<div class="empty-state">未运行负面评估（单轮模式）。</div>'
 
     parts = []
     parts.append(
-        f'<p>Violation Rate: <strong>{violation_rate:.1%}</strong> '
-        f"({len(violations)} / {total_negative} negative cases)</p>"
+        f'<p>\u8FDD\u89C4\u7387\uFF1A<strong>{violation_rate:.1%}</strong> '
+        f"({len(violations)} / {total_negative} \u6761\u8D1F\u9762\u7528\u4F8B)</p>"
     )
 
     if not violations:
-        parts.append('<div class="empty-state">No violations detected.</div>')
+        parts.append('<div class="empty-state">\u65E0\u8FDD\u89C4\u3002</div>')
         return "".join(parts)
 
     rows = []
@@ -507,11 +507,11 @@ def _render_negative_violations(
             f"<td>{should_not}</td>"
             f"<td>{violated_tools}</td>"
             f"<td>{reply_escaped}</td>"
-            f'<td class="fail-text">VIOLATED</td></tr>'
+            f'<td class="fail-text">\u8FDD\u89C4</td></tr>'
         )
     parts.append(
-        "<table><tr><th>Input</th><th>Should Not Call</th>"
-        "<th>Violated Tools</th><th>Agent Reply</th><th>Status</th></tr>"
+        "<table><tr><th>\u8F93\u5165</th><th>\u4E0D\u5E94\u8C03\u7528</th>"
+        "<th>\u8FDD\u89C4\u5DE5\u5177</th><th>\u667A\u80FD\u4F53\u56DE\u590D</th><th>\u72B6\u6001</th></tr>"
         f"{''.join(rows)}</table>"
     )
     return "".join(parts)
@@ -522,9 +522,9 @@ def _render_history_trend(
 ) -> str:
     """渲染历史趋势板块（用于新模板 Section 6）"""
     if not history_data:
-        return '<div class="empty-state">First run — no historical data yet.</div>'
+        return '<div class="empty-state">\u9996\u6B21\u8FD0\u884C\u2014\u2014\u5C1A\u65E0\u5386\u53F2\u6570\u636E\u3002</div>'
     count = len(history_data)
-    return f"<p>Showing trend across {count} historical run(s).</p>"
+    return f"<p>\u663E\u793A {count} \u6B21\u5386\u53F2\u8FD0\u884C\u7684\u8D8B\u52BF\u3002</p>"
 
 
 def _render_env_info(env_info: Dict[str, Any]) -> str:
@@ -551,7 +551,7 @@ def _render_tool_call_distribution(
     """
     all_visible = failed_cases + negative_violations
     if not all_visible:
-        return '<h3>Tool Call Count Distribution</h3><div class="empty-state">No tool call data available.</div>'
+        return '<h3>\u5DE5\u5177\u8C03\u7528\u6B21\u6570\u5206\u5E03</h3><div class="empty-state">\u65E0\u5DE5\u5177\u8C03\u7528\u6570\u636E\u3002</div>'
     # 收集每个用例的工具调用次数
     tool_counts: Dict[int, int] = {}
     for c in all_visible:
@@ -562,12 +562,12 @@ def _render_tool_call_distribution(
     rows = []
     for n_calls in sorted(tool_counts.keys()):
         rows.append(
-            f"<tr><td>{n_calls} tool(s) called</td>"
+            f"<tr><td>{n_calls} \u6B21\u5DE5\u5177\u8C03\u7528</td>"
             f"<td>{tool_counts[n_calls]}</td></tr>"
         )
     return (
-        '<h3>Tool Call Count Distribution (Failed/Violated Cases)</h3>'
-        "<table><tr><th>Tool Calls</th><th>Count</th></tr>"
+        '<h3>\u5DE5\u5177\u8C03\u7528\u6B21\u6570\u5206\u5E03\uFF08\u5931\u8D25/\u8FDD\u89C4\u7528\u4F8B\uFF09</h3>'
+        "<table><tr><th>\u5DE5\u5177\u8C03\u7528</th><th>\u6570\u91CF</th></tr>"
         f"{''.join(rows)}</table>"
     )
 
@@ -575,7 +575,7 @@ def _render_tool_call_distribution(
 def _render_positive_empty_notice(dataset_mode: str) -> str:
     """渲染正向板块空态提示"""
     if dataset_mode == "negative":
-        return '<div class="empty-state">Positive evaluation not run (negative mode).</div>'
+        return '<div class="empty-state">未运行正向评估（负面模式）。</div>'
     return ""
 
 

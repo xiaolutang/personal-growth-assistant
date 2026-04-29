@@ -697,7 +697,7 @@ class ReActAgentGraph:
         async for event in self.graph.astream(
             {"messages": [HumanMessage(content=message)]},
             config,
-            stream_mode="values",
+            stream_mode="updates",
         ):
             yield event
 

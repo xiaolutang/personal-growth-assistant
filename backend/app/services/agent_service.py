@@ -143,8 +143,6 @@ class AgentService:
                 logger.debug("Touch session 元数据失败", exc_info=True)
 
         try:
-            # 跟踪已发送的 message 数量，用于检测新增消息
-            prev_message_count = 0
             has_content = False
             has_error = False
             # 跟踪工具调用时间，用于计算延迟
@@ -159,29 +157,30 @@ class AgentService:
                 page_context=page_context_str,
                 is_new_user=is_new_user,
             ):
-                # state 是 ReActAgentState（MessagesState 的子类）
-                messages = state.get("messages", [])
-                new_messages = messages[prev_message_count:]
-                prev_message_count = len(messages)
+                # stream_mode="updates": state 是 {node_name: node_output}
+                # 只包含本步新增的消息，不含历史
+                for node_name, node_output in state.items():
+                    # updates 模式: node_output 是 {"messages": [...]}
+                    # 兼容 values 模式: node_output 可能直接是 list
+                    if isinstance(node_output, dict):
+                        messages = node_output.get("messages", [])
+                    elif isinstance(node_output, list):
+                        messages = node_output
+                    else:
+                        continue
+                    for msg in messages:
+                        async for event in self._process_message(msg, tool_call_timestamps):
+                            event_type = self._extract_event_type(event)
+                            if event_type == "content":
+                                has_content = True
+                            elif event_type == "error":
+                                has_error = True
+                            elif event_type == "created" or event_type == "updated":
+                                has_content = True
+                            yield event
 
-                for msg in new_messages:
-                    async for event in self._process_message(msg, tool_call_timestamps):
-                        # 检测是否有实际内容事件
-                        event_type = self._extract_event_type(event)
-                        if event_type == "content":
-                            has_content = True
-                        elif event_type == "error":
-                            has_error = True
-                        elif event_type == "created" or event_type == "updated":
-                            has_content = True
-                        yield event
-
-            # 发送 done 事件
-            if not has_error:
-                yield sse_event("done", {})
-            else:
-                # 已经发了 error 事件，但仍然发 done 以关闭流
-                yield sse_event("done", {})
+            # 发送 done 事件（无论是否出错都发送，以关闭 SSE 流）
+            yield sse_event("done", {})
 
         except Exception as e:
             logger.error("AgentService.chat 异常: %s", e, exc_info=True)

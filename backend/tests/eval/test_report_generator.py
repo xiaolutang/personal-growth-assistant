@@ -433,7 +433,7 @@ class TestGenerateHtmlReport:
         report = build_report_data(records, dataset_mode="negative", env_info=_default_env_info())
         html = generate_html_report(report)
         assert "50.0%" in html  # violation_rate = 1/2 = 50%
-        assert "Violation Rate" in html
+        assert "\u8FDD\u89C4\u7387" in html
 
     def test_report_data_json_contains_negative_fields(self):
         """嵌入的 JSON 数据包含负面指标字段"""

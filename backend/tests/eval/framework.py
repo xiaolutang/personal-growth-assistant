@@ -332,8 +332,10 @@ def judge_test_case(
                 return False
 
     if not actual_tools:
-        # 没有调用任何 tool
-        # 对于 pure_chat 类别，这是正确的
+        # 没有调用任何 tool — 如果期望也没有 tool，则正确
+        if not test_case.expected_tools and not test_case.reference_solution.tool:
+            return True
+        # 对于 pure_chat 类别，不调用 tool 是正确的
         if test_case.category == "pure_chat":
             return True
         return False

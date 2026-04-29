@@ -233,8 +233,8 @@ class TestFailedCasesComparison:
         html = _render_report(records)
 
         # 失败用例应展示 Expected 和 Actual 对比
-        assert "Expected Tools" in html
-        assert "Actual Tools" in html
+        assert "\u671F\u671B\u5DE5\u5177" in html
+        assert "\u5B9E\u9645\u5DE5\u5177" in html
         # 失败的输入应出现
         assert "today's learning notes" in html
 
@@ -245,7 +245,7 @@ class TestFailedCasesComparison:
 
         assert "<details>" in html
         assert "<summary>" in html
-        assert "FAIL" in html
+        assert "\u5931\u8D25" in html
 
 
 class TestChartJsDataEmbedding:
@@ -352,7 +352,7 @@ class TestAllPassedBoundary:
     def test_all_passed_shows_message(self):
         records = _make_all_pass_positive_records()
         html = _render_report(records)
-        assert "All cases passed" in html
+        assert "\u5168\u90E8\u901A\u8FC7" in html
 
     def test_all_passed_no_fail_details(self):
         records = _make_all_pass_positive_records()
@@ -366,20 +366,20 @@ class TestNoHistoryBoundary:
 
     def test_no_history_shows_first_run(self):
         html = _render_report(_make_positive_records(), history_data=None)
-        assert "First run" in html
+        assert "\u9996\u6B21\u8FD0\u884C" in html
 
     def test_empty_history_shows_first_run(self):
         html = _render_report(_make_positive_records(), history_data=[])
-        assert "First run" in html
+        assert "\u9996\u6B21\u8FD0\u884C" in html
 
 
 class TestNoViolationsBoundary:
-    """边界: 无负面违规时显示 'No violations detected'"""
+    """边界: 无负面违规时显示 '无违规'"""
 
     def test_no_violations_shows_message(self):
         records = _make_no_violation_negative_records()
         html = _render_report(records, dataset_mode="negative")
-        assert "No violations detected" in html
+        assert "\u65E0\u8FDD\u89C4" in html
 
 
 class TestSingleModeNegativeSection:
@@ -387,7 +387,7 @@ class TestSingleModeNegativeSection:
 
     def test_single_mode_negative_not_run(self):
         html = _render_report(_make_positive_records(), dataset_mode="single")
-        assert "Negative evaluation not run" in html
+        assert "\u672A\u8FD0\u884C\u8D1F\u9762\u8BC4\u4F30" in html
 
 
 class TestNegativeModePositiveSection:
@@ -395,28 +395,27 @@ class TestNegativeModePositiveSection:
 
     def test_negative_mode_positive_not_run(self):
         html = _render_report(_make_negative_records(), dataset_mode="negative")
-        assert "Positive evaluation not run" in html
+        assert "\u672A\u8FD0\u884C\u6B63\u5411\u8BC4\u4F30" in html
 
     def test_negative_mode_no_misleading_pass_rate(self):
-        """negative 模式不应在正向板块显示误导的 Pass Rate 0.0%"""
+        """negative 模式不应在正向板块显示误导的通过率 0.0%"""
         html = _render_report(_make_negative_records(), dataset_mode="negative")
         # Section 2 概览仪表盘不应显示正向通过率数据
         # positive_empty_notice 应出现
-        assert "Positive evaluation not run" in html
+        assert "\u672A\u8FD0\u884C\u6B63\u5411\u8BC4\u4F30" in html
         # Section 3 分类统计应为空态
-        # 确保分类统计区域出现"not run"而不是"No category data"
-        # _render_category_stats_table 在 negative 模式返回 not run 提示
+        # 确保分类统计区域出现空态提示
         cat_section = html[html.index("section-categories"):]
         cat_section = cat_section[:cat_section.index("</div>")]
-        assert "not run" in cat_section.lower() or "Positive evaluation not run" in cat_section
+        assert "\u672A\u8FD0\u884C\u6B63\u5411\u8BC4\u4F30" in cat_section
 
     def test_negative_mode_failed_cases_not_all_passed(self):
-        """negative 模式下失败用例区域不应显示 'All cases passed'"""
+        """negative 模式下失败用例区域不应显示 '全部通过'"""
         html = _render_report(_make_negative_records(), dataset_mode="negative")
         failed_section = html[html.index("section-failed-cases"):]
         failed_section = failed_section[:failed_section.index("section-negative-violations")]
-        assert "All cases passed" not in failed_section
-        assert "Positive evaluation not run" in failed_section
+        assert "\u5168\u90E8\u901A\u8FC7" not in failed_section
+        assert "\u672A\u8FD0\u884C\u6B63\u5411\u8BC4\u4F30" in failed_section
 
 
 # ── Error Tests ──
@@ -475,7 +474,7 @@ class TestFullReportIntegration:
         """分类统计表格包含数据"""
         html = _render_report(_make_positive_records())
         assert "tool_selection" in html
-        assert "Pass Rate" in html
+        assert "\u901A\u8FC7\u7387" in html
 
     def test_history_trend_with_data(self):
         """有历史数据时趋势图显示历史运行数量"""
@@ -483,7 +482,7 @@ class TestFullReportIntegration:
             _make_positive_records(),
             history_data=_make_history(),
         )
-        assert "2 historical run" in html
+        assert "2 \u6B21\u5386\u53F2\u8FD0\u884C" in html
 
     def test_efficiency_table_values(self):
         """效率指标表格展示正确数值"""
@@ -507,4 +506,4 @@ class TestFullReportIntegration:
         html = _render_report(records, dataset_mode="negative", history_data=history)
         # JS 代码中应根据 dataset_mode 选择 violation_rate
         assert "violation_rate" in html
-        assert "Violation Rate Trend" in html
+        assert "\\u8FDD\\u89C4\\u7387\\u8D8B\\u52BF" in html  # JS 中 unicode 转义的"违规率趋势"
