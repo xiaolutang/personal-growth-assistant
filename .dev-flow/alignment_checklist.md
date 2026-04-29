@@ -1,5 +1,37 @@
 # 对齐清单
 
+## R045: 评估 HTML 报告
+
+### 契约对齐
+
+- [ ] 无 API 契约（纯测试工具链，不涉及生产代码）
+
+### 依赖对齐
+
+- [ ] B193 无外部依赖（纯 Python string.Template）
+- [ ] B194 depends_on B193 ✓（模板依赖数据模型）
+- [ ] B195 depends_on B194 ✓（集成依赖模板）
+- [ ] 不依赖 Jinja2（改用 Python string.Template）
+- [ ] 不依赖 /health 端点获取元数据（改用 os.environ + git CLI）
+
+### 架构对齐
+
+- [ ] 所有改动在 backend/tests/eval/ 目录下，不影响生产代码
+- [ ] data/eval_reports/ 为输出目录，默认路径为项目根目录 data/eval_reports/（通过 Path(__file__) 向上 4 级解析），不纳入版本控制
+- [ ] history.json 为追加式存储，不覆盖已有数据；损坏时备份为 .bak 后重建
+- [ ] 环境元数据来源：LLM_MODEL 从 os.environ 读取，git commit 从 `git rev-parse --short HEAD` 获取，失败时降级为 "unknown"
+- [ ] 统一 per-case schema：正向 {input, expected_tools, actual_tools, agent_reply, passed, category, elapsed_seconds}；负面 {input, should_not_call, actual_tools, agent_reply, violated, violated_tools, category, elapsed_seconds}
+- [ ] B193 负责 escape_for_html() 和 escape_for_js() 转义/序列化辅助函数，B194 模板只使用转义后的数据
+- [ ] agent_reply 来源：SSE content 事件 payload key 为 'content'（agent_service.py sse_event 发送 {"content": text}，parse_sse_stream 用 data.get("content", "")），二者一致
+- [ ] 报告产物：single 模式正向完整 + 负面空态；negative 模式负面完整 + 正向空态；all 模式全板块
+- [ ] B195 重构契约：run_single_turn 返回 (EvaluationReport, per_case_records)，run_negative 返回 (NegativeReport, per_case_records)
+- [ ] --report-dir 同时影响 HTML 报告和 history.json 的输出位置
+- [ ] 不违反 architecture.md 分层不变量
+
+### 执行顺序
+
+- [ ] Phase 1: B193 → B194 → B195（严格顺序）
+
 ## R043: 架构收敛
 
 ### 契约对齐

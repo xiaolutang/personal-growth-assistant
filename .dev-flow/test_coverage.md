@@ -1,5 +1,13 @@
 # 测试覆盖清单
 
+## R045: 评估 HTML 报告
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| 报告数据模型+生成器 | B193 | unit | generate_html_report 合法数据返回非空 HTML/append_history 追加到空/已有 history.json/build_report_data 按 dataset_mode=single/negative/all 聚合正向+负面/escape_for_html 转义引号标签/escape_for_js 序列化含</script>字符串/input 含 HTML 标签不破坏 DOM/agent_reply 含 </script> 不关闭 script/history.json 不存在时自动创建/corrupted history.json 备份旧文件并重建 | pending | L1 |
+| HTML 报告模板 | B194 | unit | 模板渲染合法数据不抛异常/生成 HTML 包含全部 7 板块标题/失败用例展示期望 vs 实际/离线时 HTML 文件浏览器打开文字完整/全部通过时显示"全部通过"/无历史数据时趋势显示"首次运行"/single 模式负面板块显示"未运行负面评估"/negative 模式正向统计显示"未运行正向评估"/模板文件不存在时降级 | pending | L1 |
+| run_eval 集成 | B195 | unit+integration | 评估完成后生成 HTML 文件/history.json 含 dataset_mode 和通过率/连续两次运行 history.json 有两条记录/--output JSON 兼容性不受影响/single/negative/all 三种 dataset 模式均可生成报告/正向 HTML 展示 agent_reply/负面 HTML 展示 agent_reply/SSE content payload key='content' 验证/默认 report-dir 解析到项目根 data//corrupted history.json 全链路降级仍生成 HTML/metadata 缺失时降级不阻塞 | pending | L1 |
+
 ## R043: 架构收敛
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
