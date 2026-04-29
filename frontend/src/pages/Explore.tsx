@@ -24,7 +24,7 @@ import { BatchActionBar } from "./explore/BatchActionBar";
 import { TemplateSelector } from "./explore/TemplateSelector";
 
 // Utils
-import { TABS, EXPLORE_CATEGORIES } from "./explore/utils";
+import { TABS, EXPLORE_CATEGORIES, groupSearchResultsByType } from "./explore/utils";
 import type { Task } from "@/types/task";
 
 export function Explore() {
@@ -259,17 +259,44 @@ export function Explore() {
                 </button>
               </div>
             )}
-            <TaskList
-              tasks={filteredTasks}
-              emptyMessage={emptyMessage}
-              highlightKeyword={searchQuery.trim()}
-              selectable={batch.selectMode}
-              selectedIds={batch.selectedIds}
-              onSelect={batch.toggleSelect}
-              disableActions={batch.selectMode}
-              onCardClick={isSearchMode ? handleSearchCardClick : undefined}
-              onConvertSuccess={handleConvertSuccess}
-            />
+            {isSearchMode && filteredTasks.length > 0 ? (
+              // F12: 搜索结果按类型分组展示
+              groupSearchResultsByType(filteredTasks).map((group) => {
+                const GroupIcon = group.icon;
+                return (
+                  <div key={group.type} className="mb-4">
+                    <div className="flex items-center gap-2 px-1 mb-2 text-sm font-medium text-muted-foreground">
+                      <GroupIcon className="h-4 w-4" />
+                      <span>{group.label}</span>
+                      <span className="text-xs">({group.count})</span>
+                    </div>
+                    <TaskList
+                      tasks={group.tasks}
+                      emptyMessage=""
+                      highlightKeyword={searchQuery.trim()}
+                      selectable={batch.selectMode}
+                      selectedIds={batch.selectedIds}
+                      onSelect={batch.toggleSelect}
+                      disableActions={batch.selectMode}
+                      onCardClick={handleSearchCardClick}
+                      onConvertSuccess={handleConvertSuccess}
+                    />
+                  </div>
+                );
+              })
+            ) : (
+              <TaskList
+                tasks={filteredTasks}
+                emptyMessage={emptyMessage}
+                highlightKeyword={searchQuery.trim()}
+                selectable={batch.selectMode}
+                selectedIds={batch.selectedIds}
+                onSelect={batch.toggleSelect}
+                disableActions={batch.selectMode}
+                onCardClick={isSearchMode ? handleSearchCardClick : undefined}
+                onConvertSuccess={handleConvertSuccess}
+              />
+            )}
           </div>
         )}
       </Card>

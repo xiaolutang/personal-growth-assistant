@@ -44,11 +44,29 @@ export const SORT_OPTIONS = [
 export type SortOption = (typeof SORT_OPTIONS)[number]["value"];
 
 // F08: 视图选择器
-export type ViewKey = "list" | "grouped";
-export const VALID_VIEW_KEYS: ViewKey[] = ["list", "grouped"];
+export type ViewKey = "list" | "grouped" | "timeline";
+export const VALID_VIEW_KEYS: ViewKey[] = ["list", "grouped", "timeline"];
 
 export interface ViewOption {
   key: string;
   label: string;
   icon?: React.ReactNode;
 }
+
+// F09: 时间线日期分组定义
+export type TimelineGroupKey = "overdue" | "today" | "tomorrow" | "thisWeek" | "nextWeek" | "later" | "noDate";
+
+export interface TimelineGroupDef {
+  key: TimelineGroupKey;
+  label: string;
+}
+
+export const TIMELINE_GROUPS: TimelineGroupDef[] = [
+  { key: "overdue", label: "逾期" },
+  { key: "today", label: "今天" },
+  { key: "tomorrow", label: "明天" },
+  { key: "thisWeek", label: "本周" },
+  { key: "nextWeek", label: "下周" },
+  { key: "later", label: "更远" },
+  { key: "noDate", label: "未安排" },
+];

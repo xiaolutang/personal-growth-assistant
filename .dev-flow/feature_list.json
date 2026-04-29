@@ -11,9 +11,9 @@
     "total_tasks": 13,
     "summary": {
       "total": 13,
-      "completed": 7,
+      "completed": 9,
       "in_progress": 0,
-      "pending": 6
+      "pending": 4
     }
   },
   "workflow": {
@@ -449,7 +449,13 @@
       "description": "在任务页工具栏新增视图选择器组件（列表/按项目），当前只实现列表和按项目两个选项（时间线由 F09 补充）。选择器 UI 为 F08/F09 共用基础设施。按项目分组视图：project 条目作为折叠分组头，子任务展示在下方。无 parent_id 的条目作为「独立任务」分组。分组头可展开/折叠。",
       "verification": "F2",
       "depends_on": ["F03", "F05"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-30T02:50:00Z",
+      "completed_at": "2026-04-30T03:10:00Z",
+      "actual_minutes": 20,
+      "evidence_file": "evidence/F08_view_selector.md",
+      "commit": "pending",
+      "summary": "ViewSelector + GroupedView 按项目分组 + URL 同步。14 个测试。",
       "priority": "P1",
       "acceptance_criteria": [
         "视图选择器显示在 Tasks 页面工具栏，初始选项：列表 / 按项目",
@@ -521,7 +527,13 @@
       "description": "实现 task 完成时的复盘创建流。task 状态切换为 complete 时弹出「写个复盘？」提示，确认后创建 reflection 条目（parent_id 关联原 task），跳转到探索页复盘 tab 并自动展开新建的 reflection 进行编辑（URL 带 entry_id 参数定位）。",
       "verification": "F2",
       "depends_on": ["F03", "S01"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-04-30T02:50:00Z",
+      "completed_at": "2026-04-30T03:10:00Z",
+      "actual_minutes": 20,
+      "evidence_file": "evidence/F10.md",
+      "commit": "pending",
+      "summary": "CompletionPrompt + reflection 创建 + 跳转探索页 + entry_id 定位。18 个测试。",
       "priority": "P1",
       "acceptance_criteria": [
         "task 状态切换为 complete 时，弹出提示「写个复盘？」，有「写复盘」和「跳过」两个选项",

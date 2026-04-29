@@ -1,4 +1,7 @@
-import { Lightbulb, FileText, Layers, RotateCcw, HelpCircle } from "lucide-react";
+import {
+  Lightbulb, FileText, Layers, RotateCcw, HelpCircle,
+  CheckSquare, GitBranch, FolderKanban,
+} from "lucide-react";
 import type { Task, Category, TaskStatus, Priority, SearchResult } from "@/types/task";
 
 /**
@@ -31,6 +34,63 @@ export const TABS = [
 
 // F06: 探索页只展示 inbox/note/reflection/question，不含 task/project/decision
 export const EXPLORE_CATEGORIES = new Set(["inbox", "note", "reflection", "question"]);
+
+// F12: 搜索结果分组顺序
+export const SEARCH_GROUP_ORDER: Category[] = [
+  "task", "decision", "project", "inbox", "note", "reflection", "question",
+];
+
+export const SEARCH_GROUP_LABELS: Record<string, string> = {
+  task: "任务",
+  decision: "决策",
+  project: "项目",
+  inbox: "灵感",
+  note: "笔记",
+  reflection: "复盘",
+  question: "疑问",
+};
+
+export const SEARCH_GROUP_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  task: CheckSquare,
+  decision: GitBranch,
+  project: FolderKanban,
+  inbox: Lightbulb,
+  note: FileText,
+  reflection: RotateCcw,
+  question: HelpCircle,
+};
+
+export interface SearchGroup {
+  type: Category;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tasks: Task[];
+  count: number;
+}
+
+export function groupSearchResultsByType(tasks: Task[]): SearchGroup[] {
+  const bucket = new Map<Category, Task[]>();
+  for (const task of tasks) {
+    const cat = task.category as Category;
+    if (!SEARCH_GROUP_ORDER.includes(cat)) continue;
+    const list = bucket.get(cat) ?? [];
+    list.push(task);
+    bucket.set(cat, list);
+  }
+  const result: SearchGroup[] = [];
+  for (const type of SEARCH_GROUP_ORDER) {
+    const list = bucket.get(type);
+    if (!list || list.length === 0) continue;
+    result.push({
+      type,
+      label: SEARCH_GROUP_LABELS[type],
+      icon: SEARCH_GROUP_ICONS[type],
+      tasks: list,
+      count: list.length,
+    });
+  }
+  return result;
+}
 
 // === 时间范围快选 ===
 export type TimeRange = "today" | "week" | "month" | "";
