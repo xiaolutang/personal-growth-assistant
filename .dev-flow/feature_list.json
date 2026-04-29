@@ -2,14 +2,26 @@
   "version": "1.4",
   "project": "personal-growth-assistant",
   "status": "active",
-  "updated_at": "2026-04-29",
-  "active_requirement_cycle": null,
+  "updated_at": "2026-04-30",
+  "active_requirement_cycle": {
+    "id": "R047",
+    "name": "task-explore-reboundary",
+    "status": "reviewed",
+    "branch": "feat/R047-task-explore-reboundary",
+    "total_tasks": 13,
+    "summary": {
+      "total": 13,
+      "completed": 0,
+      "in_progress": 0,
+      "pending": 13
+    }
+  },
   "workflow": {
     "name": "XLFoundry",
     "mode": "A",
     "runtime": "skill_orchestrated",
     "review_provider": "codex_plugin",
-    "audit_provider": "local",
+    "audit_provider": "codex_plugin",
     "risk_provider": "local",
     "stop_hook_enabled": false
   },
@@ -102,5 +114,505 @@
     }
   ],
   "archived_phases": [],
-  "features": []
+  "features": [
+    {
+      "id": "S01",
+      "phase": 1,
+      "module": "backend-model",
+      "name": "type_history 模型字段 + 类型转换 API + OpenAPI 类型同步",
+      "description": "Task 模型新增 type_history 嵌套字段（List[TypeHistoryRecord]），记录类型变更历史。新增 POST /entries/{id}/convert 端点，支持 inbox→task、inbox→decision、inbox→note 三种合法转换。所有需要变更 category 的前端操作（探索页转化、任务页转分类）必须走此 API，确保 type_history 一致记录。task→reflection 不走 convert，而是创建新条目（由 F10 处理）。完成后执行 npm run gen:types 同步前端类型。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Task 模型新增 type_history: List[dict] 字段，默认空列表",
+        "TypeHistoryRecord 包含 from_category、to_category、at（ISO 时间戳）",
+        "POST /entries/{id}/convert 接收 { target_category, priority?, planned_date?, parent_id? }",
+        "只允许合法转换：inbox→task/inbox→decision/inbox→note，其他返回 422",
+        "明确禁止的转换：task→reflection（应创建新条目，不走 convert）、task→inbox/decision→task 等反向转换",
+        "转换成功后 type_history 追加记录，category 更新，priority/planned_date 按传入值更新",
+        "MarkdownStorage 读写 type_history（YAML frontmatter），旧文件无此字段时视为空列表",
+        "EntryResponse 中包含 type_history 字段",
+        "convert 端点触发 SyncService 三层同步",
+        "执行 npm run gen:types 成功，前端 api.generated.ts 包含 convert 相关类型和 type_history 字段"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常转换：inbox→task，验证 category 更新 + type_history 追加",
+        "非法转换：task→inbox，验证返回 422",
+        "非法转换：task→reflection，验证返回 422（task→reflection 应创建新条目，不走 convert）",
+        "旧文件兼容：无 type_history 的文件加载后字段为空列表",
+        "带额外字段转换：inbox→task + priority=high + planned_date，验证字段正确更新",
+        "两条 inbox 分别转为 task 和 decision，各自 type_history 独立正确",
+        "条目不存在时 convert 返回 404",
+        "target_category 不在合法枚举中时返回 422",
+        "请求 body 缺少 target_category 时返回 422",
+        "并发转换同一条目：两个请求同时转换，type_history 不丢失记录（最终一致即可）",
+        "npm run gen:types 无报错，生成的 TypeScript 类型包含 type_history 字段"
+      ],
+      "files": [
+        "backend/app/models/task.py",
+        "backend/app/api/schemas/entry.py",
+        "backend/app/routers/entries.py",
+        "backend/app/services/entry_service.py",
+        "backend/app/infrastructure/storage/markdown.py",
+        "backend/app/mappers/entry_mapper.py",
+        "backend/app/infrastructure/storage/sqlite_entries.py",
+        "frontend/src/types/api.generated.ts",
+        "frontend/src/types/task.ts"
+      ]
+    },
+    {
+      "id": "B02",
+      "phase": 1,
+      "module": "backend-api",
+      "name": "GET /entries 新增 category_group 查询参数 + OpenAPI 类型同步",
+      "description": "为 GET /entries 端点新增 category_group 参数，支持按类型分组查询。actionable=task+decision+project，knowledge=inbox+note+reflection+question。前端任务页使用 category_group=actionable 一次拉取所有行动项。完成后执行 npm run gen:types 同步前端类型。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "GET /entries?category_group=actionable 返回 category 为 task/decision/project 的条目",
+        "GET /entries?category_group=knowledge 返回 category 为 inbox/note/reflection/question 的条目",
+        "category_group 与 type 参数互斥，同时传时返回 422",
+        "不传 category_group 和 type 时行为不变（返回全部）",
+        "category_group 与 status/priority/tags/sort_by 等参数可组合使用",
+        "执行 npm run gen:types 成功，前端 client 包含 category_group 参数类型"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "category_group=actionable 只返回 task/decision/project",
+        "category_group=knowledge 只返回 inbox/note/reflection/question",
+        "category_group + type 同时传返回 422",
+        "category_group + status 组合筛选正常",
+        "无 category_group 时行为向后兼容",
+        "npm run gen:types 无报错"
+      ],
+      "files": [
+        "backend/app/routers/entries.py",
+        "backend/app/services/entry_service.py",
+        "backend/app/infrastructure/storage/markdown.py",
+        "backend/app/infrastructure/storage/sqlite_entries.py",
+        "frontend/src/types/api.generated.ts"
+      ]
+    },
+    {
+      "id": "F03",
+      "phase": 2,
+      "module": "tasks-ui",
+      "name": "Tasks 页面数据层重构 + 类型子 Tab",
+      "description": "将 Tasks 页面从只查 task 改为查 category_group=actionable（task+decision+project）。新增类型子 Tab 栏（全部/任务/决策/项目），子 Tab 状态同步到 URL 参数（?tab=task|decision|project）。useTaskFilters hook 重构：allTasks 来源统一改为调用 GET /entries?category_group=actionable（通过 taskStore.fetchEntries 封装），本地筛选增加 category 过滤。保持现有状态/优先级/时间筛选逻辑不变。页面重新可见时（路由切换回来）自动刷新数据，确保探索页转化过来的条目能即时可见。",
+      "verification": "F2",
+      "depends_on": ["B02"],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Tasks 页面初始加载调用 GET /entries?category_group=actionable&limit=100",
+        "类型子 Tab 栏显示：全部、任务、决策、项目",
+        "点击子 Tab 切换筛选，URL 同步 ?tab=task",
+        "刷新页面后从 URL 恢复子 Tab 状态",
+        "现有 status/priority/date/sort 筛选逻辑不受影响",
+        "全部 Tab 显示 task+decision+project 混合列表",
+        "批量操作（全选/删除）在混合列表下正常工作",
+        "移除任务页原有的「转笔记」「转灵感」批量操作入口（任务页是行动中心，不做类型转换）",
+        "从探索页转化条目到任务页后，切回任务页时列表自动刷新",
+        "返回数量 == limit(100) 时底部显示「可能还有更多条目」提示（纯前端判断，无需后端改字段）"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "初始加载拉取 actionable 条目，列表显示 task+decision+project",
+        "点击「决策」子 Tab，只显示 decision 类型",
+        "URL 参数 ?tab=decision 刷新后恢复正确子 Tab",
+        "status 筛选 + 子 Tab 组合：选择「进行中」+「任务」，只显示 doing 状态的 task",
+        "批量选择 + 删除在混合列表下正常",
+        "空列表状态（无条目时显示空状态提示）",
+        "路由切换回 Tasks 页时数据自动刷新",
+        "返回 100 条时底部显示「可能还有更多」提示",
+        "返回 <100 条时不显示提示"
+      ],
+      "files": [
+        "frontend/src/pages/Tasks.tsx",
+        "frontend/src/pages/tasks/useTaskFilters.ts",
+        "frontend/src/pages/tasks/constants.ts",
+        "frontend/src/services/api.ts"
+      ]
+    },
+    {
+      "id": "F04",
+      "phase": 2,
+      "module": "tasks-ui",
+      "name": "Decision 专属卡片 UI + 决策动作流",
+      "description": "为 decision 类型条目设计专属卡片组件 DecisionCard 和决策结果对话框 DecisionResultDialog。卡片包含标题 + 背景描述 + 三个行动按钮（决定 YES / 决定 NO / 延后）。点击按钮后弹出决策结果对话框：记录理由（可选）+ 可选创建关联任务。决策完成后状态变为 complete，创建的子任务立即出现在列表中。DecisionResultDialog 是决策动作流的唯一归属组件，后续 F10/F12 复用此组件。",
+      "verification": "F2",
+      "depends_on": ["F03", "S01"],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "decision 类型条目在任务列表中渲染为 DecisionCard（而非普通 TaskCard）",
+        "DecisionCard 显示标题 + content 摘要（背景描述，截断 2 行）",
+        "DecisionCard 显示三个按钮：决定 YES（绿色）/ 决定 NO（红色）/ 延后（灰色）",
+        "点击按钮弹出 DecisionResultDialog：理由文本框（可选）+「同时创建任务」开关 + 任务标题输入",
+        "确认后：decision status 改为 complete，content 追加决策结果和理由",
+        "如勾选创建任务：调用 createEntry 创建 task 类型条目，parent_id 设为 decision 所属的 project（若 decision.parent_id 存在），否则设为 decision 自身 id",
+        "新创建的子任务在当前列表中即时出现（store 更新或重新 fetch）",
+        "已完成（complete）的 decision 显示决策结果，隐藏操作按钮",
+        "延后按钮：status 改为 paused，不弹出结果对话框"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "未决定的 decision 显示三个操作按钮",
+        "点击「决定 YES」弹出对话框，输入理由确认后 status 变为 complete",
+        "勾选创建任务时，确认后列表中出现新 task，parent_id 指向 decision 的 project（或 decision 自身）",
+        "已完成的 decision 不显示操作按钮，显示决策结果文本",
+        "「延后」直接将 status 改为 paused，不弹对话框",
+        "点击「决定 NO」弹出对话框，确认后 status 变为 complete，决策结果记录为 NO",
+        "decision 状态更新 API 失败时：toast 提示错误，按钮保持可点击状态",
+        "DecisionCard 与 TaskCard 在同一列表中共存正常",
+        "创建子任务后列表即时刷新，无需手动刷新页面",
+        "决策完成成功但子任务创建失败：decision 状态已改为 complete，toast 提示子任务创建失败，decision 结果记录仍保留"
+      ],
+      "files": [
+        "frontend/src/pages/tasks/DecisionCard.tsx",
+        "frontend/src/pages/tasks/DecisionResultDialog.tsx",
+        "frontend/src/pages/Tasks.tsx",
+        "frontend/src/services/api.ts"
+      ]
+    },
+    {
+      "id": "F05",
+      "phase": 2,
+      "module": "tasks-ui",
+      "name": "Project 卡片 + 进度条",
+      "description": "为 project 类型条目在任务列表中渲染专属卡片 ProjectCard。卡片显示标题 + 子任务进度条（已完成/总数）+ 最近更新时间。进度数据统一使用后端 GET /entries/{id}/progress API。点击卡片展开显示子任务列表，子任务来源为前端已加载的 actionable 列表中 parent_id=该 project 的条目（与进度 API 的总数可能存在差异，UI 上标注「已加载 N 条」）。",
+      "verification": "F2",
+      "depends_on": ["F03"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "project 类型条目在任务列表中渲染为 ProjectCard",
+        "ProjectCard 显示标题、子任务进度条（X/Y 完成）、最近更新时间",
+        "点击 ProjectCard 展开子任务列表（从 store 中 filter parent_id）",
+        "「项目」子 Tab 下 ProjectCard 以 2 列网格布局展示",
+        "「全部」子 Tab 下 ProjectCard 以紧凑行布局展示",
+        "无子任务的 project 显示「暂无子任务」",
+        "进度条颜色：完成>80% 绿色，30-80% 蓝色，<30% 灰色",
+        "进度数据来自 GET /entries/{id}/progress API，不使用前端本地计算",
+        "展开的子任务列表来自前端已加载数据，与进度 API 总数不一致时标注「已加载 N 条」",
+        "返回 100 条时底部显示「可能还有更多」提示（纯前端判断）",
+        "进度 API 超时或失败时：卡片正常显示标题和时间，进度条显示为灰色「加载失败」"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "ProjectCard 正确显示子任务进度（3/7 完成 → 43%）",
+        "点击展开显示子任务列表，子任务状态可切换",
+        "「项目」子 Tab 网格布局正常，2 列",
+        "「全部」子 Tab 紧凑布局正常",
+        "无子任务的 project 显示空状态",
+        "子任务全部完成后进度条变绿显示 100%",
+        "进度 API 返回 5xx 时进度条显示灰色「加载失败」，卡片其余信息正常显示",
+        "进度 API 超时时降级显示，不阻塞卡片渲染"
+      ],
+      "files": [
+        "frontend/src/pages/tasks/ProjectCard.tsx",
+        "frontend/src/pages/Tasks.tsx",
+        "frontend/src/services/api.ts"
+      ]
+    },
+    {
+      "id": "F06",
+      "phase": 3,
+      "module": "explore-ui",
+      "name": "探索 Tab 精简（移除 project/decision tab，保留搜索全类型）",
+      "description": "从探索页 TABS 和 EXPLORE_CATEGORIES 中移除 project 和 decision 的 tab 入口，列表过滤排除 task/decision/project。但搜索结果仍包含所有类型，按决策记录的要求，project 搜索可见。搜索结果中 task/decision/project 以「来自任务页」标记显示，点击跳转到任务页对应条目详情。",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "探索页 tab 栏只显示：全部、灵感、笔记、复盘、疑问（5 个）",
+        "EXPLORE_CATEGORIES 只包含 inbox/note/reflection/question（用于 tab 和列表过滤）",
+        "filterByCategory 正确过滤，非搜索模式下不显示 task/decision/project 类型条目",
+        "搜索结果中 task/decision/project 条目点击跳转到 /tasks?tab={category}（跳转任务页对应类型 Tab）",
+        "搜索结果中 inbox/note/reflection/question 条目点击行为不变（高亮或进入详情）",
+        "搜索结果的分组展示由 F12 负责实现",
+        "旧的 /projects 重定向改为跳转 /tasks?tab=project",
+        "笔记模板选择器只在 note tab 下显示"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "探索页 tab 栏显示 5 个 tab，不含项目/决策",
+        "列表中不出现 task/decision/project 类型条目",
+        "「灵感」tab 只显示 inbox 类型",
+        "「笔记」tab 显示笔记模板选择器",
+        "搜索 'Rust' 命中 task 类型条目，结果中显示在「任务」分组下",
+        "搜索结果中 task 条目点击跳转到 /tasks?tab=task",
+        "URL ?type=project 重定向到 /tasks?tab=project",
+        "Home.tsx 等其他页面中指向 /explore?type=decision 的导航入口已迁移到 /tasks?tab=decision"
+      ],
+      "files": [
+        "frontend/src/pages/explore/utils.ts",
+        "frontend/src/pages/Explore.tsx",
+        "frontend/src/App.tsx",
+        "frontend/src/pages/explore/useExploreSearch.ts",
+        "frontend/src/pages/Home.tsx"
+      ]
+    },
+    {
+      "id": "F07",
+      "phase": 3,
+      "module": "explore-ui",
+      "name": "转化对话框（ConvertDialog）+ inbox 转化按钮",
+      "description": "新建 ConvertDialog 通用组件（决策记录的转化流唯一归属组件），支持 inbox 条目转化为 task 或 decision。在探索页 inbox 卡片上添加「→ 转为任务」和「→ 转为决策」快捷按钮。点击后弹出 ConvertDialog：预填标题、可选设置优先级/计划日期/归属项目。确认后调用 POST /entries/{id}/convert，成功后卡片移除（动画），toast 提示。后续 F12 条目详情页的 inbox 转化按钮复用此组件。",
+      "verification": "F2",
+      "depends_on": ["S01", "F06"],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "ConvertDialog 组件支持 task 和 decision 两种目标类型",
+        "inbox 卡片右侧显示「→ 转为任务」「→ 转为决策」两个快捷按钮",
+        "ConvertDialog 预填标题、可选优先级（高/中/低）、计划日期、归属项目（项目列表从 GET /entries?type=project 获取）",
+        "确认后调用 POST /entries/{id}/convert，category 从 inbox 变为目标类型",
+        "转换成功后：卡片从探索页列表移除（带滑出动画），toast 提示",
+        "转换失败时显示错误 toast，卡片不移除",
+        "批量模式下支持批量转换（选多条 inbox → 批量转为 task）",
+        "批量模式下非 inbox 条目不可选中（或选中后转化按钮置灰），避免无效操作",
+        "批量转换中部分失败时：已成功的移除，失败的保留，toast 显示成功/失败数"
+      ],
+      "risk_tags": ["network"],
+      "smoke_required": true,
+      "test_tasks": [
+        "单条 inbox → task：卡片消失，任务页出现新条目（smoke：完整链路验证）",
+        "单条 inbox → decision：同上",
+        "ConvertDialog 设置优先级和计划日期后转换，字段正确传递",
+        "ConvertDialog 选择归属项目后转换，parent_id 正确传递",
+        "网络超时（>10s）：toast 提示「网络超时，请重试」，卡片保留",
+        "后端 5xx 错误：toast 提示「服务暂不可用」，卡片保留",
+        "后端返回非预期结构：前端不崩溃，显示通用错误提示",
+        "批量选择 3 条 inbox → 批量转为 task，全部成功",
+        "批量 3 条中 1 条失败：成功 2 条移除，失败 1 条保留，toast「已转换 2 条，1 条失败」"
+      ],
+      "files": [
+        "frontend/src/pages/explore/ConvertDialog.tsx",
+        "frontend/src/pages/Explore.tsx",
+        "frontend/src/components/TaskCard.tsx",
+        "frontend/src/services/api.ts"
+      ]
+    },
+    {
+      "id": "F08",
+      "phase": 4,
+      "module": "tasks-ui",
+      "name": "视图选择器 + 按项目分组视图",
+      "description": "在任务页工具栏新增视图选择器组件（列表/按项目），当前只实现列表和按项目两个选项（时间线由 F09 补充）。选择器 UI 为 F08/F09 共用基础设施。按项目分组视图：project 条目作为折叠分组头，子任务展示在下方。无 parent_id 的条目作为「独立任务」分组。分组头可展开/折叠。",
+      "verification": "F2",
+      "depends_on": ["F03", "F05"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "视图选择器显示在 Tasks 页面工具栏，初始选项：列表 / 按项目",
+        "选择器为可扩展设计，F09 可在此追加「时间线」选项",
+        "选择「按项目」视图后，条目按 parent_id 分组",
+        "project 作为分组头（标题 + 进度条），展开显示子任务",
+        "无 parent_id 的条目归入「独立任务」分组",
+        "分组头可点击展开/折叠",
+        "视图选择同步到 URL 参数 ?view=grouped",
+        "非 project 类型条目（如 decision）正确归组到对应 project 或独立组",
+        "分组视图基于前端已加载数据渲染，不额外查询"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "按项目视图下，project 分组头显示子任务列表",
+        "展开/折叠分组头正常",
+        "无 parent_id 的条目在「独立任务」分组",
+        "视图切换后列表/按项目切换正常",
+        "URL ?view=grouped 刷新后恢复按项目视图",
+        "视图选择器组件可扩展（F09 可追加选项）"
+      ],
+      "files": [
+        "frontend/src/pages/tasks/ViewSelector.tsx",
+        "frontend/src/pages/tasks/GroupedView.tsx",
+        "frontend/src/pages/Tasks.tsx",
+        "frontend/src/pages/tasks/useTaskFilters.ts"
+      ]
+    },
+    {
+      "id": "F09",
+      "phase": 4,
+      "module": "tasks-ui",
+      "name": "时间线视图 + 逾期提醒",
+      "description": "在视图选择器（F08 创建）中追加「时间线」选项，实现按 planned_date 排列的时间线视图。有 planned_date 的按日期分组（逾期/今天/明天/本周/下周/更远），无日期归入「未安排」。逾期条目高亮，页面顶部显示逾期提醒条。",
+      "verification": "F2",
+      "depends_on": ["F03", "F08"],
+      "status": "pending",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "视图选择器中新增「时间线」选项（F08 的选择器追加）",
+        "时间线视图按 planned_date 分组显示条目",
+        "日期分组：逾期 / 今天 / 明天 / 本周 / 下周 / 更远 / 未安排",
+        "逾期条目卡片有红色左边框高亮",
+        "页面顶部有逾期提醒条：「⚠ N 个任务已逾期」",
+        "无逾期任务时不显示提醒条",
+        "视图选择同步到 URL ?view=timeline"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "有 planned_date 的条目按日期正确分组",
+        "逾期条目红色高亮 + 顶部提醒条显示",
+        "无逾期任务时提醒条不显示",
+        "无 planned_date 的条目在「未安排」分组",
+        "逾期/今天/本周分组顺序正确",
+        "视图选择器显示三个选项：列表/按项目/时间线"
+      ],
+      "files": [
+        "frontend/src/pages/tasks/TimelineView.tsx",
+        "frontend/src/pages/tasks/OverdueBanner.tsx",
+        "frontend/src/pages/Tasks.tsx",
+        "frontend/src/pages/tasks/ViewSelector.tsx"
+      ]
+    },
+    {
+      "id": "F10",
+      "phase": 4,
+      "module": "cross-tab",
+      "name": "task→reflection 完成流",
+      "description": "实现 task 完成时的复盘创建流。task 状态切换为 complete 时弹出「写个复盘？」提示，确认后创建 reflection 条目（parent_id 关联原 task），跳转到探索页复盘 tab 并自动展开新建的 reflection 进行编辑（URL 带 entry_id 参数定位）。",
+      "verification": "F2",
+      "depends_on": ["F03", "S01"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "task 状态切换为 complete 时，弹出提示「写个复盘？」，有「写复盘」和「跳过」两个选项",
+        "点击「写复盘」：创建 reflection 条目（title='关于「{task.title}」的复盘'，parent_id=task.id）",
+        "创建成功后跳转到 /explore?type=reflection&entry_id={new_reflection_id}",
+        "探索页识别 URL 中的 entry_id 参数，自动定位并展开该条目进入编辑模式",
+        "点击「跳过」：关闭提示，无其他操作",
+        "已完成（complete）的 task 不重复弹出复盘提示"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "完成任务 → 弹出复盘提示 → 写复盘 → 创建 reflection 并跳转",
+        "跳转后探索页自动展开并编辑新建的 reflection",
+        "完成任务 → 跳过 → 不创建 reflection",
+        "已完成的 task 不再弹出复盘提示",
+        "创建 reflection 失败时 toast 提示，不跳转"
+      ],
+      "files": [
+        "frontend/src/pages/Tasks.tsx",
+        "frontend/src/pages/tasks/CompletionPrompt.tsx",
+        "frontend/src/pages/Explore.tsx",
+        "frontend/src/services/api.ts"
+      ]
+    },
+    {
+      "id": "F11",
+      "phase": 5,
+      "module": "shared-ui",
+      "name": "条目详情页类型感知 + type_history 展示",
+      "description": "升级 EntryDetail 页面，根据条目类型渲染不同的操作栏：task 显示状态推进（完成后复用 F10 的 CompletionPrompt 弹出复盘提示），inbox 显示转化按钮（复用 F07 的 ConvertDialog），project 显示子任务列表，reflection 显示关联任务链接，question 显示「转为笔记」按钮（复用 ConvertDialog）。新增 type_history 时间线展示区域。",
+      "verification": "F2",
+      "depends_on": ["F03", "F06", "S01", "F07", "F10"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "EntryDetail 根据 category 渲染类型专属操作栏",
+        "task 类型：状态推进按钮（待开始→进行中→完成），完成后弹出「写复盘？」提示（复用 CompletionPrompt）",
+        "inbox 类型：显示「转为任务」「转为决策」按钮，复用 ConvertDialog 组件",
+        "project 类型：显示子任务列表和进度",
+        "reflection 类型：显示关联的原 task 链接（如有 parent_id）",
+        "question 类型：显示「转为笔记」按钮（独立逻辑：创建新 note 条目，parent_id 指向 question，不通过 convert API）",
+        "type_history 非空时显示类型变更时间线（「由灵感转为任务」）",
+        "type_history 时间线显示 from/to category + 时间"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "不同类型条目详情页显示对应操作栏",
+        "type_history 有记录时显示变更时间线",
+        "inbox 详情页转化按钮正常工作（复用 ConvertDialog）",
+        "project 详情页显示子任务列表",
+        "reflection 详情页显示关联 task 的链接",
+        "question 详情页「转为笔记」按钮可点击，创建新 note 条目",
+        "task 详情页完成操作后弹出「写复盘？」提示（与 Tasks 页一致）"
+      ],
+      "files": [
+        "frontend/src/pages/EntryDetail.tsx",
+        "frontend/src/services/api.ts"
+      ]
+    },
+    {
+      "id": "F12",
+      "phase": 5,
+      "module": "shared-ui",
+      "name": "搜索结果按类型分组展示",
+      "description": "优化探索页搜索结果展示，将不同类型条目按类型分组显示（任务/决策/项目/灵感/笔记/复盘/疑问），每组有类型标题和计数。task/decision/project 类型结果点击跳转任务 Tab（/tasks?tab={category}），inbox/note/reflection/question 类型结果点击跳转条目详情页。本任务在 F06 已实现搜索全类型基础上，优化分组 UI。",
+      "verification": "F2",
+      "depends_on": ["F06", "F03"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "搜索结果按类型分组显示，每组有类型图标 + 标题 + 数量",
+        "分组顺序：任务 → 决策 → 项目 → 灵感 → 笔记 → 复盘 → 疑问（有结果的类型才显示）",
+        "task/decision/project 类型结果点击跳转到 /tasks?tab={category}（跳转任务页对应类型 Tab）",
+        "inbox/note/reflection/question 类型结果点击跳转到 /entries/{id} 详情页",
+        "无搜索结果时显示空状态提示",
+        "搜索性能无明显退化"
+      ],
+      "risk_tags": ["network"],
+      "smoke_required": true,
+      "test_tasks": [
+        "搜索命中 task 类型，结果中显示「任务」分组（smoke：完整搜索→跳转任务 Tab 链路验证）",
+        "搜索结果包含 7 种类型的混合结果，分组正确",
+        "点击 task 类型结果跳转到 /tasks?tab=task",
+        "点击 note 类型结果跳转到 /entries/{id} 详情页",
+        "搜索结果为空时显示空状态",
+        "搜索超时时显示超时提示，不崩溃",
+        "后端返回非预期结构时前端不崩溃"
+      ],
+      "planning_notes": "后端 POST /search 已支持返回所有类型（filter_type=None），本任务为纯前端变更",
+      "files": [
+        "frontend/src/pages/explore/useExploreSearch.ts",
+        "frontend/src/pages/Explore.tsx",
+        "frontend/src/pages/explore/utils.ts"
+      ]
+    },
+    {
+      "id": "S13",
+      "phase": 5,
+      "module": "integration",
+      "name": "R047 集成验证 + 配套产物更新",
+      "description": "R047 所有任务完成后的集成验证和收尾。验证核心用户旅程：inbox→task 转化、decision 决策拆任务、task→reflection 复盘、搜索跨全类型、详情页类型感知。更新配套产物（api_contracts.md、alignment_checklist.md、test_coverage.md）为 R047 内容。执行全量前端测试确保无回归。",
+      "verification": "L4",
+      "depends_on": ["S01", "B02", "F03", "F04", "F05", "F06", "F07", "F08", "F09", "F10", "F11", "F12"],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "用户旅程 1：探索页创建 inbox → 点击「转为任务」→ 任务页出现新条目 → 完成任务 → 写复盘 → 探索页出现 reflection",
+        "用户旅程 2：任务页看到 decision → 点击「决定 YES」→ 拆出子任务 → 子任务在列表中可见",
+        "用户旅程 3：探索页搜索 → 结果包含 task/decision/project → 点击跳转到 /tasks?tab={category}",
+        "探索页 tab 栏只有 5 个 tab，任务页有 3 种视图模式",
+        "api_contracts.md 更新 R047 内容（convert API + category_group 参数）",
+        "alignment_checklist.md 更新 R047 对齐项",
+        "test_coverage.md 更新 R047 测试覆盖",
+        "前端 npm run test:run 全量通过",
+        "后端 uv run pytest tests/ 全量通过",
+        "npm run gen:types 成功，类型与后端 OpenAPI schema 一致",
+        "前端 npm run lint 无新增 error"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "完整执行 3 条用户旅程，验证端到端流程",
+        "前端全量测试通过",
+        "后端全量测试通过",
+        "gen:types 无报错且类型同步",
+        "lint 检查无新增 error",
+        "配套产物更新完整"
+      ],
+      "files": [
+        ".dev-flow/api_contracts.md",
+        ".dev-flow/alignment_checklist.md",
+        ".dev-flow/test_coverage.md"
+      ]
+    }
+  ]
 }

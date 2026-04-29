@@ -1,5 +1,46 @@
 # 对齐清单
 
+## R047: 任务/探索 Tab 边界重新划分
+
+### 契约对齐
+
+- [ ] S01: POST /entries/{id}/convert 契约已定义 (CONTRACT-CONVERT)
+- [ ] B02: GET /entries?category_group 契约已定义 (CONTRACT-CATEGORY-GROUP)
+- [ ] S01: type_history 字段已添加到 EntryResponse (CONTRACT-TYPE-HISTORY)
+- [ ] S01/B02: npm run gen:types 完成后前端类型同步
+
+### 依赖对齐
+
+- [ ] S01 无外部依赖（模型 + API + 存储）
+- [ ] B02 无外部依赖（查询参数扩展）
+- [ ] F03 depends_on B02 ✓（前端需要 category_group API）
+- [ ] F04 depends_on F03 + S01 ✓（决策卡片需要数据层 + convert API）
+- [ ] F05 depends_on F03 ✓（项目卡片需要数据层）
+- [ ] F06 无后端依赖 ✓（前端 tab 精简）
+- [ ] F07 depends_on S01 + F06 ✓（转化对话框需要 convert API + 精简后的探索页）
+- [ ] F08 depends_on F03 + F05 ✓（视图选择器需要数据层 + 项目卡片）
+- [ ] F09 depends_on F03 + F08 ✓（时间线追加到视图选择器）
+- [ ] F10 depends_on F03 + S01 ✓（完成流需要数据层 + 创建 API）
+- [ ] F11 depends_on F03 + F06 + S01 + F07 + F10 ✓（详情页需要 CompletionPrompt + ConvertDialog + 全 Tab + model）
+- [ ] F12 depends_on F06 + F03 ✓（搜索分组需要精简后的探索页 + 任务 Tab 子 Tab 协议）
+- [ ] S13 depends_on 全部 ✓（集成验证）
+
+### 架构对齐
+
+- [ ] 变更在现有 routers/services/infrastructure 分层内，不违反调用方向不变量
+- [ ] convert API 遵循 router→service→infrastructure 单向调用
+- [ ] 前端 OpenAPI 类型同步流程（后端 schema → gen:types → 前端类型）未被打破
+- [ ] 不涉及三层存储架构变更（Markdown/Neo4j/Qdrant 同步机制不变）
+- [ ] 不涉及认证/权限变更
+
+### 决策对齐
+
+- [ ] 类型归属：task/decision/project→任务 Tab，inbox/note/reflection/question→探索 Tab ✓
+- [ ] project 搜索可见：探索页搜索可命中 project ✓
+- [ ] 搜索结果导航：task/decision/project 跳转任务 Tab ✓
+- [ ] type_history 记录转换历史 ✓
+- [ ] task→reflection 为创建新条目（非 convert 同条目变更） ✓
+
 ## R045: 评估 HTML 报告
 
 ### 契约对齐

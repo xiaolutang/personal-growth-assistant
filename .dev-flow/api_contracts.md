@@ -2,6 +2,27 @@
 
 ## 契约索引
 
+### R047 新增/修改契约（任务/探索 Tab 边界重新划分）
+
+| 契约 ID | 方法 | 端点 | 任务 | 说明 |
+|---------|------|------|------|------|
+| CONTRACT-CONVERT | POST | /entries/{id}/convert | S01 | 类型转换，body: { target_category, priority?, planned_date?, parent_id? }，合法转换: inbox→task/inbox→decision/inbox→note，返回更新后的条目 |
+| CONTRACT-CATEGORY-GROUP | GET | /entries?category_group={group} | B02 | 按类型组查询，actionable=task+decision+project，knowledge=inbox+note+reflection+question，与 type 参数互斥 |
+| CONTRACT-TYPE-HISTORY | — | — | S01 | Task 模型新增 type_history: List[{from_category, to_category, at}]，EntryResponse 包含此字段 |
+
+### R047 修改的现有端点
+
+| 契约 ID | 方法 | 端点 | 变更 | 任务 |
+|---------|------|------|------|------|
+| CONTRACT-ENTRY-LIST | GET | /entries | 新增 category_group 查询参数 | B02 |
+
+### R047 前端类型同步
+
+| 变更 | 任务 | 说明 |
+|------|------|------|
+| api.generated.ts 更新 | S01, B02 | npm run gen:types 重新生成，包含 convert API + category_group + type_history |
+| task.ts 更新 | S01 | 前端 Task 类型新增 type_history 字段 |
+
 ### R044 新增/修改契约（统一智能体重构）
 
 | 契约 ID | 方法 | 端点 | 任务 | 说明 |

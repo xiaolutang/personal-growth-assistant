@@ -1,5 +1,23 @@
 # 测试覆盖清单
 
+## R047: 任务/探索 Tab 边界重新划分
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| type_history + convert API | S01 | unit+L2 | 正常转换 inbox→task/非法转换 task→inbox + task→reflection/旧文件兼容/带字段转换/连续转换/并发转换 | pending | — |
+| category_group 查询 | B02 | unit+L2 | actionable 只返回 task+decision+project/knowledge 只返回 inbox+note+reflection+question/互斥校验/组合筛选/向后兼容 | pending | — |
+| Tasks 数据层 + 子 Tab | F03 | unit+F2 | actionable 列表加载/子 Tab 切换/URL 恢复/组合筛选/批量操作/路由刷新 | pending | — |
+| Decision 卡片 | F04 | unit+F2 | 未决定按钮/决定 YES 弹框/创建子任务/已完成隐藏按钮/延后/混合列表共存/决策成功但子任务创建失败 | pending | — |
+| Project 卡片 | F05 | unit+F2 | 进度显示/展开子任务/网格布局/紧凑布局/空状态/100% 进度 | pending | — |
+| 探索 Tab 精简 | F06 | unit+F2 | 5 个 tab/列表过滤/灵感 tab/笔记模板/搜索全类型/URL 重定向 | pending | — |
+| 转化对话框 | F07 | unit+F2+network | 单条转化/批量转化/网络超时/5xx 错误/非预期结构/部分失败 | pending | — |
+| 视图选择器 + 分组 | F08 | unit+F2 | 分组头显示/展开折叠/独立任务组/视图切换/URL 恢复 | pending | — |
+| 时间线视图 | F09 | unit+F2 | 日期分组/逾期高亮/提醒条/空状态/分组顺序 | pending | — |
+| task→reflection 流 | F10 | unit+F2 | 完成弹框/写复盘跳转/跳过/不重复弹/创建失败 | pending | — |
+| 详情页类型感知 | F11 | unit+F2 | 类型操作栏/type_history 时间线/inbox 转化/project 子任务/question 转为笔记/reflection 关联/task 完成复盘提示 | pending | — |
+| 搜索分组展示 | F12 | unit+F2+network | 全类型分组/跳转任务 Tab/跳转详情页/空状态/超时/非预期结构 | pending | — |
+| 集成验证 | S13 | L4+smoke | 3 条用户旅程 E2E/前端全量/后端全量/gen:types/配套产物 | pending | — |
+
 ## R045: 评估 HTML 报告
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
