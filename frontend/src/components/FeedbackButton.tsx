@@ -9,13 +9,13 @@ import {
   type FeedbackItem,
   ApiError,
 } from "@/services/api";
-import { useAgentStore } from "@/stores/agentStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 const FLOATING_GAP = 16;
+const FLOATING_CHAT_FAB_HEIGHT = 64; // 悬浮按钮高度 48px + 底部间距 16px
 const MOBILE_NAV_HEIGHT = 56; // h-14 = 56px
 
 type ActiveTab = "submit" | "list";
@@ -61,7 +61,6 @@ function formatTime(iso: string): string {
 }
 
 export function FeedbackButton() {
-  const panelHeight = useAgentStore((state) => state.panelHeight);
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>("submit");
@@ -79,9 +78,9 @@ export function FeedbackButton() {
 
   const containerStyle = useMemo(
     () => ({
-      bottom: `${panelHeight + FLOATING_GAP + (isMobile ? MOBILE_NAV_HEIGHT : 0)}px`,
+      bottom: `${FLOATING_CHAT_FAB_HEIGHT + FLOATING_GAP + (isMobile ? MOBILE_NAV_HEIGHT : 0)}px`,
     }),
-    [panelHeight, isMobile],
+    [isMobile],
   );
 
   useEffect(() => {

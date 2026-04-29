@@ -1,18 +1,22 @@
 /**
- * FloatingChat.tsx — 浮动对话面板（使用 agentStore）
+ * FloatingChat.tsx — 悬浮按钮 + 展开聊天面板
  *
- * 替代旧版基于 chatStore 的实现，现在使用 Agent ReAct 架构：
- * - 使用 agentStore 管理对话状态
- * - SSE 事件由 agentStore 的 sendMessage 处理
- * - 保留浮动面板 UI（拖拽调整高度、路由感知）
- * - 复用 AgentChat 子组件（MessageList、ChatInput 等）
+ * 改造为右下角悬浮按钮模式：
+ * - 默认收起：右下角 Sparkles 图标悬浮按钮（48x48）
+ * - 点击展开：聊天面板从右下角弹出，固定宽度 400px，可拖拽高度
+ * - 面板内保留完整功能：消息列表、输入框、拖拽调高、路由感知
+ * - 点击面板外部区域或关闭按钮收起面板
+ * - 有未读消息或正在对话时悬浮按钮显示脉冲动画
+ *
+ * 复用 AgentChat 子组件（MessageList、ChatInput 等）
  */
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import {
   Sparkles,
   GripHorizontal,
   RotateCcw,
+  X,
 } from "lucide-react";
 import { useAgentStore, type AgentPageContext } from "@/stores/agentStore";
 import { useUserStore } from "@/stores/userStore";
@@ -28,12 +32,15 @@ const MIN_HEIGHT = 200;
 const MAX_HEIGHT_DESKTOP = 600;
 const MOBILE_NAV_HEIGHT = 56; // h-14 = 56px
 const MOBILE_MAX_RATIO = 0.7; // 移动端面板不超过可视区域 70%
+const PANEL_WIDTH = 400; // 桌面端面板宽度
 
 export function FloatingChat() {
   const isMobile = useIsMobile();
   const user = useUserStore((state) => state.user);
   const [input, setInput] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const {
     currentSessionId,
@@ -59,6 +66,9 @@ export function FloatingChat() {
   // 最后一条 assistant 消息中 isFollowUp 标记
   const lastAssistantMsg = [...messages].reverse().find((m) => m.role === "assistant" && m.type === "text");
   const followUpPrompt = lastAssistantMsg?.isFollowUp ? lastAssistantMsg.content : null;
+
+  // 是否有活跃对话（正在流式传输或加载中）
+  const isActive = isLoading || isStreaming || hasMessages;
 
   // 路由感知
   const location = useLocation();
@@ -101,6 +111,27 @@ export function FloatingChat() {
     }
   }, [location.pathname]);
 
+  // 点击面板外部收起
+  useEffect(() => {
+    if (!isExpanded) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setIsExpanded(false);
+      }
+    };
+
+    // 延迟添加监听，避免当前点击事件立即触发
+    const timer = setTimeout(() => {
+      document.addEventListener("mousedown", handleClickOutside);
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isExpanded]);
+
   // 发送消息
   const handleSend = useCallback(async () => {
     const text = input.trim();
@@ -128,6 +159,15 @@ export function FloatingChat() {
     setInput("");
     clearError();
   }, [resetCurrentSession, clearError]);
+
+  // 展开/收起面板
+  const handleToggleExpand = useCallback(() => {
+    setIsExpanded((prev) => !prev);
+  }, []);
+
+  const handleClosePanel = useCallback(() => {
+    setIsExpanded(false);
+  }, []);
 
   // 移动端最大高度
   const mobileMaxHeight = useMemo(
@@ -192,66 +232,105 @@ export function FloatingChat() {
     <AgentPrompt prompt={followUpPrompt} />
   ) : null;
 
+  // 悬浮按钮定位
+  const fabBottom = mobileBottomOffset + 16; // 16px 间距
+
   return (
-    <div
-      className={`fixed left-0 right-0 lg:left-64 bg-background border-t z-50 flex flex-col ${
-        isDragging ? "select-none" : ""
-      }`}
-      style={{
-        height: panelHeight,
-        bottom: mobileBottomOffset,
-      }}
-    >
-      {/* 拖拽条 */}
-      <div
-        className="flex items-center justify-center h-6 cursor-ns-resize hover:bg-muted/50 border-b shrink-0"
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
-      >
-        <GripHorizontal className="h-4 w-4 text-muted-foreground" />
-      </div>
+    <>
+      {/* 悬浮按钮（收起状态） */}
+      {!isExpanded && (
+        <button
+          type="button"
+          onClick={handleToggleExpand}
+          className={`fixed right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500 text-white shadow-lg transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 ${
+            isActive ? "animate-pulse" : ""
+          }`}
+          style={{ bottom: fabBottom }}
+          aria-label="打开聊天"
+          data-testid="chat-fab"
+        >
+          <Sparkles className="h-5 w-5" />
+        </button>
+      )}
 
-      {/* 当前会话信息 */}
-      <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30 shrink-0">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-indigo-500 shrink-0" />
-          <span className="text-sm font-medium truncate">{currentSession?.title || "新对话"}</span>
-          {isStreaming && (
-            <span className="text-xs text-indigo-500 animate-pulse">思考中</span>
-          )}
-        </div>
-        {hasMessages && (
-          <button
-            type="button"
-            onClick={handleReset}
-            className="h-6 w-6 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            aria-label="重置对话"
+      {/* 聊天面板（展开状态） */}
+      {isExpanded && (
+        <div
+          ref={panelRef}
+          className={`fixed z-50 flex flex-col rounded-xl border bg-background shadow-2xl ${
+            isDragging ? "select-none" : ""
+          } ${isMobile ? "left-2 right-2" : ""}`}
+          style={{
+            height: panelHeight,
+            bottom: mobileBottomOffset + 8,
+            right: isMobile ? undefined : 16,
+            width: isMobile ? undefined : PANEL_WIDTH,
+          }}
+          data-testid="chat-panel"
+        >
+          {/* 拖拽条 */}
+          <div
+            className="flex items-center justify-center h-6 cursor-ns-resize hover:bg-muted/50 border-b shrink-0 rounded-t-xl"
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
           >
-            <RotateCcw className="h-3 w-3" />
-          </button>
-        )}
-      </div>
+            <GripHorizontal className="h-4 w-4 text-muted-foreground" />
+          </div>
 
-      {/* 消息列表 */}
-      {(hasMessages || isLoading) && (
-        <MessageList messages={messages} footer={footer} className="flex-1 min-h-0" />
-      )}
+          {/* 当前会话信息 + 关闭按钮 */}
+          <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30 shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <Sparkles className="h-4 w-4 text-indigo-500 shrink-0" />
+              <span className="text-sm font-medium truncate">{currentSession?.title || "新对话"}</span>
+              {isStreaming && (
+                <span className="text-xs text-indigo-500 animate-pulse shrink-0">思考中</span>
+              )}
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              {hasMessages && (
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="h-6 w-6 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label="重置对话"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleClosePanel}
+                className="h-6 w-6 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="关闭聊天面板"
+                data-testid="chat-close-btn"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
 
-      {/* 错误提示 */}
-      {error && (
-        <div className="px-3 py-1.5 text-xs text-red-500 bg-red-50 dark:bg-red-950/20 border-t border-red-200 dark:border-red-800">
-          {error}
+          {/* 消息列表 */}
+          {(hasMessages || isLoading) && (
+            <MessageList messages={messages} footer={footer} className="flex-1 min-h-0" />
+          )}
+
+          {/* 错误提示 */}
+          {error && (
+            <div className="px-3 py-1.5 text-xs text-red-500 bg-red-50 dark:bg-red-950/20 border-t border-red-200 dark:border-red-800">
+              {error}
+            </div>
+          )}
+
+          {/* 输入区域 */}
+          <ChatInput
+            value={input}
+            onChange={setInput}
+            onSend={handleSend}
+            isLoading={isLoading}
+            placeholder="输入消息..."
+          />
         </div>
       )}
-
-      {/* 输入区域 */}
-      <ChatInput
-        value={input}
-        onChange={setInput}
-        onSend={handleSend}
-        isLoading={isLoading}
-        placeholder="输入消息..."
-      />
-    </div>
+    </>
   );
 }

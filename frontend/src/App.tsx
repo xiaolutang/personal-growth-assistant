@@ -9,7 +9,6 @@ import { FeedbackButton } from "@/components/FeedbackButton";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ThemeProvider } from "@/lib/theme";
-import { useAgentStore } from "@/stores/agentStore";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUserStore } from "@/stores/userStore";
 import { initFetchInterceptor } from "@/lib/uid";
@@ -69,7 +68,6 @@ initFetchInterceptor();
 const TABLET_BREAKPOINT = 1024;
 
 function AppLayout() {
-  const panelHeight = useAgentStore((state) => state.panelHeight);
   const { isOpen, close } = useSidebar();
   const navigate = useNavigate();
   const location = useLocation();
@@ -119,7 +117,6 @@ function AppLayout() {
         className={`flex flex-1 flex-col transition-all duration-300 pb-16 lg:pb-0`}
         style={{
           marginLeft: sidebarCollapsed ? "4rem" : "16rem",
-          paddingBottom: panelHeight,
         }}
       >
         {/* 大屏内容区最大宽度限制 */}

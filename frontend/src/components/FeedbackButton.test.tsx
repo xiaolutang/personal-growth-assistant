@@ -3,7 +3,6 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { FeedbackButton } from "./FeedbackButton";
-import { useAgentStore } from "@/stores/agentStore";
 import { ApiError } from "@/services/api";
 
 const { submitFeedbackMock, getFeedbackListMock, syncFeedbackMock } = vi.hoisted(() => ({
@@ -27,7 +26,6 @@ describe("FeedbackButton", () => {
     submitFeedbackMock.mockReset();
     getFeedbackListMock.mockReset();
     syncFeedbackMock.mockReset();
-    useAgentStore.setState({ panelHeight: 300 });
     vi.useRealTimers();
   });
 
@@ -94,12 +92,11 @@ describe("FeedbackButton", () => {
     expect(await screen.findByText("反馈服务暂时不可用，请稍后重试")).toBeInTheDocument();
   });
 
-  it("根据 FloatingChat 高度应用避让偏移", async () => {
-    useAgentStore.setState({ panelHeight: 360 });
-
+  it("使用固定底部偏移，不依赖 panelHeight", async () => {
     render(<FeedbackButton />);
 
-    expect(screen.getByTestId("feedback-container")).toHaveStyle({ bottom: "376px" });
+    // FLOATING_CHAT_FAB_HEIGHT(64) + FLOATING_GAP(16) = 80
+    expect(screen.getByTestId("feedback-container")).toHaveStyle({ bottom: "80px" });
   });
 
   it("点击「我的反馈」Tab 展示反馈列表", async () => {
