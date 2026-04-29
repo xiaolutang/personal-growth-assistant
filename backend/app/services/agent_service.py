@@ -80,6 +80,26 @@ class AgentService:
         """注入 SessionMetaStore 实例"""
         self._session_meta_store = store
 
+    def is_new_user(self, user_id: str) -> bool:
+        """判断用户是否为新用户（无历史会话）。
+
+        通过查询 SessionMetaStore.count_sessions 判断。
+        查询失败时降级返回 False（视为老用户）。
+
+        Args:
+            user_id: 用户 ID
+
+        Returns:
+            True 表示新用户（0 个会话），False 表示老用户或查询失败
+        """
+        if self._session_meta_store is None:
+            return False
+        try:
+            return self._session_meta_store.count_sessions(user_id=user_id) == 0
+        except Exception:
+            logger.debug("查询会话数失败，降级为非新用户", exc_info=True)
+            return False
+
     @property
     def agent(self) -> Optional[ReActAgentGraph]:
         return self._agent
@@ -95,6 +115,7 @@ class AgentService:
         user_id: str,
         page_context: Optional[Any] = None,
         is_new_user: bool = False,
+        skip_touch_session: bool = False,
     ) -> AsyncGenerator[str, None]:
         """调用 ReActAgentGraph 并将 stream 输出转换为 SSE 事件流。
 
@@ -113,6 +134,7 @@ class AgentService:
             user_id: 用户 ID
             page_context: 页面上下文（PageContext 模型实例或 None）
             is_new_user: 是否新用户
+            skip_touch_session: 跳过 touch_session，用于 greeting 等不需要创建会话记录的特殊场景
 
         Yields:
             SSE 格式的事件字符串
@@ -129,7 +151,7 @@ class AgentService:
         page, page_context_str = await self._build_agent_context(page_context, user_id)
 
         # Touch session 元数据，确保活跃对话出现在会话列表中
-        if self._session_meta_store is not None:
+        if not skip_touch_session and self._session_meta_store is not None:
             try:
                 # thread_id 格式: {user_id}:{session_id}
                 session_id = thread_id.split(":", 1)[-1] if ":" in thread_id else thread_id

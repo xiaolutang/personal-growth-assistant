@@ -6,11 +6,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from app.services.agent_service import AgentService
+from app.services.agent_service import AgentService, sse_event
 from app.routers.deps import get_current_user, namespaced_thread_id
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
+
+# greeting 特殊消息常量
+GREETING_MESSAGE = "__greeting__"
 
 router = APIRouter(tags=["parse"])
 
@@ -76,6 +79,17 @@ async def chat(request: ChatRequest, user: User = Depends(get_current_user)):
 
     thread_id = namespaced_thread_id(user.id, request.session_id)
 
+    # __greeting__ 特殊消息：查询用户会话数，设置 is_new_user，
+    # 跳过 touch_session 和 HumanMessage 持久化
+    is_greeting = request.text == GREETING_MESSAGE
+
+    if is_greeting:
+        return StreamingResponse(
+            _greeting_generate(user.id, thread_id),
+            media_type="text/event-stream",
+            headers=SSE_HEADERS,
+        )
+
     async def agent_generate():
         async for event in _agent_service.chat(
             text=request.text,
@@ -90,3 +104,40 @@ async def chat(request: ChatRequest, user: User = Depends(get_current_user)):
         media_type="text/event-stream",
         headers=SSE_HEADERS,
     )
+
+
+async def _greeting_generate(user_id: str, thread_id: str):
+    """处理 __greeting__ 消息：查询会话数，判断 is_new_user，直接调用 Agent 生成回复。
+
+    关键行为：
+    - 通过 AgentService.is_new_user() 判断是否新用户
+    - 跳过 touch_session（不创建会话记录）
+    - 使用临时 thread_id 避免污染用户的真实对话历史
+    - 通过 AgentService.chat(is_new_user=...) 透传 is_new_user
+    """
+    # 查询用户是否为新用户
+    is_new_user = False
+    if _agent_service:
+        try:
+            is_new_user = _agent_service.is_new_user(user_id)
+        except Exception:
+            logger.debug("查询会话数失败，降级为非新用户", exc_info=True)
+            is_new_user = False
+
+    # 使用临时 thread_id，避免 __greeting__ 消息存入用户真实对话历史
+    # 格式：__greeting__:{user_id}:{original_thread_id}
+    greeting_thread_id = f"__greeting__:{thread_id}"
+
+    try:
+        async for event in _agent_service.chat(
+            text=GREETING_MESSAGE,
+            thread_id=greeting_thread_id,
+            user_id=user_id,
+            is_new_user=is_new_user,
+            skip_touch_session=True,
+        ):
+            yield event
+    except Exception as e:
+        logger.error("__greeting__ 处理异常: %s", e, exc_info=True)
+        yield sse_event("error", {"message": f"处理失败: {str(e)}"})
+        yield sse_event("done", {})

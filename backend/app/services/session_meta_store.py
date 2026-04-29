@@ -78,6 +78,16 @@ class SessionMetaStore:
             updated_at=datetime.fromisoformat(row[3]),
         )
 
+    def count_sessions(self, user_id: str = "_default") -> int:
+        """获取指定用户的会话数量"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT COUNT(*) FROM session_meta WHERE user_id = ?",
+                (user_id,),
+            )
+            return cursor.fetchone()[0]
+
     def get_all_sessions(self, user_id: str = "_default") -> list[SessionMeta]:
         """获取指定用户的会话，按更新时间倒序"""
         with sqlite3.connect(self.db_path) as conn:
