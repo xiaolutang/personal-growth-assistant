@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-255",
+  "timestamp": "2026-04-29T16:10:28.121963",
+  "test_case_id": "ST-051",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "今天天气怎么样？",
+    "output": "我这边没法查天气信息，建议你打开手机上的天气 app 看一眼，比问我靠谱多了 😄\n\n不过如果你有什么想记下来的事、或者需要帮忙整理任务和笔记，随时说。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 6522.843837738037,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

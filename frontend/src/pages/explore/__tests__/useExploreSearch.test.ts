@@ -59,6 +59,8 @@ describe("useExploreSearch — F132 Tab 过滤透传", () => {
         makeTask({ id: "e1", category: "note", title: "Note 1" }),
         makeTask({ id: "e2", category: "inbox", title: "Inbox 1" }),
         makeTask({ id: "e3", category: "project", title: "Project 1" }),
+        makeTask({ id: "e4", category: "decision", title: "Decision 1" }),
+        makeTask({ id: "e5", category: "task", title: "Task 1" }),
       ],
     });
     mockSearchEntries.mockResolvedValue({ results: [] });
@@ -75,7 +77,7 @@ describe("useExploreSearch — F132 Tab 过滤透传", () => {
     expect(result.current.activeTab).toBe("");
   });
 
-  it("手动搜索（Enter 键）传递 activeTab filter_type", async () => {
+  it("手动搜索（Enter 键）不传 filter_type 以跨全类型搜索", async () => {
     const { result } = renderExploreSearch();
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -97,11 +99,11 @@ describe("useExploreSearch — F132 Tab 过滤透传", () => {
 
     await waitFor(() => expect(result.current.isSearching).toBe(false));
 
-    // 验证 searchEntries 被调用时传递了 filter_type="inbox"
+    // F12: 搜索模式不传 filter_type，让后端返回全类型结果
     expect(mockSearchEntries).toHaveBeenCalledWith(
       "manual query",
       20,
-      "inbox", // filter_type = activeTab
+      undefined,
       expect.anything(),
     );
   });
@@ -141,7 +143,7 @@ describe("useExploreSearch — F132 Tab 过滤透传", () => {
     expect(categories).toContain("inbox");
   });
 
-  it("手动搜索 — 搜索结果过滤 Explore 类别边界（排除 task 类型）", async () => {
+  it("F06: 手动搜索 — 搜索结果全类型展示（包含 task/project/decision）", async () => {
     const { result } = renderExploreSearch();
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -150,6 +152,8 @@ describe("useExploreSearch — F132 Tab 过滤透传", () => {
         { id: "s1", title: "Note", category: "note", type: "note", score: 0.9, status: "doing", tags: [], created_at: "2024-01-01", file_path: "" },
         { id: "s2", title: "Task", category: "task", type: "task", score: 0.8, status: "doing", tags: [], created_at: "2024-01-01", file_path: "" },
         { id: "s3", title: "Inbox", category: "inbox", type: "inbox", score: 0.7, status: "doing", tags: [], created_at: "2024-01-01", file_path: "" },
+        { id: "s4", title: "Project", category: "project", type: "project", score: 0.6, status: "doing", tags: [], created_at: "2024-01-01", file_path: "" },
+        { id: "s5", title: "Decision", category: "decision", type: "decision", score: 0.5, status: "doing", tags: [], created_at: "2024-01-01", file_path: "" },
       ],
     });
 
@@ -158,20 +162,26 @@ describe("useExploreSearch — F132 Tab 过滤透传", () => {
 
     await waitFor(() => expect(result.current.isSearching).toBe(false));
 
-    // task 类型被过滤掉
-    expect(result.current.filteredTasks.length).toBe(2);
+    // F06: 搜索模式全类型展示，不过滤 task/project/decision
+    expect(result.current.filteredTasks.length).toBe(5);
     const categories = result.current.filteredTasks.map((t: Task) => t.category);
     expect(categories).toContain("note");
     expect(categories).toContain("inbox");
-    expect(categories).not.toContain("task");
+    expect(categories).toContain("task");
+    expect(categories).toContain("project");
+    expect(categories).toContain("decision");
   });
 
-  it("非搜索模式下 Tab 过滤正常工作", async () => {
+  it("F06: 非搜索模式下 Tab 过滤正常工作（排除 project/decision/task）", async () => {
     const { result } = renderExploreSearch();
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    // 初始加载了 note, inbox, project
-    expect(result.current.filteredTasks.length).toBe(3);
+    // F06: 初始加载了 note, inbox（project/decision/task 被过滤掉）
+    expect(result.current.filteredTasks.length).toBe(2);
+    const categories = result.current.filteredTasks.map((t: Task) => t.category);
+    expect(categories).not.toContain("project");
+    expect(categories).not.toContain("decision");
+    expect(categories).not.toContain("task");
 
     // 切换到"灵感" Tab
     act(() => result.current.handleTabChange("inbox"));
@@ -181,7 +191,7 @@ describe("useExploreSearch — F132 Tab 过滤透传", () => {
     expect(result.current.filteredTasks[0].category).toBe("inbox");
   });
 
-  it("手动搜索 — 笔记 Tab 传递 filter_type=note", async () => {
+  it("手动搜索 — 笔记 Tab 也不传 filter_type（跨全类型搜索）", async () => {
     const { result } = renderExploreSearch();
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -198,10 +208,11 @@ describe("useExploreSearch — F132 Tab 过滤透传", () => {
 
     await waitFor(() => expect(result.current.isSearching).toBe(false));
 
+    // F12: 搜索模式不传 filter_type
     expect(mockSearchEntries).toHaveBeenCalledWith(
       "notes only",
       20,
-      "note",
+      undefined,
       expect.anything(),
     );
   });

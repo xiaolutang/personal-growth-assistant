@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-212",
+  "timestamp": "2026-04-29T15:58:34.742986",
+  "test_case_id": "ST-008",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "找找关于 React Hooks 的内容",
+    "output": "搜索到 1 条与 React Hooks 相关的内容：\n\n---\n\n### 📋 聊天→创建任务 API 调用优化\n\n- **分类**：任务（已完成）\n- **标签**：`个人助手` `API`\n- **创建时间**：2026-04-13\n\n其中和 React Hooks 相关的部分是前端开发中用到了 **`useStreamParse` Hook**，用于处理 SSE 流式响应的解析和显示。具体涉及：\n\n- `frontend/src/hooks/useStreamParse.ts` — 新增的流式解析 Hook\n- `frontend/src/components/FloatingChat.tsx` — 简化逻辑\n- 在 SSE 流式响应学习中，通过这个 Hook 实现了前端流式显示 JSON 解析过程\n\n---\n\n除此之外没有找到其他直接关于 React Hooks 的笔记或条目。你是想找关于 React Hooks 的学习资料，还是想回顾之前前端 Hook 相关的开发记录？",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "React Hooks"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 20239.008903503418,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

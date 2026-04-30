@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-182",
+  "timestamp": "2026-04-29T15:06:52.427018",
+  "test_case_id": "ST-046",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "你好，你是什么？",
+    "output": "我是「日知」，一个帮你管理个人成长的小助手。可以理解为你的朋友 + 备忘录 + 任务管理器的结合体。\n\n具体能做的事情包括：\n\n- **记录和整理**：创建任务、笔记、灵感、项目等条目\n- **搜索和回顾**：查找之前记录的内容，生成日报/周报\n- **规划和跟进**：帮你管理任务状态、优先级、计划日期\n- **聊天和反思**：有时候你只是想理清思路，我也能陪你聊聊\n\n有什么我可以帮你的吗？",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 9184.154033660889,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-145",
+  "timestamp": "2026-04-29T14:57:55.682851",
+  "test_case_id": "ST-009",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "更新任务状态为已完成",
+    "output": "",
+    "tool_calls": [
+      {
+        "tool": "ask_user",
+        "args": {
+          "question": "你想把哪个任务标记为已完成？可以告诉我任务名称或关键词，我帮你找到它。"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 3518.418788909912,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

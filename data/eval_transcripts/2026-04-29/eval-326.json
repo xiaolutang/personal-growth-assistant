@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-326",
+  "timestamp": "2026-04-29T16:46:55.660697",
+  "test_case_id": "ST-054",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "给我讲个笑话吧",
+    "output": "好，来一个：\n\n> 程序员去面试，面试官问：\"你有什么特长？\"\n> \n> 程序员想了想说：\"我会修 bug。\"\n> \n> 面试官：\"能举个例子吗？\"\n> \n> 程序员：\"我上次修了一个 bug，然后发现另外三个。\"\n> \n> 面试官：\"……这不是制造问题吗？\"\n> \n> 程序员：\"不，这叫**发现潜在需求**。\"\n\n😄 希望能让你笑一下。有什么想聊的或者需要帮忙的，随时说。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 7185.266971588135,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

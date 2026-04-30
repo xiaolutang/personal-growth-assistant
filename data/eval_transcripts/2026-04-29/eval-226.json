@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-226",
+  "timestamp": "2026-04-29T16:02:19.463802",
+  "test_case_id": "ST-022",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "看看上周的成长周报",
+    "output": "这是上周（4/26 ~ 5/2）的成长周报：\n\n---\n\n### 📊 任务完成情况\n| 指标 | 数据 |\n|------|------|\n| 总任务数 | 26 |\n| 已完成 | 0 |\n| 进行中 | 13 |\n| 待开始 | 13 |\n| **完成率** | **0%** |\n\n### 📝 笔记产出\n- 本周产出了 **19 篇笔记**，涵盖 Docker、Python 等技术内容和运动相关，知识沉淀做得很扎实 👍\n\n### 💡 AI 点评\n> 本周笔记产出丰富，说明学习和思考没有停。但 26 项任务完成率为 0%，且大多堆积在周二和周三。建议下周化整为零，优先把 13 项进行中的任务推进完成，保持知行合一。\n\n---\n\n坦白说，笔记写了 19 篇但任务一个都没完成，有点\"光记不练\"的感觉。13 项进行中的任务可能是最大的负担——建议下周先从中挑 2-3 个最紧急的集中完成，别让它们越堆越多。需要我帮你梳理一下那些进行中的任务吗？",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "weekly",
+          "target_date": "2026-04-26"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 34631.72006607056,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

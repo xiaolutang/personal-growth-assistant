@@ -1,0 +1,36 @@
+{
+  "transcript_id": "eval-203",
+  "timestamp": "2026-04-29T15:11:02.133506",
+  "test_case_id": "ST-067",
+  "test_case_category": "directness",
+  "agent_trace": {
+    "input": "本周的学习情况怎么样",
+    "output": "本周（4月27日 ~ 5月3日）的情况如下：\n\n### 📋 任务概况\n- **总任务数**：23 个\n- **已完成**：0 个\n- **进行中**：10 个\n- **待开始**：13 个\n- **完成率**：0%\n\n### 📝 笔记\n- 本周共记录了 **14 条**笔记\n\n---\n\n坦率地说，这周的任务完成率是 0%，有 10 个任务还在进行中，13 个还没开始。今天是周三，时间还有余地，但量不小。\n\n几个可能的方向：\n1. **挑出最紧急的 2-3 个任务**，先把它们推进掉，打破零完成的局面\n2. 看看那 13 个待开始的任务里，有没有其实可以推迟或取消的，减少压力\n3. 如果有些任务是卡住了，可以聊聊卡在哪里，我帮你拆解一下\n\n想怎么调整？",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "weekly"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 40123.18825721741,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {
+    "behavior_checks": {
+      "no_greeting": true,
+      "must_show_details": true,
+      "no_ask_to_search": true
+    }
+  }
+}

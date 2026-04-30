@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-072",
+  "timestamp": "2026-04-29T14:22:59.377727",
+  "test_case_id": "ST-004",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "帮我删除那条不需要的笔记",
+    "output": "搜到了几条和\"笔记\"相关的条目，但不太确定你说的是哪一条\"不需要的笔记\"。能告诉我具体是哪条吗？\n\n目前搜到的条目有：\n\n1. **AI 应用开发转型**（项目）- 详细的转型学习计划\n2. **灵感收集**（inbox）- 各种灵感和想法记录\n3. **个人成长助手开发**（项目）- 产品设计文档\n4. **项目清单**（项目）- 项目规划清单\n\n你想删除的是哪一条？",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 10,
+          "query": "笔记"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 11672.446966171265,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

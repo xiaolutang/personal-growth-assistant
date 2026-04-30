@@ -1,0 +1,33 @@
+{
+  "transcript_id": "eval-095",
+  "timestamp": "2026-04-29T14:30:48.273707",
+  "test_case_id": "ST-027",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "更新 entry-proj-001 的状态为已完成，耗时 120 分钟",
+    "output": "看起来 `entry-proj-001` 这个条目不存在，可能是 ID 有误。\n\n要不我帮你搜一下？告诉我这个条目的标题或关键词，我找找看正确的 ID。",
+    "tool_calls": [
+      {
+        "tool": "update_entry",
+        "args": {
+          "completed_at": "2026-04-29T06:30:00",
+          "entry_id": "entry-proj-001",
+          "status": "complete",
+          "time_spent": 120
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 22652.88209915161,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

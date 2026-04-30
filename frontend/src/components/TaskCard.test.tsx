@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -15,8 +15,13 @@ vi.mock("sonner", () => ({
   Toaster: () => null,
 }));
 
+// Mock convertEntry API
+const mockConvertEntry = vi.fn();
+vi.mock("@/services/api", () => ({
+  convertEntry: (...args: unknown[]) => mockConvertEntry(...args),
+}));
+
 // Mock taskStore selectors
-const mockUpdateEntry = vi.fn();
 const mockUpdateTaskStatus = vi.fn();
 const mockDeleteTask = vi.fn();
 const mockTasks: Task[] = [];
@@ -24,7 +29,6 @@ const mockTasks: Task[] = [];
 vi.mock("@/stores/taskStore", () => ({
   useTaskStore: (selector: (state: Record<string, unknown>) => unknown) => {
     const state = {
-      updateEntry: mockUpdateEntry,
       updateTaskStatus: mockUpdateTaskStatus,
       deleteTask: mockDeleteTask,
       tasks: mockTasks,
@@ -32,6 +36,10 @@ vi.mock("@/stores/taskStore", () => ({
     return selector(state);
   },
 }));
+
+// HTMLDialogElement polyfill for jsdom
+const originalShowModal = HTMLDialogElement.prototype.showModal;
+const originalClose = HTMLDialogElement.prototype.close;
 
 import { toast } from "sonner";
 
@@ -72,105 +80,117 @@ function renderWithRouter(ui: React.ReactElement) {
 describe("TaskCard — 灵感转化", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
+      this.open = true;
+    });
+    HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
+      this.open = false;
+    });
   });
 
-  it("inbox 条目应显示更多操作按钮", () => {
+  afterEach(() => {
+    HTMLDialogElement.prototype.showModal = originalShowModal;
+    HTMLDialogElement.prototype.close = originalClose;
+  });
+
+  it("inbox 条目应显示转化按钮", () => {
     renderWithRouter(<TaskCard task={createInboxTask()} />);
-    // 查找包含 MoreHorizontal 图标的按钮区域
+    // inbox 条目应该有：状态切换按钮 + 转任务按钮 + 转决策按钮 + 删除按钮 = 4 个按钮
     const buttons = screen.getAllByRole("button");
-    // inbox 条目应该有：状态切换按钮 + 菜单按钮 + 删除按钮 = 3 个按钮
-    expect(buttons.length).toBeGreaterThanOrEqual(3);
+    expect(buttons.length).toBeGreaterThanOrEqual(4);
   });
 
-  it("非 inbox 条目不显示转化菜单", () => {
+  it("非 inbox 条目不显示转化按钮", () => {
     const { container } = renderWithRouter(<TaskCard task={createTaskItem()} />);
-    // 不应出现"转为任务"或"转为笔记"文本
+    // 不应出现"转为任务"或"转为决策"文本
     expect(container.textContent).not.toContain("转为任务");
-    expect(container.textContent).not.toContain("转为笔记");
+    expect(container.textContent).not.toContain("转为决策");
   });
 
-  it("点击菜单按钮显示「转为任务」和「转为笔记」选项", async () => {
+  it("点击转任务按钮打开 ConvertDialog", async () => {
     const user = userEvent.setup();
     renderWithRouter(<TaskCard task={createInboxTask()} />);
 
-    // 点击第二个按钮（菜单按钮）
-    const buttons = screen.getAllByRole("button");
-    // 状态切换=buttons[0], 菜单按钮=buttons[1]（在删除按钮前面）
-    await user.click(buttons[1]);
+    // 查找带 title="转为任务" 的按钮
+    const convertBtn = screen.getByTitle("转为任务");
+    await user.click(convertBtn);
 
-    expect(screen.getByText("转为任务")).toBeInTheDocument();
-    expect(screen.getByText("转为笔记")).toBeInTheDocument();
+    // ConvertDialog 应该打开
+    expect(screen.getByText("转化条目")).toBeInTheDocument();
+    expect(screen.getByText("确认转化")).toBeInTheDocument();
   });
 
-  it("点击「转为任务」调用 updateEntry 并显示成功 toast", async () => {
-    mockUpdateEntry.mockResolvedValueOnce(undefined);
+  it("点击转决策按钮打开 ConvertDialog 并默认选中决策", async () => {
     const user = userEvent.setup();
     renderWithRouter(<TaskCard task={createInboxTask()} />);
 
-    const buttons = screen.getAllByRole("button");
-    await user.click(buttons[1]); // 打开菜单
-    await user.click(screen.getByText("转为任务"));
+    const convertBtn = screen.getByTitle("转为决策");
+    await user.click(convertBtn);
 
-    expect(mockUpdateEntry).toHaveBeenCalledWith("inbox-test123", { category: "task" });
-    await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("已转为任务：测试灵感");
-    });
-  });
-
-  it("点击「转为笔记」调用 updateEntry 并显示成功 toast", async () => {
-    mockUpdateEntry.mockResolvedValueOnce(undefined);
-    const user = userEvent.setup();
-    renderWithRouter(<TaskCard task={createInboxTask()} />);
-
-    const buttons = screen.getAllByRole("button");
-    await user.click(buttons[1]);
-    await user.click(screen.getByText("转为笔记"));
-
-    expect(mockUpdateEntry).toHaveBeenCalledWith("inbox-test123", { category: "note" });
-    await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("已转为笔记：测试灵感");
-    });
+    // ConvertDialog 应该打开，且决策应被选中
+    expect(screen.getByText("转化条目")).toBeInTheDocument();
+    const decisionButton = screen.getByText("决策").closest("button")!;
+    expect(decisionButton.className).toContain("bg-primary");
   });
 
   it("转化失败显示错误 toast", async () => {
-    mockUpdateEntry.mockRejectedValueOnce(new Error("API error"));
+    mockConvertEntry.mockRejectedValueOnce(new Error("API error"));
+    const onConvertSuccess = vi.fn();
     const user = userEvent.setup();
-    renderWithRouter(<TaskCard task={createInboxTask()} />);
+    renderWithRouter(<TaskCard task={createInboxTask()} onConvertSuccess={onConvertSuccess} />);
 
-    const buttons = screen.getAllByRole("button");
-    await user.click(buttons[1]);
-    await user.click(screen.getByText("转为任务"));
+    const convertBtn = screen.getByTitle("转为任务");
+    await user.click(convertBtn);
+
+    // Wait for dialog to appear
+    await waitFor(() => {
+      expect(screen.getByText("确认转化")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("确认转化"));
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("转化失败，请重试");
+    }, { timeout: 3000 });
+    expect(onConvertSuccess).not.toHaveBeenCalled();
+  });
+
+  it("转化成功后触发 onConvertSuccess 回调", async () => {
+    mockConvertEntry.mockResolvedValueOnce({ ...createInboxTask(), category: "task" });
+    const onConvertSuccess = vi.fn();
+    const user = userEvent.setup();
+    renderWithRouter(<TaskCard task={createInboxTask()} onConvertSuccess={onConvertSuccess} />);
+
+    const convertBtn = screen.getByTitle("转为任务");
+    await user.click(convertBtn);
+    await user.click(screen.getByText("确认转化"));
+
+    await waitFor(() => {
+      expect(mockConvertEntry).toHaveBeenCalledWith("inbox-test123", {
+        target_category: "task",
+        priority: null,
+        planned_date: null,
+        parent_id: null,
+      });
     });
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalled();
+    });
+    // onConvertSuccess should be called after animation timeout (300ms)
+    await waitFor(() => {
+      expect(onConvertSuccess).toHaveBeenCalled();
+    }, { timeout: 1000 });
   });
 
-  it("点击菜单按钮不触发卡片导航", async () => {
+  it("转化按钮不触发卡片导航", async () => {
     const user = userEvent.setup();
     renderWithRouter(<TaskCard task={createInboxTask()} />);
 
-    const buttons = screen.getAllByRole("button");
-    await user.click(buttons[1]);
+    const convertBtn = screen.getByTitle("转为任务");
+    await user.click(convertBtn);
 
-    // 菜单按钮点击后不应触发导航（卡片点击才导航）
-    // 验证菜单打开而非导航
-    expect(screen.getByText("转为任务")).toBeInTheDocument();
-  });
-
-  it("转化过程中显示 loading 图标", async () => {
-    // 让 updateEntry 永远 pending
-    mockUpdateEntry.mockReturnValueOnce(new Promise(() => {}));
-    const user = userEvent.setup();
-    renderWithRouter(<TaskCard task={createInboxTask()} />);
-
-    const buttons = screen.getAllByRole("button");
-    await user.click(buttons[1]); // 打开菜单
-    await user.click(screen.getByText("转为任务"));
-
-    // 转化中，菜单按钮应变为 disabled（Loader2 图标）
-    const menuBtn = buttons[1];
-    expect(menuBtn).toBeDisabled();
+    // 转化按钮点击后应打开对话框而非导航
+    expect(screen.getByText("转化条目")).toBeInTheDocument();
   });
 });
 

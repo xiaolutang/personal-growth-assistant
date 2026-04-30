@@ -1,0 +1,36 @@
+{
+  "transcript_id": "eval-146",
+  "timestamp": "2026-04-29T14:58:06.644163",
+  "test_case_id": "ST-010",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "记录一个学习笔记：Docker 容器网络原理",
+    "output": "已经帮你记好了 📝\n\n**Docker 容器网络原理**\n\n标签：`Docker`、`网络`、`学习笔记`\n\n后续如果你想补充具体内容，随时告诉我，我可以帮你更新到这条笔记里。",
+    "tool_calls": [
+      {
+        "tool": "create_entry",
+        "args": {
+          "category": "note",
+          "tags": [
+            "Docker",
+            "网络",
+            "学习笔记"
+          ],
+          "title": "Docker 容器网络原理"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 10960.18099784851,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

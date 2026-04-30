@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-186",
+  "timestamp": "2026-04-29T15:07:48.427602",
+  "test_case_id": "ST-050",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "解释一下什么是 REST API",
+    "output": "REST API 是一种设计网络接口的风格，不是什么复杂的东西，简单理解就是：\n\n**REST = 用 URL 定位资源，用 HTTP 方法操作资源。**\n\n核心就这几点：\n\n1. **资源用 URL 表示**\n   - 比如 `/users` 代表用户列表，`/users/123` 代表某个具体用户\n\n2. **用 HTTP 方法区分操作**\n   - `GET` → 查\n   - `POST` → 增\n   - `PUT` → 改（整体替换）\n   - `PATCH` → 改（部分更新）\n   - `DELETE` → 删\n\n3. **无状态**\n   - 每次请求都自带所有必要信息（比如认证 token），服务器不依赖之前的请求记忆\n\n4. **统一返回格式**\n   - 通常用 JSON，配合 HTTP 状态码表示结果（200 成功，404 找不到，500 服务器错误等）\n\n举个例子，一个\"文章管理\"的 REST API 可能长这样：\n\n| 方法 | URL | 作用 |\n|------|-----|------|\n| GET | `/articles` | 获取文章列表 |\n| GET | `/articles/42` | 获取第42篇文章 |\n| POST | `/articles` | 创建新文章 |\n| PUT | `/articles/42` | 更新第42篇 |\n| DELETE | `/articles/42` | 删除第42篇 |\n\n**为什么流行？** 因为简单直观——URL 一看就知道在操作什么，HTTP 方法一看就知道在做什么，前端后端都能快速理解。\n\n有一点要注意：REST 是一种设计**风格**（规范），不是协议。所以实际开发中大家多少会有些自己的变通，只要团队内一致就行。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 19048.712015151978,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

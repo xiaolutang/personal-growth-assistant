@@ -291,7 +291,7 @@ export function EntryHeader({
               <Link2 className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">所属{categoryConfig[parentEntry.category]?.label || "条目"}:</span>
               <button
-                onClick={() => navigate(`/entry/${parentEntry.id}`)}
+                onClick={() => navigate(`/entries/${parentEntry.id}`)}
                 className="text-sm text-primary hover:underline"
               >
                 {parentEntry.title}

@@ -10,6 +10,10 @@ import {
   getPopularTags,
   filterByCategory,
   TIME_RANGE_LABELS,
+  SEARCH_GROUP_ORDER,
+  SEARCH_GROUP_LABELS,
+  SEARCH_GROUP_ICONS,
+  groupSearchResultsByType,
 } from "../utils";
 import type { Task, SearchResult } from "@/types/task";
 
@@ -47,8 +51,8 @@ describe("utils", () => {
 
   // --- TABS constant ---
   describe("TABS", () => {
-    it("包含 7 个 tab 配置项", () => {
-      expect(TABS).toHaveLength(7);
+    it("F06: 包含 5 个 tab 配置项（全部/灵感/笔记/复盘/疑问）", () => {
+      expect(TABS).toHaveLength(5);
     });
 
     it("第一个 tab 是全部（key 为空字符串）", () => {
@@ -63,21 +67,39 @@ describe("utils", () => {
         expect(tab).toHaveProperty("icon");
       }
     });
+
+    it("F06: 不包含 project 和 decision tab", () => {
+      const keys = TABS.map(t => t.key);
+      expect(keys).not.toContain("project");
+      expect(keys).not.toContain("decision");
+    });
+
+    it("F06: 包含全部/灵感/笔记/复盘/疑问", () => {
+      const keys = TABS.map(t => t.key);
+      expect(keys).toEqual(["", "inbox", "note", "reflection", "question"]);
+    });
   });
 
   // --- EXPLORE_CATEGORIES ---
   describe("EXPLORE_CATEGORIES", () => {
-    it("包含 inbox, note, project, decision, reflection, question", () => {
+    it("F06: 只包含 inbox, note, reflection, question", () => {
       expect(EXPLORE_CATEGORIES.has("inbox")).toBe(true);
       expect(EXPLORE_CATEGORIES.has("note")).toBe(true);
-      expect(EXPLORE_CATEGORIES.has("project")).toBe(true);
-      expect(EXPLORE_CATEGORIES.has("decision")).toBe(true);
       expect(EXPLORE_CATEGORIES.has("reflection")).toBe(true);
       expect(EXPLORE_CATEGORIES.has("question")).toBe(true);
     });
 
-    it("不包含 task", () => {
+    it("F06: 不包含 task", () => {
       expect(EXPLORE_CATEGORIES.has("task")).toBe(false);
+    });
+
+    it("F06: 不包含 project 和 decision", () => {
+      expect(EXPLORE_CATEGORIES.has("project")).toBe(false);
+      expect(EXPLORE_CATEGORIES.has("decision")).toBe(false);
+    });
+
+    it("F06: 恰好包含 4 个类型", () => {
+      expect(EXPLORE_CATEGORIES.size).toBe(4);
     });
   });
 
@@ -270,7 +292,7 @@ describe("utils", () => {
 
   // --- filterByCategory ---
   describe("filterByCategory", () => {
-    it("空 tab 返回所有探索分类条目", () => {
+    it("空 tab 返回所有探索分类条目（不含 task/project/decision）", () => {
       const entries = [
         makeTask({ category: "note" }),
         makeTask({ category: "task" }),
@@ -290,28 +312,42 @@ describe("utils", () => {
       expect(result).toHaveLength(1);
       expect(result[0].category).toBe("note");
     });
+
+    it("F06: 灵感 tab 只显示 inbox 类型", () => {
+      const entries = [
+        makeTask({ category: "note" }),
+        makeTask({ category: "inbox" }),
+        makeTask({ category: "task" }),
+      ];
+      const result = filterByCategory(entries, "inbox");
+      expect(result).toHaveLength(1);
+      expect(result[0].category).toBe("inbox");
+    });
   });
 
   // --- filterByCategory 搜索模式跨类型混合展示 (F132) ---
   describe("filterByCategory — 搜索模式（tab=空）跨类型混合展示", () => {
-    it("tab 为空时排除 task 等非 Explore 类型", () => {
+    it("F06: tab 为空时排除 task/project/decision 等非 Explore 类型", () => {
       const entries = [
         makeTask({ category: "note" }),
         makeTask({ category: "task" }),
         makeTask({ category: "inbox" }),
         makeTask({ category: "project" }),
+        makeTask({ category: "decision" }),
       ];
       const result = filterByCategory(entries, "");
-      expect(result).toHaveLength(3);
+      expect(result).toHaveLength(2);
       expect(result.every((t) => t.category !== "task")).toBe(true);
+      expect(result.every((t) => t.category !== "project")).toBe(true);
+      expect(result.every((t) => t.category !== "decision")).toBe(true);
     });
 
-    it("tab 为空时保留所有 Explore 类型（混合展示）", () => {
+    it("F06: tab 为空时只保留 inbox/note/reflection/question", () => {
       const entries = [
         makeTask({ category: "note" }),
         makeTask({ category: "inbox" }),
-        makeTask({ category: "project" }),
-        makeTask({ category: "decision" }),
+        makeTask({ category: "reflection" }),
+        makeTask({ category: "question" }),
       ];
       const result = filterByCategory(entries, "");
       expect(result).toHaveLength(4);
@@ -319,6 +355,126 @@ describe("utils", () => {
 
     it("空数组返回空", () => {
       expect(filterByCategory([], "")).toEqual([]);
+    });
+  });
+
+  // --- F12: 搜索结果按类型分组 ---
+  describe("SEARCH_GROUP_ORDER", () => {
+    it("F12: 包含 7 个类型，按指定顺序排列", () => {
+      expect(SEARCH_GROUP_ORDER).toEqual([
+        "task", "decision", "project", "inbox", "note", "reflection", "question",
+      ]);
+    });
+
+    it("F12: 每个 key 都有对应的中文标签", () => {
+      for (const key of SEARCH_GROUP_ORDER) {
+        expect(SEARCH_GROUP_LABELS[key]).toBeTruthy();
+      }
+    });
+
+    it("F12: 每个 key 都有对应的图标组件", () => {
+      for (const key of SEARCH_GROUP_ORDER) {
+        expect(SEARCH_GROUP_ICONS[key]).toBeTruthy();
+      }
+    });
+  });
+
+  describe("SEARCH_GROUP_LABELS", () => {
+    it("F12: 标签映射正确", () => {
+      expect(SEARCH_GROUP_LABELS).toEqual({
+        task: "任务",
+        decision: "决策",
+        project: "项目",
+        inbox: "灵感",
+        note: "笔记",
+        reflection: "复盘",
+        question: "疑问",
+      });
+    });
+  });
+
+  describe("groupSearchResultsByType", () => {
+    it("F12: 空数组返回空分组", () => {
+      expect(groupSearchResultsByType([])).toEqual([]);
+    });
+
+    it("F12: 按类型分组，每组包含 type/label/icon/tasks/count", () => {
+      const tasks = [
+        makeTask({ id: "1", category: "task", title: "任务1" }),
+        makeTask({ id: "2", category: "note", title: "笔记1" }),
+        makeTask({ id: "3", category: "task", title: "任务2" }),
+        makeTask({ id: "4", category: "inbox", title: "灵感1" }),
+      ];
+      const groups = groupSearchResultsByType(tasks);
+
+      // 只有包含结果的类型才出现
+      expect(groups).toHaveLength(3);
+
+      // 顺序：task → inbox → note
+      expect(groups[0].type).toBe("task");
+      expect(groups[0].count).toBe(2);
+      expect(groups[0].tasks).toHaveLength(2);
+      expect(groups[1].type).toBe("inbox");
+      expect(groups[1].count).toBe(1);
+      expect(groups[2].type).toBe("note");
+      expect(groups[2].count).toBe(1);
+    });
+
+    it("F12: 分组顺序严格遵循 SEARCH_GROUP_ORDER", () => {
+      const tasks = [
+        makeTask({ id: "1", category: "question" }),
+        makeTask({ id: "2", category: "task" }),
+        makeTask({ id: "3", category: "note" }),
+      ];
+      const groups = groupSearchResultsByType(tasks);
+      const types = groups.map((g) => g.type);
+      expect(types).toEqual(["task", "note", "question"]);
+    });
+
+    it("F12: 每组都有 label 和 icon", () => {
+      const tasks = [
+        makeTask({ id: "1", category: "decision" }),
+      ];
+      const groups = groupSearchResultsByType(tasks);
+      expect(groups[0].label).toBe("决策");
+      expect(groups[0].icon).toBeTruthy();
+    });
+
+    it("F12: 未知 category 的条目被忽略", () => {
+      const tasks = [
+        makeTask({ id: "1", category: "unknown_type" as any }),
+        makeTask({ id: "2", category: "note" }),
+      ];
+      const groups = groupSearchResultsByType(tasks);
+      expect(groups).toHaveLength(1);
+      expect(groups[0].type).toBe("note");
+    });
+
+    it("F12: 所有 7 种类型都能正确分组", () => {
+      const tasks = [
+        makeTask({ id: "1", category: "task" }),
+        makeTask({ id: "2", category: "decision" }),
+        makeTask({ id: "3", category: "project" }),
+        makeTask({ id: "4", category: "inbox" }),
+        makeTask({ id: "5", category: "note" }),
+        makeTask({ id: "6", category: "reflection" }),
+        makeTask({ id: "7", category: "question" }),
+      ];
+      const groups = groupSearchResultsByType(tasks);
+      expect(groups).toHaveLength(7);
+      const types = groups.map((g) => g.type);
+      expect(types).toEqual(SEARCH_GROUP_ORDER);
+    });
+
+    it("F12: count 与 tasks.length 一致", () => {
+      const tasks = [
+        makeTask({ id: "1", category: "task" }),
+        makeTask({ id: "2", category: "task" }),
+        makeTask({ id: "3", category: "task" }),
+      ];
+      const groups = groupSearchResultsByType(tasks);
+      expect(groups[0].count).toBe(3);
+      expect(groups[0].tasks).toHaveLength(3);
     });
   });
 });

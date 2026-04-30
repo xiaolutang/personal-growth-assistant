@@ -1,0 +1,32 @@
+{
+  "transcript_id": "eval-001",
+  "timestamp": "2026-04-29T13:38:55.851840",
+  "test_case_id": "ST-001",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "帮我记录一个想法：今天学了 Python 装饰器",
+    "output": "已记录到收件箱了 ✅\n\n装饰器是个好东西，刚开始学可能会觉得绕，但一旦理解了「函数可以作为参数传递」这个核心概念，后面就很顺畅了。有需要的话随时可以整理成笔记，把理解沉淀下来。",
+    "tool_calls": [
+      {
+        "tool": "create_entry",
+        "args": {
+          "category": "inbox",
+          "content": "今天学了 Python 装饰器",
+          "title": "学了 Python 装饰器"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 7817.384958267212,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

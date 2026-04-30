@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-100",
+  "timestamp": "2026-04-29T14:33:14.114601",
+  "test_case_id": "ST-032",
+  "test_case_category": "multi_step",
+  "agent_trace": {
+    "input": "帮我查看 entry-multi-001 的内容，如果状态是进行中就改成已完成",
+    "output": "这条目没找到，`entry-multi-001` 在系统里不存在。可能是 ID 记错了，或者它已经被删除了。\n\n你还记得这条目的标题或者大概内容吗？我可以帮你搜一下。",
+    "tool_calls": [
+      {
+        "tool": "get_entry",
+        "args": {
+          "entry_id": "entry-multi-001"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 14333.262920379639,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,5 +1,9 @@
-import { Lightbulb, FileText, Folder, Layers, Scale, RotateCcw, HelpCircle } from "lucide-react";
+import {
+  Lightbulb, FileText, Layers, RotateCcw, HelpCircle,
+  CheckSquare, GitBranch, FolderKanban,
+} from "lucide-react";
 import type { Task, Category, TaskStatus, Priority, SearchResult } from "@/types/task";
+import { categoryConfig } from "@/config/constants";
 
 /**
  * 将搜索结果归一化为 Task 类型，补齐缺失字段
@@ -25,14 +29,63 @@ export const TABS = [
   { key: "", label: "全部", icon: Layers },
   { key: "inbox", label: "灵感", icon: Lightbulb },
   { key: "note", label: "笔记", icon: FileText },
-  { key: "project", label: "项目", icon: Folder },
-  { key: "decision", label: "决策", icon: Scale },
   { key: "reflection", label: "复盘", icon: RotateCcw },
   { key: "question", label: "疑问", icon: HelpCircle },
 ] as const;
 
-// 探索页只展示 inbox/note/project/decision/reflection/question，不含 task
-export const EXPLORE_CATEGORIES = new Set(["inbox", "note", "project", "decision", "reflection", "question"]);
+// F06: 探索页只展示 inbox/note/reflection/question，不含 task/project/decision
+export const EXPLORE_CATEGORIES = new Set(["inbox", "note", "reflection", "question"]);
+
+// F12: 搜索结果分组顺序
+export const SEARCH_GROUP_ORDER: Category[] = [
+  "task", "decision", "project", "inbox", "note", "reflection", "question",
+];
+
+export const SEARCH_GROUP_LABELS: Record<string, string> = Object.fromEntries(
+  Object.entries(categoryConfig).map(([key, val]) => [key, val.label])
+);
+
+export const SEARCH_GROUP_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  task: CheckSquare,
+  decision: GitBranch,
+  project: FolderKanban,
+  inbox: Lightbulb,
+  note: FileText,
+  reflection: RotateCcw,
+  question: HelpCircle,
+};
+
+export interface SearchGroup {
+  type: Category;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tasks: Task[];
+  count: number;
+}
+
+export function groupSearchResultsByType(tasks: Task[]): SearchGroup[] {
+  const bucket = new Map<Category, Task[]>();
+  for (const task of tasks) {
+    const cat = task.category as Category;
+    if (!SEARCH_GROUP_ORDER.includes(cat)) continue;
+    const list = bucket.get(cat) ?? [];
+    list.push(task);
+    bucket.set(cat, list);
+  }
+  const result: SearchGroup[] = [];
+  for (const type of SEARCH_GROUP_ORDER) {
+    const list = bucket.get(type);
+    if (!list || list.length === 0) continue;
+    result.push({
+      type,
+      label: SEARCH_GROUP_LABELS[type],
+      icon: SEARCH_GROUP_ICONS[type],
+      tasks: list,
+      count: list.length,
+    });
+  }
+  return result;
+}
 
 // === 时间范围快选 ===
 export type TimeRange = "today" | "week" | "month" | "";

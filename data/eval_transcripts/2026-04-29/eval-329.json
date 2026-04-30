@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-329",
+  "timestamp": "2026-04-29T16:47:28.771799",
+  "test_case_id": "ST-057",
+  "test_case_category": "boundary",
+  "agent_trace": {
+    "input": "   ",
+    "output": "抱歉，处理时遇到了问题：Error code: 400 - {'error': {'message': '未正常接收到prompt参数。', 'type': 'upstream_error', 'param': '', 'code': '1213'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 275.6319046020508,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

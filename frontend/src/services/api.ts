@@ -155,12 +155,13 @@ function handleOpenApiResponse<T>(data: T | undefined, error: unknown, response:
 }
 // === 条目 CRUD ===
 export async function getEntries(params?: {
-  type?: string; status?: string; parent_id?: string; tags?: string[];
+  type?: string; category_group?: string; status?: string; parent_id?: string; tags?: string[];
   start_date?: string; end_date?: string; limit?: number;
 }): Promise<EntryListResponse> {
   const { data, error, response } = await client.GET("/entries", {
     params: { query: {
-      type: params?.type, status: params?.status, parent_id: params?.parent_id,
+      type: params?.type, category_group: params?.category_group,
+      status: params?.status, parent_id: params?.parent_id,
       tags: params?.tags && params.tags.length > 0 ? params.tags.join(",") : undefined,
       start_date: params?.start_date, end_date: params?.end_date, limit: params?.limit,
     }},
@@ -602,6 +603,22 @@ export async function fetchTemplates(category?: string): Promise<EntryTemplateLi
   } catch {
     return { templates: [] };
   }
+}
+
+// === 条目类型转换（Convert） ===
+export type ConvertRequest = components["schemas"]["ConvertRequest"];
+
+export async function convertEntry(id: string, request: ConvertRequest): Promise<Task> {
+  const { data, error, response } = await client.POST("/entries/{entry_id}/convert", {
+    params: { path: { entry_id: id } },
+    body: {
+      target_category: request.target_category,
+      priority: request.priority ?? null,
+      planned_date: request.planned_date ?? null,
+      parent_id: request.parent_id ?? null,
+    } as S["ConvertRequest"],
+  });
+  return handleOpenApiResponse<Task>(data as Task | undefined, error, response);
 }
 
 // 导出错误类供外部使用

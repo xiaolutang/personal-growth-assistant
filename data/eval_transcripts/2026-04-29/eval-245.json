@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-245",
+  "timestamp": "2026-04-29T16:09:04.998075",
+  "test_case_id": "ST-041",
+  "test_case_category": "ask_user",
+  "agent_trace": {
+    "input": "搜索笔记",
+    "output": "请问你想搜索什么内容的笔记？给我一个关键词或主题，我来帮你找。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 2335.891008377075,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

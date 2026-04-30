@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-172",
+  "timestamp": "2026-04-29T15:05:03.259030",
+  "test_case_id": "ST-036",
+  "test_case_category": "multi_step",
+  "agent_trace": {
+    "input": "搜索所有标签包含 go 的条目，然后给其中类型为 task 的条目都加上 golang 标签",
+    "output": "搜索到了 3 条结果，不过没有一条的标签里包含 `go`，也没有类型为 `task` 的条目。具体来看：\n\n| # | 标题 | 类型 | 标签 |\n|---|------|------|------|\n| 1 | 学习笔记与想法 | note | 疑问, 思考, Prompt, RAG, LangChain, FastAPI |\n| 2 | FastAPI 学习笔记 | note | （无标签） |\n| 3 | Week 2 Day 1：FastAPI 基础概念复盘 | note | FastAPI |\n\n这 3 条都是 `note` 类型，且标签中没有 `go`（搜索结果是因为内容中提到了 \"Go/Node.js\" 等文字匹配）。\n\n所以目前没有需要添加 `golang` 标签的条目。你是不是想搜索其他关键词，或者需要我帮你做别的调整？",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 50,
+          "query": "go"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 11154.299020767212,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

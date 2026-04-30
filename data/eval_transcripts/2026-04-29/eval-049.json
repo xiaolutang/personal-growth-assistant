@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-049",
+  "timestamp": "2026-04-29T13:50:56.127008",
+  "test_case_id": "ST-049",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "你能帮我做什么？",
+    "output": "我是「日知」，简单说，我能帮你做这几件事：\n\n**📝 记录与管理**\n- 创建任务、笔记、灵感、项目等各种条目\n- 给任务设定优先级、计划日期、状态\n- 更新或删除已有条目\n\n**🔍 查找与回顾**\n- 搜索你记录过的内容\n- 查看今日/本周的回顾报告（完成了什么、花了多少时间等）\n\n**💡 思考与建议**\n- 你在规划事情时，帮你拆解步骤、理清思路\n- 你在反思或纠结时，帮你照见自己的想法\n- 需要信息时，直接给你答案\n\n你可以随时跟我说：\n- \"帮我记一下……\"\n- \"我今天做了什么？\"\n- \"帮我创建一个任务……\"\n- 或者就是聊聊你正在想的事情\n\n有什么想开始的，直接说就好。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 7491.805076599121,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

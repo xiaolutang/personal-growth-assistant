@@ -3,6 +3,7 @@ import { useTaskStore } from "@/stores/taskStore";
 import { toast } from "sonner";
 import { subscribeSyncProgress } from "@/lib/offlineSync";
 import type { SyncEvent } from "@/lib/offlineSync";
+import { convertEntry } from "@/services/api";
 import type { Task, Category } from "@/types/task";
 
 interface UseBatchOperationsProps {
@@ -204,6 +205,60 @@ export function useBatchOperations({
     setFailedItems([]);
   }, []);
 
+  // F07: 批量转化（使用 POST /entries/{id}/convert API）
+  const handleBatchConvert = useCallback(async (targetCategory: "task" | "decision") => {
+    setBatchLoading(true);
+    setFailedItems([]);
+
+    let failed = 0;
+    const convertedIds: string[] = [];
+    const failures: { id: string; title: string }[] = [];
+
+    for (const id of selectedIds) {
+      const task = filteredTasks.find((t) => t.id === id);
+      if (!task || task.category !== "inbox") {
+        // 非 inbox 条目跳过（计为失败）
+        failed++;
+        failures.push({ id, title: task?.title ?? id });
+        continue;
+      }
+      try {
+        await convertEntry(id, { target_category: targetCategory });
+        convertedIds.push(id);
+      } catch {
+        failed++;
+        failures.push({ id, title: task.title });
+      }
+    }
+    setBatchLoading(false);
+
+    // 移除成功转化的条目
+    if (convertedIds.length > 0) {
+      setEntries((prev) => prev.filter((e) => !convertedIds.includes(e.id)));
+      setSearchResults((prev) => prev ? prev.filter((e) => !convertedIds.includes(e.id)) : null);
+    }
+
+    const label = targetCategory === "task" ? "任务" : "决策";
+    if (failed === 0) {
+      toast.success(`已转为${label} ${convertedIds.length} 条`);
+      exitSelectMode();
+    } else {
+      setFailedItems(failures);
+      toast.error(`${failed} 条转化失败`, {
+        description: failures.map((f) => f.title).join("、"),
+      });
+      if (convertedIds.length > 0) {
+        toast.success(`已成功转化 ${convertedIds.length} 条`);
+      }
+    }
+  }, [selectedIds, filteredTasks, setEntries, setSearchResults, exitSelectMode]);
+
+  // F07: 判断选中条目是否全部为 inbox 类型
+  const allSelectedInbox = filteredTasks.length > 0 && Array.from(selectedIds).every((id) => {
+    const task = filteredTasks.find((t) => t.id === id);
+    return task?.category === "inbox";
+  });
+
   return {
     selectMode,
     selectedIds,
@@ -216,6 +271,8 @@ export function useBatchOperations({
     selectAll,
     handleBatchDelete,
     handleBatchCategory,
+    handleBatchConvert,
+    allSelectedInbox,
     clearFailedItems,
   };
 }

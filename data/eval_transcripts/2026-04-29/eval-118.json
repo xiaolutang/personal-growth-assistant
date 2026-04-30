@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-118",
+  "timestamp": "2026-04-29T14:37:18.737979",
+  "test_case_id": "ST-050",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "解释一下什么是 REST API",
+    "output": "**REST API** 是一种设计网络接口的方式，全称是 **Representational State Transfer**（表述性状态转移）。听起来很学术，但核心思想很简单：\n\n### 核心要点\n\n1. **用 URL 定位资源**\n   每个东西（资源）都有一个唯一的地址，比如：\n   - `/users` — 用户列表\n   - `/users/123` — 编号为 123 的用户\n\n2. **用 HTTP 方法表达操作**\n   - `GET` — 获取\n   - `POST` — 创建\n   - `PUT` — 更新（整体替换）\n   - `PATCH` — 部分更新\n   - `DELETE` — 删除\n\n3. **无状态**\n   每次请求都要自带所有必要信息（比如认证 token），服务器不会记住你上次做了什么。\n\n4. **返回标准格式**\n   通常返回 JSON，比如：\n   ```json\n   { \"id\": 123, \"name\": \"小明\", \"email\": \"xm@example.com\" }\n   ```\n\n### 一个完整例子\n\n| 操作 | 方法 | URL |\n|------|------|-----|\n| 获取所有用户 | GET | `/users` |\n| 获取单个用户 | GET | `/users/123` |\n| 创建用户 | POST | `/users` |\n| 修改用户 | PUT | `/users/123` |\n| 删除用户 | DELETE | `/users/123` |\n\n### 为什么流行？\n\n- **简单直观**：URL 看路径，方法看动作，一目了然\n- **通用性强**：不管前端是网页、App 还是小程序，都能用同一套接口\n- **标准化**：基于 HTTP 协议，几乎所有语言和平台都支持\n\n一句话总结：**REST API 就是把\"对资源的操作\"映射成\"HTTP 方法 + URL\"的一种约定**。它不是某个具体的技术，而是一种风格规范。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 18733.519792556763,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

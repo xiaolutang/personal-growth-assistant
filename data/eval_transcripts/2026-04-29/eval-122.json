@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-122",
+  "timestamp": "2026-04-29T14:38:00.650460",
+  "test_case_id": "ST-054",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "给我讲个笑话吧",
+    "output": "好，来一个：\n\n> 程序员去面试，面试官问：\"你有对象吗？\"\n> \n> 程序员：\"有啊。\"\n> \n> 面试官：\"什么类型的？\"\n> \n> 程序员：\"Object。\"\n\n😄 要不要再来一个，还是聊点别的？",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 7301.964044570923,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

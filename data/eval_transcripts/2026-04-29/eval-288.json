@@ -1,0 +1,35 @@
+{
+  "transcript_id": "eval-288",
+  "timestamp": "2026-04-29T16:35:07.077882",
+  "test_case_id": "ST-016",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "记录想法：微服务架构中服务发现的最佳实践，标签加上 architecture 和 microservice",
+    "output": "已记录，放在了收件箱里：\n\n- **标题**：微服务架构中服务发现的最佳实践\n- **标签**：architecture, microservice\n\n等你有空想展开写的时候，随时可以把它变成一篇完整的笔记。",
+    "tool_calls": [
+      {
+        "tool": "create_entry",
+        "args": {
+          "category": "inbox",
+          "tags": [
+            "architecture",
+            "microservice"
+          ],
+          "title": "微服务架构中服务发现的最佳实践"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 11580.797910690308,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

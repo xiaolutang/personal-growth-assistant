@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-187",
+  "timestamp": "2026-04-29T15:07:52.048643",
+  "test_case_id": "ST-051",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "今天天气怎么样？",
+    "output": "这个我可帮不了你，我没有查天气的能力 😄\n\n不过你可以直接问我任务管理、笔记记录、成长回顾这些方面的事，这些我比较在行。有什么需要帮忙的吗？",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 3619.3909645080566,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

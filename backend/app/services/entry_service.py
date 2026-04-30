@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 from app.api.schemas import (
     EntryCreate,
     EntryUpdate,
+    ConvertRequest,
     EntryResponse,
     EntryListResponse,
     SearchResult,
@@ -37,6 +38,24 @@ from app.services.hybrid_search import HybridSearchService
 
 class EntryService:
     """条目业务逻辑服务"""
+
+    # 类型组映射：actionable = 行动项, knowledge = 知识类
+    CATEGORY_GROUPS: dict[str, set[str]] = {
+        "actionable": {"task", "decision", "project"},
+        "knowledge": {"inbox", "note", "reflection", "question"},
+    }
+
+    # 合法的类型转换规则（from_category, to_category）
+    VALID_CONVERSIONS: set[tuple[str, str]] = {
+        ("inbox", "task"),
+        ("inbox", "decision"),
+        ("inbox", "note"),
+    }
+
+    @staticmethod
+    def is_valid_conversion(from_cat: Category, to_cat: Category) -> bool:
+        """检查类型转换是否合法"""
+        return (from_cat.value, to_cat.value) in EntryService.VALID_CONVERSIONS
 
     def __init__(self, storage: SyncService):
         self.storage = storage
@@ -312,6 +331,107 @@ class EntryService:
 
         return RelatedEntriesResponse(related=results)
 
+    async def convert_entry(
+        self, entry_id: str, request: ConvertRequest, user_id: str = "_default"
+    ) -> EntryResponse:
+        """条目类型转换（inbox → task/decision/note）
+
+        Args:
+            entry_id: 条目 ID
+            request: 转换请求（含 target_category 和可选的 priority/planned_date/parent_id）
+            user_id: 用户 ID
+
+        Returns:
+            EntryResponse: 更新后的条目
+
+        Raises:
+            ValueError: 条目不存在
+            ValueError: 非法转换
+        """
+        # 验证条目存在且属于当前用户
+        if not self._verify_entry_owner(entry_id, user_id):
+            raise ValueError(f"条目不存在: {entry_id}")
+
+        # 读取条目
+        md_storage = self._get_markdown_storage(user_id)
+        entry = md_storage.read_entry(entry_id)
+        if not entry:
+            raise ValueError(f"条目不存在: {entry_id}")
+
+        # 解析目标分类
+        try:
+            target_category = Category(request.target_category)
+        except ValueError:
+            raise ValueError(f"无效的 target_category: {request.target_category}")
+
+        # 验证转换合法性
+        if not self.is_valid_conversion(entry.category, target_category):
+            raise ValueError(
+                f"不允许从 {entry.category.value} 转换为 {target_category.value}"
+            )
+
+        # 记录变更历史
+        now = datetime.now()
+        history_record = {
+            "from_category": entry.category.value,
+            "to_category": target_category.value,
+            "at": now.isoformat(),
+        }
+        entry.type_history = list(entry.type_history) + [history_record]
+
+        # 更新分类和文件路径
+        old_file_path = entry.file_path
+        entry.category = target_category
+        entry.file_path = self._get_file_path(target_category, entry.id)
+
+        # 更新可选字段
+        if request.priority is not None:
+            entry.priority = self._parse_priority(request.priority)
+        if request.planned_date is not None:
+            parsed_date = self._parse_datetime(request.planned_date)
+            if parsed_date:
+                entry.planned_date = parsed_date
+        if request.parent_id is not None:
+            entry.parent_id = request.parent_id
+
+        entry.updated_at = now
+
+        # 写入 Markdown（新位置）
+        md_storage.write_entry(entry)
+
+        # 迁移旧文件
+        if old_file_path:
+            old_path = md_storage.data_dir / old_file_path
+            new_path = md_storage.data_dir / entry.file_path
+            if old_path.exists() and Path(old_path) != Path(new_path):
+                try:
+                    new_path.parent.mkdir(parents=True, exist_ok=True)
+                    if not new_path.exists():
+                        old_path.rename(new_path)
+                    else:
+                        old_path.unlink()
+                except OSError:
+                    logger.warning(
+                        "文件迁移失败 old=%s new=%s", old_path, new_path,
+                    )
+                    try:
+                        old_path.unlink()
+                    except OSError:
+                        pass
+
+        # SQLite 同步
+        if self.storage.sqlite:
+            self.storage.sqlite.upsert_entry(entry, user_id=user_id)
+
+        # Neo4j + Qdrant 后台同步
+        asyncio.create_task(self.storage.sync_to_graph_and_vector(entry, user_id=user_id))
+
+        # tag_auto 目标进度重算
+        if entry.tags:
+            asyncio.create_task(self._trigger_tag_auto_recalc(user_id, entry.tags))
+
+        return EntryResponse(**EntryMapper.task_to_response(entry))
+
     async def update_entry(self, entry_id: str, request: EntryUpdate, user_id: str = "_default") -> Tuple[bool, str]:
         """更新条目，返回 (成功, 消息)"""
         if not self._verify_entry_owner(entry_id, user_id):
@@ -475,6 +595,7 @@ class EntryService:
     async def list_entries(
         self,
         type: Optional[str] = None,
+        category_group: Optional[str] = None,
         status: Optional[str] = None,
         tags: Optional[str] = None,
         parent_id: Optional[str] = None,
@@ -488,11 +609,17 @@ class EntryService:
         sort_by: Optional[str] = None,
     ) -> EntryListResponse:
         """列出条目"""
+        # 解析 category_group 为类型集合
+        category_types: Optional[set[str]] = None
+        if category_group:
+            category_types = self.CATEGORY_GROUPS.get(category_group)
+
         # 优先使用 SQLite 索引
         if self.storage.sqlite:
             tag_list = [t.strip() for t in tags.split(",")] if tags else None
             entries = self.storage.sqlite.list_entries(
                 type=type,
+                category_types=category_types,
                 status=status,
                 tags=tag_list,
                 parent_id=parent_id,
@@ -507,6 +634,7 @@ class EntryService:
             )
             total = self.storage.sqlite.count_entries(
                 type=type,
+                category_types=category_types,
                 status=status,
                 tags=tag_list,
                 parent_id=parent_id,
@@ -527,6 +655,7 @@ class EntryService:
 
         entries = self._get_markdown_storage(user_id).list_entries(
             category=category,
+            category_types=category_types,
             status=task_status,
             limit=limit,
         )

@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-050",
+  "timestamp": "2026-04-29T13:51:11.971067",
+  "test_case_id": "ST-050",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "解释一下什么是 REST API",
+    "output": "REST API 是一种设计网络接口的风格，不是什么高深的东西，简单说就是**用 HTTP 协议来操作资源的一套约定**。\n\n---\n\n### REST 是什么\n\nREST 全称 **Representational State Transfer**，中文叫\"表述性状态转移\"。名字听着唬人，核心思想就几条：\n\n1. **一切皆资源**  \n   数据以\"资源\"的形式存在，比如用户、文章、订单。每个资源用一个 **URL** 来标识。  \n   - `https://api.example.com/users` — 用户列表\n   - `https://api.example.com/users/123` — 某个具体用户\n\n2. **用 HTTP 方法表达操作意图**  \n   - `GET` — 获取\n   - `POST` — 创建\n   - `PUT` — 全量更新\n   - `PATCH` — 部分更新\n   - `DELETE` — 删除\n\n3. **无状态**  \n   每次请求必须自带所有必要信息（比如认证 token），服务器不依赖之前的请求上下文。\n\n4. **统一接口**  \n   不管什么资源，操作方式都一样，就是上面那几个 HTTP 方法 + URL，不用学新的。\n\n---\n\n### 举个例子\n\n| 想做什么 | HTTP 方法 | URL |\n|---------|-----------|-----|\n| 获取所有用户 | GET | `/users` |\n| 获取 ID 为 3 的用户 | GET | `/users/3` |\n| 创建一个新用户 | POST | `/users` |\n| 修改用户 3 的信息 | PUT | `/users/3` |\n| 删除用户 3 | DELETE | `/users/3` |\n\n你看，**URL 是名词（资源），HTTP 方法是动词（操作）**，这就是 REST 最直观的特点。\n\n---\n\n### 常见的数据格式\n\n请求和响应通常用 **JSON**，比如：\n\n```json\n{\n  \"id\": 3,\n  \"name\": \"张三\",\n  \"email\": \"zhangsan@example.com\"\n}\n```\n\n---\n\n### 一句话总结\n\nREST API 就是：**用 URL 定位资源，用 HTTP 方法操作资源，用 JSON 传输数据**。它简洁、通用，所以成了当今 Web 开发中最主流的接口设计方式。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 15843.477010726929,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-174",
+  "timestamp": "2026-04-29T15:05:35.461293",
+  "test_case_id": "ST-038",
+  "test_case_category": "ask_user",
+  "agent_trace": {
+    "input": "帮我创建一个任务",
+    "output": "",
+    "tool_calls": [
+      {
+        "tool": "ask_user",
+        "args": {
+          "question": "好的，想创建什么内容的任务？可以把任务标题和具体要求告诉我。"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 4000.101089477539,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

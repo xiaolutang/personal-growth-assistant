@@ -1,6 +1,7 @@
 """条目类型转换器 - 处理 DTO 与 Domain 模型之间的转换"""
+import json
 from datetime import datetime
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from app.models import Task
 from app.models.enums import Category, Priority, TaskStatus
@@ -93,8 +94,24 @@ class EntryMapper:
                 "time_spent": task.time_spent,
                 "parent_id": task.parent_id,
                 "file_path": task.file_path,
+                "type_history": task.type_history if task.type_history else [],
             }
         return cls.dict_to_response(task)
+
+    @classmethod
+    def _parse_type_history(cls, raw: Any) -> List[Dict[str, Any]]:
+        """解析 type_history 字段（兼容 JSON 字符串和列表）"""
+        if not raw:
+            return []
+        if isinstance(raw, list):
+            return raw
+        if isinstance(raw, str):
+            try:
+                parsed = json.loads(raw)
+                return parsed if isinstance(parsed, list) else []
+            except (json.JSONDecodeError, TypeError):
+                return []
+        return []
 
     @classmethod
     def dict_to_response(cls, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -125,4 +142,5 @@ class EntryMapper:
             "time_spent": data.get("time_spent"),
             "parent_id": data.get("parent_id"),
             "file_path": data.get("file_path", ""),
+            "type_history": cls._parse_type_history(data.get("type_history")),
         }

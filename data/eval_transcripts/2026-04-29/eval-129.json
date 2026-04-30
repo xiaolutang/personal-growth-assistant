@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-129",
+  "timestamp": "2026-04-29T14:38:47.475334",
+  "test_case_id": "ST-061",
+  "test_case_category": "boundary",
+  "agent_trace": {
+    "input": "12345",
+    "output": "你输入了 `12345`——看起来像是随手试了一下，或者想查某个编号的东西？\n\n如果是想查找或操作某个条目，可以告诉我具体想做什么，我来帮你处理。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 3969.555139541626,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

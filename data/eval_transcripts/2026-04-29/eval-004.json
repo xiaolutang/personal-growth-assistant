@@ -1,0 +1,39 @@
+{
+  "transcript_id": "eval-004",
+  "timestamp": "2026-04-29T13:39:25.390508",
+  "test_case_id": "ST-004",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "帮我删除那条不需要的笔记",
+    "output": "",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 10,
+          "query": "笔记"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "ask_user",
+        "args": {
+          "question": "你想删除的是哪条笔记？可以告诉我标题或大概内容吗？"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 7748.908996582031,
+    "iteration_count": 2
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

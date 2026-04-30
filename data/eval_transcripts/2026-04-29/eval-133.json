@@ -1,0 +1,37 @@
+{
+  "transcript_id": "eval-133",
+  "timestamp": "2026-04-29T14:40:11.169691",
+  "test_case_id": "ST-065",
+  "test_case_category": "directness",
+  "agent_trace": {
+    "input": "昨天完成了什么",
+    "output": "昨天（4月28日）的情况：\n\n- **完成任务数：0**，完成率 0%\n- 🔄 进行中：2 项\n- ⏳ 待开始：2 项\n- 📝 笔记：0 条\n\n整体来看昨天没有完成的任务，有 2 项还在进行中。需要我帮你看看那几项具体是什么吗？或者聊聊怎么推进？",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "daily",
+          "target_date": "2026-04-28"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 20053.449869155884,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {
+    "behavior_checks": {
+      "no_greeting": true,
+      "must_show_details": true,
+      "no_ask_to_search": true
+    }
+  }
+}

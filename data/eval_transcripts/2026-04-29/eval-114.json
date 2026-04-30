@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-114",
+  "timestamp": "2026-04-29T14:36:17.619591",
+  "test_case_id": "ST-046",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "你好，你是什么？",
+    "output": "我是「日知」，一个帮你管理个人成长的小助手。名字取自\"日知其所亡\"——每天知道自己不知道的东西。\n\n我可以帮你做这些事：\n\n- **记录想法和灵感**——冒出来的念头，随手记下来\n- **管理任务和项目**——创建、追踪、整理你要做的事\n- **回顾和反思**——日报、周报，看看自己这段时间做了什么\n- **搜索笔记**——找以前记过的东西\n\n你可以把我当一个不会嫌你烦的朋友，想聊什么就聊。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 6633.549928665161,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

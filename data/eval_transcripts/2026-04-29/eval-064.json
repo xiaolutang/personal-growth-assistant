@@ -1,0 +1,55 @@
+{
+  "transcript_id": "eval-064",
+  "timestamp": "2026-04-29T13:53:49.608416",
+  "test_case_id": "ST-064",
+  "test_case_category": "directness",
+  "agent_trace": {
+    "input": "今天有哪些事情",
+    "output": "根据今天的日报，整体情况如下：\n\n**📊 今日概览**\n- 任务：11 个（完成 0 / 进行中 2 / 待开始 9）\n- 笔记：4 篇（GraphQL、Docker 等技术内容）\n\n**⚠️ 现状提醒**\n今天有 9 个任务还处于「待开始」状态，没有一个完成。不过有 2 个已经在推进中了，先把这两个做下去是合理的。\n\n搜索没有命中具体的任务列表，可能是任务没有关联详细内容。如果你想看具体某个任务的详情，或者需要我帮你梳理一下优先级，随时说一声。\n\n**小建议**：9 个待办看着容易焦虑，不妨挑出 1-2 个最重要的先动手，动起来状态会跟着来。",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "daily",
+          "target_date": "2026-04-29"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 20,
+          "query": "2026-04-29 今天待办任务"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 20,
+          "query": "待办任务 planned today"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 17637.75086402893,
+    "iteration_count": 3
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {
+    "behavior_checks": {
+      "no_greeting": true,
+      "must_show_details": true,
+      "no_ask_to_search": true
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "transcript_id": "eval-080",
+  "timestamp": "2026-04-29T14:25:54.892982",
+  "test_case_id": "ST-012",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "我昨天写的那条笔记改一下标题",
+    "output": "搜索结果里没看到昨天（4月28日）创建的笔记条目。能告诉我你想改的是哪条笔记吗？或者我记得的这几条里有你要找的吗？\n\n搜到的条目有：\n1. **AI 应用开发转型**（项目）\n2. **灵感收集**（inbox）\n3. **个人成长助手开发**（项目）\n4. **项目清单**（项目）\n\n这些都不是笔记类型，也没有昨天创建的。你想改的那条笔记标题是什么，或者大概内容是关于什么的？",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "笔记 2026-04-28"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "笔记"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 21500.843048095703,
+    "iteration_count": 2
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

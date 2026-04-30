@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-286",
+  "timestamp": "2026-04-29T16:34:35.224464",
+  "test_case_id": "ST-014",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "查看 2024-01-15 的日报",
+    "output": "2024年1月15日的日报显示，这一天没有任何记录：\n\n- **任务**：0 个（无完成、无进行中、无待开始）\n- **笔记**：0 条\n- **完成率**：0%\n\n看起来那天没有记录任何内容。可能是个休息日，或者当时还没开始用这个工具做记录。需要查看其他日期的日报吗？",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "daily",
+          "target_date": "2024-01-15"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 23594.773054122925,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,58 @@
+{
+  "transcript_id": "eval-284",
+  "timestamp": "2026-04-29T16:34:02.809285",
+  "test_case_id": "ST-012",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "我昨天写的那条笔记改一下标题",
+    "output": "根据昨天的日报，4月28日你没有创建任何笔记，只有 4 条任务（其中 2 条进行中、2 条待开始）。\n\n你说的\"昨天写的那条笔记\"可能指的是其中某条任务，或者是更早的条目？能告诉我具体是哪条吗，或者想改成什么标题？",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 5,
+          "query": "昨天写的笔记"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 10,
+          "query": "笔记"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 10,
+          "query": "2026-04-28"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "daily",
+          "target_date": "2026-04-28"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 37156.20517730713,
+    "iteration_count": 4
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

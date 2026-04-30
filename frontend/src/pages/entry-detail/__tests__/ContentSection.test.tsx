@@ -311,6 +311,6 @@ describe("ContentSection - 预览模式引用展示", () => {
     const item = screen.getByText("引用笔记").closest("[class*='cursor-pointer']");
     expect(item).toBeTruthy();
     fireEvent.click(item!);
-    expect(mockNavigate).toHaveBeenCalledWith("/entry/note-1");
+    expect(mockNavigate).toHaveBeenCalledWith("/entries/note-1");
   });
 });

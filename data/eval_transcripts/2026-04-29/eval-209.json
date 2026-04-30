@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-209",
+  "timestamp": "2026-04-29T15:57:44.150359",
+  "test_case_id": "ST-005",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "查看条目 entry-12345 的详细内容",
+    "output": "没有找到这个条目，`entry-12345` 似乎不存在。可能的原因：\n\n- 条目 ID 有误，你可以核对一下\n- 该条目可能已经被删除了\n\n如果你记得条目的大致内容或关键词，我可以帮你搜索一下，看看能不能找到它。",
+    "tool_calls": [
+      {
+        "tool": "get_entry",
+        "args": {
+          "entry_id": "entry-12345"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 8744.195222854614,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

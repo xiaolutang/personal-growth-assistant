@@ -1,0 +1,37 @@
+{
+  "transcript_id": "eval-268",
+  "timestamp": "2026-04-29T16:12:07.021616",
+  "test_case_id": "ST-064",
+  "test_case_category": "directness",
+  "agent_trace": {
+    "input": "今天有哪些事情",
+    "output": "今天的情况一览：\n\n**任务（共 23 个）**\n- 🔵 进行中：12 个\n- ⏳ 待开始：11 个\n- ✅ 已完成：0 个\n\n**笔记：19 篇**\n\n---\n\n看起来今天的任务量不少，但目前还没有一个完成。记录了 19 篇笔记，学习的劲头很足。\n\n建议接下来先暂停新的知识输入，从那 12 个\"进行中\"的任务里挑一个最紧急的，专注把它做完。完成第一个之后，后面的节奏会顺畅很多。\n\n要不要我帮你看看具体有哪些任务？",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "daily",
+          "target_date": "2026-04-29"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 19020.2579498291,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {
+    "behavior_checks": {
+      "no_greeting": true,
+      "must_show_details": true,
+      "no_ask_to_search": true
+    }
+  }
+}

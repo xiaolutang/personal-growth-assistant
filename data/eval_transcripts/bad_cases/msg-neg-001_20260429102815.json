@@ -1,0 +1,11 @@
+{
+  "feedback_id": 1,
+  "message_id": "msg-neg-001",
+  "reason": "理解错了",
+  "detail": "Agent 把任务理解成了笔记",
+  "title": "Agent 理解错误",
+  "description": null,
+  "user_id": "test-user",
+  "created_at": "2026-04-29T10:28:15.820987+00:00",
+  "exported_at": "2026-04-29T10:28:15.821675+00:00"
+}

@@ -1,0 +1,36 @@
+{
+  "transcript_id": "eval-020",
+  "timestamp": "2026-04-29T13:42:53.903983",
+  "test_case_id": "ST-020",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "新建笔记：GraphQL 入门指南，内容写上 GraphQL 是一种 API 查询语言，标签加 graphql 和 api",
+    "output": "已创建笔记 **GraphQL 入门指南**，标签打了 `graphql` 和 `api`，随时可以继续补充内容。",
+    "tool_calls": [
+      {
+        "tool": "create_entry",
+        "args": {
+          "category": "note",
+          "content": "GraphQL 是一种 API 查询语言",
+          "tags": [
+            "graphql",
+            "api"
+          ],
+          "title": "GraphQL 入门指南"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 14991.712093353271,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

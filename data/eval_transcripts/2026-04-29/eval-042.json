@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-042",
+  "timestamp": "2026-04-29T13:50:00.557059",
+  "test_case_id": "ST-042",
+  "test_case_category": "ask_user",
+  "agent_trace": {
+    "input": "帮我改一下",
+    "output": "",
+    "tool_calls": [
+      {
+        "tool": "ask_user",
+        "args": {
+          "question": "你想修改哪个条目？请告诉我条目的标题或关键词，以及你想改什么内容（比如标题、内容、状态、优先级等）。"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 3799.4601726531982,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

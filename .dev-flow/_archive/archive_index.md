@@ -2,6 +2,17 @@
 
 ## 已完成需求包
 
+### R047: 任务/探索 Tab 边界重新划分
+
+- 状态: 已完成
+- 分支: `feat/R047-task-explore-reboundary`
+- 主题: 按"可行动性"重新划分 Tab — task/decision/project→任务页，inbox/note/reflection/question→探索页
+- 目录: `R047_task-explore-reboundary/`
+- 完成时间: 2026-04-30
+- 任务数: 13 (S01, B02, F03-F12, S13)
+- 决策来源: `_archive/R047_task-explore-reboundary/decisions/`
+- 验证: pytest 1431 + vitest 731 + build + codex_plugin 2轮 code-review + simplify 收敛
+
 ### R046: 聊天面板重构
 
 - 状态: 已完成

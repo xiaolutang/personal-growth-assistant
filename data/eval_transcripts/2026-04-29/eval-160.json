@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-160",
+  "timestamp": "2026-04-29T15:01:19.755688",
+  "test_case_id": "ST-024",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "获取 entry-test001 的详细信息",
+    "output": "没有找到 `entry-test001` 这个条目，它可能不存在或已被删除。\n\n你可以：\n- **检查一下 ID** 是否正确，比如有没有拼写错误\n- **用关键词搜索**，告诉我大概内容，我帮你找找看\n\n需要我帮你搜一下吗？",
+    "tool_calls": [
+      {
+        "tool": "get_entry",
+        "args": {
+          "entry_id": "entry-test001"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 4496.457815170288,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

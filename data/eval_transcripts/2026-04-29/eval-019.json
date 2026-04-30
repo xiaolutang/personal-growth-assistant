@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-019",
+  "timestamp": "2026-04-29T13:42:38.911863",
+  "test_case_id": "ST-019",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "搜索关于 kubernetes 的笔记，只返回 5 条",
+    "output": "没有找到关于 Kubernetes 的笔记。你的库目前还没有相关内容。\n\n要不要现在创建一条 Kubernetes 的笔记？告诉我你想记什么内容，我帮你建。",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 5,
+          "query": "kubernetes"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 9172.05023765564,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

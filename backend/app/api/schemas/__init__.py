@@ -2,6 +2,7 @@
 from app.api.schemas.entry import (
     EntryCreate,
     EntryUpdate,
+    ConvertRequest,
     EntryResponse,
     EntryListResponse,
     SearchResult,
@@ -37,6 +38,7 @@ from app.api.schemas.goal import (
 __all__ = [
     "EntryCreate",
     "EntryUpdate",
+    "ConvertRequest",
     "EntryResponse",
     "EntryListResponse",
     "SearchResult",

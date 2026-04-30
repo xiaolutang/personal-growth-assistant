@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-014",
+  "timestamp": "2026-04-29T13:41:48.065678",
+  "test_case_id": "ST-014",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "查看 2024-01-15 的日报",
+    "output": "2024年1月15日的日报：\n\n- **任务完成数**：0 / 0\n- **笔记数**：0\n- **完成率**：0%\n\n这一天没有任何记录，看起来是完全放空的一天。偶尔给大脑彻底休息挺好的，但如果需要的话，可以回顾一下那天实际做了什么，补几条记录也有助于后续回顾。",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "daily",
+          "target_date": "2024-01-15"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 27498.054027557373,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

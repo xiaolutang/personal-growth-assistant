@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-247",
+  "timestamp": "2026-04-29T16:09:14.904997",
+  "test_case_id": "ST-043",
+  "test_case_category": "ask_user",
+  "agent_trace": {
+    "input": "我想创建一个新条目",
+    "output": "",
+    "tool_calls": [
+      {
+        "tool": "ask_user",
+        "args": {
+          "question": "好的，想创建什么内容的条目？可以告诉我类型（任务/笔记/灵感/项目等）和具体内容吗？"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 6233.839988708496,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

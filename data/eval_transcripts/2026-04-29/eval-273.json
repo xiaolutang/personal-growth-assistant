@@ -1,0 +1,36 @@
+{
+  "transcript_id": "eval-273",
+  "timestamp": "2026-04-29T16:30:32.050445",
+  "test_case_id": "ST-001",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "帮我记录一个想法：今天学了 Python 装饰器",
+    "output": "已经帮你记下了 📝 放在了收件箱里，方便你之后再整理。\n\n装饰器确实是 Python 里一个比较巧妙的概念，本质就是一个接受函数并返回函数的高阶函数。刚开始学可能会觉得绕，但用多了就会发现它的优雅。如果有需要，随时可以帮你把这个想法整理成更详细的笔记。",
+    "tool_calls": [
+      {
+        "tool": "create_entry",
+        "args": {
+          "category": "inbox",
+          "content": "今天学了 Python 装饰器",
+          "tags": [
+            "Python",
+            "学习"
+          ],
+          "title": "Python 装饰器学习"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 11147.46904373169,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

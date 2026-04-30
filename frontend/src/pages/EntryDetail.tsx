@@ -24,6 +24,8 @@ import { ContentSection } from "./entry-detail/ContentSection";
 import { AiSummaryCard } from "./entry-detail/AiSummaryCard";
 import { KnowledgeContextCard } from "./entry-detail/KnowledgeContextCard";
 import { RelatedEntriesCard } from "./entry-detail/RelatedEntriesCard";
+import { TypeActionBar } from "./entry-detail/TypeActionBar";
+import { TypeHistoryTimeline } from "./entry-detail/TypeHistoryTimeline";
 
 export function EntryDetail() {
   const navigate = useNavigate();
@@ -147,6 +149,20 @@ export function EntryDetail() {
 
         <CategoryInfoCard category={entry.category} status={entry.status} />
 
+        {/* F11: 类型感知操作栏（task/inbox/question/reflection） */}
+        {!editing.isEditing && (
+          <TypeActionBar
+            entry={entry}
+            parentEntry={data.parentEntry}
+            onReload={data.reloadEntry}
+          />
+        )}
+
+        {/* F11: 类型转换历史时间线 */}
+        {entry.type_history && entry.type_history.length > 0 && (
+          <TypeHistoryTimeline typeHistory={entry.type_history} />
+        )}
+
         <ProjectSection
           category={entry.category}
           projectProgress={data.projectProgress}
@@ -221,7 +237,7 @@ export function EntryDetail() {
                   <div
                     key={bl.id}
                     className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => navigate(`/entry/${bl.id}`)}
+                    onClick={() => navigate(`/entries/${bl.id}`)}
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">{bl.title}</span>

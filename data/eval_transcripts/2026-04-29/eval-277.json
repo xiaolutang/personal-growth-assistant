@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-277",
+  "timestamp": "2026-04-29T16:31:30.035107",
+  "test_case_id": "ST-005",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "查看条目 entry-12345 的详细内容",
+    "output": "没有找到 `entry-12345` 这个条目，它可能已经被删除，或者 ID 有误。\n\n你可以：\n- **检查一下 ID** 是否正确，再试一次\n- 或者告诉我关键词，我帮你**搜索**相关的条目",
+    "tool_calls": [
+      {
+        "tool": "get_entry",
+        "args": {
+          "entry_id": "entry-12345"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 18482.779026031494,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

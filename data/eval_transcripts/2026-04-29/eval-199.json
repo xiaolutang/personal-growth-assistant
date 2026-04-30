@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-199",
+  "timestamp": "2026-04-29T15:09:23.613133",
+  "test_case_id": "ST-063",
+  "test_case_category": "boundary",
+  "agent_trace": {
+    "input": "搜索",
+    "output": "想搜索什么内容？告诉我关键词，我帮你找。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 5093.458890914917,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-253",
+  "timestamp": "2026-04-29T16:10:10.925040",
+  "test_case_id": "ST-049",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "你能帮我做什么？",
+    "output": "我是「日知」，可以帮你管理个人成长相关的事情。具体来说：\n\n**📝 记录与管理**\n- 创建任务、笔记、灵感、项目等条目\n- 更新、删除已有条目\n- 搜索和查看之前记录的内容\n\n**📅 规划与回顾**\n- 帮你整理待办事项、设定优先级和计划日期\n- 生成日报或周报，回顾你的成长进展\n\n**💡 其他**\n- 需要建议或规划时，帮你梳理思路、给出可执行的步骤\n- 想反思或倾诉时，陪你聊、帮你看清自己的想法\n\n简单来说，想到什么想记的、想查的、想聊的，直接说就行。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 8874.232769012451,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

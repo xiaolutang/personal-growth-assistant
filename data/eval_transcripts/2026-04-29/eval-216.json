@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-216",
+  "timestamp": "2026-04-29T15:59:39.063191",
+  "test_case_id": "ST-012",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "我昨天写的那条笔记改一下标题",
+    "output": "没搜到相关内容。我不太确定你指的是哪条笔记，能告诉我那条笔记大概写了什么，或者原标题是什么吗？这样我能帮你找到它。",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "昨天笔记"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 8807.566165924072,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

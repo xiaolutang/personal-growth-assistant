@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-111",
+  "timestamp": "2026-04-29T14:35:53.749940",
+  "test_case_id": "ST-043",
+  "test_case_category": "ask_user",
+  "agent_trace": {
+    "input": "我想创建一个新条目",
+    "output": "好的，我来帮你创建。需要先了解几个信息：\n\n1. **类型**是什么？比如：任务、笔记、灵感、项目、待办等\n2. **标题**是什么？\n\n其他信息（内容、优先级、计划日期等）你可以视情况补充，不填也没关系。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 4988.174915313721,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

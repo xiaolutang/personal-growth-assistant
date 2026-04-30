@@ -1,0 +1,36 @@
+{
+  "transcript_id": "eval-069",
+  "timestamp": "2026-04-29T14:22:18.663598",
+  "test_case_id": "ST-001",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "帮我记录一个想法：今天学了 Python 装饰器",
+    "output": "已经记下了 📝\n\n- **标题**：学 Python 装饰器\n- **分类**：收件箱（inbox）\n\n装饰器是个好东西，刚开始学可能会觉得绕，但用多了会发现它真的很优雅。有需要整理成笔记或者继续深入的话随时说。",
+    "tool_calls": [
+      {
+        "tool": "create_entry",
+        "args": {
+          "category": "inbox",
+          "content": "今天学了 Python 装饰器",
+          "tags": [
+            "Python",
+            "学习"
+          ],
+          "title": "学 Python 装饰器"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 15868.597030639648,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

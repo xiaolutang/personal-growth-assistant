@@ -1,0 +1,38 @@
+{
+  "transcript_id": "eval-300",
+  "timestamp": "2026-04-29T16:38:40.480483",
+  "test_case_id": "ST-028",
+  "test_case_category": "multi_step",
+  "agent_trace": {
+    "input": "先搜索一下关于设计模式的内容，然后帮我创建一条笔记记录今天的设计模式学习心得",
+    "output": "",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "设计模式"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "ask_user",
+        "args": {
+          "question": "你今天学了哪些设计模式？有什么心得体会想记录下来的？简单说说要点就行，我帮你整理。"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 7268.394947052002,
+    "iteration_count": 2
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

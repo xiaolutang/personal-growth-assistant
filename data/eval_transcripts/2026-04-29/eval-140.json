@@ -1,0 +1,30 @@
+{
+  "transcript_id": "eval-140",
+  "timestamp": "2026-04-29T14:56:44.505028",
+  "test_case_id": "ST-004",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "帮我删除那条不需要的笔记",
+    "output": "我搜索了一下，没有找到标题或内容包含\"不需要\"的笔记。你记得那条笔记大概写了什么吗？给我个关键词我帮你找找。",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "不需要的笔记"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 8951.277732849121,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

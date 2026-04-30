@@ -124,10 +124,11 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
       setIsSearching(true);
       setSearchError(null);
       try {
+        // F12: 搜索模式不传 filter_type，让后端返回全类型结果
         const result = await searchEntries(
           searchQuery.trim() || "",
           20,
-          activeTab || undefined, // Tab 过滤透传到后端 filter_type
+          undefined,
           searchFilters,
         );
         if (!cancelled) {
@@ -178,9 +179,11 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
 
   const filteredTasks = useMemo(() => {
     if (searchResults !== null) {
-      // 搜索模式：跨类型混合展示，仅过滤 Explore 类别边界（排除 task 等）
-      return filterByCategory(searchResults, "");
+      // F06: 搜索模式 — 全类型混合展示（不再过滤 task/project/decision）
+      // task/decision/project 在搜索结果中可点击跳转到任务页
+      return searchResults;
     }
+    // 非搜索模式：仅展示 EXPLORE_CATEGORIES 中的类型
     return filterByCategory(entries, activeTab);
   }, [entries, searchResults, activeTab]);
 
@@ -214,10 +217,11 @@ export function useExploreSearch(searchHistoryRefresh: () => void): UseExploreSe
     setSearchError(null);
     setShowSuggestions(false);
     try {
+      // F12: 搜索模式不传 filter_type，让后端返回全类型结果
       const result = await searchEntries(
         searchQuery.trim() || "",
         20,
-        activeTab || undefined, // Tab 过滤透传到后端 filter_type
+        undefined,
         searchFilters,
       );
       const mapped: Task[] = (result.results ?? []).map(normalizeSearchResult);

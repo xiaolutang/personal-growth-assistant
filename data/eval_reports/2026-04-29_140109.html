@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eval Report - 2026-04-29T14:01:09.055150</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1f2937; background: #f9fafb; line-height: 1.6; padding: 2rem;
+  }
+  a { color: #6366F1; }
+
+  /* ── Layout ── */
+  .container { max-width: 1100px; margin: 0 auto; }
+  .header {
+    text-align: center; margin-bottom: 2rem; padding-bottom: 1.5rem;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  .header h1 { color: #6366F1; font-size: 1.75rem; margin-bottom: 0.25rem; }
+  .header .subtitle { color: #6b7280; font-size: 0.9rem; }
+
+  /* ── Section Card ── */
+  .section {
+    background: #fff; border-radius: 12px; padding: 1.5rem;
+    margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .section h2 {
+    font-size: 1.15rem; color: #6366F1; margin-bottom: 1rem;
+    padding-bottom: 0.5rem; border-bottom: 1px solid #e5e7eb;
+  }
+  .section h3 { font-size: 1rem; color: #374151; margin: 0.75rem 0 0.5rem; }
+
+  /* ── Stat Cards (Section 2) ── */
+  .dashboard { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
+  .dashboard .chart-wrap { flex: 0 0 220px; height: 220px; }
+  .dashboard .cards { flex: 1; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+  .stat-card {
+    flex: 1 1 140px; background: #f0f0ff; border-radius: 8px; padding: 0.75rem 1rem;
+    text-align: center;
+  }
+  .stat-card .label { font-size: 0.8rem; color: #6b7280; }
+  .stat-card .value { font-size: 1.5rem; font-weight: 700; }
+  .stat-card.pass .value { color: #059669; }
+  .stat-card.fail .value { color: #dc2626; }
+  .stat-card.neutral .value { color: #6366F1; }
+
+  /* ── Chart Containers ── */
+  .chart-container { position: relative; width: 100%; max-width: 700px; margin: 0 auto; }
+  .chart-container.trend { max-width: 100%; height: 280px; }
+  .chart-placeholder {
+    text-align: center; padding: 2rem; color: #9ca3af;
+    border: 1px dashed #d1d5db; border-radius: 8px;
+  }
+
+  /* ── Tables ── */
+  table { border-collapse: collapse; width: 100%; margin: 0.5rem 0; font-size: 0.875rem; }
+  th, td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; }
+  th { background: #f3f4f6; color: #374151; font-weight: 600; }
+  td { vertical-align: top; }
+  tr:hover td { background: #f9fafb; }
+  .pass-text { color: #059669; font-weight: 600; }
+  .fail-text { color: #dc2626; font-weight: 600; }
+
+  /* ── Collapsible (Section 4) ── */
+  details { margin-bottom: 0.5rem; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+  summary {
+    cursor: pointer; padding: 0.75rem 1rem; background: #fef2f2;
+    font-weight: 600; color: #991b1b; list-style: none;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  summary::after { content: "\25BC"; font-size: 0.75rem; transition: transform 0.2s; }
+  details[open] summary::after { transform: rotate(180deg); }
+  details .detail-body { padding: 1rem; background: #fff; }
+  details .detail-body .field { margin-bottom: 0.5rem; }
+  details .detail-body .field-label { font-weight: 600; color: #4b5563; font-size: 0.8rem; text-transform: uppercase; }
+  details .detail-body .field-value { background: #f9fafb; padding: 0.5rem; border-radius: 4px; margin-top: 0.25rem; white-space: pre-wrap; word-break: break-word; }
+
+  /* ── Empty State ── */
+  .empty-state { text-align: center; padding: 1.5rem; color: #6b7280; font-style: italic; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+  .badge-pass { background: #d1fae5; color: #065f46; }
+  .badge-fail { background: #fee2e2; color: #991b1b; }
+
+  /* ── Environment Info List ── */
+  .env-list { list-style: none; }
+  .env-list li { padding: 0.25rem 0; border-bottom: 1px solid #f3f4f6; }
+  .env-list li:last-child { border-bottom: none; }
+  .env-key { font-weight: 600; color: #4b5563; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    body { padding: 1rem; }
+    .dashboard { flex-direction: column; }
+    .dashboard .chart-wrap { flex: none; width: 100%; height: 200px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <h1>AI Agent Evaluation Report</h1>
+    <div class="subtitle">Generated at 2026-04-29T14:01:09.055150 | Mode: all</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 1: Assessment Methodology                         -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-methodology">
+    <h2>1. Assessment Methodology</h2>
+    <h3>Dataset Composition</h3>
+    <p>The evaluation dataset contains test cases across multiple intent categories, designed to verify that the AI Agent correctly selects and invokes tools based on user input.</p>
+    <table>
+      <tr><th>Metric</th><th>Description</th></tr>
+      <tr><td>Dataset Mode</td><td>all</td></tr>
+      <tr><td>Total Cases Evaluated</td><td>92</td></tr>
+      <tr><td>Positive Cases</td><td>68</td></tr>
+      <tr><td>Negative Cases</td><td>24</td></tr>
+    </table>
+
+    <h3>Classification Dimensions</h3>
+    <p>Each test case is classified into a category (e.g., tool_selection, no_tool, boundary). Categories map to common user intent patterns the Agent should handle.</p>
+
+    <h3>Pass/Fail Criteria</h3>
+    <ul>
+      <li><strong>Positive case:</strong> PASS if <code>actual_tools</code> matches <code>expected_tools</code>; FAIL otherwise.</li>
+      <li><strong>Negative case:</strong> PASS if Agent does NOT call any tool in <code>should_not_call</code>; VIOLATED otherwise.</li>
+    </ul>
+
+    <h3>Environment</h3>
+    <ul class="env-list">
+      <li><span class="env-key">git_commit</span>: 82ebebe</li>
+      <li><span class="env-key">model</span>: unknown</li>
+    </ul>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 2: Overview Dashboard (Donut Chart + Stat Cards)  -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-overview">
+    <h2>2. Overview Dashboard</h2>
+    <div class="dashboard">
+      <div class="chart-wrap">
+        <canvas id="overviewChart"></canvas>
+        <div class="chart-placeholder" id="overviewChartFallback" style="display:none;">
+          Chart requires internet (Chart.js CDN).<br>Pass Rate: 77.9%
+        </div>
+      </div>
+      <div class="cards">
+        <div class="stat-card fail">
+          <div class="label">Pass Rate</div>
+          <div class="value">77.9%</div>
+        </div>
+        <div class="stat-card pass">
+          <div class="label">Passed</div>
+          <div class="value">53</div>
+        </div>
+        <div class="stat-card fail">
+          <div class="label">Failed</div>
+          <div class="value">15</div>
+        </div>
+        <div class="stat-card neutral">
+          <div class="label">Total Positive</div>
+          <div class="value">68</div>
+        </div>
+        <div class="stat-card neutral">
+          <div class="label">Total Elapsed</div>
+          <div class="value">1340.95s</div>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 3: Category Statistics (Bar Chart)                -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-categories">
+    <h2>3. Category Statistics</h2>
+    <table><tr><th>Category</th><th>Total</th><th>Passed</th><th>Pass Rate</th></tr><tr><td>ask_user</td><td>8</td><td>2</td><td class="fail-text">25.0%</td></tr><tr><td>boundary</td><td>8</td><td>2</td><td class="fail-text">25.0%</td></tr><tr><td>directness</td><td>5</td><td>5</td><td class="pass-text">100.0%</td></tr><tr><td>multi_step</td><td>10</td><td>10</td><td class="pass-text">100.0%</td></tr><tr><td>param_extraction</td><td>12</td><td>12</td><td class="pass-text">100.0%</td></tr><tr><td>pure_chat</td><td>10</td><td>10</td><td class="pass-text">100.0%</td></tr><tr><td>tool_selection</td><td>15</td><td>12</td><td class="pass-text">80.0%</td></tr></table>
+    <div class="chart-container">
+      <canvas id="categoryChart"></canvas>
+      <div class="chart-placeholder" id="categoryChartFallback" style="display:none;">
+        Category chart requires internet.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 4: Failed Cases Detail (Collapsible)              -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-failed-cases">
+    <h2>4. Failed Cases Detail</h2>
+    <details><summary><span>#1 帮我删除那条不需要的笔记</span> <span class="badge badge-fail">FAIL</span></summary><div class="detail-body"><div class="field"><div class="field-label">Input</div><div class="field-value">帮我删除那条不需要的笔记</div></div><div class="field"><div class="field-label">Expected Tools</div><div class="field-value">[&#x27;delete_entry&#x27;]</div></div><div class="field"><div class="field-label">Actual Tools</div><div class="field-value">[&#x27;search_entries&#x27;, &#x27;ask_user&#x27;]</div></div><div class="field"><div class="field-label">Agent Reply</div><div class="field-value"></div></div></div></details><details><summary><span>#2 更新任务状态为已完成</span> <span class="badge badge-fail">FAIL</span></summary><div class="detail-body"><div class="field"><div class="field-label">Input</div><div class="field-value">更新任务状态为已完成</div></div><div class="field"><div class="field-label">Expected Tools</div><div class="field-value">[&#x27;update_entry&#x27;]</div></div><div class="field"><div class="field-label">Actual Tools</div><div class="field-value">[&#x27;search_entries&#x27;, &#x27;search_entries&#x27;]</div></div><div class="field"><div class="field-label">Agent Reply</div><div class="field-value">你目前有几个条目，但没有明确状态为&quot;进行中&quot;的独立任务。能告诉我你想把哪个任务标记为已完成吗？
+
+以下是你现有的条目列表：
+
+1. **灵感收集** (inbox)
+2. **Day 2：工作原则与Prompt优化** (note)
+3. **项目清单** (project)
+4. **个人成长助手开发** (project)
+5. **AI 应用开发转型** (project)
+6. **学习笔记与想法** (note)
+
+你想更新哪一个的状态为已完成？或者是指某个具体的子任务？</div></div></div></details><details><summary><span>#3 我昨天写的那条笔记改一下标题</span> <span class="badge badge-fail">FAIL</span></summary><div class="detail-body"><div class="field"><div class="field-label">Input</div><div class="field-value">我昨天写的那条笔记改一下标题</div></div><div class="field"><div class="field-label">Expected Tools</div><div class="field-value">[&#x27;update_entry&#x27;]</div></div><div class="field"><div class="field-label">Actual Tools</div><div class="field-value">[&#x27;search_entries&#x27;, &#x27;get_review_summary&#x27;, &#x27;search_entries&#x27;]</div></div><div class="field"><div class="field-label">Agent Reply</div><div class="field-value">搜索结果里没有找到分类为「笔记」的条目。你说的「昨天写的那条笔记」具体是哪一条？能告诉我更多信息吗，比如：
+
+- 标题大概是什么内容？
+- 或者是哪个分类下的？（任务、灵感、项目等）</div></div></div></details><details><summary><span>#4 帮我创建一个任务</span> <span class="badge badge-fail">FAIL</span></summary><div class="detail-body"><div class="field"><div class="field-label">Input</div><div class="field-value">帮我创建一个任务</div></div><div class="field"><div class="field-label">Expected Tools</div><div class="field-value">[&#x27;ask_user&#x27;]</div></div><div class="field"><div class="field-label">Actual Tools</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">Agent Reply</div><div class="field-value">好的，没问题！请告诉我：
+
+1. **任务标题**是什么？
+2. 有没有其他补充信息，比如：
+   - 计划完成日期？
+   - 优先级（高/中/低）？
+   - 具体内容描述？
+   - 标签？
+
+至少告诉我标题就行，其他看你需要。</div></div></div></details><details><summary><span>#5 删除一条笔记</span> <span class="badge badge-fail">FAIL</span></summary><div class="detail-body"><div class="field"><div class="field-label">Input</div><div class="field-value">删除一条笔记</div></div><div class="field"><div class="field-label">Expected Tools</div><div class="field-value">[&#x27;ask_user&#x27;]</div></div><div class="field"><div class="field-label">Actual Tools</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">Agent Reply</div><div class="field-value">你想删除哪条笔记？能不能告诉我它的标题或者关键词，我帮你找一下。</div></div></div></details><details><summary><span>#6 更新一下那个条目</span> <span class="badge badge-fail">FAIL</span></summary><div class="detail-body"><div class="field"><div class="field-label">Input</div><div class="field-value">更新一下那个条目</div></div><div class="field"><div class="field-label">Expected Tools</div><div class="field-value">[&#x27;ask_user&#x27;]</div></div><div class="field"><div class="field-label">Actual Tools</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">Agent Reply</div><div class="field-value">你想更新哪个条目？能给我一些线索吗？比如关键词或者条目的大概内容，我帮你找一下。
+
+另外，你想更新什么内容呢？比如标题、内容、状态、优先级？</div></div></div></details><details><summary><span>#7 搜索笔记</span> <span class="badge badge-fail">FAIL</span></summary><div class="detail-body"><div class="field"><div class="field-label">Input</div><div class="field-value">搜索笔记</div></div><div class="field"><div class="field-label">Expected Tools</div><div class="field-value">[&#x27;ask_user&#x27;]</div></div><div class="field"><div class="field-label">Actual Tools</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">Agent Reply</div><div class="field-value">我来帮你搜索笔记。不过你还没告诉我要搜什么关键词，能告诉我你想查找哪方面的笔记吗？</div></div></div></details><details><summary><span>#8 我想创建一个新条目</span> <span class="badge badge-fail">FAIL</span></summary><div class="detail-body"><div class="field"><div class="field-label">Input</div><div class="field-value">我想创建一个新条目</div></div><div class="field"><div class="field-label">Expected Tools</div><div class="field-value">[&#x27;ask_user&#x27;]</div></div><div class="field"><div class="field-label">Actual Tools</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">Agent Reply</div><div class="field-value">好的，创建条目需要一些基本信息。至少告诉我：
+
+1. **分类** — 你想创建什么类型的条目？比如：
+   - `project` 项目
+   - `task` 任务
+   - `note` 笔记
+   - `inbox` 灵感/收件箱
+   - `decision` 决策
+   - `reflection` 反思
+   - `question` 问题
+
+2. **标题** — 这个条目叫什么？
+
+你也可以一并补充其他信息，比如内容、优先级、计划日期、标签等，不填也没关系，之后可以再改。</div></div></div></details><details><summary><span>#9 查看某个条目</span> <span class="badge badge-fail">FAIL</span></summary><div class="detail-body"><div class="field"><div class="field-label">Input</div><div class="field-value">查看某个条目</div></div><div class="field"><div class="field-label">Expected Tools</div><div class="field-value">[&#x27;ask_user&#x27;]</div></div><div class="field"><div class="field-label">Actual Tools</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">Agent Reply</div><div class="field-value">我需要知道你想查看哪个条目。你能提供条目的 ID 吗？或者你可以告诉我关键词，我帮你搜索一下。</div></div></div></details><details><summary><span>#10 </span> <span class="badge badge-fail">FAIL</span></summary><div class="detail-body"><div class="field"><div class="field-label">Input</div><div class="field-value"></div></div><div class="field"><div class="field-label">Expected Tools</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">Actual Tools</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">Agent Reply</div><div class="field-value"></div></div></div></details><details><summary><span>#11    </span> <span class="badge badge-fail">FAIL</span></summary><div class="detail-body"><div class="field"><div class="field-label">Input</div><div class="field-value">   </div></div><div class="field"><div class="field-label">Expected Tools</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">Actual Tools</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">Agent Reply</div><div class="field-value">抱歉，处理时遇到了问题：Error code: 400 - {&#x27;error&#x27;: {&#x27;message&#x27;: &#x27;未正常接收到prompt参数。&#x27;, &#x27;type&#x27;: &#x27;upstream_error&#x27;, &#x27;param&#x27;: &#x27;&#x27;, &#x27;code&#x27;: &#x27;1213&#x27;}}。请稍后再试。</div></div></div></details><details><summary><span>#12 帮我记录一条想法但是不告诉我内容</span> <span class="badge badge-fail">FAIL</span></summary><div class="detail-body"><div class="field"><div class="field-label">Input</div><div class="field-value">帮我记录一条想法但是不告诉我内容</div></div><div class="field"><div class="field-label">Expected Tools</div><div class="field-value">[&#x27;ask_user&#x27;]</div></div><div class="field"><div class="field-label">Actual Tools</div><div class="field-value">[&#x27;create_entry&#x27;]</div></div><div class="field"><div class="field-label">Agent Reply</div><div class="field-value">已经帮你创建了一条空的收件箱条目（ID: `inbox-8cce6035`），标题是「一条想法（待补充）」。
+
+等你准备好了，随时可以告诉我具体内容，我帮你补上。</div></div></div></details><details><summary><span>#13 帮我创建一条笔记同时删除一条笔记同时更新一条笔记</span> <span class="badge badge-fail">FAIL</span></summary><div class="detail-body"><div class="field"><div class="field-label">Input</div><div class="field-value">帮我创建一条笔记同时删除一条笔记同时更新一条笔记</div></div><div class="field"><div class="field-label">Expected Tools</div><div class="field-value">[&#x27;create_entry&#x27;]</div></div><div class="field"><div class="field-label">Actual Tools</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">Agent Reply</div><div class="field-value">我需要更多信息才能帮你完成这三个操作。请分别告诉我：
+
+1. **创建笔记**：标题是什么？内容呢？
+2. **删除笔记**：要删除哪条笔记？（可以告诉我标题或关键词，我来搜一下）
+3. **更新笔记**：要更新哪条笔记？改什么内容？
+
+你把这三个信息给我，我一次性帮你搞定。</div></div></div></details><details><summary><span>#14 ajsdfhkajsdfhkajsdhfkjahsdkjfhaskdjfh</span> <span class="badge badge-fail">FAIL</span></summary><div class="detail-body"><div class="field"><div class="field-label">Input</div><div class="field-value">ajsdfhkajsdfhkajsdhfkjahsdkjfhaskdjfh</div></div><div class="field"><div class="field-label">Expected Tools</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">Actual Tools</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">Agent Reply</div><div class="field-value">看起来你可能是随手敲了一串键盘？😄
+
+有什么想聊的或者需要帮忙的，随时说。</div></div></div></details><details><summary><span>#15 12345</span> <span class="badge badge-fail">FAIL</span></summary><div class="detail-body"><div class="field"><div class="field-label">Input</div><div class="field-value">12345</div></div><div class="field"><div class="field-label">Expected Tools</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">Actual Tools</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">Agent Reply</div><div class="field-value">看起来你输入了&quot;12345&quot;——不太确定你的意思。你是想：
+
+- 查看某个条目的详情（比如 ID 为 12345 的条目）？
+- 还是随手试试，有什么我能帮你的？
+
+可以告诉我你想做什么，我来帮你 😊</div></div></div></details>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 5: Negative Violations                            -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-negative-violations">
+    <h2>5. Negative Violations</h2>
+    <p>Violation Rate: <strong>0.0%</strong> (0 / 24 negative cases)</p><div class="empty-state">No violations detected.</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 6: History Trend (Line Chart)                     -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-history-trend">
+    <h2>6. History Trend</h2>
+    <div class="empty-state">First run — no historical data yet.</div>
+    <div class="chart-container trend">
+      <canvas id="trendChart"></canvas>
+      <div class="chart-placeholder" id="trendChartFallback" style="display:none;">
+        Trend chart requires internet.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 7: Efficiency Metrics                             -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-efficiency">
+    <h2>7. Efficiency Metrics</h2>
+    <table>
+      <tr><th>Metric</th><th>Value</th></tr>
+      <tr><td>Total Cases</td><td>92</td></tr>
+      <tr><td>Total Elapsed</td><td>1340.95s</td></tr>
+      <tr><td>Average Elapsed</td><td>14.58s</td></tr>
+      <tr><td>Median Elapsed</td><td>11.00s</td></tr>
+    </table>
+    <h3>Tool Call Count Distribution (Failed/Violated Cases)</h3><table><tr><th>Tool Calls</th><th>Count</th></tr><tr><td>0 tool(s) called</td><td>11</td></tr><tr><td>1 tool(s) called</td><td>1</td></tr><tr><td>2 tool(s) called</td><td>2</td></tr><tr><td>3 tool(s) called</td><td>1</td></tr></table>
+  </div>
+
+</div>
+
+<!-- ── Chart.js CDN ── -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function() {
+  /* ── Embedded report data ── */
+  var RD = {
+  "eval_time": "2026-04-29T14:01:09.055150",
+  "dataset_mode": "all",
+  "pass_rate": 0.7794,
+  "total_positive": 68,
+  "total_passed": 53,
+  "category_stats": {
+    "tool_selection": {
+      "total": 15,
+      "passed": 12,
+      "pass_rate": 0.8
+    },
+    "param_extraction": {
+      "total": 12,
+      "passed": 12,
+      "pass_rate": 1.0
+    },
+    "multi_step": {
+      "total": 10,
+      "passed": 10,
+      "pass_rate": 1.0
+    },
+    "ask_user": {
+      "total": 8,
+      "passed": 2,
+      "pass_rate": 0.25
+    },
+    "pure_chat": {
+      "total": 10,
+      "passed": 10,
+      "pass_rate": 1.0
+    },
+    "boundary": {
+      "total": 8,
+      "passed": 2,
+      "pass_rate": 0.25
+    },
+    "directness": {
+      "total": 5,
+      "passed": 5,
+      "pass_rate": 1.0
+    }
+  },
+  "failed_cases": [
+    {
+      "input": "帮我删除那条不需要的笔记",
+      "expected_tools": [
+        "delete_entry"
+      ],
+      "actual_tools": [
+        "search_entries",
+        "ask_user"
+      ],
+      "agent_reply": "",
+      "passed": false,
+      "category": "tool_selection",
+      "elapsed_seconds": 7.7489
+    },
+    {
+      "input": "更新任务状态为已完成",
+      "expected_tools": [
+        "update_entry"
+      ],
+      "actual_tools": [
+        "search_entries",
+        "search_entries"
+      ],
+      "agent_reply": "你目前有几个条目，但没有明确状态为\"进行中\"的独立任务。能告诉我你想把哪个任务标记为已完成吗？\n\n以下是你现有的条目列表：\n\n1. **灵感收集** (inbox)\n2. **Day 2：工作原则与Prompt优化** (note)\n3. **项目清单** (project)\n4. **个人成长助手开发** (project)\n5. **AI 应用开发转型** (project)\n6. **学习笔记与想法** (note)\n\n你想更新哪一个的状态为已完成？或者是指某个具体的子任务？",
+      "passed": false,
+      "category": "tool_selection",
+      "elapsed_seconds": 11.3803
+    },
+    {
+      "input": "我昨天写的那条笔记改一下标题",
+      "expected_tools": [
+        "update_entry"
+      ],
+      "actual_tools": [
+        "search_entries",
+        "get_review_summary",
+        "search_entries"
+      ],
+      "agent_reply": "搜索结果里没有找到分类为「笔记」的条目。你说的「昨天写的那条笔记」具体是哪一条？能告诉我更多信息吗，比如：\n\n- 标题大概是什么内容？\n- 或者是哪个分类下的？（任务、灵感、项目等）",
+      "passed": false,
+      "category": "tool_selection",
+      "elapsed_seconds": 13.9152
+    },
+    {
+      "input": "帮我创建一个任务",
+      "expected_tools": [
+        "ask_user"
+      ],
+      "actual_tools": [],
+      "agent_reply": "好的，没问题！请告诉我：\n\n1. **任务标题**是什么？\n2. 有没有其他补充信息，比如：\n   - 计划完成日期？\n   - 优先级（高/中/低）？\n   - 具体内容描述？\n   - 标签？\n\n至少告诉我标题就行，其他看你需要。",
+      "passed": false,
+      "category": "ask_user",
+      "elapsed_seconds": 4.0836
+    },
+    {
+      "input": "删除一条笔记",
+      "expected_tools": [
+        "ask_user"
+      ],
+      "actual_tools": [],
+      "agent_reply": "你想删除哪条笔记？能不能告诉我它的标题或者关键词，我帮你找一下。",
+      "passed": false,
+      "category": "ask_user",
+      "elapsed_seconds": 54.9695
+    },
+    {
+      "input": "更新一下那个条目",
+      "expected_tools": [
+        "ask_user"
+      ],
+      "actual_tools": [],
+      "agent_reply": "你想更新哪个条目？能给我一些线索吗？比如关键词或者条目的大概内容，我帮你找一下。\n\n另外，你想更新什么内容呢？比如标题、内容、状态、优先级？",
+      "passed": false,
+      "category": "ask_user",
+      "elapsed_seconds": 4.4455
+    },
+    {
+      "input": "搜索笔记",
+      "expected_tools": [
+        "ask_user"
+      ],
+      "actual_tools": [],
+      "agent_reply": "我来帮你搜索笔记。不过你还没告诉我要搜什么关键词，能告诉我你想查找哪方面的笔记吗？",
+      "passed": false,
+      "category": "ask_user",
+      "elapsed_seconds": 2.795
+    },
+    {
+      "input": "我想创建一个新条目",
+      "expected_tools": [
+        "ask_user"
+      ],
+      "actual_tools": [],
+      "agent_reply": "好的，创建条目需要一些基本信息。至少告诉我：\n\n1. **分类** — 你想创建什么类型的条目？比如：\n   - `project` 项目\n   - `task` 任务\n   - `note` 笔记\n   - `inbox` 灵感/收件箱\n   - `decision` 决策\n   - `reflection` 反思\n   - `question` 问题\n\n2. **标题** — 这个条目叫什么？\n\n你也可以一并补充其他信息，比如内容、优先级、计划日期、标签等，不填也没关系，之后可以再改。",
+      "passed": false,
+      "category": "ask_user",
+      "elapsed_seconds": 5.0151
+    },
+    {
+      "input": "查看某个条目",
+      "expected_tools": [
+        "ask_user"
+      ],
+      "actual_tools": [],
+      "agent_reply": "我需要知道你想查看哪个条目。你能提供条目的 ID 吗？或者你可以告诉我关键词，我帮你搜索一下。",
+      "passed": false,
+      "category": "ask_user",
+      "elapsed_seconds": 7.3584
+    },
+    {
+      "input": "",
+      "expected_tools": [],
+      "actual_tools": [],
+      "agent_reply": "",
+      "passed": false,
+      "category": "boundary",
+      "elapsed_seconds": 0.0575
+    },
+    {
+      "input": "   ",
+      "expected_tools": [],
+      "actual_tools": [],
+      "agent_reply": "抱歉，处理时遇到了问题：Error code: 400 - {'error': {'message': '未正常接收到prompt参数。', 'type': 'upstream_error', 'param': '', 'code': '1213'}}。请稍后再试。",
+      "passed": false,
+      "category": "boundary",
+      "elapsed_seconds": 0.2576
+    },
+    {
+      "input": "帮我记录一条想法但是不告诉我内容",
+      "expected_tools": [
+        "ask_user"
+      ],
+      "actual_tools": [
+        "create_entry"
+      ],
+      "agent_reply": "已经帮你创建了一条空的收件箱条目（ID: `inbox-8cce6035`），标题是「一条想法（待补充）」。\n\n等你准备好了，随时可以告诉我具体内容，我帮你补上。",
+      "passed": false,
+      "category": "boundary",
+      "elapsed_seconds": 16.8146
+    },
+    {
+      "input": "帮我创建一条笔记同时删除一条笔记同时更新一条笔记",
+      "expected_tools": [
+        "create_entry"
+      ],
+      "actual_tools": [],
+      "agent_reply": "我需要更多信息才能帮你完成这三个操作。请分别告诉我：\n\n1. **创建笔记**：标题是什么？内容呢？\n2. **删除笔记**：要删除哪条笔记？（可以告诉我标题或关键词，我来搜一下）\n3. **更新笔记**：要更新哪条笔记？改什么内容？\n\n你把这三个信息给我，我一次性帮你搞定。",
+      "passed": false,
+      "category": "boundary",
+      "elapsed_seconds": 5.0234
+    },
+    {
+      "input": "ajsdfhkajsdfhkajsdhfkjahsdkjfhaskdjfh",
+      "expected_tools": [],
+      "actual_tools": [],
+      "agent_reply": "看起来你可能是随手敲了一串键盘？😄\n\n有什么想聊的或者需要帮忙的，随时说。",
+      "passed": false,
+      "category": "boundary",
+      "elapsed_seconds": 4.198
+    },
+    {
+      "input": "12345",
+      "expected_tools": [],
+      "actual_tools": [],
+      "agent_reply": "看起来你输入了\"12345\"——不太确定你的意思。你是想：\n\n- 查看某个条目的详情（比如 ID 为 12345 的条目）？\n- 还是随手试试，有什么我能帮你的？\n\n可以告诉我你想做什么，我来帮你 😊",
+      "passed": false,
+      "category": "boundary",
+      "elapsed_seconds": 4.5873
+    }
+  ],
+  "total_negative": 24,
+  "total_violations": 0,
+  "violation_rate": 0.0,
+  "negative_violations": [],
+  "efficiency": {
+    "total_elapsed": 1340.9498,
+    "avg_elapsed": 14.5755,
+    "median_elapsed": 10.9986,
+    "total_cases": 92
+  },
+  "env_info": {
+    "git_commit": "82ebebe",
+    "model": "unknown"
+  },
+  "history": []
+};
+
+  /* ── Graceful fallback if Chart.js is not loaded (offline) ── */
+  if (typeof Chart === "undefined") {
+    var ids = ["overviewChartFallback","categoryChartFallback","trendChartFallback"];
+    ids.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = "block";
+    });
+    var canvases = ["overviewChart","categoryChart","trendChart"];
+    canvases.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
+    return;
+  }
+
+  /* ── Common chart defaults ── */
+  Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  Chart.defaults.color = "#374151";
+
+  /* ── Section 2: Overview Donut Chart ── */
+  var overviewCtx = document.getElementById("overviewChart");
+  if (overviewCtx && RD.total_positive > 0) {
+    new Chart(overviewCtx, {
+      type: "doughnut",
+      data: {
+        labels: ["Passed", "Failed"],
+        datasets: [{
+          data: [RD.total_passed, RD.total_positive - RD.total_passed],
+          backgroundColor: ["#059669", "#dc2626"],
+          borderWidth: 2,
+          borderColor: "#fff"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: "65%",
+        plugins: {
+          legend: { position: "bottom" },
+          title: { display: false }
+        }
+      }
+    });
+  } else if (overviewCtx) {
+    overviewCtx.style.display = "none";
+    var fb = document.getElementById("overviewChartFallback");
+    if (fb) { fb.style.display = "block"; fb.textContent = "No positive cases to display."; }
+  }
+
+  /* ── Section 3: Category Bar Chart ── */
+  var catCtx = document.getElementById("categoryChart");
+  if (catCtx && RD.category_stats && Object.keys(RD.category_stats).length > 0) {
+    var catLabels = Object.keys(RD.category_stats);
+    var catRates = catLabels.map(function(k) { return Math.round(RD.category_stats[k].pass_rate * 100); });
+    var catBgColors = catRates.map(function(r) { return r >= 80 ? "#059669" : "#dc2626"; });
+    new Chart(catCtx, {
+      type: "bar",
+      data: {
+        labels: catLabels,
+        datasets: [{
+          label: "Pass Rate (%)",
+          data: catRates,
+          backgroundColor: catBgColors,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + "%"; } } }
+        },
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: "Pass Rate by Category" }
+        }
+      }
+    });
+  } else if (catCtx) {
+    catCtx.style.display = "none";
+    var fb2 = document.getElementById("categoryChartFallback");
+    if (fb2) { fb2.style.display = "block"; fb2.textContent = "No category data available."; }
+  }
+
+  /* ── Section 6: History Trend Line Chart ── */
+  var trendCtx = document.getElementById("trendChart");
+  if (trendCtx && RD.history && RD.history.length > 0) {
+    var trendLabels = RD.history.map(function(h) { return h.eval_time || ""; });
+    var isNeg = RD.dataset_mode === "negative";
+    var trendKey = isNeg ? "violation_rate" : "pass_rate";
+    var trendTitle = isNeg ? "Violation Rate Trend" : "Pass Rate Trend";
+    var trendRates = RD.history.map(function(h) { return Math.round((h[trendKey] || 0) * 100); });
+    new Chart(trendCtx, {
+      type: "line",
+      data: {
+        labels: trendLabels,
+        datasets: [{
+          label: isNeg ? "Violation Rate (%)" : "Pass Rate (%)",
+          data: trendRates,
+          borderColor: "#6366F1",
+          backgroundColor: "rgba(99,102,241,0.1)",
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: "#6366F1"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + "%"; } } }
+        },
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: trendTitle }
+        }
+      }
+    });
+  } else if (trendCtx) {
+    trendCtx.style.display = "none";
+    var fb3 = document.getElementById("trendChartFallback");
+    if (fb3) { fb3.style.display = "block"; fb3.textContent = RD.history && RD.history.length === 0 ? "First run — no historical data yet." : "Trend chart requires internet."; }
+  }
+})();
+</script>
+</body>
+</html>

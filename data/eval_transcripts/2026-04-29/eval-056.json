@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-056",
+  "timestamp": "2026-04-29T13:52:36.741582",
+  "test_case_id": "ST-056",
+  "test_case_category": "boundary",
+  "agent_trace": {
+    "input": "",
+    "output": "",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 57.52205848693848,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

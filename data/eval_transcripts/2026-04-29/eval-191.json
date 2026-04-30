@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-191",
+  "timestamp": "2026-04-29T15:08:39.163238",
+  "test_case_id": "ST-055",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "推荐一些学习编程的资源",
+    "output": "好的，分享一些我觉得靠谱的编程学习资源，按阶段和方向整理：\n\n---\n\n## 🌱 零基础入门\n\n**交互式学习平台**\n- **freeCodeCamp**（freecodecamp.org）— 免费，从 HTML/JS 到后端，边学边练，完成后有证书\n- **Codecademy**（codecademy.com）— 互动式教学，基础课程免费，适合快速上手语法\n\n**视频课程**\n- **B站** 搜「黑马程序员」「尚硅谷」— 有大量免费的系统化中文课程，Java/Python/前端都有\n- **CS50（哈佛）** — edX 上免费，编程思维的最好入门课之一，有中文字幕\n\n**入门语言建议**\n- 想做网页/前端 → JavaScript\n- 想学数据科学/AI → Python\n- 想深入理解计算机 → C 语言\n- 想找工作快 → Java 或 Python\n\n---\n\n## 📈 进阶提升\n\n- **MDN Web Docs**（developer.mozilla.org）— 前端开发的权威参考手册\n- **LeetCode**（leetcode.cn）— 刷题练算法，面试必备\n- **掘金 / InfoQ** — 中文技术社区，看实战文章和行业趋势\n- **GitHub** — 多看优秀开源项目的代码，比看教程成长快\n\n---\n\n## 💡 几个实在的建议\n\n1. **别光看视频，一定要动手写**。看懂和写出来差很远。\n2. **做小项目 > 刷更多课**。哪怕是一个待办清单、一个小爬虫，做出来的东西才是你的。\n3. **不用纠结先学哪门语言**。学会一门之后，第二门会快很多。\n4. **遇到 bug 别慌，学会读报错信息**，这是程序员最重要的能力之一。\n\n---\n\n你现在有具体想学的方向吗？可以帮你推荐更有针对性的资源或制定一个学习计划。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 16363.838911056519,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

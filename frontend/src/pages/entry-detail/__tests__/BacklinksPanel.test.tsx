@@ -111,7 +111,7 @@ describe("EntryDetail - 反向引用面板", () => {
     const item = screen.getByText("引用笔记A").closest("[class*='cursor-pointer']");
     expect(item).toBeTruthy();
     fireEvent.click(item!);
-    expect(mockNavigate).toHaveBeenCalledWith("/entry/bl-1");
+    expect(mockNavigate).toHaveBeenCalledWith("/entries/bl-1");
   });
 
   it("API 失败时静默降级（不展示错误）", async () => {

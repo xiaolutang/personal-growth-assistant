@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-248",
+  "timestamp": "2026-04-29T16:09:21.899984",
+  "test_case_id": "ST-044",
+  "test_case_category": "ask_user",
+  "agent_trace": {
+    "input": "查看某个条目",
+    "output": "我需要知道你想查看哪个条目。你能提供以下信息之一吗？\n\n- **条目标题**或**关键词**（我可以帮你搜索）\n- **条目ID**（如果有的话，可以直接查看）",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 6993.489027023315,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

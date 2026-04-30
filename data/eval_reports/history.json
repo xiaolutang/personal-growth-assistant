@@ -1,0 +1,77 @@
+[
+  {
+    "eval_time": "2026-04-29T14:01:09.055150",
+    "dataset_mode": "all",
+    "pass_rate": 0.7794,
+    "total_positive": 68,
+    "total_passed": 53,
+    "total_negative": 24,
+    "total_violations": 0,
+    "violation_rate": 0.0,
+    "html_file": "2026-04-29_140109.html",
+    "env_info": {
+      "git_commit": "82ebebe",
+      "model": "unknown"
+    }
+  },
+  {
+    "eval_time": "2026-04-29T14:48:29.664019",
+    "dataset_mode": "all",
+    "pass_rate": 0.75,
+    "total_positive": 68,
+    "total_passed": 51,
+    "total_negative": 24,
+    "total_violations": 0,
+    "violation_rate": 0.0,
+    "html_file": "2026-04-29_144829.html",
+    "env_info": {
+      "git_commit": "82ebebe",
+      "model": "unknown"
+    }
+  },
+  {
+    "eval_time": "2026-04-29T15:16:46.944166",
+    "dataset_mode": "all",
+    "pass_rate": 0.7941,
+    "total_positive": 68,
+    "total_passed": 54,
+    "total_negative": 24,
+    "total_violations": 0,
+    "violation_rate": 0.0,
+    "html_file": "2026-04-29_151646.html",
+    "env_info": {
+      "git_commit": "82ebebe",
+      "model": "unknown"
+    }
+  },
+  {
+    "eval_time": "2026-04-29T16:20:53.753152",
+    "dataset_mode": "all",
+    "pass_rate": 0.8088,
+    "total_positive": 68,
+    "total_passed": 55,
+    "total_negative": 24,
+    "total_violations": 0,
+    "violation_rate": 0.0,
+    "html_file": "2026-04-29_162053.html",
+    "env_info": {
+      "git_commit": "82ebebe",
+      "model": "unknown"
+    }
+  },
+  {
+    "eval_time": "2026-04-29T16:56:58.035225",
+    "dataset_mode": "all",
+    "pass_rate": 0.8824,
+    "total_positive": 68,
+    "total_passed": 60,
+    "total_negative": 24,
+    "total_violations": 0,
+    "violation_rate": 0.0,
+    "html_file": "2026-04-29_165658.html",
+    "env_info": {
+      "git_commit": "82ebebe",
+      "model": "unknown"
+    }
+  }
+]

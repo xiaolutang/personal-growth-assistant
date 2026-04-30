@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-082",
+  "timestamp": "2026-04-29T14:26:15.802103",
+  "test_case_id": "ST-014",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "查看 2024-01-15 的日报",
+    "output": "**2024年1月15日 · 日报**\n\n- 📋 任务：0 个（完成 0，进行中 0）\n- 📝 笔记：0 条\n\n这一天没有留下任何记录——可能是完全放空的一天，也可能是忙碌到没顾上记录。不管哪种，都没关系。如果需要，可以随时补记。",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "daily",
+          "target_date": "2024-01-15"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 13773.583889007568,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

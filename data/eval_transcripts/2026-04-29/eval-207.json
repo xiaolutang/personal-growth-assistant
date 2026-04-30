@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-207",
+  "timestamp": "2026-04-29T15:57:26.617055",
+  "test_case_id": "ST-003",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "我想看看今天的成长日报",
+    "output": "这是你今天的成长日报（2026-04-29）：\n\n---\n\n### 📊 任务概况\n\n| 指标 | 数值 |\n|------|------|\n| 总任务数 | 20 |\n| 已完成 | 0 |\n| 进行中 | 9 |\n| 待开始 | 11 |\n| 完成率 | 0% |\n\n### 📝 笔记\n\n- 今天共积累了 **17 篇笔记**，涵盖前后端技术和日常锻炼等内容，记录热情很高 👍\n\n### 💡 小建议\n\n今天的学习和记录做得很扎实，但任务完成率还是零。不妨从 9 项「进行中」的任务里挑一个最容易的，先把完成率从 0% 突破到 5%——一个勾选往往就能带动接下来的节奏。",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "daily",
+          "target_date": "2026-04-29"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 17491.46318435669,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,46 @@
+{
+  "transcript_id": "eval-066",
+  "timestamp": "2026-04-29T13:54:39.651781",
+  "test_case_id": "ST-066",
+  "test_case_category": "directness",
+  "agent_trace": {
+    "input": "我还有哪些任务没做完",
+    "output": "根据搜索结果，我帮你整理一下目前状态为 **doing（进行中）** 的事项：\n\n---\n\n### 📋 进行中的项目/任务\n\n1. **AI 应用开发转型**（整体项目，状态：doing）\n   - 当前在 **Week 2**，完成度约 70%\n   - Week 2 剩余未完成项：\n     - Day 5：CS146S Week 3 MCP Server 作业\n     - Day 6：写一个实用的 MCP Server\n     - Day 7：本周总结 + 整合练习\n   - Day 4.5：意图识别 + LangGraph 深入（标记为延后）\n   - Week 3-8 全部未开始\n\n2. **个人成长助手开发**（子项目，状态：doing）\n   - 功能与交互设计还有几个待思考的问题\n   - 问题反馈接口待实现\n\n3. **灵感收集**（inbox，状态：doing）\n   - 里面有几条待调研/待整理的想法：\n     - 客户端如何实现 SSE 功能\n     - 个人成长助手接入飞书\n     - 深入学习 Embedding 模型对比\n     - 尝试 Pinecone 向量数据库\n     - 阅读 LangChain 源码\n\n4. **学习笔记与想法**（状态：doing）\n   - Prompt Engineering 学习笔记中部分检验标准未完成\n\n---\n\n总的来说，核心主线是 **AI 应用开发转型项目**，卡在 Week 2 尾声。要不要我帮你把 Week 2 剩余的几项拆成具体任务，排一下优先级？",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 20,
+          "query": "未完成的任务"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 50,
+          "query": "任务"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 33864.00318145752,
+    "iteration_count": 2
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {
+    "behavior_checks": {
+      "no_greeting": true,
+      "must_show_details": true,
+      "no_ask_to_search": true
+    }
+  }
+}

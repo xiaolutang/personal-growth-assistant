@@ -1,0 +1,21 @@
+{
+  "transcript_id": "eval-106",
+  "timestamp": "2026-04-29T14:35:10.383350",
+  "test_case_id": "ST-038",
+  "test_case_category": "ask_user",
+  "agent_trace": {
+    "input": "帮我创建一个任务",
+    "output": "好的，你想创建什么任务呢？跟我说说任务内容、时间安排之类的信息吧。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 7309.293985366821,
+    "iteration_count": 0
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

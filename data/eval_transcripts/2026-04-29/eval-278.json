@@ -1,0 +1,49 @@
+{
+  "transcript_id": "eval-278",
+  "timestamp": "2026-04-29T16:32:01.964674",
+  "test_case_id": "ST-006",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "把这周的任务总结一下",
+    "output": "这周（4/29 ~ 5/5）的任务概况如下：\n\n- **总任务数**：24 个\n- **进行中**：12 个\n- **待开始**：12 个\n- **已完成**：0 个\n- **完成率**：0%\n\n另外还有 **21 条笔记**。\n\n---\n\n坦率地说，这周的任务推进还没怎么启动——24 个任务全部处在\"进行中\"或\"待开始\"状态，还没有完成的。\n\n想不想梳理一下，挑出几件最重要的事先推进？或者你可以说说哪些任务卡住了，我帮你看看怎么拆解。",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "weekly",
+          "target_date": "2026-04-29"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 30,
+          "query": "本周任务"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "search_entries",
+        "args": {
+          "limit": 30,
+          "query": "任务 task 计划"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 31928.268909454346,
+    "iteration_count": 3
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

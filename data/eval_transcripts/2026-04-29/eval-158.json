@@ -1,0 +1,31 @@
+{
+  "transcript_id": "eval-158",
+  "timestamp": "2026-04-29T15:00:46.292500",
+  "test_case_id": "ST-022",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "看看上周的成长周报",
+    "output": "这是上周（4/26 ~ 5/2）的成长周报：\n\n---\n\n**📊 任务概况**\n- 总任务数：**22 项**\n- 进行中：**9 项**\n- 未启动：**13 项**\n- 已完成：**0 项**（完成率 0%）\n\n**📝 笔记记录**\n- 本周共记录 **14 篇**笔记，涵盖了技术学习（Docker、Python）和运动健康等方面，知识沉淀做得不错。\n\n---\n\n**一点观察：**\n\n笔记产出很积极，说明你在持续学习和记录，这是好习惯。不过 22 项任务 0 完成率，可能需要留意一下——是任务本身拆得太大，还是这周注意力分散了？\n\n如果愿意的话，可以看看那 9 项\"进行中\"的任务，挑出 1-2 个最关键的，本周集中推进，先把完成率从零突破出来。需要我帮你梳理一下吗？",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "weekly",
+          "target_date": "2026-04-26"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 17790.820121765137,
+    "iteration_count": 1
+  },
+  "judge_result": null,
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

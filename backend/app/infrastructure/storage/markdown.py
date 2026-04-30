@@ -157,6 +157,9 @@ class MarkdownStorage:
             metadata['time_spent'] = task.time_spent
         if task.completed_at:
             metadata['completed_at'] = task.completed_at.isoformat()
+        # type_history
+        if task.type_history:
+            metadata['type_history'] = task.type_history
 
         yaml_str = yaml.dump(metadata, allow_unicode=True, sort_keys=False, default_flow_style=False)
         return f"---\n{yaml_str}---\n\n{body}"
@@ -261,6 +264,7 @@ class MarkdownStorage:
                 time_spent=metadata.get('time_spent'),
                 parent_id=metadata.get('parent_id'),
                 file_path=self._safe_relative_path(file_path),
+                type_history=metadata.get('type_history', []),
             )
         else:
             # 旧格式：从正文提取元数据
@@ -313,6 +317,7 @@ class MarkdownStorage:
     def list_entries(
         self,
         category: Optional[Category] = None,
+        category_types: Optional[set[str]] = None,
         status: Optional[TaskStatus] = None,
         limit: int = 50,
     ) -> List[Task]:
@@ -321,6 +326,9 @@ class MarkdownStorage:
 
         if category:
             dirs = [self.CATEGORY_DIRS.get(category, "notes")]
+        elif category_types:
+            # category_group 模式：列出所有目录，后续按 category 过滤
+            dirs = ["projects", "tasks", "notes", "decisions", "reflections", "questions"]
         else:
             dirs = ["projects", "tasks", "notes", "decisions", "reflections", "questions"]
 
@@ -349,6 +357,10 @@ class MarkdownStorage:
                             entries.append(entry)
                     except Exception:
                         continue
+
+        # category_group 过滤：只保留匹配类型的条目
+        if category_types:
+            entries = [e for e in entries if e.category.value in category_types]
 
         entries.sort(key=lambda e: e.updated_at, reverse=True)
         return entries[:limit]

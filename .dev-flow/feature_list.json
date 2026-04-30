@@ -2,18 +2,16 @@
   "version": "1.4",
   "project": "personal-growth-assistant",
   "status": "active",
-  "updated_at": "2026-04-29",
-  "active_requirement_cycle": null,
-  "workflow": {
-    "name": "XLFoundry",
-    "mode": "A",
-    "runtime": "skill_orchestrated",
-    "review_provider": "codex_plugin",
-    "audit_provider": "local",
-    "risk_provider": "local",
-    "stop_hook_enabled": false
-  },
+  "updated_at": "2026-04-30",
   "archived_requirement_cycles": [
+    {
+      "id": "R047",
+      "name": "task-explore-reboundary",
+      "status": "completed",
+      "archive_dir": "_archive/R047_task-explore-reboundary",
+      "total_tasks": 13,
+      "completed_at": "2026-04-30"
+    },
     {
       "id": "R046",
       "name": "chat-panel-refactor",

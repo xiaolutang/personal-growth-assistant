@@ -1,0 +1,11 @@
+{
+  "feedback_id": 1,
+  "message_id": "msg-abc123",
+  "reason": "信息不准确",
+  "detail": "Agent 说今天有 5 个任务，实际只有 2 个",
+  "title": "Agent 回复不准确",
+  "description": null,
+  "user_id": "test-user",
+  "created_at": "2026-04-29T17:45:10.733115+00:00",
+  "exported_at": "2026-04-29T17:45:10.733840+00:00"
+}
