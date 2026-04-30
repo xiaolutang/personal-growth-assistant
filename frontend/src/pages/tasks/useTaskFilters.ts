@@ -8,6 +8,7 @@ import {
   TASK_SUB_TABS, type SubTabKey, ACTIONABLE_CATEGORIES,
   VALID_VIEW_KEYS, type ViewKey,
 } from "./constants";
+import { toLocalDateString } from "@/lib/utils";
 
 // === URL 参数合法性校验 ===
 const VALID_PRIORITIES: Priority[] = ["high", "medium", "low"];
@@ -17,14 +18,6 @@ const VALID_SUB_TAB_KEYS: SubTabKey[] = TASK_SUB_TABS.map(t => t.key);
 function validateUrlParam<T>(value: string | null, validValues: readonly T[]): T | null {
   if (!value) return null;
   return validValues.includes(value as T) ? (value as T) : null;
-}
-
-/** 获取本地日期字符串 YYYY-MM-DD */
-function toLocalDateString(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
 }
 
 // 获取日期范围

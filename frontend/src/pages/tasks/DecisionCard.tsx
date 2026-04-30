@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Scale, Clock, Pause } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,9 +29,18 @@ export function DecisionCard({ decision, selectable = false, selected = false, o
   const isPaused = decision.status === "paused";
 
   // 解析已完成决策的结果
-  const decisionResult = isComplete && decision.content.includes("## 决策结果")
-    ? extractDecisionResult(decision.content)
-    : null;
+  const decisionResult = useMemo(() =>
+    isComplete && decision.content.includes("## 决策结果")
+      ? extractDecisionResult(decision.content)
+      : null,
+    [isComplete, decision.content]
+  );
+
+  // 去除决策结果段的正文摘要
+  const contentSummary = useMemo(
+    () => decision.content.replace(/## 决策结果[\s\S]*$/, "").trim(),
+    [decision.content]
+  );
 
   const handleDecide = (choice: DecisionChoice) => {
     setDialogChoice(choice);
@@ -165,7 +174,7 @@ export function DecisionCard({ decision, selectable = false, selected = false, o
             data-testid="decision-content"
             className="text-xs text-muted-foreground mt-1 mb-2 line-clamp-2 pl-6"
           >
-            {decision.content.replace(/## 决策结果[\s\S]*$/, "").trim()}
+            {contentSummary}
           </p>
         )}
 

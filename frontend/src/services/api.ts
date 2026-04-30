@@ -606,12 +606,7 @@ export async function fetchTemplates(category?: string): Promise<EntryTemplateLi
 }
 
 // === 条目类型转换（Convert） ===
-export interface ConvertRequest {
-  target_category: "task" | "decision" | "note";
-  priority?: string | null;
-  planned_date?: string | null;
-  parent_id?: string | null;
-}
+export type ConvertRequest = components["schemas"]["ConvertRequest"];
 
 export async function convertEntry(id: string, request: ConvertRequest): Promise<Task> {
   const { data, error, response } = await client.POST("/entries/{entry_id}/convert", {

@@ -42,7 +42,7 @@ class EntryUpdate(BaseModel):
 
 class ConvertRequest(BaseModel):
     """条目类型转换请求"""
-    target_category: str = Field(
+    target_category: Literal["task", "decision", "note"] = Field(
         ...,
         description="目标分类: task/decision/note（仅允许从 inbox 转换）",
     )

@@ -1709,8 +1709,9 @@ export interface components {
             /**
              * Target Category
              * @description 目标分类: task/decision/note（仅允许从 inbox 转换）
+             * @enum {string}
              */
-            target_category: string;
+            target_category: "task" | "decision" | "note";
             /**
              * Priority
              * @description 优先级: high/medium/low

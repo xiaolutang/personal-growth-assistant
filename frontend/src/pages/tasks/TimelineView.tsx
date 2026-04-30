@@ -5,20 +5,13 @@ import { DecisionCard } from "./DecisionCard";
 import { OverdueBanner } from "./OverdueBanner";
 import { TIMELINE_GROUPS, type TimelineGroupKey } from "./constants";
 import type { Task } from "@/types/task";
+import { toLocalDateString } from "@/lib/utils";
 
 interface TimelineViewProps {
   tasks: Task[];
   selectable?: boolean;
   selectedIds?: Set<string>;
   onSelect?: (id: string) => void;
-}
-
-/** 获取本地日期字符串 YYYY-MM-DD */
-function toLocalDateString(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
 }
 
 /** 判断一个日期字符串属于哪个时间线分组 */

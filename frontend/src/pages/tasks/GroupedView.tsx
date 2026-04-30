@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { ChevronDown, ChevronRight, FolderOpen, Inbox, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getProgressColor } from "@/lib/utils";
 import { TaskCard } from "@/components/TaskCard";
 import { DecisionCard } from "./DecisionCard";
 import type { Task } from "@/types/task";
@@ -18,13 +18,6 @@ interface GroupedViewProps {
   selectable?: boolean;
   selectedIds?: Set<string>;
   onSelect?: (id: string) => void;
-}
-
-/** 进度条颜色 */
-function getProgressColor(percentage: number): string {
-  if (percentage > 80) return "bg-green-500";
-  if (percentage >= 30) return "bg-blue-500";
-  return "bg-gray-400";
 }
 
 /** Project group header with inline progress bar */

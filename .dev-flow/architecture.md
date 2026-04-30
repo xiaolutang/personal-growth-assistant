@@ -67,9 +67,20 @@ backend/app/
 frontend/src/
 ├── pages/               # Home, Tasks, Projects, Notes, Inbox, Review, EntryDetail
 ├── components/AgentChat/ # R044: AgentChat, MessageList, ToolCallCard, ThinkingIndicator
+├── components/          # 通用共享组件 (TaskCard, ProgressRing, LinkEntryDialog...)
+├── lib/                 # 纯工具函数 (cn, toLocalDateString, getProgressColor...)
+├── config/              # 常量配置 (categoryConfig, statusConfig...)
 ├── stores/              # Zustand (agentStore, taskStore)
+├── services/            # API 调用层 (api.ts)
 └── types/               # TypeScript (含 OpenAPI 生成)
 ```
+
+### 前端分层不变量
+
+- **依赖方向**：`pages/ → components/ → lib/`，严格单向；`components/` 禁止 import 任何 `pages/` 下的模块
+- **跨页面共享**：当 pages 下的组件被 2 个以上页面使用时，提升到 `components/`
+- **API 调用边界**：组件和页面允许直接调用 `services/api.ts`（通过 store 或直接调用均可）；写操作优先通过 store，读操作可直接调用 API
+- **类型权威**：后端 OpenAPI schema → `npm run gen:types` → `types/api.generated.ts`，前端不硬编码后端枚举值
 
 ## Flutter 移动端
 

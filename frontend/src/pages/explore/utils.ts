@@ -3,6 +3,7 @@ import {
   CheckSquare, GitBranch, FolderKanban,
 } from "lucide-react";
 import type { Task, Category, TaskStatus, Priority, SearchResult } from "@/types/task";
+import { categoryConfig } from "@/config/constants";
 
 /**
  * 将搜索结果归一化为 Task 类型，补齐缺失字段
@@ -40,15 +41,9 @@ export const SEARCH_GROUP_ORDER: Category[] = [
   "task", "decision", "project", "inbox", "note", "reflection", "question",
 ];
 
-export const SEARCH_GROUP_LABELS: Record<string, string> = {
-  task: "任务",
-  decision: "决策",
-  project: "项目",
-  inbox: "灵感",
-  note: "笔记",
-  reflection: "复盘",
-  question: "疑问",
-};
+export const SEARCH_GROUP_LABELS: Record<string, string> = Object.fromEntries(
+  Object.entries(categoryConfig).map(([key, val]) => [key, val.label])
+);
 
 export const SEARCH_GROUP_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   task: CheckSquare,

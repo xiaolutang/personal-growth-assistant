@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { FolderOpen, ChevronDown, ChevronUp, Clock, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, getProgressColor } from "@/lib/utils";
 import type { Task } from "@/types/task";
 import { useTaskStore } from "@/stores/taskStore";
 import { getProjectProgress, type ProjectProgressResponse } from "@/services/api";
@@ -16,13 +16,6 @@ interface ProjectCardProps {
   onSelect?: (id: string) => void;
   /** F06: 自定义卡片点击回调（搜索模式下跳转到任务页） */
   onClickOverride?: (task: Task) => void;
-}
-
-/** 进度条颜色：>80% 绿色，30-80% 蓝色，<30% 灰色 */
-function getProgressColor(percentage: number): string {
-  if (percentage > 80) return "bg-green-500";
-  if (percentage >= 30) return "bg-blue-500";
-  return "bg-gray-400";
 }
 
 /** 格式化更新时间为可读字符串 */
