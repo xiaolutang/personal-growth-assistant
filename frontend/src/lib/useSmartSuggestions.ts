@@ -12,6 +12,21 @@ import { useState, useCallback, useRef } from "react";
 import { parseDateKeyword } from "./dateParser";
 import type { ParseResult } from "./dateParser";
 
+/** 创建日期变更处理器，统一处理清除和手动修改逻辑 */
+export function createDateChangeHandler(
+  currentValue: string,
+  onCleared: () => void,
+  onManuallyChanged: (value: string) => void
+): (newValue: string) => void {
+  return (newValue: string) => {
+    if (newValue === "") {
+      onCleared();
+    } else if (newValue !== currentValue) {
+      onManuallyChanged(newValue);
+    }
+  };
+}
+
 /** 类型建议结果 */
 export interface TypeSuggestion {
   type: string;

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { X, Loader2, CheckCircle, Scale, FileText } from "lucide-react";
 import { convertEntry, type ConvertRequest } from "@/services/api";
 import { toast } from "sonner";
+import { PRIORITY_OPTIONS } from "@/config/constants";
 import type { Task } from "@/types/task";
 
 type TargetCategory = ConvertRequest["target_category"];
@@ -19,13 +20,6 @@ const TARGET_OPTIONS: { value: TargetCategory; label: string; icon: typeof Check
   { value: "task", label: "任务", icon: CheckCircle, color: "text-green-500 dark:text-green-400" },
   { value: "decision", label: "决策", icon: Scale, color: "text-amber-600 dark:text-amber-400" },
   { value: "note", label: "笔记", icon: FileText, color: "text-blue-500 dark:text-blue-400" },
-];
-
-const PRIORITY_OPTIONS = [
-  { value: "", label: "不设置" },
-  { value: "high", label: "高" },
-  { value: "medium", label: "中" },
-  { value: "low", label: "低" },
 ];
 
 export function ConvertDialog({ open, onClose, onSuccess, entry, defaultTarget = "task" }: ConvertDialogProps) {

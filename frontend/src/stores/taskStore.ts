@@ -11,7 +11,7 @@ import type {
 import {
   getEntries,
   createEntry as apiCreateEntry,
-  updateEntry,
+  updateEntry as apiUpdateEntry,
   deleteEntry as apiDeleteEntry,
   searchEntries as apiSearchEntries,
   getKnowledgeGraph as apiGetKnowledgeGraph,
@@ -172,7 +172,7 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
 
     set({ isLoading: true, error: null });
     try {
-      await updateEntry(id, data);
+      await apiUpdateEntry(id, data);
       await get().fetchEntries();
     } catch (error) {
       set({

@@ -1,20 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { categoryConfig } from "@/config/constants";
+import { categoryConfig, PRIORITY_OPTIONS } from "@/config/constants";
 import { useTaskStore } from "@/stores/taskStore";
-import { useSmartSuggestions } from "@/lib/useSmartSuggestions";
+import { useSmartSuggestions, createDateChangeHandler } from "@/lib/useSmartSuggestions";
 import type { Task, Category, Priority, EntryCreate } from "@/types/task";
 
 // 从 categoryConfig 派生全部分类，保持单一权威来源
 const ALL_CATEGORIES: Category[] = Object.keys(categoryConfig) as Category[];
-
-const PRIORITY_OPTIONS: { value: Priority | ""; label: string }[] = [
-  { value: "", label: "不设置" },
-  { value: "high", label: "高" },
-  { value: "medium", label: "中" },
-  { value: "low", label: "低" },
-];
 
 /** 是否为快速创建类型（仅标题字段，支持回车提交） */
 function isQuickCreateCategory(category: Category): boolean {
@@ -247,16 +240,11 @@ export function CreateDialog({
 
   /** 计划日期变更处理 */
   const handlePlannedDateChange = useCallback(
-    (value: string) => {
-      setPlannedDate(value);
-      if (value === "" && plannedDate !== "") {
-        // 用户手动清除了日期字段，触发 suppress
-        onDateCleared();
-      } else if (value !== "" && value !== plannedDate) {
-        // 用户手动修改了日期字段（非清除），检查是否需要清除提示
-        onDateManuallyChanged(value);
-      }
-    },
+    createDateChangeHandler(
+      plannedDate,
+      () => { setPlannedDate(""); onDateCleared(); },
+      (v) => { setPlannedDate(v); onDateManuallyChanged(v); },
+    ),
     [plannedDate, onDateCleared, onDateManuallyChanged],
   );
 

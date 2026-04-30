@@ -1,4 +1,5 @@
 import type { TaskStatus, Priority, Category } from "@/types/task";
+import { PRIORITY_OPTIONS as _PRIORITY_OPTIONS } from "@/config/constants";
 
 // 所有可选状态
 export const STATUS_OPTIONS: TaskStatus[] = ["waitStart", "doing", "complete", "paused", "cancelled"];
@@ -27,12 +28,9 @@ export const QUICK_DATE_OPTIONS = [
   { label: "全部", value: "all" },
 ];
 
-// 优先级筛选选项
-export const PRIORITY_OPTIONS: { label: string; value: Priority }[] = [
-  { label: "高", value: "high" },
-  { label: "中", value: "medium" },
-  { label: "低", value: "low" },
-];
+// 优先级筛选选项（从统一配置派生，排除"不设置"选项）
+export const PRIORITY_OPTIONS: { label: string; value: Priority }[] =
+  _PRIORITY_OPTIONS.filter((opt): opt is { value: Priority; label: string } => opt.value !== "");
 
 // 排序选项
 export const SORT_OPTIONS = [

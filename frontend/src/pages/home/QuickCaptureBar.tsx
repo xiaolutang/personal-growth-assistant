@@ -3,15 +3,9 @@ import { Send, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { useTaskStore } from "@/stores/taskStore";
 import { CreateDialog } from "@/components/CreateDialog";
-import { useSmartSuggestions } from "@/lib/useSmartSuggestions";
+import { useSmartSuggestions, createDateChangeHandler } from "@/lib/useSmartSuggestions";
+import { PRIORITY_OPTIONS } from "@/config/constants";
 import type { Priority, EntryCreate } from "@/types/task";
-
-const PRIORITY_OPTIONS: { value: Priority | ""; label: string }[] = [
-  { value: "", label: "不设置" },
-  { value: "high", label: "高" },
-  { value: "medium", label: "中" },
-  { value: "low", label: "低" },
-];
 
 interface QuickCaptureBarProps {
   /** 外部聚焦触发，传入一个递增值即可触发聚焦 */
@@ -136,16 +130,11 @@ export function QuickCaptureBar({ focusTrigger }: QuickCaptureBarProps) {
 
   /** 计划日期变更处理 */
   const handlePlannedDateChange = useCallback(
-    (value: string) => {
-      setPlannedDate(value);
-      if (value === "" && plannedDate !== "") {
-        // 用户手动清除了日期字段，触发 suppress
-        onDateCleared();
-      } else if (value !== "" && value !== plannedDate) {
-        // 用户手动修改了日期字段（非清除），检查是否需要清除提示
-        onDateManuallyChanged(value);
-      }
-    },
+    createDateChangeHandler(
+      plannedDate,
+      () => { setPlannedDate(""); onDateCleared(); },
+      (v) => { setPlannedDate(v); onDateManuallyChanged(v); },
+    ),
     [plannedDate, onDateCleared, onDateManuallyChanged],
   );
 

@@ -29,6 +29,9 @@ import { TemplateSelector } from "./explore/TemplateSelector";
 import { TABS, EXPLORE_CATEGORIES, groupSearchResultsByType } from "./explore/utils";
 import type { Task } from "@/types/task";
 
+// F04: 支持创建表单的 tab 集合（模块顶层常量）
+const TABS_WITH_CREATE: ReadonlySet<Category> = new Set(["inbox", "reflection", "question"]);
+
 export function Explore() {
   // 搜索历史
   const { searchHistory, removeHistory, refresh: refreshHistory } = useSearchHistory();
@@ -91,16 +94,17 @@ export function Explore() {
   const isSearchMode = searchResults !== null;
 
   // F04: 创建表单集成（inbox/reflection/question tab 的 '+New' 按钮）
-  const TABS_WITH_CREATE: ReadonlySet<string> = new Set(["inbox", "reflection", "question"]);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createDialogType, setCreateDialogType] = useState<Category>("inbox");
 
-  const handleOpenCreateDialog = (type: Category) => {
-    setCreateDialogType(type);
-    setCreateDialogOpen(true);
+  const handleOpenCreateDialog = (type: string) => {
+    if (TABS_WITH_CREATE.has(type as Category)) {
+      setCreateDialogType(type as Category);
+      setCreateDialogOpen(true);
+    }
   };
 
-  const showCreateButton = !isSearchMode && !searchQuery.trim() && TABS_WITH_CREATE.has(activeTab);
+  const showCreateButton = !isSearchMode && !searchQuery.trim() && TABS_WITH_CREATE.has(activeTab as Category);
 
   // 批量操作
   const batch = useBatchOperations({
@@ -243,7 +247,7 @@ export function Explore() {
             )
           )}
           {showCreateButton && (
-            <Button variant="outline" size="sm" onClick={() => handleOpenCreateDialog(activeTab as Category)}>
+            <Button variant="outline" size="sm" onClick={() => handleOpenCreateDialog(activeTab)}>
               <Plus className="h-4 w-4 mr-1" />
               新建
             </Button>
