@@ -1,18 +1,25 @@
 # 功能图
 
 > 项目：personal-growth-assistant
-> 活跃需求包：R041 Flutter 页面补齐 + 工程健康
-> 最后更新：2026-04-27
+> 活跃需求包：R048 创建体验升级
+> 最后更新：2026-04-30
 
 ## 活跃需求包
 
 | 需求包 | 状态 | 任务数 |
 |--------|------|--------|
-| R036 残留问题全面收口 | completed | 10 (全部 completed, pytest 1133, vitest 475) |
-| R037 全面补齐与功能增强 | completed | 18 completed, 4 cancelled (pytest 1299, vitest 597) |
-| R038 工程健康收口 + 小功能补齐 | completed | 8 tasks (pytest 1299, vitest 597) |
-| R039 Flutter Explore + 工程维护 | completed | 6 tasks (flutter test 221) |
+| R048 创建体验升级 | active | 5 tasks (1 completed, 4 pending) |
 | R041 Flutter 页面补齐 + 工程健康 | completed | 11 tasks (pytest 1375, vitest 612, flutter test 310) |
+
+### R048: 创建体验升级 — 模块映射
+
+| 任务 ID | 模块 | 描述 | 状态 | 文件 |
+|---------|------|------|------|------|
+| S01 | shared-components | CreateDialog 通用创建对话框（7 种类型，动态字段，复用 categoryConfig + taskStore） | completed | frontend/src/components/CreateDialog.tsx |
+| F02 | tasks-page | 任务页 '+New' 按钮 + 上下文感知创建 | pending | — |
+| F03 | home-page | 首页智能输入栏（QuickCaptureBar） | pending | — |
+| F04 | explore-page | 探索页创建入口 | pending | — |
+| F05 | shared-components | 智能提示（dateParser + useSmartSuggestions） | pending | — |
 
 ## 归档需求包
 
@@ -54,5 +61,5 @@
 | 项目 | 测试数 | 状态 |
 |------|--------|------|
 | 后端测试 | 1375 passed | 全绿 |
-| 前端测试 | 612 passed | 全绿 |
+| 前端测试 | 763 passed | 全绿 |
 | Flutter 测试 | 310 passed | 全绿 |
