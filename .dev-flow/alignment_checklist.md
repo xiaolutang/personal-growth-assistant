@@ -1,5 +1,35 @@
 # 对齐清单
 
+## R048: 创建体验升级
+
+### 契约对齐
+
+- [x] 无新增 API 契约：复用已有 POST /entries（createEntry），所有 7 种类型均支持
+- [x] 无后端改动：纯前端需求，createEntry API 已满足全部字段需求
+
+### 依赖对齐
+
+- [x] S01 无外部依赖（通用组件）
+- [ ] F02 depends_on S01 ✓（任务页使用 CreateDialog）
+- [x] F03 depends_on S01 ✓（首页使用 CreateDialog 的"更多类型"入口）
+- [x] F04 depends_on S01 ✓（探索页使用 CreateDialog）
+- [ ] F05 depends_on S01 + F03 ✓（智能提示增强 CreateDialog + QuickCaptureBar，后者由 F03 引入）
+- [ ] F02/F03/F04 可并行执行（页面间无依赖）
+
+### 架构对齐
+
+- [x] CreateDialog 位于 components/，符合 pages/ → components/ → lib/ 单向依赖
+- [x] QuickCaptureBar 位于 pages/home/，仅被 Home.tsx 使用（< 2 页面不提升）
+- [ ] dateParser.ts 位于 lib/，纯工具函数
+- [x] 写操作通过 taskStore.createEntry（符合"写操作优先通过 store"规范）
+- [x] 不引入新 API 端点，不硬编码后端枚举值（使用 categoryConfig）
+
+### 执行顺序
+
+- [x] Phase 1: S01（基础组件）
+- [x] Phase 2: F02 + F03 + F04（可并行，各页面独立）— F03 done, F04 done
+- [ ] Phase 3: F05（增强，可延后）
+
 ## R047: 任务/探索 Tab 边界重新划分
 
 ### 契约对齐

@@ -3,6 +3,29 @@
   "project": "personal-growth-assistant",
   "status": "active",
   "updated_at": "2026-04-30",
+  "active_requirement_cycle": {
+    "id": "R048",
+    "name": "creation-experience-upgrade",
+    "status": "active",
+    "branch": "feat/R048-creation-experience",
+    "started_at": "2026-04-30",
+    "summary": {
+      "total": 5,
+      "completed": 5,
+      "review_passed": 1,
+      "in_progress": 0,
+      "pending": 0
+    }
+  },
+  "workflow": {
+    "name": "R048 creation-experience-upgrade",
+    "mode": "B",
+    "runtime": "skill_orchestrated",
+    "review_provider": "codex_plugin",
+    "audit_provider": "codex_plugin",
+    "risk_provider": "codex_plugin",
+    "stop_hook_enabled": false
+  },
   "archived_requirement_cycles": [
     {
       "id": "R047",
@@ -88,7 +111,7 @@
       "id": "R037",
       "name": "comprehensive-completion",
       "status": "completed",
-      "archive_dir": "_archive/R037_comprehensive-completion",
+      "archive_dir": "_archive/R037_comprehensive-convergence",
       "total_tasks": 18,
       "completed_at": "2026-04-26"
     },
@@ -100,5 +123,192 @@
     }
   ],
   "archived_phases": [],
-  "features": []
+  "features": [
+    {
+      "id": "S01",
+      "phase": 1,
+      "module": "shared-components",
+      "name": "CreateDialog 通用创建对话框",
+      "description": "构建可复用的 CreateDialog 组件，支持全部 7 种条目类型的创建。按类型动态展示字段：task（标题+优先级+日期）、project（标题+描述）、decision（标题+选项描述）、inbox（仅标题）、note（标题+内容）、reflection（标题+内容）、question（标题+描述）。组件位于 components/ 目录，符合前端分层不变量。复用现有 taskStore.createEntry API。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "P0",
+      "started_at": "2026-04-30",
+      "completed_at": "2026-04-30",
+      "acceptance_criteria": [
+        "CreateDialog 组件位于 components/CreateDialog.tsx，使用 <dialog> 原生元素（与 ConvertDialog 一致）",
+        "接收 props: open, onOpenChange, defaultType?: Category, allowedTypes?: Category[], onSuccess?: (entry: Task) => void",
+        "类型选择器：默认 7 种类型可选，传入 allowedTypes 时仅展示指定类型（显示 icon + label + color，复用 categoryConfig）",
+        "按类型动态渲染字段：task 必填标题、可选优先级下拉（high/medium/low）和日期选择器；project 必填标题、可选内容（textarea，label='描述'）；decision 必填标题、可选内容（textarea，label='选项描述'）；inbox 仅标题；note 标题+内容；reflection 标题+内容；question 标题+内容（textarea，label='描述'）。所有二级文本字段统一映射到 createEntry 的 content 参数，不新增 description 字段",
+        "标题输入框支持回车快速提交（inbox/task 单字段场景）",
+        "调用 taskStore.createEntry（内部已含 fetchEntries 列表刷新），成功后 toast 提示 + 触发 onSuccess 回调 + 表单重置",
+        "创建失败（含网络异常）显示错误提示，不关闭对话框，不触发 onSuccess",
+        "创建失败显示错误提示，不关闭对话框",
+        "键盘 ESC 关闭对话框",
+        "移动端适配：对话框全屏或底部抽屉"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常创建：选 task 类型 → 填标题+优先级 → 提交 → toast 成功 + 列表刷新",
+        "快速创建：inbox 类型 → 输入标题 → 回车 → 直接创建",
+        "类型切换：从 task 切到 project → 优先级字段消失、描述字段出现",
+        "空标题提交：显示校验错误",
+        "创建失败：API 报错 → 错误提示可见 → 对话框不关闭",
+        "ESC 关闭：键盘 ESC → 对话框关闭 → 表单重置",
+        "创建成功后再次打开：所有字段为空，不残留上次输入",
+        "移动端：视口宽度 < 640px 时对话框全屏展示（底部抽屉式）",
+        "表单重置：创建成功后再次打开对话框 → 所有字段为空"
+      ],
+      "files": ["frontend/src/components/CreateDialog.tsx"],
+      "evidence_file": ".dev-flow/evidence/S01.md"
+    },
+    {
+      "id": "F02",
+      "phase": 2,
+      "module": "tasks-page",
+      "name": "任务页 '+New' 按钮 + 上下文感知创建",
+      "description": "在任务页子 Tab 栏右侧添加 '+New' 按钮。根据当前活跃子 Tab 自动选择创建类型：任务 tab→task、决策 tab→decision、项目 tab→project、全部 tab→从 task/decision/project 中选择（任务页只展示 actionable 类型，不提供 inbox/note/reflection/question 创建入口）。修复空状态循环导航问题（空状态的'去创建任务'改为弹出 CreateDialog 而非 navigate('/')）。创建成功后刷新任务列表。",
+      "verification": "F2",
+      "depends_on": ["S01"],
+      "status": "completed",
+      "priority": "P0",
+      "started_at": "2026-04-30",
+      "completed_at": "2026-04-30",
+      "acceptance_criteria": [
+        "子 Tab 栏右侧出现 '+New' 按钮（Plus 图标），与筛选按钮同行",
+        "点击 '+New' 后：任务 tab → CreateDialog 以 task 打开；决策 tab → decision；项目 tab → project；全部 tab → CreateDialog 无默认类型，但类型选择器仅展示 task/decision/project（与 ACTIONABLE_CATEGORIES 一致）",
+        "创建成功后：toast 提示 + 任务列表自动刷新（显示新条目）",
+        "空状态（无任务时）：'去创建任务' 按钮直接弹出 CreateDialog(defaultType='task')，不再 navigate('/')",
+        "子 Tab 切换时 '+New' 按钮保持可见",
+        "视图切换（列表/分组/时间线）不影响 '+New' 按钮"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "任务 tab → 点 '+New' → 对话框默认 task 类型 → 填写提交 → 列表出现新任务",
+        "项目 tab → 点 '+New' → 对话框默认 project → 创建后项目 tab 可见",
+        "全部 tab → 点 '+New' → 类型选择器只有 task/decision/project → 选 decision → 创建成功",
+        "全部 tab → 点 '+New' → 类型选择器中无 inbox/note/reflection/question",
+        "空状态 → 点'去创建任务' → 弹出对话框（非跳转首页）→ 创建后空状态消失",
+        "创建成功后列表自动刷新：原列表有 3 条，创建后变 4 条",
+        "网络失败：API 报错 → 对话框内显示错误提示 → 不关闭 → 可重试",
+        "提交中按钮 loading → 不可重复点击"
+      ],
+      "files": ["frontend/src/pages/Tasks.tsx", "frontend/src/pages/tasks/useTaskFilters.ts"]
+    },
+    {
+      "id": "F03",
+      "phase": 3,
+      "module": "home-page",
+      "name": "首页智能输入栏",
+      "description": "替换首页 6 个快捷导航按钮为一个智能输入栏。默认模式：单行输入 + 回车直接创建 inbox（灵感）。展开模式：仅支持 task（标题+优先级+日期），其他类型需通过 CreateDialog 创建。保留首页'最近灵感'卡片的快捷转化功能。与 FloatingChat 形成互补：输入栏处理快速结构化创建，AI 聊天处理模糊/复杂创建。",
+      "verification": "F2",
+      "depends_on": ["S01"],
+      "status": "completed",
+      "priority": "P1",
+      "started_at": "2026-04-30",
+      "completed_at": "2026-04-30",
+      "acceptance_criteria": [
+        "首页快捷操作区域从 6 个按钮替换为输入栏组件（QuickCaptureBar）",
+        "默认模式：单行文本输入 + 发送按钮，回车或点击发送 → 调用 createEntry({type:'inbox', title:输入内容}) → toast 成功",
+        "展开模式：点击展开图标 → 输入栏下方显示优先级下拉 + 日期选择器（仅 task 类型，无类型选择器）",
+        "展开模式提交后调用 createEntry({type:'task', title:输入内容, priority, planned_date})",
+        "需要创建 project/decision/note/reflection/question 时，通过 CreateDialog（点展开栏的'更多类型'链接）",
+        "保留空状态下的 2 个入口（'记灵感'直接聚焦输入栏，'建任务'打开 CreateDialog(task)）",
+        "'最近灵感'卡片的'转任务'/'转笔记'快捷转化保持不变",
+        "输入栏样式与 AgentChat 视觉区分：输入栏用实线边框，无 AI 装饰元素",
+        "空内容不可提交：输入为空时发送按钮 disabled，回车不触发创建",
+        "替换按钮后首页其他卡片（MorningDigestCard、TodayProgressCard、RecentInboxCard）正常渲染"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "快速捕捉：输入'买牛奶'→ 回车 → toast '已创建灵感' → 最近灵感卡片出现",
+        "展开创建：点击展开 → 填标题+高优先级 → 提交 → toast 成功（无类型选择器，固定为 task）",
+        "更多类型：点击'更多类型'链接 → 弹出 CreateDialog → 选 decision → 创建成功",
+        "空状态入口：首页无数据 → 点'记灵感'→ 输入栏聚焦 → 输入回车创建",
+        "空状态建任务：点'建任务'→ 弹出 CreateDialog(task)",
+        "快捷转化不受影响：最近灵感卡片点'转任务'→ 正常转化",
+        "空输入：输入框为空 → 发送按钮 disabled → 回车无反应",
+        "网络失败：API 报错 → 发送按钮恢复可用 → 显示错误提示",
+        "防重复提交：发送中按钮 loading → 不可重复点击"
+      ],
+      "files": ["frontend/src/pages/Home.tsx", "frontend/src/pages/home/QuickCaptureBar.tsx"]
+    },
+    {
+      "id": "F04",
+      "phase": 4,
+      "module": "explore-page",
+      "name": "探索页创建表单集成",
+      "description": "为探索页的 inbox、reflection、question tab 补齐 '+New' 创建入口。inbox tab → 创建 inbox 条目（仅标题）；reflection tab → 创建复盘（标题+内容）；question tab → 创建疑问（标题+内容）。note tab 已有模板创建，不改动。各 tab 的 '+New' 按钮使用 CreateDialog 并传入对应 defaultType。Explore 页面数据来自本地 useExploreSearch，创建成功后需调用 loadEntries() 刷新本地列表（不依赖 taskStore 全局刷新）。",
+      "verification": "F2",
+      "depends_on": ["S01"],
+      "status": "completed",
+      "priority": "P2",
+      "started_at": "2026-04-30",
+      "completed_at": "2026-04-30",
+      "acceptance_criteria": [
+        "inbox tab：工具栏出现 '+New' 按钮 → 点击弹出 CreateDialog(defaultType='inbox') → 创建后列表刷新",
+        "reflection tab：'+New' 按钮 → CreateDialog(defaultType='reflection') → 创建后列表刷新",
+        "question tab：'+New' 按钮 → CreateDialog(defaultType='question') → 创建后列表刷新",
+        "note tab：保持现有模板创建，不新增 '+New' 按钮（模板创建体验更好）",
+        "全部 tab 和搜索结果态：不显示 '+New'（类型不确定，用户应切换到具体子 tab）",
+        "创建成功后对应 tab 列表自动刷新（通过 CreateDialog onSuccess 回调调用 useExploreSearch 的 loadEntries()）",
+        "支持创建的 tab（inbox/reflection/question）在空列表状态下也展示 '+New' 按钮"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "inbox tab → '+New' → 输入标题 → 创建成功 → inbox 列表出现",
+        "reflection tab → '+New' → 填标题+内容 → 创建成功",
+        "question tab → '+New' → 填标题+描述 → 创建成功",
+        "note tab → 无 '+New' 按钮（只有模板选择器）",
+        "创建后列表刷新：创建前 N 条，创建后 N+1 条",
+        "空 tab（0 条记录）→ '+New' 按钮可见 → 点击创建 → 空状态消失",
+        "网络失败：API 报错 → 错误提示可见 → 可重试"
+      ],
+      "files": ["frontend/src/pages/Explore.tsx"],
+      "evidence_file": ".dev-flow/evidence/F04.md"
+    },
+    {
+      "id": "F05",
+      "phase": 5,
+      "module": "shared-components",
+      "name": "输入智能提示（日期解析 + 类型建议）",
+      "description": "在 CreateDialog 和 QuickCaptureBar 中增加智能提示。1）日期关键词解析（两个入口共享）：输入'明天'、'后天'、'下周一'等中文日期词时自动填充日期字段。2）类型建议（仅 CreateDialog）：根据输入内容特征建议条目类型，点击立即切换。QuickCaptureBar 仅做 inbox/task，不展示类型建议。实现为共享 hook useSmartSuggestions，位于 lib/，日期解析两个入口复用，类型建议仅 CreateDialog 消费。",
+      "verification": "F1",
+      "depends_on": ["S01", "F03"],
+      "status": "completed",
+      "started_at": "2026-04-30",
+      "completed_at": "2026-04-30",
+      "acceptance_criteria": [
+        "日期解析工具函数 parseDateKeyword(text) 和共享 hook useSmartSuggestions() 均位于 lib/",
+        "支持关键词及确定性规则：今天→当天、明天→+1天、后天→+2天、大后天→+3天、本周X→本周已过的日期视为下周同日（如周三输入'本周一'→下周一）、下周一~下周日→下周对应日、下个月→下月同日（若不存在如1/31→2/28）",
+        "在 CreateDialog 和 QuickCaptureBar 展开模式标题输入时均触发日期解析（通过同一 hook）",
+        "自动填充时日期字段显示高亮提示（如'已自动设为明天'）",
+        "类型建议（仅 CreateDialog）：输入含'要不要/是否/该不该'→显示'建议创建为决策'链接；含'完成/做/学'→显示'建议创建为任务'。QuickCaptureBar 不展示类型建议",
+        "点击类型建议：立即切换当前选中类型（非跳转），用户可继续编辑",
+        "手动清除日期字段后：当前对话框/输入栏实例内不再对该字段自动填充（组件 state 级 suppress，非 localStorage）。关闭后重新打开 suppress 重置",
+        "类型建议为纯前端规则匹配，不调用 AI，不阻塞输入"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "输入'明天交报告'→ planned_date 自动填为明天日期",
+        "输入'下周一开会'→ planned_date 自动填为下周一日期",
+        "输入'要不要学 Rust'→ 显示'建议创建为决策'提示",
+        "输入'完成项目文档'→ 显示'建议创建为任务'提示",
+        "输入普通文本'买牛奶'→ 无日期填充，无类型建议",
+        "手动清除日期字段 → 不再自动填充（用户主动清除视为取消）",
+        "月末边界：4月30日输入'明天'→ 填充为5月1日",
+        "QuickCaptureBar 展开模式输入'后天开会'→ 日期字段自动填充",
+        "点击'建议创建为决策'→ 类型切换为 decision → 可继续编辑内容",
+        "点击'建议创建为任务'→ 类型切换为 task → 可继续编辑",
+        "手动清除日期 → 再输入'明天开会'→ 不自动填充（组件 state suppress）",
+        "关闭对话框重新打开 → 输入'明天开会'→ 日期重新自动填充（suppress 重置）",
+        "周三输入'本周一'→ 解析为下周一（本周已过视为下周）",
+        "输入'下个月'→ 1月31日解析为2月28日（下月无同日取最后一天）",
+        "QuickCaptureBar 展开模式输入'后天开会'→ 日期字段自动填充但无类型建议"
+      ],
+      "files": ["frontend/src/lib/dateParser.ts", "frontend/src/lib/useSmartSuggestions.ts", "frontend/src/components/CreateDialog.tsx", "frontend/src/pages/home/QuickCaptureBar.tsx"],
+      "planning_notes": "类型建议仅在 CreateDialog 中生效（它有完整类型选择器）；QuickCaptureBar 只做日期解析（它只有 inbox/task 两种模式）。allowedTypes prop 允许调用方限制可选类型范围。"
+    }
+  ]
 }

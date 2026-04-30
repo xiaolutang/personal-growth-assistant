@@ -26,7 +26,7 @@ vi.mock("sonner", () => ({
 }));
 
 // Mock ConvertDialog
-vi.mock("@/pages/explore/ConvertDialog", () => ({
+vi.mock("@/components/ConvertDialog", () => ({
   ConvertDialog: ({ open, onClose, onSuccess, entry }: any) =>
     open ? (
       <div data-testid="convert-dialog">

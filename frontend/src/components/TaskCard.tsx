@@ -9,7 +9,7 @@ import type { Task } from "@/types/task";
 import { useTaskStore } from "@/stores/taskStore";
 import { nextStatusMap, priorityConfig } from "@/config/constants";
 import { getDueDateInfo } from "@/lib/dueDate";
-import { ConvertDialog } from "@/pages/explore/ConvertDialog";
+import { ConvertDialog } from "@/components/ConvertDialog";
 import { CompletionPrompt } from "@/pages/tasks/CompletionPrompt";
 
 interface TaskCardProps {

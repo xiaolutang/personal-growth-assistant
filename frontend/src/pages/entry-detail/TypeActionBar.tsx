@@ -8,7 +8,7 @@ import { useTaskStore } from "@/stores/taskStore";
 import { statusConfig, nextStatusMap } from "@/config/constants";
 import type { Task, TaskStatus } from "@/types/task";
 
-import { ConvertDialog } from "@/pages/explore/ConvertDialog";
+import { ConvertDialog } from "@/components/ConvertDialog";
 import { CompletionPrompt } from "@/pages/tasks/CompletionPrompt";
 
 interface TypeActionBarProps {

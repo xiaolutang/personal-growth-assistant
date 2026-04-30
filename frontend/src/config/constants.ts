@@ -67,3 +67,11 @@ export const categoryBgColors: Record<Category, string> = {
   reflection: "bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300",
   question: "bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300",
 };
+
+// 优先级选项（用于 select 下拉框）
+export const PRIORITY_OPTIONS: { value: Priority | ""; label: string }[] = [
+  { value: "", label: "不设置" },
+  { value: "high", label: "高" },
+  { value: "medium", label: "中" },
+  { value: "low", label: "低" },
+];
