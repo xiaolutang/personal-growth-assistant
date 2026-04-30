@@ -21,6 +21,11 @@ import { trackEvent } from "@/lib/analytics";
 
 interface TaskStore {
   tasks: Task[];
+  /** fetchEntries / updateEntry / searchEntries / getKnowledgeGraph 等列表级加载状态 */
+  isFetching: boolean;
+  /** createEntry 创建中的加载状态 */
+  isCreating: boolean;
+  /** @deprecated 使用 isFetching 代替，保留作为向后兼容别名 */
   isLoading: boolean;
   error: string | null;
   serviceUnavailable: boolean;
@@ -40,7 +45,7 @@ interface TaskStore {
     end_date?: string;
     limit?: number;
   }) => Promise<void>;
-  createEntry: (data: EntryCreate, options?: { skipRefetch?: boolean }) => Promise<Task>;
+  createEntry: (data: EntryCreate, options?: { refreshParams?: Record<string, unknown> }) => Promise<Task>;
   updateEntry: (id: string, data: EntryUpdate) => Promise<void>;
   addTasks: (tasks: { type: string; title: string; content?: string; category: Category; status: TaskStatus; tags?: string[] }[]) => Promise<void>;
   updateTaskStatus: (id: string, status: TaskStatus) => Promise<void>;
@@ -62,6 +67,9 @@ interface TaskStore {
 
 export const useTaskStore = create<TaskStore>()((set, get) => ({
   tasks: [],
+  isFetching: false,
+  isCreating: false,
+  /** @deprecated 兼容别名，始终等于 isFetching */
   isLoading: false,
   error: null,
   serviceUnavailable: false,
@@ -70,11 +78,12 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
   _offlineEntries: [],
 
   fetchEntries: async (params) => {
-    set({ isLoading: true, error: null });
+    set({ isFetching: true, isLoading: true, error: null });
     try {
       const response = await getEntries(params);
       set(state => ({
         tasks: [...response.entries, ...state._offlineEntries],
+        isFetching: false,
         isLoading: false,
         serviceUnavailable: false,
       }));
@@ -83,27 +92,28 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
       set({
         error: error instanceof Error ? error.message : "获取条目失败",
         serviceUnavailable: is503,
+        isFetching: false,
         isLoading: false,
       });
     }
   },
 
-  createEntry: async (data: EntryCreate, options?: { skipRefetch?: boolean }) => {
-    set({ isLoading: true, error: null });
+  createEntry: async (data: EntryCreate, options?: { refreshParams?: Record<string, unknown> }) => {
+    set({ isCreating: true, error: null });
     try {
       const entry = await apiCreateEntry(data);
       trackEvent("entry_created", { category: data.type });
-      // 创建成功后重新获取列表（除非调用方要自行刷新）
-      if (!options?.skipRefetch) {
-        await get().fetchEntries();
-      } else {
-        set({ isLoading: false });
+      // 如果调用方指定了 refreshParams，创建成功后用指定参数刷新列表
+      if (options?.refreshParams) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await get().fetchEntries(options.refreshParams as any);
       }
+      set({ isCreating: false });
       return entry;
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : "创建条目失败",
-        isLoading: false,
+        isCreating: false,
       });
       throw error;
     }
@@ -170,13 +180,14 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
       return;
     }
 
-    set({ isLoading: true, error: null });
+    set({ isFetching: true, isLoading: true, error: null });
     try {
       await apiUpdateEntry(id, data);
       await get().fetchEntries();
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : "更新条目失败",
+        isFetching: false,
         isLoading: false,
       });
       throw error;
@@ -185,7 +196,7 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
 
   // 批量添加任务（从 AI 解析结果创建）
   addTasks: async (tasks) => {
-    set({ isLoading: true, error: null });
+    set({ isFetching: true, isLoading: true, error: null });
     try {
       // 并行创建条目
       await Promise.all(
@@ -203,6 +214,7 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : "创建条目失败",
+        isFetching: false,
         isLoading: false,
       });
     }
@@ -284,17 +296,19 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
   },
 
   searchEntries: async (query: string, limit: number = 5) => {
-    set({ isLoading: true, error: null });
+    set({ isFetching: true, isLoading: true, error: null });
     try {
       const response = await apiSearchEntries(query, limit);
       set({
         searchResults: response.results,
+        isFetching: false,
         isLoading: false,
       });
       return response.results;
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : "搜索失败",
+        isFetching: false,
         isLoading: false,
       });
       return [];
@@ -302,17 +316,19 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
   },
 
   getKnowledgeGraph: async (concept: string, depth: number = 2) => {
-    set({ isLoading: true, error: null });
+    set({ isFetching: true, isLoading: true, error: null });
     try {
       const response = await apiGetKnowledgeGraph(concept, depth);
       set({
         knowledgeGraph: response,
+        isFetching: false,
         isLoading: false,
       });
       return response;
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : "获取知识图谱失败",
+        isFetching: false,
         isLoading: false,
       });
       return null;

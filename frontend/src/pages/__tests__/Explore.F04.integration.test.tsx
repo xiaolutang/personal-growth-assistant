@@ -234,7 +234,6 @@ describe("F04 Integration — Explore -> CreateDialog real component", () => {
     await waitFor(() => {
       expect(mockCreateEntry).toHaveBeenCalledWith(
         expect.objectContaining({ type: "inbox", title: "测试灵感" }),
-        expect.objectContaining({ skipRefetch: true }),
       );
     });
 

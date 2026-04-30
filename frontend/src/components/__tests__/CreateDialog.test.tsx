@@ -201,8 +201,8 @@ describe("CreateDialog", () => {
     expect(onSuccess).toHaveBeenCalledWith(mockEntry);
   });
 
-  // --- AC: skipStoreRefetch 控制 ---
-  it("skipStoreRefetch=true 时 createEntry 传 { skipRefetch: true }", async () => {
+  // --- AC: createEntry 不传刷新参数，由调用方在 onSuccess 中自行刷新 ---
+  it("createEntry 只传 data，不传 options（刷新由调用方在 onSuccess 中处理）", async () => {
     mockCreateEntry.mockResolvedValueOnce(mockEntry);
     const user = userEvent.setup();
 
@@ -210,7 +210,6 @@ describe("CreateDialog", () => {
       <CreateDialog
         {...defaultProps}
         defaultType="task"
-        skipStoreRefetch
       />
     );
 
@@ -220,9 +219,10 @@ describe("CreateDialog", () => {
     await waitFor(() => {
       expect(mockCreateEntry).toHaveBeenCalledWith(
         expect.objectContaining({ type: "task", title: "跳过刷新" }),
-        { skipRefetch: true },
       );
     });
+    // 确认只有 1 个参数（无 skipRefetch / refreshParams）
+    expect(mockCreateEntry.mock.calls[0].length).toBe(1);
   });
 
   it("默认（不传 skipStoreRefetch）时 createEntry 不传第二参数", async () => {

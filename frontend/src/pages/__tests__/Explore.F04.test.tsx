@@ -132,8 +132,8 @@ vi.mock("../explore/useBatchOperations", () => ({
 // Mock CreateDialog — 记录调用参数，支持成功/失败模式
 let mockCreateShouldFail = false;
 vi.mock("@/components/CreateDialog", () => ({
-  CreateDialog: ({ open, onOpenChange, defaultType, allowedTypes, onSuccess, skipStoreRefetch }: any) => {
-    (window as any).__createDialogProps = { open, onOpenChange, defaultType, allowedTypes, onSuccess, skipStoreRefetch };
+  CreateDialog: ({ open, onOpenChange, defaultType, allowedTypes, onSuccess }: any) => {
+    (window as any).__createDialogProps = { open, onOpenChange, defaultType, allowedTypes, onSuccess };
     if (!open) return null;
     return (
       <div data-testid="create-dialog">
@@ -432,8 +432,8 @@ describe("Explore — F04 创建表单集成", () => {
     expect(screen.getByRole("button", { name: /新建/i })).toBeInTheDocument();
   });
 
-  // ---- 9. CreateDialog 使用 skipStoreRefetch 和 allowedTypes ----
-  it("CreateDialog 传入 skipStoreRefetch=true（由 Explore 自行调用 loadEntries 刷新）", async () => {
+  // ---- 9. CreateDialog 不传 skipStoreRefetch，由 Explore 在 onSuccess 中自行调用 loadEntries ----
+  it("CreateDialog 不传 skipStoreRefetch，onSuccess 中调用 loadEntries 刷新", async () => {
     const user = userEvent.setup();
     renderExplore("/?type=inbox");
 
@@ -444,7 +444,10 @@ describe("Explore — F04 创建表单集成", () => {
     await user.click(screen.getByRole("button", { name: /新建/i }));
 
     const props = (window as any).__createDialogProps;
-    expect(props.skipStoreRefetch).toBe(true);
+    // CreateDialog 不再接收 skipStoreRefetch prop
+    expect(props.skipStoreRefetch).toBeUndefined();
+    // onSuccess 回调存在（Explore 会调用 loadEntries）
+    expect(props.onSuccess).toBeDefined();
   });
 
   // ---- 9b. CreateDialog 传入 allowedTypes 约束类型 ----

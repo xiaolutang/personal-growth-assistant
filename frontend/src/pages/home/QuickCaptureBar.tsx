@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useTaskStore } from "@/stores/taskStore";
 import { CreateDialog } from "@/components/CreateDialog";
 import { useSmartSuggestions, createDateChangeHandler } from "@/lib/useSmartSuggestions";
-import { PRIORITY_OPTIONS } from "@/config/constants";
+import { TaskFields } from "@/components/TaskFields";
 import type { Priority, EntryCreate } from "@/types/task";
 
 interface QuickCaptureBarProps {
@@ -178,45 +178,16 @@ export function QuickCaptureBar({ focusTrigger }: QuickCaptureBarProps) {
       {/* 展开区域 */}
       {expanded && (
         <div className="rounded-xl border border-border bg-card p-3 space-y-3">
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label htmlFor="qcb-priority" className="text-xs text-muted-foreground mb-1 block">
-                优先级
-              </label>
-              <select
-                id="qcb-priority"
-                aria-label="优先级"
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as Priority | "")}
-                disabled={submitting}
-                className="w-full px-2 py-1.5 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                {PRIORITY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex-1">
-              <label htmlFor="qcb-planned-date" className="text-xs text-muted-foreground mb-1 block">
-                计划日期
-              </label>
-              <input
-                id="qcb-planned-date"
-                type="date"
-                aria-label="计划日期"
-                value={plannedDate}
-                onChange={(e) => handlePlannedDateChange(e.target.value)}
-                disabled={submitting}
-                className="w-full px-2 py-1.5 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              {/* 日期高亮提示 */}
-              {dateHint && plannedDate && (
-                <p className="text-xs text-primary/80 mt-1">{dateHint}</p>
-              )}
-            </div>
-          </div>
+          <TaskFields
+            priority={priority}
+            onPriorityChange={(v) => setPriority(v as Priority | "")}
+            plannedDate={plannedDate}
+            onPlannedDateChange={handlePlannedDateChange}
+            dateHint={dateHint}
+            disabled={submitting}
+            idPrefix="qcb"
+            compact
+          />
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
               将创建为<b className="text-foreground">任务</b>

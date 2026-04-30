@@ -95,9 +95,8 @@ export function Tasks() {
     setCreateDialogOpen(true);
   }, []);
 
-  // F02: CreateDialog 使用 skipRefetch 跳过 store 内部无参刷新，
-  // 此处以 TASK_QUERY_PARAMS（category_group=actionable, limit=100）精确刷新，
-  // 保证任务页数据语义一致，避免双重请求和错误数据集填充。
+  // F02: 创建成功后以 TASK_QUERY_PARAMS 精确刷新，
+  // 保证任务页数据语义一致。
   const handleCreateSuccess = useCallback(() => {
     fetchEntries(TASK_QUERY_PARAMS);
   }, [fetchEntries]);
@@ -393,7 +392,6 @@ export function Tasks() {
         defaultType={createDialogDefaultType}
         allowedTypes={ACTIONABLE_CATEGORIES}
         onSuccess={handleCreateSuccess}
-        skipStoreRefetch
       />
     </>
   );

@@ -71,7 +71,7 @@ export function Explore() {
   // 模板创建
   const navigate = useNavigate();
   const createEntry = useTaskStore((state) => state.createEntry);
-  const isCreating = useTaskStore((state) => state.isLoading);
+  const isCreating = useTaskStore((state) => state.isCreating);
 
   const handleTemplateSelected = async (template: EntryTemplate) => {
     try {
@@ -378,7 +378,6 @@ export function Explore() {
         onOpenChange={setCreateDialogOpen}
         defaultType={createDialogType}
         allowedTypes={[createDialogType]}
-        skipStoreRefetch={true}
         onSuccess={() => { loadEntries(); }}
       />
     </main>

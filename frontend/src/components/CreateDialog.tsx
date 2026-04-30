@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { categoryConfig, PRIORITY_OPTIONS } from "@/config/constants";
+import { categoryConfig } from "@/config/constants";
 import { useTaskStore } from "@/stores/taskStore";
 import { useSmartSuggestions, createDateChangeHandler } from "@/lib/useSmartSuggestions";
+import { BaseDialog } from "@/components/BaseDialog";
+import { TaskFields } from "@/components/TaskFields";
 import type { Task, Category, Priority, EntryCreate } from "@/types/task";
 
 // 从 categoryConfig 派生全部分类，保持单一权威来源
@@ -37,10 +38,6 @@ interface CreateDialogProps {
   defaultType?: Category;
   allowedTypes?: Category[];
   onSuccess?: (entry: Task) => void;
-  /** 跳过 store 内部自动刷新，由调用方在 onSuccess 中自行刷新。
-   * 适用于页面有自定义查询参数（如 TASK_QUERY_PARAMS）的场景，
-   * 避免无参 fetchEntries 冲掉页面特定的查询语义。 */
-  skipStoreRefetch?: boolean;
 }
 
 export function CreateDialog({
@@ -49,9 +46,7 @@ export function CreateDialog({
   defaultType,
   allowedTypes,
   onSuccess,
-  skipStoreRefetch = false,
 }: CreateDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
 
   const availableTypes = allowedTypes ?? ALL_CATEGORIES;
@@ -103,17 +98,6 @@ export function CreateDialog({
     }
   }, [selectedType, suggestedDate]);
 
-  // 同步对话框开关
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) {
-      dialog.showModal();
-    } else if (!open && dialog.open) {
-      dialog.close();
-    }
-  }, [open]);
-
   // 打开时重置表单
   useEffect(() => {
     if (open) {
@@ -143,10 +127,6 @@ export function CreateDialog({
       setPlannedDate("");
     }
   }, [availableTypes, selectedType]);
-
-  const handleClose = useCallback(() => {
-    onOpenChange(false);
-  }, [onOpenChange]);
 
   const handleSubmit = useCallback(async () => {
     // 校验
@@ -183,15 +163,13 @@ export function CreateDialog({
         }
       }
 
-      const entry = skipStoreRefetch
-        ? await createEntry(data, { skipRefetch: true })
-        : await createEntry(data);
+      const entry = await createEntry(data);
       // 创建成功 — 后续回调异常不应影响成功状态
       setSubmitting(false);
       toast.success("创建成功");
       // onSuccess 和关闭分别处理，互不影响
       try { onSuccess?.(entry); } catch { /* callback error 不影响 UI */ }
-      try { handleClose(); } catch { /* close error 不影响 UI */ }
+      try { onOpenChange(false); } catch { /* close error 不影响 UI */ }
       return;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "创建失败";
@@ -199,7 +177,7 @@ export function CreateDialog({
     } finally {
       setSubmitting(false);
     }
-  }, [title, content, selectedType, priority, plannedDate, createEntry, onSuccess, handleClose, skipStoreRefetch]);
+  }, [title, content, selectedType, priority, plannedDate, createEntry, onSuccess, onOpenChange]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -266,188 +244,117 @@ export function CreateDialog({
 
   // selectedType 为 null 时，动态字段和按钮不渲染
 
-  if (!open) return null;
-
   const contentLabel = selectedType ? getContentLabel(selectedType) : null;
-  const showPriority = selectedType === "task";
-  const showPlannedDate = selectedType === "task";
+  const showTaskFields = selectedType === "task";
 
   return (
-    <dialog
-      ref={dialogRef}
-      onClose={handleClose}
-      className="rounded-xl p-0 bg-transparent backdrop:bg-black/40 max-w-md w-full max-sm:max-w-full max-sm:m-0 max-sm:mt-auto max-sm:rounded-b-none max-sm:h-[90vh] max-sm:rounded-t-xl"
+    <BaseDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="新建条目"
+      confirmLabel="创建"
+      loadingLabel="创建中..."
+      onConfirm={handleSubmit}
+      loading={submitting}
     >
-      <div className="bg-card rounded-xl p-6 shadow-lg flex flex-col max-sm:h-full max-sm:rounded-b-none">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">新建条目</h2>
-          <button
-            onClick={handleClose}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            disabled={submitting}
-            aria-label="关闭"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* 类型选择器 */}
-        <div className="mb-4">
-          <label className="text-sm font-medium mb-2 block">类型</label>
-          <div className="flex flex-wrap gap-2">
-            {availableTypes.map((cat) => {
-              const config = categoryConfig[cat];
-              const Icon = config.icon;
-              const isSelected = selectedType === cat;
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => handleTypeChange(cat)}
-                  disabled={submitting}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
-                    isSelected
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-card border-border hover:bg-accent"
-                  }`}
-                >
-                  <Icon className={`h-4 w-4 ${isSelected ? "" : config.color}`} />
-                  {config.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 标题 */}
-        <div className="mb-4">
-          <label htmlFor="create-title" className="text-sm font-medium mb-2 block">
-            标题
-          </label>
-          <input
-            ref={titleRef}
-            id="create-title"
-            aria-label="标题"
-            type="text"
-            value={title}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="输入标题..."
-            disabled={submitting}
-            className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-          {/* 类型建议（仅在建议类型可用时显示） */}
-          {typeSuggestion && availableTypes.includes(typeSuggestion.type as Category) && (
-            <p className="text-xs text-primary mt-1">
+      {/* 类型选择器 */}
+      <div className="mb-4">
+        <label className="text-sm font-medium mb-2 block">类型</label>
+        <div className="flex flex-wrap gap-2">
+          {availableTypes.map((cat) => {
+            const config = categoryConfig[cat];
+            const Icon = config.icon;
+            const isSelected = selectedType === cat;
+            return (
               <button
+                key={cat}
                 type="button"
-                onClick={() => handleTypeSuggestionClick(typeSuggestion.type)}
-                className="hover:underline"
+                onClick={() => handleTypeChange(cat)}
+                disabled={submitting}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                  isSelected
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card border-border hover:bg-accent"
+                }`}
               >
-                {typeSuggestion.label}
+                <Icon className={`h-4 w-4 ${isSelected ? "" : config.color}`} />
+                {config.label}
               </button>
-            </p>
-          )}
-          {validationError && (
-            <p className="text-sm text-red-500 dark:text-red-400 mt-1">{validationError}</p>
-          )}
-        </div>
-
-        {/* 二级文本字段（content） */}
-        {contentLabel && (
-          <div className="mb-4">
-            <label htmlFor="create-content" className="text-sm font-medium mb-2 block">
-              {contentLabel}
-            </label>
-            <textarea
-              id="create-content"
-              aria-label={contentLabel}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder={`输入${contentLabel}...`}
-              disabled={submitting}
-              rows={3}
-              className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-            />
-          </div>
-        )}
-
-        {/* 优先级（task 专属） */}
-        {showPriority && (
-          <div className="mb-4">
-            <label htmlFor="create-priority" className="text-sm font-medium mb-2 block">
-              优先级
-            </label>
-            <select
-              id="create-priority"
-              aria-label="优先级"
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as Priority | "")}
-              disabled={submitting}
-              className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              {PRIORITY_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/* 计划日期（task 专属） */}
-        {showPlannedDate && (
-          <div className="mb-4">
-            <label htmlFor="create-planned-date" className="text-sm font-medium mb-2 block">
-              计划日期
-            </label>
-            <input
-              id="create-planned-date"
-              aria-label="计划日期"
-              type="date"
-              value={plannedDate}
-              onChange={(e) => handlePlannedDateChange(e.target.value)}
-              disabled={submitting}
-              className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            {/* 日期高亮提示 */}
-            {dateHint && plannedDate && (
-              <p className="text-xs text-primary/80 mt-1">{dateHint}</p>
-            )}
-          </div>
-        )}
-
-        {/* 错误提示 */}
-        {error && (
-          <p className="text-sm text-red-500 dark:text-red-400 mb-3">{error}</p>
-        )}
-
-        {/* 操作按钮 */}
-        <div className="flex gap-3 mt-4 max-sm:mt-auto max-sm:pt-4">
-          <button
-            onClick={handleClose}
-            disabled={submitting}
-            className="flex-1 px-4 py-2 rounded-lg text-sm font-medium border border-border hover:bg-accent transition-colors"
-          >
-            取消
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                创建中...
-              </>
-            ) : (
-              "创建"
-            )}
-          </button>
+            );
+          })}
         </div>
       </div>
-    </dialog>
+
+      {/* 标题 */}
+      <div className="mb-4">
+        <label htmlFor="create-title" className="text-sm font-medium mb-2 block">
+          标题
+        </label>
+        <input
+          ref={titleRef}
+          id="create-title"
+          aria-label="标题"
+          type="text"
+          value={title}
+          onChange={(e) => handleTitleChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="输入标题..."
+          disabled={submitting}
+          className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+        {/* 类型建议（仅在建议类型可用时显示） */}
+        {typeSuggestion && availableTypes.includes(typeSuggestion.type as Category) && (
+          <p className="text-xs text-primary mt-1">
+            <button
+              type="button"
+              onClick={() => handleTypeSuggestionClick(typeSuggestion.type)}
+              className="hover:underline"
+            >
+              {typeSuggestion.label}
+            </button>
+          </p>
+        )}
+        {validationError && (
+          <p className="text-sm text-red-500 dark:text-red-400 mt-1">{validationError}</p>
+        )}
+      </div>
+
+      {/* 二级文本字段（content） */}
+      {contentLabel && (
+        <div className="mb-4">
+          <label htmlFor="create-content" className="text-sm font-medium mb-2 block">
+            {contentLabel}
+          </label>
+          <textarea
+            id="create-content"
+            aria-label={contentLabel}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder={`输入${contentLabel}...`}
+            disabled={submitting}
+            rows={3}
+            className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+          />
+        </div>
+      )}
+
+      {/* 优先级 + 计划日期（task 专属） */}
+      {showTaskFields && (
+        <TaskFields
+          priority={priority}
+          onPriorityChange={(v) => setPriority(v as Priority | "")}
+          plannedDate={plannedDate}
+          onPlannedDateChange={handlePlannedDateChange}
+          dateHint={dateHint}
+          disabled={submitting}
+          idPrefix="create"
+        />
+      )}
+
+      {/* 错误提示 */}
+      {error && (
+        <p className="text-sm text-red-500 dark:text-red-400 mb-3">{error}</p>
+      )}
+    </BaseDialog>
   );
 }
