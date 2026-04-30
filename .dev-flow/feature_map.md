@@ -8,7 +8,7 @@
 
 | 需求包 | 状态 | 任务数 |
 |--------|------|--------|
-| R048 创建体验升级 | active | 5 tasks (2 completed, 3 pending) |
+| R048 创建体验升级 | active | 5 tasks (3 completed, 2 pending) |
 | R041 Flutter 页面补齐 + 工程健康 | completed | 11 tasks (pytest 1375, vitest 612, flutter test 310) |
 
 ### R048: 创建体验升级 — 模块映射
@@ -18,7 +18,7 @@
 | S01 | shared-components | CreateDialog 通用创建对话框（7 种类型，动态字段，复用 categoryConfig + taskStore） | completed | frontend/src/components/CreateDialog.tsx |
 | F02 | tasks-page | 任务页 '+New' 按钮 + 上下文感知创建 | pending | — |
 | F03 | home-page | 首页智能输入栏（QuickCaptureBar） | completed | frontend/src/pages/home/QuickCaptureBar.tsx, frontend/src/pages/Home.tsx |
-| F04 | explore-page | 探索页创建入口 | pending | — |
+| F04 | explore-page | 探索页创建入口 | completed | frontend/src/pages/Explore.tsx |
 | F05 | shared-components | 智能提示（dateParser + useSmartSuggestions） | pending | — |
 
 ## 归档需求包

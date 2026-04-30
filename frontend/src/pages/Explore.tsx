@@ -1,7 +1,8 @@
-import { AlertCircle, Loader2, Pencil, RefreshCw } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { AlertCircle, Loader2, Pencil, Plus, RefreshCw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { CreateDialog } from "@/components/CreateDialog";
 import { ErrorState } from "@/components/ErrorState";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { TaskList } from "@/components/TaskList";
@@ -11,6 +12,7 @@ import { Header } from "@/components/layout/Header";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { useTaskStore } from "@/stores/taskStore";
 import type { EntryTemplate } from "@/services/api";
+import type { Category } from "@/types/task";
 
 // Hooks
 import { useSearchHistory } from "./explore/useSearchHistory";
@@ -83,6 +85,23 @@ export function Explore() {
     }
   };
 
+  const showPanel = showSuggestions && !searchQuery.trim();
+
+  // F06: 搜索模式下 task/decision/project 点击跳转到任务页
+  const isSearchMode = searchResults !== null;
+
+  // F04: 创建表单集成（inbox/reflection/question tab 的 '+New' 按钮）
+  const TABS_WITH_CREATE: ReadonlySet<string> = new Set(["inbox", "reflection", "question"]);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createDialogType, setCreateDialogType] = useState<Category>("inbox");
+
+  const handleOpenCreateDialog = (type: Category) => {
+    setCreateDialogType(type);
+    setCreateDialogOpen(true);
+  };
+
+  const showCreateButton = !isSearchMode && !searchQuery.trim() && TABS_WITH_CREATE.has(activeTab);
+
   // 批量操作
   const batch = useBatchOperations({
     filteredTasks,
@@ -90,11 +109,6 @@ export function Explore() {
     setSearchResults,
     onSyncCompleted: () => loadEntries(),
   });
-
-  const showPanel = showSuggestions && !searchQuery.trim();
-
-  // F06: 搜索模式下 task/decision/project 点击跳转到任务页
-  const isSearchMode = searchResults !== null;
   const handleSearchCardClick = (task: Task) => {
     if (!EXPLORE_CATEGORIES.has(task.category)) {
       navigate(`/tasks?tab=${task.category}`);
@@ -211,10 +225,12 @@ export function Explore() {
           </CardTitle>
           {!isLoading && !entriesError && filteredTasks.length > 0 && !searchError && (
             !batch.selectMode ? (
-              <Button variant="outline" size="sm" onClick={batch.enterSelectMode}>
-                <Pencil className="h-4 w-4 mr-1" />
-                编辑
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={batch.enterSelectMode}>
+                  <Pencil className="h-4 w-4 mr-1" />
+                  编辑
+                </Button>
+              </div>
             ) : (
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={batch.selectAll}>
@@ -225,6 +241,12 @@ export function Explore() {
                 </Button>
               </div>
             )
+          )}
+          {showCreateButton && (
+            <Button variant="outline" size="sm" onClick={() => handleOpenCreateDialog(activeTab as Category)}>
+              <Plus className="h-4 w-4 mr-1" />
+              新建
+            </Button>
           )}
         </CardHeader>
         {isLoading ? (
@@ -345,6 +367,16 @@ export function Explore() {
 
       </PullToRefresh>
       )}
+
+      {/* F04: 创建表单（inbox/reflection/question tab 的 '+New' 触发） */}
+      <CreateDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        defaultType={createDialogType}
+        allowedTypes={[createDialogType]}
+        skipStoreRefetch={true}
+        onSuccess={() => { loadEntries(); }}
+      />
     </main>
   );
 }

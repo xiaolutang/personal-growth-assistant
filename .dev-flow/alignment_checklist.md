@@ -12,7 +12,7 @@
 - [x] S01 无外部依赖（通用组件）
 - [ ] F02 depends_on S01 ✓（任务页使用 CreateDialog）
 - [x] F03 depends_on S01 ✓（首页使用 CreateDialog 的"更多类型"入口）
-- [ ] F04 depends_on S01 ✓（探索页使用 CreateDialog）
+- [x] F04 depends_on S01 ✓（探索页使用 CreateDialog）
 - [ ] F05 depends_on S01 + F03 ✓（智能提示增强 CreateDialog + QuickCaptureBar，后者由 F03 引入）
 - [ ] F02/F03/F04 可并行执行（页面间无依赖）
 
@@ -27,7 +27,7 @@
 ### 执行顺序
 
 - [x] Phase 1: S01（基础组件）
-- [x] Phase 2: F02 + F03 + F04（可并行，各页面独立）— F03 done
+- [x] Phase 2: F02 + F03 + F04（可并行，各页面独立）— F03 done, F04 done
 - [ ] Phase 3: F05（增强，可延后）
 
 ## R047: 任务/探索 Tab 边界重新划分

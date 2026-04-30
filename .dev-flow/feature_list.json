@@ -11,10 +11,10 @@
     "started_at": "2026-04-30",
     "summary": {
       "total": 5,
-      "completed": 1,
-      "review_passed": 0,
+      "completed": 3,
+      "review_passed": 1,
       "in_progress": 0,
-      "pending": 4
+      "pending": 2
     }
   },
   "workflow": {
@@ -171,8 +171,10 @@
       "description": "在任务页子 Tab 栏右侧添加 '+New' 按钮。根据当前活跃子 Tab 自动选择创建类型：任务 tab→task、决策 tab→decision、项目 tab→project、全部 tab→从 task/decision/project 中选择（任务页只展示 actionable 类型，不提供 inbox/note/reflection/question 创建入口）。修复空状态循环导航问题（空状态的'去创建任务'改为弹出 CreateDialog 而非 navigate('/')）。创建成功后刷新任务列表。",
       "verification": "F2",
       "depends_on": ["S01"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
+      "started_at": "2026-04-30",
+      "completed_at": "2026-04-30",
       "acceptance_criteria": [
         "子 Tab 栏右侧出现 '+New' 按钮（Plus 图标），与筛选按钮同行",
         "点击 '+New' 后：任务 tab → CreateDialog 以 task 打开；决策 tab → decision；项目 tab → project；全部 tab → CreateDialog 无默认类型，但类型选择器仅展示 task/decision/project（与 ACTIONABLE_CATEGORIES 一致）",
@@ -202,8 +204,10 @@
       "description": "替换首页 6 个快捷导航按钮为一个智能输入栏。默认模式：单行输入 + 回车直接创建 inbox（灵感）。展开模式：仅支持 task（标题+优先级+日期），其他类型需通过 CreateDialog 创建。保留首页'最近灵感'卡片的快捷转化功能。与 FloatingChat 形成互补：输入栏处理快速结构化创建，AI 聊天处理模糊/复杂创建。",
       "verification": "F2",
       "depends_on": ["S01"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
+      "started_at": "2026-04-30",
+      "completed_at": "2026-04-30",
       "acceptance_criteria": [
         "首页快捷操作区域从 6 个按钮替换为输入栏组件（QuickCaptureBar）",
         "默认模式：单行文本输入 + 发送按钮，回车或点击发送 → 调用 createEntry({type:'inbox', title:输入内容}) → toast 成功",
@@ -238,8 +242,10 @@
       "description": "为探索页的 inbox、reflection、question tab 补齐 '+New' 创建入口。inbox tab → 创建 inbox 条目（仅标题）；reflection tab → 创建复盘（标题+内容）；question tab → 创建疑问（标题+内容）。note tab 已有模板创建，不改动。各 tab 的 '+New' 按钮使用 CreateDialog 并传入对应 defaultType。Explore 页面数据来自本地 useExploreSearch，创建成功后需调用 loadEntries() 刷新本地列表（不依赖 taskStore 全局刷新）。",
       "verification": "F2",
       "depends_on": ["S01"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P2",
+      "started_at": "2026-04-30",
+      "completed_at": "2026-04-30",
       "acceptance_criteria": [
         "inbox tab：工具栏出现 '+New' 按钮 → 点击弹出 CreateDialog(defaultType='inbox') → 创建后列表刷新",
         "reflection tab：'+New' 按钮 → CreateDialog(defaultType='reflection') → 创建后列表刷新",
@@ -259,7 +265,8 @@
         "空 tab（0 条记录）→ '+New' 按钮可见 → 点击创建 → 空状态消失",
         "网络失败：API 报错 → 错误提示可见 → 可重试"
       ],
-      "files": ["frontend/src/pages/Explore.tsx"]
+      "files": ["frontend/src/pages/Explore.tsx"],
+      "evidence_file": ".dev-flow/evidence/F04.md"
     },
     {
       "id": "F05",
