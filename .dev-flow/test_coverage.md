@@ -6,7 +6,7 @@
 |--------|----------|-----------|--------------------|--------|------|
 | CreateDialog 通用组件 | S01 | unit+F1 | 7 种类型动态字段渲染/inbox 回车快速创建/task 优先级日期/project 描述/decision 内容/note 内容/reflection 内容/question 描述/类型切换字段显隐/空标题校验/创建失败不关闭/ESC 关闭重置/再次打开字段清空/依赖 store 内置刷新/移动端全屏适配 | done | 32 tests, 763/763 suite pass |
 | 任务页 +New | F02 | unit+F2 | 子 Tab 感知类型（任务→task/决策→decision/项目→project/全部→仅选 task/decision/project）/全部 tab 不可选 inbox/note/reflection/question/空状态弹对话框非跳转/创建后列表刷新/网络失败错误提示可重试/提交中防重复/视图切换不影响按钮 | pending | — |
-| 首页智能输入栏 | F03 | unit+F2+network | 默认模式回车创建 inbox/展开模式创建 task+优先级+日期/空输入 disabled/网络失败恢复可用/发送中 loading 防重复/替换后其他卡片正常渲染/最近灵感转化不受影响/空状态入口可用/更多类型链接打开 CreateDialog | pending | — |
+| 首页智能输入栏 | F03 | unit+F2+network | 默认模式回车创建 inbox/展开模式创建 task+优先级+日期/空输入 disabled/网络失败恢复可用/发送中 loading 防重复/替换后其他卡片正常渲染/最近灵感转化不受影响/空状态入口可用/更多类型链接打开 CreateDialog | done | 16 tests (QuickCaptureBar) + 5 tests (Home.F03), 800/800 suite pass |
 | 探索页创建 | F04 | unit+F2 | inbox/reflection/question tab +New 创建/搜索结果态不显示 +New/note tab 无 +New/全部 tab 无 +New/创建后列表刷新/网络失败错误提示可重试 | pending | — |
 | 智能提示 | F05 | unit | 明天/后天/下周一/本周五日期解析/月末边界(4.30→5.1)/要不要→决策建议(仅CreateDialog)/完成做学→任务建议(仅CreateDialog)/点击建议立即切换类型/手动清除不再填充(组件 state suppress)/重新打开 suppress 重置/周三输入本周一→下周一/1.31输入下个月→2.28/普通文本无触发/QuickCaptureBar 展开模式日期解析但无类型建议/useSmartSuggestions 共享 hook | pending | — |
 
