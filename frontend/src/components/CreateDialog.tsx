@@ -43,6 +43,10 @@ interface CreateDialogProps {
   defaultType?: Category;
   allowedTypes?: Category[];
   onSuccess?: (entry: Task) => void;
+  /** 跳过 store 内部自动刷新，由调用方在 onSuccess 中自行刷新。
+   * 适用于页面有自定义查询参数（如 TASK_QUERY_PARAMS）的场景，
+   * 避免无参 fetchEntries 冲掉页面特定的查询语义。 */
+  skipStoreRefetch?: boolean;
 }
 
 export function CreateDialog({
@@ -51,6 +55,7 @@ export function CreateDialog({
   defaultType,
   allowedTypes,
   onSuccess,
+  skipStoreRefetch = false,
 }: CreateDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
@@ -150,7 +155,9 @@ export function CreateDialog({
         }
       }
 
-      const entry = await createEntry(data);
+      const entry = skipStoreRefetch
+        ? await createEntry(data, { skipRefetch: true })
+        : await createEntry(data);
       // 创建成功 — 后续回调异常不应影响成功状态
       setSubmitting(false);
       toast.success("创建成功");
@@ -164,7 +171,7 @@ export function CreateDialog({
     } finally {
       setSubmitting(false);
     }
-  }, [title, content, selectedType, priority, plannedDate, createEntry, onSuccess, handleClose]);
+  }, [title, content, selectedType, priority, plannedDate, createEntry, onSuccess, handleClose, skipStoreRefetch]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

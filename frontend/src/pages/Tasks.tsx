@@ -5,18 +5,40 @@ import { TaskList } from "@/components/TaskList";
 import { Header } from "@/components/layout/Header";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { PullToRefresh } from "@/components/PullToRefresh";
-import { Filter, X, Calendar, Loader2, Pencil, Trash2, ClipboardList, SearchX, ArrowUpDown } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Filter, X, Calendar, Loader2, Pencil, Trash2, ClipboardList, SearchX, ArrowUpDown, Plus } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { statusConfig } from "@/config/constants";
 import { useTaskStore } from "@/stores/taskStore";
+import { CreateDialog } from "@/components/CreateDialog";
 
 // Constants & Hooks
-import { STATUS_OPTIONS, TASK_QUERY_PARAMS, QUICK_DATE_OPTIONS, PRIORITY_OPTIONS, SORT_OPTIONS, TASK_SUB_TABS } from "./tasks/constants";
+import { STATUS_OPTIONS, TASK_QUERY_PARAMS, QUICK_DATE_OPTIONS, PRIORITY_OPTIONS, SORT_OPTIONS, TASK_SUB_TABS, ACTIONABLE_CATEGORIES } from "./tasks/constants";
 import { useTaskFilters } from "./tasks/useTaskFilters";
 import { ViewSelector } from "./tasks/ViewSelector";
 import { GroupedView } from "./tasks/GroupedView";
 import { TimelineView } from "./tasks/TimelineView";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback, type ReactNode } from "react";
+
+/** F02: 统一的空状态创建入口，供 list/grouped/timeline 视图复用 */
+function EmptyStateCreateEntry({
+  icon,
+  message,
+  onCreateClick,
+}: {
+  icon: ReactNode;
+  message: string;
+  onCreateClick: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-3">
+      {icon}
+      <p>{message}</p>
+      <Button variant="outline" size="sm" onClick={onCreateClick}>
+        去创建任务
+      </Button>
+    </div>
+  );
+}
 
 export function Tasks() {
   const {
@@ -39,8 +61,46 @@ export function Tasks() {
   } = useTaskFilters();
   const isLoading = useTaskStore((state) => state.isLoading);
   const allTasks = useTaskStore((state) => state.tasks);
-  const navigate = useNavigate();
   const location = useLocation();
+
+  // F02: 只计算 actionable 类型的任务数量，保持 actionable-only 语义
+  const actionableTaskCount = useMemo(
+    () => allTasks.filter((t) => ACTIONABLE_CATEGORIES.includes(t.category)).length,
+    [allTasks]
+  );
+
+  // F02: CreateDialog 状态
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [emptyStateDefaultType, setEmptyStateDefaultType] = useState<boolean>(false);
+
+  // F02: 根据当前子 Tab 计算 CreateDialog 的 defaultType
+  // allowedTypes 统一为 ACTIONABLE_CATEGORIES，defaultType 由子 Tab 预选
+  // 空状态强制 defaultType='task'
+  const createDialogDefaultType = useMemo(() => {
+    if (emptyStateDefaultType) return "task" as const;
+    if (activeSubTab === "all") return undefined;
+    const tabDef = TASK_SUB_TABS.find(t => t.key === activeSubTab);
+    if (tabDef && "category" in tabDef && tabDef.category) return tabDef.category;
+    return undefined;
+  }, [activeSubTab, emptyStateDefaultType]);
+
+  const handleOpenCreateDialog = useCallback(() => {
+    setEmptyStateDefaultType(false);
+    setCreateDialogOpen(true);
+  }, []);
+
+  // F02: 空状态专用 - 强制 defaultType='task'
+  const handleOpenCreateDialogForEmpty = useCallback(() => {
+    setEmptyStateDefaultType(true);
+    setCreateDialogOpen(true);
+  }, []);
+
+  // F02: CreateDialog 使用 skipRefetch 跳过 store 内部无参刷新，
+  // 此处以 TASK_QUERY_PARAMS（category_group=actionable, limit=100）精确刷新，
+  // 保证任务页数据语义一致，避免双重请求和错误数据集填充。
+  const handleCreateSuccess = useCallback(() => {
+    fetchEntries(TASK_QUERY_PARAMS);
+  }, [fetchEntries]);
 
   // F03: 路由切换回时自动刷新数据
   const prevPathname = useRef(location.pathname);
@@ -52,11 +112,12 @@ export function Tasks() {
   }, [location.pathname, fetchEntries]);
 
   // 区分两种空状态：真正无任务 vs 筛选无结果
-  const isTotallyEmpty = !isLoading && allTasks.length === 0;
-  const isFilterEmpty = !isLoading && allTasks.length > 0 && filteredTasks.length === 0;
+  // F02: 使用 actionableTaskCount 保持 actionable-only 语义
+  const isTotallyEmpty = !isLoading && actionableTaskCount === 0;
+  const isFilterEmpty = !isLoading && actionableTaskCount > 0 && filteredTasks.length === 0;
 
   // F03: 返回 100 条时显示「可能还有更多」提示
-  const mayHaveMore = allTasks.length === TASK_QUERY_PARAMS.limit;
+  const mayHaveMore = actionableTaskCount >= TASK_QUERY_PARAMS.limit;
 
   const handleRefresh = () => fetchEntries(TASK_QUERY_PARAMS);
 
@@ -69,7 +130,13 @@ export function Tasks() {
     // Grouped view — F08
     if (activeView === "grouped") {
       if (isTotallyEmpty) {
-        return <GroupedView tasks={[]} />;
+        return (
+          <EmptyStateCreateEntry
+            icon={<ClipboardList className="h-12 w-12 opacity-20" />}
+            message="还没有任务，开始记录你的第一个任务吧"
+            onCreateClick={handleOpenCreateDialogForEmpty}
+          />
+        );
       }
       return (
         <GroupedView
@@ -84,7 +151,13 @@ export function Tasks() {
     // Timeline view — F09
     if (activeView === "timeline") {
       if (isTotallyEmpty) {
-        return <TimelineView tasks={[]} />;
+        return (
+          <EmptyStateCreateEntry
+            icon={<ClipboardList className="h-12 w-12 opacity-20" />}
+            message="还没有任务，开始记录你的第一个任务吧"
+            onCreateClick={handleOpenCreateDialogForEmpty}
+          />
+        );
       }
       return (
         <TimelineView
@@ -103,7 +176,7 @@ export function Tasks() {
           tasks={filteredTasks}
           emptyIcon={<ClipboardList className="h-12 w-12 opacity-20" />}
           emptyMessage="还没有任务，开始记录你的第一个任务吧"
-          emptyAction={{ label: "去创建任务", onClick: () => navigate("/") }}
+          emptyAction={{ label: "去创建任务", onClick: handleOpenCreateDialogForEmpty }}
           selectable={selectMode}
           selectedIds={selectedIds}
           onSelect={toggleSelect}
@@ -177,22 +250,33 @@ export function Tasks() {
             </div>
           </CardHeader>
 
-          {/* F03: 类型子 Tab 栏 */}
-          <div className="border-b px-6 py-2 flex gap-1">
-            {TASK_SUB_TABS.map((tab) => (
-              <button
-                key={tab.key}
-                data-active={activeSubTab === tab.key}
-                onClick={() => setActiveSubTab(tab.key)}
-                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  activeSubTab === tab.key
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          {/* F03: 类型子 Tab 栏 + F02: '+New' 按钮 */}
+          <div className="border-b px-6 py-2 flex gap-1 items-center justify-between">
+            <div className="flex gap-1">
+              {TASK_SUB_TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  data-active={activeSubTab === tab.key}
+                  onClick={() => setActiveSubTab(tab.key)}
+                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                    activeSubTab === tab.key
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenCreateDialog}
+              aria-label="新建条目"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              New
+            </Button>
           </div>
 
           {/* 筛选面板 */}
@@ -298,6 +382,19 @@ export function Tasks() {
           </div>
         )}
       </main>
+
+      {/* F02: CreateDialog - 上下文感知创建 */}
+      <CreateDialog
+        open={createDialogOpen}
+        onOpenChange={(open) => {
+          setCreateDialogOpen(open);
+          if (!open) setEmptyStateDefaultType(false);
+        }}
+        defaultType={createDialogDefaultType}
+        allowedTypes={ACTIONABLE_CATEGORIES}
+        onSuccess={handleCreateSuccess}
+        skipStoreRefetch
+      />
     </>
   );
 }

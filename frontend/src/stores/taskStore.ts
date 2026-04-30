@@ -40,7 +40,7 @@ interface TaskStore {
     end_date?: string;
     limit?: number;
   }) => Promise<void>;
-  createEntry: (data: EntryCreate) => Promise<Task>;
+  createEntry: (data: EntryCreate, options?: { skipRefetch?: boolean }) => Promise<Task>;
   updateEntry: (id: string, data: EntryUpdate) => Promise<void>;
   addTasks: (tasks: { type: string; title: string; content?: string; category: Category; status: TaskStatus; tags?: string[] }[]) => Promise<void>;
   updateTaskStatus: (id: string, status: TaskStatus) => Promise<void>;
@@ -88,13 +88,17 @@ export const useTaskStore = create<TaskStore>()((set, get) => ({
     }
   },
 
-  createEntry: async (data: EntryCreate) => {
+  createEntry: async (data: EntryCreate, options?: { skipRefetch?: boolean }) => {
     set({ isLoading: true, error: null });
     try {
       const entry = await apiCreateEntry(data);
       trackEvent("entry_created", { category: data.type });
-      // 创建成功后重新获取列表
-      await get().fetchEntries();
+      // 创建成功后重新获取列表（除非调用方要自行刷新）
+      if (!options?.skipRefetch) {
+        await get().fetchEntries();
+      } else {
+        set({ isLoading: false });
+      }
       return entry;
     } catch (error) {
       set({

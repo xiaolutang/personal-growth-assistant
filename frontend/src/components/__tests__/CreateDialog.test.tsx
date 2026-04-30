@@ -201,6 +201,54 @@ describe("CreateDialog", () => {
     expect(onSuccess).toHaveBeenCalledWith(mockEntry);
   });
 
+  // --- AC: skipStoreRefetch 控制 ---
+  it("skipStoreRefetch=true 时 createEntry 传 { skipRefetch: true }", async () => {
+    mockCreateEntry.mockResolvedValueOnce(mockEntry);
+    const user = userEvent.setup();
+
+    render(
+      <CreateDialog
+        {...defaultProps}
+        defaultType="task"
+        skipStoreRefetch
+      />
+    );
+
+    await user.type(screen.getByLabelText("标题"), "跳过刷新");
+    await user.click(screen.getByText("创建"));
+
+    await waitFor(() => {
+      expect(mockCreateEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "task", title: "跳过刷新" }),
+        { skipRefetch: true },
+      );
+    });
+  });
+
+  it("默认（不传 skipStoreRefetch）时 createEntry 不传第二参数", async () => {
+    mockCreateEntry.mockResolvedValueOnce(mockEntry);
+    const user = userEvent.setup();
+
+    render(
+      <CreateDialog
+        {...defaultProps}
+        defaultType="task"
+      />
+    );
+
+    await user.type(screen.getByLabelText("标题"), "默认刷新");
+    await user.click(screen.getByText("创建"));
+
+    await waitFor(() => {
+      // 只传了一个参数（data），没有第二个参数
+      expect(mockCreateEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "task", title: "默认刷新" }),
+      );
+    });
+    // 确认只有 1 个参数
+    expect(mockCreateEntry.mock.calls[0].length).toBe(1);
+  });
+
   // --- AC: 回车快速提交（inbox 单字段场景） ---
   it("inbox 类型 → 输入标题 → 回车 → 直接创建", async () => {
     mockCreateEntry.mockResolvedValueOnce({ ...mockEntry, category: "inbox" });

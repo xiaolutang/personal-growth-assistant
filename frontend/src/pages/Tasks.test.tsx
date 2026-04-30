@@ -59,6 +59,20 @@ vi.mock("@/components/TaskList", () => ({
   ),
 }));
 
+// Mock CreateDialog
+vi.mock("@/components/CreateDialog", () => ({
+  CreateDialog: ({ open, defaultType, onOpenChange }: {
+    open: boolean;
+    defaultType?: string | null;
+    onOpenChange: (open: boolean) => void;
+  }) => open ? (
+    <div data-testid="create-dialog">
+      <span data-testid="create-dialog-default-type">{defaultType ?? "none"}</span>
+      <button data-testid="create-dialog-close" onClick={() => onOpenChange(false)}>关闭</button>
+    </div>
+  ) : null,
+}));
+
 beforeEach(() => {
   resetStore();
   vi.clearAllMocks();
@@ -121,7 +135,7 @@ describe("F139: Tasks 空状态展示", () => {
     expect(screen.getByText("去创建任务")).toBeInTheDocument();
   });
 
-  it("点击快速创建入口导航到首页", async () => {
+  it("点击快速创建入口弹出 CreateDialog(defaultType='task')，不再导航到首页", async () => {
     useTaskStore.setState({
       tasks: [],
       isLoading: false,
@@ -133,8 +147,10 @@ describe("F139: Tasks 空状态展示", () => {
     const createBtn = await screen.findByText("去创建任务");
     await userEvent.click(createBtn);
 
-    // 验证 navigate 被调用，目标是首页 "/"
-    expect(mockNavigate).toHaveBeenCalledWith("/");
+    // F02: 不再 navigate("/")，而是弹出 CreateDialog
+    expect(mockNavigate).not.toHaveBeenCalledWith("/");
+    expect(screen.getByTestId("create-dialog")).toBeInTheDocument();
+    expect(screen.getByTestId("create-dialog-default-type")).toHaveTextContent("task");
   });
 
   it("有任务时正常显示列表，不显示空状态", async () => {
