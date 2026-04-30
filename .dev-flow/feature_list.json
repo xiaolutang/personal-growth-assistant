@@ -11,10 +11,10 @@
     "started_at": "2026-04-30",
     "summary": {
       "total": 5,
-      "completed": 3,
+      "completed": 5,
       "review_passed": 1,
       "in_progress": 0,
-      "pending": 2
+      "pending": 0
     }
   },
   "workflow": {
@@ -276,6 +276,9 @@
       "description": "在 CreateDialog 和 QuickCaptureBar 中增加智能提示。1）日期关键词解析（两个入口共享）：输入'明天'、'后天'、'下周一'等中文日期词时自动填充日期字段。2）类型建议（仅 CreateDialog）：根据输入内容特征建议条目类型，点击立即切换。QuickCaptureBar 仅做 inbox/task，不展示类型建议。实现为共享 hook useSmartSuggestions，位于 lib/，日期解析两个入口复用，类型建议仅 CreateDialog 消费。",
       "verification": "F1",
       "depends_on": ["S01", "F03"],
+      "status": "completed",
+      "started_at": "2026-04-30",
+      "completed_at": "2026-04-30",
       "acceptance_criteria": [
         "日期解析工具函数 parseDateKeyword(text) 和共享 hook useSmartSuggestions() 均位于 lib/",
         "支持关键词及确定性规则：今天→当天、明天→+1天、后天→+2天、大后天→+3天、本周X→本周已过的日期视为下周同日（如周三输入'本周一'→下周一）、下周一~下周日→下周对应日、下个月→下月同日（若不存在如1/31→2/28）",

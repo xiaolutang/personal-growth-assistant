@@ -3,6 +3,7 @@ import { Send, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { useTaskStore } from "@/stores/taskStore";
 import { CreateDialog } from "@/components/CreateDialog";
+import { useSmartSuggestions } from "@/lib/useSmartSuggestions";
 import type { Priority, EntryCreate } from "@/types/task";
 
 const PRIORITY_OPTIONS: { value: Priority | ""; label: string }[] = [
@@ -27,6 +28,36 @@ export function QuickCaptureBar({ focusTrigger }: QuickCaptureBarProps) {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const createEntry = useTaskStore((s) => s.createEntry);
+
+  // 智能提示 hook（仅日期解析，不启用类型建议）
+  const {
+    autoFillEvent,
+    dateHint,
+    onTitleChange: onSmartTitleChange,
+    onDateCleared,
+    onDateManuallyChanged,
+    reset: resetSmartSuggestions,
+  } = useSmartSuggestions({ enableTypeSuggestion: false });
+
+  // 响应日期自动填充/清除事件（仅在展开模式下生效）
+  useEffect(() => {
+    if (!autoFillEvent || !expanded) return;
+    if (autoFillEvent.date) {
+      setPlannedDate(autoFillEvent.date);
+    } else if (autoFillEvent.date === null) {
+      setPlannedDate("");
+    }
+  }, [autoFillEvent, expanded]);
+
+  // 展开时基于当前标题触发日期解析（仅处理"先输入后展开"的场景）
+  // 注意：展开后的正常输入由 handleTitleChange 中的 onSmartTitleChange 处理
+  const prevExpandedRef = useRef(false);
+  useEffect(() => {
+    if (expanded && !prevExpandedRef.current && title) {
+      onSmartTitleChange(title);
+    }
+    prevExpandedRef.current = expanded;
+  }, [expanded, onSmartTitleChange, title]);
 
   const trimmed = title.trim();
   const canSubmit = trimmed.length > 0 && !submitting;
@@ -59,6 +90,8 @@ export function QuickCaptureBar({ focusTrigger }: QuickCaptureBarProps) {
       setTitle("");
       setPriority("");
       setPlannedDate("");
+      // 提交成功后重置智能提示（清除 suppress，下次可重新自动填充）
+      resetSmartSuggestions();
       // 展开模式提交后收起
       setExpanded(false);
     } catch (err) {
@@ -67,7 +100,7 @@ export function QuickCaptureBar({ focusTrigger }: QuickCaptureBarProps) {
     } finally {
       setSubmitting(false);
     }
-  }, [trimmed, submitting, expanded, priority, plannedDate, createEntry]);
+  }, [trimmed, submitting, expanded, priority, plannedDate, createEntry, resetSmartSuggestions]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -89,6 +122,33 @@ export function QuickCaptureBar({ focusTrigger }: QuickCaptureBarProps) {
     setDialogOpen(true);
   }, []);
 
+  /** 标题变更处理 */
+  const handleTitleChange = useCallback(
+    (value: string) => {
+      setTitle(value);
+      // 仅在展开模式下触发日期解析（收起模式是 inbox，无日期字段）
+      if (expanded) {
+        onSmartTitleChange(value);
+      }
+    },
+    [onSmartTitleChange, expanded],
+  );
+
+  /** 计划日期变更处理 */
+  const handlePlannedDateChange = useCallback(
+    (value: string) => {
+      setPlannedDate(value);
+      if (value === "" && plannedDate !== "") {
+        // 用户手动清除了日期字段，触发 suppress
+        onDateCleared();
+      } else if (value !== "" && value !== plannedDate) {
+        // 用户手动修改了日期字段（非清除），检查是否需要清除提示
+        onDateManuallyChanged(value);
+      }
+    },
+    [plannedDate, onDateCleared, onDateManuallyChanged],
+  );
+
   return (
     <div className="space-y-2">
       {/* 输入栏主区域 */}
@@ -97,7 +157,7 @@ export function QuickCaptureBar({ focusTrigger }: QuickCaptureBarProps) {
           ref={inputRef}
           type="text"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => handleTitleChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="记录灵感或任务..."
           disabled={submitting}
@@ -158,10 +218,14 @@ export function QuickCaptureBar({ focusTrigger }: QuickCaptureBarProps) {
                 type="date"
                 aria-label="计划日期"
                 value={plannedDate}
-                onChange={(e) => setPlannedDate(e.target.value)}
+                onChange={(e) => handlePlannedDateChange(e.target.value)}
                 disabled={submitting}
                 className="w-full px-2 py-1.5 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
+              {/* 日期高亮提示 */}
+              {dateHint && plannedDate && (
+                <p className="text-xs text-primary/80 mt-1">{dateHint}</p>
+              )}
             </div>
           </div>
           <div className="flex items-center justify-between">

@@ -3,6 +3,7 @@ import { X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { categoryConfig } from "@/config/constants";
 import { useTaskStore } from "@/stores/taskStore";
+import { useSmartSuggestions } from "@/lib/useSmartSuggestions";
 import type { Task, Category, Priority, EntryCreate } from "@/types/task";
 
 // 从 categoryConfig 派生全部分类，保持单一权威来源
@@ -77,6 +78,38 @@ export function CreateDialog({
 
   const createEntry = useTaskStore((s) => s.createEntry);
 
+  // 智能提示 hook（日期解析 + 类型建议）
+  const {
+    suggestedDate,
+    dateHint,
+    typeSuggestion,
+    autoFillEvent,
+    onTitleChange: onSmartTitleChange,
+    onDateCleared,
+    onDateManuallyChanged,
+    clearTypeSuggestion,
+    reset: resetSmartSuggestions,
+  } = useSmartSuggestions({ enableTypeSuggestion: true });
+
+  // 响应日期自动填充/清除事件（仅在 task 类型下生效）
+  useEffect(() => {
+    if (!autoFillEvent) return;
+    if (selectedType !== "task") return;
+    if (autoFillEvent.date) {
+      setPlannedDate(autoFillEvent.date);
+    } else if (autoFillEvent.date === null) {
+      setPlannedDate("");
+    }
+  }, [autoFillEvent, selectedType]);
+
+  // 当 selectedType 变为 task 且已有建议日期时，应用建议日期
+  // 处理"先输入标题后选类型"的场景
+  useEffect(() => {
+    if (selectedType === "task" && suggestedDate) {
+      setPlannedDate(suggestedDate);
+    }
+  }, [selectedType, suggestedDate]);
+
   // 同步对话框开关
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -99,12 +132,14 @@ export function CreateDialog({
       setSubmitting(false);
       setError(null);
       setValidationError(null);
+      // 重置智能提示状态（包括 suppress）
+      resetSmartSuggestions();
       // 延迟聚焦让 DOM 先渲染
       requestAnimationFrame(() => {
         titleRef.current?.focus();
       });
     }
-  }, [open, resolvedDefaultType]);
+  }, [open, resolvedDefaultType, resetSmartSuggestions]);
 
   // 当 allowedTypes 动态变化时，若 selectedType 不再有效则重置
   useEffect(() => {
@@ -196,7 +231,50 @@ export function CreateDialog({
     setPlannedDate("");
     setValidationError(null);
     setError(null);
+    // 清除类型建议（避免与新选中类型冲突）
+    clearTypeSuggestion();
   }, []);
+
+  /** 标题变更处理 */
+  const handleTitleChange = useCallback(
+    (value: string) => {
+      setTitle(value);
+      if (validationError) setValidationError(null);
+      onSmartTitleChange(value);
+    },
+    [validationError, onSmartTitleChange],
+  );
+
+  /** 计划日期变更处理 */
+  const handlePlannedDateChange = useCallback(
+    (value: string) => {
+      setPlannedDate(value);
+      if (value === "" && plannedDate !== "") {
+        // 用户手动清除了日期字段，触发 suppress
+        onDateCleared();
+      } else if (value !== "" && value !== plannedDate) {
+        // 用户手动修改了日期字段（非清除），检查是否需要清除提示
+        onDateManuallyChanged(value);
+      }
+    },
+    [plannedDate, onDateCleared, onDateManuallyChanged],
+  );
+
+  /** 类型建议点击处理 */
+  const handleTypeSuggestionClick = useCallback(
+    (suggestedType: string) => {
+      // 仅在建议类型与当前选中不同时才执行切换（避免清空已填写内容）
+      if (
+        availableTypes.includes(suggestedType as Category) &&
+        suggestedType !== selectedType
+      ) {
+        // 复用 handleTypeChange 清理 content、priority、plannedDate、校验/错误状态
+        handleTypeChange(suggestedType as Category);
+      }
+      clearTypeSuggestion();
+    },
+    [availableTypes, clearTypeSuggestion, handleTypeChange, selectedType],
+  );
 
   // selectedType 为 null 时，动态字段和按钮不渲染
 
@@ -265,15 +343,24 @@ export function CreateDialog({
             aria-label="标题"
             type="text"
             value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              if (validationError) setValidationError(null);
-            }}
+            onChange={(e) => handleTitleChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="输入标题..."
             disabled={submitting}
             className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
+          {/* 类型建议（仅在建议类型可用时显示） */}
+          {typeSuggestion && availableTypes.includes(typeSuggestion.type as Category) && (
+            <p className="text-xs text-primary mt-1">
+              <button
+                type="button"
+                onClick={() => handleTypeSuggestionClick(typeSuggestion.type)}
+                className="hover:underline"
+              >
+                {typeSuggestion.label}
+              </button>
+            </p>
+          )}
           {validationError && (
             <p className="text-sm text-red-500 dark:text-red-400 mt-1">{validationError}</p>
           )}
@@ -332,10 +419,14 @@ export function CreateDialog({
               aria-label="计划日期"
               type="date"
               value={plannedDate}
-              onChange={(e) => setPlannedDate(e.target.value)}
+              onChange={(e) => handlePlannedDateChange(e.target.value)}
               disabled={submitting}
               className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
+            {/* 日期高亮提示 */}
+            {dateHint && plannedDate && (
+              <p className="text-xs text-primary/80 mt-1">{dateHint}</p>
+            )}
           </div>
         )}
 
