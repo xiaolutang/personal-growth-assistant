@@ -357,10 +357,10 @@ export function GoalsPage() {
           </div>
         )}
 
-        <CreateGoalDialog open={showCreate} onClose={() => setShowCreate(false)} onCreated={fetchGoals} />
         </PullToRefresh>
         )}
       </main>
+      <CreateGoalDialog open={showCreate} onClose={() => setShowCreate(false)} onCreated={fetchGoals} />
     </>
   );
 }
