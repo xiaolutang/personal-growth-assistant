@@ -2,6 +2,16 @@
 
 ## 已完成需求包
 
+### R048: 创建体验升级
+
+- 状态: 已完成
+- 分支: `feat/R048-creation-experience`
+- 主题: 三页面补齐直接创建入口 — CreateDialog 通用表单 + 任务页+New + 首页智能输入栏 + 探索页创建 + 智能提示
+- 目录: `R048_creation-experience-upgrade/`
+- 完成时间: 2026-05-03
+- 任务数: 5 (S01, F02, F03, F04, F05)
+- 验证: vitest 905 + build + codex_plugin code-review + simplify + 架构收敛
+
 ### R047: 任务/探索 Tab 边界重新划分
 
 - 状态: 已完成
