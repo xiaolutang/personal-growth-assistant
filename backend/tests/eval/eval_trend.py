@@ -186,6 +186,9 @@ def print_diff(records: List[Dict[str, Any]], n: int, m: int) -> str:
     lines: List[str] = []
     lines.append(f"## 评估对比: 第 {n} 次 vs 第 {m} 次")
     lines.append("")
+    lines.append("> **注意**: 当前仅对比聚合指标（通过率/通过数/违规数）。")
+    lines.append("> case-level 差异（新增失败/回归修复/分类维度 delta）待 history 扩展后支持。")
+    lines.append("")
 
     time_n = rec_n.get("eval_time", "N/A")[:19]
     time_m = rec_m.get("eval_time", "N/A")[:19]

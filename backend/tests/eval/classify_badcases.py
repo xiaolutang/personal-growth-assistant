@@ -235,10 +235,10 @@ def generate_testcase_templates(
 
         template = {
             "id": f"BAD-{i:03d}",
+            "category": category,
             "source_message_id": message_id,
             "source_reason": reason,
             "source_detail": record.get("detail", ""),
-            "suggested_category": category,
             "template_type": "negative",
             "user_input": "<待填充：该 badcase 对应的用户输入>",
             "should_not_call": [],

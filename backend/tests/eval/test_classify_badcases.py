@@ -343,7 +343,7 @@ class TestTemplateGeneration:
         assert t["source_message_id"] == "msg-001"
         assert t["source_reason"] == "信息不准确"
         assert t["source_detail"] == "Agent 说有 5 个任务"
-        assert t["suggested_category"] == "accuracy"
+        assert t["category"] == "accuracy"
         assert t["template_type"] == "negative"
         assert t["status"] == "draft"
 

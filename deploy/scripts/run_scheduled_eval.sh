@@ -107,23 +107,25 @@ if [[ "$health_ok" != "true" ]]; then
     die "健康检查失败，服务不可用"
 fi
 
-# ── Step 2: 登录获取 token ──
+# ── Step 2: 登录验证（仅 dry-run 模式） ──
 
-log "登录: ${EVAL_USERNAME}@${BASE_URL}"
+if [[ "$DRY_RUN" == "true" ]]; then
+    log "验证登录: ${EVAL_USERNAME}@${BASE_URL}"
 
-TOKEN_RESPONSE=$(curl -sf --max-time 10 \
-    -X POST \
-    -H "Content-Type: application/json" \
-    -d "{\"username\": \"${EVAL_USERNAME}\", \"password\": \"${EVAL_PASSWORD}\"}" \
-    "${BASE_URL}/auth/login" 2>/dev/null) || die "登录请求失败"
+    TOKEN_RESPONSE=$(curl -sf --max-time 10 \
+        -X POST \
+        -H "Content-Type: application/json" \
+        -d "{\"username\": \"${EVAL_USERNAME}\", \"password\": \"${EVAL_PASSWORD}\"}" \
+        "${BASE_URL}/auth/login" 2>/dev/null) || die "登录请求失败"
 
-TOKEN=$(echo "$TOKEN_RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin).get('access_token', ''))" 2>/dev/null) || die "解析登录响应失败"
+    TOKEN=$(echo "$TOKEN_RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin).get('access_token', ''))" 2>/dev/null) || die "解析登录响应失败"
 
-if [[ -z "$TOKEN" ]]; then
-    die "登录失败：未获取到 access_token"
+    if [[ -z "$TOKEN" ]]; then
+        die "登录失败：未获取到 access_token"
+    fi
+
+    log "登录验证成功"
 fi
-
-log "登录成功"
 
 # ── Step 3: dry-run 模式 ──
 
@@ -144,7 +146,8 @@ cd "$PROJECT_ROOT/backend"
 
 EVAL_EXIT_CODE=0
 EVAL_OUTPUT=$(uv run python -m tests.eval.run_eval \
-    --token "$TOKEN" \
+    --username "$EVAL_USERNAME" \
+    --password "$EVAL_PASSWORD" \
     --dataset all \
     --base-url "$BASE_URL" \
     2>&1) || EVAL_EXIT_CODE=$?
@@ -161,7 +164,7 @@ fi
 
 # ── Step 5: 解析通过率 ──
 
-PASS_RATE=$(echo "$EVAL_OUTPUT" | grep -oE '通过率[: ]+[0-9]+(\.[0-9]+)?%' | grep -oE '[0-9]+(\.[0-9]+)?' | head -1 || echo "0")
+PASS_RATE=$(echo "$EVAL_OUTPUT" | grep -oE 'Overall pass rate: [0-9]+(\.[0-9]+)?%' | grep -oE '[0-9]+(\.[0-9]+)?' | head -1 || echo "0")
 
 if [[ -z "$PASS_RATE" ]]; then
     PASS_RATE="0"

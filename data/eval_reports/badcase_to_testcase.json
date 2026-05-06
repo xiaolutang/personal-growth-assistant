@@ -1,10 +1,10 @@
 [
   {
     "id": "BAD-001",
+    "category": "accuracy",
     "source_message_id": "msg-abc123",
     "source_reason": "信息不准确",
     "source_detail": "Agent 说今天有 5 个任务，实际只有 2 个",
-    "suggested_category": "accuracy",
     "template_type": "negative",
     "user_input": "<待填充：该 badcase 对应的用户输入>",
     "should_not_call": [],
@@ -20,10 +20,10 @@
   },
   {
     "id": "BAD-002",
+    "category": "comprehension",
     "source_message_id": "msg-neg-001",
     "source_reason": "理解错了",
     "source_detail": "Agent 把任务理解成了笔记",
-    "suggested_category": "comprehension",
     "template_type": "negative",
     "user_input": "<待填充：该 badcase 对应的用户输入>",
     "should_not_call": [],
@@ -39,10 +39,10 @@
   },
   {
     "id": "BAD-003",
+    "category": "completeness",
     "source_message_id": "msg-store-001",
     "source_reason": "不完整",
     "source_detail": "缺少关键信息",
-    "suggested_category": "completeness",
     "template_type": "negative",
     "user_input": "<待填充：该 badcase 对应的用户输入>",
     "should_not_call": [],

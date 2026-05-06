@@ -30,7 +30,7 @@ from tests.eval.transcript import EvalTranscript, TranscriptStore
 # ── 默认数据目录 ──
 
 DEFAULT_TRANSCRIPTS_DIR = (
-    Path(__file__).resolve().parents[2] / "data" / "eval_transcripts"
+    Path(__file__).resolve().parents[3] / "data" / "eval_transcripts"
 )
 
 
