@@ -1,0 +1,86 @@
+{
+  "transcript_id": "eval-274",
+  "timestamp": "2026-05-06T22:56:37.378253",
+  "test_case_id": "ST-020",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "新建笔记：GraphQL 入门指南，内容写上 GraphQL 是一种 API 查询语言，标签加 graphql 和 api",
+    "output": "笔记已创建好：\n\n- **标题**：GraphQL 入门指南\n- **内容**：GraphQL 是一种 API 查询语言\n- **标签**：graphql, api\n\n后续如果想补充更多内容，随时告诉我。",
+    "tool_calls": [
+      {
+        "tool": "create_entry",
+        "args": {
+          "category": "note",
+          "title": "GraphQL 入门指南",
+          "content": "GraphQL 是一种 API 查询语言",
+          "tags": [
+            "graphql",
+            "api"
+          ]
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 7963.910102844238,
+    "iteration_count": 1
+  },
+  "judge_result": {
+    "test_id": "ST-020",
+    "total_score": 50,
+    "max_possible_score": 50,
+    "average_score": 5.0,
+    "weighted_average": 5.0,
+    "percentage": 100.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 5,
+        "reasoning": "完美选择了创建笔记的工具。"
+      },
+      "param_extraction": {
+        "score": 5,
+        "reasoning": "完美提取了标题、内容、标签等所有参数，准确无误。"
+      },
+      "response_quality": {
+        "score": 5,
+        "reasoning": "回复自然清晰，结构化地展示了创建结果，并友好地提供了后续帮助。"
+      },
+      "error_handling": {
+        "score": 5,
+        "reasoning": "工具调用成功，无异常发生。"
+      },
+      "efficiency": {
+        "score": 5,
+        "reasoning": "一步到位完成操作，无任何冗余步骤。"
+      },
+      "user_experience": {
+        "score": 5,
+        "reasoning": "体验极佳，反馈清晰自然，交互流畅。"
+      },
+      "directness": {
+        "score": 5,
+        "reasoning": "直接给出创建结果，没有多余的寒暄或废话。"
+      },
+      "context_retention": {
+        "score": 5,
+        "reasoning": "首轮对话，无需考虑上下文保持。"
+      },
+      "follow_up_quality": {
+        "score": 5,
+        "reasoning": "单轮任务已闭环，无缺失信息，不需要额外追问。"
+      },
+      "conversation_coherence": {
+        "score": 5,
+        "reasoning": "首轮交互，逻辑完全一致，准确响应了用户指令。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

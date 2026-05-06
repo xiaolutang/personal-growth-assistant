@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-323",
+  "timestamp": "2026-05-06T23:10:21.320115",
+  "test_case_id": "ST-061",
+  "test_case_category": "boundary",
+  "agent_trace": {
+    "input": "12345",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061510061535371098268d9d61ht20gMD)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 60.028791427612305,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-061",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent完全未进行工具调用，无法判断其工具选择能力，系统直接返回了底层API的401鉴权错误。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "Agent未能解析用户的数字输入意图，也没有提取任何参数进行后续处理，直接抛出系统异常。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复直接将底层系统错误（Invalid token、request id等）暴露给用户，毫无帮助且令人困惑。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "完全没有优雅处理系统异常。将内部API错误代码和请求ID直接抛给用户，未提供任何有效的替代方案或问题排查引导。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "Agent处于崩溃状态，未执行任何有效任务步骤，毫无效率可言。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "体验极差。用户只输入了简单的数字，却得到了生硬的内部系统报错，会严重损害产品信任度。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "Agent未能针对用户的输入内容作出直接回应，而是输出了无关的系统级报错信息。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "Agent未能成功初始化并处理当前会话，无法评估其对上下文的保持能力。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent因系统错误直接崩溃，未能提供任何追问或进一步交互的提示。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "对话毫无连贯性，用户的正常输入与Agent返回的底层系统错误信息之间没有任何逻辑关联。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

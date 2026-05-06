@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-306",
+  "timestamp": "2026-05-06T23:07:56.636231",
+  "test_case_id": "ST-052",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "你觉得 Python 和 Go 哪个更好？",
+    "output": "",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 42.112112045288086,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-052",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "没有进行任何工具调用且未生成任何回复，面对主观比较类问题未能选择合适工具或正确回答。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "无工具调用，无参数提取过程。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复完全为空，毫无帮助，用户无法获得任何有效信息。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "遇到需要逻辑分析或比较的问题时直接输出为空，没有任何错误处理或提示。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "无任何实质操作或内容输出，完全无效。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "交互体验极差，Agent对用户的提问毫无反应。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "完全没有回应，没有任何信息传达。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "无历史对话且当前回复为空，无法体现任何上下文保持能力。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "回复为空，没有进行任何追问或引导。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "对话完全无法进行，无连贯性可言。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

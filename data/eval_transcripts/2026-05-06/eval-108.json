@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-108",
+  "timestamp": "2026-05-06T20:02:31.890546",
+  "test_case_id": "ST-019",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "搜索关于 kubernetes 的笔记，只返回 5 条",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': '2e408297-9084-992f-b8af-631ad155889f'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 213.3781909942627,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-019",
+    "total_score": 11,
+    "max_possible_score": 50,
+    "average_score": 1.1,
+    "weighted_average": 1.11,
+    "percentage": 22.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent 未能选择任何工具来搜索笔记，工具调用记录为空。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "Agent 完全未进行工具调用，因此未能提取任何参数。"
+      },
+      "response_quality": {
+        "score": 2,
+        "reasoning": "Agent 将底层系统的 API 错误（模型不存在）直接暴露给用户，对于普通用户来说信息过于专业且没有帮助。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "Agent 未优雅地处理模型不可用的错误，而是直接将异常代码和错误信息抛给用户，未能提供替代方案或有效引导。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "任务完全失败，没有产生任何有效的执行路径。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户体验极差，用户的需求没有得到任何解决，且被暴露了不应看到的系统级错误信息。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "Agent 未能直接回应用户的搜索需求，而是输出了无意义的报错堆栈。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "因系统直接报错，Agent 完全未能理解和利用用户的上下文信息。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "任务执行失败，Agent 没有提供任何合理的追问或后续建议。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "对话逻辑完全断裂，用户的请求与系统的报错响应之间没有任何有意义的联系。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

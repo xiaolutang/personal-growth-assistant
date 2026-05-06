@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-351",
+  "timestamp": "2026-05-06T23:15:48.068804",
+  "test_case_id": "ST-026",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "查看 2024-06-01 到 2024-06-07 的周报",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061515284933514308268d9d6wBzaqfMu)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 53.72810363769531,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-026",
+    "total_score": 15,
+    "max_possible_score": 50,
+    "average_score": 1.5,
+    "weighted_average": 1.49,
+    "percentage": 30.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "由于系统报错（401 Invalid token），Agent未能成功选择和调用任何工具，工具调用记录为空。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于Agent未能进入实际处理阶段，因此无法提取用户输入中的时间等关键参数。"
+      },
+      "response_quality": {
+        "score": 2,
+        "reasoning": "回复具有一定的相关性，正确告知了用户发生错误，但向用户暴露了底层不友好的技术细节（如 Error code: 401 和 request id），体验不佳。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "Agent捕获了系统错误并提示用户稍后再试，但处理不够优雅，直接将API的原始错误信息抛给用户，缺乏对错误的合理包装和更有针对性的引导。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "在鉴权失败的情况下未能执行任何有效操作，此次交互毫无效率可言，属于无效处理。"
+      },
+      "user_experience": {
+        "score": 2,
+        "reasoning": "用户看到了难以理解的原始报错信息，这会引起困惑和不安，整体体验较差。"
+      },
+      "directness": {
+        "score": 3,
+        "reasoning": "Agent直接指出了遇到的问题，没有多余的寒暄或废话，但受限于报错本身的技术细节，直接性打了折扣。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "由于没有对话历史且Agent直接因鉴权失败而中断，未能展现出任何上下文保持能力。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent未能理解用户意图并执行任务，也没有提供任何相关的追问或后续操作建议。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "交互在初始阶段即因系统错误中断，未形成有效的对话逻辑和连贯性。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

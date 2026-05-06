@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-312",
+  "timestamp": "2026-05-06T23:08:51.353602",
+  "test_case_id": "ST-055",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "推荐一些学习编程的资源",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061508315780785238268d9d6sSLYein1)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 61.96880340576172,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-055",
+    "total_score": 11,
+    "max_possible_score": 50,
+    "average_score": 1.1,
+    "weighted_average": 1.09,
+    "percentage": 22.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent在遇到内部API鉴权错误（Invalid token）时，未能选择合适的错误处理机制或兜底工具，而是直接将底层系统错误抛给用户，没有选择正确的工具来妥善处理异常。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于系统直接抛出异常，Agent未能执行任何有效意图识别和参数提取的逻辑，未提取用户问题中的核心参数（如“编程”、“学习资源”）。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复对于用户的问题（推荐学习编程资源）毫无帮助，将毫无意义的系统内部错误代码和请求ID直接展示给用户，内容令人困惑且体验极差。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "Agent虽然以“抱歉”开场并提示“请稍后再试”，勉强算作对错误的响应，但未能优雅地处理异常，暴露了内部API鉴权失败的敏感信息，也没有为用户提供任何实质性的替代方案或引导。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "Agent没有执行任何有效操作来解决用户的需求，直接失败，对解决问题而言毫无效率可言。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户体验极差。用户期待获得编程资源推荐，却收到了一段技术报错信息，完全不知所云且需求未被满足。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "完全没有回应核心问题，用户只看到了废话（系统错误信息），没有获取到任何与“学习编程资源”相关的实质性内容。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "由于系统直接抛出未处理的异常，Agent未能理解并记住用户的任何输入信息，完全丧失了上下文处理能力。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent因为系统错误而崩溃，未能与用户进行正常交互，没有任何有效追问来澄清用户需要哪种编程语言或具体的学习方向。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户的正常提问与Agent抛出的底层API错误代码毫无逻辑关联，对话在第一轮即出现严重的断层与割裂。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

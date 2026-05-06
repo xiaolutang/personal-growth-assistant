@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-090",
+  "timestamp": "2026-05-06T20:00:33.227015",
+  "test_case_id": "ST-020",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "新建笔记：GraphQL 入门指南，内容写上 GraphQL 是一种 API 查询语言，标签加 graphql 和 api",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': '0d951e62-e3aa-9629-aea5-6feea0409669'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 127.15792655944824,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-020",
+    "total_score": 12,
+    "max_possible_score": 50,
+    "average_score": 1.2,
+    "weighted_average": 1.2,
+    "percentage": 24.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "工具调用记录为空，Agent未能选择任何工具来尝试执行创建笔记的操作。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于没有发起任何工具调用，Agent未能从用户输入中提取任何参数（标题、内容、标签）。"
+      },
+      "response_quality": {
+        "score": 2,
+        "reasoning": "回复内容仅仅是原样暴露了底层API报错（模型 glm-4.7v not found），对用户而言缺乏帮助，仅能做到提示稍后再试。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "处理异常的方式不佳，将系统内部配置错误（大模型版本号错误）直接暴露给用户，且没有提供有效的替代方案。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "遇到内部错误直接中断，没有进行任何有效操作，效率极低。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户体验极差，任务完全没有执行，且展示了用户无法理解的系统级报错信息，令人困惑。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "没有直接解决用户的核心需求，而是直接抛出异常代码，没有任何前置的引导或处理。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "首次交互即发生严重错误，未能利用任何上下文信息去执行用户的请求。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "完全没有提供合理的追问，只是让用户稍后重试，未能进一步引导用户。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "对话逻辑完全脱节，用户要求创建笔记，Agent回复底层大模型不存在的错误，毫无连贯性可言。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

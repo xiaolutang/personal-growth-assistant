@@ -1,0 +1,83 @@
+{
+  "transcript_id": "eval-017",
+  "timestamp": "2026-05-07T00:13:42.967703",
+  "test_case_id": "ST-017",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "创建任务：准备周五的技术分享演示，优先级中等，计划日期 2024-03-15",
+    "output": "已创建任务：\n\n- **标题**：准备周五的技术分享演示\n- **优先级**：中等\n- **计划日期**：2024-03-15\n- **状态**：进行中\n\n如果需要补充具体内容（比如分享的主题、大纲要点等），随时告诉我。",
+    "tool_calls": [
+      {
+        "tool": "create_entry",
+        "args": {
+          "category": "task",
+          "planned_date": "2024-03-15",
+          "priority": "medium",
+          "title": "准备周五的技术分享演示"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 7576.180934906006,
+    "iteration_count": 1
+  },
+  "judge_result": {
+    "test_id": "ST-017",
+    "total_score": 49,
+    "max_possible_score": 50,
+    "average_score": 4.9,
+    "weighted_average": 4.91,
+    "percentage": 98.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 5,
+        "reasoning": "完美选择了创建条目的工具来处理任务创建需求。"
+      },
+      "param_extraction": {
+        "score": 5,
+        "reasoning": "用户提供的标题、优先级（中等）、计划日期等关键参数均被完整且准确地提取并映射到正确的字段。"
+      },
+      "response_quality": {
+        "score": 5,
+        "reasoning": "回复格式清晰，自然且直观地总结了任务详情，并提供了后续帮助的建议，体验极佳。"
+      },
+      "error_handling": {
+        "score": 5,
+        "reasoning": "工具调用成功，未触发异常。针对无异常的正常流程，Agent 清晰地确认了操作结果，处理得当。"
+      },
+      "efficiency": {
+        "score": 5,
+        "reasoning": "单次调用即完成任务，无任何冗余步骤，执行路径最短，非常高效。"
+      },
+      "user_experience": {
+        "score": 5,
+        "reasoning": "交互十分流畅，结果展示一目了然，结尾的贴心提示进一步提升了整体体验。"
+      },
+      "directness": {
+        "score": 5,
+        "reasoning": "毫无废话与冗余铺垫，直接展示用户最关心的任务创建结果，精准命中需求。"
+      },
+      "context_retention": {
+        "score": 5,
+        "reasoning": "作为首轮对话，Agent 完美解析了当前输入中的所有信息，无前文遗漏。"
+      },
+      "follow_up_quality": {
+        "score": 4,
+        "reasoning": "主动且合理的追问，提示用户可以补充大纲等细节，有助于进一步完善任务。"
+      },
+      "conversation_coherence": {
+        "score": 5,
+        "reasoning": "逻辑清晰，工具调用结果与最终文本回复完全一致，对话连贯且符合常理。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

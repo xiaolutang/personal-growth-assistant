@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-345",
+  "timestamp": "2026-05-06T23:13:58.078017",
+  "test_case_id": "ST-020",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "新建笔记：GraphQL 入门指南，内容写上 GraphQL 是一种 API 查询语言，标签加 graphql 和 api",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 20260506151342576609628268d9d6P56HevuS)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 55.052995681762695,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-020",
+    "total_score": 17,
+    "max_possible_score": 50,
+    "average_score": 1.7,
+    "weighted_average": 1.68,
+    "percentage": 34.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "工具调用记录为空，Agent 未选择任何工具来尝试完成创建笔记的任务。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于未调用任何工具，未能提取用户输入的标题、内容和标签等参数。"
+      },
+      "response_quality": {
+        "score": 2,
+        "reasoning": "回复虽然指出了系统遇到了 401 Invalid token 错误并建议稍后重试，但将底层原始的错误请求 ID 暴露给用户，质量较低。"
+      },
+      "error_handling": {
+        "score": 3,
+        "reasoning": "捕获到了鉴权失败的异常，并给出了“请稍后再试”的提示，基本做到了错误处理，但不够优雅，缺乏对用户的引导。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "由于没有执行任何工具调用，任务完全失败，效率极低。"
+      },
+      "user_experience": {
+        "score": 2,
+        "reasoning": "用户明确要求新建笔记，但收到的是包含原始报错信息的失败提示，体验不佳。"
+      },
+      "directness": {
+        "score": 4,
+        "reasoning": "直接向用户反馈了当前系统无法处理的结果，没有多余的废话。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "无对话历史，且未能成功利用当前输入执行任务。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "在任务失败后，Agent 仅建议“稍后再试”，没有进行任何有效的追问或后续处理。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "单轮交互，Agent 因系统错误未能针对用户的指令进行任何有效处理，无有效对话逻辑可言。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

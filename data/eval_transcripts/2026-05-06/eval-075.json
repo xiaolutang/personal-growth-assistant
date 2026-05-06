@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-075",
+  "timestamp": "2026-05-06T19:59:00.594794",
+  "test_case_id": "ST-024",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "获取 entry-test001 的详细信息",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': 'bc6f5941-93cf-9cb9-b07d-f8ea4b21830e'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 207.60822296142578,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-024",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent未能选择任何工具，工具调用记录为空，直接导致了底层模型调用失败的错误暴露给用户。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "未能提取用户输入中的参数（'entry-test001'），也没有进行任何工具调用尝试。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复将底层系统报错（模型不存在）直接抛给用户，毫无帮助且极其困惑，用户体验极差。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "未对异常进行任何包装或优雅降级处理，直接将后端的技术错误代码和模型信息展示给用户，缺乏基础错误处理机制。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "Agent完全未能执行用户任务，产生无效输出，效率极低。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "体验极差，用户看到的是无法理解的技术报错，核心需求完全没有被满足。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "虽然没有废话，但给出的是毫无意义且无法理解的报错信息，无法视为对用户请求的直接回应。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "在第一轮对话中完全崩溃，未能处理任何上下文信息。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "没有提供任何有效的追问或替代方案，仅提示用户'稍后再试'，但系统模型配置错误不是重试能解决的。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "对话起始就彻底失败，未能建立任何正常的对话逻辑。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

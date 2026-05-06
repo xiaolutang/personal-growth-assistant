@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-104",
+  "timestamp": "2026-05-06T20:02:14.800652",
+  "test_case_id": "ST-018",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "把 entry-abc123 的状态改成进行中",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': '508d0dbf-fb18-986c-b455-1c613e50abb6'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 217.3750400543213,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-018",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "从工具调用记录为空且直接返回底层模型404错误来看，Agent未能选择任何工具来处理用户更新状态的请求，完全未能调用业务工具。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "未能进行任何参数提取。用户明确提供了实体ID 'entry-abc123' 和目标状态 '进行中'，但Agent未能将这些参数传递给任何工具。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复直接暴露了系统底层的模型调用错误，而非业务相关的提示。这对用户毫无帮助，且暴露了系统内部错误信息，质量极低。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "未进行任何优雅的错误处理。Agent将底层大模型配置错误（model_not_found）直接抛给用户，并给出“请稍后再试”这种针对瞬时错误的无意义建议。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "任务完全失败，没有执行任何有效的业务步骤，效率无从谈起。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户体验极差。用户不仅未能完成状态更改的意图，还要面对一段充满技术术语（如 Error code, request_id）的底层错误日志，感到困惑和沮丧。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "Agent未能直接解决用户的核心问题，而是输出了系统内部错误信息，未提供任何实质性的直接回应。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "单轮交互且任务彻底失败，Agent未能利用任何上下文去完成任务。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "未提供任何追问或替代方案，仅以“请稍后再试”草草结束对话。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户的输入是明确的业务操作，而Agent的回复是系统级错误，在对话逻辑上完全脱节，毫无连贯性。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

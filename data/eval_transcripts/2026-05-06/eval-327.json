@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-327",
+  "timestamp": "2026-05-06T23:11:01.426058",
+  "test_case_id": "ST-063",
+  "test_case_category": "boundary",
+  "agent_trace": {
+    "input": "搜索",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 20260506151039806347928268d9d6DX9rt3T2)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 57.81984329223633,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-063",
+    "total_score": 16,
+    "max_possible_score": 50,
+    "average_score": 1.6,
+    "weighted_average": 1.6,
+    "percentage": 32.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "用户输入仅为“搜索”，意图不明确且缺少参数，Agent直接抛出底层系统的401鉴权错误（Invalid token），未调用任何搜索工具或向用户追问意图，工具选择完全失败。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "没有进行任何参数提取，工具调用记录为空，且用户输入也完全没有提供可供提取的有效参数。"
+      },
+      "response_quality": {
+        "score": 2,
+        "reasoning": "回复内容直接暴露了底层API的报错信息（Error code: 401 - Invalid token），这对普通用户来说不仅毫无帮助且令人困惑，但至少给出了一句提示用户稍后再试的安抚话语。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "在遇到鉴权错误时，系统未能优雅处理（如隐藏底层错误码），而是直接将原始报错抛给用户，处理方式糟糕。但回复中带有一句简单的致歉和“请稍后再试”，勉强具备最基础的错误响应格式。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "系统出现异常并直接中断，没有任何有效执行步骤，对解决用户的搜索需求而言是完全的无效操作。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "体验极差。用户仅输入“搜索”，不仅没有得到想要的搜索结果或意图澄清，反而看到了毫无意义的系统级API鉴权错误，完全处于困惑状态。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "面对不清晰的指令，Agent未能直接向用户提出反问以明确搜索词，而是直接抛出异常错误信息，完全未能命中用户需求。"
+      },
+      "context_retention": {
+        "score": 3,
+        "reasoning": "无对话历史，属于单轮交互，没有出现上下文遗忘的问题，给予无历史情况下的基础及格分。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "面对高度模糊的用户输入“搜索”，Agent完全没有发起任何追问来澄清用户的搜索内容，而是直接报错，缺乏基本的对话引导能力。"
+      },
+      "conversation_coherence": {
+        "score": 3,
+        "reasoning": "单次对话，不存在前后逻辑矛盾的问题，符合单次输入报错的逻辑，给予基础及格分。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

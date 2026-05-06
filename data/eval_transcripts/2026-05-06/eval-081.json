@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-081",
+  "timestamp": "2026-05-06T19:59:36.744704",
+  "test_case_id": "ST-026",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "查看 2024-06-01 到 2024-06-07 的周报",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': 'eb9f4f0e-339c-9059-be9e-fbb383c38796'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 209.3830108642578,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-026",
+    "total_score": 12,
+    "max_possible_score": 50,
+    "average_score": 1.2,
+    "weighted_average": 1.2,
+    "percentage": 24.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent未能选择任何工具来处理用户的请求，直接因底层模型调用错误而失败，工具选择完全缺失。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于未发起任何有效的工具调用，用户输入的时间范围（2024-06-01 到 2024-06-07）等关键参数完全没有被提取。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复将底层API的模型404错误直接抛出给用户，这种包含代码和技术细节的信息对普通用户毫无帮助且令人困惑。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "未能优雅地处理底层异常，直接暴露了系统内部错误（模型不存在），且仅建议“稍后再试”，没有提供任何实质性的替代方案或解决途径。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "未能执行任何有效操作，在最初的基础步骤就直接报错阻断，效率极低。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "直接向用户展示致命的底层系统错误，体验极差，会导致用户对系统失去信任并感到无所适从。"
+      },
+      "directness": {
+        "score": 3,
+        "reasoning": "回复没有啰嗦的寒暄或多余的废话，直接告知了失败结果，但由于堆砌了无用的错误代码，无法做到精准传达有效信息。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "这是单轮对话，且系统直接崩溃，没有展现出对用户意图（查看周报）的任何记忆或理解。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent完全未能处理用户的请求，没有进行任何追问或引导来进一步明确或协助用户。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户期望查看周报，Agent却抛出一段模型缺失的报错信息，对话逻辑完全断裂，无连贯性可言。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

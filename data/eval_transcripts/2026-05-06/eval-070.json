@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-070",
+  "timestamp": "2026-05-06T19:58:26.908579",
+  "test_case_id": "ST-022",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "看看上周的成长周报",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': '7d84ec7e-742b-96c5-9342-f3dceb6d2485'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 128.0529499053955,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-022",
+    "total_score": 12,
+    "max_possible_score": 50,
+    "average_score": 1.2,
+    "weighted_average": 1.2,
+    "percentage": 24.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "没有进行任何工具调用，且内部模型路由失败，导致完全未能选择工具。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "因未调用任何工具，未能提取出“上周”和“成长周报”等关键参数。"
+      },
+      "response_quality": {
+        "score": 2,
+        "reasoning": "向用户回复了内部技术报错信息，质量低，未能提供实际有用的帮助。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "捕获了底层错误但没有进行优雅降级，直接将原始的模型不存在（model_not_found）报错抛给用户，信息不友好。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "未能执行任何有效操作，直接触发系统错误并中断，产生无效交互。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户体验极差，底层系统错误直接暴露给用户，令人困惑且无法解决用户需求。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "未能回应核心问题，直接性无从谈起。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "系统直接报错，未能进入对话状态，无法评估上下文保持能力。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "直接报错退出，未提供任何追问或后续引导。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "无法评估对话连贯性，因为未产生任何有效对话逻辑。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

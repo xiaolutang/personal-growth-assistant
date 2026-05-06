@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-107",
+  "timestamp": "2026-05-06T20:02:26.869383",
+  "test_case_id": "ST-027",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "更新 entry-proj-001 的状态为已完成，耗时 120 分钟",
+    "output": "",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 54.673194885253906,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-027",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent没有调用任何工具来完成任务。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "用户提供了项目ID、状态和耗时，但Agent完全没有提取这些参数。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "Agent没有提供任何回复，无法帮助用户。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "Agent未能处理任务或给出任何异常提示。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "未执行任何有效操作。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "毫无响应，用户体验极差。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "没有任何直接回应。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "单轮对话且Agent未做出任何响应，无法体现上下文保持能力。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "未进行任何追问。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "无任何对话逻辑可言。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

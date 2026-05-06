@@ -1,0 +1,86 @@
+{
+  "transcript_id": "eval-020",
+  "timestamp": "2026-05-07T00:14:39.314684",
+  "test_case_id": "ST-020",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "新建笔记：GraphQL 入门指南，内容写上 GraphQL 是一种 API 查询语言，标签加 graphql 和 api",
+    "output": "已经创建好了 ✅\n\n- **标题**：GraphQL 入门指南\n- **内容**：GraphQL 是一种 API 查询语言\n- **标签**：graphql、api\n- **分类**：笔记\n\n后续如果想补充内容或加上学习计划，随时告诉我。",
+    "tool_calls": [
+      {
+        "tool": "create_entry",
+        "args": {
+          "category": "note",
+          "content": "GraphQL 是一种 API 查询语言",
+          "tags": [
+            "graphql",
+            "api"
+          ],
+          "title": "GraphQL 入门指南"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 7621.5972900390625,
+    "iteration_count": 1
+  },
+  "judge_result": {
+    "test_id": "ST-020",
+    "total_score": 50,
+    "max_possible_score": 50,
+    "average_score": 5.0,
+    "weighted_average": 5.0,
+    "percentage": 100.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 5,
+        "reasoning": "完美选择了创建笔记的专用工具。"
+      },
+      "param_extraction": {
+        "score": 5,
+        "reasoning": "标题、内容、标签等参数全部准确无误地从用户输入中提取。"
+      },
+      "response_quality": {
+        "score": 5,
+        "reasoning": "回复自然且有帮助，清晰地展示了创建的结果，并友好地提供了后续帮助。"
+      },
+      "error_handling": {
+        "score": 5,
+        "reasoning": "本次执行非常顺利，无需处理任何异常。"
+      },
+      "efficiency": {
+        "score": 5,
+        "reasoning": "单次调用即完成所有操作，路径最短，没有任何冗余步骤。"
+      },
+      "user_experience": {
+        "score": 5,
+        "reasoning": "交互极其流畅，结果展示清晰直观，整体体验极佳。"
+      },
+      "directness": {
+        "score": 5,
+        "reasoning": "没有任何废话或多余的寒暄，直接展示执行结果，精准命中用户需求。"
+      },
+      "context_retention": {
+        "score": 5,
+        "reasoning": "首轮对话，准确捕捉并应用了当轮所有指令信息。"
+      },
+      "follow_up_quality": {
+        "score": 5,
+        "reasoning": "在回复末尾主动提供后续帮助（补充内容或学习计划），恰到好处，体现了良好的引导性。"
+      },
+      "conversation_coherence": {
+        "score": 5,
+        "reasoning": "首轮对话，逻辑高度一致，执行与回复完美匹配。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

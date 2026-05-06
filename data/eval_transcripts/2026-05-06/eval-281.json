@@ -1,0 +1,83 @@
+{
+  "transcript_id": "eval-281",
+  "timestamp": "2026-05-06T23:00:28.192562",
+  "test_case_id": "ST-027",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "更新 entry-proj-001 的状态为已完成，耗时 120 分钟",
+    "output": "`entry-proj-001` 这个条目不存在，没法更新。可能的原因：\n\n- 条目 ID 写错了\n- 这个条目之前已经被删除了\n\n要不要帮你搜一下相关的内容，确认一下正确的 ID？",
+    "tool_calls": [
+      {
+        "tool": "update_entry",
+        "args": {
+          "entry_id": "entry-proj-001",
+          "status": "complete",
+          "time_spent": 120,
+          "completed_at": "2026-05-06T15:00:00"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 12417.63710975647,
+    "iteration_count": 1
+  },
+  "judge_result": {
+    "test_id": "ST-027",
+    "total_score": 44,
+    "max_possible_score": 50,
+    "average_score": 4.4,
+    "weighted_average": 4.41,
+    "percentage": 88.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 5,
+        "reasoning": "选择了 update_entry 工具，完美契合用户更新状态和耗时的需求。"
+      },
+      "param_extraction": {
+        "score": 4,
+        "reasoning": "准确提取了 ID、状态和耗时参数，但自动生成了 completed_at 时间戳，未与用户确认。"
+      },
+      "response_quality": {
+        "score": 4,
+        "reasoning": "回复清晰，结构良好地列出了可能的原因，能有效帮助用户排查问题。"
+      },
+      "error_handling": {
+        "score": 4,
+        "reasoning": "面对条目不存在的异常，给出了合理的解释，并主动提出帮助搜索以确认ID。"
+      },
+      "efficiency": {
+        "score": 5,
+        "reasoning": "直接调用工具，遇到错误后立即返回结果并提出解决建议，无冗余步骤。"
+      },
+      "user_experience": {
+        "score": 4,
+        "reasoning": "交互自然，提供了解决问题的思路，体验良好。"
+      },
+      "directness": {
+        "score": 4,
+        "reasoning": "开门见山地指出了问题，没有多余的寒暄和废话。"
+      },
+      "context_retention": {
+        "score": 5,
+        "reasoning": "单轮对话，准确利用了当前输入的所有信息。"
+      },
+      "follow_up_quality": {
+        "score": 4,
+        "reasoning": "追问合理且有帮助，主动提供搜索服务以帮助用户找到正确的ID。"
+      },
+      "conversation_coherence": {
+        "score": 5,
+        "reasoning": "单轮交互，逻辑清晰，动作与反馈高度一致。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,83 @@
+{
+  "transcript_id": "eval-200",
+  "timestamp": "2026-05-06T20:33:37.712214",
+  "test_case_id": "ST-017",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "创建任务：准备周五的技术分享演示，优先级中等，计划日期 2024-03-15",
+    "output": "任务已创建好了：\n\n- **标题**：准备周五的技术分享演示\n- **优先级**：中等\n- **计划日期**：2024-03-15\n- **状态**：doing\n\n演示准备是个需要多步推进的事，建议你可以拆几个子任务，比如\"整理分享大纲\"、\"做PPT\"、\"准备Demo环境\"等，这样推进起来更有节奏。需要的话我可以帮你拆。",
+    "tool_calls": [
+      {
+        "tool": "create_entry",
+        "args": {
+          "category": "task",
+          "title": "准备周五的技术分享演示",
+          "priority": "medium",
+          "planned_date": "2024-03-15"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 6110.525846481323,
+    "iteration_count": 1
+  },
+  "judge_result": {
+    "test_id": "ST-017",
+    "total_score": 50,
+    "max_possible_score": 50,
+    "average_score": 5.0,
+    "weighted_average": 5.0,
+    "percentage": 100.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 5,
+        "reasoning": "Agent完美地选择了创建条目的工具来处理用户的任务创建请求。"
+      },
+      "param_extraction": {
+        "score": 5,
+        "reasoning": "所有参数均被精准提取并正确映射，包括类别(task)、标题、优先级(medium)和计划日期，无任何遗漏。"
+      },
+      "response_quality": {
+        "score": 5,
+        "reasoning": "回复自然、清晰，不仅向用户确认了任务详情，还主动提供了任务拆解的实用建议，超出了基本预期。"
+      },
+      "error_handling": {
+        "score": 5,
+        "reasoning": "本次交互为正常的任务创建，无错误发生。Agent顺畅执行了操作，在无异常场景下表现完美。"
+      },
+      "efficiency": {
+        "score": 5,
+        "reasoning": "一次调用即完成了用户的所有诉求，路径最短，无任何冗余操作。"
+      },
+      "user_experience": {
+        "score": 5,
+        "reasoning": "整体体验极佳，响应迅速且确认信息一目了然，附加的拆分建议也非常贴心。"
+      },
+      "directness": {
+        "score": 5,
+        "reasoning": "毫无废话，开门见山地给出了任务创建结果，并附加了相关的高价值建议。"
+      },
+      "context_retention": {
+        "score": 5,
+        "reasoning": "首轮交互，Agent完全基于并精准利用了当前用户的输入信息。"
+      },
+      "follow_up_quality": {
+        "score": 5,
+        "reasoning": "主动提供的后续追问（是否需要帮忙拆分子任务）非常合理且恰到好处，不仅相关度高，还体现了较强的主动性。"
+      },
+      "conversation_coherence": {
+        "score": 5,
+        "reasoning": "单轮对话逻辑极其清晰，从理解指令、调用工具到返回结果并提供建议，一气呵成。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-025",
+  "timestamp": "2026-05-06T19:54:28.757903",
+  "test_case_id": "ST-017",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "创建任务：准备周五的技术分享演示，优先级中等，计划日期 2024-03-15",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': '1ae942e9-8925-98be-9629-112f4a52172c'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 236.983060836792,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-017",
+    "total_score": 11,
+    "max_possible_score": 50,
+    "average_score": 1.1,
+    "weighted_average": 1.09,
+    "percentage": 22.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "工具调用记录为空，Agent未能选择任何工具来处理任务创建请求。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "Agent完全失败，未能从用户输入中提取任务名称、优先级和日期等关键参数。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复未能帮助用户完成任务，直接将底层模型404错误抛出，令人困惑且没有帮助。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "Agent捕获了系统级错误并给出了“请稍后再试”的提示，但没有优雅地处理问题，也未提供有效的替代方案或人工客服引导。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "未执行任何有效操作，直接因底层模型不可用而报错退出。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "体验极差，用户明确的建任务需求未被满足，反而看到了无法理解的技术报错信息。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "未能直接回应用户需求，直接输出了无关的底层错误代码和报错日志。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "Agent未能对当前轮次的输入信息进行任何记忆或处理，直接崩溃。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "完全没有任何追问或引导用户的行为。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户的意图与Agent的回复完全脱节，毫无逻辑连贯性可言。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

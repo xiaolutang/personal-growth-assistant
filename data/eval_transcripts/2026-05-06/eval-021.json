@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-021",
+  "timestamp": "2026-05-06T19:54:01.295910",
+  "test_case_id": "ST-015",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "帮我搜索所有关于 TypeScript 高级类型的内容",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': '2b6bbee2-39a5-9da7-aadc-52e235556b4d'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 123.47698211669922,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-015",
+    "total_score": 12,
+    "max_possible_score": 50,
+    "average_score": 1.2,
+    "weighted_average": 1.2,
+    "percentage": 24.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "工具调用记录为空，Agent未能选择并调用任何搜索工具来获取信息。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于未进行任何工具调用，完全没有进行参数提取。"
+      },
+      "response_quality": {
+        "score": 2,
+        "reasoning": "回复向用户暴露了底层系统错误（如模型名、请求ID等技术细节），对普通用户帮助极低。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "系统发生错误时，Agent未能优雅拦截并处理异常，仅将原始报错直接抛给用户，未提供替代解决方案。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "未能成功执行任何有效操作以完成用户请求。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户体验极差，未获取到任何所需信息，且被一段无法理解的技术报错信息困扰。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "完全没有回应“TypeScript高级类型”的核心需求，仅输出了报错信息。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "首轮交互即报错，未能展示对上下文的任何记忆或处理能力。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent遇到错误后直接中断，没有进行任何有助于解决问题的追问或引导。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户的正常提问与Agent的系统报错回复之间毫无逻辑联系，对话不连贯。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

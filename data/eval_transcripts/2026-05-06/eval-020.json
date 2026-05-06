@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-020",
+  "timestamp": "2026-05-06T19:53:46.158206",
+  "test_case_id": "ST-014",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "查看 2024-01-15 的日报",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': 'f33bf943-c9eb-930a-9f27-afe831be53e3'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 126.32274627685547,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-014",
+    "total_score": 20,
+    "max_possible_score": 50,
+    "average_score": 2.0,
+    "weighted_average": 2.02,
+    "percentage": 40.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "未进行任何工具调用，工具调用记录为空，直接因模型访问错误而失败。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于未调用任何工具，也未能成功提取日期（2024-01-15）等参数。"
+      },
+      "response_quality": {
+        "score": 2,
+        "reasoning": "回复中包含了底层的原始 API 错误代码，对普通用户来说不友好且令人困惑。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "虽然捕获了系统错误并向用户进行了反馈，但直接暴露了底层的模型错误信息，且没有提供任何有用的替代方案。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "Agent 未能执行用户的请求，完全因为自身的系统配置错误（模型不存在）而受阻，效率极低。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户不仅没有看到所需的日报，反而看到了一堆技术报错信息，体验极差。"
+      },
+      "directness": {
+        "score": 3,
+        "reasoning": "回复没有多余的寒暄和废话，直奔主题返回了错误，但在未能解决用户问题的前提下，直接性意义不大。"
+      },
+      "context_retention": {
+        "score": 5,
+        "reasoning": "当前为单轮对话，没有前文信息需要保持，默认满分。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent 仅建议用户“稍后再试”，但实际上这是系统配置错误（模型不存在），稍后重试依然会失败，没有提供有价值的追问或引导。"
+      },
+      "conversation_coherence": {
+        "score": 3,
+        "reasoning": "当前为单轮对话，且直接以错误中断，逻辑上没有产生矛盾，连贯性表现一般。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

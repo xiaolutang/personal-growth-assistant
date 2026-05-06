@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-106",
+  "timestamp": "2026-05-06T20:02:19.473488",
+  "test_case_id": "ST-026",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "查看 2024-06-01 到 2024-06-07 的周报",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': '1844c780-ce8b-9432-9826-6026459b0308'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 119.18997764587402,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-026",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent 完全没有进行任何工具调用，工具调用记录为空，直接抛出了底层模型不存在的系统错误，未能选择任何业务工具来获取周报。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于根本没有发起任何工具调用，对于用户明确提供的“查看周报”意图及“2024-06-01 到 2024-06-07”的关键时间参数，Agent 没有进行任何提取操作。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复对用户毫无帮助。Agent 将底层的 404 模型调用错误原封不动地抛给用户，包含大量技术细节（Error code, request_id 等），普通用户无法理解，体验极差。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "未能优雅处理异常。Agent 遇到模型不可用的错误时，没有进行任何包装或降级处理，直接将原始报错信息暴露给用户，并给出了“请稍后再试”这种无效的解决建议。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "Agent 未能完成用户的任何请求，产生了一次完全无效的交互，毫无效率可言。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户体验极差。用户希望查看周报，却收到了一段无法理解的技术报错信息，需求没有得到任何满足，且系统显得极不专业。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "回复确实没有废话，但这是因为 Agent 直接崩溃并报错。它没有直接回应用户的核心需求（查看周报），而是输出了系统错误。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "当前为第一轮对话，无历史上下文，且由于系统直接报错崩溃，未能展示任何上下文处理能力。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent 未能提供任何有效的追问或后续引导，仅提示用户“稍后再试”，没有尝试进一步明确需求或提供替代方案。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "对话完全脱节。用户的输入是正常的业务查询，Agent 的回复是系统级别的模型报错，两者之间没有任何逻辑连贯性可言。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

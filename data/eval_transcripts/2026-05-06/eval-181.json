@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-181",
+  "timestamp": "2026-05-06T20:24:41.229545",
+  "test_case_id": "ST-048",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "谢谢你的帮助！",
+    "output": "不客气，随时找我聊就好。有事说事，没事也可以随便聊聊 😊",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 2460.742950439453,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-048",
+    "total_score": 30,
+    "max_possible_score": 50,
+    "average_score": 3.0,
+    "weighted_average": 3.0,
+    "percentage": 60.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 3,
+        "reasoning": "维度评分缺失，使用默认值"
+      },
+      "param_extraction": {
+        "score": 3,
+        "reasoning": "维度评分缺失，使用默认值"
+      },
+      "response_quality": {
+        "score": 3,
+        "reasoning": "维度评分缺失，使用默认值"
+      },
+      "error_handling": {
+        "score": 3,
+        "reasoning": "维度评分缺失，使用默认值"
+      },
+      "efficiency": {
+        "score": 3,
+        "reasoning": "维度评分缺失，使用默认值"
+      },
+      "user_experience": {
+        "score": 3,
+        "reasoning": "维度评分缺失，使用默认值"
+      },
+      "directness": {
+        "score": 3,
+        "reasoning": "维度评分缺失，使用默认值"
+      },
+      "context_retention": {
+        "score": 3,
+        "reasoning": "维度评分缺失，使用默认值"
+      },
+      "follow_up_quality": {
+        "score": 3,
+        "reasoning": "维度评分缺失，使用默认值"
+      },
+      "conversation_coherence": {
+        "score": 3,
+        "reasoning": "维度评分缺失，使用默认值"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

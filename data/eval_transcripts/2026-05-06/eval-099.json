@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-099",
+  "timestamp": "2026-05-06T20:01:25.296416",
+  "test_case_id": "ST-015",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "帮我搜索所有关于 TypeScript 高级类型的内容",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': '9aeb1932-92f2-90c6-967f-672b312e39de'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 295.0549125671387,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-015",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "工具调用记录为空，Agent未能选择任何工具来处理用户的搜索请求，直接导致了底层模型配置错误的发生。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于未进行任何工具调用，Agent未能提取用户的搜索意图和关键词参数。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复直接向用户暴露了底层的 404 错误和模型名称，属于典型的系统内部报错，对用户毫无帮助且极其令人困惑。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "Agent未对异常进行任何包装或降级处理，直接将原始的 API 报错（模型不存在）抛给用户，没有提供任何替代方案或有效引导。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "请求彻底失败，没有产生任何有效操作，Agent系统自身报错导致效率为零。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "体验极差。用户不仅没有得到想要的内容，反而看到了不需要理解的技术报错信息，不知所措。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "回复中包含的“抱歉，处理时遇到了问题”和原始报错信息与用户的实际需求无关，未能直接回应核心问题。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "在系统级报错的情况下，Agent直接中断了处理流程，未能保留并处理当前用户输入的上下文信息。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "回复仅包含“请稍后再试”的敷衍提示，没有提供任何有价值的追问或进一步解决搜索需求的引导。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户的正常请求与系统级的模型配置错误之间毫无逻辑关联，对话连贯性彻底断裂。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

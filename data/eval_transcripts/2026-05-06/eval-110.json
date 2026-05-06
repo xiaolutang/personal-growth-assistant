@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-110",
+  "timestamp": "2026-05-06T20:02:47.578994",
+  "test_case_id": "ST-020",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "新建笔记：GraphQL 入门指南，内容写上 GraphQL 是一种 API 查询语言，标签加 graphql 和 api",
+    "output": "",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 2849.825143814087,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-020",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent 完全没有进行任何工具调用来执行创建笔记的任务，属于完全错误（或缺失）的工具选择。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "用户明确提供了标题、内容和标签三个关键参数，但 Agent 未能将其提取并传递给任何工具，参数提取完全失败。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "Agent 返回了空回复，没有向用户提供任何有价值的信息或操作结果，毫无帮助。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "Agent 无响应，未能执行操作，也未能向用户提示任何错误信息或异常。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "Agent 未能采取任何行动，直接返回空内容，毫无效率可言。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户提出了明确的操作请求却得到了空回复，体验极差。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "没有任何实质性的回复内容，无法评估直接性，属于最差情况。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "Agent 未能对当前的初始用户输入做出任何反应，完全没有处理上下文信息。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent 没有返回任何内容，自然也没有提供任何追问或确认。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "Agent 给出了空回复，与用户的输入毫无逻辑交集，对话连贯性彻底断裂。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

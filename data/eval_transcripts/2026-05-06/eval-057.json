@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-057",
+  "timestamp": "2026-05-06T19:57:35.526408",
+  "test_case_id": "ST-002",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "搜索一下关于机器学习的笔记",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': 'fa2c9854-2587-9741-84b6-2317aa0874e3'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 127.95495986938477,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-002",
+    "total_score": 11,
+    "max_possible_score": 50,
+    "average_score": 1.1,
+    "weighted_average": 1.09,
+    "percentage": 22.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent未能选择任何工具，工具调用记录为空，直接因模型调用错误而失败。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于未进行任何工具调用，参数提取完全缺失。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复仅展示了底层的技术错误代码，对用户毫无帮助，体验极差。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "Agent识别到了错误的发生，但将原始的底层API报错直接暴露给用户，缺乏优雅的处理和合理的引导。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "没有执行任何有效操作，直接失败，毫无效率可言。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "系统直接将技术报错甩给用户，让用户感到困惑，整体体验极差。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "完全没有回应“搜索机器学习笔记”的核心需求，仅返回了无意义的服务器错误信息。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "因系统直接报错崩溃，未能展现出任何对用户意图的理解和记忆。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent未能正常工作，没有任何追问或进一步澄清用户需求的动作。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户的请求与Agent的报错回复之间没有任何逻辑联系，对话直接断裂。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-049",
+  "timestamp": "2026-05-06T19:56:52.390551",
+  "test_case_id": "ST-026",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "查看 2024-06-01 到 2024-06-07 的周报",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': 'e3fea94b-0207-9f4d-b916-5bd1d0497394'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 119.95887756347656,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-026",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent完全没有选择任何工具（工具调用记录为空），直接抛出了底层模型的404错误，未能执行查看周报的任务。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于Agent未发起任何工具调用，用户输入中明确提供的时间参数（2024-06-01 到 2024-06-07）完全没有被提取和使用。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复毫无帮助，直接将底层报错代码和英文字典展示给用户，既不自然也没有解决用户的核心需求。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "Agent未对底层异常进行任何封装或优雅降级，而是将原始的错误字典直接抛出，没有任何替代方案或有效引导，处理极差。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "Agent没有执行任何有效动作，任务直接以失败告终，效率为零。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户体验极差，原始报错信息让普通用户感到困惑，且核心诉求（查看周报）完全没有得到满足。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "虽然回复没有废话，但它给出的是无用的报错信息而非用户请求的周报内容，在满足用户需求的角度上没有任何直接性可言。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "Agent在接收到用户指令后直接崩溃报错，未能进行任何有效对话或建立上下文，无法评估且只能给最低分。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent仅给出了敷衍的“请稍后再试”，没有提供任何有助于解决问题的追问或有效引导。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "对话无法推进，用户指令与Agent的报错回复之间不存在正常的逻辑交互，连贯性彻底断裂。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-309",
+  "timestamp": "2026-05-06T23:08:30.287482",
+  "test_case_id": "ST-002",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "搜索一下关于机器学习的笔记",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061508157834557238268d9d680TzpNBb)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 96.39501571655273,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-002",
+    "total_score": 13,
+    "max_possible_score": 50,
+    "average_score": 1.3,
+    "weighted_average": 1.3,
+    "percentage": 26.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "工具调用记录为空，Agent未能选择任何工具来执行用户的搜索请求，完全失败。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于未进行任何工具调用，没有任何参数被提取，参数提取完全缺失。"
+      },
+      "response_quality": {
+        "score": 2,
+        "reasoning": "回复虽然指出了遇到错误（Invalid token），但直接将底层 API 的报错信息抛给用户，缺乏帮助且体验不佳。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "捕获了系统底层的 401 鉴权错误，但处理方式极不优雅，将技术性报错直接暴露给用户，仅给出“请稍后再试”的无效建议。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "系统在鉴权阶段直接失败报错，未能执行任何有效操作，效率极低。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户期望得到搜索结果，却看到了一堆技术性错误代码，体验极差且令人困惑。"
+      },
+      "directness": {
+        "score": 2,
+        "reasoning": "虽然直接告知了错误，但堆砌了无意义的底层报错代码（如 request id），不够直接明了。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "系统在处理指令初期就因 401 错误崩溃，完全未能进入实际的上下文理解和对话阶段。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "因系统错误未能正常响应，没有也无法提供任何追问或进一步交互的引导。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "对话完全中断于系统异常，没有建立任何连贯的对话逻辑。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

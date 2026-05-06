@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-083",
+  "timestamp": "2026-05-06T19:59:41.068663",
+  "test_case_id": "ST-017",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "创建任务：准备周五的技术分享演示，优先级中等，计划日期 2024-03-15",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': 'ba33b707-2828-94cc-866d-53e71f15fdc8'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 123.4428882598877,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-017",
+    "total_score": 11,
+    "max_possible_score": 50,
+    "average_score": 1.1,
+    "weighted_average": 1.1,
+    "percentage": 22.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent未能调用创建任务的工具，工具调用记录为空，直接返回了底层模型调用的404错误。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于未能进行任何工具调用，Agent没有提取出用户输入的任务名称、优先级和计划日期等参数。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复直接暴露了底层系统的错误代码和技术细节（Error code: 404, model_not_found），对普通用户而言毫无帮助且令人困惑。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "Agent未对系统或API异常进行任何封装或降级处理，将原始错误直接抛给用户，没有提供替代方案或有效引导。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "由于直接失败，未能执行任何有效的业务步骤，效率为零。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "体验极差。用户的明确需求完全没有得到满足，反而看到了无关的底层系统报错信息。"
+      },
+      "directness": {
+        "score": 2,
+        "reasoning": "回复虽然没有任何寒暄或废话，但内容完全是系统报错，未能直接回应用户的核心需求。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "Agent完全被系统错误中断，未能解析和利用用户提供的任务详细信息。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent在遇到错误后直接中断，没有进行任何有意义的追问或进一步处理。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户要求创建任务，Agent回复模型不存在，对话逻辑完全断裂。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

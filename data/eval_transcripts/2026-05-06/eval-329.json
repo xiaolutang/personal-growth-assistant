@@ -1,0 +1,77 @@
+{
+  "transcript_id": "eval-329",
+  "timestamp": "2026-05-06T23:11:17.263317",
+  "test_case_id": "ST-064",
+  "test_case_category": "directness",
+  "agent_trace": {
+    "input": "今天有哪些事情",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061511011599235118268d9d6uQ2MzLGD)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 58.226823806762695,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-064",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "未进行任何工具调用，直接抛出了底层API鉴权错误（401 Invalid token），工具选择完全失败。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于系统在初始阶段就发生崩溃，未进入到意图识别和参数提取环节。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "直接向用户展示了包含Error code、request id等开发者级别的底层报错信息，毫无帮助且令人困惑。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "完全没有优雅地处理系统异常，未对错误信息进行包装或降级处理，直接将原始API报错暴露给了用户。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "系统未能执行任何有效步骤来解答用户的日程查询问题，执行效率无从谈起。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "暴露系统底层报错给用户带来极差的体验，不仅没有解决用户问题，还会严重降低用户对系统的信任度。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "未能提供与用户问题相关的任何直接回答，仅反馈了毫无意义的系统报错。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "没有对话历史，且Agent在发生错误时未体现任何上下文理解或记录能力。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "在遇到错误时，未提供任何补救措施、替代方案或追问来引导用户。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户询问日常事务，系统回复API鉴权报错，答非所问，毫无连贯性可言。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {
+    "behavior_checks": {
+      "no_greeting": true,
+      "must_show_details": true,
+      "no_ask_to_search": true
+    }
+  }
+}

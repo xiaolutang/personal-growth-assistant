@@ -189,12 +189,13 @@ class TestJWTToken:
 
     def test_create_token_with_missing_jwt_secret_raises(self):
         """B57: JWT_SECRET 环境变量不存在时 create_access_token 抛出 ValueError"""
-        from app.core.config import get_settings
+        from app.core.config import get_settings, Settings
         get_settings.cache_clear()
         env = dict(os.environ)
         env.pop("JWT_SECRET", None)
         env["DATA_DIR"] = "/tmp/test_b57_missing"
-        with patch.dict("os.environ", env, clear=True):
+        with patch.dict("os.environ", env, clear=True), \
+             patch.object(Settings, "model_config", {**Settings.model_config, "env_file": None}):
             get_settings.cache_clear()
             with pytest.raises(ValueError, match="JWT_SECRET 环境变量未设置"):
                 create_access_token("some-user-id")

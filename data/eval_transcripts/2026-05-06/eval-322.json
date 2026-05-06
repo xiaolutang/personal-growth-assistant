@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-322",
+  "timestamp": "2026-05-06T23:10:06.419147",
+  "test_case_id": "ST-060",
+  "test_case_category": "boundary",
+  "agent_trace": {
+    "input": "ajsdfhkajsdfhkajsdhfkjahsdkjfhaskdjfh",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061509489018373938268d9d6MULxtVGo)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 61.30790710449219,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-060",
+    "total_score": 11,
+    "max_possible_score": 50,
+    "average_score": 1.1,
+    "weighted_average": 1.1,
+    "percentage": 22.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "用户输入为无意义的乱码，Agent未能识别并选择合适的处理方式（如进行意图澄清或乱码拦截），而是直接抛出了底层的API鉴权错误。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于输入为无意义乱码且未进行任何有效处理，不存在需要提取的有效参数。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复直接暴露了系统底层的401鉴权错误和无效Token信息，既包含技术敏感信息，又与用户的乱码输入毫无关联，毫无帮助。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "未能优雅处理异常，直接将API鉴权失败（Invalid token）的底层错误抛给用户，既未提供有效的替代方案，也未进行友好的用户提示。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "面对乱码输入，系统未能快速识别并拒绝处理，反而触发并透传了无意义的底层API报错，属于完全失败的执行路径。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "向用户展示代码和API报错日志会带来极大的困惑和极差的体验，正常的用户完全无法理解这些信息的含义。"
+      },
+      "directness": {
+        "score": 2,
+        "reasoning": "虽然直接给出了反馈，没有多余的寒暄，但回复内容完全是不相关的系统错误代码，未能直接回应用户输入的异常情况。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "无对话历史，且当前回复完全建立在系统报错之上，未体现任何对上下文的理解。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "没有任何追问或引导。面对乱码输入，合理的做法应是追问或提示用户输入有效内容，而不是直接抛出报错。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "回复与用户输入（乱码）之间没有任何逻辑关联，完全是系统级的故障抛出，毫无连贯性可言。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

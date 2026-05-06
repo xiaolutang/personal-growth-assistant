@@ -79,7 +79,7 @@
       "tool": "delete_entry",
       "args": {}
     },
-    "acceptable_alternatives": [],
+    "acceptable_alternatives": ["ask_user", "search_entries"],
     "unacceptable": [
       "create_entry"
     ]
@@ -190,7 +190,7 @@
         "status": "complete"
       }
     },
-    "acceptable_alternatives": [],
+    "acceptable_alternatives": ["ask_user"],
     "unacceptable": [
       "create_entry",
       "delete_entry"
@@ -252,7 +252,7 @@
       "tool": "update_entry",
       "args": {}
     },
-    "acceptable_alternatives": [],
+    "acceptable_alternatives": ["search_entries", "ask_user"],
     "unacceptable": [
       "delete_entry",
       "create_entry"

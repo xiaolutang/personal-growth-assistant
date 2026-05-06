@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-028",
+  "timestamp": "2026-05-06T19:54:58.862320",
+  "test_case_id": "ST-019",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "搜索关于 kubernetes 的笔记，只返回 5 条",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': 'bf08947f-7a9e-92e5-9bbe-2beb64b2dcb8'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 159.29722785949707,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-019",
+    "total_score": 11,
+    "max_possible_score": 50,
+    "average_score": 1.1,
+    "weighted_average": 1.09,
+    "percentage": 22.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent 未能选择任何工具，工具调用记录为空。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "Agent 在发生错误前就没有进行参数提取的步骤，未能识别出搜索关键词'kubernetes'和限制条件'5条'。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "Agent 未能提供与用户请求相关的任何有价值信息，仅返回了底层系统的原始错误代码。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "Agent 捕获了错误但没有进行优雅处理，直接将底层的模型不存在（404）错误暴露给用户，这对用户来说既难以理解也没有任何帮助。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "Agent 未执行任何有效操作（未调用工具），直接失败。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "体验极差。用户提出明确的业务需求，却收到了一条与业务无关的、包含技术细节的系统报错，完全无法达成目标。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "Agent 没有直接回应用户的搜索需求，而是直接给出了系统报错信息。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "Agent 从第一步起就发生了系统级报错，未能处理任何上下文信息。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent 遇到错误直接中断，未能提供任何追问或后续处理建议。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户的指令非常清晰，但 Agent 的回复完全脱节，未能形成任何有效的对话逻辑。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

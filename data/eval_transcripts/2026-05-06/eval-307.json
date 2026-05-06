@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-307",
+  "timestamp": "2026-05-06T23:08:16.009026",
+  "test_case_id": "ST-001",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "帮我记录一个想法：今天学了 Python 装饰器",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061507589464184658268d9d6FPZtqKnu)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 56.2748908996582,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-001",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent未能选择任何工具（工具调用记录为空），完全没有处理用户的记录请求。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于未调用任何工具，也谈不上参数提取，直接评最低分。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复直接将底层API错误代码（401 Invalid token）暴露给用户，没有任何实际帮助，体验极差。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "遇到鉴权错误时未做任何优雅降级或包装，直接把系统级错误抛给用户，没有提供替代方案。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "没有执行任何有效步骤，直接失败，效率极低。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户的需求完全没有得到满足，并且看到了不应该看到的系统报错，体验极差。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "虽然直截了当报错了，但没有解决任何实际问题，对用户而言毫无价值。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "在发生系统报错的情况下，Agent完全丢失了用户“记录想法”的上下文意图。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "没有进行任何追问，仅仅返回了错误信息，未能引导用户下一步操作。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户的正常诉求与系统内部错误反馈之间毫无逻辑连贯性，对话完全中断。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-050",
+  "timestamp": "2026-05-06T19:56:57.804665",
+  "test_case_id": "ST-017",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "创建任务：准备周五的技术分享演示，优先级中等，计划日期 2024-03-15",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': 'b7c59392-d9aa-9067-8a71-70ea67e5126f'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 200.14524459838867,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-017",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent完全未能选择工具。由于底层模型配置错误，Agent在尝试处理请求时直接崩溃，未执行任何工具调用（工具调用记录为空）。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于Agent在初始阶段就因模型错误而失败，根本没有进入参数提取和组装环节，无法评估其提取能力。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复将底层API的技术报错（如模型不存在）直接暴露给用户，没有任何实质性的帮助，体验极差。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "未优雅处理异常。Agent将系统内部配置错误（model_not_found）直接抛出，除了让用户稍后重试外，未提供任何替代方案或有效引导。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "未完成用户的任何意图，直接因为系统报错而中断，没有任何有效操作步骤，效率极低。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户体验极差。用户期望创建一个任务，但收到了一段难以理解的技术报错，任务未能创建，且系统问题让用户产生困惑。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "回复完全偏离了用户的原始需求，未能直接回应用户的创建任务指令，而是抛出了一段无关的报错日志。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "Agent直接因为系统错误而彻底失败，未能记录或处理任何上下文信息。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent未提供任何追问或后续交互引导，对话被错误直接阻断。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "由于在首轮交互就发生系统崩溃，用户的输入与Agent的报错输出之间毫无逻辑关联，完全破坏了对话连贯性。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

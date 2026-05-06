@@ -1,0 +1,90 @@
+{
+  "transcript_id": "eval-159",
+  "timestamp": "2026-05-06T20:14:30.580520",
+  "test_case_id": "ST-026",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "查看 2024-06-01 到 2024-06-07 的周报",
+    "output": "这两周的周报数据如下：\n\n---\n\n**📊 周报一：2024-05-30 ~ 2024-06-05**（覆盖6月1-5日）\n- 任务：0 条（完成 0 / 进行中 0 / 待开始 0）\n- 笔记：0 条\n- 完成率：0%\n\n**📊 周报二：2024-06-03 ~ 2024-06-05 ~ 2024-06-09**（覆盖6月3-7日）\n- 任务：0 条（完成 0 / 进行中 0 / 待开始 0）\n- 笔记：0 条\n- 完成率：0%\n\n---\n\n这两周的数据都是空的——没有任务，也没有笔记。看起来那时候你可能还没开始用这个系统记录东西。如果你想回顾更近的时间段，随时告诉我。",
+    "tool_calls": [
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "weekly",
+          "target_date": "2024-06-03"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "get_review_summary",
+        "args": {
+          "period": "weekly",
+          "target_date": "2024-05-30"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 52287.850856781006,
+    "iteration_count": 2
+  },
+  "judge_result": {
+    "test_id": "ST-026",
+    "total_score": 40,
+    "max_possible_score": 50,
+    "average_score": 4.0,
+    "weighted_average": 4.03,
+    "percentage": 80.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 4,
+        "reasoning": "选择了正确的周报查询工具，为了完整覆盖用户指定的日期范围进行了两次调用，选择合理。"
+      },
+      "param_extraction": {
+        "score": 3,
+        "reasoning": "提取了基本的查询周期和目标日期参数，但提取的目标日期（2024-06-03 和 2024-05-30）是基于推断的，且第二次调用的参数可能并非用户直观预期的。有更准确的日期参数提取方式。"
+      },
+      "response_quality": {
+        "score": 4,
+        "reasoning": "回复格式清晰，排版易读，对空数据给出了合理的解释，并且自然地引导用户提供更多需求，体验良好。"
+      },
+      "error_handling": {
+        "score": 4,
+        "reasoning": "面对系统返回的空数据（异常场景），Agent 没有生硬报错，而是给出了合理的推测和友好的提示，处理得当。"
+      },
+      "efficiency": {
+        "score": 3,
+        "reasoning": "进行了两次调用以覆盖完整日期范围，基本合理。但从周报返回结果来看存在日期重叠（2024-06-03 ~ 2024-06-05），说明可能存在不必要的冗余查询，参数设计可优化。"
+      },
+      "user_experience": {
+        "score": 4,
+        "reasoning": "整体交互流畅，信息呈现直观，语言友好礼貌，用户体验良好。"
+      },
+      "directness": {
+        "score": 5,
+        "reasoning": "直接调用工具并展示结果，没有任何废话、寒暄或不必要的反问，非常干脆。"
+      },
+      "context_retention": {
+        "score": 5,
+        "reasoning": "首轮对话，准确获取了用户的起始和结束时间需求并应用。"
+      },
+      "follow_up_quality": {
+        "score": 4,
+        "reasoning": "在展示空数据后，自然地追问用户是否需要查看更近的时间段，追问合理且有助于推进对话。"
+      },
+      "conversation_coherence": {
+        "score": 4,
+        "reasoning": "单轮交互逻辑清晰，工具调用与最终回复文本的内容完全一致，无矛盾。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

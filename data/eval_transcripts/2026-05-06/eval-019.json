@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-019",
+  "timestamp": "2026-05-06T19:53:45.519975",
+  "test_case_id": "ST-006",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "把这周的任务总结一下",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': 'b0988811-a2b9-9706-b7fe-f826a9b389a5'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 210.3428840637207,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-006",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent未选择任何工具，直接由于后端模型不可用（404）而失败，未能调用相关工具（如日历、任务列表等）来总结任务。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于完全没有进行工具调用，Agent未能提取任何相关参数（如时间范围“这周”、任务类型等）。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复仅暴露了底层的原始系统报错信息（包括模型名称、错误代码和请求ID），对用户毫无帮助，且令人困惑。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "未优雅处理异常。Agent直接将技术性错误代码和原始报错抛给用户，没有任何降级处理、友好解释或替代方案。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "Agent遇到错误直接中断，未能执行任何有效操作，无任何效率可言。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户体验极差。普通用户无法理解报错信息，需求也没有得到任何解决。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "回复虽然是直接给出结果（报错），但这并不是用户所期望的直接回答，反而是完全无关的底层错误信息。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "Agent因系统错误崩溃，完全未能利用或理解用户的意图，未表现出任何上下文保持能力。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent未提供任何追问或进一步引导（例如询问具体指哪类任务），仅以报错结束。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "对话无法进行，Agent的回复与用户请求在语义上完全脱节，无连贯性可言。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}
