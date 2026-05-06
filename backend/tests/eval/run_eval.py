@@ -32,14 +32,18 @@ import httpx
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from tests.eval.framework import (
+    CategoryStats,
     DatasetLoader,
     EvaluationReport,
     GoldenDatasetRunner,
+    NegativeEvalResult,
     NegativeReport,
     NegativeTestCase,
     TestCase,
     judge_negative_case,
     judge_test_case,
+    pass_at_k,
+    pass_hat_k,
 )
 from tests.eval.judge import LLMJudge, JudgeResult
 from tests.eval.report_generator import (
@@ -295,8 +299,6 @@ async def run_single_turn(
             category_results.setdefault(tc.category, []).append(r)
 
     # 构建报告
-    from tests.eval.framework import CategoryStats, pass_at_k, pass_hat_k
-
     category_stats: Dict[str, CategoryStats] = {}
     for cat, cat_results in category_results.items():
         by_case_id: Dict[str, List[bool]] = {}
@@ -376,8 +378,6 @@ async def run_negative(
             "category": tc.category,
             "elapsed_seconds": round(elapsed, 4),
         })
-
-        from tests.eval.framework import NegativeEvalResult
 
         all_results.append(NegativeEvalResult(
             test_id=tc.id,

@@ -246,7 +246,7 @@ class TestScheduledEvalThreshold:
         result = subprocess.run(
             [
                 "uv", "run", "python", "-m", "tests.eval.eval_trend",
-                "--history", str(report_dir / "history.json"),
+                "--history", str(report_dir),
                 "--last", "5",
             ],
             capture_output=True,
@@ -286,13 +286,14 @@ class TestScheduledEvalScriptIntegration:
                 "env_info": {"git_commit": "bbb222", "model": "v2"},
             },
         ]
-        history_file = tmp_path / "history.json"
-        history_file.write_text(json.dumps(history, ensure_ascii=False), encoding="utf-8")
+        reports_dir = tmp_path / "reports"
+        reports_dir.mkdir()
+        (reports_dir / "history.json").write_text(json.dumps(history, ensure_ascii=False), encoding="utf-8")
 
         result = subprocess.run(
             [
                 "uv", "run", "python", "-m", "tests.eval.eval_trend",
-                "--history", str(history_file),
+                "--history", str(reports_dir),
                 "--diff", "1", "2",
             ],
             capture_output=True,

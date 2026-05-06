@@ -19,58 +19,19 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
-import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+from tests.eval.report_generator import load_history
 
 
 # ── 路径解析 ──
 
 
-def _get_default_history_path() -> Path:
-    """获取默认 history.json 路径: 项目根目录/data/eval_reports/history.json"""
-    return Path(__file__).resolve().parent.parent.parent.parent / "data" / "eval_reports" / "history.json"
-
-
-# ── 数据加载 ──
-
-
-def load_history(path: str | Path) -> List[Dict[str, Any]]:
-    """加载 history.json
-
-    Args:
-        path: history.json 文件路径
-
-    Returns:
-        历史记录列表
-
-    Raises:
-        SystemExit: JSON 解析失败时打印警告并退出
-    """
-    path = Path(path)
-
-    if not path.exists():
-        return []
-
-    try:
-        content = path.read_text(encoding="utf-8")
-    except OSError as e:
-        print(f"WARNING: 无法读取 {path}: {e}", file=sys.stderr)
-        sys.exit(1)
-
-    try:
-        data = json.loads(content)
-    except json.JSONDecodeError as e:
-        print(f"WARNING: JSON 解析失败 {path}: {e}", file=sys.stderr)
-        sys.exit(1)
-
-    if not isinstance(data, list):
-        print(f"WARNING: history.json 不是数组 (类型: {type(data).__name__})", file=sys.stderr)
-        sys.exit(1)
-
-    return data
+def _get_default_reports_dir() -> Path:
+    """获取默认报告目录: 项目根目录/data/eval_reports/"""
+    return Path(__file__).resolve().parent.parent.parent.parent / "data" / "eval_reports"
 
 
 # ── 趋势输出 ──
@@ -262,8 +223,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--history",
-        default=str(_get_default_history_path()),
-        help="history.json 路径 (默认 data/eval_reports/history.json)",
+        default=str(_get_default_reports_dir()),
+        help="history.json 所在目录 (默认 data/eval_reports)",
     )
     parser.add_argument(
         "--last",

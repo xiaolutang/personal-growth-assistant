@@ -123,17 +123,17 @@ class TestPrintTrend:
 
 
 class TestLoadHistory:
-    def test_corrupt_history(self, history_dir: Path):
-        """JSON 解析失败时警告并退出"""
+    def test_corrupt_history_returns_empty(self, history_dir: Path):
+        """JSON 解析失败时返回空列表并警告"""
         history_file = history_dir / "history.json"
         history_file.write_text("{invalid json content", encoding="utf-8")
 
-        with pytest.raises(SystemExit):
-            load_history(history_file)
+        result = load_history(history_dir)
+        assert result == []
 
     def test_nonexistent_returns_empty(self, history_dir: Path):
         """文件不存在时返回空列表"""
-        result = load_history(history_dir / "nonexistent.json")
+        result = load_history(history_dir / "nonexistent")
         assert result == []
 
     def test_valid_json_returns_records(self, history_dir: Path):
@@ -142,17 +142,17 @@ class TestLoadHistory:
         history_file = history_dir / "history.json"
         history_file.write_text(json.dumps(records), encoding="utf-8")
 
-        result = load_history(history_file)
+        result = load_history(history_dir)
         assert len(result) == 3
         assert result[0]["pass_rate"] == 0.70
 
-    def test_non_array_json_exits(self, history_dir: Path):
-        """非数组 JSON 警告并退出"""
+    def test_non_array_json_returns_empty(self, history_dir: Path):
+        """非数组 JSON 返回空列表并警告"""
         history_file = history_dir / "history.json"
         history_file.write_text('{"key": "value"}', encoding="utf-8")
 
-        with pytest.raises(SystemExit):
-            load_history(history_file)
+        result = load_history(history_dir)
+        assert result == []
 
 
 # ── print_diff ──

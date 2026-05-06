@@ -40,11 +40,13 @@ def load_badcases(badcases_dir: Path) -> Tuple[List[Dict[str, Any]], List[str]]:
     """
     records: List[Dict[str, Any]] = []
     skipped: List[str] = []
+    total_files = 0
 
     if not badcases_dir.exists():
-        return records, skipped
+        return records, skipped, 0
 
     for json_file in sorted(badcases_dir.glob("*.json")):
+        total_files += 1
         try:
             with open(json_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -62,7 +64,7 @@ def load_badcases(badcases_dir: Path) -> Tuple[List[Dict[str, Any]], List[str]]:
         except Exception as e:
             skipped.append(f"{json_file.name}: 读取异常 - {e}")
 
-    return records, skipped
+    return records, skipped, total_files
 
 
 def dedup_by_message_id(records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -273,8 +275,7 @@ def classify_badcases(badcases_dir: Path, output_dir: Path) -> Dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # 1. 读取
-    records, skipped = load_badcases(badcases_dir)
-    total_files = len(list(badcases_dir.glob("*.json"))) if badcases_dir.exists() else 0
+    records, skipped, total_files = load_badcases(badcases_dir)
     total_records = len(records)
 
     # 2. 去重
@@ -320,13 +321,13 @@ def main() -> None:
     parser.add_argument(
         "--badcases-dir",
         type=Path,
-        default=Path("data/eval_transcripts/bad_cases"),
+        default=Path(__file__).resolve().parents[3] / "data" / "eval_transcripts" / "bad_cases",
         help="bad_cases 目录路径（默认: data/eval_transcripts/bad_cases）",
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("data/eval_reports"),
+        default=Path(__file__).resolve().parents[3] / "data" / "eval_reports",
         help="报告输出目录（默认: data/eval_reports）",
     )
     args = parser.parse_args()
