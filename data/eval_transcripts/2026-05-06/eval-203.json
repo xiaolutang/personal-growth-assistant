@@ -1,0 +1,86 @@
+{
+  "transcript_id": "eval-203",
+  "timestamp": "2026-05-06T20:34:40.211348",
+  "test_case_id": "ST-020",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "新建笔记：GraphQL 入门指南，内容写上 GraphQL 是一种 API 查询语言，标签加 graphql 和 api",
+    "output": "已创建笔记「GraphQL 入门指南」，内容为「GraphQL 是一种 API 查询语言」，标签已加上 graphql 和 api。",
+    "tool_calls": [
+      {
+        "tool": "create_entry",
+        "args": {
+          "category": "note",
+          "title": "GraphQL 入门指南",
+          "content": "GraphQL 是一种 API 查询语言",
+          "tags": [
+            "graphql",
+            "api"
+          ]
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 4962.327003479004,
+    "iteration_count": 1
+  },
+  "judge_result": {
+    "test_id": "ST-020",
+    "total_score": 50,
+    "max_possible_score": 50,
+    "average_score": 5.0,
+    "weighted_average": 5.0,
+    "percentage": 100.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 5,
+        "reasoning": "Agent完美选择了创建笔记的工具(create_entry)，完全符合用户'新建笔记'的需求。"
+      },
+      "param_extraction": {
+        "score": 5,
+        "reasoning": "所有参数（标题、内容、标签）都从用户的单句输入中准确、完整地提取出来，没有任何遗漏。"
+      },
+      "response_quality": {
+        "score": 5,
+        "reasoning": "回复清晰明了，自然地确认了笔记的创建，并完整复述了各项关键信息，让用户确认无误。"
+      },
+      "error_handling": {
+        "score": 5,
+        "reasoning": "本次交互非常顺利，未触发任何异常或错误，无需进行错误处理。"
+      },
+      "efficiency": {
+        "score": 5,
+        "reasoning": "单次调用即完成用户的所有指令，没有任何多余的动作或冗余步骤，路径最短。"
+      },
+      "user_experience": {
+        "score": 5,
+        "reasoning": "交互极其流畅，Agent瞬间理解意图并给出完美的执行反馈，体验极佳。"
+      },
+      "directness": {
+        "score": 5,
+        "reasoning": "没有任何多余的寒暄、废话或反问，直接执行操作并给出简明扼要的结果，精准命中需求。"
+      },
+      "context_retention": {
+        "score": 5,
+        "reasoning": "无对话历史，Agent准确捕捉并处理了当前单轮对话中的所有信息。"
+      },
+      "follow_up_quality": {
+        "score": 5,
+        "reasoning": "用户的需求已完整实现，无需进行任何追问，保持克制是最佳选择。"
+      },
+      "conversation_coherence": {
+        "score": 5,
+        "reasoning": "虽然是单轮对话，但Agent的输入理解、工具调用与文本回复之间逻辑完全一致，配合完美。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

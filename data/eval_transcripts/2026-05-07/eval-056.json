@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-056",
+  "timestamp": "2026-05-07T00:29:02.184641",
+  "test_case_id": "ST-056",
+  "test_case_category": "boundary",
+  "agent_trace": {
+    "input": "",
+    "output": "",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 43.10798645019531,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-056",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "由于无用户输入和回复内容，无任何工具被调用。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "无提取出任何参数。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "无回复内容可供评估。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "无交互过程，无法评估错误处理能力。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "无执行流程可供评估效率。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "无交互发生，无用户体验。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "无回复内容，无法评估直接性。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "无对话历史，无上下文可供保持。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "无追问发生。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "无对话过程，无法评估连贯性。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

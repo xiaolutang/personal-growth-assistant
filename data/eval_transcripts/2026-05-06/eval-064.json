@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-064",
+  "timestamp": "2026-05-06T19:57:57.642530",
+  "test_case_id": "ST-020",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "新建笔记：GraphQL 入门指南，内容写上 GraphQL 是一种 API 查询语言，标签加 graphql 和 api",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': '8ac0c4e0-8bef-93ed-a46f-df43ac0ce8ed'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 109.14826393127441,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-020",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "从工具调用记录为空来看，Agent 未能成功调用任何创建笔记的工具，导致任务完全失败。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于未能成功发起任何工具调用，用户提供的标题、内容和标签等关键参数均未被提取和应用。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "Agent 未能完成用户的任务，且直接将底层 API 错误代码和内部模型报错信息暴露给用户，回复毫无帮助且令人困惑。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "Agent 遇到异常时缺乏优雅的处理机制，直接将无关的原始 404 错误（模型不存在）抛给用户，未提供任何替代方案或有效引导。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "Agent 未能执行任何有效操作，直接因为内部错误而中断，没有任何执行效率可言。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户体验极差。用户提出了明确的建笔记需求，不仅没有达成，反而看到了一堆难以理解的技术报错信息。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "Agent 完全没有回应核心业务需求，仅输出了内部错误日志，没有任何针对用户指令的直接回应。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "Agent 未能执行任务，也未表现出对上下文的理解和利用，直接因内部错误而停止。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent 未能进行任何有效的追问或业务处理，仅提示用户“稍后再试”，没有任何互动质量。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户指令清晰明确，但 Agent 的回复是完全不相关的内部错误抛出，对话逻辑断裂。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

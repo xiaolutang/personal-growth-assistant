@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-336",
+  "timestamp": "2026-05-06T23:12:22.300531",
+  "test_case_id": "ST-015",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "帮我搜索所有关于 TypeScript 高级类型的内容",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061512028875601238268d9d6CVuOFQOd)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 80.1849365234375,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-015",
+    "total_score": 25,
+    "max_possible_score": 50,
+    "average_score": 2.5,
+    "weighted_average": 2.48,
+    "percentage": 50.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "工具调用记录为空，Agent未选择任何工具，直接输出了错误信息。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "未进行任何工具调用，无法提取和传递参数。"
+      },
+      "response_quality": {
+        "score": 2,
+        "reasoning": "虽然回复与系统报错相关，但直接抛出了底层的认证错误代码和Token报错，对普通用户来说体验差且没有实质性帮助。"
+      },
+      "error_handling": {
+        "score": 3,
+        "reasoning": "基本处理了错误，提示用户稍后再试，但未能屏蔽底层的Invalid token等技术细节，信息不够清晰友好。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "遇到鉴权错误即直接终止，未尝试其他方法，也未完成用户的搜索任务。"
+      },
+      "user_experience": {
+        "score": 2,
+        "reasoning": "用户未能获取任何所需内容，且看到了底层的API报错信息，体验不佳。"
+      },
+      "directness": {
+        "score": 4,
+        "reasoning": "遇到错误后直接告知了结果，没有多余的寒暄或废话。"
+      },
+      "context_retention": {
+        "score": 5,
+        "reasoning": "单轮对话，且Agent在最开始即发生报错，无上下文需要保持，不扣分。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "在发生报错后，Agent仅建议用户稍后再试，没有提供替代方案或进一步追问以协助解决问题。"
+      },
+      "conversation_coherence": {
+        "score": 5,
+        "reasoning": "虽然任务失败，但错误信息与实际的401未授权情况逻辑一致，不存在对话矛盾。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

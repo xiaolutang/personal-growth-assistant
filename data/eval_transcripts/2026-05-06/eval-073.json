@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-073",
+  "timestamp": "2026-05-06T19:58:46.770276",
+  "test_case_id": "ST-014",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "查看 2024-01-15 的日报",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': '269e0332-0df7-938a-b1f6-e3ec5e484f13'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 226.75490379333496,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-014",
+    "total_score": 14,
+    "max_possible_score": 50,
+    "average_score": 1.4,
+    "weighted_average": 1.44,
+    "percentage": 28.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent完全未能选择正确的工具。工具调用记录为空，直接将用户的查询错误地转发给了不可用或无权限的语言模型API，而不是使用日常查询或数据检索工具。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于未能调用任何工具，Agent完全没有提取用户输入中的关键参数（如日期 '2024-01-15' 和动作 '查看日报'）。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复极其糟糕。将底层模型的原始API 404错误代码和堆栈信息直接暴露给用户，信息极度不友好且令人困惑，没有提供任何实际价值。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "未进行任何优雅的错误处理。直接将系统级的报错（模型不存在或无权限）原样抛出，且仅提示“请稍后再试”，这种错误提示对用户毫无帮助，因为问题出在系统配置而非临时的网络波动。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "完全未能执行任务，执行路径错误，不仅没有获取到日报，反而触发了不必要的模型调用错误，效率极低。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户体验极差。用户期望看到日报内容，却看到了一段技术性的报错信息，这会导致普通用户感到困惑并对系统的可靠性产生严重怀疑。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "回复完全偏离了用户的核心诉求，不仅没有直接回答，反而用无关的技术错误代码打扰用户。"
+      },
+      "context_retention": {
+        "score": 5,
+        "reasoning": "这是第一轮对话，没有需要保持的上下文历史，不存在遗忘前文的情况，默认给满分。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent未能主动提供合理的追问或替代方案。仅仅机械地告知“请稍后再试”，没有尝试了解用户具体需要哪方面的日报或其他帮助。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "对话逻辑破裂。用户输入了明确的业务查询指令，Agent却返回了系统模型调用的技术故障，前后文毫无逻辑关联。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-051",
+  "timestamp": "2026-05-06T19:57:00.069518",
+  "test_case_id": "ST-008",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "找找关于 React Hooks 的内容",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': '00959241-cded-9344-8c0d-88041b4345c2'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 214.25199508666992,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-008",
+    "total_score": 11,
+    "max_possible_score": 50,
+    "average_score": 1.1,
+    "weighted_average": 1.09,
+    "percentage": 22.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "没有工具调用记录，未能选择任何工具来处理用户的请求。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "未进行任何工具调用，无法提取参数。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "直接将底层 404 模型不存在的原始错误代码暴露给用户，没有任何实质性的帮助。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "虽然捕获了错误并给出了“请稍后再试”的提示，但未能优雅处理，暴露了内部实现细节，未提供替代方案。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "未能执行任何有效操作来完成用户的任务。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "返回一大串原始的内部报错信息，让用户感到困惑，体验极差。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "完全未能回应“找 React Hooks 的内容”这一核心需求。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "未涉及多轮对话，且当前请求也因报错未被正常处理。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "未能理解需求并提供后续的追问或引导，只是因为系统错误而中断。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户的正常输入与系统底层模型报错回复之间完全没有任何逻辑连贯性。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

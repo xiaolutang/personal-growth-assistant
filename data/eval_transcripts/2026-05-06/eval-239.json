@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-239",
+  "timestamp": "2026-05-06T20:57:30.156490",
+  "test_case_id": "ST-056",
+  "test_case_category": "boundary",
+  "agent_trace": {
+    "input": "",
+    "output": "",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 55.88507652282715,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-056",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "用户输入与Agent回复均为空，无任何工具调用记录，无法评估。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "没有输入和输出，无法提取任何参数。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复完全为空，对用户没有任何帮助。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "没有任何回复，未处理任何可能的错误或空输入异常。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "无任何操作与交互，无法评估效率。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "面对空白的输入和回复，用户体验极差。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "无任何回复内容，无法评估直接性。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "无对话历史，Agent也未给出任何回复，无法评估上下文保持能力。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "无任何追问或交互。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "无对话发生，无法评估连贯性。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

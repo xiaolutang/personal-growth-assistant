@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-031",
+  "timestamp": "2026-05-06T19:55:14.262893",
+  "test_case_id": "ST-020",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "新建笔记：GraphQL 入门指南，内容写上 GraphQL 是一种 API 查询语言，标签加 graphql 和 api",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': '89c14182-529d-9219-a63c-39095eaef601'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 203.59516143798828,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-020",
+    "total_score": 20,
+    "max_possible_score": 50,
+    "average_score": 2.0,
+    "weighted_average": 1.98,
+    "percentage": 40.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "工具调用记录为空，Agent 未能选择任何工具来执行新建笔记的操作，完全失败。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于未进行任何工具调用，提取参数无从谈起，得分为1分。"
+      },
+      "response_quality": {
+        "score": 2,
+        "reasoning": "回复直接将底层系统的报错（模型找不到）暴露给用户，不仅没有帮助解决问题，且内容令人困惑，但至少交代了失败的原因。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "Agent 遇到了内部错误（模型配置错误）并中断了流程，未能优雅处理，仅是把一段系统级的错误代码抛给用户并建议稍后再试，未能提供有效的替代方案。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "未能成功执行任何有效操作，直接报错退出，毫无效率可言。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "暴露了后端的模型调用错误，给用户带来极大的困扰，体验极差。"
+      },
+      "directness": {
+        "score": 3,
+        "reasoning": "报错时没有多余的寒暄或废话，直接给出了报错信息，但在告知用户任务失败这一点上信息过于技术化。"
+      },
+      "context_retention": {
+        "score": 3,
+        "reasoning": "这是单轮对话，没有需要跨越多轮保持的上下文，因此不扣分。"
+      },
+      "follow_up_quality": {
+        "score": 3,
+        "reasoning": "当前为单轮交互且以系统报错结束，不涉及后续追问的场景，给予中位分。"
+      },
+      "conversation_coherence": {
+        "score": 3,
+        "reasoning": "单轮对话，不存在前后矛盾或不连贯的情况，给予中位分。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

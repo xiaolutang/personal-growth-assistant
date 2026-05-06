@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-352",
+  "timestamp": "2026-05-06T23:16:06.382857",
+  "test_case_id": "ST-027",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "更新 entry-proj-001 的状态为已完成，耗时 120 分钟",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061515478262849818268d9d6CwukBboY)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 78.09281349182129,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-027",
+    "total_score": 23,
+    "max_possible_score": 50,
+    "average_score": 2.3,
+    "weighted_average": 2.3,
+    "percentage": 46.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "由于遇到鉴权错误（401 Invalid token），Agent并未成功发起任何工具调用，因此没有进行工具选择。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于没有执行任何工具调用，Agent未能将用户输入中的关键信息（entry-proj-001，已完成，120分钟）提取并转化为工具参数。"
+      },
+      "response_quality": {
+        "score": 2,
+        "reasoning": "回复直接抛出了底层的系统错误日志，对普通用户来说极其不友好，毫无帮助，仅能让人知道当前系统出错了。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "Agent识别到了异常并中断了执行，避免了程序崩溃，但没有做任何优雅的掩饰或转换，只是将原始API的401错误直接转达给用户，缺乏良好的引导和替代方案。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "遇到API鉴权错误导致任务完全停滞，未执行任何有效操作，整体执行效率为极低。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "将后端复杂的内部错误（如Invalid token和request id）直接暴露给用户，会带来极大的困惑和极差的体验。"
+      },
+      "directness": {
+        "score": 4,
+        "reasoning": "在出错的情况下，Agent没有使用任何多余的寒暄或废话，直接说明了当前遇到的问题。"
+      },
+      "context_retention": {
+        "score": 5,
+        "reasoning": "当前为单轮对话，无前文上下文依赖，Agent处理当前输入的逻辑独立完整。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent直接因为异常中断了流程，没有发起任何有助于解决问题的追问（例如询问是否重试或提供其他帮助）。"
+      },
+      "conversation_coherence": {
+        "score": 5,
+        "reasoning": "单轮交互，语句前后表达通顺，不存在逻辑矛盾或不一致的情况。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

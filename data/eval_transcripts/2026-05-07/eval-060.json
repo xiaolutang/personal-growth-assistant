@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-060",
+  "timestamp": "2026-05-07T00:30:06.725366",
+  "test_case_id": "ST-060",
+  "test_case_category": "boundary",
+  "agent_trace": {
+    "input": "ajsdfhkajsdfhkajsdhfkjahsdkjfhaskdjfh",
+    "output": "看起来你打了一串乱码 😄 有什么我可以帮你的吗？",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 2477.1811962127686,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-060",
+    "total_score": 50,
+    "max_possible_score": 50,
+    "average_score": 5.0,
+    "weighted_average": 5.0,
+    "percentage": 100.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 5,
+        "reasoning": "对于用户的乱码输入，无需调用任何工具，不调用工具是最正确的选择。"
+      },
+      "param_extraction": {
+        "score": 5,
+        "reasoning": "没有需要提取参数的意图或工具调用，因此不存在参数提取问题，得满分。"
+      },
+      "response_quality": {
+        "score": 5,
+        "reasoning": "回复非常自然友好，准确识别出乱码，并以轻松的语气（配合表情包）提供帮助，体验很好。"
+      },
+      "error_handling": {
+        "score": 5,
+        "reasoning": "将无意义的乱码输入视为异常场景处理得非常优雅，没有报错，而是幽默化解并引导用户。"
+      },
+      "efficiency": {
+        "score": 5,
+        "reasoning": "直接给出回复，没有任何多余的步骤或分析过程，路径最短。"
+      },
+      "user_experience": {
+        "score": 5,
+        "reasoning": "极佳的体验。面对乱码没有生硬地回复“不懂”，而是像真人一样幽默回应，交互非常流畅。"
+      },
+      "directness": {
+        "score": 5,
+        "reasoning": "精准命中问题（乱码）并直接给出反馈和询问，没有任何多余的废话或铺垫。"
+      },
+      "context_retention": {
+        "score": 5,
+        "reasoning": "无对话历史，符合当前单轮交互的语境。"
+      },
+      "follow_up_quality": {
+        "score": 5,
+        "reasoning": "在识别出输入无效后，询问“有什么我可以帮你的吗？”是非常必要、合理且恰到好处的追问。"
+      },
+      "conversation_coherence": {
+        "score": 5,
+        "reasoning": "单轮对话逻辑清晰，识别乱码 -> 幽默提示 -> 提供帮助，符合人类对话逻辑，非常连贯。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

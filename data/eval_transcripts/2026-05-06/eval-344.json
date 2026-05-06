@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-344",
+  "timestamp": "2026-05-06T23:13:42.323943",
+  "test_case_id": "ST-019",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "搜索关于 kubernetes 的笔记，只返回 5 条",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061513266581340388268d9d6Wnf0YyPC)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 57.68299102783203,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-019",
+    "total_score": 14,
+    "max_possible_score": 50,
+    "average_score": 1.4,
+    "weighted_average": 1.4,
+    "percentage": 28.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent由于API报错（401 Invalid token），完全没有进行任何工具调用，工具选择无从谈起，属于完全失败。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "Agent未能成功解析用户的意图和参数（如搜索关键词'kubernetes'，数量限制'5'），未发起任何有效的调用请求。"
+      },
+      "response_quality": {
+        "score": 2,
+        "reasoning": "回复直接展示了底层的错误代码和详情，对普通用户不友好且无法自行解决，但至少指出了是身份验证错误并建议稍后再试。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "虽然捕获了系统异常并向用户报错，但缺乏优雅的处理方式（如联系管理员、检查配置等），仅仅是原封不动地抛出了后端的报错信息。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "未能成功执行任何有效步骤，直接因鉴权失败而中断，效率极低。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户提出了明确的查询需求，但直接面对一堆冰冷的系统报错日志，体验极差，需求完全没有被满足。"
+      },
+      "directness": {
+        "score": 3,
+        "reasoning": "在遇到错误时没有使用多余的寒暄或废话，直接报告了失败，但因为直接抛出了长串的异常代码，显得不够精炼。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "单轮对话，Agent直接在鉴权阶段失败，未能体现对上下文的任何记忆或处理能力。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent直接抛出错误并终止，没有提供任何追问或进一步协助用户解决该问题的建议。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "因系统级报错导致任务中断，完全未能与用户建立任何有效的对话和逻辑交互。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

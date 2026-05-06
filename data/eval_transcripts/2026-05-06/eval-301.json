@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-301",
+  "timestamp": "2026-05-06T23:06:37.281464",
+  "test_case_id": "ST-047",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "什么是微服务架构？",
+    "output": "抱歉，处理时遇到了问题：Error code: 400 - {'error': {'message': 'Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment', 'type': 'Arrearage', 'param': None, 'code': 'Arrearage'}, 'id': 'chatcmpl-7b70f25b-75c3-907d-9bd2-9feb19ee7d0e', 'request_id': '7b70f25b-75c3-907d-9bd2-9feb19ee7d0e'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 230.01599311828613,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-047",
+    "total_score": 11,
+    "max_possible_score": 50,
+    "average_score": 1.1,
+    "weighted_average": 1.09,
+    "percentage": 22.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent未能选择任何工具来尝试回答基础的架构知识问题，且未能妥善处理因账户欠费导致的API调用失败。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于系统直接崩溃并暴露出底层错误，没有任何有效的工具被调用或参数被提取。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复完全没有解答用户提出的“什么是微服务架构”的问题，而是展示了一堆对用户毫无意义的原始报错代码。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "Agent捕获到了异常并以“处理时遇到了问题”进行提示，勉强算作处理，但直接将后端账户欠费的原始API错误代码暴露给用户，体验极差，缺乏优雅的处理。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "完全没有效率可言，系统遇到异常即停滞，既没有尝试解答问题也没有给出实质性的解决建议。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户体验极差。普通用户看到大段的系统报错（如Arrearization、Error code: 400等）会感到非常困惑和不安。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "回复不仅没有任何有用的内容，反而用冗长且无关的技术报错代码敷衍用户，完全没有直击用户需求。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "Agent直接失败并报错，没有展现出任何理解上下文的能力。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "回复处于彻底崩溃状态，没有任何有效的追问或交互。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "由于回复内容仅为系统错误信息，与用户提出的技术问题毫无关联，毫无连贯性可言。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -96,6 +96,15 @@
     .dashboard { flex-direction: column; }
     .dashboard .chart-wrap { flex: none; width: 100%; height: 200px; }
   }
+
+  /* ── Judge Section (Section 8) ── */
+  .judge-overview { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; }
+  .judge-bar-chart { margin: 0.5rem 0; }
+  .judge-bar-row { display: flex; align-items: center; margin-bottom: 0.4rem; gap: 0.5rem; }
+  .judge-bar-label { flex: 0 0 160px; font-size: 0.8rem; color: #4b5563; text-align: right; }
+  .judge-bar-track { flex: 1; height: 18px; background: #f3f4f6; border-radius: 4px; overflow: hidden; }
+  .judge-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+  .judge-bar-score { flex: 0 0 40px; font-size: 0.8rem; font-weight: 600; color: #374151; }
 </style>
 </head>
 <body>
@@ -232,6 +241,14 @@ $env_info_items
       <tr><td>中位耗时</td><td>${efficiency_median_elapsed}s</td></tr>
     </table>
     $tool_call_distribution
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 8: LLM-as-Judge Scores                            -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-judge">
+    <h2>8. LLM-as-Judge 评分</h2>
+    $judge_section_content
   </div>
 
 </div>

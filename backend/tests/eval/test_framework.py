@@ -40,25 +40,25 @@ DATASETS_DIR = Path(__file__).parent / "datasets"
 class TestDatasetLoader:
     """测试数据集加载器"""
 
-    def test_load_single_turn_has_68_cases(self):
+    def test_load_single_turn_has_71_cases(self):
         cases = DatasetLoader.load_single_turn()
-        assert len(cases) == 68
+        assert len(cases) == 71
 
-    def test_load_negative_has_24_cases(self):
+    def test_load_negative_has_26_cases(self):
         cases = DatasetLoader.load_negative()
-        assert len(cases) == 24
+        assert len(cases) == 26
 
     def test_single_turn_categories(self):
         cases = DatasetLoader.load_single_turn()
         from collections import Counter
 
         cats = Counter(c.category for c in cases)
-        assert cats["tool_selection"] == 15
-        assert cats["param_extraction"] == 12
+        assert cats["tool_selection"] == 16
+        assert cats["param_extraction"] == 13
         assert cats["multi_step"] == 10
         assert cats["ask_user"] == 8
         assert cats["pure_chat"] == 10
-        assert cats["boundary"] == 8
+        assert cats["boundary"] == 9
         assert cats["directness"] == 5
 
     def test_negative_categories(self):
@@ -66,7 +66,7 @@ class TestDatasetLoader:
         from collections import Counter
 
         cats = Counter(c.category for c in cases)
-        assert cats["no_tool"] == 10
+        assert cats["no_tool"] == 12
         assert cats["no_ask"] == 8
         assert cats["no_multi_step"] == 6
 
@@ -124,11 +124,11 @@ class TestDatasetLoader:
     def test_load_from_absolute_path(self):
         path = DATASETS_DIR / "single_turn_68.json"
         cases = DatasetLoader.load_test_cases(path)
-        assert len(cases) == 68
+        assert len(cases) == 71
 
     def test_load_from_relative_path(self):
         cases = DatasetLoader.load_test_cases("single_turn_68.json")
-        assert len(cases) == 68
+        assert len(cases) == 71
 
 
 # ── 指标计算测试 ──
@@ -502,14 +502,14 @@ class TestDataIntegrity:
         with open(path, "r") as f:
             data = json.load(f)
         assert isinstance(data, list)
-        assert len(data) == 68
+        assert len(data) == 71
 
     def test_negative_json_valid(self):
         path = DATASETS_DIR / "negative_24.json"
         with open(path, "r") as f:
             data = json.load(f)
         assert isinstance(data, list)
-        assert len(data) == 24
+        assert len(data) == 26
 
     def test_single_turn_required_fields(self):
         cases = DatasetLoader.load_single_turn()

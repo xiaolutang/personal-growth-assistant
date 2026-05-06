@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-308",
+  "timestamp": "2026-05-06T23:08:16.631266",
+  "test_case_id": "ST-053",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": " bye bye ",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061507566297746318268d9d6eHQDWHzU)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 321.00582122802734,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-053",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "用户输入为告别语，无需调用任何工具，但Agent内部处理失败导致返回401错误，属于严重异常。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "因为发生了严重的认证错误，系统未能正常解析用户意图并提取任何参数。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "对于用户的告别语，Agent未能给出正常的告别回复，而是直接将API底层错误（Invalid token）抛给用户，毫无帮助且令人困惑。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "Agent直接暴露了底层系统的401认证错误代码，没有拦截异常，也没有提供对用户友好的解释或有效引导，处理极差。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "用户的简单告别信息触发了系统错误，未能高效顺畅地结束对话，属于无效的执行路径。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "正常说再见却收到一堆系统报错信息，体验极差，会让用户误以为平台崩溃或自己的账号存在问题。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "回复完全偏离了用户意图，通篇都是无意义的报错信息，没有任何针对告别语的有效回应。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "系统直接抛出异常报错，未能体现对上下文的任何记忆或正常处理逻辑。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "面对用户的结束对话，无合适的追回应，反而输出报错，完全不合理。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户说再见，Agent回复系统API鉴权报错，对话逻辑完全断裂，毫无连贯性可言。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

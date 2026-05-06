@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-334",
+  "timestamp": "2026-05-06T23:12:03.128680",
+  "test_case_id": "ST-014",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "查看 2024-01-15 的日报",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061511442494438238268d9d6kM4HqRMI)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 58.035850524902344,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-014",
+    "total_score": 13,
+    "max_possible_score": 50,
+    "average_score": 1.3,
+    "weighted_average": 1.29,
+    "percentage": 26.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "从工具调用记录为空可以看出，Agent由于认证错误（401 Invalid token）完全未能发起任何工具调用，无法评估其工具选择能力。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于在初始阶段就发生了401认证错误，Agent未能进入参数提取环节，因此无法评估。"
+      },
+      "response_quality": {
+        "score": 2,
+        "reasoning": "Agent向用户暴露了底层的原始错误信息（如Error code: 401和内部request id），这些技术细节对普通用户没有帮助且会造成困惑，属于较低质量的回复。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "虽然捕获了系统异常并提示用户稍后再试，但将未经包装的底层API 401认证错误直接展示给用户，处理方式不够优雅，缺乏良好的用户引导。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "因为系统级别的鉴权错误，任务在第一步就直接失败，没有任何有效进展，效率极低。"
+      },
+      "user_experience": {
+        "score": 2,
+        "reasoning": "用户的需求未能得到满足，且看到的满是技术代码的错误提示，体验不佳。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "未能直接回应用户查看日报的核心诉求，而是直接抛出了系统异常。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "系统在鉴权阶段即宣告失败，未进入实质性的对话或任务处理阶段，无法体现出对上下文的保持能力。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "任务彻底失败，Agent仅给出了“请稍后再试”的敷衍建议，未提供任何有价值的追问或替代方案。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "对话刚一开始就因系统错误而中断，未能建立起任何有效的对话逻辑和连贯性。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-084",
+  "timestamp": "2026-05-06T19:59:55.811932",
+  "test_case_id": "ST-018",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "把 entry-abc123 的状态改成进行中",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': '1bc3b768-4b54-92e0-8ec6-3b7aa578ab61'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 125.89812278747559,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-018",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent未能选择任何工具来完成任务，工具调用记录为空，导致请求直接发送给了不可用或无权限的模型。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于Agent没有发起任何工具调用，完全没有进行参数提取（如提取 entry-abc123 和状态 '进行中'）。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复完全是由系统底层模型报错引起的堆栈信息暴露，对用户毫无帮助，体验极差。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "Agent未优雅处理底层模型缺失（404）的异常，直接将API错误代码抛给用户，没有提供替代方案或合理的业务解释。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "未能成功执行任何有效操作，直接失败并返回了错误信息。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "面对专业的系统报错信息，普通用户会感到非常困惑和挫败，交互体验极差。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "未能直接回应用户的业务需求（修改状态），而是抛出了一堆毫无意义的系统报错。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "Agent完全崩溃，根本未能处理用户的输入，无从谈及上下文保持。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent没有提供任何后续追问或有效引导，仅简单要求用户'稍后再试'。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "由于Agent完全无法处理当前的请求，对话逻辑在起始阶段就已经断裂。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,0 +1,77 @@
+{
+  "transcript_id": "eval-335",
+  "timestamp": "2026-05-06T23:12:05.486741",
+  "test_case_id": "ST-067",
+  "test_case_category": "directness",
+  "agent_trace": {
+    "input": "本周的学习情况怎么样",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061511491486592838268d9d612bsUhsm)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 53.96676063537598,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-067",
+    "total_score": 11,
+    "max_possible_score": 50,
+    "average_score": 1.1,
+    "weighted_average": 1.09,
+    "percentage": 22.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent未选择任何工具（工具调用记录为空），而是直接抛出了内部系统错误，无法获取学习情况数据。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于完全没有进行工具调用，参数提取无从谈起，评分为最低。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复不仅没有回答用户关于“学习情况”的问题，反而直接将内部API报错（包含错误代码和Request ID等杂乱信息）暴露给用户，体验极差且毫无帮助。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "遇到异常（401无效token）时，系统仅作了基本的拦截和提示“请稍后再试”，但将底层技术错误细节直接抛出，没有给用户提供任何替代方案或友好引导，处理不够优雅。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "Agent未能有效执行任何动作，也未尝试重试或补救，直接返回了错误，效率极低。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "整体体验极差。用户提出正常询问却收到一段无法理解的代码报错，不仅未解决问题，还容易引起用户困惑和对系统稳定性的担忧。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "Agent直接以报错回应，完全未响应核心需求，没有提供任何有效的直接信息。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "由于无对话历史且当前轮次完全失败，无法体现上下文保持能力，评分为最低。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent因系统错误直接中断，没有任何针对用户需求的追问或澄清，评分为最低。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户的输入与Agent的报错输出完全不匹配，对话毫无逻辑连贯性可言。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {
+    "behavior_checks": {
+      "no_greeting": true,
+      "must_show_details": true,
+      "no_ask_to_search": true
+    }
+  }
+}

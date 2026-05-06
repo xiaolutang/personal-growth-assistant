@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-317",
+  "timestamp": "2026-05-06T23:09:32.142257",
+  "test_case_id": "ST-006",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "把这周的任务总结一下",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061509168115486698268d9d62LpbASq1)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 89.98894691467285,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-006",
+    "total_score": 12,
+    "max_possible_score": 50,
+    "average_score": 1.2,
+    "weighted_average": 1.19,
+    "percentage": 24.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent在遇到异常时未能选择任何工具或采取合理的补救措施，而是直接将底层系统错误暴露给用户。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "因遇到错误而完全未能进入任务处理阶段，无法提取任何相关参数。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "将包含技术细节（如Error code: 401, Invalid token等）的原始错误信息直接抛给用户，回复毫无帮助且令人困惑。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "没有优雅地处理异常，只是简单抛出代码级错误。虽然提示了“请稍后再试”，但对用户缺乏有效的引导和解释。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "未能执行任何有效操作，直接失败，无效率可言。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "体验极差。用户看到满屏的技术报错信息，需求完全没有得到解决，且容易引起用户困惑或恐慌。"
+      },
+      "directness": {
+        "score": 2,
+        "reasoning": "虽然直接报告了失败，但包含了大量无关的底层错误细节，掩盖了核心反馈，不够直接了当。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "在报错阶段完全丧失了对上下文的理解，未能针对“这周的任务”这一信息进行任何保留或处理。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "没有任何有价值的追问或替代方案，仅用一句机械的“请稍后再试”打发用户。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户的合理请求与Agent抛出的认证错误（401）之间毫无逻辑关联，对话完全脱节。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

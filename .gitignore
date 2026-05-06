@@ -28,6 +28,7 @@ Thumbs.db
 # Local config
 *.local
 deploy/.remote.env
+deploy/docker-compose.override.yml
 
 # Runtime data
 data/index.db

@@ -1,0 +1,86 @@
+{
+  "transcript_id": "eval-023",
+  "timestamp": "2026-05-07T00:15:51.442672",
+  "test_case_id": "ST-023",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "创建任务：学习 AWS Lambda，添加标签 cloud 和 serverless，优先级低",
+    "output": "已创建任务 **「学习 AWS Lambda」**，详情如下：\n\n- **分类**：任务\n- **优先级**：低\n- **标签**：cloud、serverless\n- **状态**：进行中\n- **ID**：`task-f9917558`\n\n需要的话，可以随时设置计划日期或补充更多内容。",
+    "tool_calls": [
+      {
+        "tool": "create_entry",
+        "args": {
+          "category": "task",
+          "priority": "low",
+          "tags": [
+            "cloud",
+            "serverless"
+          ],
+          "title": "学习 AWS Lambda"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 8509.675025939941,
+    "iteration_count": 1
+  },
+  "judge_result": {
+    "test_id": "ST-023",
+    "total_score": 50,
+    "max_possible_score": 50,
+    "average_score": 5.0,
+    "weighted_average": 5.0,
+    "percentage": 100.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 5,
+        "reasoning": "Agent完美选择了创建任务的工具，与用户需求完全匹配。"
+      },
+      "param_extraction": {
+        "score": 5,
+        "reasoning": "任务标题、标签及优先级等参数提取完全准确，无任何遗漏。"
+      },
+      "response_quality": {
+        "score": 5,
+        "reasoning": "回复格式清晰，信息完整，自然且非常有帮助。"
+      },
+      "error_handling": {
+        "score": 5,
+        "reasoning": "执行过程顺利，无异常发生，并在回复中贴心提示了后续操作建议。"
+      },
+      "efficiency": {
+        "score": 5,
+        "reasoning": "单次调用完成任务，路径最短，没有任何冗余步骤。"
+      },
+      "user_experience": {
+        "score": 5,
+        "reasoning": "交互极其流畅，信息展示直观明了，提供了极佳的用户体验。"
+      },
+      "directness": {
+        "score": 5,
+        "reasoning": "精准命中用户需求，直接展示任务创建结果，没有任何废话和多余寒暄。"
+      },
+      "context_retention": {
+        "score": 5,
+        "reasoning": "首单次交互，信息提取完整，完美基于当前输入做出了响应。"
+      },
+      "follow_up_quality": {
+        "score": 5,
+        "reasoning": "结尾主动提供补充计划日期的提议，恰到好处且具引导性。"
+      },
+      "conversation_coherence": {
+        "score": 5,
+        "reasoning": "单轮对话逻辑严密，输入输出高度一致，表现如真人般自然。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

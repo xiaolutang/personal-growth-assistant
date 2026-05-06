@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-077",
+  "timestamp": "2026-05-06T19:59:09.114032",
+  "test_case_id": "ST-015",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "帮我搜索所有关于 TypeScript 高级类型的内容",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': '5b493f82-a132-97fd-b9b3-70b5b3c9496d'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 111.72723770141602,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-015",
+    "total_score": 13,
+    "max_possible_score": 50,
+    "average_score": 1.3,
+    "weighted_average": 1.32,
+    "percentage": 26.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "没有进行任何工具调用。Agent 直接暴露了内部调用大模型失败的底层 404 错误，完全未能执行用户的搜索请求，说明未能正确选择或路由到有效的搜索工具或模型。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于 Agent 未能成功发起任何有效的工具调用，也没有提取出用户的搜索关键词，参数提取完全缺失。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复对用户毫无帮助。Agent 直接将包含请求 ID、参数类型和内部错误代码的原始 JSON 错误信息抛给用户，不仅令人困惑，也不符合正常的对话交互规范。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "未进行任何优雅的错误处理。Agent 未捕获内部 API 的模型不存在异常，直接将底层系统的 404 报错透传给用户，仅机械地加上“请稍后再试”，没有提供任何替代方案或合理的解释。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "执行彻底失败。未能触发任何有效的工具调用或执行步骤，直接因底层错误而中断，效率为零。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "体验极差。用户不仅没有获得答案，还被迫阅读毫无意义的底层技术报错信息，会严重损害用户对系统的信任。"
+      },
+      "directness": {
+        "score": 2,
+        "reasoning": "Agent 没有废话或寒暄，第一时间报告了错误。但由于直接抛出原始错误代码，在“直接解决用户问题”这一层面上是失败的。"
+      },
+      "context_retention": {
+        "score": 3,
+        "reasoning": "单轮对话，且由于直接崩溃未能体现对上下文的利用，但也没有出现遗忘前文的情况。给予及格分。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "没有任何追问或试图进一步明确用户需求的动作，直接因为内部错误而中断了对话。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "对话逻辑断裂。用户要求“搜索内容”，Agent 回复“模型不存在”，前后语义完全不连贯，逻辑矛盾。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

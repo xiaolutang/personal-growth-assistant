@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-341",
+  "timestamp": "2026-05-06T23:13:05.880017",
+  "test_case_id": "ST-017",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "创建任务：准备周五的技术分享演示，优先级中等，计划日期 2024-03-15",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061512527146635648268d9d65Kkxm2bL)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 55.99784851074219,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-017",
+    "total_score": 11,
+    "max_possible_score": 50,
+    "average_score": 1.1,
+    "weighted_average": 1.09,
+    "percentage": 22.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent 未能成功选择任何工具，工具调用记录为空，直接返回了系统底层错误。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于未能发起任何工具调用，用户提供的任务详情、优先级和日期等关键参数完全未被提取。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复包含未经处理的系统 API 错误代码，毫无帮助且令用户困惑，毫无质量可言。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "Agent 暴露了底层的 401 Invalid Token 错误，没有进行任何优雅的包装或降级处理，仅提示用户稍后再试。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "没有进行任何有效操作，未能完成用户的任务。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户体验极差，暴露技术错误细节会导致普通用户感到恐慌或困惑，任务也没有完成。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "回复直接指向了系统内部错误，而非直接响应用户的任务创建需求。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "这是单轮交互且直接失败，Agent 完全未能对用户的输入信息进行任何理解和保留。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "Agent 直接报错，未能提供任何有效的追问或替代方案来协助用户。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户的明确指令与 Agent 暴露的系统底层报错毫无逻辑联系，对话完全脱节。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

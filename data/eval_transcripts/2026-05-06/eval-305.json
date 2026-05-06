@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-305",
+  "timestamp": "2026-05-06T23:07:43.940402",
+  "test_case_id": "ST-051",
+  "test_case_category": "pure_chat",
+  "agent_trace": {
+    "input": "今天天气怎么样？",
+    "output": "",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 49.35002326965332,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-051",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "用户询问天气，Agent 应该调用天气查询工具，但实际上未调用任何工具（工具调用记录为空）。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "由于没有发起任何工具调用，不存在参数提取的过程，因此得分为1。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "Agent 回复内容完全为空（回复内容为空字符串），没有向用户提供任何信息或帮助。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "Agent 在面对缺乏位置信息的天气查询时，既没有尝试调用工具，也没有向用户询问所在城市以进行错误处理或引导，直接返回了空回复。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "Agent 完全没有采取任何行动，未能完成用户的请求，无效率可言。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "面对用户正常提问得到的是一片空白的回复，体验极差，用户会感到困惑和沮丧。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "Agent 没有给出任何实质性内容，完全未回应核心问题。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "没有对话历史，且 Agent 本次也未产生任何有效回复或动作，无法体现上下文保持能力。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "针对缺乏地理位置信息的天气查询，Agent 没有进行任何追问（如询问用户所在城市）来明确需求。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "Agent 没有任何输出，无法构成连贯的对话。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

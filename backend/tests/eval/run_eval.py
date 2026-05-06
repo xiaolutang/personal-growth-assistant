@@ -32,15 +32,20 @@ import httpx
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from tests.eval.framework import (
+    CategoryStats,
     DatasetLoader,
     EvaluationReport,
     GoldenDatasetRunner,
+    NegativeEvalResult,
     NegativeReport,
     NegativeTestCase,
     TestCase,
     judge_negative_case,
     judge_test_case,
+    pass_at_k,
+    pass_hat_k,
 )
+from tests.eval.judge import LLMJudge, JudgeResult
 from tests.eval.report_generator import (
     EvalReportData,
     append_history,
@@ -174,14 +179,21 @@ async def run_single_turn(
     client: RealAgentClient,
     cases: List[TestCase],
     transcript_store: TranscriptStore | None = None,
+    judge: LLMJudge | None = None,
 ) -> Tuple[EvaluationReport, List[Dict[str, Any]]]:
     """运行单轮正向评估
+
+    Args:
+        client: Agent 客户端
+        cases: 测试用例列表
+        transcript_store: 转录存储（可选）
+        judge: LLMJudge 实例（可选，None 表示跳过 Judge 评分）
 
     Returns:
         (EvaluationReport, per_case_records) 二元组。
         每个 per_case_record 含:
             input, expected_tools, actual_tools, agent_reply,
-            passed, category, elapsed_seconds
+            passed, category, elapsed_seconds, judge_result
     """
 
     # 缓存每次调用的完整结果（含 content），用于 transcript 和 agent_reply
@@ -208,11 +220,41 @@ async def run_single_turn(
         actual_tools = case_results[0].actual_tools if case_results else []
         mark = "PASS" if passed else "FAIL"
         tools_str = ",".join(actual_tools) if actual_tools else "(none)"
-        print(f"{mark} [{elapsed:.1f}s] tools=[{tools_str}]")
+        print(f"{mark} [{elapsed:.1f}s] tools=[{tools_str}]", end="")
 
         # 获取 agent_reply
         call_data = _call_cache.get(case_results[0].thread_id, {}) if case_results else {}
         agent_reply = call_data.get("content", "")
+
+        # 调用 LLMJudge 进行评分
+        judge_result_dict: Dict[str, Any] | None = None
+        if judge is not None:
+            try:
+                tool_calls_for_judge = [
+                    {"tool": t, "args": a}
+                    for t, a in zip(
+                        actual_tools,
+                        case_results[0].actual_args if case_results and case_results[0].actual_args else [{}] * len(actual_tools),
+                    )
+                ]
+                judge_result: JudgeResult = await judge.evaluate(
+                    user_input=tc.user_input,
+                    agent_response=agent_reply,
+                    tool_calls=tool_calls_for_judge,
+                    test_id=tc.id,
+                )
+                judge_result_dict = judge_result.to_dict()
+                print(f" judge={judge_result.weighted_average:.2f}")
+            except Exception as e:
+                # Judge 调用失败不阻塞主流程
+                judge_result_dict = {
+                    "error": True,
+                    "error_message": str(e),
+                    "test_id": tc.id,
+                }
+                print(f" judge=ERROR({type(e).__name__})")
+        else:
+            print()
 
         # 构建 per-case record
         per_case_records.append({
@@ -223,6 +265,7 @@ async def run_single_turn(
             "passed": passed,
             "category": tc.category,
             "elapsed_seconds": round(elapsed, 4),
+            "judge_result": judge_result_dict,
         })
 
         # 保存 EvalTranscript
@@ -245,6 +288,7 @@ async def run_single_turn(
                 test_case_id=tc.id,
                 test_case_category=tc.category,
                 agent_trace=trace,
+                judge_result=judge_result_dict,
                 outcome_grade={"passed": passed},
                 metadata={"behavior_checks": tc.behavior_checks} if tc.behavior_checks else {},
             )
@@ -255,8 +299,6 @@ async def run_single_turn(
             category_results.setdefault(tc.category, []).append(r)
 
     # 构建报告
-    from tests.eval.framework import CategoryStats, pass_at_k, pass_hat_k
-
     category_stats: Dict[str, CategoryStats] = {}
     for cat, cat_results in category_results.items():
         by_case_id: Dict[str, List[bool]] = {}
@@ -336,8 +378,6 @@ async def run_negative(
             "category": tc.category,
             "elapsed_seconds": round(elapsed, 4),
         })
-
-        from tests.eval.framework import NegativeEvalResult
 
         all_results.append(NegativeEvalResult(
             test_id=tc.id,
@@ -461,6 +501,14 @@ async def main():
         "--report-dir",
         help="HTML 报告输出目录 (默认项目根目录 data/eval_reports/)",
     )
+    parser.add_argument(
+        "--judge", action="store_true", default=True,
+        help="启用 LLM-as-Judge 评分 (默认启用)",
+    )
+    parser.add_argument(
+        "--no-judge", dest="judge", action="store_false",
+        help="跳过 LLM-as-Judge 评分",
+    )
     args = parser.parse_args()
 
     # 1. 登录
@@ -491,6 +539,21 @@ async def main():
     # 初始化 TranscriptStore
     transcript_store = TranscriptStore()
 
+    # 初始化 LLMJudge（仅在 --judge 启用时）
+    judge_instance: LLMJudge | None = None
+    if args.judge:
+        print("\n=== 初始化 LLM-as-Judge ===")
+        try:
+            judge_instance = LLMJudge(use_real_llm=True)
+            if judge_instance.is_degraded:
+                print(f"  [Warning] Judge 降级: {judge_instance.degraded_reason}")
+                judge_instance = None
+            else:
+                print("  Judge 初始化成功 (use_real_llm=True)")
+        except Exception as e:
+            print(f"  [Warning] Judge 初始化失败: {e}，将跳过 Judge 评分")
+            judge_instance = None
+
     # 收集所有 per-case records 用于 HTML 报告
     all_case_records: List[Dict[str, Any]] = []
 
@@ -499,7 +562,11 @@ async def main():
         print("\n=== 单轮正向评估 (68 条) ===")
         cases = DatasetLoader.load_single_turn()
         start = time.time()
-        report, single_records = await run_single_turn(client, cases, transcript_store=transcript_store)
+        report, single_records = await run_single_turn(
+            client, cases,
+            transcript_store=transcript_store,
+            judge=judge_instance,
+        )
         elapsed = time.time() - start
 
         print(f"\n{report.to_text()}")

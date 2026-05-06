@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>评估报告 - 2026-05-06T23:13:22.726531</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1f2937; background: #f9fafb; line-height: 1.6; padding: 2rem;
+  }
+  a { color: #6366F1; }
+
+  /* ── Layout ── */
+  .container { max-width: 1100px; margin: 0 auto; }
+  .header {
+    text-align: center; margin-bottom: 2rem; padding-bottom: 1.5rem;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  .header h1 { color: #6366F1; font-size: 1.75rem; margin-bottom: 0.25rem; }
+  .header .subtitle { color: #6b7280; font-size: 0.9rem; }
+
+  /* ── Section Card ── */
+  .section {
+    background: #fff; border-radius: 12px; padding: 1.5rem;
+    margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .section h2 {
+    font-size: 1.15rem; color: #6366F1; margin-bottom: 1rem;
+    padding-bottom: 0.5rem; border-bottom: 1px solid #e5e7eb;
+  }
+  .section h3 { font-size: 1rem; color: #374151; margin: 0.75rem 0 0.5rem; }
+
+  /* ── Stat Cards (Section 2) ── */
+  .dashboard { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
+  .dashboard .chart-wrap { flex: 0 0 220px; height: 220px; }
+  .dashboard .cards { flex: 1; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+  .stat-card {
+    flex: 1 1 140px; background: #f0f0ff; border-radius: 8px; padding: 0.75rem 1rem;
+    text-align: center;
+  }
+  .stat-card .label { font-size: 0.8rem; color: #6b7280; }
+  .stat-card .value { font-size: 1.5rem; font-weight: 700; }
+  .stat-card.pass .value { color: #059669; }
+  .stat-card.fail .value { color: #dc2626; }
+  .stat-card.neutral .value { color: #6366F1; }
+
+  /* ── Chart Containers ── */
+  .chart-container { position: relative; width: 100%; max-width: 700px; margin: 0 auto; }
+  .chart-container.trend { max-width: 100%; height: 280px; }
+  .chart-placeholder {
+    text-align: center; padding: 2rem; color: #9ca3af;
+    border: 1px dashed #d1d5db; border-radius: 8px;
+  }
+
+  /* ── Tables ── */
+  table { border-collapse: collapse; width: 100%; margin: 0.5rem 0; font-size: 0.875rem; }
+  th, td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; }
+  th { background: #f3f4f6; color: #374151; font-weight: 600; }
+  td { vertical-align: top; }
+  tr:hover td { background: #f9fafb; }
+  .pass-text { color: #059669; font-weight: 600; }
+  .fail-text { color: #dc2626; font-weight: 600; }
+
+  /* ── Collapsible (Section 4) ── */
+  details { margin-bottom: 0.5rem; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+  summary {
+    cursor: pointer; padding: 0.75rem 1rem; background: #fef2f2;
+    font-weight: 600; color: #991b1b; list-style: none;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  summary::after { content: "\25BC"; font-size: 0.75rem; transition: transform 0.2s; }
+  details[open] summary::after { transform: rotate(180deg); }
+  details .detail-body { padding: 1rem; background: #fff; }
+  details .detail-body .field { margin-bottom: 0.5rem; }
+  details .detail-body .field-label { font-weight: 600; color: #4b5563; font-size: 0.8rem; text-transform: uppercase; }
+  details .detail-body .field-value { background: #f9fafb; padding: 0.5rem; border-radius: 4px; margin-top: 0.25rem; white-space: pre-wrap; word-break: break-word; }
+
+  /* ── Empty State ── */
+  .empty-state { text-align: center; padding: 1.5rem; color: #6b7280; font-style: italic; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+  .badge-pass { background: #d1fae5; color: #065f46; }
+  .badge-fail { background: #fee2e2; color: #991b1b; }
+
+  /* ── Environment Info List ── */
+  .env-list { list-style: none; }
+  .env-list li { padding: 0.25rem 0; border-bottom: 1px solid #f3f4f6; }
+  .env-list li:last-child { border-bottom: none; }
+  .env-key { font-weight: 600; color: #4b5563; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    body { padding: 1rem; }
+    .dashboard { flex-direction: column; }
+    .dashboard .chart-wrap { flex: none; width: 100%; height: 200px; }
+  }
+
+  /* ── Judge Section (Section 8) ── */
+  .judge-overview { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; }
+  .judge-bar-chart { margin: 0.5rem 0; }
+  .judge-bar-row { display: flex; align-items: center; margin-bottom: 0.4rem; gap: 0.5rem; }
+  .judge-bar-label { flex: 0 0 160px; font-size: 0.8rem; color: #4b5563; text-align: right; }
+  .judge-bar-track { flex: 1; height: 18px; background: #f3f4f6; border-radius: 4px; overflow: hidden; }
+  .judge-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+  .judge-bar-score { flex: 0 0 40px; font-size: 0.8rem; font-weight: 600; color: #374151; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <h1>AI 智能体评估报告</h1>
+    <div class="subtitle">生成时间：2026-05-06T23:13:22.726531 | 模式：single</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 1: Assessment Methodology                         -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-methodology">
+    <h2>1. 评估方法说明</h2>
+    <h3>数据集构成</h3>
+    <p>评估数据集包含多个意图类别的测试用例，用于验证 AI 智能体能否根据用户输入正确选择和调用工具。</p>
+    <table>
+      <tr><th>指标</th><th>说明</th></tr>
+      <tr><td>数据集模式</td><td>single</td></tr>
+      <tr><td>评估用例总数</td><td>71</td></tr>
+      <tr><td>正向用例数</td><td>71</td></tr>
+      <tr><td>负面用例数</td><td>0</td></tr>
+    </table>
+
+    <h3>分类维度</h3>
+    <p>每条测试用例按意图类别分类（如 tool_selection、no_tool、boundary 等），对应智能体应处理的常见用户意图模式。</p>
+
+    <h3>判定逻辑</h3>
+    <ul>
+      <li><strong>正向用例：</strong>通过条件为 <code>actual_tools</code> 与 <code>expected_tools</code> 匹配；否则为失败。</li>
+      <li><strong>负面用例：</strong>通过条件为智能体未调用 <code>should_not_call</code> 中的任何工具；否则为违规。</li>
+    </ul>
+
+    <h3>环境信息</h3>
+    <ul class="env-list">
+      <li><span class="env-key">git_commit</span>: c1368e6</li>
+      <li><span class="env-key">model</span>: unknown</li>
+    </ul>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 2: Overview Dashboard (Donut Chart + Stat Cards)  -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-overview">
+    <h2>2. 概览仪表盘</h2>
+    <div class="dashboard">
+      <div class="chart-wrap">
+        <canvas id="overviewChart"></canvas>
+        <div class="chart-placeholder" id="overviewChartFallback" style="display:none;">
+          图表需要网络连接（Chart.js CDN）。<br>通过率：77.5%
+        </div>
+      </div>
+      <div class="cards">
+        <div class="stat-card fail">
+          <div class="label">通过率</div>
+          <div class="value">77.5%</div>
+        </div>
+        <div class="stat-card pass">
+          <div class="label">通过</div>
+          <div class="value">55</div>
+        </div>
+        <div class="stat-card fail">
+          <div class="label">失败</div>
+          <div class="value">16</div>
+        </div>
+        <div class="stat-card neutral">
+          <div class="label">正向总数</div>
+          <div class="value">71</div>
+        </div>
+        <div class="stat-card neutral">
+          <div class="label">总耗时</div>
+          <div class="value">382.89s</div>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 3: Category Statistics (Bar Chart)                -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-categories">
+    <h2>3. 分类统计</h2>
+    <table><tr><th>分类</th><th>总数</th><th>通过</th><th>通过率</th></tr><tr><td>ask_user</td><td>8</td><td>8</td><td class="pass-text">100.0%</td></tr><tr><td>boundary</td><td>9</td><td>8</td><td class="pass-text">88.9%</td></tr><tr><td>directness</td><td>5</td><td>0</td><td class="fail-text">0.0%</td></tr><tr><td>multi_step</td><td>10</td><td>2</td><td class="fail-text">20.0%</td></tr><tr><td>param_extraction</td><td>13</td><td>12</td><td class="pass-text">92.3%</td></tr><tr><td>pure_chat</td><td>10</td><td>10</td><td class="pass-text">100.0%</td></tr><tr><td>tool_selection</td><td>16</td><td>15</td><td class="pass-text">93.8%</td></tr></table>
+    <div class="chart-container">
+      <canvas id="categoryChart"></canvas>
+      <div class="chart-placeholder" id="categoryChartFallback" style="display:none;">
+        分类图表需要网络连接。
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 4: Failed Cases Detail (Collapsible)              -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-failed-cases">
+    <h2>4. 失败用例详情</h2>
+    <details><summary><span>#1 查看今天的日报，然后帮我创建一条反思记录今天的表现</span> <span class="badge badge-fail">失败</span></summary><div class="detail-body"><div class="field"><div class="field-label">用户输入</div><div class="field-value">查看今天的日报，然后帮我创建一条反思记录今天的表现</div></div><div class="field"><div class="field-label">期望工具</div><div class="field-value">[&#x27;get_review_summary&#x27;, &#x27;create_entry&#x27;]</div></div><div class="field"><div class="field-label">实际工具</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">智能体回复</div><div class="field-value">抱歉，处理时遇到了问题：Error code: 400 - {&#x27;error&#x27;: {&#x27;message&#x27;: &#x27;Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment&#x27;, &#x27;type&#x27;: &#x27;Arrearage&#x27;, &#x27;param&#x27;: None, &#x27;code&#x27;: &#x27;Arrearage&#x27;}, &#x27;id&#x27;: &#x27;chatcmpl-9be6f85b-c5d1-9145-99d0-3f7d05c26ce6&#x27;, &#x27;request_id&#x27;: &#x27;9be6f85b-c5d1-9145-99d0-3f7d05c26ce6&#x27;}。请稍后再试。</div></div></div></details><details><summary><span>#2 搜索 Redis 相关的笔记，然后更新其中优先级最高的那条为高优先级</span> <span class="badge badge-fail">失败</span></summary><div class="detail-body"><div class="field"><div class="field-label">用户输入</div><div class="field-value">搜索 Redis 相关的笔记，然后更新其中优先级最高的那条为高优先级</div></div><div class="field"><div class="field-label">期望工具</div><div class="field-value">[&#x27;search_entries&#x27;, &#x27;update_entry&#x27;]</div></div><div class="field"><div class="field-label">实际工具</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">智能体回复</div><div class="field-value">抱歉，处理时遇到了问题：Error code: 400 - {&#x27;error&#x27;: {&#x27;message&#x27;: &#x27;Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment&#x27;, &#x27;type&#x27;: &#x27;Arrearage&#x27;, &#x27;param&#x27;: None, &#x27;code&#x27;: &#x27;Arrearage&#x27;}, &#x27;id&#x27;: &#x27;chatcmpl-86b46d77-d841-9159-854b-a4ea08c1c4c5&#x27;, &#x27;request_id&#x27;: &#x27;86b46d77-d841-9159-854b-a4ea08c1c4c5&#x27;}。请稍后再试。</div></div></div></details><details><summary><span>#3 帮我查看 entry-multi-001 的内容，如果状态是进行中就改成已完成</span> <span class="badge badge-fail">失败</span></summary><div class="detail-body"><div class="field"><div class="field-label">用户输入</div><div class="field-value">帮我查看 entry-multi-001 的内容，如果状态是进行中就改成已完成</div></div><div class="field"><div class="field-label">期望工具</div><div class="field-value">[&#x27;get_entry&#x27;, &#x27;update_entry&#x27;]</div></div><div class="field"><div class="field-label">实际工具</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">智能体回复</div><div class="field-value">抱歉，处理时遇到了问题：Error code: 400 - {&#x27;error&#x27;: {&#x27;message&#x27;: &#x27;Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment&#x27;, &#x27;type&#x27;: &#x27;Arrearage&#x27;, &#x27;param&#x27;: None, &#x27;code&#x27;: &#x27;Arrearage&#x27;}, &#x27;id&#x27;: &#x27;chatcmpl-eacb713f-7940-9956-b910-216d2cc7ca1f&#x27;, &#x27;request_id&#x27;: &#x27;eacb713f-7940-9956-b910-216d2cc7ca1f&#x27;}。请稍后再试。</div></div></div></details><details><summary><span>#4 查看这周的周报，然后根据完成情况创建下周的任务计划</span> <span class="badge badge-fail">失败</span></summary><div class="detail-body"><div class="field"><div class="field-label">用户输入</div><div class="field-value">查看这周的周报，然后根据完成情况创建下周的任务计划</div></div><div class="field"><div class="field-label">期望工具</div><div class="field-value">[&#x27;get_review_summary&#x27;, &#x27;create_entry&#x27;]</div></div><div class="field"><div class="field-label">实际工具</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">智能体回复</div><div class="field-value">抱歉，处理时遇到了问题：Error code: 400 - {&#x27;error&#x27;: {&#x27;message&#x27;: &#x27;Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment&#x27;, &#x27;type&#x27;: &#x27;Arrearage&#x27;, &#x27;param&#x27;: None, &#x27;code&#x27;: &#x27;Arrearage&#x27;}, &#x27;id&#x27;: &#x27;chatcmpl-2099b8c8-d416-906b-a826-0162317cce9b&#x27;, &#x27;request_id&#x27;: &#x27;2099b8c8-d416-906b-a826-0162317cce9b&#x27;}。请稍后再试。</div></div></div></details><details><summary><span>#5 先找到关于 CI/CD 的笔记，再创建一条相关的新任务</span> <span class="badge badge-fail">失败</span></summary><div class="detail-body"><div class="field"><div class="field-label">用户输入</div><div class="field-value">先找到关于 CI/CD 的笔记，再创建一条相关的新任务</div></div><div class="field"><div class="field-label">期望工具</div><div class="field-value">[&#x27;search_entries&#x27;, &#x27;create_entry&#x27;]</div></div><div class="field"><div class="field-label">实际工具</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">智能体回复</div><div class="field-value">抱歉，处理时遇到了问题：Error code: 400 - {&#x27;error&#x27;: {&#x27;message&#x27;: &#x27;Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment&#x27;, &#x27;type&#x27;: &#x27;Arrearage&#x27;, &#x27;param&#x27;: None, &#x27;code&#x27;: &#x27;Arrearage&#x27;}, &#x27;id&#x27;: &#x27;chatcmpl-46079d8a-7bf9-9d99-b61d-6c265010ef2c&#x27;, &#x27;request_id&#x27;: &#x27;46079d8a-7bf9-9d99-b61d-6c265010ef2c&#x27;}。请稍后再试。</div></div></div></details><details><summary><span>#6 获取 entry-step-002 的详情，然后删除它</span> <span class="badge badge-fail">失败</span></summary><div class="detail-body"><div class="field"><div class="field-label">用户输入</div><div class="field-value">获取 entry-step-002 的详情，然后删除它</div></div><div class="field"><div class="field-label">期望工具</div><div class="field-value">[&#x27;get_entry&#x27;, &#x27;delete_entry&#x27;]</div></div><div class="field"><div class="field-label">实际工具</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">智能体回复</div><div class="field-value">抱歉，处理时遇到了问题：Error code: 400 - {&#x27;error&#x27;: {&#x27;message&#x27;: &#x27;Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment&#x27;, &#x27;type&#x27;: &#x27;Arrearage&#x27;, &#x27;param&#x27;: None, &#x27;code&#x27;: &#x27;Arrearage&#x27;}, &#x27;id&#x27;: &#x27;chatcmpl-bafddfdd-7dc9-92e7-8596-f902826a08b6&#x27;, &#x27;request_id&#x27;: &#x27;bafddfdd-7dc9-92e7-8596-f902826a08b6&#x27;}。请稍后再试。</div></div></div></details><details><summary><span>#7 搜索所有标签包含 go 的条目，然后给其中类型为 task 的条目都加上 golang 标签</span> <span class="badge badge-fail">失败</span></summary><div class="detail-body"><div class="field"><div class="field-label">用户输入</div><div class="field-value">搜索所有标签包含 go 的条目，然后给其中类型为 task 的条目都加上 golang 标签</div></div><div class="field"><div class="field-label">期望工具</div><div class="field-value">[&#x27;search_entries&#x27;, &#x27;update_entry&#x27;]</div></div><div class="field"><div class="field-label">实际工具</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">智能体回复</div><div class="field-value">抱歉，处理时遇到了问题：Error code: 400 - {&#x27;error&#x27;: {&#x27;message&#x27;: &#x27;Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment&#x27;, &#x27;type&#x27;: &#x27;Arrearage&#x27;, &#x27;param&#x27;: None, &#x27;code&#x27;: &#x27;Arrearage&#x27;}, &#x27;id&#x27;: &#x27;chatcmpl-4d744e61-c542-916b-be92-d43eda296916&#x27;, &#x27;request_id&#x27;: &#x27;4d744e61-c542-916b-be92-d43eda296916&#x27;}。请稍后再试。</div></div></div></details><details><summary><span>#8 看看今天的日报数据，然后创建一条笔记总结今天的学习内容</span> <span class="badge badge-fail">失败</span></summary><div class="detail-body"><div class="field"><div class="field-label">用户输入</div><div class="field-value">看看今天的日报数据，然后创建一条笔记总结今天的学习内容</div></div><div class="field"><div class="field-label">期望工具</div><div class="field-value">[&#x27;get_review_summary&#x27;, &#x27;create_entry&#x27;]</div></div><div class="field"><div class="field-label">实际工具</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">智能体回复</div><div class="field-value">抱歉，处理时遇到了问题：Error code: 400 - {&#x27;error&#x27;: {&#x27;message&#x27;: &#x27;Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment&#x27;, &#x27;type&#x27;: &#x27;Arrearage&#x27;, &#x27;param&#x27;: None, &#x27;code&#x27;: &#x27;Arrearage&#x27;}, &#x27;id&#x27;: &#x27;chatcmpl-e9fe828b-2b64-94a2-aaea-ad71f66f3390&#x27;, &#x27;request_id&#x27;: &#x27;e9fe828b-2b64-94a2-aaea-ad71f66f3390&#x27;}。请稍后再试。</div></div></div></details><details><summary><span>#9 今天有哪些事情</span> <span class="badge badge-fail">失败</span></summary><div class="detail-body"><div class="field"><div class="field-label">用户输入</div><div class="field-value">今天有哪些事情</div></div><div class="field"><div class="field-label">期望工具</div><div class="field-value">[&#x27;search_entries&#x27;, &#x27;get_review_summary&#x27;]</div></div><div class="field"><div class="field-label">实际工具</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">智能体回复</div><div class="field-value">抱歉，处理时遇到了问题：Error code: 401 - {&#x27;error&#x27;: {&#x27;code&#x27;: &#x27;&#x27;, &#x27;message&#x27;: &#x27;Invalid token (request id: 202605061511011599235118268d9d6uQ2MzLGD)&#x27;, &#x27;type&#x27;: &#x27;new_api_error&#x27;}}。请稍后再试。</div></div></div></details><details><summary><span>#10 昨天完成了什么</span> <span class="badge badge-fail">失败</span></summary><div class="detail-body"><div class="field"><div class="field-label">用户输入</div><div class="field-value">昨天完成了什么</div></div><div class="field"><div class="field-label">期望工具</div><div class="field-value">[&#x27;get_review_summary&#x27;, &#x27;search_entries&#x27;]</div></div><div class="field"><div class="field-label">实际工具</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">智能体回复</div><div class="field-value">抱歉，处理时遇到了问题：Error code: 401 - {&#x27;error&#x27;: {&#x27;code&#x27;: &#x27;&#x27;, &#x27;message&#x27;: &#x27;Invalid token (request id: 202605061511169987754768268d9d6MKYWf51L)&#x27;, &#x27;type&#x27;: &#x27;new_api_error&#x27;}}。请稍后再试。</div></div></div></details><details><summary><span>#11 我还有哪些任务没做完</span> <span class="badge badge-fail">失败</span></summary><div class="detail-body"><div class="field"><div class="field-label">用户输入</div><div class="field-value">我还有哪些任务没做完</div></div><div class="field"><div class="field-label">期望工具</div><div class="field-value">[&#x27;search_entries&#x27;]</div></div><div class="field"><div class="field-label">实际工具</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">智能体回复</div><div class="field-value">抱歉，处理时遇到了问题：Error code: 401 - {&#x27;error&#x27;: {&#x27;code&#x27;: &#x27;&#x27;, &#x27;message&#x27;: &#x27;Invalid token (request id: 202605061511351951786948268d9d6Z5kOqqBM)&#x27;, &#x27;type&#x27;: &#x27;new_api_error&#x27;}}。请稍后再试。</div></div></div></details><details><summary><span>#12 本周的学习情况怎么样</span> <span class="badge badge-fail">失败</span></summary><div class="detail-body"><div class="field"><div class="field-label">用户输入</div><div class="field-value">本周的学习情况怎么样</div></div><div class="field"><div class="field-label">期望工具</div><div class="field-value">[&#x27;get_review_summary&#x27;]</div></div><div class="field"><div class="field-label">实际工具</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">智能体回复</div><div class="field-value">抱歉，处理时遇到了问题：Error code: 401 - {&#x27;error&#x27;: {&#x27;code&#x27;: &#x27;&#x27;, &#x27;message&#x27;: &#x27;Invalid token (request id: 202605061511491486592838268d9d612bsUhsm)&#x27;, &#x27;type&#x27;: &#x27;new_api_error&#x27;}}。请稍后再试。</div></div></div></details><details><summary><span>#13 帮我看看项目进展</span> <span class="badge badge-fail">失败</span></summary><div class="detail-body"><div class="field"><div class="field-label">用户输入</div><div class="field-value">帮我看看项目进展</div></div><div class="field"><div class="field-label">期望工具</div><div class="field-value">[&#x27;search_entries&#x27;]</div></div><div class="field"><div class="field-label">实际工具</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">智能体回复</div><div class="field-value">抱歉，处理时遇到了问题：Error code: 401 - {&#x27;error&#x27;: {&#x27;code&#x27;: &#x27;&#x27;, &#x27;message&#x27;: &#x27;Invalid token (request id: 202605061512052317941248268d9d6HUgNmEzz)&#x27;, &#x27;type&#x27;: &#x27;new_api_error&#x27;}}。请稍后再试。</div></div></div></details><details><summary><span>#14 我现在有多少个进行中的任务？</span> <span class="badge badge-fail">失败</span></summary><div class="detail-body"><div class="field"><div class="field-label">用户输入</div><div class="field-value">我现在有多少个进行中的任务？</div></div><div class="field"><div class="field-label">期望工具</div><div class="field-value">[&#x27;search_entries&#x27;]</div></div><div class="field"><div class="field-label">实际工具</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">智能体回复</div><div class="field-value">抱歉，处理时遇到了问题：Error code: 401 - {&#x27;error&#x27;: {&#x27;code&#x27;: &#x27;&#x27;, &#x27;message&#x27;: &#x27;Invalid token (request id: 202605061512302037215958268d9d6TwqYIOkw)&#x27;, &#x27;type&#x27;: &#x27;new_api_error&#x27;}}。请稍后再试。</div></div></div></details><details><summary><span>#15 帮我整理一下今天的学习心得，记成一条笔记</span> <span class="badge badge-fail">失败</span></summary><div class="detail-body"><div class="field"><div class="field-label">用户输入</div><div class="field-value">帮我整理一下今天的学习心得，记成一条笔记</div></div><div class="field"><div class="field-label">期望工具</div><div class="field-value">[&#x27;create_entry&#x27;]</div></div><div class="field"><div class="field-label">实际工具</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">智能体回复</div><div class="field-value">抱歉，处理时遇到了问题：Error code: 401 - {&#x27;error&#x27;: {&#x27;code&#x27;: &#x27;&#x27;, &#x27;message&#x27;: &#x27;Invalid token (request id: 202605061512485833423128268d9d6Xe5qc3VE)&#x27;, &#x27;type&#x27;: &#x27;new_api_error&#x27;}}。请稍后再试。</div></div></div></details><details><summary><span>#16 记录一个新任务：下周五之前完成项目报告，优先级高</span> <span class="badge badge-fail">失败</span></summary><div class="detail-body"><div class="field"><div class="field-label">用户输入</div><div class="field-value">记录一个新任务：下周五之前完成项目报告，优先级高</div></div><div class="field"><div class="field-label">期望工具</div><div class="field-value">[&#x27;create_entry&#x27;]</div></div><div class="field"><div class="field-label">实际工具</div><div class="field-value">[]</div></div><div class="field"><div class="field-label">智能体回复</div><div class="field-value">抱歉，处理时遇到了问题：Error code: 401 - {&#x27;error&#x27;: {&#x27;code&#x27;: &#x27;&#x27;, &#x27;message&#x27;: &#x27;Invalid token (request id: 202605061513026716083198268d9d6dLFnS2Gq)&#x27;, &#x27;type&#x27;: &#x27;new_api_error&#x27;}}。请稍后再试。</div></div></div></details>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 5: Negative Violations                            -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-negative-violations">
+    <h2>5. 负面违规</h2>
+    <div class="empty-state">未运行负面评估（单轮模式）。</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 6: History Trend (Line Chart)                     -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-history-trend">
+    <h2>6. 历史趋势</h2>
+    <p>显示 6 次历史运行的趋势。</p>
+    <div class="chart-container trend">
+      <canvas id="trendChart"></canvas>
+      <div class="chart-placeholder" id="trendChartFallback" style="display:none;">
+        趋势图表需要网络连接。
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 7: Efficiency Metrics                             -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-efficiency">
+    <h2>7. 效率指标</h2>
+    <table>
+      <tr><th>指标</th><th>值</th></tr>
+      <tr><td>用例总数</td><td>71</td></tr>
+      <tr><td>总耗时</td><td>382.89s</td></tr>
+      <tr><td>平均耗时</td><td>5.39s</td></tr>
+      <tr><td>中位耗时</td><td>0.26s</td></tr>
+    </table>
+    <h3>工具调用次数分布（失败/违规用例）</h3><table><tr><th>工具调用</th><th>数量</th></tr><tr><td>0 次工具调用</td><td>16</td></tr></table>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 8: LLM-as-Judge Scores                            -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-judge">
+    <h2>8. LLM-as-Judge 评分</h2>
+    <div class="judge-overview"><div class="stat-card neutral"><div class="label">Judge 加权平均分</div><div class="value">2.70</div></div><div class="stat-card neutral"><div class="label">评分用例数</div><div class="value">71</div></div></div><h3>总体维度平均分</h3><div class="judge-bar-chart"><div class="judge-bar-row"><div class="judge-bar-label">context_retention</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:58.6%;background:#dc2626;"></div></div><div class="judge-bar-score">2.93</div></div><div class="judge-bar-row"><div class="judge-bar-label">conversation_coherence</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:56.0%;background:#dc2626;"></div></div><div class="judge-bar-score">2.80</div></div><div class="judge-bar-row"><div class="judge-bar-label">directness</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:58.6%;background:#dc2626;"></div></div><div class="judge-bar-score">2.93</div></div><div class="judge-bar-row"><div class="judge-bar-label">efficiency</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:51.6%;background:#dc2626;"></div></div><div class="judge-bar-score">2.58</div></div><div class="judge-bar-row"><div class="judge-bar-label">error_handling</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:58.4%;background:#dc2626;"></div></div><div class="judge-bar-score">2.92</div></div><div class="judge-bar-row"><div class="judge-bar-label">follow_up_quality</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:49.8%;background:#dc2626;"></div></div><div class="judge-bar-score">2.49</div></div><div class="judge-bar-row"><div class="judge-bar-label">param_extraction</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:50.2%;background:#dc2626;"></div></div><div class="judge-bar-score">2.51</div></div><div class="judge-bar-row"><div class="judge-bar-label">response_quality</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:53.8%;background:#dc2626;"></div></div><div class="judge-bar-score">2.69</div></div><div class="judge-bar-row"><div class="judge-bar-label">tool_selection</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:52.2%;background:#dc2626;"></div></div><div class="judge-bar-score">2.61</div></div><div class="judge-bar-row"><div class="judge-bar-label">user_experience</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:50.8%;background:#dc2626;"></div></div><div class="judge-bar-score">2.54</div></div></div><h3>各分类维度平均分</h3><details><summary><span>ask_user (加权均分: 1.43, 8 条)</span></summary><div class="detail-body"><div class="judge-bar-chart"><div class="judge-bar-row"><div class="judge-bar-label">context_retention</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:45.0%;background:#dc2626;"></div></div><div class="judge-bar-score">2.25</div></div><div class="judge-bar-row"><div class="judge-bar-label">conversation_coherence</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:27.6%;background:#dc2626;"></div></div><div class="judge-bar-score">1.38</div></div><div class="judge-bar-row"><div class="judge-bar-label">directness</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:40.0%;background:#dc2626;"></div></div><div class="judge-bar-score">2.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">efficiency</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">error_handling</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:40.0%;background:#dc2626;"></div></div><div class="judge-bar-score">2.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">follow_up_quality</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">param_extraction</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">response_quality</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:32.4%;background:#dc2626;"></div></div><div class="judge-bar-score">1.62</div></div><div class="judge-bar-row"><div class="judge-bar-label">tool_selection</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">user_experience</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div></div></div></details><details><summary><span>boundary (加权均分: 1.22, 9 条)</span></summary><div class="detail-body"><div class="judge-bar-chart"><div class="judge-bar-row"><div class="judge-bar-label">context_retention</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:28.8%;background:#dc2626;"></div></div><div class="judge-bar-score">1.44</div></div><div class="judge-bar-row"><div class="judge-bar-label">conversation_coherence</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:24.4%;background:#dc2626;"></div></div><div class="judge-bar-score">1.22</div></div><div class="judge-bar-row"><div class="judge-bar-label">directness</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:33.4%;background:#dc2626;"></div></div><div class="judge-bar-score">1.67</div></div><div class="judge-bar-row"><div class="judge-bar-label">efficiency</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">error_handling</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:28.8%;background:#dc2626;"></div></div><div class="judge-bar-score">1.44</div></div><div class="judge-bar-row"><div class="judge-bar-label">follow_up_quality</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">param_extraction</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">response_quality</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:26.6%;background:#dc2626;"></div></div><div class="judge-bar-score">1.33</div></div><div class="judge-bar-row"><div class="judge-bar-label">tool_selection</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">user_experience</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:22.2%;background:#dc2626;"></div></div><div class="judge-bar-score">1.11</div></div></div></div></details><details><summary><span>directness (加权均分: 1.51, 5 条)</span></summary><div class="detail-body"><div class="judge-bar-chart"><div class="judge-bar-row"><div class="judge-bar-label">context_retention</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:36.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.80</div></div><div class="judge-bar-row"><div class="judge-bar-label">conversation_coherence</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:36.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.80</div></div><div class="judge-bar-row"><div class="judge-bar-label">directness</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:52.0%;background:#dc2626;"></div></div><div class="judge-bar-score">2.60</div></div><div class="judge-bar-row"><div class="judge-bar-label">efficiency</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">error_handling</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:40.0%;background:#dc2626;"></div></div><div class="judge-bar-score">2.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">follow_up_quality</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">param_extraction</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">response_quality</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:32.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.60</div></div><div class="judge-bar-row"><div class="judge-bar-label">tool_selection</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">user_experience</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:28.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.40</div></div></div></div></details><details><summary><span>multi_step (加权均分: 1.89, 10 条)</span></summary><div class="detail-body"><div class="judge-bar-chart"><div class="judge-bar-row"><div class="judge-bar-label">context_retention</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:46.0%;background:#dc2626;"></div></div><div class="judge-bar-score">2.30</div></div><div class="judge-bar-row"><div class="judge-bar-label">conversation_coherence</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:44.0%;background:#dc2626;"></div></div><div class="judge-bar-score">2.20</div></div><div class="judge-bar-row"><div class="judge-bar-label">directness</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:48.0%;background:#dc2626;"></div></div><div class="judge-bar-score">2.40</div></div><div class="judge-bar-row"><div class="judge-bar-label">efficiency</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:34.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.70</div></div><div class="judge-bar-row"><div class="judge-bar-label">error_handling</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:40.0%;background:#dc2626;"></div></div><div class="judge-bar-score">2.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">follow_up_quality</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:28.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.40</div></div><div class="judge-bar-row"><div class="judge-bar-label">param_extraction</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:36.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.80</div></div><div class="judge-bar-row"><div class="judge-bar-label">response_quality</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:36.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.80</div></div><div class="judge-bar-row"><div class="judge-bar-label">tool_selection</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:34.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.70</div></div><div class="judge-bar-row"><div class="judge-bar-label">user_experience</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:30.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.50</div></div></div></div></details><details><summary><span>param_extraction (加权均分: 4.57, 13 条)</span></summary><div class="detail-body"><div class="judge-bar-chart"><div class="judge-bar-row"><div class="judge-bar-label">context_retention</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:93.8%;background:#059669;"></div></div><div class="judge-bar-score">4.69</div></div><div class="judge-bar-row"><div class="judge-bar-label">conversation_coherence</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:93.8%;background:#059669;"></div></div><div class="judge-bar-score">4.69</div></div><div class="judge-bar-row"><div class="judge-bar-label">directness</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:89.2%;background:#059669;"></div></div><div class="judge-bar-score">4.46</div></div><div class="judge-bar-row"><div class="judge-bar-label">efficiency</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:90.8%;background:#059669;"></div></div><div class="judge-bar-score">4.54</div></div><div class="judge-bar-row"><div class="judge-bar-label">error_handling</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:93.8%;background:#059669;"></div></div><div class="judge-bar-score">4.69</div></div><div class="judge-bar-row"><div class="judge-bar-label">follow_up_quality</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:87.6%;background:#059669;"></div></div><div class="judge-bar-score">4.38</div></div><div class="judge-bar-row"><div class="judge-bar-label">param_extraction</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:87.6%;background:#059669;"></div></div><div class="judge-bar-score">4.38</div></div><div class="judge-bar-row"><div class="judge-bar-label">response_quality</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:90.8%;background:#059669;"></div></div><div class="judge-bar-score">4.54</div></div><div class="judge-bar-row"><div class="judge-bar-label">tool_selection</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:93.8%;background:#059669;"></div></div><div class="judge-bar-score">4.69</div></div><div class="judge-bar-row"><div class="judge-bar-label">user_experience</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:90.8%;background:#059669;"></div></div><div class="judge-bar-score">4.54</div></div></div></div></details><details><summary><span>pure_chat (加权均分: 1.03, 10 条)</span></summary><div class="detail-body"><div class="judge-bar-chart"><div class="judge-bar-row"><div class="judge-bar-label">context_retention</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">conversation_coherence</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">directness</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">efficiency</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">error_handling</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:26.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.30</div></div><div class="judge-bar-row"><div class="judge-bar-label">follow_up_quality</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">param_extraction</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">response_quality</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">tool_selection</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div><div class="judge-bar-row"><div class="judge-bar-label">user_experience</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:20.0%;background:#dc2626;"></div></div><div class="judge-bar-score">1.00</div></div></div></div></details><details><summary><span>tool_selection (加权均分: 4.57, 16 条)</span></summary><div class="detail-body"><div class="judge-bar-chart"><div class="judge-bar-row"><div class="judge-bar-label">context_retention</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:92.4%;background:#059669;"></div></div><div class="judge-bar-score">4.62</div></div><div class="judge-bar-row"><div class="judge-bar-label">conversation_coherence</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:93.8%;background:#059669;"></div></div><div class="judge-bar-score">4.69</div></div><div class="judge-bar-row"><div class="judge-bar-label">directness</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:90.0%;background:#059669;"></div></div><div class="judge-bar-score">4.50</div></div><div class="judge-bar-row"><div class="judge-bar-label">efficiency</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:93.8%;background:#059669;"></div></div><div class="judge-bar-score">4.69</div></div><div class="judge-bar-row"><div class="judge-bar-label">error_handling</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:92.4%;background:#059669;"></div></div><div class="judge-bar-score">4.62</div></div><div class="judge-bar-row"><div class="judge-bar-label">follow_up_quality</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:92.4%;background:#059669;"></div></div><div class="judge-bar-score">4.62</div></div><div class="judge-bar-row"><div class="judge-bar-label">param_extraction</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:88.8%;background:#059669;"></div></div><div class="judge-bar-score">4.44</div></div><div class="judge-bar-row"><div class="judge-bar-label">response_quality</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:88.8%;background:#059669;"></div></div><div class="judge-bar-score">4.44</div></div><div class="judge-bar-row"><div class="judge-bar-label">tool_selection</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:93.8%;background:#059669;"></div></div><div class="judge-bar-score">4.69</div></div><div class="judge-bar-row"><div class="judge-bar-label">user_experience</div><div class="judge-bar-track"><div class="judge-bar-fill" style="width:88.8%;background:#059669;"></div></div><div class="judge-bar-score">4.44</div></div></div></div></details>
+  </div>
+
+</div>
+
+<!-- ── Chart.js CDN ── -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function() {
+  /* ── Embedded report data ── */
+  var RD = {
+  "eval_time": "2026-05-06T23:13:22.726531",
+  "dataset_mode": "single",
+  "pass_rate": 0.7746,
+  "total_positive": 71,
+  "total_passed": 55,
+  "category_stats": {
+    "tool_selection": {
+      "total": 16,
+      "passed": 15,
+      "pass_rate": 0.9375
+    },
+    "param_extraction": {
+      "total": 13,
+      "passed": 12,
+      "pass_rate": 0.9231
+    },
+    "multi_step": {
+      "total": 10,
+      "passed": 2,
+      "pass_rate": 0.2
+    },
+    "ask_user": {
+      "total": 8,
+      "passed": 8,
+      "pass_rate": 1.0
+    },
+    "pure_chat": {
+      "total": 10,
+      "passed": 10,
+      "pass_rate": 1.0
+    },
+    "boundary": {
+      "total": 9,
+      "passed": 8,
+      "pass_rate": 0.8889
+    },
+    "directness": {
+      "total": 5,
+      "passed": 0,
+      "pass_rate": 0.0
+    }
+  },
+  "failed_cases": [
+    {
+      "input": "查看今天的日报，然后帮我创建一条反思记录今天的表现",
+      "expected_tools": [
+        "get_review_summary",
+        "create_entry"
+      ],
+      "actual_tools": [],
+      "agent_reply": "抱歉，处理时遇到了问题：Error code: 400 - {'error': {'message': 'Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment', 'type': 'Arrearage', 'param': None, 'code': 'Arrearage'}, 'id': 'chatcmpl-9be6f85b-c5d1-9145-99d0-3f7d05c26ce6', 'request_id': '9be6f85b-c5d1-9145-99d0-3f7d05c26ce6'}。请稍后再试。",
+      "passed": false,
+      "category": "multi_step",
+      "elapsed_seconds": 0.2331
+    },
+    {
+      "input": "搜索 Redis 相关的笔记，然后更新其中优先级最高的那条为高优先级",
+      "expected_tools": [
+        "search_entries",
+        "update_entry"
+      ],
+      "actual_tools": [],
+      "agent_reply": "抱歉，处理时遇到了问题：Error code: 400 - {'error': {'message': 'Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment', 'type': 'Arrearage', 'param': None, 'code': 'Arrearage'}, 'id': 'chatcmpl-86b46d77-d841-9159-854b-a4ea08c1c4c5', 'request_id': '86b46d77-d841-9159-854b-a4ea08c1c4c5'}。请稍后再试。",
+      "passed": false,
+      "category": "multi_step",
+      "elapsed_seconds": 0.2588
+    },
+    {
+      "input": "帮我查看 entry-multi-001 的内容，如果状态是进行中就改成已完成",
+      "expected_tools": [
+        "get_entry",
+        "update_entry"
+      ],
+      "actual_tools": [],
+      "agent_reply": "抱歉，处理时遇到了问题：Error code: 400 - {'error': {'message': 'Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment', 'type': 'Arrearage', 'param': None, 'code': 'Arrearage'}, 'id': 'chatcmpl-eacb713f-7940-9956-b910-216d2cc7ca1f', 'request_id': 'eacb713f-7940-9956-b910-216d2cc7ca1f'}。请稍后再试。",
+      "passed": false,
+      "category": "multi_step",
+      "elapsed_seconds": 0.2508
+    },
+    {
+      "input": "查看这周的周报，然后根据完成情况创建下周的任务计划",
+      "expected_tools": [
+        "get_review_summary",
+        "create_entry"
+      ],
+      "actual_tools": [],
+      "agent_reply": "抱歉，处理时遇到了问题：Error code: 400 - {'error': {'message': 'Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment', 'type': 'Arrearage', 'param': None, 'code': 'Arrearage'}, 'id': 'chatcmpl-2099b8c8-d416-906b-a826-0162317cce9b', 'request_id': '2099b8c8-d416-906b-a826-0162317cce9b'}。请稍后再试。",
+      "passed": false,
+      "category": "multi_step",
+      "elapsed_seconds": 0.256
+    },
+    {
+      "input": "先找到关于 CI/CD 的笔记，再创建一条相关的新任务",
+      "expected_tools": [
+        "search_entries",
+        "create_entry"
+      ],
+      "actual_tools": [],
+      "agent_reply": "抱歉，处理时遇到了问题：Error code: 400 - {'error': {'message': 'Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment', 'type': 'Arrearage', 'param': None, 'code': 'Arrearage'}, 'id': 'chatcmpl-46079d8a-7bf9-9d99-b61d-6c265010ef2c', 'request_id': '46079d8a-7bf9-9d99-b61d-6c265010ef2c'}。请稍后再试。",
+      "passed": false,
+      "category": "multi_step",
+      "elapsed_seconds": 0.2629
+    },
+    {
+      "input": "获取 entry-step-002 的详情，然后删除它",
+      "expected_tools": [
+        "get_entry",
+        "delete_entry"
+      ],
+      "actual_tools": [],
+      "agent_reply": "抱歉，处理时遇到了问题：Error code: 400 - {'error': {'message': 'Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment', 'type': 'Arrearage', 'param': None, 'code': 'Arrearage'}, 'id': 'chatcmpl-bafddfdd-7dc9-92e7-8596-f902826a08b6', 'request_id': 'bafddfdd-7dc9-92e7-8596-f902826a08b6'}。请稍后再试。",
+      "passed": false,
+      "category": "multi_step",
+      "elapsed_seconds": 0.2538
+    },
+    {
+      "input": "搜索所有标签包含 go 的条目，然后给其中类型为 task 的条目都加上 golang 标签",
+      "expected_tools": [
+        "search_entries",
+        "update_entry"
+      ],
+      "actual_tools": [],
+      "agent_reply": "抱歉，处理时遇到了问题：Error code: 400 - {'error': {'message': 'Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment', 'type': 'Arrearage', 'param': None, 'code': 'Arrearage'}, 'id': 'chatcmpl-4d744e61-c542-916b-be92-d43eda296916', 'request_id': '4d744e61-c542-916b-be92-d43eda296916'}。请稍后再试。",
+      "passed": false,
+      "category": "multi_step",
+      "elapsed_seconds": 0.235
+    },
+    {
+      "input": "看看今天的日报数据，然后创建一条笔记总结今天的学习内容",
+      "expected_tools": [
+        "get_review_summary",
+        "create_entry"
+      ],
+      "actual_tools": [],
+      "agent_reply": "抱歉，处理时遇到了问题：Error code: 400 - {'error': {'message': 'Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment', 'type': 'Arrearage', 'param': None, 'code': 'Arrearage'}, 'id': 'chatcmpl-e9fe828b-2b64-94a2-aaea-ad71f66f3390', 'request_id': 'e9fe828b-2b64-94a2-aaea-ad71f66f3390'}。请稍后再试。",
+      "passed": false,
+      "category": "multi_step",
+      "elapsed_seconds": 0.2685
+    },
+    {
+      "input": "今天有哪些事情",
+      "expected_tools": [
+        "search_entries",
+        "get_review_summary"
+      ],
+      "actual_tools": [],
+      "agent_reply": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061511011599235118268d9d6uQ2MzLGD)', 'type': 'new_api_error'}}。请稍后再试。",
+      "passed": false,
+      "category": "directness",
+      "elapsed_seconds": 0.0582
+    },
+    {
+      "input": "昨天完成了什么",
+      "expected_tools": [
+        "get_review_summary",
+        "search_entries"
+      ],
+      "actual_tools": [],
+      "agent_reply": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061511169987754768268d9d6MKYWf51L)', 'type': 'new_api_error'}}。请稍后再试。",
+      "passed": false,
+      "category": "directness",
+      "elapsed_seconds": 0.0585
+    },
+    {
+      "input": "我还有哪些任务没做完",
+      "expected_tools": [
+        "search_entries"
+      ],
+      "actual_tools": [],
+      "agent_reply": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061511351951786948268d9d6Z5kOqqBM)', 'type': 'new_api_error'}}。请稍后再试。",
+      "passed": false,
+      "category": "directness",
+      "elapsed_seconds": 0.0589
+    },
+    {
+      "input": "本周的学习情况怎么样",
+      "expected_tools": [
+        "get_review_summary"
+      ],
+      "actual_tools": [],
+      "agent_reply": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061511491486592838268d9d612bsUhsm)', 'type': 'new_api_error'}}。请稍后再试。",
+      "passed": false,
+      "category": "directness",
+      "elapsed_seconds": 0.054
+    },
+    {
+      "input": "帮我看看项目进展",
+      "expected_tools": [
+        "search_entries"
+      ],
+      "actual_tools": [],
+      "agent_reply": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061512052317941248268d9d6HUgNmEzz)', 'type': 'new_api_error'}}。请稍后再试。",
+      "passed": false,
+      "category": "directness",
+      "elapsed_seconds": 0.0959
+    },
+    {
+      "input": "我现在有多少个进行中的任务？",
+      "expected_tools": [
+        "search_entries"
+      ],
+      "actual_tools": [],
+      "agent_reply": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061512302037215958268d9d6TwqYIOkw)', 'type': 'new_api_error'}}。请稍后再试。",
+      "passed": false,
+      "category": "boundary",
+      "elapsed_seconds": 0.0607
+    },
+    {
+      "input": "帮我整理一下今天的学习心得，记成一条笔记",
+      "expected_tools": [
+        "create_entry"
+      ],
+      "actual_tools": [],
+      "agent_reply": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061512485833423128268d9d6Xe5qc3VE)', 'type': 'new_api_error'}}。请稍后再试。",
+      "passed": false,
+      "category": "tool_selection",
+      "elapsed_seconds": 0.0657
+    },
+    {
+      "input": "记录一个新任务：下周五之前完成项目报告，优先级高",
+      "expected_tools": [
+        "create_entry"
+      ],
+      "actual_tools": [],
+      "agent_reply": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061513026716083198268d9d6dLFnS2Gq)', 'type': 'new_api_error'}}。请稍后再试。",
+      "passed": false,
+      "category": "param_extraction",
+      "elapsed_seconds": 0.0653
+    }
+  ],
+  "total_negative": 0,
+  "total_violations": 0,
+  "violation_rate": 0.0,
+  "negative_violations": [],
+  "efficiency": {
+    "total_elapsed": 382.8904,
+    "avg_elapsed": 5.3928,
+    "median_elapsed": 0.2588,
+    "total_cases": 71
+  },
+  "env_info": {
+    "git_commit": "c1368e6",
+    "model": "unknown"
+  },
+  "history": [
+    {
+      "eval_time": "2026-04-29T14:01:09.055150",
+      "dataset_mode": "all",
+      "pass_rate": 0.7794,
+      "total_positive": 68,
+      "total_passed": 53,
+      "total_negative": 24,
+      "total_violations": 0,
+      "violation_rate": 0.0,
+      "html_file": "2026-04-29_140109.html",
+      "env_info": {
+        "git_commit": "82ebebe",
+        "model": "unknown"
+      }
+    },
+    {
+      "eval_time": "2026-04-29T14:48:29.664019",
+      "dataset_mode": "all",
+      "pass_rate": 0.75,
+      "total_positive": 68,
+      "total_passed": 51,
+      "total_negative": 24,
+      "total_violations": 0,
+      "violation_rate": 0.0,
+      "html_file": "2026-04-29_144829.html",
+      "env_info": {
+        "git_commit": "82ebebe",
+        "model": "unknown"
+      }
+    },
+    {
+      "eval_time": "2026-04-29T15:16:46.944166",
+      "dataset_mode": "all",
+      "pass_rate": 0.7941,
+      "total_positive": 68,
+      "total_passed": 54,
+      "total_negative": 24,
+      "total_violations": 0,
+      "violation_rate": 0.0,
+      "html_file": "2026-04-29_151646.html",
+      "env_info": {
+        "git_commit": "82ebebe",
+        "model": "unknown"
+      }
+    },
+    {
+      "eval_time": "2026-04-29T16:20:53.753152",
+      "dataset_mode": "all",
+      "pass_rate": 0.8088,
+      "total_positive": 68,
+      "total_passed": 55,
+      "total_negative": 24,
+      "total_violations": 0,
+      "violation_rate": 0.0,
+      "html_file": "2026-04-29_162053.html",
+      "env_info": {
+        "git_commit": "82ebebe",
+        "model": "unknown"
+      }
+    },
+    {
+      "eval_time": "2026-04-29T16:56:58.035225",
+      "dataset_mode": "all",
+      "pass_rate": 0.8824,
+      "total_positive": 68,
+      "total_passed": 60,
+      "total_negative": 24,
+      "total_violations": 0,
+      "violation_rate": 0.0,
+      "html_file": "2026-04-29_165658.html",
+      "env_info": {
+        "git_commit": "82ebebe",
+        "model": "unknown"
+      }
+    },
+    {
+      "eval_time": "2026-05-06T22:25:21.108013",
+      "dataset_mode": "negative",
+      "pass_rate": 0.0,
+      "total_positive": 0,
+      "total_passed": 0,
+      "total_negative": 26,
+      "total_violations": 1,
+      "violation_rate": 0.0385,
+      "html_file": "2026-05-06_222521.html",
+      "env_info": {
+        "git_commit": "c1368e6",
+        "model": "unknown"
+      }
+    }
+  ]
+};
+
+  /* ── Graceful fallback if Chart.js is not loaded (offline) ── */
+  if (typeof Chart === "undefined") {
+    var ids = ["overviewChartFallback","categoryChartFallback","trendChartFallback"];
+    ids.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = "block";
+    });
+    var canvases = ["overviewChart","categoryChart","trendChart"];
+    canvases.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
+    return;
+  }
+
+  /* ── Common chart defaults ── */
+  Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  Chart.defaults.color = "#374151";
+
+  /* ── Section 2: Overview Donut Chart ── */
+  var overviewCtx = document.getElementById("overviewChart");
+  if (overviewCtx && RD.total_positive > 0) {
+    new Chart(overviewCtx, {
+      type: "doughnut",
+      data: {
+        labels: ["\u901A\u8FC7", "\u5931\u8D25"],
+        datasets: [{
+          data: [RD.total_passed, RD.total_positive - RD.total_passed],
+          backgroundColor: ["#059669", "#dc2626"],
+          borderWidth: 2,
+          borderColor: "#fff"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: "65%",
+        plugins: {
+          legend: { position: "bottom" },
+          title: { display: false }
+        }
+      }
+    });
+  } else if (overviewCtx) {
+    overviewCtx.style.display = "none";
+    var fb = document.getElementById("overviewChartFallback");
+    if (fb) { fb.style.display = "block"; fb.textContent = "\u65E0\u6B63\u5411\u7528\u4F8B\u6570\u636E\u3002"; }
+  }
+
+  /* ── Section 3: Category Bar Chart ── */
+  var catCtx = document.getElementById("categoryChart");
+  if (catCtx && RD.category_stats && Object.keys(RD.category_stats).length > 0) {
+    var catLabels = Object.keys(RD.category_stats);
+    var catRates = catLabels.map(function(k) { return Math.round(RD.category_stats[k].pass_rate * 100); });
+    var catBgColors = catRates.map(function(r) { return r >= 80 ? "#059669" : "#dc2626"; });
+    new Chart(catCtx, {
+      type: "bar",
+      data: {
+        labels: catLabels,
+        datasets: [{
+          label: "\u901A\u8FC7\u7387 (%)",
+          data: catRates,
+          backgroundColor: catBgColors,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + "%"; } } }
+        },
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: "\u5404\u5206\u7C7B\u901A\u8FC7\u7387" }
+        }
+      }
+    });
+  } else if (catCtx) {
+    catCtx.style.display = "none";
+    var fb2 = document.getElementById("categoryChartFallback");
+    if (fb2) { fb2.style.display = "block"; fb2.textContent = "\u65E0\u5206\u7C7B\u6570\u636E\u3002"; }
+  }
+
+  /* ── Section 6: History Trend Line Chart ── */
+  var trendCtx = document.getElementById("trendChart");
+  if (trendCtx && RD.history && RD.history.length > 0) {
+    var trendLabels = RD.history.map(function(h) { return h.eval_time || ""; });
+    var isNeg = RD.dataset_mode === "negative";
+    var trendKey = isNeg ? "violation_rate" : "pass_rate";
+    var trendTitle = isNeg ? "\u8FDD\u89C4\u7387\u8D8B\u52BF" : "\u901A\u8FC7\u7387\u8D8B\u52BF";
+    var trendRates = RD.history.map(function(h) { return Math.round((h[trendKey] || 0) * 100); });
+    new Chart(trendCtx, {
+      type: "line",
+      data: {
+        labels: trendLabels,
+        datasets: [{
+          label: isNeg ? "\u8FDD\u89C4\u7387 (%)" : "\u901A\u8FC7\u7387 (%)",
+          data: trendRates,
+          borderColor: "#6366F1",
+          backgroundColor: "rgba(99,102,241,0.1)",
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: "#6366F1"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + "%"; } } }
+        },
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: trendTitle }
+        }
+      }
+    });
+  } else if (trendCtx) {
+    trendCtx.style.display = "none";
+    var fb3 = document.getElementById("trendChartFallback");
+    if (fb3) { fb3.style.display = "block"; fb3.textContent = RD.history && RD.history.length === 0 ? "\u9996\u6B21\u8FD0\u884C\u2014\u2014\u5C1A\u65E0\u5386\u53F2\u6570\u636E\u3002" : "\u8D8B\u52BF\u56FE\u8868\u9700\u8981\u7F51\u7EDC\u8FDE\u63A5\u3002"; }
+  }
+})();
+</script>
+</body>
+</html>

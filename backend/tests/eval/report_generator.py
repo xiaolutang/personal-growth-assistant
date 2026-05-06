@@ -134,6 +134,8 @@ class EvalReportData:
     negative_violations: List[Dict[str, Any]] = field(default_factory=list)
     efficiency: Dict[str, Any] = field(default_factory=dict)
     env_info: Dict[str, Any] = field(default_factory=dict)
+    judge_summary: Dict[str, Any] = field(default_factory=dict)
+    judge_by_category: Dict[str, Dict[str, Any]] = field(default_factory=dict)
 
 
 # ── Schema 验证 ──
@@ -273,6 +275,75 @@ def build_report_data(
         "total_cases": len(all_records),
     }
 
+    # ── Judge 评分聚合 ──
+    judge_records = [r for r in all_records if r.get("judge_result") is not None]
+    judge_successful = [r for r in judge_records if not r["judge_result"].get("error", False)]
+
+    judge_summary: Dict[str, Any] = {}
+    judge_by_category: Dict[str, Dict[str, Any]] = {}
+
+    if judge_successful:
+        # 计算加权平均分
+        weighted_avgs = [r["judge_result"].get("weighted_average", 0.0) for r in judge_successful]
+        avg_weighted = sum(weighted_avgs) / len(weighted_avgs) if weighted_avgs else 0.0
+
+        # 计算各维度平均分
+        dim_sums: Dict[str, float] = {}
+        dim_counts: Dict[str, int] = {}
+        for r in judge_successful:
+            dim_scores = r["judge_result"].get("dimension_scores", {})
+            for dim, data in dim_scores.items():
+                if isinstance(data, dict) and "score" in data:
+                    dim_sums[dim] = dim_sums.get(dim, 0.0) + data["score"]
+                    dim_counts[dim] = dim_counts.get(dim, 0) + 1
+
+        dim_avgs = {
+            dim: round(dim_sums[dim] / dim_counts[dim], 2)
+            for dim in dim_sums
+            if dim_counts.get(dim, 0) > 0
+        }
+
+        judge_summary = {
+            "total_judged": len(judge_successful),
+            "total_error": len(judge_records) - len(judge_successful),
+            "avg_weighted_score": round(avg_weighted, 2),
+            "dimension_averages": dim_avgs,
+        }
+
+        # 按分类聚合
+        for r in judge_successful:
+            cat = r.get("category", "unknown")
+            if cat not in judge_by_category:
+                judge_by_category[cat] = {
+                    "count": 0,
+                    "weighted_avgs": [],
+                    "dim_sums": {},
+                    "dim_counts": {},
+                }
+            entry = judge_by_category[cat]
+            entry["count"] += 1
+            entry["weighted_avgs"].append(r["judge_result"].get("weighted_average", 0.0))
+            dim_scores = r["judge_result"].get("dimension_scores", {})
+            for dim, data in dim_scores.items():
+                if isinstance(data, dict) and "score" in data:
+                    entry["dim_sums"][dim] = entry["dim_sums"].get(dim, 0.0) + data["score"]
+                    entry["dim_counts"][dim] = entry["dim_counts"].get(dim, 0) + 1
+
+        # 计算每个分类的汇总
+        for cat, entry in judge_by_category.items():
+            wavs = entry.pop("weighted_avgs")
+            avg_w = sum(wavs) / len(wavs) if wavs else 0.0
+            dim_avgs_cat = {
+                dim: round(entry["dim_sums"][dim] / entry["dim_counts"][dim], 2)
+                for dim in entry["dim_sums"]
+                if entry["dim_counts"].get(dim, 0) > 0
+            }
+            entry["avg_weighted_score"] = round(avg_w, 2)
+            entry["dimension_averages"] = dim_avgs_cat
+            # 清理中间数据
+            entry.pop("dim_sums", None)
+            entry.pop("dim_counts", None)
+
     return EvalReportData(
         eval_time=eval_time or datetime.now().isoformat(),
         dataset_mode=dataset_mode,
@@ -287,6 +358,8 @@ def build_report_data(
         negative_violations=negative_violations,
         efficiency=efficiency,
         env_info=env_info,
+        judge_summary=judge_summary,
+        judge_by_category=judge_by_category,
     )
 
 
@@ -579,6 +652,98 @@ def _render_positive_empty_notice(dataset_mode: str) -> str:
     return ""
 
 
+def _render_judge_section(
+    judge_summary: Dict[str, Any],
+    judge_by_category: Dict[str, Dict[str, Any]],
+    dataset_mode: str,
+) -> str:
+    """渲染 LLM-as-Judge 评分区块（用于新模板 Section 8）
+
+    顶部展示加权平均分，各分类下展示 7 维度条形图（内联 CSS）。
+    """
+    if dataset_mode == "negative":
+        return '<div class="empty-state">\u672A\u8FD0\u884C\u6B63\u5411\u8BC4\u4F30\uFF0C\u65E0 Judge \u8BC4\u5206\u6570\u636E\u3002</div>'
+
+    if not judge_summary:
+        return '<div class="empty-state">\u672A\u542F\u7528 LLM-as-Judge \u8BC4\u5206\u6216\u65E0\u6709\u6548\u6570\u636E\u3002</div>'
+
+    parts = []
+
+    # 顶部概览
+    avg_w = judge_summary.get("avg_weighted_score", 0.0)
+    total_judged = judge_summary.get("total_judged", 0)
+    total_error = judge_summary.get("total_error", 0)
+    dim_avgs = judge_summary.get("dimension_averages", {})
+
+    parts.append(
+        f'<div class="judge-overview">'
+        f'<div class="stat-card neutral">'
+        f'<div class="label">Judge \u52A0\u6743\u5E73\u5747\u5206</div>'
+        f'<div class="value">{avg_w:.2f}</div>'
+        f'</div>'
+        f'<div class="stat-card neutral">'
+        f'<div class="label">\u8BC4\u5206\u7528\u4F8B\u6570</div>'
+        f'<div class="value">{total_judged}</div>'
+        f'</div>'
+    )
+    if total_error > 0:
+        parts.append(
+            f'<div class="stat-card fail">'
+            f'<div class="label">\u8BC4\u5206\u5931\u8D25\u6570</div>'
+            f'<div class="value">{total_error}</div>'
+            f'</div>'
+        )
+    parts.append('</div>')
+
+    # 总体维度条形图
+    if dim_avgs:
+        parts.append('<h3>\u603B\u4F53\u7EF4\u5EA6\u5E73\u5747\u5206</h3>')
+        parts.append('<div class="judge-bar-chart">')
+        for dim, avg in sorted(dim_avgs.items()):
+            pct = (avg / 5.0) * 100
+            color = "#059669" if avg >= 4.0 else ("#f59e0b" if avg >= 3.0 else "#dc2626")
+            parts.append(
+                f'<div class="judge-bar-row">'
+                f'<div class="judge-bar-label">{escape_for_html(dim)}</div>'
+                f'<div class="judge-bar-track">'
+                f'<div class="judge-bar-fill" style="width:{pct:.1f}%;background:{color};"></div>'
+                f'</div>'
+                f'<div class="judge-bar-score">{avg:.2f}</div>'
+                f'</div>'
+            )
+        parts.append('</div>')
+
+    # 各分类维度条形图
+    if judge_by_category:
+        parts.append('<h3>\u5404\u5206\u7C7B\u7EF4\u5EA6\u5E73\u5747\u5206</h3>')
+        for cat, cat_data in sorted(judge_by_category.items()):
+            cat_avg = cat_data.get("avg_weighted_score", 0.0)
+            cat_dim_avgs = cat_data.get("dimension_averages", {})
+            cat_count = cat_data.get("count", 0)
+            parts.append(
+                f'<details>'
+                f'<summary><span>{escape_for_html(cat)} '
+                f'(\u52A0\u6743\u5747\u5206: {cat_avg:.2f}, {cat_count} \u6761)</span></summary>'
+                f'<div class="detail-body">'
+                f'<div class="judge-bar-chart">'
+            )
+            for dim, avg in sorted(cat_dim_avgs.items()):
+                pct = (avg / 5.0) * 100
+                color = "#059669" if avg >= 4.0 else ("#f59e0b" if avg >= 3.0 else "#dc2626")
+                parts.append(
+                    f'<div class="judge-bar-row">'
+                    f'<div class="judge-bar-label">{escape_for_html(dim)}</div>'
+                    f'<div class="judge-bar-track">'
+                    f'<div class="judge-bar-fill" style="width:{pct:.1f}%;background:{color};"></div>'
+                    f'</div>'
+                    f'<div class="judge-bar-score">{avg:.2f}</div>'
+                    f'</div>'
+                )
+            parts.append('</div></div></details>')
+
+    return "".join(parts)
+
+
 def generate_html_report(
     report_data: EvalReportData,
     template_path: Optional[str] = None,
@@ -661,10 +826,6 @@ def generate_html_report(
     total_failed = report_data.total_positive - report_data.total_passed
     efficiency = report_data.efficiency
 
-    # 计算派生值
-    total_failed = report_data.total_positive - report_data.total_passed
-    efficiency = report_data.efficiency
-
     html = tmpl.safe_substitute(
         # Header
         eval_time=escape_for_html(report_data.eval_time),
@@ -702,6 +863,12 @@ def generate_html_report(
         efficiency_median_elapsed=f"{efficiency.get('median_elapsed', 0.0):.2f}",
         tool_call_distribution=_render_tool_call_distribution(
             report_data.failed_cases, report_data.negative_violations,
+        ),
+        # Section 8: LLM-as-Judge Scores
+        judge_section_content=_render_judge_section(
+            report_data.judge_summary,
+            report_data.judge_by_category,
+            report_data.dataset_mode,
         ),
         # Negative stats (for Section 1)
         total_negative=str(report_data.total_negative),

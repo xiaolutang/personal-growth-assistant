@@ -223,12 +223,12 @@ class DatasetLoader:
 
     @staticmethod
     def load_single_turn() -> List[TestCase]:
-        """快捷方法：加载单轮 63 条测试数据"""
+        """快捷方法：加载单轮 71 条测试数据"""
         return DatasetLoader.load_test_cases("single_turn_68.json")
 
     @staticmethod
     def load_negative() -> List[NegativeTestCase]:
-        """快捷方法：加载负面 24 条测试数据"""
+        """快捷方法：加载负面 26 条测试数据"""
         return DatasetLoader.load_negative_cases("negative_24.json")
 
 
@@ -280,6 +280,15 @@ class NegativeEvalResult:
 
 
 # ── 判定逻辑 ──
+
+
+def _build_allowed_tools(test_case: TestCase) -> set[str]:
+    """构建允许的工具集合"""
+    allowed = set(test_case.expected_tools)
+    if test_case.reference_solution.tool:
+        allowed.add(test_case.reference_solution.tool)
+    allowed.update(test_case.acceptable_alternatives)
+    return allowed
 
 
 def judge_test_case(
@@ -338,6 +347,10 @@ def judge_test_case(
         # 对于 pure_chat 类别，不调用 tool 是正确的
         if test_case.category == "pure_chat":
             return True
+        # 模糊输入时，Agent 通过文本追问（而非调用 ask_user 工具）也是正确行为
+        # ask_user 类别或 ask_user 在允许集内的用例都适用此规则
+        if "ask_user" in _build_allowed_tools(test_case):
+            return True
         return False
 
     # 检查是否调用了 unacceptable 的 tool
@@ -346,10 +359,7 @@ def judge_test_case(
             return False
 
     # 构建允许的 tool 集合
-    allowed_tools = set(test_case.expected_tools)
-    if test_case.reference_solution.tool:
-        allowed_tools.add(test_case.reference_solution.tool)
-    allowed_tools.update(test_case.acceptable_alternatives)
+    allowed_tools = _build_allowed_tools(test_case)
 
     # 检查是否至少调用了期望的 tool
     for tool in actual_tools:

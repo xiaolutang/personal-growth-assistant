@@ -158,6 +158,26 @@ entry_service = deps.get_entry_service()
 
 ## 环境变量
 
+### 环境分层（.env / .env.local）
+
+项目使用两级 `.env` 实现线上/本地环境分离：
+
+| 文件 | 用途 | 加载方 | git |
+|------|------|--------|-----|
+| `.env`（根目录） | **线上配置**（Docker Compose 使用） | docker-compose.yml | 忽略 |
+| `backend/.env` | **本地开发默认配置** | pydantic_settings | 忽略 |
+| `backend/.env.local` | **本地覆盖**（优先级最高） | pydantic_settings（覆盖 backend/.env） | 忽略 |
+| `deploy/docker-compose.override.yml` | **本地 Docker 覆盖** | docker compose（自动加载） | 忽略 |
+
+规则：
+- 根目录 `.env` 始终保持线上配置，禁止改为本地值
+- `backend/.env` 是本地开发默认配置
+- `backend/.env.local` 覆盖 `backend/.env`，不影响根目录 `.env`
+- `docker-compose.override.yml` 覆盖 Docker 容器内的环境变量
+- 部署时只使用根目录 `.env`，不包含覆盖文件
+
+### 变量说明
+
 | 变量 | 说明 |
 |------|------|
 | `FRONTEND_BASE_PATH` | 前端基础路径，如 `/growth/` |

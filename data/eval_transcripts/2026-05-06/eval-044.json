@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-044",
+  "timestamp": "2026-05-06T19:56:24.401536",
+  "test_case_id": "ST-015",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "帮我搜索所有关于 TypeScript 高级类型的内容",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': 'f87809b8-b147-9099-b538-3b3fe3ac7251'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 227.0059585571289,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-015",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "未调用任何工具（工具调用记录为空），完全未能选择搜索工具，直接导致模型路由或执行错误。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "没有发起任何工具调用，因此也完全没有提取和传递用户请求中的参数（如搜索关键词“TypeScript 高级类型”）。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "直接向用户暴露了底层系统的错误代码和模型信息（如 glm-4.7v 不存在），这让用户感到极其困惑，没有任何实质性的帮助。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "处理极差，直接将未处理的底层 API 报错和堆栈信息抛给用户，没有进行任何包装、降级处理或提供可行的替代方案。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "连最基本的搜索动作都没有执行，直接以错误告终，毫无效率可言。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "体验极差，用户不仅没有得到想要的内容，还被迫看到了不应该看到的系统级报错信息，感到不知所措。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "没有任何实质性的回应，直接抛出大段错误日志，完全偏离了用户直接获取信息的需求。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "任务在最开始就彻底失败，Agent 未能记住或利用用户的任何意图去执行有效动作。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "没有任何主动的追问或引导，仅仅被动地告知用户“请稍后再试”，没有尝试澄清需求或换个方式解决。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "从用户的正常提问突然跳跃到系统的底层报错，毫无连贯性和逻辑可言，对话直接断裂。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

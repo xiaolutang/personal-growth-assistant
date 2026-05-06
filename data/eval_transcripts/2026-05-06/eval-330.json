@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-330",
+  "timestamp": "2026-05-06T23:11:27.208783",
+  "test_case_id": "ST-012",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "我昨天写的那条笔记改一下标题",
+    "output": "抱歉，处理时遇到了问题：Error code: 401 - {'error': {'code': '', 'message': 'Invalid token (request id: 202605061511059479857638268d9d69T4KxPb4)', 'type': 'new_api_error'}}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 58.43400955200195,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-012",
+    "total_score": 10,
+    "max_possible_score": 50,
+    "average_score": 1.0,
+    "weighted_average": 1.0,
+    "percentage": 20.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "没有进行任何工具调用，Agent 应该先调用工具获取昨天写的笔记列表，然后再进行修改。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "未提取任何参数，用户提到的“昨天”和“那条笔记”需要转化为具体的查询条件，Agent 完全没有处理。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复直接抛出了底层 API 报错（Invalid token），对用户毫无帮助，且未能解决修改笔记标题的核心需求。"
+      },
+      "error_handling": {
+        "score": 1,
+        "reasoning": "未能优雅处理 token 验证异常，将原始报错信息直接暴露给用户，没有提供任何有价值的引导或替代方案。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "由于认证错误，Agent 没有执行任何实质性的有效动作，整个过程完全无效。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "体验极差，用户看到了不知所云的系统错误代码，需求完全没有被理解和推进。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "没有回应核心需求，仅反馈了系统级错误，对用户来说是无用信息。"
+      },
+      "context_retention": {
+        "score": 1,
+        "reasoning": "Agent 完全没有理解用户输入中的时间限制（“昨天”）和目标对象（“那条笔记”），未利用任何上下文信息。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "没有进行任何追问。Agent 本应因为信息不足（如未提供新标题的内容，或昨天笔记有多条需要确认）而向用户追问。"
+      },
+      "conversation_coherence": {
+        "score": 1,
+        "reasoning": "用户的输入是明确的操作指令，而 Agent 给出的是系统级错误回复，双方对话完全不在同一频道，毫无逻辑连贯性。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": true
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

@@ -1,5 +1,16 @@
 # 归档索引
 
+## 活跃需求包
+
+### R049: Agent 评估体系运营化
+
+- 状态: 规划中
+- 分支: `feat/R049-eval-operationalization`
+- 主题: 让评估基础设施真正运转 — Judge 集成 + Bad Cases 回流 + 定期评估管道
+- 目录: `R049_eval-operationalization/`
+- 任务数: 7 (B01-B06, S07)
+- 范围: P0(4) + P1(3)
+
 ## 已完成需求包
 
 ### R048: 创建体验升级

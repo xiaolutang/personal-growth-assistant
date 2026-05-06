@@ -356,6 +356,7 @@ class LLMJudge:
         self.dimensions = dimensions or JudgeDimension.all_dimensions()
         self._llm_caller = None
         self._real_llm_degraded = False
+        self._degraded_reason = ""
 
         if use_real_llm and inject_llm_response is None:
             try:
@@ -364,6 +365,16 @@ class LLMJudge:
             except Exception as e:
                 self._real_llm_degraded = True
                 self._degraded_reason = f"APICaller 初始化失败: {e}"
+
+    @property
+    def is_degraded(self) -> bool:
+        """Judge 是否处于降级状态（LLM 不可用）"""
+        return self._real_llm_degraded
+
+    @property
+    def degraded_reason(self) -> str:
+        """降级原因说明"""
+        return self._degraded_reason
 
     def _build_prompt(
         self,

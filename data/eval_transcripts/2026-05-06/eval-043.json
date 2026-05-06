@@ -1,0 +1,71 @@
+{
+  "transcript_id": "eval-043",
+  "timestamp": "2026-05-06T19:56:16.821864",
+  "test_case_id": "ST-024",
+  "test_case_category": "param_extraction",
+  "agent_trace": {
+    "input": "获取 entry-test001 的详细信息",
+    "output": "抱歉，处理时遇到了问题：Error code: 404 - {'error': {'message': 'The model `glm-4.7v` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}, 'request_id': 'f67883c5-972b-927c-8f02-53fd00d75b24'}。请稍后再试。",
+    "tool_calls": [],
+    "llm_calls": [],
+    "total_latency_ms": 234.1609001159668,
+    "iteration_count": 0
+  },
+  "judge_result": {
+    "test_id": "ST-024",
+    "total_score": 15,
+    "max_possible_score": 50,
+    "average_score": 1.5,
+    "weighted_average": 1.49,
+    "percentage": 30.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 1,
+        "reasoning": "Agent未能调用任何工具。由于内部配置错误（模型不存在），直接抛出了底层异常，未选择任何工具来获取entry-test001的信息。"
+      },
+      "param_extraction": {
+        "score": 1,
+        "reasoning": "因为没有进行任何工具调用，所以没有进行任何参数提取，参数提取完全缺失。"
+      },
+      "response_quality": {
+        "score": 1,
+        "reasoning": "回复完全是内部系统错误日志，对用户毫无帮助，暴露了后端模型配置细节，用户体验极差。"
+      },
+      "error_handling": {
+        "score": 2,
+        "reasoning": "虽然系统捕获了错误并向用户报错，但没有做优雅的异常转换，直接将原生的404模型不存在的错误代码抛给用户，缺乏合理的掩饰和解决引导。"
+      },
+      "efficiency": {
+        "score": 1,
+        "reasoning": "Agent未能执行有效操作，直接因底层错误中断，毫无效率可言。"
+      },
+      "user_experience": {
+        "score": 1,
+        "reasoning": "用户看到了一堆毫不相干的技术报错信息（如模型名称、request_id等），不仅问题没解决，还会感到困惑和挫败。"
+      },
+      "directness": {
+        "score": 1,
+        "reasoning": "Agent没有直接回应“获取entry-test001详细信息”的核心需求，而是直接给出了系统报错，文不对题。"
+      },
+      "context_retention": {
+        "score": 3,
+        "reasoning": "单轮对话，无历史上下文需保持，且错误信息本身未偏离当前请求的场景，给予基础及格分。"
+      },
+      "follow_up_quality": {
+        "score": 1,
+        "reasoning": "在发生错误时，Agent未提供任何有用的追问或替代方案（例如让用户核对名称或联系管理员），仅仅提示“请稍后再试”，对于这种配置错误毫无意义。"
+      },
+      "conversation_coherence": {
+        "score": 3,
+        "reasoning": "单轮交互，逻辑上是因为系统故障导致无法完成任务，基本逻辑尚存，但不涉及连贯性考验。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}

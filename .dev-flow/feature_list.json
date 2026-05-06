@@ -2,7 +2,7 @@
   "version": "1.4",
   "project": "personal-growth-assistant",
   "status": "active",
-  "updated_at": "2026-05-03",
+  "updated_at": "2026-05-06",
   "archived_requirement_cycles": [
     {
       "id": "R048",
@@ -96,7 +96,7 @@
       "id": "R037",
       "name": "comprehensive-completion",
       "status": "completed",
-      "archive_dir": "_archive/R037_comprehensive-convergence",
+      "archive_dir": "_archive/R037_comprehensive-completion",
       "total_tasks": 18,
       "completed_at": "2026-04-26"
     },
@@ -108,5 +108,270 @@
     }
   ],
   "archived_phases": [],
-  "features": []
+  "active_requirement_cycle": {
+    "id": "R049",
+    "name": "eval-operationalization",
+    "branch": "feat/R049-eval-operationalization",
+    "status": "completed"
+  },
+  "workflow": {
+    "name": "xlfoundry",
+    "mode": "B",
+    "runtime": "skill_orchestrated",
+    "review_provider": "codex_plugin",
+    "audit_provider": "codex_plugin",
+    "risk_provider": "codex_plugin"
+  },
+  "features": [
+    {
+      "id": "B01",
+      "phase": 1,
+      "module": "eval-judge",
+      "name": "run_eval 集成 LLM-as-Judge",
+      "description": "在 run_eval.py 的 run_single_turn 流程中集成 LLMJudge（use_real_llm=True），将 10 维度评分结果写入 transcript 的 judge_result 字段。需要处理 Judge 调用失败时的降级逻辑（fallback 到 outcome_grade only）。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "started_at": "2026-05-06T00:00:00",
+      "completed_at": "2026-05-06",
+      "actual_minutes": 45,
+      "commit": "8f5f014",
+      "summary": "run_eval 集成 LLMJudge 完成，新增 --judge/--no-judge 参数、judge_result 写入、HTML 报告 Section 8、8 个新测试",
+      "evidence_file": "evidence/B01.md",
+      "execution_notes": "",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "run_eval.py 新增 --judge 参数（默认启用），可 --no-judge 跳过",
+        "run_single_turn 中每条用例调用 LLMJudge.evaluate()，将结果写入 transcript.judge_result",
+        "Judge 调用失败时不阻塞 eval 主流程，transcript.judge_result 标记为 error",
+        "HTML 报告新增 judge 评分区块：顶部展示加权平均分，各分类下展示 7 维度条形图（使用内联 CSS，不依赖外部库）",
+        "单元测试覆盖：judge 成功/失败/降级 3 条路径"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        "正常路径：mock APICaller 返回合法 JSON，验证 judge_result 写入 transcript",
+        "降级路径：APICaller 抛超时，验证 eval 继续、judge_result 标记 error",
+        "边界：LLM 返回非法 JSON，验证解析失败优雅处理",
+        "网络异常：LLM API 返回 5xx / 连接重置 / 空 body，验证 judge_result 标记 error 且 eval 不中断"
+      ],
+      "smoke_required": true,
+      "files": [
+        "backend/tests/eval/run_eval.py",
+        "backend/tests/eval/report_generator.py",
+        "backend/tests/eval/report_template.html",
+        "backend/tests/eval/test_run_eval_report.py"
+      ]
+    },
+    {
+      "id": "B02",
+      "phase": 1,
+      "module": "eval-judge",
+      "name": "transcript judge_result 补填脚本",
+      "description": "编写一个脚本读取历史 transcript（2026-04-29 的 342 条），对 judge_result=null 的记录调用 LLMJudge 补填评分。用于补全历史数据，使趋势报告从第一轮就有 judge 维度。",
+      "backfill_transcripts": true,
+      "verification": "L2",
+      "depends_on": ["B01"],
+      "status": "completed",
+      "started_at": "2026-05-06T01:00:00",
+      "completed_at": "2026-05-06",
+      "actual_minutes": 20,
+      "commit": "2bf5e8d",
+      "summary": "backfill_judge.py 补填脚本完成，支持 --dry-run/--limit，6 个测试",
+      "evidence_file": "evidence/B02.md",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "新脚本 backfill_judge.py 在 tests/eval/ 下",
+        "读取指定日期目录的 transcript，过滤 judge_result=null 的记录",
+        "调用 LLMJudge(use_real_llm=True) 补填，写入原文件",
+        "支持 --dry-run 模式只输出统计不修改文件",
+        "--limit 参数控制单次处理条数，避免一次性消耗过多 token"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        "正常路径：mock transcript + mock judge，验证补填写入",
+        "幂等性：已补填的 record 不重复处理",
+        "dry-run：不修改任何文件，只输出统计"
+      ],
+      "files": [
+        "backend/tests/eval/backfill_judge.py"
+      ]
+    },
+    {
+      "id": "B03",
+      "phase": 2,
+      "module": "eval-badcases",
+      "name": "bad cases 分类与回流脚本",
+      "description": "编写脚本读取 data/eval_transcripts/bad_cases/ 下的 195 个坏例，按 reason 字段自动分类，生成分类报告。对于可转化为测试用例的坏例，输出符合 TestCase/NegativeTestCase schema 的 JSON 模板，人工审核后补充到 Golden Dataset。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "started_at": "2026-05-06T02:00:00",
+      "completed_at": "2026-05-06",
+      "actual_minutes": 15,
+      "commit": "ee0af08",
+      "summary": "classify_badcases.py 完成，去重后 3 类 3 条，10 个测试，报告和模板已生成",
+      "evidence_file": "evidence/B03.md",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "新脚本 classify_badcases.py 在 tests/eval/ 下",
+        "读取 bad_cases/ 目录，按 reason 分类统计",
+        "输出 Markdown 分类报告到 data/eval_reports/badcase_classification.md",
+        "对于可转化坏例，输出 JSON 模板到 data/eval_reports/badcase_to_testcase.json",
+        "去重：相同 message_id 的多条反馈合并为一条分析",
+        "脚本纯本地运行，不需要 Agent 在线"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常路径：给定 3 个 badcase JSON 文件，验证分类输出",
+        "空目录：无 badcase 时无报错",
+        "去重：相同 message_id 只输出一条分析",
+        "损坏文件：badcase JSON 格式异常时跳过该文件，不崩溃"
+      ],
+      "files": [
+        "backend/tests/eval/classify_badcases.py"
+      ]
+    },
+    {
+      "id": "B04",
+      "phase": 2,
+      "module": "eval-badcases",
+      "name": "分类坏例补充到 Golden Dataset",
+      "description": "基于 B03 的分类报告，人工审核后将高质量坏例转化为正式 TestCase/NegativeTestCase，补充到 single_turn_68.json 或 negative_24.json。同时更新 DatasetLoader 的快捷方法名（如 total count 注释）。",
+      "verification": "L1",
+      "depends_on": ["B03"],
+      "status": "completed",
+      "started_at": "2026-05-06T03:00:00",
+      "completed_at": "2026-05-06",
+      "actual_minutes": 10,
+      "commit": "eb5936d",
+      "summary": "补充 ST-069~071 + NEG-025~026 共 5 条测试用例，Golden Dataset 增至 71+26",
+      "evidence_file": "evidence/B04.md",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "至少补充 5 条来自真实反馈的测试用例",
+        "新增用例符合 TestCase/NegativeTestCase schema，有完整 expected_tools/expected_args",
+        "每条新用例有 behavior_checks 或 unacceptable 约束",
+        "DatasetLoader.load_single_turn() / load_negative() 正常加载新数据",
+        "现有单元测试全部通过"
+      ],
+      "planning_notes": "需要人工审核坏例内容决定哪些值得补充",
+      "files": [
+        "backend/tests/eval/datasets/single_turn_68.json",
+        "backend/tests/eval/datasets/negative_24.json"
+      ]
+    },
+    {
+      "id": "B05",
+      "phase": 3,
+      "module": "eval-pipeline",
+      "name": "定期评估包装脚本 run_scheduled_eval.sh",
+      "description": "编写 shell 脚本封装 run_eval.py 的完整执行流程：Docker 健康检查 → 等待 Agent 就绪 → 登录获取 token → 执行评估 → 生成报告 → 输出摘要。支持 cron 调用，退出码反映评估结果（0=通过率>=阈值, 1=低于阈值, 2=执行失败）。",
+      "verification": "L3",
+      "status": "completed",
+      "started_at": "2026-05-06T04:00:00",
+      "completed_at": "2026-05-06",
+      "actual_minutes": 15,
+      "commit": "48216f7",
+      "summary": "run_scheduled_eval.sh 完成，支持健康检查/登录/评估/阈值判断/通知钩子",
+      "evidence_file": "evidence/B05.md",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "新脚本 deploy/scripts/run_scheduled_eval.sh",
+        "登录凭证通过环境变量 EVAL_USERNAME / EVAL_PASSWORD 传入，不硬编码",
+        "健康检查：curl /health，失败时等待重试（最多 3 次，间隔 10s）",
+        "登录 → 执行 --dataset all → 报告输出到 data/eval_reports/",
+        "--threshold 参数设置通过率阈值（默认 80%），低于阈值时 exit 1",
+        "--notify 参数：失败时输出告警信息（预留通知钩子）",
+        "脚本可被 cron 调用：0 6 * * * /path/to/run_scheduled_eval.sh"
+      ],
+      "risk_tags": ["network", "startup"],
+      "test_tasks": [
+        "正常路径：Docker 运行中，脚本成功执行并 exit 0",
+        "Agent 不可用：健康检查失败，脚本 exit 2",
+        "低于阈值：通过率 < 80%，脚本 exit 1",
+        "超时：eval 执行超过 30 分钟，graceful exit",
+        "登录失败：凭证无效时 exit 2 并输出明确错误信息"
+      ],
+      "smoke_required": true,
+      "files": [
+        "deploy/scripts/run_scheduled_eval.sh"
+      ]
+    },
+    {
+      "id": "B06",
+      "phase": 3,
+      "module": "eval-pipeline",
+      "name": "评估趋势对比脚本 eval_trend.py",
+      "description": "读取 history.json，输出最近 N 次评估的趋势对比：通过率变化、分类维度 delta、失败用例回归/新增。支持 --diff 参数对比任意两次评估的详细差异。",
+      "verification": "L2",
+      "status": "completed",
+      "started_at": "2026-05-06T05:00:00",
+      "completed_at": "2026-05-06",
+      "actual_minutes": 20,
+      "commit": "a7e26fb",
+      "summary": "eval_trend.py 完成，支持 --last/--diff 参数，17 个测试，集成到 scheduled eval",
+      "evidence_file": "evidence/B06.md",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "新脚本 tests/eval/eval_trend.py",
+        "读取 data/eval_reports/history.json，输出最近 N 次评估趋势（默认 10 次）",
+        "--diff N M 对比第 N 次和第 M 次的详细差异（新增失败、回归修复、新增通过）",
+        "输出 Markdown 格式到 stdout，可被 cron 邮件或通知管道消费",
+        "集成到 run_scheduled_eval.sh 的报告输出中"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "正常路径：给定 5 条 history 记录，输出趋势表",
+        "单条记录：只有 1 次评估时输出当前状态",
+        "空 history：输出'无历史数据'",
+        "损坏 history.json：JSON 解析失败时输出警告并退出，不崩溃"
+      ],
+      "files": [
+        "backend/tests/eval/eval_trend.py"
+      ]
+    },
+    {
+      "id": "S07",
+      "phase": 4,
+      "module": "eval-quality",
+      "name": "质量收口 — eval 基础设施验证",
+      "description": "全量验证：所有 eval 单元测试通过 + run_eval 端到端验证 + HTML 报告检查 + 脚本 dry-run 验证。确保 P0+P1 全部可运转。",
+      "verification": "L2",
+      "depends_on": ["B01", "B02", "B03", "B05", "B06"],
+      "status": "completed",
+      "started_at": "2026-05-06T06:00:00",
+      "completed_at": "2026-05-06",
+      "actual_minutes": 10,
+      "commit": "93f65f4",
+      "summary": "质量收口完成，361 eval 测试通过，6 个脚本 dry-run 正常",
+      "evidence_file": "evidence/S07.md",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "uv run pytest tests/eval/ 全部通过",
+        "run_eval.py --dataset single --no-judge dry-run 不报错",
+        "backfill_judge.py --dry-run 正常输出统计",
+        "classify_badcases.py 正常输出分类报告",
+        "run_scheduled_eval.sh --dry-run 检查脚本逻辑",
+        "eval_trend.py --last 5 正常输出趋势"
+      ],
+      "risk_tags": ["startup"],
+      "files": []
+    }
+  ],
+  "summary": {
+    "total": 7,
+    "by_status": {
+      "completed": 7
+    },
+    "by_priority": {
+      "P0": 4,
+      "P1": 3
+    },
+    "by_module": {
+      "eval-judge": 2,
+      "eval-badcases": 2,
+      "eval-pipeline": 2,
+      "eval-quality": 1
+    }
+  }
 }

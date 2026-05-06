@@ -1,0 +1,89 @@
+{
+  "transcript_id": "eval-135",
+  "timestamp": "2026-05-06T20:08:09.758218",
+  "test_case_id": "ST-012",
+  "test_case_category": "tool_selection",
+  "agent_trace": {
+    "input": "我昨天写的那条笔记改一下标题",
+    "output": "",
+    "tool_calls": [
+      {
+        "tool": "search_entries",
+        "args": {
+          "query": "昨天笔记",
+          "limit": 10
+        },
+        "result": null,
+        "latency_ms": 0.0
+      },
+      {
+        "tool": "ask_user",
+        "args": {
+          "question": "想改成什么标题？"
+        },
+        "result": null,
+        "latency_ms": 0.0
+      }
+    ],
+    "llm_calls": [],
+    "total_latency_ms": 6130.06329536438,
+    "iteration_count": 2
+  },
+  "judge_result": {
+    "test_id": "ST-012",
+    "total_score": 39,
+    "max_possible_score": 50,
+    "average_score": 3.9,
+    "weighted_average": 3.93,
+    "percentage": 78.0,
+    "dimension_scores": {
+      "tool_selection": {
+        "score": 4,
+        "reasoning": "选择了search_entries查询相关笔记，并用ask_user追问缺失信息，工具方向正确。但搜索'昨天笔记'可能不够精确，若系统支持按时间范围筛选会更好。"
+      },
+      "param_extraction": {
+        "score": 3,
+        "reasoning": "用户请求中提取了'昨天'这一时间信息转化为搜索关键词，但未提取到具体标题或内容特征，导致搜索可能匹配不准确。"
+      },
+      "response_quality": {
+        "score": 4,
+        "reasoning": "追问'想改成什么标题？'直接且合理，因为用户确实未提供新标题信息，回复自然流畅。"
+      },
+      "error_handling": {
+        "score": 3,
+        "reasoning": "没有明显错误场景需要处理，但如果搜索结果为空时缺乏后续引导机制，只能给基本分数。"
+      },
+      "efficiency": {
+        "score": 3,
+        "reasoning": "流程基本合理，但先搜索再追问的顺序可以优化，如果能同时指定时间范围筛选会更高效。"
+      },
+      "user_experience": {
+        "score": 4,
+        "reasoning": "整体交互较为流畅，追问合理且不打扰用户，但缺少对多条搜索结果的确认步骤可能造成困扰。"
+      },
+      "directness": {
+        "score": 4,
+        "reasoning": "追问直接相关且必要，没有多余寒暄，直接切入核心问题。"
+      },
+      "context_retention": {
+        "score": 5,
+        "reasoning": "虽然没有对话历史，但Agent准确捕捉了'昨天'这一时间信息并用于搜索。"
+      },
+      "follow_up_quality": {
+        "score": 5,
+        "reasoning": "追问'想改成什么标题？'恰到好处，这是执行修改操作必需的信息，且提问清晰明确。"
+      },
+      "conversation_coherence": {
+        "score": 4,
+        "reasoning": "对话逻辑清晰，先查询再确认修改内容，流程合理，但缺少对查询结果的确认环节。"
+      }
+    },
+    "metadata": null
+  },
+  "outcome_grade": {
+    "passed": false
+  },
+  "human_label": null,
+  "human_notes": "",
+  "metadata": {}
+}
