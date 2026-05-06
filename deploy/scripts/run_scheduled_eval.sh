@@ -171,6 +171,17 @@ PASS_RATE_INT=$(echo "$PASS_RATE" | awk '{printf "%.0f", $1}')
 
 log "评估完成: 通过率 ${PASS_RATE}% (阈值 ${THRESHOLD}%)"
 
+# ── Step 5b: 趋势输出 ──
+
+HISTORY_FILE="${REPORT_DIR}/history.json"
+if [[ -f "$HISTORY_FILE" ]]; then
+    log "评估趋势:"
+    TREND_OUTPUT=$(cd "$PROJECT_ROOT/backend" && uv run python -m tests.eval.eval_trend --history "$HISTORY_FILE" --last 5 2>/dev/null || true)
+    if [[ -n "$TREND_OUTPUT" ]]; then
+        echo "$TREND_OUTPUT"
+    fi
+fi
+
 # ── Step 6: 阈值判断 ──
 
 if [[ "$PASS_RATE_INT" -lt "$THRESHOLD" ]]; then
