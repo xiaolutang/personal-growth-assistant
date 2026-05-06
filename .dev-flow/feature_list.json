@@ -131,8 +131,14 @@
       "description": "在 run_eval.py 的 run_single_turn 流程中集成 LLMJudge（use_real_llm=True），将 10 维度评分结果写入 transcript 的 judge_result 字段。需要处理 Judge 调用失败时的降级逻辑（fallback 到 outcome_grade only）。",
       "verification": "L2",
       "depends_on": [],
-      "status": "in_progress",
+      "status": "completed",
       "started_at": "2026-05-06T00:00:00",
+      "completed_at": "2026-05-06",
+      "actual_minutes": 45,
+      "commit": "8f5f014",
+      "summary": "run_eval 集成 LLMJudge 完成，新增 --judge/--no-judge 参数、judge_result 写入、HTML 报告 Section 8、8 个新测试",
+      "evidence_file": "evidence/B01.md",
+      "execution_notes": "",
       "priority": "P0",
       "acceptance_criteria": [
         "run_eval.py 新增 --judge 参数（默认启用），可 --no-judge 跳过",
@@ -165,7 +171,8 @@
       "backfill_transcripts": true,
       "verification": "L2",
       "depends_on": ["B01"],
-      "status": "pending",
+      "status": "in_progress",
+      "started_at": "2026-05-06T01:00:00",
       "priority": "P0",
       "acceptance_criteria": [
         "新脚本 backfill_judge.py 在 tests/eval/ 下",
@@ -321,7 +328,8 @@
   "summary": {
     "total": 7,
     "by_status": {
-      "pending": 7
+      "completed": 1,
+      "pending": 6
     },
     "by_priority": {
       "P0": 4,
