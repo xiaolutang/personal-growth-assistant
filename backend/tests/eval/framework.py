@@ -223,12 +223,12 @@ class DatasetLoader:
 
     @staticmethod
     def load_single_turn() -> List[TestCase]:
-        """快捷方法：加载单轮 63 条测试数据"""
+        """快捷方法：加载单轮 71 条测试数据"""
         return DatasetLoader.load_test_cases("single_turn_68.json")
 
     @staticmethod
     def load_negative() -> List[NegativeTestCase]:
-        """快捷方法：加载负面 24 条测试数据"""
+        """快捷方法：加载负面 26 条测试数据"""
         return DatasetLoader.load_negative_cases("negative_24.json")
 
 

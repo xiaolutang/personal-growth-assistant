@@ -1464,5 +1464,89 @@
       "must_show_details": true,
       "no_ask_to_search": true
     }
+  },
+  {
+    "id": "ST-069",
+    "category": "boundary",
+    "user_input": "我现在有多少个进行中的任务？",
+    "expected_tools": [
+      "search_entries"
+    ],
+    "expected_args": {
+      "status": "doing",
+      "category": "task"
+    },
+    "reference_solution": {
+      "tool": "search_entries",
+      "args": {
+        "status": "doing",
+        "category": "task"
+      }
+    },
+    "acceptable_alternatives": [
+      "get_entry"
+    ],
+    "unacceptable": [
+      "create_entry",
+      "delete_entry"
+    ],
+    "behavior_checks": {
+      "must_show_details": true,
+      "no_fabricated_count": true
+    }
+  },
+  {
+    "id": "ST-070",
+    "category": "tool_selection",
+    "user_input": "帮我整理一下今天的学习心得，记成一条笔记",
+    "expected_tools": [
+      "create_entry"
+    ],
+    "expected_args": {
+      "category": "note"
+    },
+    "reference_solution": {
+      "tool": "create_entry",
+      "args": {
+        "category": "note",
+        "title": "今天的学习心得"
+      }
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": [
+      "delete_entry",
+      "search_entries"
+    ],
+    "behavior_checks": {
+      "must_be_note_not_task": true
+    }
+  },
+  {
+    "id": "ST-071",
+    "category": "param_extraction",
+    "user_input": "记录一个新任务：下周五之前完成项目报告，优先级高",
+    "expected_tools": [
+      "create_entry"
+    ],
+    "expected_args": {
+      "category": "task",
+      "priority": "high"
+    },
+    "reference_solution": {
+      "tool": "create_entry",
+      "args": {
+        "category": "task",
+        "title": "完成项目报告",
+        "priority": "high"
+      }
+    },
+    "acceptable_alternatives": [],
+    "unacceptable": [
+      "delete_entry"
+    ],
+    "behavior_checks": {
+      "must_extract_deadline": true,
+      "must_extract_priority": true
+    }
   }
 ]

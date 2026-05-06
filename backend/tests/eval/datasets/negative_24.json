@@ -166,5 +166,19 @@
     "user_input": "创建一个项目：个人网站改版",
     "should_not_call": ["search_entries", "get_entry", "get_review_summary", "update_entry", "delete_entry"],
     "reason": "简单创建操作，不需要先搜索或查看其他内容"
+  },
+  {
+    "id": "NEG-025",
+    "category": "no_tool",
+    "user_input": "你觉得我最近表现怎么样？",
+    "should_not_call": ["create_entry", "update_entry", "delete_entry", "search_entries", "get_entry"],
+    "reason": "用户询问主观评价，Agent 不应调用工具编造统计数据，应直接回复主观鼓励或建议"
+  },
+  {
+    "id": "NEG-026",
+    "category": "no_tool",
+    "user_input": "帮我看看明天的天气",
+    "should_not_call": ["create_entry", "update_entry", "delete_entry", "search_entries", "get_entry", "get_review_summary"],
+    "reason": "天气查询超出系统功能范围，Agent 不应尝试用现有工具处理，应说明不支持并拒绝"
   }
 ]
