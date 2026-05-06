@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>评估报告 - 2026-05-07T01:06:45.803782</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1f2937; background: #f9fafb; line-height: 1.6; padding: 2rem;
+  }
+  a { color: #6366F1; }
+
+  /* ── Layout ── */
+  .container { max-width: 1100px; margin: 0 auto; }
+  .header {
+    text-align: center; margin-bottom: 2rem; padding-bottom: 1.5rem;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  .header h1 { color: #6366F1; font-size: 1.75rem; margin-bottom: 0.25rem; }
+  .header .subtitle { color: #6b7280; font-size: 0.9rem; }
+
+  /* ── Section Card ── */
+  .section {
+    background: #fff; border-radius: 12px; padding: 1.5rem;
+    margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .section h2 {
+    font-size: 1.15rem; color: #6366F1; margin-bottom: 1rem;
+    padding-bottom: 0.5rem; border-bottom: 1px solid #e5e7eb;
+  }
+  .section h3 { font-size: 1rem; color: #374151; margin: 0.75rem 0 0.5rem; }
+
+  /* ── Stat Cards (Section 2) ── */
+  .dashboard { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
+  .dashboard .chart-wrap { flex: 0 0 220px; height: 220px; }
+  .dashboard .cards { flex: 1; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+  .stat-card {
+    flex: 1 1 140px; background: #f0f0ff; border-radius: 8px; padding: 0.75rem 1rem;
+    text-align: center;
+  }
+  .stat-card .label { font-size: 0.8rem; color: #6b7280; }
+  .stat-card .value { font-size: 1.5rem; font-weight: 700; }
+  .stat-card.pass .value { color: #059669; }
+  .stat-card.fail .value { color: #dc2626; }
+  .stat-card.neutral .value { color: #6366F1; }
+
+  /* ── Chart Containers ── */
+  .chart-container { position: relative; width: 100%; max-width: 700px; margin: 0 auto; }
+  .chart-container.trend { max-width: 100%; height: 280px; }
+  .chart-placeholder {
+    text-align: center; padding: 2rem; color: #9ca3af;
+    border: 1px dashed #d1d5db; border-radius: 8px;
+  }
+
+  /* ── Tables ── */
+  table { border-collapse: collapse; width: 100%; margin: 0.5rem 0; font-size: 0.875rem; }
+  th, td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; }
+  th { background: #f3f4f6; color: #374151; font-weight: 600; }
+  td { vertical-align: top; }
+  tr:hover td { background: #f9fafb; }
+  .pass-text { color: #059669; font-weight: 600; }
+  .fail-text { color: #dc2626; font-weight: 600; }
+
+  /* ── Collapsible (Section 4) ── */
+  details { margin-bottom: 0.5rem; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+  summary {
+    cursor: pointer; padding: 0.75rem 1rem; background: #fef2f2;
+    font-weight: 600; color: #991b1b; list-style: none;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  summary::after { content: "\25BC"; font-size: 0.75rem; transition: transform 0.2s; }
+  details[open] summary::after { transform: rotate(180deg); }
+  details .detail-body { padding: 1rem; background: #fff; }
+  details .detail-body .field { margin-bottom: 0.5rem; }
+  details .detail-body .field-label { font-weight: 600; color: #4b5563; font-size: 0.8rem; text-transform: uppercase; }
+  details .detail-body .field-value { background: #f9fafb; padding: 0.5rem; border-radius: 4px; margin-top: 0.25rem; white-space: pre-wrap; word-break: break-word; }
+
+  /* ── Empty State ── */
+  .empty-state { text-align: center; padding: 1.5rem; color: #6b7280; font-style: italic; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+  .badge-pass { background: #d1fae5; color: #065f46; }
+  .badge-fail { background: #fee2e2; color: #991b1b; }
+
+  /* ── Environment Info List ── */
+  .env-list { list-style: none; }
+  .env-list li { padding: 0.25rem 0; border-bottom: 1px solid #f3f4f6; }
+  .env-list li:last-child { border-bottom: none; }
+  .env-key { font-weight: 600; color: #4b5563; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    body { padding: 1rem; }
+    .dashboard { flex-direction: column; }
+    .dashboard .chart-wrap { flex: none; width: 100%; height: 200px; }
+  }
+
+  /* ── Judge Section (Section 8) ── */
+  .judge-overview { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; }
+  .judge-bar-chart { margin: 0.5rem 0; }
+  .judge-bar-row { display: flex; align-items: center; margin-bottom: 0.4rem; gap: 0.5rem; }
+  .judge-bar-label { flex: 0 0 160px; font-size: 0.8rem; color: #4b5563; text-align: right; }
+  .judge-bar-track { flex: 1; height: 18px; background: #f3f4f6; border-radius: 4px; overflow: hidden; }
+  .judge-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+  .judge-bar-score { flex: 0 0 40px; font-size: 0.8rem; font-weight: 600; color: #374151; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <h1>AI 智能体评估报告</h1>
+    <div class="subtitle">生成时间：2026-05-07T01:06:45.803782 | 模式：negative</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 1: Assessment Methodology                         -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-methodology">
+    <h2>1. 评估方法说明</h2>
+    <h3>数据集构成</h3>
+    <p>评估数据集包含多个意图类别的测试用例，用于验证 AI 智能体能否根据用户输入正确选择和调用工具。</p>
+    <table>
+      <tr><th>指标</th><th>说明</th></tr>
+      <tr><td>数据集模式</td><td>negative</td></tr>
+      <tr><td>评估用例总数</td><td>26</td></tr>
+      <tr><td>正向用例数</td><td>0</td></tr>
+      <tr><td>负面用例数</td><td>26</td></tr>
+    </table>
+
+    <h3>分类维度</h3>
+    <p>每条测试用例按意图类别分类（如 tool_selection、no_tool、boundary 等），对应智能体应处理的常见用户意图模式。</p>
+
+    <h3>判定逻辑</h3>
+    <ul>
+      <li><strong>正向用例：</strong>通过条件为 <code>actual_tools</code> 与 <code>expected_tools</code> 匹配；否则为失败。</li>
+      <li><strong>负面用例：</strong>通过条件为智能体未调用 <code>should_not_call</code> 中的任何工具；否则为违规。</li>
+    </ul>
+
+    <h3>环境信息</h3>
+    <ul class="env-list">
+      <li><span class="env-key">git_commit</span>: a723bb6</li>
+      <li><span class="env-key">model</span>: unknown</li>
+    </ul>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 2: Overview Dashboard (Donut Chart + Stat Cards)  -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-overview">
+    <h2>2. 概览仪表盘</h2>
+    <div class="dashboard">
+      <div class="chart-wrap">
+        <canvas id="overviewChart"></canvas>
+        <div class="chart-placeholder" id="overviewChartFallback" style="display:none;">
+          图表需要网络连接（Chart.js CDN）。<br>通过率：0.0%
+        </div>
+      </div>
+      <div class="cards">
+        <div class="stat-card fail">
+          <div class="label">通过率</div>
+          <div class="value">0.0%</div>
+        </div>
+        <div class="stat-card pass">
+          <div class="label">通过</div>
+          <div class="value">0</div>
+        </div>
+        <div class="stat-card fail">
+          <div class="label">失败</div>
+          <div class="value">0</div>
+        </div>
+        <div class="stat-card neutral">
+          <div class="label">正向总数</div>
+          <div class="value">0</div>
+        </div>
+        <div class="stat-card neutral">
+          <div class="label">总耗时</div>
+          <div class="value">285.59s</div>
+        </div>
+      </div>
+    </div>
+    <div class="empty-state">未运行正向评估（负面模式）。</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 3: Category Statistics (Bar Chart)                -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-categories">
+    <h2>3. 分类统计</h2>
+    <div class="empty-state">未运行正向评估（负面模式）。</div>
+    <div class="chart-container">
+      <canvas id="categoryChart"></canvas>
+      <div class="chart-placeholder" id="categoryChartFallback" style="display:none;">
+        分类图表需要网络连接。
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 4: Failed Cases Detail (Collapsible)              -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-failed-cases">
+    <h2>4. 失败用例详情</h2>
+    <div class="empty-state">未运行正向评估（负面模式）。</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 5: Negative Violations                            -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-negative-violations">
+    <h2>5. 负面违规</h2>
+    <p>违规率：<strong>0.0%</strong> (0 / 26 条负面用例)</p><div class="empty-state">无违规。</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 6: History Trend (Line Chart)                     -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-history-trend">
+    <h2>6. 历史趋势</h2>
+    <p>显示 8 次历史运行的趋势。</p>
+    <div class="chart-container trend">
+      <canvas id="trendChart"></canvas>
+      <div class="chart-placeholder" id="trendChartFallback" style="display:none;">
+        趋势图表需要网络连接。
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 7: Efficiency Metrics                             -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-efficiency">
+    <h2>7. 效率指标</h2>
+    <table>
+      <tr><th>指标</th><th>值</th></tr>
+      <tr><td>用例总数</td><td>26</td></tr>
+      <tr><td>总耗时</td><td>285.59s</td></tr>
+      <tr><td>平均耗时</td><td>10.98s</td></tr>
+      <tr><td>中位耗时</td><td>6.88s</td></tr>
+    </table>
+    <h3>工具调用次数分布</h3><div class="empty-state">无工具调用数据。</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Section 8: LLM-as-Judge Scores                            -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="section-judge">
+    <h2>8. LLM-as-Judge 评分</h2>
+    <div class="empty-state">未运行正向评估，无 Judge 评分数据。</div>
+  </div>
+
+</div>
+
+<!-- ── Chart.js CDN ── -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function() {
+  /* ── Embedded report data ── */
+  var RD = {
+  "eval_time": "2026-05-07T01:06:45.803782",
+  "dataset_mode": "negative",
+  "pass_rate": 0.0,
+  "total_positive": 0,
+  "total_passed": 0,
+  "category_stats": {},
+  "failed_cases": [],
+  "total_negative": 26,
+  "total_violations": 0,
+  "violation_rate": 0.0,
+  "negative_violations": [],
+  "efficiency": {
+    "total_elapsed": 285.592,
+    "avg_elapsed": 10.9843,
+    "median_elapsed": 6.8817,
+    "total_cases": 26
+  },
+  "env_info": {
+    "git_commit": "a723bb6",
+    "model": "unknown"
+  },
+  "history": [
+    {
+      "eval_time": "2026-04-29T14:01:09.055150",
+      "dataset_mode": "all",
+      "pass_rate": 0.7794,
+      "total_positive": 68,
+      "total_passed": 53,
+      "total_negative": 24,
+      "total_violations": 0,
+      "violation_rate": 0.0,
+      "html_file": "2026-04-29_140109.html",
+      "env_info": {
+        "git_commit": "82ebebe",
+        "model": "unknown"
+      }
+    },
+    {
+      "eval_time": "2026-04-29T14:48:29.664019",
+      "dataset_mode": "all",
+      "pass_rate": 0.75,
+      "total_positive": 68,
+      "total_passed": 51,
+      "total_negative": 24,
+      "total_violations": 0,
+      "violation_rate": 0.0,
+      "html_file": "2026-04-29_144829.html",
+      "env_info": {
+        "git_commit": "82ebebe",
+        "model": "unknown"
+      }
+    },
+    {
+      "eval_time": "2026-04-29T15:16:46.944166",
+      "dataset_mode": "all",
+      "pass_rate": 0.7941,
+      "total_positive": 68,
+      "total_passed": 54,
+      "total_negative": 24,
+      "total_violations": 0,
+      "violation_rate": 0.0,
+      "html_file": "2026-04-29_151646.html",
+      "env_info": {
+        "git_commit": "82ebebe",
+        "model": "unknown"
+      }
+    },
+    {
+      "eval_time": "2026-04-29T16:20:53.753152",
+      "dataset_mode": "all",
+      "pass_rate": 0.8088,
+      "total_positive": 68,
+      "total_passed": 55,
+      "total_negative": 24,
+      "total_violations": 0,
+      "violation_rate": 0.0,
+      "html_file": "2026-04-29_162053.html",
+      "env_info": {
+        "git_commit": "82ebebe",
+        "model": "unknown"
+      }
+    },
+    {
+      "eval_time": "2026-04-29T16:56:58.035225",
+      "dataset_mode": "all",
+      "pass_rate": 0.8824,
+      "total_positive": 68,
+      "total_passed": 60,
+      "total_negative": 24,
+      "total_violations": 0,
+      "violation_rate": 0.0,
+      "html_file": "2026-04-29_165658.html",
+      "env_info": {
+        "git_commit": "82ebebe",
+        "model": "unknown"
+      }
+    },
+    {
+      "eval_time": "2026-05-06T22:25:21.108013",
+      "dataset_mode": "negative",
+      "pass_rate": 0.0,
+      "total_positive": 0,
+      "total_passed": 0,
+      "total_negative": 26,
+      "total_violations": 1,
+      "violation_rate": 0.0385,
+      "html_file": "2026-05-06_222521.html",
+      "env_info": {
+        "git_commit": "c1368e6",
+        "model": "unknown"
+      }
+    },
+    {
+      "eval_time": "2026-05-06T23:13:22.726531",
+      "dataset_mode": "single",
+      "pass_rate": 0.7746,
+      "total_positive": 71,
+      "total_passed": 55,
+      "total_negative": 0,
+      "total_violations": 0,
+      "violation_rate": 0.0,
+      "html_file": "2026-05-06_231322.html",
+      "env_info": {
+        "git_commit": "c1368e6",
+        "model": "unknown"
+      }
+    },
+    {
+      "eval_time": "2026-05-07T00:35:07.719002",
+      "dataset_mode": "single",
+      "pass_rate": 0.9859,
+      "total_positive": 71,
+      "total_passed": 70,
+      "total_negative": 0,
+      "total_violations": 0,
+      "violation_rate": 0.0,
+      "html_file": "2026-05-07_003507.html",
+      "env_info": {
+        "git_commit": "c1368e6",
+        "model": "unknown"
+      }
+    }
+  ]
+};
+
+  /* ── Graceful fallback if Chart.js is not loaded (offline) ── */
+  if (typeof Chart === "undefined") {
+    var ids = ["overviewChartFallback","categoryChartFallback","trendChartFallback"];
+    ids.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = "block";
+    });
+    var canvases = ["overviewChart","categoryChart","trendChart"];
+    canvases.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
+    return;
+  }
+
+  /* ── Common chart defaults ── */
+  Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  Chart.defaults.color = "#374151";
+
+  /* ── Section 2: Overview Donut Chart ── */
+  var overviewCtx = document.getElementById("overviewChart");
+  if (overviewCtx && RD.total_positive > 0) {
+    new Chart(overviewCtx, {
+      type: "doughnut",
+      data: {
+        labels: ["\u901A\u8FC7", "\u5931\u8D25"],
+        datasets: [{
+          data: [RD.total_passed, RD.total_positive - RD.total_passed],
+          backgroundColor: ["#059669", "#dc2626"],
+          borderWidth: 2,
+          borderColor: "#fff"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: "65%",
+        plugins: {
+          legend: { position: "bottom" },
+          title: { display: false }
+        }
+      }
+    });
+  } else if (overviewCtx) {
+    overviewCtx.style.display = "none";
+    var fb = document.getElementById("overviewChartFallback");
+    if (fb) { fb.style.display = "block"; fb.textContent = "\u65E0\u6B63\u5411\u7528\u4F8B\u6570\u636E\u3002"; }
+  }
+
+  /* ── Section 3: Category Bar Chart ── */
+  var catCtx = document.getElementById("categoryChart");
+  if (catCtx && RD.category_stats && Object.keys(RD.category_stats).length > 0) {
+    var catLabels = Object.keys(RD.category_stats);
+    var catRates = catLabels.map(function(k) { return Math.round(RD.category_stats[k].pass_rate * 100); });
+    var catBgColors = catRates.map(function(r) { return r >= 80 ? "#059669" : "#dc2626"; });
+    new Chart(catCtx, {
+      type: "bar",
+      data: {
+        labels: catLabels,
+        datasets: [{
+          label: "\u901A\u8FC7\u7387 (%)",
+          data: catRates,
+          backgroundColor: catBgColors,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + "%"; } } }
+        },
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: "\u5404\u5206\u7C7B\u901A\u8FC7\u7387" }
+        }
+      }
+    });
+  } else if (catCtx) {
+    catCtx.style.display = "none";
+    var fb2 = document.getElementById("categoryChartFallback");
+    if (fb2) { fb2.style.display = "block"; fb2.textContent = "\u65E0\u5206\u7C7B\u6570\u636E\u3002"; }
+  }
+
+  /* ── Section 6: History Trend Line Chart ── */
+  var trendCtx = document.getElementById("trendChart");
+  if (trendCtx && RD.history && RD.history.length > 0) {
+    var trendLabels = RD.history.map(function(h) { return h.eval_time || ""; });
+    var isNeg = RD.dataset_mode === "negative";
+    var trendKey = isNeg ? "violation_rate" : "pass_rate";
+    var trendTitle = isNeg ? "\u8FDD\u89C4\u7387\u8D8B\u52BF" : "\u901A\u8FC7\u7387\u8D8B\u52BF";
+    var trendRates = RD.history.map(function(h) { return Math.round((h[trendKey] || 0) * 100); });
+    new Chart(trendCtx, {
+      type: "line",
+      data: {
+        labels: trendLabels,
+        datasets: [{
+          label: isNeg ? "\u8FDD\u89C4\u7387 (%)" : "\u901A\u8FC7\u7387 (%)",
+          data: trendRates,
+          borderColor: "#6366F1",
+          backgroundColor: "rgba(99,102,241,0.1)",
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: "#6366F1"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + "%"; } } }
+        },
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: trendTitle }
+        }
+      }
+    });
+  } else if (trendCtx) {
+    trendCtx.style.display = "none";
+    var fb3 = document.getElementById("trendChartFallback");
+    if (fb3) { fb3.style.display = "block"; fb3.textContent = RD.history && RD.history.length === 0 ? "\u9996\u6B21\u8FD0\u884C\u2014\u2014\u5C1A\u65E0\u5386\u53F2\u6570\u636E\u3002" : "\u8D8B\u52BF\u56FE\u8868\u9700\u8981\u7F51\u7EDC\u8FDE\u63A5\u3002"; }
+  }
+})();
+</script>
+</body>
+</html>

@@ -118,5 +118,20 @@
       "git_commit": "c1368e6",
       "model": "unknown"
     }
+  },
+  {
+    "eval_time": "2026-05-07T01:06:45.803782",
+    "dataset_mode": "negative",
+    "pass_rate": 0.0,
+    "total_positive": 0,
+    "total_passed": 0,
+    "total_negative": 26,
+    "total_violations": 0,
+    "violation_rate": 0.0,
+    "html_file": "2026-05-07_010645.html",
+    "env_info": {
+      "git_commit": "a723bb6",
+      "model": "unknown"
+    }
   }
 ]
