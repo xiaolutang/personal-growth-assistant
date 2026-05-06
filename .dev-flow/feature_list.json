@@ -112,7 +112,7 @@
     "id": "R049",
     "name": "eval-operationalization",
     "branch": "feat/R049-eval-operationalization",
-    "status": "ready"
+    "status": "completed"
   },
   "workflow": {
     "name": "xlfoundry",
@@ -338,8 +338,13 @@
       "description": "全量验证：所有 eval 单元测试通过 + run_eval 端到端验证 + HTML 报告检查 + 脚本 dry-run 验证。确保 P0+P1 全部可运转。",
       "verification": "L2",
       "depends_on": ["B01", "B02", "B03", "B05", "B06"],
-      "status": "in_progress",
+      "status": "completed",
       "started_at": "2026-05-06T06:00:00",
+      "completed_at": "2026-05-06",
+      "actual_minutes": 10,
+      "commit": "93f65f4",
+      "summary": "质量收口完成，361 eval 测试通过，6 个脚本 dry-run 正常",
+      "evidence_file": "evidence/S07.md",
       "priority": "P1",
       "acceptance_criteria": [
         "uv run pytest tests/eval/ 全部通过",
@@ -356,8 +361,7 @@
   "summary": {
     "total": 7,
     "by_status": {
-      "completed": 1,
-      "pending": 6
+      "completed": 7
     },
     "by_priority": {
       "P0": 4,
