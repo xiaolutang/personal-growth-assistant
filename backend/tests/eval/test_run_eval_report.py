@@ -858,3 +858,225 @@ class TestFullFlowMocked:
 
         history = json.loads((tmp_path / "history.json").read_text())
         assert len(history) == 2
+
+
+# ══════════════════════════════════════════════════════════
+# B01: Judge 集成测试
+# ══════════════════════════════════════════════════════════
+
+
+def _make_mock_judge_result(
+    weighted_average: float = 4.2,
+    dimension_scores: dict = None,
+) -> MagicMock:
+    """创建 mock JudgeResult"""
+    if dimension_scores is None:
+        dimension_scores = {
+            "tool_selection": {"score": 5, "reasoning": "正确"},
+            "param_extraction": {"score": 4, "reasoning": "基本正确"},
+            "response_quality": {"score": 4, "reasoning": "自然"},
+            "error_handling": {"score": 4, "reasoning": "良好"},
+            "efficiency": {"score": 5, "reasoning": "高效"},
+            "user_experience": {"score": 4, "reasoning": "流畅"},
+            "directness": {"score": 4, "reasoning": "直接"},
+        }
+    result = MagicMock()
+    result.weighted_average = weighted_average
+    result.to_dict.return_value = {
+        "test_id": "ST-001",
+        "weighted_average": weighted_average,
+        "dimension_scores": dimension_scores,
+    }
+    return result
+
+
+class TestJudgeIntegration:
+    """B01: run_eval 集成 LLM-as-Judge 测试"""
+
+    @pytest.mark.asyncio
+    async def test_judge_success_writes_to_transcript(self, tmp_path):
+        """正常路径：Judge 评分成功，结果写入 transcript"""
+        mock_client = _make_mock_client_single()
+        mock_judge = AsyncMock()
+        mock_judge.evaluate.return_value = _make_mock_judge_result()
+
+        from tests.eval.transcript import TranscriptStore
+
+        transcript_store = TranscriptStore(base_dir=str(tmp_path))
+        cases = [_make_test_case()]
+
+        report, records = await run_single_turn(
+            mock_client, cases,
+            transcript_store=transcript_store,
+            judge=mock_judge,
+        )
+
+        # 验证 per-case record 包含 judge_result
+        assert records[0]["judge_result"] is not None
+        assert records[0]["judge_result"]["weighted_average"] == 4.2
+        mock_judge.evaluate.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_judge_timeout_degrades_gracefully(self):
+        """降级路径：Judge 超时，eval 继续运行，judge_result 标记 error"""
+        mock_client = _make_mock_client_single()
+        mock_judge = AsyncMock()
+        mock_judge.evaluate.side_effect = TimeoutError("LLM API timeout")
+
+        cases = [_make_test_case()]
+
+        report, records = await run_single_turn(
+            mock_client, cases, judge=mock_judge,
+        )
+
+        # eval 不中断
+        assert len(records) == 1
+        assert records[0]["passed"] is True
+        # judge_result 标记 error
+        assert records[0]["judge_result"] is not None
+        assert records[0]["judge_result"]["error"] is True
+        assert "LLM API timeout" in records[0]["judge_result"]["error_message"]
+
+    @pytest.mark.asyncio
+    async def test_judge_invalid_json_graceful_handling(self):
+        """边界：Judge 返回解析失败，eval 不中断"""
+        mock_client = _make_mock_client_single()
+        mock_judge = AsyncMock()
+        mock_judge.evaluate.side_effect = ValueError("Invalid JSON from LLM")
+
+        cases = [_make_test_case()]
+
+        report, records = await run_single_turn(
+            mock_client, cases, judge=mock_judge,
+        )
+
+        assert len(records) == 1
+        assert records[0]["judge_result"]["error"] is True
+
+    @pytest.mark.asyncio
+    async def test_judge_network_error_5xx(self):
+        """网络异常：LLM API 5xx，judge_result 标记 error"""
+        mock_client = _make_mock_client_single()
+        mock_judge = AsyncMock()
+        mock_judge.evaluate.side_effect = ConnectionError("502 Bad Gateway")
+
+        cases = [_make_test_case()]
+
+        report, records = await run_single_turn(
+            mock_client, cases, judge=mock_judge,
+        )
+
+        assert len(records) == 1
+        assert records[0]["judge_result"]["error"] is True
+        assert "502 Bad Gateway" in records[0]["judge_result"]["error_message"]
+
+    @pytest.mark.asyncio
+    async def test_no_judge_skips_scoring(self):
+        """无 Judge 时正常评估，judge_result 为 None"""
+        mock_client = _make_mock_client_single()
+        cases = [_make_test_case()]
+
+        report, records = await run_single_turn(
+            mock_client, cases, judge=None,
+        )
+
+        assert len(records) == 1
+        assert records[0]["judge_result"] is None
+        assert records[0]["passed"] is True
+
+
+class TestJudgeReportSection:
+    """B01: HTML 报告 Judge 评分区块"""
+
+    def test_judge_section_rendered_in_html(self):
+        """Judge 数据在 HTML 报告中渲染"""
+        records = [
+            {
+                "input": "搜索 Rust",
+                "expected_tools": ["search_entries"],
+                "actual_tools": ["search_entries"],
+                "agent_reply": "找到了 3 条 Rust 相关笔记",
+                "passed": True,
+                "category": "tool_selection",
+                "elapsed_seconds": 1.5,
+                "judge_result": {
+                    "weighted_average": 4.2,
+                    "dimension_scores": {
+                        "tool_selection": {"score": 5, "reasoning": "正确"},
+                        "param_extraction": {"score": 4, "reasoning": "OK"},
+                        "response_quality": {"score": 4, "reasoning": "OK"},
+                        "error_handling": {"score": 3, "reasoning": "一般"},
+                        "efficiency": {"score": 5, "reasoning": "高效"},
+                        "user_experience": {"score": 4, "reasoning": "OK"},
+                        "directness": {"score": 4, "reasoning": "OK"},
+                    },
+                },
+            },
+        ]
+        report_data = build_report_data(records, dataset_mode="all", env_info={}, eval_time="2026-05-06")
+        html = generate_html_report(report_data)
+
+        assert "LLM-as-Judge" in html
+        assert "4.2" in html
+        assert "judge-bar-fill" in html
+
+    def test_judge_section_empty_when_no_judge(self):
+        """无 Judge 数据时显示空状态"""
+        records = [
+            {
+                "input": "搜索",
+                "expected_tools": ["search_entries"],
+                "actual_tools": ["search_entries"],
+                "agent_reply": "找到结果",
+                "passed": True,
+                "category": "tool_selection",
+                "elapsed_seconds": 1.0,
+            },
+        ]
+        report_data = build_report_data(records, dataset_mode="all", env_info={}, eval_time="2026-05-06")
+        html = generate_html_report(report_data)
+
+        assert "LLM-as-Judge" in html
+        assert "未启用" in html
+
+    def test_judge_summary_in_report_data(self):
+        """build_report_data 正确聚合 judge_summary"""
+        records = [
+            {
+                "input": "记个笔记",
+                "expected_tools": ["create_entry"],
+                "actual_tools": ["create_entry"],
+                "agent_reply": "已记录",
+                "passed": True,
+                "category": "tool_selection",
+                "elapsed_seconds": 2.0,
+                "judge_result": {
+                    "weighted_average": 3.8,
+                    "dimension_scores": {
+                        "tool_selection": {"score": 4, "reasoning": "OK"},
+                        "response_quality": {"score": 4, "reasoning": "OK"},
+                    },
+                },
+            },
+            {
+                "input": "搜索 Rust",
+                "expected_tools": ["search_entries"],
+                "actual_tools": ["search_entries"],
+                "agent_reply": "找到 3 条",
+                "passed": True,
+                "category": "tool_selection",
+                "elapsed_seconds": 1.5,
+                "judge_result": {
+                    "weighted_average": 4.5,
+                    "dimension_scores": {
+                        "tool_selection": {"score": 5, "reasoning": "完美"},
+                        "response_quality": {"score": 4, "reasoning": "OK"},
+                    },
+                },
+            },
+        ]
+        report_data = build_report_data(records, dataset_mode="all", env_info={}, eval_time="2026-05-06")
+
+        assert report_data.judge_summary["total_judged"] == 2
+        assert report_data.judge_summary["avg_weighted_score"] == pytest.approx(4.15, abs=0.01)
+        assert "tool_selection" in report_data.judge_by_category
