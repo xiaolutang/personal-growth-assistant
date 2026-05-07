@@ -12,6 +12,7 @@ import '../pages/inbox_page.dart';
 import '../pages/login_page.dart';
 import '../pages/notes_page.dart';
 import '../pages/review_page.dart';
+import '../pages/settings_page.dart';
 import '../pages/tasks_page.dart';
 import '../pages/today_page.dart';
 import '../providers/auth_provider.dart';
@@ -118,6 +119,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                 },
               ),
             ],
+          ),
+          GoRoute(
+            path: '/settings',
+            name: 'settings',
+            builder: (context, state) => const SettingsPage(),
           ),
           GoRoute(
             path: '/entries/:id',

@@ -33,6 +33,12 @@ dependencies:
   uuid: ^4.5.3
   collection: ^1.19.0
 
+  # Local notifications
+  flutter_local_notifications: ^18.0.1
+
+  # Persistent key-value storage
+  shared_preferences: ^2.3.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

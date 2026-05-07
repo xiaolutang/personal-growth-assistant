@@ -140,7 +140,13 @@
       "description": "新增注册页面（用户名+密码+确认密码），LoginPage 增加「忘记密码?」提示（简化为联系管理员）和「注册」跳转。注册成功后自动登录跳转首页。",
       "verification": "F1",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-05-07T21:15:00+08:00",
+      "completed_at": "2026-05-07T21:22:00+08:00",
+      "actual_minutes": 7,
+      "commit": "8057aa8",
+      "evidence_file": "evidence/F01.md",
+      "summary": "注册页 + 忘记密码提示完成。RegisterPage 含表单校验，LoginPage 增加注册/忘记密码入口。10 个测试通过。",
       "priority": "P0",
       "acceptance_criteria": [
         "LoginPage 底部有「注册」和「忘记密码?」链接",
@@ -212,7 +218,13 @@
       "description": "TodayPage 顶部新增晨报摘要卡片（GET /review/morning-digest），底部新增快捷录入栏（内联输入框，直接创建 inbox 条目）。",
       "verification": "F2",
       "depends_on": ["F02"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-05-07T21:23:00+08:00",
+      "completed_at": "2026-05-07T21:30:00+08:00",
+      "actual_minutes": 7,
+      "commit": "pending",
+      "evidence_file": "evidence/F03.md",
+      "summary": "首页升级完成。MorningDigestCard + 快捷录入栏 + MorningDigestState 四态。23 个新测试通过。",
       "priority": "P0",
       "acceptance_criteria": [
         "TodayPage 顶部显示晨报卡片（从 GET /review/morning-digest 加载）",
@@ -244,7 +256,13 @@
       "description": "新增 GoalDetailPage，从 GoalsPage 点击目标卡片 push 进入。展示目标信息、进度环、里程碑列表（CRUD）、关联条目列表。复用后端已有的 16 个 goals 端点。",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-05-07T21:31:00+08:00",
+      "completed_at": "2026-05-07T21:42:00+08:00",
+      "actual_minutes": 11,
+      "commit": "f80436f",
+      "evidence_file": "evidence/F04.md",
+      "summary": "目标详情独立页完成。GoalDetailPage 含里程碑 CRUD + 关联条目 + 进度环。13 个新测试通过。",
       "priority": "P1",
       "acceptance_criteria": [
         "GoalsPage 点击目标卡片 → push 到 GoalDetailPage",
@@ -331,7 +349,7 @@
   ],
   "summary": {
     "total": 6,
-    "by_status": {"completed": 1, "pending": 5},
+    "by_status": {"completed": 4, "pending": 2},
     "by_priority": {"P0": 3, "P1": 3},
     "by_module": {"auth": 1, "capture": 1, "home": 1, "goals": 1, "notifications": 1, "quality": 1}
   }
