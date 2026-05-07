@@ -55,6 +55,8 @@ class _TodayPageState extends ConsumerState<TodayPage> {
     if (!mounted) return;
 
     if (success) {
+      // 刷新 today 数据以更新"最近动态"列表
+      ref.read(todayProvider.notifier).loadData();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('已记录到灵感'),
