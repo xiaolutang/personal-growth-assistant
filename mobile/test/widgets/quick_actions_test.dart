@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:growth_assistant/widgets/quick_actions.dart';
 
 /// Find the main FAB by looking for the one containing the add icon.
@@ -143,22 +144,33 @@ void main() {
   });
 
   group('CreateTaskSheet', () {
-    testWidgets('renders title and input field', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () {
-                  CreateTaskSheet.show(
-                    context,
-                    onSubmit: (_) async => true,
-                  );
-                },
-                child: const Text('Show'),
+    GoRouter _testRouter(VoidCallback showSheet) {
+      return GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: showSheet,
+                  child: const Text('Show'),
+                ),
               ),
             ),
           ),
+        ],
+      );
+    }
+
+    testWidgets('renders title and input field', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp.router(
+          routerConfig: _testRouter(() {
+            CreateTaskSheet.show(
+              tester.element(find.text('Show')),
+              onSubmit: (_) async => true,
+            );
+          }),
         ),
       );
 
@@ -173,23 +185,16 @@ void main() {
     testWidgets('entering text and tapping create calls onSubmit', (WidgetTester tester) async {
       String? submittedTitle;
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () {
-                  CreateTaskSheet.show(
-                    context,
-                    onSubmit: (title) async {
-                      submittedTitle = title;
-                      return true;
-                    },
-                  );
-                },
-                child: const Text('Show'),
-              ),
-            ),
-          ),
+        MaterialApp.router(
+          routerConfig: _testRouter(() {
+            CreateTaskSheet.show(
+              tester.element(find.text('Show')),
+              onSubmit: (title) async {
+                submittedTitle = title;
+                return true;
+              },
+            );
+          }),
         ),
       );
 

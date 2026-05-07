@@ -909,4 +909,13 @@ class _FakeApiClient implements ApiClient {
       requestOptions: RequestOptions(path: '/entries/$id/ai-summary'),
     );
   }
+
+  @override
+  Future<Response<T>> fetchGoalEntries<T>({required String goalId}) async {
+    return Response<T>(
+      data: {'entries': <Map<String, dynamic>>[]} as T,
+      statusCode: 200,
+      requestOptions: RequestOptions(path: '/goals/$goalId/entries'),
+    );
+  }
 }
