@@ -84,7 +84,7 @@ class EntryListNotifier extends Notifier<EntryListState> {
         },
       );
       // 通知 inboxProvider 刷新，保持所有 inbox 入口一致
-      ref.invalidate(inboxProvider);
+      ref.read(inboxProvider.notifier).fetchInbox();
       return true;
     } catch (e) {
       state = state.copyWith(error: ApiClient.errorMessage(e));

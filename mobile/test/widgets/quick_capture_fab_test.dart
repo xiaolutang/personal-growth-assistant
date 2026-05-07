@@ -36,6 +36,23 @@ class _FakeApiClient extends ApiClient {
       ),
     );
   }
+
+  @override
+  Future<Response<T>> fetchEntries<T>({
+    String? type,
+    String? status,
+    String? tags,
+    String? startDate,
+    String? endDate,
+    int? limit,
+    int? offset,
+  }) {
+    return Future.value(Response<T>(
+      requestOptions: RequestOptions(path: '/entries'),
+      statusCode: 200,
+      data: {'entries': <Map<String, dynamic>>[]} as T,
+    ));
+  }
 }
 
 /// Build test GoRouter with BottomNavShell wrapping a child page
@@ -339,7 +356,7 @@ void main() {
       expect(find.byType(QuickCaptureFAB), findsNothing);
     });
 
-    testWidgets('FAB 在 TodayPage (/) 不显示，因为有独立 QuickActions',
+    testWidgets('FAB 在 TodayPage (/) 显示 — QuickCaptureFAB 与快捷录入栏共存',
         (WidgetTester tester) async {
       final router = GoRouter(
         initialLocation: '/',
@@ -366,8 +383,8 @@ void main() {
         ),
       );
 
-      // TodayPage has its own QuickActions, so QuickCaptureFAB should not show
-      expect(find.byType(QuickCaptureFAB), findsNothing);
+      // TodayPage should show QuickCaptureFAB (global FAB)
+      expect(find.byType(QuickCaptureFAB), findsOneWidget);
     });
   });
 
