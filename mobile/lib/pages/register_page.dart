@@ -6,18 +6,20 @@ import '../config/theme.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
 
-class LoginPage extends ConsumerStatefulWidget {
-  const LoginPage({super.key});
+class RegisterPage extends ConsumerStatefulWidget {
+  const RegisterPage({super.key});
 
   @override
-  ConsumerState<LoginPage> createState() => _LoginPageState();
+  ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _LoginPageState extends ConsumerState<LoginPage> {
+class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -25,10 +27,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
+  Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -37,6 +40,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     });
 
     try {
+      final authService = ref.read(authServiceProvider);
+      await authService.register(
+        username: _usernameController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      // 注册成功 → 自动登录
       await ref.read(authProvider.notifier).login(
             username: _usernameController.text.trim(),
             password: _passwordController.text,
@@ -54,9 +66,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         },
         loading: () {},
         error: (error, _) {
-          setState(() {
-            _errorMessage = ApiClient.errorMessage(error);
-          });
+          // 注册成功但自动登录失败，跳转到登录页
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('注册成功，请手动登录')),
+          );
+          context.go('/login');
         },
       );
     } catch (e) {
@@ -99,7 +113,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   Text(
-                    '个人成长助手',
+                    '创建账号',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
@@ -111,12 +125,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   // 错误提示
                   if (_errorMessage != null)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      padding:
+                          const EdgeInsets.only(bottom: AppSpacing.md),
                       child: Container(
                         padding: const EdgeInsets.all(AppSpacing.md),
                         decoration: BoxDecoration(
                           color: AppColors.error.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(AppRadius.button),
+                          borderRadius:
+                              BorderRadius.circular(AppRadius.button),
                           border: Border.all(
                             color: AppColors.error.withValues(alpha: 0.3),
                           ),
@@ -181,11 +197,49 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       ),
                     ),
                     obscureText: _obscurePassword,
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _handleLogin(),
+                    textInputAction: TextInputAction.next,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return '请输入密码';
+                      }
+                      if (value.length < 6) {
+                        return '密码长度不能少于6位';
+                      }
+                      return null;
+                    },
+                    enabled: !_isLoading,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // 确认密码输入框
+                  TextFormField(
+                    controller: _confirmPasswordController,
+                    decoration: InputDecoration(
+                      labelText: '确认密码',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirmPassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureConfirmPassword =
+                                !_obscureConfirmPassword;
+                          });
+                        },
+                      ),
+                    ),
+                    obscureText: _obscureConfirmPassword,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _handleRegister(),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return '请确认密码';
+                      }
+                      if (value != _passwordController.text) {
+                        return '两次密码输入不一致';
                       }
                       return null;
                     },
@@ -193,9 +247,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: AppSpacing.xl),
 
-                  // 登录按钮
+                  // 注册按钮
                   FilledButton(
-                    onPressed: _isLoading ? null : _handleLogin,
+                    onPressed: _isLoading ? null : _handleRegister,
                     child: _isLoading
                         ? const SizedBox(
                             height: 20,
@@ -205,31 +259,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text('登录'),
+                        : const Text('注册'),
                   ),
                   const SizedBox(height: AppSpacing.lg),
 
-                  // 注册 + 忘记密码
+                  // 已有账号？去登录
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      TextButton(
-                        onPressed: _isLoading
-                            ? null
-                            : () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('请联系管理员重置密码'),
-                                  ),
-                                );
-                              },
-                        child: const Text('忘记密码?'),
+                      Text(
+                        '已有账号？',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: AppFontSize.body,
+                        ),
                       ),
                       TextButton(
                         onPressed: _isLoading
                             ? null
-                            : () => context.push('/register'),
-                        child: const Text('注册新账号'),
+                            : () => context.go('/login'),
+                        child: const Text('去登录'),
                       ),
                     ],
                   ),

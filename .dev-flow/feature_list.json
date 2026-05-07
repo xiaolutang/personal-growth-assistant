@@ -173,7 +173,13 @@
       "description": "所有主页面右下角添加 FloatingActionButton，点击弹出底部输入弹窗，输入内容后创建 inbox 类型条目。登录页和详情页不显示 FAB。",
       "verification": "F1",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-05-07T21:04:00+08:00",
+      "completed_at": "2026-05-07T21:14:00+08:00",
+      "actual_minutes": 10,
+      "commit": "245f985",
+      "evidence_file": "evidence/F02.md",
+      "summary": "全局 FAB 快速捕获完成。QuickCaptureFAB 组件 + BottomSheet + createInboxEntry Provider 方法。11 个测试通过。",
       "priority": "P0",
       "acceptance_criteria": [
         "FAB 显示在所有底部导航页（今天/日知/任务/笔记/探索/灵感/回顾/目标）",
@@ -325,7 +331,7 @@
   ],
   "summary": {
     "total": 6,
-    "by_status": {"pending": 6},
+    "by_status": {"completed": 1, "pending": 5},
     "by_priority": {"P0": 3, "P1": 3},
     "by_module": {"auth": 1, "capture": 1, "home": 1, "goals": 1, "notifications": 1, "quality": 1}
   }

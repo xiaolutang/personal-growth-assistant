@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../pages/chat_page.dart';
+import '../pages/register_page.dart';
 import '../pages/entry_detail_page.dart';
 import '../pages/explore_page.dart';
 import '../pages/goals_page.dart';
@@ -27,14 +28,15 @@ String? _authRedirect(Ref ref, GoRouterState state) {
       ) is AuthAuthenticated;
 
   final isLoggingIn = state.uri.path == '/login';
+  final isRegistering = state.uri.path == '/register';
 
-  // 未认证且不在登录页 → 重定向到登录页
-  if (!isAuthenticated && !isLoggingIn) {
+  // 未认证且不在登录/注册页 → 重定向到登录页
+  if (!isAuthenticated && !isLoggingIn && !isRegistering) {
     return '/login';
   }
 
-  // 已认证且在登录页 → 重定向到首页
-  if (isAuthenticated && isLoggingIn) {
+  // 已认证且在登录/注册页 → 重定向到首页
+  if (isAuthenticated && (isLoggingIn || isRegistering)) {
     return '/';
   }
 
@@ -56,6 +58,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => const RegisterPage(),
       ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
