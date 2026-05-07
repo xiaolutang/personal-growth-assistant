@@ -37,6 +37,9 @@ COPY --from=builder /app/.venv /app/.venv
 COPY backend/app /app/app
 COPY backend/scripts /app/scripts
 
+# 覆盖 log_service_sdk handler（修复 _worker_loop 忙循环 CPU 100% 问题）
+COPY --chmod=644 external-patches/handler.py /app/.venv/lib/python3.12/site-packages/log_service_sdk/handler.py
+
 # Copy frontend build output
 COPY --from=frontend-builder /app/dist /app/static/frontend
 
@@ -53,4 +56,4 @@ USER ${RUN_USER}
 
 EXPOSE 8001
 
-CMD ["uvicorn", "static_app:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["python", "-m", "uvicorn", "static_app:app", "--host", "0.0.0.0", "--port", "8001"]
