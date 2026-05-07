@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'config/routes.dart';
@@ -40,8 +41,20 @@ class _GrowthAppState extends ConsumerState<GrowthApp> {
 
   Future<void> _initNotifications() async {
     try {
-      await ref.read(notificationProvider.notifier).initService();
-      await ref.read(notificationProvider.notifier).checkDueTasksOnStartup();
+      final notifier = ref.read(notificationProvider.notifier);
+      // 接入通知点击导航：点击通知 → 跳转到对应页面
+      final service = ref.read(notificationServiceProvider);
+      service.onNotificationTap = (payload) {
+        if (payload != null && payload.startsWith('/')) {
+          final router = ref.read(routerProvider);
+          final context = router.configuration.navigatorKey.currentContext;
+          if (context != null && context.mounted) {
+            context.go(payload);
+          }
+        }
+      };
+      await notifier.initService();
+      await notifier.checkDueTasksOnStartup();
     } catch (_) {
       // 通知初始化失败不影响 App 启动
     }
