@@ -39,8 +39,12 @@ class _FakeApiClient extends ApiClient {
 }
 
 /// Build test GoRouter with BottomNavShell wrapping a child page
-GoRouter _testRouter({required Widget child}) {
+GoRouter _testRouter({
+  required Widget child,
+  String initialLocation = '/tasks',
+}) {
   return GoRouter(
+    initialLocation: initialLocation,
     routes: [
       GoRoute(
         path: '/login',
@@ -51,6 +55,10 @@ GoRouter _testRouter({required Widget child}) {
         routes: [
           GoRoute(
             path: '/',
+            builder: (context, state) => child,
+          ),
+          GoRoute(
+            path: '/tasks',
             builder: (context, state) => child,
           ),
           GoRoute(
@@ -80,13 +88,13 @@ void main() {
           ],
           child: MaterialApp.router(
             routerConfig: _testRouter(
-              child: const Scaffold(body: Text('Home')),
+              child: const Scaffold(body: Text('Tasks')),
             ),
           ),
         ),
       );
 
-      // FAB should be visible on home page (within ShellRoute)
+      // FAB should be visible on tasks page (within ShellRoute, not /)
       expect(find.byType(QuickCaptureFAB), findsOneWidget);
       expect(find.byType(FloatingActionButton), findsOneWidget);
     });
@@ -99,7 +107,7 @@ void main() {
           ],
           child: MaterialApp.router(
             routerConfig: _testRouter(
-              child: const Scaffold(body: Text('Home')),
+              child: const Scaffold(body: Text('Tasks')),
             ),
           ),
         ),
@@ -123,7 +131,7 @@ void main() {
           ],
           child: MaterialApp.router(
             routerConfig: _testRouter(
-              child: const Scaffold(body: Text('Home')),
+              child: const Scaffold(body: Text('Tasks')),
             ),
           ),
         ),
@@ -151,7 +159,7 @@ void main() {
           ],
           child: MaterialApp.router(
             routerConfig: _testRouter(
-              child: const Scaffold(body: Text('Home')),
+              child: const Scaffold(body: Text('Tasks')),
             ),
           ),
         ),
@@ -183,7 +191,7 @@ void main() {
           ],
           child: MaterialApp.router(
             routerConfig: _testRouter(
-              child: const Scaffold(body: Text('Home')),
+              child: const Scaffold(body: Text('Tasks')),
             ),
           ),
         ),
@@ -229,7 +237,7 @@ void main() {
           ],
           child: MaterialApp.router(
             routerConfig: _testRouter(
-              child: const Scaffold(body: Text('Home')),
+              child: const Scaffold(body: Text('Tasks')),
             ),
           ),
         ),
@@ -263,7 +271,7 @@ void main() {
           ],
           child: MaterialApp.router(
             routerConfig: _testRouter(
-              child: const Scaffold(body: Text('Home')),
+              child: const Scaffold(body: Text('Tasks')),
             ),
           ),
         ),
@@ -291,14 +299,15 @@ void main() {
   group('BottomNavShell FAB visibility', () {
     testWidgets('FAB 在条目详情页不显示', (WidgetTester tester) async {
       final router = GoRouter(
+        initialLocation: '/tasks',
         routes: [
           ShellRoute(
             builder: (context, state, child) => BottomNavShell(child: child),
             routes: [
               GoRoute(
-                path: '/',
+                path: '/tasks',
                 builder: (context, state) =>
-                    const Scaffold(body: Text('Home')),
+                    const Scaffold(body: Text('Tasks')),
               ),
               GoRoute(
                 path: '/entries/:id',
@@ -319,7 +328,7 @@ void main() {
         ),
       );
 
-      // Initially on home - FAB visible
+      // On tasks page - FAB visible
       expect(find.byType(QuickCaptureFAB), findsOneWidget);
 
       // Navigate to entry detail
@@ -327,6 +336,37 @@ void main() {
       await tester.pumpAndSettle();
 
       // FAB should not be visible on entry detail page
+      expect(find.byType(QuickCaptureFAB), findsNothing);
+    });
+
+    testWidgets('FAB 在 TodayPage (/) 不显示，因为有独立 QuickActions',
+        (WidgetTester tester) async {
+      final router = GoRouter(
+        initialLocation: '/',
+        routes: [
+          ShellRoute(
+            builder: (context, state, child) => BottomNavShell(child: child),
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) =>
+                    const Scaffold(body: Text('Today')),
+              ),
+            ],
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            apiClientProvider.overrideWithValue(fakeApiClient),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+
+      // TodayPage has its own QuickActions, so QuickCaptureFAB should not show
       expect(find.byType(QuickCaptureFAB), findsNothing);
     });
   });

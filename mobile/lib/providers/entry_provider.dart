@@ -5,6 +5,7 @@ import '../models/entry.dart';
 import '../config/constants.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
+import 'inbox_provider.dart';
 
 // ============================================================
 // EntryListState - 条目列表状态
@@ -72,7 +73,7 @@ class EntryListNotifier extends Notifier<EntryListState> {
 
   /// 创建 inbox 条目（快速捕获）
   /// 调用 POST /entries {category: inbox, title: title}
-  /// 成功后刷新列表
+  /// 成功后通知 inboxProvider 刷新列表
   Future<bool> createInboxEntry(String title) async {
     try {
       final apiClient = ref.read(apiClientProvider);
@@ -82,8 +83,11 @@ class EntryListNotifier extends Notifier<EntryListState> {
           'title': title.trim(),
         },
       );
+      // 通知 inboxProvider 刷新，保持所有 inbox 入口一致
+      ref.invalidate(inboxProvider);
       return true;
     } catch (e) {
+      state = state.copyWith(error: ApiClient.errorMessage(e));
       return false;
     }
   }
