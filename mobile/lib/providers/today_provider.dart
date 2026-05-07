@@ -2,8 +2,38 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/constants.dart';
 import '../models/entry.dart';
+import '../models/morning_digest.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
+
+// ============================================================
+// MorningDigestLoadState - 晨报加载状态
+// ============================================================
+enum MorningDigestStatus { initial, loading, loaded, error }
+
+class MorningDigestState {
+  final MorningDigest? data;
+  final MorningDigestStatus status;
+  final String? error;
+
+  const MorningDigestState({
+    this.data,
+    this.status = MorningDigestStatus.initial,
+    this.error,
+  });
+
+  MorningDigestState copyWith({
+    MorningDigest? data,
+    MorningDigestStatus? status,
+    String? error,
+  }) {
+    return MorningDigestState(
+      data: data ?? this.data,
+      status: status ?? this.status,
+      error: error,
+    );
+  }
+}
 
 // ============================================================
 // TodayState - 今日页状态
@@ -13,12 +43,14 @@ class TodayState {
   final List<Entry> recentEntries;
   final bool isLoading;
   final String? error;
+  final MorningDigestState morningDigest;
 
   const TodayState({
     this.todayTasks = const [],
     this.recentEntries = const [],
     this.isLoading = false,
     this.error,
+    this.morningDigest = const MorningDigestState(),
   });
 
   /// 今日完成率 (0.0 ~ 1.0)
@@ -35,12 +67,14 @@ class TodayState {
     List<Entry>? recentEntries,
     bool? isLoading,
     String? error,
+    MorningDigestState? morningDigest,
   }) {
     return TodayState(
       todayTasks: todayTasks ?? this.todayTasks,
       recentEntries: recentEntries ?? this.recentEntries,
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      morningDigest: morningDigest ?? this.morningDigest,
     );
   }
 }
@@ -62,6 +96,7 @@ class TodayNotifier extends Notifier<TodayState> {
       final apiClient = ref.read(apiClientProvider);
       final today = _todayDateString();
 
+      // 并行加载：任务列表 + 最近动态 + 晨报
       final results = await Future.wait([
         // 今日任务：获取所有任务，再按 planned_date 过滤
         apiClient.get<Map<String, dynamic>>(
@@ -91,10 +126,54 @@ class TodayNotifier extends Notifier<TodayState> {
         recentEntries: recentEntries,
         isLoading: false,
       );
+
+      // 晨报独立加载（失败不阻塞主页面）
+      loadMorningDigest();
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: ApiClient.errorMessage(e),
+      );
+    }
+  }
+
+  /// 加载晨报数据（独立加载，失败不阻塞主页面）
+  Future<void> loadMorningDigest() async {
+    state = state.copyWith(
+      morningDigest: state.morningDigest.copyWith(
+        status: MorningDigestStatus.loading,
+      ),
+    );
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.get<Map<String, dynamic>>(
+        '/review/morning-digest',
+      );
+
+      final data = response.data;
+      if (data != null) {
+        final digest = MorningDigest.fromJson(data);
+        state = state.copyWith(
+          morningDigest: MorningDigestState(
+            data: digest,
+            status: MorningDigestStatus.loaded,
+          ),
+        );
+      } else {
+        state = state.copyWith(
+          morningDigest: const MorningDigestState(
+            status: MorningDigestStatus.loaded,
+          ),
+        );
+      }
+    } catch (e) {
+      // 晨报加载失败不阻塞页面，记录错误即可
+      state = state.copyWith(
+        morningDigest: MorningDigestState(
+          status: MorningDigestStatus.error,
+          error: ApiClient.errorMessage(e),
+        ),
       );
     }
   }

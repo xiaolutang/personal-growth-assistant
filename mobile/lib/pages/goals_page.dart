@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../config/theme.dart';
 import '../providers/goals_provider.dart';
@@ -9,10 +10,7 @@ import '../providers/goals_provider.dart';
 //
 // 功能：
 // - 展示目标列表，每项显示标题、进度条、截止日期
-// - 点击目标展开显示里程碑列表
-// - 支持添加里程碑（标题 + 日期）
-// - 支持标记里程碑完成 / 删除（删除需确认弹窗）
-// - 空标题显示校验提示
+// - 点击目标卡片 → push 到 GoalDetailPage
 // - 空列表引导文案
 // ============================================================
 
@@ -37,114 +35,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   // ----------------------------------------------------------
 
   void _handleGoalTap(Goal goal) {
-    final state = ref.read(goalsProvider);
-    if (state.selectedGoal?.id == goal.id) {
-      // 收起当前目标
-      ref.read(goalsProvider.notifier).deselectGoal();
-    } else {
-      // 展开新目标：加载详情 + 里程碑
-      ref.read(goalsProvider.notifier).fetchGoalDetail(goal.id);
-      ref.read(goalsProvider.notifier).fetchMilestones(goal.id);
-    }
-  }
-
-  void _handleToggleMilestone(Milestone milestone) {
-    final goalId = ref.read(goalsProvider).selectedGoal?.id;
-    if (goalId == null) return;
-
-    final isCompleted = milestone.status == 'completed';
-    final newStatus = isCompleted ? 'pending' : 'completed';
-    ref.read(goalsProvider.notifier).updateMilestone(
-          goalId,
-          milestone.id,
-          {'status': newStatus},
-        );
-  }
-
-  void _handleDeleteMilestone(Milestone milestone) {
-    final goalId = ref.read(goalsProvider).selectedGoal?.id;
-    if (goalId == null) return;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('确认删除'),
-        content: Text('确定要删除里程碑「${milestone.title}」吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ref
-                  .read(goalsProvider.notifier)
-                  .deleteMilestone(goalId, milestone.id);
-            },
-            child: const Text('删除'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAddMilestoneDialog(String goalId) {
-    final titleController = TextEditingController();
-    final dateController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('添加里程碑'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                labelText: '标题',
-                hintText: '输入里程碑标题',
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            TextField(
-              controller: dateController,
-              decoration: const InputDecoration(
-                labelText: '截止日期',
-                hintText: 'YYYY-MM-DD',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (titleController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('请输入里程碑标题')),
-                );
-                return;
-              }
-              Navigator.pop(ctx);
-              ref.read(goalsProvider.notifier).createMilestone(
-                    goalId,
-                    {
-                      'title': titleController.text.trim(),
-                      if (dateController.text.isNotEmpty)
-                        'due_date': dateController.text.trim(),
-                    },
-                  );
-            },
-            child: const Text('添加'),
-          ),
-        ],
-      ),
-    );
+    context.push('/goals/${goal.id}');
   }
 
   // ----------------------------------------------------------
@@ -197,8 +88,6 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   // ----------------------------------------------------------
 
   Widget _buildGoalCard(Goal goal, GoalsState state, ThemeData theme) {
-    final isSelected = state.selectedGoal?.id == goal.id;
-    final milestones = isSelected ? state.milestones : <Milestone>[];
     final progress = (goal.progress ?? 0.0) / 100.0; // backend returns percentage
 
     return Card(
@@ -209,144 +98,55 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
-      child: Column(
-        children: [
-          // Goal header - tappable
-          InkWell(
-            onTap: () => _handleGoalTap(goal),
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      child: InkWell(
+        onTap: () => _handleGoalTap(goal),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          goal.title,
-                          style: theme.textTheme.titleSmall,
-                        ),
-                      ),
-                      if (goal.endDate != null)
-                        Padding(
-                          padding: const EdgeInsets.only(right: AppSpacing.sm),
-                          child: Text(
-                            _formatDate(goal.endDate!),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.outline,
-                            ),
-                          ),
-                        ),
-                      Icon(
-                        isSelected
-                            ? Icons.expand_less
-                            : Icons.expand_more,
-                        color: theme.colorScheme.outline,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  // Progress bar
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: progress.clamp(0.0, 1.0),
-                      minHeight: 6,
-                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                  Expanded(
+                    child: Text(
+                      goal.title,
+                      style: theme.textTheme.titleSmall,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    '${(progress * 100).toStringAsFixed(0)}% 完成',
-                    style: theme.textTheme.bodySmall,
+                  if (goal.endDate != null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.sm),
+                      child: Text(
+                        _formatDate(goal.endDate!),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
+                    ),
+                  Icon(
+                    Icons.chevron_right,
+                    color: theme.colorScheme.outline,
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: AppSpacing.sm),
+              // Progress bar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: progress.clamp(0.0, 1.0),
+                  minHeight: 6,
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                '${(progress * 100).toStringAsFixed(0)}% 完成',
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
           ),
-          // Expanded milestones
-          if (isSelected) ...[
-            const Divider(height: 1),
-            _buildMilestonesList(milestones, theme),
-            _buildAddMilestoneButton(goal.id, theme),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // ----------------------------------------------------------
-  // Milestones
-  // ----------------------------------------------------------
-
-  Widget _buildMilestonesList(
-    List<Milestone> milestones,
-    ThemeData theme,
-  ) {
-    if (milestones.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Text(
-          '暂无里程碑',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.outline,
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      children: milestones.map((m) {
-        final isCompleted = m.status == 'completed';
-        return ListTile(
-          dense: true,
-          leading: IconButton(
-            icon: Icon(
-              isCompleted
-                  ? Icons.check_circle
-                  : Icons.radio_button_unchecked,
-              color: isCompleted ? AppColors.success : theme.colorScheme.outline,
-            ),
-            onPressed: () => _handleToggleMilestone(m),
-          ),
-          title: Text(
-            m.title,
-            style: isCompleted
-                ? theme.textTheme.bodyMedium?.copyWith(
-                    decoration: TextDecoration.lineThrough,
-                    color: theme.colorScheme.outline,
-                  )
-                : theme.textTheme.bodyMedium,
-          ),
-          subtitle: m.dueDate != null
-              ? Text(
-                  _formatDate(m.dueDate!),
-                  style: theme.textTheme.bodySmall,
-                )
-              : null,
-          trailing: IconButton(
-            icon: const Icon(Icons.delete_outline, size: 20),
-            onPressed: () => _handleDeleteMilestone(m),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildAddMilestoneButton(String goalId, ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.xs,
-      ),
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: TextButton.icon(
-          onPressed: () => _showAddMilestoneDialog(goalId),
-          icon: const Icon(Icons.add, size: 18),
-          label: const Text('添加里程碑'),
         ),
       ),
     );

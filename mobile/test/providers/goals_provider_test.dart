@@ -10,6 +10,7 @@ void main() {
       expect(state.goals, isEmpty);
       expect(state.selectedGoal, isNull);
       expect(state.milestones, isEmpty);
+      expect(state.linkedEntries, isEmpty);
       expect(state.isLoading, false);
       expect(state.error, isNull);
     });
@@ -102,6 +103,7 @@ void main() {
       expect(state.goals, isEmpty);
       expect(state.selectedGoal, isNull);
       expect(state.milestones, isEmpty);
+      expect(state.linkedEntries, isEmpty);
       expect(state.isLoading, false);
       expect(state.error, isNull);
     });

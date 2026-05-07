@@ -83,10 +83,13 @@ class _BottomNavShellState extends State<BottomNavShell> {
 
   /// 判断当前路由是否应该显示 FAB
   /// 登录页和条目详情页不显示（登录页不在 ShellRoute 内，只需排除详情页）
+  /// 目标详情页自带 FAB，也不显示
   bool _shouldShowFab() {
     final location = GoRouterState.of(context).uri.path;
     // 条目详情页不显示 FAB
     if (location.startsWith('/entries/')) return false;
+    // 目标详情页自带 FAB
+    if (RegExp(r'^/goals/[^/]+$').hasMatch(location)) return false;
     return true;
   }
 

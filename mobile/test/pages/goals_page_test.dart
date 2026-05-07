@@ -45,6 +45,9 @@ class _FakeGoalsNotifier extends GoalsNotifier {
   Future<void> fetchMilestones(String goalId) async {}
 
   @override
+  Future<void> fetchLinkedEntries(String goalId) async {}
+
+  @override
   void deselectGoal() {}
 }
 
@@ -90,22 +93,6 @@ Goal _makeGoal({
     title: title,
     progress: progress,
     endDate: endDate,
-  );
-}
-
-Milestone _makeMilestone({
-  required String id,
-  required String goalId,
-  String title = 'Milestone',
-  String? status,
-  String? dueDate,
-}) {
-  return Milestone(
-    id: id,
-    goalId: goalId,
-    title: title,
-    status: status,
-    dueDate: dueDate,
   );
 }
 
@@ -165,40 +152,15 @@ void main() {
       expect(find.text('6月30日'), findsOneWidget);
     });
 
-    testWidgets('点击目标展开里程碑区域', (WidgetTester tester) async {
-      final goal = _makeGoal(id: 'g1', title: 'Expandable Goal');
-      final milestones = [
-        _makeMilestone(
-          id: 'm1',
-          goalId: 'g1',
-          title: 'First milestone',
-        ),
+    testWidgets('点击目标卡片有 chevron_right 图标（表示可导航）',
+        (WidgetTester tester) async {
+      final goals = [
+        _makeGoal(id: '1', title: 'Clickable Goal'),
       ];
 
-      await _pumpGoalsPage(
-        tester,
-        goals: [goal],
-        selectedGoal: goal,
-        milestones: milestones,
-      );
+      await _pumpGoalsPage(tester, goals: goals);
 
-      // 里程碑标题可见
-      expect(find.text('First milestone'), findsOneWidget);
-      // 添加里程碑按钮可见
-      expect(find.text('添加里程碑'), findsOneWidget);
-    });
-
-    testWidgets('展开目标但无里程碑显示暂无里程碑', (WidgetTester tester) async {
-      final goal = _makeGoal(id: 'g1', title: 'Empty Milestones Goal');
-
-      await _pumpGoalsPage(
-        tester,
-        goals: [goal],
-        selectedGoal: goal,
-        milestones: [],
-      );
-
-      expect(find.text('暂无里程碑'), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
     });
 
     testWidgets('AppBar 标题为"目标"', (WidgetTester tester) async {

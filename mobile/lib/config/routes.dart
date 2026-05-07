@@ -6,6 +6,7 @@ import '../pages/chat_page.dart';
 import '../pages/register_page.dart';
 import '../pages/entry_detail_page.dart';
 import '../pages/explore_page.dart';
+import '../pages/goal_detail_page.dart';
 import '../pages/goals_page.dart';
 import '../pages/inbox_page.dart';
 import '../pages/login_page.dart';
@@ -108,6 +109,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/goals',
             name: 'goals',
             builder: (context, state) => const GoalsPage(),
+            routes: [
+              GoRoute(
+                path: ':id',
+                builder: (context, state) {
+                  final id = state.pathParameters['id']!;
+                  return GoalDetailPage(goalId: id);
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: '/entries/:id',

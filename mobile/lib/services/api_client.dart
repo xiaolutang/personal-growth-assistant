@@ -322,6 +322,14 @@ class ApiClient {
     return _dio.delete<T>('/goals/$goalId/milestones/$milestoneId');
   }
 
+  // ---- Goals Entries API Methods ----
+
+  /// 获取目标关联的条目列表
+  /// [goalId] 目标 ID
+  Future<Response<T>> fetchGoalEntries<T>({required String goalId}) {
+    return _dio.get<T>('/goals/$goalId/entries');
+  }
+
   // ---- Review API Methods ----
 
   /// 获取回顾报告（日报/周报/月报）

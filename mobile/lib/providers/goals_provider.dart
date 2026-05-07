@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/entry.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
 
@@ -92,6 +93,7 @@ class GoalsState {
   final List<Goal> goals;
   final Goal? selectedGoal;
   final List<Milestone> milestones;
+  final List<Entry> linkedEntries;
   final bool isLoading;
   final String? error;
 
@@ -99,6 +101,7 @@ class GoalsState {
     this.goals = const [],
     this.selectedGoal,
     this.milestones = const [],
+    this.linkedEntries = const [],
     this.isLoading = false,
     this.error,
   });
@@ -107,6 +110,7 @@ class GoalsState {
     List<Goal>? goals,
     Object? selectedGoal = _sentinel,
     List<Milestone>? milestones,
+    List<Entry>? linkedEntries,
     bool? isLoading,
     Object? error = _sentinel,
   }) {
@@ -116,6 +120,7 @@ class GoalsState {
           ? this.selectedGoal
           : selectedGoal as Goal?,
       milestones: milestones ?? this.milestones,
+      linkedEntries: linkedEntries ?? this.linkedEntries,
       isLoading: isLoading ?? this.isLoading,
       error: identical(error, _sentinel) ? this.error : error as String?,
     );
@@ -276,6 +281,26 @@ class GoalsNotifier extends Notifier<GoalsState> {
     } catch (e) {
       state = state.copyWith(error: ApiClient.errorMessage(e));
       return false;
+    }
+  }
+
+  /// 获取目标关联的条目列表
+  Future<void> fetchLinkedEntries(String goalId) async {
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.fetchGoalEntries<Map<String, dynamic>>(
+        goalId: goalId,
+      );
+
+      final data = response.data;
+      final items = (data?['entries'] as List<dynamic>?)
+              ?.map((e) => Entry.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [];
+
+      state = state.copyWith(linkedEntries: items);
+    } catch (e) {
+      state = state.copyWith(error: ApiClient.errorMessage(e));
     }
   }
 
