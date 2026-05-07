@@ -8,7 +8,7 @@ import '../providers/today_provider.dart';
 import '../widgets/entry_card.dart';
 import '../widgets/morning_digest_card.dart';
 import '../widgets/progress_ring.dart';
-import '../widgets/quick_actions.dart';
+import '../widgets/quick_capture_fab.dart';
 
 // ============================================================
 // TodayPage - 今天 Tab 页面
@@ -40,19 +40,6 @@ class _TodayPageState extends ConsumerState<TodayPage> {
 
   Future<void> _handleRefresh() async {
     await ref.read(todayProvider.notifier).loadData();
-  }
-
-  void _navigateToChat() {
-    context.go('/chat');
-  }
-
-  void _showCreateTaskSheet() {
-    CreateTaskSheet.show(
-      context,
-      onSubmit: (title) async {
-        return ref.read(todayProvider.notifier).createTask(title);
-      },
-    );
   }
 
   Future<void> _handleQuickSubmit() async {
@@ -102,10 +89,7 @@ class _TodayPageState extends ConsumerState<TodayPage> {
             ? const Center(child: CircularProgressIndicator())
             : _buildContent(context, theme, todayState),
       ),
-      floatingActionButton: QuickActions(
-        onInbox: _navigateToChat,
-        onCreateTask: _showCreateTaskSheet,
-      ),
+      floatingActionButton: const QuickCaptureFAB(),
     );
   }
 
