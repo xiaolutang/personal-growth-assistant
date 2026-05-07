@@ -296,7 +296,13 @@
       "description": "在「更多」菜单添加设置入口，设置页包含退出登录和通知开关。启用通知时请求系统权限，每天定时检查到期任务并发送本地通知（flutter_local_notifications）。",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-05-07T21:43:00+08:00",
+      "completed_at": "2026-05-07T21:55:00+08:00",
+      "actual_minutes": 12,
+      "commit": "pending",
+      "evidence_file": "evidence/F05.md",
+      "summary": "到期通知 + 设置页完成。NotificationService 含去重逻辑，SettingsPage 含退出登录 + 通知开关。18 个新测试通过。",
       "priority": "P1",
       "acceptance_criteria": [
         "「更多」BottomSheet 新增「设置」选项",
@@ -332,7 +338,12 @@
       "description": "全量 flutter test + flutter analyze + 真机冒烟验证 + 新增页面回归测试。确保所有新功能与现有页面无冲突。",
       "verification": "F2",
       "depends_on": ["F01", "F02", "F03", "F04", "F05"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-05-07T21:56:00+08:00",
+      "completed_at": "2026-05-07T22:12:00+08:00",
+      "actual_minutes": 16,
+      "commit": "pending",
+      "summary": "质量收口完成。flutter analyze 0 warnings, flutter test 453/455 (2 pre-existing), pytest 1431, vitest 905, build 通过。",
       "priority": "P1",
       "acceptance_criteria": [
         "flutter analyze 0 warnings",
@@ -349,7 +360,7 @@
   ],
   "summary": {
     "total": 6,
-    "by_status": {"completed": 4, "pending": 2},
+    "by_status": {"completed": 6},
     "by_priority": {"P0": 3, "P1": 3},
     "by_module": {"auth": 1, "capture": 1, "home": 1, "goals": 1, "notifications": 1, "quality": 1}
   }
