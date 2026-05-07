@@ -342,8 +342,9 @@
       "started_at": "2026-05-07T21:56:00+08:00",
       "completed_at": "2026-05-07T22:12:00+08:00",
       "actual_minutes": 16,
-      "commit": "pending",
-      "summary": "质量收口完成。flutter analyze 0 warnings, flutter test 453/455 (2 pre-existing), pytest 1431, vitest 905, build 通过。",
+      "commit": "0770d97",
+      "evidence_file": "evidence/S06.md",
+      "summary": "质量收口完成。flutter analyze 0 warnings, flutter test 489/489 全绿, pytest 1431, vitest 905, build 通过。5 轮 code-review + 审计修复全部闭环。",
       "priority": "P1",
       "acceptance_criteria": [
         "flutter analyze 0 warnings",
