@@ -356,7 +356,7 @@ void main() {
       expect(find.byType(QuickCaptureFAB), findsNothing);
     });
 
-    testWidgets('FAB 在 TodayPage (/) 显示 — QuickCaptureFAB 与快捷录入栏共存',
+    testWidgets('FAB 在 TodayPage (/) 不显示 — TodayPage 有独立 QuickActions',
         (WidgetTester tester) async {
       final router = GoRouter(
         initialLocation: '/',
@@ -383,8 +383,8 @@ void main() {
         ),
       );
 
-      // TodayPage should show QuickCaptureFAB (global FAB)
-      expect(find.byType(QuickCaptureFAB), findsOneWidget);
+      // TodayPage has its own QuickActions, so QuickCaptureFAB should not show
+      expect(find.byType(QuickCaptureFAB), findsNothing);
     });
   });
 

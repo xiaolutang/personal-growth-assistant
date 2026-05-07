@@ -72,24 +72,13 @@ class EntryListNotifier extends Notifier<EntryListState> {
   }
 
   /// 创建 inbox 条目（快速捕获）
-  /// 调用 POST /entries {category: inbox, title: title}
-  /// 成功后通知 inboxProvider 刷新列表
+  /// 委托给 inboxProvider.createInboxItem 保持单一权威入口
   Future<bool> createInboxEntry(String title) async {
-    try {
-      final apiClient = ref.read(apiClientProvider);
-      await apiClient.createEntry<Map<String, dynamic>>(
-        data: {
-          'category': AppConstants.categoryInbox,
-          'title': title.trim(),
-        },
-      );
-      // 通知 inboxProvider 刷新，保持所有 inbox 入口一致
-      ref.read(inboxProvider.notifier).fetchInbox();
-      return true;
-    } catch (e) {
-      state = state.copyWith(error: ApiClient.errorMessage(e));
-      return false;
+    final success = await ref.read(inboxProvider.notifier).createInboxItem(title);
+    if (!success) {
+      state = state.copyWith(error: '创建失败');
     }
+    return success;
   }
 
   /// 更新条目状态（本地乐观更新 + API 调用）
