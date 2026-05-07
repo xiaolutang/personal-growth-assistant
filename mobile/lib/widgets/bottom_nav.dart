@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'quick_capture_fab.dart';
+
 class BottomNavShell extends StatefulWidget {
   final Widget child;
 
@@ -79,10 +81,20 @@ class _BottomNavShellState extends State<BottomNavShell> {
         location.startsWith('/explore');
   }
 
+  /// 判断当前路由是否应该显示 FAB
+  /// 登录页和条目详情页不显示（登录页不在 ShellRoute 内，只需排除详情页）
+  bool _shouldShowFab() {
+    final location = GoRouterState.of(context).uri.path;
+    // 条目详情页不显示 FAB
+    if (location.startsWith('/entries/')) return false;
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: widget.child,
+      floatingActionButton: _shouldShowFab() ? const QuickCaptureFAB() : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _isOnMoreRoute() ? 4 : _currentIndex(),
         onDestinationSelected: (index) {

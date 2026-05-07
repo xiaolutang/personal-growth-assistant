@@ -70,6 +70,24 @@ class EntryListNotifier extends Notifier<EntryListState> {
     }
   }
 
+  /// 创建 inbox 条目（快速捕获）
+  /// 调用 POST /entries {category: inbox, title: title}
+  /// 成功后刷新列表
+  Future<bool> createInboxEntry(String title) async {
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.createEntry<Map<String, dynamic>>(
+        data: {
+          'category': AppConstants.categoryInbox,
+          'title': title.trim(),
+        },
+      );
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// 更新条目状态（本地乐观更新 + API 调用）
   Future<bool> updateEntryStatus(String entryId, String newStatus) async {
     // 乐观更新：先在本地切换状态
