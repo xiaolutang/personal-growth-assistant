@@ -50,10 +50,15 @@ def get_entry_service() -> "EntryService":
         if storage is None:
             raise HTTPException(status_code=503, detail="存储服务未初始化")
         from app.services.entry_service import EntryService
-        _entry_service = EntryService(storage)
+        # 主动触发懒初始化，确保 HybridSearchService 可用
+        hybrid_svc = get_hybrid_search_service()
+        _entry_service = EntryService(storage, hybrid_search=hybrid_svc)
     # 延迟注入 GoalService（EntryService 先创建，GoalService 后初始化的情况）
     if _goal_service and _entry_service._goal_service is None:
         _entry_service.set_goal_service(_goal_service)
+    # 延迟注入 HybridSearchService（EntryService 先创建，HybridSearchService 后初始化的情况）
+    if _hybrid_search_service and _entry_service._hybrid_search is None:
+        _entry_service.set_hybrid_search(_hybrid_search_service)
     return _entry_service
 
 

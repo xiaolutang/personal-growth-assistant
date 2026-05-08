@@ -583,6 +583,118 @@ class TestBatchCreateEntries:
         assert results == []
 
 
+class TestB03HybridSearchInjection:
+    """B03: HybridSearchService 注入行为验证"""
+
+    def test_constructor_accepts_optional_hybrid_search(self):
+        """EntryService 构造函数接受可选 HybridSearchService 参数"""
+        from app.services.sync_service import SyncService
+        from app.services.hybrid_search import HybridSearchService
+
+        mock_storage = MagicMock(spec=SyncService)
+        mock_hs = MagicMock(spec=HybridSearchService)
+
+        # 不传 hybrid_search 也能正常创建（向后兼容）
+        service_no_inject = EntryService(storage=mock_storage)
+        assert service_no_inject._hybrid_search is None
+
+        # 传入 hybrid_search 后被存储
+        service_with_inject = EntryService(storage=mock_storage, hybrid_search=mock_hs)
+        assert service_with_inject._hybrid_search is mock_hs
+
+    def test_set_hybrid_search_injection(self):
+        """通过 setter 注入 HybridSearchService"""
+        from app.services.sync_service import SyncService
+        from app.services.hybrid_search import HybridSearchService
+
+        mock_storage = MagicMock(spec=SyncService)
+        mock_hs = MagicMock(spec=HybridSearchService)
+
+        service = EntryService(storage=mock_storage)
+        assert service._hybrid_search is None
+
+        service.set_hybrid_search(mock_hs)
+        assert service._hybrid_search is mock_hs
+
+    @pytest.mark.asyncio
+    async def test_search_entries_uses_injected_instance(self):
+        """search_entries 使用注入的 HybridSearchService 实例（不再每次新建）"""
+        from app.services.sync_service import SyncService
+        from app.services.hybrid_search import HybridSearchService
+        from app.api.schemas.entry import EntryResponse
+
+        mock_storage = MagicMock(spec=SyncService)
+        mock_storage.qdrant = MagicMock()
+        mock_storage.sqlite = MagicMock()
+
+        mock_hs = MagicMock(spec=HybridSearchService)
+        mock_response = [
+            EntryResponse(
+                id="task-001", title="测试", content="内容", category="task",
+                status="doing", priority="medium", tags=[],
+                created_at="2026-01-01T00:00:00", updated_at="2026-01-01T00:00:00",
+                file_path="tasks/task-001.md",
+            )
+        ]
+        mock_hs.search = AsyncMock(return_value=mock_response)
+
+        service = EntryService(storage=mock_storage, hybrid_search=mock_hs)
+        result = await service.search_entries("测试查询", limit=10)
+
+        # 注入的实例被调用
+        mock_hs.search.assert_called_once_with("测试查询", user_id="_default", limit=10)
+        assert len(result.entries) == 1
+
+    @pytest.mark.asyncio
+    async def test_search_entries_backward_compatible(self):
+        """不注入 HybridSearchService 时 search_entries 仍可工作（向后兼容）"""
+        from app.services.sync_service import SyncService
+
+        mock_storage = MagicMock(spec=SyncService)
+        mock_storage.qdrant = None  # 无 Qdrant，走 SQLite 回退
+        mock_storage.sqlite = MagicMock()
+        mock_storage.sqlite.search.return_value = [
+            {"id": "task-001", "title": "测试", "type": "task", "status": "doing",
+             "content": "", "file_path": "tasks/task-001.md",
+             "created_at": "2026-01-01T00:00:00", "updated_at": "2026-01-01T00:00:00",
+             "priority": "medium", "tags": []},
+        ]
+
+        service = EntryService(storage=mock_storage)
+        result = await service.search_entries("测试查询", limit=10)
+
+        assert len(result.entries) == 1
+
+    @pytest.mark.asyncio
+    async def test_get_related_entries_uses_injected_instance(self):
+        """get_related_entries 使用注入的 HybridSearchService 实例"""
+        from app.services.sync_service import SyncService
+        from app.services.hybrid_search import HybridSearchService
+
+        mock_storage = MagicMock(spec=SyncService)
+        mock_storage.sqlite = MagicMock()
+        mock_storage.sqlite.entry_belongs_to_user.return_value = True
+
+        # 创建真实 entry 对象
+        entry = _make_entry("task-001", title="测试条目", tags=["test"])
+        mock_md = MagicMock()
+        mock_md.read_entry.return_value = entry
+        mock_storage.get_markdown_storage.return_value = mock_md
+
+        # list_entries 返回空（跳过级别 1 和级别 2）
+        mock_storage.sqlite.find_entries_by_tag_overlap.return_value = []
+
+        mock_hs = MagicMock(spec=HybridSearchService)
+        mock_hs.search = AsyncMock(return_value=[])
+        mock_storage.sqlite.list_entries.return_value = []
+
+        service = EntryService(storage=mock_storage, hybrid_search=mock_hs)
+        result = await service.get_related_entries("task-001", user_id="usr_alice", limit=5)
+
+        # 注入的 HybridSearchService 的 search 方法被调用（级别 3）
+        mock_hs.search.assert_called_once()
+
+
 class TestB58VerifyEntryOwnerNoSqlite:
     """B58: _verify_entry_owner 在无 SQLite 时拒绝访问"""
 

@@ -99,7 +99,7 @@ class HybridSearchService:
                 return {}
 
         # 在线程池中运行同步的 SQLite 搜索
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         vector_task = do_vector_search()
         text_task = loop.run_in_executor(None, do_text_search)
 

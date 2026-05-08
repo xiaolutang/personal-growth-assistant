@@ -1,6 +1,6 @@
 """测试 B19 条目关联 API — get_related_entries"""
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 from app.services.entry_service import EntryService
 from app.models import Task, Category, TaskStatus, Priority
@@ -50,10 +50,7 @@ class TestGetRelatedEntries:
         service.list_entries = AsyncMock(return_value=mock_response)
         # No tags, no sqlite
         storage.sqlite = None
-        # Mock HybridSearchService to return empty
-        with patch("app.services.entry_service.HybridSearchService") as MockSearch:
-            MockSearch.return_value.search = AsyncMock(return_value=[])
-            result = await service.get_related_entries("task-1", user_id="u1")
+        result = await service.get_related_entries("task-1", user_id="u1")
 
         assert result is not None
         assert len(result.related) >= 1
@@ -78,9 +75,11 @@ class TestGetRelatedEntries:
         ])
         storage.sqlite = mock_sqlite
 
-        with patch("app.services.entry_service.HybridSearchService") as MockSearch:
-            MockSearch.return_value.search = AsyncMock(return_value=[])
-            result = await service.get_related_entries("task-1", user_id="u1")
+        # 注入 mock HybridSearchService（不再 patch，直接注入）
+        mock_hs = MagicMock()
+        mock_hs.search = AsyncMock(return_value=[])
+        service._hybrid_search = mock_hs
+        result = await service.get_related_entries("task-1", user_id="u1")
 
         assert result is not None
         assert len(result.related) == 1
@@ -98,7 +97,7 @@ class TestGetRelatedEntries:
         service.list_entries = AsyncMock(return_value=MagicMock(entries=[entry]))
         storage.sqlite = None
 
-        # Mock vector search results
+        # Mock vector search results — 注入 mock HybridSearchService
         from app.api.schemas import EntryResponse
         mock_vr = EntryResponse(
             id="task-vec1", title="相似条目", category="note",
@@ -107,9 +106,10 @@ class TestGetRelatedEntries:
             created_at=datetime.now().isoformat(),
             updated_at=datetime.now().isoformat(),
         )
-        with patch("app.services.entry_service.HybridSearchService") as MockSearch:
-            MockSearch.return_value.search = AsyncMock(return_value=[mock_vr])
-            result = await service.get_related_entries("task-1", user_id="u1")
+        mock_hs = MagicMock()
+        mock_hs.search = AsyncMock(return_value=[mock_vr])
+        service._hybrid_search = mock_hs
+        result = await service.get_related_entries("task-1", user_id="u1")
 
         assert result is not None
         assert len(result.related) == 1
@@ -129,9 +129,7 @@ class TestGetRelatedEntries:
         service.list_entries = AsyncMock(return_value=MagicMock(entries=[entry] + siblings))
         storage.sqlite = None
 
-        with patch("app.services.entry_service.HybridSearchService") as MockSearch:
-            MockSearch.return_value.search = AsyncMock(return_value=[])
-            result = await service.get_related_entries("task-1", user_id="u1")
+        result = await service.get_related_entries("task-1", user_id="u1")
 
         assert result is not None
         assert len(result.related) == 5
@@ -148,9 +146,7 @@ class TestGetRelatedEntries:
         service.list_entries = AsyncMock(return_value=MagicMock(entries=[entry]))
         storage.sqlite = None
 
-        with patch("app.services.entry_service.HybridSearchService") as MockSearch:
-            MockSearch.return_value.search = AsyncMock(return_value=[])
-            result = await service.get_related_entries("task-1", user_id="u1")
+        result = await service.get_related_entries("task-1", user_id="u1")
 
         assert result is not None
         assert len(result.related) == 0
@@ -179,9 +175,11 @@ class TestGetRelatedEntries:
         service.list_entries = AsyncMock(return_value=MagicMock(entries=[entry, sibling]))
         storage.sqlite = None
 
-        with patch("app.services.entry_service.HybridSearchService") as MockSearch:
-            MockSearch.return_value.search = AsyncMock(side_effect=Exception("Qdrant down"))
-            result = await service.get_related_entries("task-1", user_id="u1")
+        # 注入会抛异常的 mock HybridSearchService
+        mock_hs = MagicMock()
+        mock_hs.search = AsyncMock(side_effect=Exception("Qdrant down"))
+        service._hybrid_search = mock_hs
+        result = await service.get_related_entries("task-1", user_id="u1")
 
         assert result is not None
         assert len(result.related) == 1
@@ -213,8 +211,6 @@ class TestGetRelatedEntries:
         service.list_entries = AsyncMock(return_value=MagicMock(entries=[entry]))
         storage.sqlite = None
 
-        with patch("app.services.entry_service.HybridSearchService") as MockSearch:
-            MockSearch.return_value.search = AsyncMock(return_value=[])
-            await service.get_related_entries("task-1", user_id="user-abc")
+        await service.get_related_entries("task-1", user_id="user-abc")
 
         service._verify_entry_owner.assert_called_once_with("task-1", "user-abc")
