@@ -98,6 +98,7 @@ export function Home() {
             {/* ====== AI 晨报卡片 ====== */}
             {!digestCollapsed && (
               <MorningDigestCard
+                variant="home"
                 digest={digest}
                 digestLoading={digestLoading}
                 digestError={digestError}

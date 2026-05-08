@@ -86,7 +86,7 @@ export function Review() {
           </div>
         ) : (
           <>
-            <MorningDigestCard visible={reportType === "daily"} />
+            <MorningDigestCard variant="review" visible={reportType === "daily"} />
 
             <Card className="mb-6">
               <CardHeader className="pb-2">

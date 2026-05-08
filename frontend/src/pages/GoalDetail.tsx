@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { ProgressRing } from "@/components/ProgressRing";
+import { BaseDialog } from "@/components/BaseDialog";
 import { getUrgency } from "@/utils/goalUrgency";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -59,16 +60,15 @@ function EntrySearchDialog({ open, onClose, onSelect }: {
     return () => clearTimeout(t);
   }, [query, doSearch]);
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="bg-card rounded-xl shadow-xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="p-4 border-b">
-          <h3 className="font-medium mb-2">搜索条目关联</h3>
-          <input className="w-full rounded-lg border px-3 py-2 text-sm" placeholder="输入关键词搜索..." autoFocus value={query} onChange={e => setQuery(e.target.value)} />
-        </div>
-        <div className="flex-1 overflow-y-auto p-2">
+    <BaseDialog
+      open={open}
+      onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}
+      title="搜索条目关联"
+    >
+      <div className="space-y-3">
+        <input className="w-full rounded-lg border px-3 py-2 text-sm" placeholder="输入关键词搜索..." autoFocus value={query} onChange={e => setQuery(e.target.value)} />
+        <div className="max-h-[50vh] overflow-y-auto">
           {searching && <div className="text-center py-4 text-sm text-muted-foreground">搜索中...</div>}
           {!searching && results.length === 0 && query && <div className="text-center py-4 text-sm text-muted-foreground">无结果</div>}
           {results.map(r => (
@@ -82,7 +82,7 @@ function EntrySearchDialog({ open, onClose, onSelect }: {
           ))}
         </div>
       </div>
-    </div>
+    </BaseDialog>
   );
 }
 

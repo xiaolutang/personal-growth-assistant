@@ -10,6 +10,7 @@ import { useServiceUnavailable } from "@/hooks/useServiceUnavailable";
 import { ServiceUnavailable } from "@/components/ServiceUnavailable";
 import { ProgressRing } from "@/components/ProgressRing";
 import { PullToRefresh } from "@/components/PullToRefresh";
+import { BaseDialog } from "@/components/BaseDialog";
 import { toast } from "sonner";
 import {
   getGoals,
@@ -62,8 +63,6 @@ function CreateGoalDialog({ open, onClose, onCreated }: {
     return () => clearTimeout(t);
   }, [tagSearch, searchTags]);
 
-  if (!open) return null;
-
   const handleSubmit = async () => {
     if (!title.trim()) { toast.error("请输入目标标题"); return; }
     if (targetValue <= 0) { toast.error("目标值必须大于 0"); return; }
@@ -102,98 +101,96 @@ function CreateGoalDialog({ open, onClose, onCreated }: {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="bg-card rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="p-6">
-          <h2 className="text-lg font-semibold mb-4">创建目标</h2>
+    <BaseDialog
+      open={open}
+      onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}
+      title="创建目标"
+      confirmLabel="创建"
+      loadingLabel="创建中..."
+      onConfirm={handleSubmit}
+      loading={submitting}
+      maxWidth="max-w-lg"
+    >
+      <div className="space-y-4">
+        <div>
+          <label className="text-sm font-medium">标题 *</label>
+          <input className="w-full mt-1 rounded-lg border px-3 py-2 text-sm" placeholder="如：完成 React 学习" value={title} onChange={e => setTitle(e.target.value)} />
+        </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">标题 *</label>
-              <input className="w-full mt-1 rounded-lg border px-3 py-2 text-sm" placeholder="如：完成 React 学习" value={title} onChange={e => setTitle(e.target.value)} />
+        <div>
+          <label className="text-sm font-medium">描述</label>
+          <textarea className="w-full mt-1 rounded-lg border px-3 py-2 text-sm" rows={2} placeholder="可选" value={description} onChange={e => setDescription(e.target.value)} />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium">衡量方式</label>
+          <div className="flex gap-2 mt-1">
+            {(["count", "checklist", "tag_auto"] as MetricType[]).map(t => (
+              <Badge key={t} variant={metricType === t ? "default" : "outline"} className="cursor-pointer" onClick={() => setMetricType(t)}>
+                {metricTypeConfig[t].label}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        {metricType !== "checklist" && (
+          <div>
+            <label className="text-sm font-medium">目标值</label>
+            <input type="number" className="w-full mt-1 rounded-lg border px-3 py-2 text-sm" min={1} value={targetValue} onChange={e => setTargetValue(Number(e.target.value))} />
+          </div>
+        )}
+
+        {metricType === "checklist" && (
+          <div>
+            <label className="text-sm font-medium">检查项</label>
+            <div className="space-y-2 mt-1">
+              {checklistItems.map((item, i) => (
+                <div key={i} className="flex gap-2">
+                  <input className="flex-1 rounded-lg border px-3 py-2 text-sm" placeholder={`检查项 ${i + 1}`} value={item} onChange={e => {
+                    const next = [...checklistItems]; next[i] = e.target.value; setChecklistItems(next);
+                  }} />
+                  <Button variant="ghost" size="sm" onClick={() => setChecklistItems(checklistItems.filter((_, j) => j !== i))}>X</Button>
+                </div>
+              ))}
+              <Button variant="outline" size="sm" onClick={() => setChecklistItems([...checklistItems, ""])}>+ 添加检查项</Button>
             </div>
+            <p className="text-xs text-muted-foreground mt-1">目标值将设为 {checklistItems.filter(i => i.trim()).length}</p>
+          </div>
+        )}
 
-            <div>
-              <label className="text-sm font-medium">描述</label>
-              <textarea className="w-full mt-1 rounded-lg border px-3 py-2 text-sm" rows={2} placeholder="可选" value={description} onChange={e => setDescription(e.target.value)} />
+        {metricType === "tag_auto" && (
+          <div>
+            <label className="text-sm font-medium">追踪标签</label>
+            <div className="flex flex-wrap gap-1 mt-1 mb-2">
+              {autoTags.map(tag => (
+                <Badge key={tag} variant="secondary" className="cursor-pointer" onClick={() => setAutoTags(autoTags.filter(t => t !== tag))}>{tag} x</Badge>
+              ))}
             </div>
-
-            <div>
-              <label className="text-sm font-medium">衡量方式</label>
-              <div className="flex gap-2 mt-1">
-                {(["count", "checklist", "tag_auto"] as MetricType[]).map(t => (
-                  <Badge key={t} variant={metricType === t ? "default" : "outline"} className="cursor-pointer" onClick={() => setMetricType(t)}>
-                    {metricTypeConfig[t].label}
-                  </Badge>
+            <input className="w-full rounded-lg border px-3 py-2 text-sm" placeholder="搜索标签..." value={tagSearch} onChange={e => setTagSearch(e.target.value)} />
+            {tagResults.length > 0 && (
+              <div className="mt-1 border rounded-lg overflow-hidden">
+                {tagResults.filter(r => !autoTags.includes(r.name)).slice(0, 5).map(r => (
+                  <div key={r.name} className="px-3 py-2 text-sm hover:bg-accent cursor-pointer" onClick={() => {
+                    setAutoTags([...autoTags, r.name]); setTagSearch(""); setTagResults([]);
+                  }}>{r.name}</div>
                 ))}
               </div>
-            </div>
-
-            {metricType !== "checklist" && (
-              <div>
-                <label className="text-sm font-medium">目标值</label>
-                <input type="number" className="w-full mt-1 rounded-lg border px-3 py-2 text-sm" min={1} value={targetValue} onChange={e => setTargetValue(Number(e.target.value))} />
-              </div>
             )}
-
-            {metricType === "checklist" && (
-              <div>
-                <label className="text-sm font-medium">检查项</label>
-                <div className="space-y-2 mt-1">
-                  {checklistItems.map((item, i) => (
-                    <div key={i} className="flex gap-2">
-                      <input className="flex-1 rounded-lg border px-3 py-2 text-sm" placeholder={`检查项 ${i + 1}`} value={item} onChange={e => {
-                        const next = [...checklistItems]; next[i] = e.target.value; setChecklistItems(next);
-                      }} />
-                      <Button variant="ghost" size="sm" onClick={() => setChecklistItems(checklistItems.filter((_, j) => j !== i))}>X</Button>
-                    </div>
-                  ))}
-                  <Button variant="outline" size="sm" onClick={() => setChecklistItems([...checklistItems, ""])}>+ 添加检查项</Button>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">目标值将设为 {checklistItems.filter(i => i.trim()).length}</p>
-              </div>
-            )}
-
-            {metricType === "tag_auto" && (
-              <div>
-                <label className="text-sm font-medium">追踪标签</label>
-                <div className="flex flex-wrap gap-1 mt-1 mb-2">
-                  {autoTags.map(tag => (
-                    <Badge key={tag} variant="secondary" className="cursor-pointer" onClick={() => setAutoTags(autoTags.filter(t => t !== tag))}>{tag} x</Badge>
-                  ))}
-                </div>
-                <input className="w-full rounded-lg border px-3 py-2 text-sm" placeholder="搜索标签..." value={tagSearch} onChange={e => setTagSearch(e.target.value)} />
-                {tagResults.length > 0 && (
-                  <div className="mt-1 border rounded-lg overflow-hidden">
-                    {tagResults.filter(r => !autoTags.includes(r.name)).slice(0, 5).map(r => (
-                      <div key={r.name} className="px-3 py-2 text-sm hover:bg-accent cursor-pointer" onClick={() => {
-                        setAutoTags([...autoTags, r.name]); setTagSearch(""); setTagResults([]);
-                      }}>{r.name}</div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm font-medium">开始日期</label>
-                <input type="date" className="w-full mt-1 rounded-lg border px-3 py-2 text-sm" value={startDate} onChange={e => setStartDate(e.target.value)} />
-              </div>
-              <div>
-                <label className="text-sm font-medium">截止日期</label>
-                <input type="date" className="w-full mt-1 rounded-lg border px-3 py-2 text-sm" value={endDate} onChange={e => setEndDate(e.target.value)} />
-              </div>
-            </div>
           </div>
+        )}
 
-          <div className="flex justify-end gap-2 mt-6">
-            <Button variant="outline" onClick={onClose}>取消</Button>
-            <Button onClick={handleSubmit} disabled={submitting}>{submitting ? "创建中..." : "创建"}</Button>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-sm font-medium">开始日期</label>
+            <input type="date" className="w-full mt-1 rounded-lg border px-3 py-2 text-sm" value={startDate} onChange={e => setStartDate(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-sm font-medium">截止日期</label>
+            <input type="date" className="w-full mt-1 rounded-lg border px-3 py-2 text-sm" value={endDate} onChange={e => setEndDate(e.target.value)} />
           </div>
         </div>
       </div>
-    </div>
+    </BaseDialog>
   );
 }
 
