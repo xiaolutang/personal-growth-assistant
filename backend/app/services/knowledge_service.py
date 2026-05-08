@@ -197,6 +197,8 @@ class KnowledgeService:
         """
         获取概念的知识图谱
 
+        纯 Neo4j 端点，不可用时抛 ValueError（路由层返回 503）。
+
         Args:
             concept: 概念名称
             depth: 关系深度 (1-3)
@@ -237,6 +239,8 @@ class KnowledgeService:
     async def get_related_concepts(self, concept: str, user_id: str = "_default") -> RelatedConceptsResponse:
         """
         获取相关概念
+
+        纯 Neo4j 端点，不可用时抛 ValueError（路由层返回 503）。
 
         Args:
             concept: 概念名称
@@ -282,32 +286,31 @@ class KnowledgeService:
         response = LearningPathResponse(concept=concept)
 
         # 1. 从 Neo4j 获取前置知识和后续概念（如果可用）
-        if self.is_neo4j_available():
-            try:
-                graph = await self._neo4j.get_knowledge_graph(concept, depth=2, user_id=user_id)
+        graph = await self._with_neo4j_fallback(
+            lambda: self._neo4j.get_knowledge_graph(concept, depth=2, user_id=user_id),
+            lambda: None,
+        )
 
-                # 分析关系类型
-                for conn in graph.get("connections", []):
-                    node = conn.get("node", {})
-                    relationship = conn.get("relationship", "RELATED_TO")
+        if graph:
+            # 分析关系类型
+            for conn in graph.get("connections", []):
+                node = conn.get("node", {})
+                relationship = conn.get("relationship", "RELATED_TO")
 
-                    if relationship in ["PREREQUISITE_OF", "REQUIRES"]:
-                        # 这是前置知识（概念需要先学它）
-                        response.prerequisites.append(ConceptNode(
-                            name=node.get("name", ""),
-                            category=node.get("category"),
-                            description=node.get("description"),
-                        ))
-                    elif relationship in ["FOLLOWS", "NEXT"]:
-                        # 这是后续概念
-                        response.next_steps.append(ConceptNode(
-                            name=node.get("name", ""),
-                            category=node.get("category"),
-                            description=node.get("description"),
-                        ))
-            except (ConnectionError, OSError, ValueError) as e:
-                # Neo4j 查询失败，继续使用 SQLite 数据
-                logger.warning(f"Neo4j 学习路径查询失败，降级到 SQLite: {e}")
+                if relationship in ["PREREQUISITE_OF", "REQUIRES"]:
+                    # 这是前置知识（概念需要先学它）
+                    response.prerequisites.append(ConceptNode(
+                        name=node.get("name", ""),
+                        category=node.get("category"),
+                        description=node.get("description"),
+                    ))
+                elif relationship in ["FOLLOWS", "NEXT"]:
+                    # 这是后续概念
+                    response.next_steps.append(ConceptNode(
+                        name=node.get("name", ""),
+                        category=node.get("category"),
+                        description=node.get("description"),
+                    ))
 
         # 2. 从 SQLite 搜索相关内容
         if self._sqlite:
