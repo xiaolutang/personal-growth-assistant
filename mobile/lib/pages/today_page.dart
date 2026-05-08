@@ -6,7 +6,9 @@ import '../config/constants.dart';
 import '../config/theme.dart';
 import '../providers/entry_provider.dart';
 import '../providers/today_provider.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/entry_card.dart';
+import '../widgets/error_state.dart';
 import '../widgets/morning_digest_card.dart';
 import '../widgets/progress_ring.dart';
 // FAB 由 Shell 层全局管理
@@ -96,9 +98,20 @@ class _TodayPageState extends ConsumerState<TodayPage> {
   }
 
   Widget _buildContent(BuildContext context, ThemeData theme, TodayState state) {
-    // 错误状态
+    // 错误状态（用 ListView 包裹以保留下拉刷新能力）
     if (state.error != null && state.todayTasks.isEmpty && state.recentEntries.isEmpty) {
-      return _buildError(state);
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: ErrorStateWidget(
+              message: state.error ?? '加载失败',
+              onRetry: _handleRefresh,
+            ),
+          ),
+        ],
+      );
     }
 
     return Column(
@@ -196,43 +209,6 @@ class _TodayPageState extends ConsumerState<TodayPage> {
     );
   }
 
-  Widget _buildError(TodayState state) {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.5,
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 48,
-                  color: AppColors.error.withValues(alpha: 0.7),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  state.error ?? '加载失败',
-                  style: TextStyle(
-                    color: AppColors.error.withValues(alpha: 0.8),
-                    fontSize: AppFontSize.body,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                FilledButton.tonal(
-                  onPressed: _handleRefresh,
-                  child: const Text('重试'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildErrorBanner(String error) {
     return Container(
       margin: const EdgeInsets.symmetric(
@@ -319,29 +295,14 @@ class _TodayPageState extends ConsumerState<TodayPage> {
           ),
         ),
         if (state.todayTasks.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(
+          const Padding(
+            padding: EdgeInsets.symmetric(
               vertical: AppSpacing.xl,
               horizontal: AppSpacing.lg,
             ),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.check_circle_outline,
-                    size: 40,
-                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    '今天暂无任务，点击 + 创建一个吧',
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: AppFontSize.body,
-                    ),
-                  ),
-                ],
-              ),
+            child: EmptyStateWidget(
+              icon: Icons.check_circle_outline,
+              title: '今天暂无任务，点击 + 创建一个吧',
             ),
           )
         else
@@ -376,29 +337,14 @@ class _TodayPageState extends ConsumerState<TodayPage> {
           ),
         ),
         if (state.recentEntries.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(
+          const Padding(
+            padding: EdgeInsets.symmetric(
               vertical: AppSpacing.xl,
               horizontal: AppSpacing.lg,
             ),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.article_outlined,
-                    size: 40,
-                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    '暂无动态，开始记录你的成长吧',
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: AppFontSize.body,
-                    ),
-                  ),
-                ],
-              ),
+            child: EmptyStateWidget(
+              icon: Icons.article_outlined,
+              title: '暂无动态，开始记录你的成长吧',
             ),
           )
         else
