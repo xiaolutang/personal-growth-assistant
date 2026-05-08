@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, memo } from "react";
 import { Circle, CheckCircle, Clock, Trash2, Pause, XCircle, Folder, ArrowRightCircle, Scale, CheckSquare, Square, Calendar, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -57,11 +57,16 @@ function HighlightText({ text, keyword }: { text: string; keyword: string }) {
   return <>{parts}</>;
 }
 
-export function TaskCard({ task, showParent = true, highlightKeyword, selectable = false, selected = false, onSelect, disableActions = false, onClickOverride, onConvertSuccess }: TaskCardProps) {
+/** Selector: 只订阅 parentProject，避免订阅整个 tasks 数组 */
+const selectParentProject = (parentId: string | undefined) => (state: { tasks: Task[] }) =>
+  parentId ? state.tasks.find(t => t.id === parentId && t.category === "project") ?? null : null;
+
+export const TaskCard = memo(function TaskCard({ task, showParent = true, highlightKeyword, selectable = false, selected = false, onSelect, disableActions = false, onClickOverride, onConvertSuccess }: TaskCardProps) {
   const navigate = useNavigate();
   const updateTaskStatus = useTaskStore((state) => state.updateTaskStatus);
   const deleteTask = useTaskStore((state) => state.deleteTask);
-  const tasks = useTaskStore((state) => state.tasks);
+  // F05: 只订阅 parentProject，不再订阅整个 tasks 数组
+  const parentProject = useTaskStore(selectParentProject(showParent ? task.parent_id : undefined));
   const priority = task.priority ? priorityConfig[task.priority] : null;
 
   // F07: ConvertDialog 状态
@@ -81,11 +86,6 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
       if (animTimerRef.current) clearTimeout(animTimerRef.current);
     };
   }, []);
-
-  // 查找父项目
-  const parentProject = showParent && task.parent_id
-    ? tasks.find(t => t.id === task.parent_id && t.category === "project")
-    : null;
 
   // 搜索模式下展示内容摘要（截取前 100 字符）
   const snippetText = highlightKeyword
@@ -312,4 +312,4 @@ export function TaskCard({ task, showParent = true, highlightKeyword, selectable
       )}
     </>
   );
-}
+});

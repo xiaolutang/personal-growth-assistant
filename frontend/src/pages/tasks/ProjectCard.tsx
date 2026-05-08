@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { FolderOpen, ChevronDown, ChevronUp, Clock, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +34,7 @@ function formatUpdatedTime(isoString: string): string {
   return date.toLocaleDateString("zh-CN", { month: "short", day: "numeric" });
 }
 
-export function ProjectCard({ project, layout = "grid", selectable = false, selected = false, onSelect, onClickOverride }: ProjectCardProps) {
+export const ProjectCard = memo(function ProjectCard({ project, layout = "grid", selectable = false, selected = false, onSelect, onClickOverride }: ProjectCardProps) {
   const allTasks = useTaskStore((state) => state.tasks);
   const [expanded, setExpanded] = useState(false);
   const [progress, setProgress] = useState<ProjectProgressResponse | null>(null);
@@ -309,4 +309,4 @@ export function ProjectCard({ project, layout = "grid", selectable = false, sele
       )}
     </Card>
   );
-}
+});

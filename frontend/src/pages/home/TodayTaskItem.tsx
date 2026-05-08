@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { CheckCircle, Circle, Clock } from "lucide-react";
 import type { TaskStatus } from "@/types/task";
 
@@ -11,7 +12,7 @@ interface TodayTaskItemProps {
   onToggle: (taskId: string, status: TaskStatus) => void;
 }
 
-export function TodayTaskItem({ task, isToggling, onToggle }: TodayTaskItemProps) {
+export const TodayTaskItem = memo(function TodayTaskItem({ task, isToggling, onToggle }: TodayTaskItemProps) {
   const isComplete = task.status === "complete";
 
   return (
@@ -46,4 +47,4 @@ export function TodayTaskItem({ task, isToggling, onToggle }: TodayTaskItemProps
       )}
     </div>
   );
-}
+});
