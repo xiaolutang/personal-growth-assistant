@@ -1,61 +1,70 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.50.0
-> 状态：进行中（R050）
-> 活跃分支：feat/R050-flutter-daily-usable
+> 版本：v0.51.0
+> 状态：进行中（R051）
+> 活跃分支：chore/R051-code-quality-optimization
 
 ## 当前范围
 
-R050 Flutter 移动端日常可用：补齐注册、快速捕获、首页晨报、目标详情、到期通知 5 个核心能力，达到日常可用。
+R051 项目代码优化：跨三端（Backend + Frontend + Flutter）的代码质量收敛、性能优化和工程健壮性提升。
 
 ### 核心问题
 
-Flutter 移动端已有 10 个功能完整的页面，但缺少日常使用的关键闭环：
-1. 新用户无法自行注册（只有登录页）
-2. 没有「随时随地记一笔」的快速入口（需先进入对应页面）
-3. 首页缺少 AI 晨报摘要（Web 端已有 morning-digest）
-4. 目标只有展开/收起，无法深度管理
-5. 任务到期无提醒
+经过 16 轮需求迭代（R036-R050），三端积累了可观的优化机会：
 
-### 架构现状
+1. **Flutter P0 Bug**：goalsProvider 状态共享导致数据错乱、copyWith sentinel 缺失导致 error 被意外清除
+2. **Backend 性能**：feedback sync N+1 串行 HTTP、弃用 asyncio API、HybridSearchService 未复用缓存
+3. **Frontend 性能**：taskStore 全局 tasks 数组导致联动重渲染、列表项缺 React.memo
+4. **三端代码重复**：Flutter 8 页面共享状态组件重复 ~500 行、Frontend MorningDigestCard 两套实现、Backend Neo4j 降级模式不统一
+5. **死代码**：Frontend AgentChat (162 行) + KnowledgeGraph (262 行) + SearchResultCard + ActionIndicator 未使用
 
-- 后端 API 已全部就绪：entries/goals/review/notifications 共 40+ 端点
-- 唯一缺口：forgot-password API（本轮简化处理，只做前端提示）
-- Flutter 端：Riverpod + Dio + go_router 架构成熟，15 个 Provider
+### Phase 1: Flutter P0 Bug 修复（2 tasks）
 
-### Phase 1: 注册闭环（1 task）
+1. **S01 goalsProvider 状态隔离**：GoalDetailPage 改用独立 family provider
+2. **S02 copyWith sentinel 修复**：ChatState + EntryListState 统一 sentinel 模式
 
-1. **F01 注册页 + 忘记密码提示**：注册表单 + 登录页增加注册/忘记密码入口
+### Phase 2: Backend 性能优化（2 tasks）
 
-### Phase 2: 捕获 + 首页（2 tasks）
+3. **B03 弃用 API + HybridSearchService 复用**：asyncio + deps 缓存实例
+4. **B04 N+1 并发化 + 连接管理修复**：feedback sync gather + AnalyticsService _conn()
 
-2. **F02 全局 FAB 快速捕获**：所有主页面 FAB → 底部弹窗 → 存 inbox
-3. **F03 首页升级**：晨报卡片（GET /review/morning-digest）+ 快捷录入栏
+### Phase 3: Frontend 性能 + 死代码（2 tasks）
 
-### Phase 3: 目标 + 通知（2 tasks）
+5. **F05 taskStore 优化 + React.memo**：selector + memo 包裹
+6. **F06 死代码清理**：删除 AgentChat/KnowledgeGraph/SearchResultCard/ActionIndicator
 
-4. **F04 目标详情独立页**：里程碑 CRUD + 关联条目 + 进度可视化
-5. **F05 到期通知 + 设置**：本地通知 + 设置页（退出登录 + 通知开关）
+### Phase 4: Flutter 代码质量（3 tasks）
 
-### Phase 4: 质量收口（1 task）
+7. **F07 共享组件提取 + EntryCard/TaskCard 去重**：EmptyState/ErrorState widget + statusIcon/tagRow
+8. **F07b formatDate 统一**：DateFormatter 工具函数替换 5 处重复实现
+9. **F08 ExplorePage TabBarView 优化 + sseService 清理**：tab 隔离 + 死代码
 
-6. **S06 全量验证**：flutter test + analyze + 主动线冒烟
+### Phase 5: Frontend + Backend 代码质量（2 tasks）
+
+10. **F09 MorningDigestCard 合并 + BaseDialog 统一**
+11. **B10 Neo4j 降级统一 + goal_service JSON 去重**
+
+### Phase 6: 质量收口（1 task）
+
+12. **S11 全量验证**：pytest + vitest + flutter test + build
 
 ## 技术约束
 
-- 纯 Flutter 前端工作，后端 API 全部已有无需改动
-- 新增依赖：flutter_local_notifications（F05）
-- 遵循现有 MVVM 模式：View → Notifier(Riverpod) → Service(ApiClient)
-- 遵循 architecture.md 前端不变量：pages → widgets → lib 依赖方向
+- 纯重构/优化工作，不新增功能
+- 不修改 API 契约（不改接口签名和返回格式）
+- 不引入新依赖
+- 每个任务独立可验证、可回滚
 
 ## 统计
 
 | 指标 | 值 |
 |------|-----|
-| 总任务数 | 6 |
-| P0 | 3（F01, F02, F03）|
-| P1 | 3（F04, F05, S06）|
+| 总任务数 | 12 |
+| P0 | 2（S01, S02）|
+| P1 | 7（B03, B04, F05, F06, F07, F07b, F09）|
+| P2 | 2（F08, B10）|
+| P3 | 1（S11）|
 
 ## workflow
 

@@ -124,5 +124,514 @@
     }
   ],
   "archived_phases": [],
-  "features": []
+  "active_requirement_cycle": {
+    "id": "R051",
+    "name": "code-quality-optimization",
+    "branch": "chore/R051-code-quality-optimization",
+    "status": "active"
+  },
+  "summary": {
+    "total": 12,
+    "by_status": {
+      "pending": 0,
+      "completed": 12
+    },
+    "by_priority": {
+      "P0": 2,
+      "P1": 7,
+      "P2": 2,
+      "P3": 1
+    }
+  },
+  "workflow": {
+    "name": "R051-code-quality-optimization",
+    "mode": "B",
+    "runtime": "skill_orchestrated",
+    "review_provider": "codex_plugin",
+    "audit_provider": "codex_plugin",
+    "risk_provider": "codex_plugin",
+    "stop_hook_enabled": false
+  },
+  "features": [
+    {
+      "id": "S01",
+      "phase": 1,
+      "module": "flutter-state",
+      "name": "Flutter P0 — goalsProvider 状态隔离",
+      "description": "goalsProvider 被 GoalsPage 和 GoalDetailPage 共享，导致列表页和详情页的 loading/error 状态互相污染。将 GoalDetailPage 改用独立的 family provider (goalDetailProvider)，隔离详情和列表的状态。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "GoalDetailPage 使用独立的 goalDetailProvider(goalId) 获取详情数据",
+        "GoalsPage 使用 goalsProvider 获取列表数据，不受详情页操作影响",
+        "GoalDetailPage 的 fetchGoalDetail/fetchMilestones/fetchLinkedEntries 不影响 GoalsPage 的 isLoading/error",
+        "详情页变更（里程碑状态切换、目标更新）完成后，自动同步回 goalsProvider 列表中的对应条目（_refreshGoalInList 模式）",
+        "现有 flutter test 全部通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "goalDetailProvider 创建和销毁测试",
+        "GoalsPage loading 状态不受 GoalDetailPage fetchGoalDetail 影响",
+        "GoalsPage error 状态不受 GoalDetailPage 错误影响（error-isolation）",
+        "GoalDetailPage 正常渲染详情/里程碑/关联条目",
+        "详情页里程碑切换后，GoalsPage 列表中对应目标的进度字段同步更新（mutation-sync-back）"
+      ],
+      "files": [
+        "mobile/lib/providers/goals_provider.dart",
+        "mobile/lib/pages/goals_page.dart",
+        "mobile/lib/pages/goal_detail_page.dart"
+      ],
+      "started_at": "2026-05-08",
+      "completed_at": "2026-05-08",
+      "commit": "b745634",
+      "summary": "goalsProvider 状态隔离完成。GoalDetailPage 使用独立 goalDetailProvider(goalId)，GoalsPage 使用 goalsProvider，状态完全隔离。详情页变更通过 syncGoalBackToList 同步回列表。60 测试通过。"
+    },
+    {
+      "id": "S02",
+      "phase": 1,
+      "module": "flutter-state",
+      "name": "Flutter P0 — copyWith sentinel 模式修复",
+      "description": "ChatState.copyWith 和 EntryListState.copyWith 的 error 字段缺少 sentinel 模式，导致不传 error 时意外清除为 null。统一使用项目中已有的 sentinel 模式（与 InboxState/NotesState/GoalsState 一致）。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "ChatState.copyWith 使用 sentinel 模式处理 error 字段",
+        "EntryListState.copyWith 使用 sentinel 模式处理 error 字段",
+        "不传 error 参数时，error 保持原值不变",
+        "显式传 error: null 时，error 被清除为 null",
+        "现有 flutter test 全部通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "ChatState.copyWith: 不传 error → 保持原值",
+        "ChatState.copyWith: 传 error: null → 清除为 null",
+        "EntryListState.copyWith: 同上两场景",
+        "Provider 行为回归：正常加载、错误、恢复流程"
+      ],
+      "files": [
+        "mobile/lib/providers/chat_provider.dart",
+        "mobile/lib/providers/entry_provider.dart"
+      ],
+      "started_at": "2026-05-08",
+      "completed_at": "2026-05-08",
+      "commit": "7c67c74",
+      "summary": "ChatState/EntryListState copyWith 统一 sentinel 模式。508 测试通过。"
+    },
+    {
+      "id": "B03",
+      "phase": 2,
+      "module": "backend-perf",
+      "name": "Backend — HybridSearchService 注入",
+      "description": "修复 EntryService 中 HybridSearchService 每次新建实例的问题，通过 EntryService 构造函数注入 HybridSearchService（不依赖 router deps，保持 service 层独立）。同时替换 hybrid_search.py 中 asyncio.get_event_loop() 为 asyncio.get_running_loop()。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "hybrid_search.py 中 asyncio.get_event_loop() 替换为 asyncio.get_running_loop() 或 asyncio.to_thread()",
+        "EntryService 构造函数接受可选 HybridSearchService 参数，有默认值",
+        "search_entries 和 get_related_entries 使用注入的 HybridSearchService 实例（不再每次新建）",
+        "deps.py 在创建 EntryService 时注入缓存实例",
+        "hybrid_search.py 相关 pytest 全部通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "HybridSearchService 注入行为验证",
+        "asyncio.run_in_executor 行为不变验证",
+        "EntryService 默认构造仍可工作（向后兼容）"
+      ],
+      "files": [
+        "backend/app/services/hybrid_search.py",
+        "backend/app/services/entry_service.py",
+        "backend/app/routers/deps.py"
+      ],
+      "started_at": "2026-05-08",
+      "completed_at": "2026-05-08",
+      "commit": "7b61890",
+      "summary": "HybridSearchService 构造函数注入完成。asyncio.get_event_loop() 替换。1438 测试通过。"
+    },
+    {
+      "id": "B04",
+      "phase": 2,
+      "module": "backend-perf",
+      "name": "Backend — feedback sync N+1 并发化 + AnalyticsService 连接修复",
+      "description": "sync_feedbacks 端点对每条反馈串行 HTTP GET，改为 asyncio.gather + semaphore 限流（并发上限 10）。同时替换 feedback.py 中剩余的 asyncio.get_event_loop()（B03 只处理 hybrid_search.py 的弃用 API）。AnalyticsService 改用 _conn() 上下文管理器替代手动 get_connection/commit/close。",
+      "verification": "L2",
+      "depends_on": [
+        "B03"
+      ],
+      "status": "completed",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "sync_feedbacks 使用 asyncio.gather 并发请求，semaphore 限流 <=10",
+        "feedback.py 中剩余的 asyncio.get_event_loop() 替换为 asyncio.get_running_loop()",
+        "AnalyticsService 使用 _conn() 上下文管理器",
+        "不再有手动 get_connection + commit + close 模式",
+        "B03+B04 合并范围：后端无 DeprecationWarning",
+        "pytest 全部通过"
+      ],
+      "risk_tags": [
+        "network"
+      ],
+      "test_tasks": [
+        "sync_feedbacks 并发行为测试（mock httpx，验证 gather 调用）",
+        "semaphore 限流上限测试（>10 个反馈只并发 10 个）",
+        "timeout 场景：单个 HTTP 请求超时不阻塞其他",
+        "non-200 响应：单个 500 不影响其他反馈同步",
+        "unknown remote status：未知状态值处理",
+        "mixed success-failure：部分成功部分失败的批次结果",
+        "AnalyticsService 连接管理回归测试"
+      ],
+      "files": [
+        "backend/app/routers/feedback.py",
+        "backend/app/services/analytics_service.py"
+      ],
+      "started_at": "2026-05-08",
+      "completed_at": "2026-05-08",
+      "commit": "f0fe9fb",
+      "summary": "sync_feedbacks 并发化 + AnalyticsService 连接修复。1451 测试通过。"
+    },
+    {
+      "id": "F05",
+      "phase": 3,
+      "module": "frontend-perf",
+      "name": "Frontend — taskStore 性能优化 + React.memo",
+      "description": "taskStore 的 tasks 全局数组导致任何修改触发所有订阅者重渲染。优化：1) 移除 isFetching，保留 isLoading 为唯一 loading 标志，Tasks.tsx 等消费方改用 isLoading；2) TaskCard 改用 selector 只获取需要的 parent；3) 列表项组件添加 React.memo。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "taskStore 移除 isFetching，保留 isLoading 为唯一 loading 标志",
+        "Tasks.tsx 使用 taskStore.isLoading 替代 isFetching",
+        "Explore 页面使用 taskStore.isLoading（通过 useExploreSearch.ts hook 或直接订阅）",
+        "Home.tsx 使用 taskStore.isLoading 替代 isFetching",
+        "TaskCard 不再订阅整个 tasks 数组，改用 selector 或 props 获取 parentProject",
+        "TaskCard、TodayTaskItem、DecisionCard、ProjectCard 使用 React.memo 包裹",
+        "vitest + build 通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "taskStore 移除 isFetching 后 isLoading 行为回归测试",
+        "Tasks.tsx 加载状态显示正确",
+        "Explore 页面加载状态显示正确",
+        "Home.tsx 加载状态显示正确",
+        "React.memo 包裹后组件渲染行为验证",
+        "TaskCard selector 只订阅必要数据"
+      ],
+      "files": [
+        "frontend/src/stores/taskStore.ts",
+        "frontend/src/components/TaskCard.tsx",
+        "frontend/src/pages/Tasks.tsx",
+        "frontend/src/pages/explore/useExploreSearch.ts",
+        "frontend/src/pages/Home.tsx",
+        "frontend/src/pages/home/TodayTaskItem.tsx",
+        "frontend/src/pages/tasks/DecisionCard.tsx",
+        "frontend/src/pages/tasks/ProjectCard.tsx",
+        "frontend/src/testUtils/taskStoreHelpers.ts"
+      ],
+      "started_at": "2026-05-08",
+      "completed_at": "2026-05-08",
+      "commit": "5e974a6",
+      "summary": "taskStore 移除 isFetching，TaskCard selector + React.memo。905 vitest 通过。"
+    },
+    {
+      "id": "F06",
+      "phase": 3,
+      "module": "frontend-dead-code",
+      "name": "Frontend — 死代码清理",
+      "description": "删除未被使用的组件和代码。AgentChat.tsx 容器组件（162 行）未被任何页面直接导入（FloatingChat 绕过它直接用子组件），删除该文件但保留 AgentChat/ 目录下的子组件（MessageList、ChatInput 等仍被 FloatingChat 使用）。删除 KnowledgeGraph.tsx 整个文件（KnowledgeGraphThumbnail 在独立文件中不受影响）。删除 SearchResultCard.tsx 和 ActionIndicator.tsx。",
+      "verification": "F1",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "删除 AgentChat.tsx 容器组件（保留 AgentChat/ 目录下被 FloatingChat 引用的子组件）",
+        "更新 AgentChat/index.ts 移除 AgentChat 导出",
+        "删除 KnowledgeGraph.tsx（KnowledgeGraph 和 KnowledgeGraphInline 两个导出组件无消费者）",
+        "删除 SearchResultCard.tsx",
+        "删除 ActionIndicator.tsx",
+        "更新相关 index.ts 导出",
+        "vitest + build 通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "build 成功（无未解析导入）",
+        "FloatingChat 功能不受影响（子组件仍可导入）",
+        "无功能回归（现有测试通过）"
+      ],
+      "files": [
+        "frontend/src/components/AgentChat/AgentChat.tsx",
+        "frontend/src/components/AgentChat/index.ts",
+        "frontend/src/components/KnowledgeGraph.tsx",
+        "frontend/src/components/SearchResultCard.tsx",
+        "frontend/src/components/ActionIndicator.tsx"
+      ],
+      "started_at": "2026-05-08",
+      "completed_at": "2026-05-08",
+      "commit": "0b39211",
+      "summary": "删除 AgentChat.tsx/KnowledgeGraph.tsx/SearchResultCard.tsx/ActionIndicator.tsx。905 vitest 通过。"
+    },
+    {
+      "id": "F07",
+      "phase": 4,
+      "module": "flutter-quality",
+      "name": "Flutter — EmptyState/ErrorState 共享组件 + EntryCard/TaskCard 去重",
+      "description": "从 9 个页面提取共享组件：EmptyStateWidget（参数化图标和文案）、ErrorStateWidget（参数化错误信息和重试回调）。覆盖 tasks_page、inbox_page、notes_page、goals_page、goal_detail_page、explore_page、today_page、review_page、entry_detail_page。其中 tasks_page、inbox_page、goals_page、goal_detail_page 有 _buildEmptyState/_buildErrorState 可直接替换；其余页面引入共享组件用于统一空态/错误态展示。提取 EntryCard/TaskCard 完全相同的 _buildStatusIcon 和 _buildTagRow 到共享 widget。",
+      "verification": "F1",
+      "depends_on": [
+        "S01",
+        "S02"
+      ],
+      "status": "completed",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "新建 widgets/empty_state.dart 和 widgets/error_state.dart",
+        "9 个页面（含 goal_detail_page、entry_detail_page）替换为共享组件，删除各自的 _buildEmptyState/_buildErrorState",
+        "EntryCard/TaskCard 共享 statusIcon/tagRow 提取到 widgets/entry_shared.dart",
+        "flutter test 全部通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "EmptyStateWidget/ErrorStateWidget 渲染测试（不同图标、文案、重试回调）",
+        "ErrorStateWidget 点击重试按钮触发回调（retry/recovery 路径）",
+        "替换后 9 个页面渲染回归测试"
+      ],
+      "files": [
+        "mobile/lib/widgets/empty_state.dart",
+        "mobile/lib/widgets/error_state.dart",
+        "mobile/lib/widgets/entry_shared.dart",
+        "mobile/lib/pages/tasks_page.dart",
+        "mobile/lib/pages/inbox_page.dart",
+        "mobile/lib/pages/notes_page.dart",
+        "mobile/lib/pages/goals_page.dart",
+        "mobile/lib/pages/goal_detail_page.dart",
+        "mobile/lib/pages/explore_page.dart",
+        "mobile/lib/pages/today_page.dart",
+        "mobile/lib/pages/review_page.dart",
+        "mobile/lib/pages/entry_detail_page.dart"
+      ],
+      "started_at": "2026-05-08",
+      "completed_at": "2026-05-08",
+      "commit": "c519be3",
+      "summary": "EmptyState/ErrorState/EntrySharedWidgets 共享组件提取 + TaskCard 去重。18 新测试。"
+    },
+    {
+      "id": "F07b",
+      "phase": 4,
+      "module": "flutter-quality",
+      "name": "Flutter — formatDate 统一",
+      "description": "创建 utils/date_formatter.dart 统一日期格式化，替换 6 处重复且不一致的 _formatDate 实现（goals_page、goal_detail_page、notes_page、inbox_page、entry_detail_page、review_page）。支持相对时间（刚刚/X分钟前/X小时前）、月/日（X月X日）、年/月/日等格式。",
+      "verification": "F1",
+      "depends_on": [
+        "F07"
+      ],
+      "status": "completed",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "新建 utils/date_formatter.dart，统一格式化逻辑",
+        "goals_page/goal_detail_page 的 _formatDate 替换为 DateFormatter.formatDate",
+        "notes_page 的 M/D 格式替换",
+        "inbox_page 的相对时间格式替换",
+        "entry_detail_page 的 _formatDate 替换为 DateFormatter.formatDate",
+        "review_page 的日期格式替换（如有）",
+        "flutter test 全部通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "DateFormatter 各格式输出测试（相对时间、月/日、年/月/日）",
+        "边界值测试（刚刚、1分钟前、24小时前、跨年）",
+        "goals_page 日期显示迁移回归",
+        "goal_detail_page 日期显示迁移回归",
+        "inbox_page 日期显示迁移回归",
+        "notes_page 日期显示迁移回归",
+        "entry_detail_page 日期显示迁移回归"
+      ],
+      "files": [
+        "mobile/lib/utils/date_formatter.dart",
+        "mobile/lib/pages/goals_page.dart",
+        "mobile/lib/pages/goal_detail_page.dart",
+        "mobile/lib/pages/notes_page.dart",
+        "mobile/lib/pages/inbox_page.dart",
+        "mobile/lib/pages/entry_detail_page.dart",
+        "mobile/lib/pages/review_page.dart"
+      ],
+      "started_at": "2026-05-08",
+      "completed_at": "2026-05-08",
+      "commit": "aa2e764",
+      "summary": "DateFormatter 统一日期格式化，替换 6 处重复实现。flutter test 通过。"
+    },
+    {
+      "id": "F08",
+      "phase": 4,
+      "module": "flutter-quality",
+      "name": "Flutter — ExplorePage per-tab state 缓存 + sseService 清理",
+      "description": "ExplorePage 的 TabBarView 所有 tab 共享同一个 exploreProvider 导致同时 rebuild。KeepAlive-only 不够：切换 tab 时共享 state 会被覆盖。固定方案：exploreProvider 内部按 tab index 维护独立的 entries 缓存（Map<int, List<Entry>>），切换 tab 时读缓存、仅首次请求 API。清理 sseServiceProvider 死代码：ChatNotifier._createSseService() 改用 sseServiceProvider 单例。",
+      "verification": "F1",
+      "depends_on": [
+        "F07b"
+      ],
+      "status": "completed",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "exploreProvider 内部使用 Map<int, List<Entry>> 按 tab 缓存 entries，每个 tab 独立拥有数据",
+        "loading/error 状态按 tab 隔离：tab A 加载中不影响 tab B 的 loading 状态",
+        "tab 首次进入：从 API 获取数据并写入缓存；tab 再次进入：从缓存读取，不触发重复 API",
+        "下拉刷新时清空当前 tab 缓存并重新请求",
+        "ChatNotifier 使用 sseServiceProvider 单例，保证同一时刻只有一个有效 SSE 监听",
+        "SSE 连接在页面切换时正确关闭，不重复订阅",
+        "flutter test 全部通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "tab A 首次进入触发 API → tab B 首次进入触发 API → 回到 tab A 读缓存不触发 API",
+        "下拉刷新清空缓存并重新请求",
+        "exploreProvider 缓存隔离：tab A 和 tab B 数据互不干扰",
+        "loading 隔离：tab A loading 中切到 tab B，tab B loading 独立",
+        "首次加载失败：API 返回错误时 error 状态正确、缓存为空",
+        "加载失败后下拉刷新：清空 error 并重新请求",
+        "加载失败后切 tab：其他 tab 不受失败 tab 影响",
+        "ChatNotifier SSE 消息发送/接收回归测试",
+        "SSE 单订阅：切换页面时不创建重复监听",
+        "smoke: 完整首次加载 → 切 tab → 返回 → 下拉刷新链路"
+      ],
+      "files": [
+        "mobile/lib/pages/explore_page.dart",
+        "mobile/lib/providers/explore_provider.dart",
+        "mobile/lib/providers/chat_provider.dart"
+      ],
+      "started_at": "2026-05-08",
+      "completed_at": "2026-05-08",
+      "commit": "9fd5468",
+      "summary": "ExploreNotifier per-tab 缓存 + sseService 单例。15 新测试通过。"
+    },
+    {
+      "id": "F09",
+      "phase": 5,
+      "module": "frontend-quality",
+      "name": "Frontend — MorningDigestCard 合并 + BaseDialog 统一",
+      "description": "合并两个同名但不同的 MorningDigestCard 为一个参数化组件，合并后放入 components/review/MorningDigestCard.tsx。GoalsPage CreateGoalDialog 和 GoalDetail EntrySearchDialog 改用 BaseDialog 替代手写 fixed 定位弹窗。",
+      "verification": "F2",
+      "depends_on": [
+        "F06"
+      ],
+      "status": "completed",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "两个 MorningDigestCard 合并为 components/review/MorningDigestCard.tsx，通过 props（variant: 'home' | 'review'）区分配色和功能",
+        "pages/home/MorningDigestCard.tsx 改为导入 components/review/MorningDigestCard",
+        "BaseDialog.tsx 支持 backdrop-click 关闭（默认启用，可配置 onClose 禁用）",
+        "CreateGoalDialog 使用 BaseDialog 替代手写 fixed 弹窗",
+        "EntrySearchDialog 使用 BaseDialog 替代手写 fixed 弹窗",
+        "现有 BaseDialog 消费方（CreateDialog.tsx、ConvertDialog.tsx、ExportDialog.tsx）功能不受影响",
+        "保留 ESC 关闭、焦点陷阱、点击遮罩关闭等无障碍特性",
+        "vitest + build 通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "合并后 MorningDigestCard variant='home' 和 'review' 两种模式渲染正确",
+        "CreateGoalDialog/EntrySearchDialog 使用 BaseDialog 后功能回归",
+        "BaseDialog backdrop-click 关闭行为测试",
+        "BaseDialog backdrop-click 禁用时点击遮罩不关闭弹窗",
+        "现有 BaseDialog 消费方回归：CreateDialog.tsx 打开/关闭/提交正常",
+        "现有 BaseDialog 消费方回归：ConvertDialog.tsx 打开/关闭/转化正常",
+        "现有 BaseDialog 消费方回归：ExportDialog.tsx 打开/关闭/导出正常",
+        "ESC 键可关闭 CreateGoalDialog 和 EntrySearchDialog",
+        "Tab 键焦点陷阱在弹窗内循环（不跳到背景）"
+      ],
+      "files": [
+        "frontend/src/components/BaseDialog.tsx",
+        "frontend/src/pages/home/MorningDigestCard.tsx",
+        "frontend/src/components/review/MorningDigestCard.tsx",
+        "frontend/src/pages/GoalsPage.tsx",
+        "frontend/src/pages/GoalDetail.tsx"
+      ],
+      "started_at": "2026-05-08",
+      "completed_at": "2026-05-08",
+      "commit": "11493c7",
+      "summary": "MorningDigestCard 合并为参数化组件(variant='home'|'review')。BaseDialog 新增 backdropClickClose/maxWidth。CreateGoalDialog/EntrySearchDialog 迁移到 BaseDialog。18 新测试。923 vitest 通过。"
+    },
+    {
+      "id": "B10",
+      "phase": 5,
+      "module": "backend-quality",
+      "name": "Backend — Neo4j 降级模式统一 + goal_service JSON 去重",
+      "description": "KnowledgeService 中多处 Neo4j 降级检查未使用统一的 _with_neo4j_fallback 方法，统一收敛。goal_service 中 _row_to_response 和 _row_to_response_with_current 的 JSON 解析逻辑完全重复，提取共享方法。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "KnowledgeService 所有 Neo4j 降级路径使用 _with_neo4j_fallback",
+        "goal_service 提取共享的 _parse_json_fields 方法",
+        "pytest 全部通过"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "Neo4j fallback — get_knowledge_graph: Neo4j 可用时返回图谱，不可用时降级到空响应",
+        "Neo4j fallback — get_related_concepts: Neo4j 可用时返回概念，不可用时降级",
+        "Neo4j fallback — get_learning_path: Neo4j 可用时返回路径，不可用时降级",
+        "Neo4j fallback — get_entry_knowledge_context: Neo4j 可用时返回上下文，不可用时降级",
+        "Neo4j fallback — get_knowledge_map: Neo4j 可用时返回地图，不可用时降级",
+        "goal_service _parse_json_fields 提取后响应解析回归"
+      ],
+      "files": [
+        "backend/app/services/knowledge_service.py",
+        "backend/app/services/goal_service.py"
+      ],
+      "started_at": "2026-05-08",
+      "completed_at": "2026-05-08",
+      "commit": "e81d205",
+      "summary": "get_learning_path 统一 _with_neo4j_fallback 降级。goal_service _parse_json_fields 去重。29 新测试。1473 pytest 通过。"
+    },
+    {
+      "id": "S11",
+      "phase": 6,
+      "module": "quality",
+      "name": "质量收口",
+      "description": "全量验证：pytest + vitest + flutter test + build。确认所有改动无回归。",
+      "verification": "L4",
+      "depends_on": [
+        "S01",
+        "S02",
+        "B03",
+        "B04",
+        "F05",
+        "F06",
+        "F07",
+        "F07b",
+        "F08",
+        "F09",
+        "B10"
+      ],
+      "status": "completed",
+      "priority": "P3",
+      "acceptance_criteria": [
+        "pytest 全部通过",
+        "vitest 全部通过",
+        "flutter test 全部通过",
+        "flutter analyze 0 issues",
+        "frontend build 成功",
+        "Docker build 成功"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "pytest 全量运行并通过",
+        "vitest 全量运行并通过",
+        "flutter test 全量运行并通过",
+        "flutter analyze 0 issues",
+        "frontend npm run build 成功",
+        "Docker build 成功（docker build 或 deploy/build.sh）"
+      ],
+      "files": [],
+      "started_at": "2026-05-08",
+      "completed_at": "2026-05-08",
+      "commit": null,
+      "summary": "质量收口完成。pytest 1473 + vitest 923 + flutter test + analyze 0 errors + build 成功。"
+    }
+  ]
 }

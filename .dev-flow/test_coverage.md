@@ -1,5 +1,22 @@
 # 测试覆盖清单
 
+## R051: 项目代码优化
+
+| Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
+|--------|----------|-----------|--------------------|--------|------|
+| goalsProvider 隔离 | S01 | unit+F1 | goalDetailProvider 独立创建/GoalsPage loading 隔离/GoalsPage error 隔离/详情页正常渲染/详情页变更同步回列表（mutation-sync-back） | done | — |
+| copyWith sentinel | S02 | unit+F1 | 不传 error 保持原值/传 null 清除/Provider 行为回归 | done | — |
+| 弃用 API + HybridSearch 复用 | B03 | unit+L2 | asyncio 替换回归/HybridSearchService 注入行为验证 | done | — |
+| feedback sync 并发 + 连接管理 | B04 | unit+L2+network | gather 并发/semaphore 限流/timeout/non-200/unknown status/mixed success-failure/连接管理回归 | done | — |
+| taskStore 优化 + React.memo | F05 | unit+F1 | store 移除 isFetching 回归/Tasks.tsx 加载状态/Explore 页面加载状态(useExploreSearch)/Home.tsx 加载状态/React.memo 渲染/TaskCard selector | done | — |
+| 死代码清理 | F06 | build | build 成功/FloatingChat 不受影响/现有测试通过 | done | — |
+| 共享组件提取 | F07 | unit+F1 | EmptyState/ErrorState 渲染测试/ErrorState retry 回调/9 页面渲染回归（含 goal_detail/entry_detail） | done | — |
+| formatDate 统一 | F07b | unit+F1 | 各格式输出测试/边界值（刚刚/跨年）/6 处替换（含 entry_detail_page/review_page） | done | — |
+| ExplorePage + sseService | F08 | unit+F1+smoke | per-tab 缓存隔离(含 loading/error)/首次 API → 缓存命中无重复请求/下拉刷新清缓存/加载失败 error 处理/失败后刷新恢复/SSE 单订阅回归/smoke 链路 | done | — |
+| MorningDigestCard + BaseDialog | F09 | unit+F2 | 合并后两种模式渲染/ESC 关闭/focus trap/backdrop-click 关闭/backdrop-click 禁用/BaseDialog 消费方回归（CreateDialog/ConvertDialog/ExportDialog） | done | — |
+| Neo4j 降级 + JSON 去重 | B10 | unit+L2 | 5 方法 Neo4j fallback 矩阵（get_knowledge_graph/get_related_concepts/get_learning_path/get_entry_knowledge_context/get_knowledge_map）/goal_service JSON 去重回归 | done | — |
+| 质量收口 | S11 | integration | pytest/vitest/flutter test/analyze/build | done | — |
+
 ## R050: Flutter 日常可用
 
 | Module | Task IDs | Test Type | Required Scenarios | Status | Gaps |
