@@ -315,7 +315,7 @@ async def submit_feedback(
         if payload.message_id:
             reason = payload.reason or ""
             score = 0.0 if reason in _NEGATIVE_REASONS else 1.0
-            asyncio.get_event_loop().run_in_executor(
+            asyncio.get_running_loop().run_in_executor(
                 None, _langfuse_score_trace, payload.message_id, score, reason
             )
 
@@ -402,46 +402,67 @@ async def sync_feedbacks(
         )
 
     settings = get_settings()
-    synced_count = 0
-    updated_count = 0
 
-    async with httpx.AsyncClient(timeout=10.0) as http_client:
-        for fb in feedbacks:
-            remote_id = fb["log_service_issue_id"]
+    # 并发上限 10
+    semaphore = asyncio.Semaphore(10)
+
+    async def _sync_one(
+        fb: dict, client: httpx.AsyncClient
+    ) -> tuple[bool, bool]:
+        """同步单条反馈，返回 (was_synced, was_updated)
+
+        was_synced: 远程状态已知（成功获取并识别状态）
+        was_updated: 本地状态实际变更（数据库已写入）
+        """
+        remote_id = fb["log_service_issue_id"]
+        async with semaphore:
             try:
-                resp = await http_client.get(
+                resp = await client.get(
                     f"{settings.LOG_SERVICE_URL}/api/issues/{remote_id}"
                 )
                 if resp.status_code != 200:
-                    # 404/超时/其他错误：该条 status 和 updated_at 均不变
-                    continue
+                    return False, False
 
                 remote_data = resp.json()
                 remote_status = remote_data.get("status", "")
                 local_status = _REMOTE_STATUS_MAP.get(remote_status)
 
                 if local_status is None:
-                    # 未知 status：保持原状态不更新
-                    continue
-
-                synced_count += 1
+                    return False, False
 
                 if fb["status"] != local_status:
-                    # 状态实际变更 → 更新 status + updated_at
                     updated_at = datetime.now(timezone.utc).isoformat()
                     storage.sqlite.sync_feedback_status(fb["id"], local_status, updated_at)
-                    updated_count += 1
+                    return True, True
                 elif fb.get("updated_at") is None:
-                    # 首次同步（updated_at 为 null）→ 写入 updated_at
                     updated_at = datetime.now(timezone.utc).isoformat()
                     storage.sqlite.sync_feedback_status(fb["id"], local_status, updated_at)
-                # else: 状态未变更且非首次 → 不更新
+                    return True, False
+                # 状态未变更且非首次 → 已同步但无更新
+                return True, False
             except (httpx.TimeoutException, httpx.HTTPError):
-                # 单条超时/网络错误：跳过，其他继续
-                continue
+                return False, False
             except Exception:
                 logger.warning("同步反馈 %d 远程 issue %d 异常", fb["id"], remote_id, exc_info=True)
-                continue
+                return False, False
+
+    synced_count = 0
+    updated_count = 0
+
+    async with httpx.AsyncClient(timeout=10.0) as http_client:
+        results = await asyncio.gather(
+            *[_sync_one(fb, http_client) for fb in feedbacks],
+            return_exceptions=True,
+        )
+
+    for result in results:
+        if isinstance(result, Exception):
+            continue
+        was_synced, was_updated = result
+        if was_synced:
+            synced_count += 1
+        if was_updated:
+            updated_count += 1
 
     # 返回同步后的完整列表
     all_items = storage.sqlite.list_feedbacks_by_user(user.id)
