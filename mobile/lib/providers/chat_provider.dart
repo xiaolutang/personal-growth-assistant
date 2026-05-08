@@ -44,15 +44,17 @@ class ChatState {
 // ============================================================
 class ChatNotifier extends Notifier<ChatState> {
   StreamSubscription<SseEvent>? _currentSubscription;
-  SseService? _currentSseService;
+  late final SseService _sseService;
 
   @override
   ChatState build() {
+    // 缓存 SseService 引用（避免 dispose 时 read 已销毁的 container）
+    _sseService = ref.read(sseServiceProvider);
+
     // 清理旧的 SSE 连接和订阅
     ref.onDispose(() {
-      _currentSseService?.cancel();
+      _sseService.cancel();
       _currentSubscription?.cancel();
-      _currentSseService = null;
       _currentSubscription = null;
     });
     return const ChatState();
@@ -93,14 +95,12 @@ class ChatNotifier extends Notifier<ChatState> {
     // 3. 获取或创建 session_id
     final sessionId = await _getOrCreateSessionId();
 
-    // 4. 调用 SseService
-    // 取消之前的 SSE 连接
-    _currentSseService?.cancel();
+    // 4. 调用 SseService（使用单例）
+    // 取消之前的 SSE 连接和订阅
     _currentSubscription?.cancel();
+    _sseService.cancel();
 
-    final sseService = _createSseService();
-    _currentSseService = sseService;
-    final stream = sseService.connect(
+    final stream = _sseService.connect(
       message: text.trim(),
       sessionId: sessionId,
     );
@@ -253,12 +253,6 @@ class ChatNotifier extends Notifier<ChatState> {
     return sessionId;
   }
 
-  /// 创建 SseService 实例
-  SseService _createSseService() {
-    final apiClient = ref.read(apiClientProvider);
-    final storage = ref.read(secureStorageProvider);
-    return SseService(apiClient: apiClient, storage: storage);
-  }
 }
 
 /// SseService 单例 Provider

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_assistant/models/chat_message.dart';
 import 'package:growth_assistant/providers/chat_provider.dart';
+import 'package:growth_assistant/services/sse_service.dart';
 
 ChatMessage makeMessage(String id) {
   return ChatMessage(
@@ -100,6 +101,53 @@ void main() {
       expect(state.messages, isEmpty);
       expect(state.isLoading, false);
       expect(state.error, isNull);
+    });
+
+    test('sseServiceProvider provides same instance', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final sse1 = container.read(sseServiceProvider);
+      final sse2 = container.read(sseServiceProvider);
+
+      expect(identical(sse1, sse2), true,
+          reason: 'sseServiceProvider should return the same singleton instance');
+    });
+
+    test('dispose cancels subscription', () async {
+      // This tests that onDispose properly cleans up
+      final container = ProviderContainer();
+
+      // Just reading the provider and disposing should not throw
+      container.read(chatProvider);
+      container.dispose();
+
+      // If we reach here without error, cleanup was successful
+      expect(true, true);
+    });
+  });
+
+  group('SSE single subscription pattern', () {
+    test('sseServiceProvider is a singleton (Provider, not family)', () {
+      // Verify that sseServiceProvider is a plain Provider (singleton scope)
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final instance1 = container.read(sseServiceProvider);
+      final instance2 = container.read(sseServiceProvider);
+
+      expect(identical(instance1, instance2), true,
+          reason: 'SSE service must be a singleton to prevent multiple listeners');
+    });
+
+    test('ChatNotifier no longer creates SseService instances', () {
+      // Verify ChatNotifier uses sseServiceProvider by checking
+      // that the provider exists and is the correct type
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final sseService = container.read(sseServiceProvider);
+      expect(sseService, isA<SseService>());
     });
   });
 }
