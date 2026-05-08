@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../providers/notes_provider.dart';
 import '../config/theme.dart';
 import '../models/entry.dart';
+import '../utils/date_formatter.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/error_state.dart';
 
 class NotesPage extends ConsumerStatefulWidget {
   const NotesPage({super.key});
@@ -96,45 +99,17 @@ class _NotesPageState extends ConsumerState<NotesPage> {
     }
     // 2. Error
     if (state.error != null && state.entries.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
-            const SizedBox(height: AppSpacing.md),
-            Text(state.error!, style: TextStyle(color: theme.colorScheme.error)),
-            const SizedBox(height: AppSpacing.md),
-            FilledButton.tonal(
-              onPressed: () => ref.read(notesProvider.notifier).fetchNotes(),
-              child: const Text('重试'),
-            ),
-          ],
-        ),
+      return ErrorStateWidget(
+        message: state.error!,
+        onRetry: () => ref.read(notesProvider.notifier).fetchNotes(),
       );
     }
     // 3. Empty
     if (state.entries.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.note_alt_outlined, size: 64, color: theme.colorScheme.outline),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              '暂无笔记',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.outline,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              '记录你的学习心得和思考',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.outline,
-              ),
-            ),
-          ],
-        ),
+      return const EmptyStateWidget(
+        icon: Icons.note_alt_outlined,
+        title: '暂无笔记',
+        subtitle: '记录你的学习心得和思考',
       );
     }
     // 4. Data
@@ -201,7 +176,7 @@ class _NotesPageState extends ConsumerState<NotesPage> {
                       ),
                 const Spacer(),
                 Text(
-                  _formatDate(entry.createdAt),
+                  DateFormatter.formatShortDate(entry.createdAt),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.outline,
                   ),
@@ -213,15 +188,5 @@ class _NotesPageState extends ConsumerState<NotesPage> {
         onTap: () => context.push('/entries/${entry.id}'),
       ),
     );
-  }
-
-  String _formatDate(String? dateStr) {
-    if (dateStr == null) return '';
-    try {
-      final date = DateTime.parse(dateStr);
-      return '${date.month}/${date.day}';
-    } catch (_) {
-      return dateStr;
-    }
   }
 }

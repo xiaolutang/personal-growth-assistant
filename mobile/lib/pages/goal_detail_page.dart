@@ -5,6 +5,8 @@ import '../config/constants.dart';
 import '../config/theme.dart';
 import '../models/entry.dart';
 import '../providers/goals_provider.dart';
+import '../utils/date_formatter.dart';
+import '../widgets/error_state.dart';
 import '../widgets/progress_ring.dart';
 
 // ============================================================
@@ -141,7 +143,10 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
 
     // Error state (no goal loaded)
     if (state.error != null && state.goal == null) {
-      return _buildErrorState(state.error!, theme);
+      return ErrorStateWidget(
+        message: state.error!,
+        onRetry: _loadData,
+      );
     }
 
     final goal = state.goal;
@@ -216,7 +221,7 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
       children: [
         if (goal.startDate != null)
           Text(
-            _formatDate(goal.startDate!),
+            DateFormatter.formatShortDate(goal.startDate!),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.outline,
             ),
@@ -233,7 +238,7 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
           ),
         if (goal.endDate != null)
           Text(
-            _formatDate(goal.endDate!),
+            DateFormatter.formatShortDate(goal.endDate!),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.outline,
             ),
@@ -365,7 +370,7 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
         ),
         subtitle: milestone.dueDate != null
             ? Text(
-                _formatDate(milestone.dueDate!),
+                DateFormatter.formatShortDate(milestone.dueDate!),
                 style: theme.textTheme.bodySmall,
               )
             : null,
@@ -463,52 +468,5 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
           : null,
     );
   }
-
-  // ----------------------------------------------------------
-  // Error State
-  // ----------------------------------------------------------
-
-  Widget _buildErrorState(String error, ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: theme.colorScheme.error.withValues(alpha: 0.6),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              error,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            ElevatedButton(
-              onPressed: _loadData,
-              child: const Text('重试'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ----------------------------------------------------------
-  // Helpers
-  // ----------------------------------------------------------
-
-  String _formatDate(String dateStr) {
-    try {
-      final dateTime = DateTime.parse(dateStr);
-      return '${dateTime.month}月${dateTime.day}日';
-    } catch (_) {
-      return dateStr;
-    }
-  }
 }
+

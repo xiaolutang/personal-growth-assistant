@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../config/constants.dart';
 import '../config/theme.dart';
 import '../models/entry.dart';
 import '../providers/entry_provider.dart';
+import '../utils/date_formatter.dart';
+import '../widgets/error_state.dart';
 
 // ============================================================
 // EntryDetailPage - 条目详情页
@@ -268,7 +269,10 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
     }
 
     if (state.error != null && state.entry == null) {
-      return _buildError(state.error!, theme);
+      return ErrorStateWidget(
+        message: state.error!,
+        onRetry: _loadEntry,
+      );
     }
 
     final entry = state.entry;
@@ -1566,9 +1570,9 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
           if (entry.priority != null && entry.priority!.isNotEmpty)
             _buildMetaRow('优先级', _priorityLabel(entry.priority), theme),
           if (entry.createdAt != null)
-            _buildMetaRow('创建时间', _formatDate(entry.createdAt), theme),
+            _buildMetaRow('创建时间', DateFormatter.formatFullDate(entry.createdAt), theme),
           if (entry.updatedAt != null)
-            _buildMetaRow('更新时间', _formatDate(entry.updatedAt), theme),
+            _buildMetaRow('更新时间', DateFormatter.formatFullDate(entry.updatedAt), theme),
         ],
       ),
     );
@@ -1629,37 +1633,6 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
     );
   }
 
-  Widget _buildError(String error, ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: theme.colorScheme.error.withValues(alpha: 0.6),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              error,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            ElevatedButton(
-              onPressed: _loadEntry,
-              child: const Text('重试'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   String _categoryLabel(String? category) {
     switch (category) {
       case AppConstants.categoryTask:
@@ -1702,16 +1675,6 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
         return '低';
       default:
         return priority ?? '未知';
-    }
-  }
-
-  String _formatDate(String? dateStr) {
-    if (dateStr == null) return '未知';
-    try {
-      final date = DateTime.parse(dateStr);
-      return DateFormat('yyyy-MM-dd HH:mm').format(date);
-    } catch (_) {
-      return dateStr;
     }
   }
 }
