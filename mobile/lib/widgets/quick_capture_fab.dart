@@ -16,17 +16,17 @@ class QuickCaptureFAB extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return FloatingActionButton(
       heroTag: 'quick_capture',
-      onPressed: () => _showCaptureSheet(context, ref),
+      onPressed: () => _showCaptureSheet(context),
       tooltip: '快速捕获',
       child: const Icon(Icons.add),
     );
   }
 
-  void _showCaptureSheet(BuildContext context, WidgetRef ref) {
+  void _showCaptureSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (sheetContext) => _CaptureBottomSheet(ref: ref),
+      builder: (sheetContext) => const _CaptureBottomSheet(),
     );
   }
 }
@@ -34,16 +34,14 @@ class QuickCaptureFAB extends ConsumerWidget {
 // ============================================================
 // _CaptureBottomSheet - 底部输入弹窗
 // ============================================================
-class _CaptureBottomSheet extends StatefulWidget {
-  final WidgetRef ref;
-
-  const _CaptureBottomSheet({required this.ref});
+class _CaptureBottomSheet extends ConsumerStatefulWidget {
+  const _CaptureBottomSheet();
 
   @override
-  State<_CaptureBottomSheet> createState() => _CaptureBottomSheetState();
+  ConsumerState<_CaptureBottomSheet> createState() => _CaptureBottomSheetState();
 }
 
-class _CaptureBottomSheetState extends State<_CaptureBottomSheet> {
+class _CaptureBottomSheetState extends ConsumerState<_CaptureBottomSheet> {
   final _controller = TextEditingController();
   bool _isSubmitting = false;
 
@@ -62,7 +60,7 @@ class _CaptureBottomSheetState extends State<_CaptureBottomSheet> {
 
     setState(() => _isSubmitting = true);
 
-    final notifier = widget.ref.read(entryListProvider.notifier);
+    final notifier = ref.read(entryListProvider.notifier);
     final success = await notifier.createInboxEntry(title);
 
     if (!mounted) return;
@@ -131,7 +129,7 @@ class _CaptureBottomSheetState extends State<_CaptureBottomSheet> {
               hintText: '记下你的想法...',
               border: OutlineInputBorder(),
             ),
-            onChanged: (_) => setState(() {}),
+            onChanged: (_) {},
             onSubmitted: (_) {
               if (_canSubmit) _submit();
             },

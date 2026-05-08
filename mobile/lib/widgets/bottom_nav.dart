@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'draggable_fab.dart';
 import 'quick_capture_fab.dart';
 
 class BottomNavShell extends StatefulWidget {
@@ -90,71 +91,71 @@ class _BottomNavShellState extends State<BottomNavShell> {
   }
 
   /// 判断当前路由是否应该显示 FAB
-  /// 登录页和条目详情页不显示（登录页不在 ShellRoute 内，只需排除详情页）
-  /// 目标详情页自带 FAB，也不显示
-  /// TodayPage 自带 QuickCaptureFAB + 快捷录入栏，不使用 Shell 层 FAB
+  /// 全局唯一 FAB，仅条目详情页和目标详情页隐藏
   bool _shouldShowFab() {
     final location = GoRouterState.of(context).uri.path;
-    // 条目详情页不显示 FAB
     if (location.startsWith('/entries/')) return false;
-    // 目标详情页自带 FAB
     if (RegExp(r'^/goals/[^/]+$').hasMatch(location)) return false;
-    // TodayPage 自带 QuickCaptureFAB + 快捷录入栏
-    if (location == '/') return false;
     return true;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: widget.child,
-      floatingActionButton: _shouldShowFab() ? const QuickCaptureFAB() : null,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _isOnMoreRoute() ? 4 : _currentIndex(),
-        onDestinationSelected: (index) {
-          if (index == 4) {
-            _showMoreMenu();
-            return;
-          }
-          switch (index) {
-            case 0:
-              context.go('/');
-            case 1:
-              context.go('/chat');
-            case 2:
-              context.go('/tasks');
-            case 3:
-              context.go('/notes');
-          }
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: '今天',
+    final showFab = _shouldShowFab();
+
+    return Stack(
+      children: [
+        Scaffold(
+          body: widget.child,
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: _isOnMoreRoute() ? 4 : _currentIndex(),
+            onDestinationSelected: (index) {
+              if (index == 4) {
+                _showMoreMenu();
+                return;
+              }
+              switch (index) {
+                case 0:
+                  context.go('/');
+                case 1:
+                  context.go('/chat');
+                case 2:
+                  context.go('/tasks');
+                case 3:
+                  context.go('/notes');
+              }
+            },
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home),
+                label: '今天',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.chat_bubble_outline),
+                selectedIcon: Icon(Icons.chat_bubble),
+                label: '日知',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.check_circle_outline),
+                selectedIcon: Icon(Icons.check_circle),
+                label: '任务',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.note_outlined),
+                selectedIcon: Icon(Icons.note),
+                label: '笔记',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.more_horiz),
+                selectedIcon: Icon(Icons.more_horiz),
+                label: '更多',
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline),
-            selectedIcon: Icon(Icons.chat_bubble),
-            label: '日知',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.check_circle_outline),
-            selectedIcon: Icon(Icons.check_circle),
-            label: '任务',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.note_outlined),
-            selectedIcon: Icon(Icons.note),
-            label: '笔记',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.more_horiz),
-            selectedIcon: Icon(Icons.more_horiz),
-            label: '更多',
-          ),
-        ],
-      ),
+        ),
+        if (showFab) const DraggableFAB(child: QuickCaptureFAB()),
+      ],
     );
   }
 }

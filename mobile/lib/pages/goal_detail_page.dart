@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/constants.dart';
 import '../config/theme.dart';
 import '../models/entry.dart';
 import '../providers/goals_provider.dart';
@@ -36,11 +37,13 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
     });
   }
 
-  void _loadData() {
+  Future<void> _loadData() async {
     final notifier = ref.read(goalsProvider.notifier);
-    notifier.fetchGoalDetail(widget.goalId);
-    notifier.fetchMilestones(widget.goalId);
-    notifier.fetchLinkedEntries(widget.goalId);
+    await Future.wait([
+      notifier.fetchGoalDetail(widget.goalId),
+      notifier.fetchMilestones(widget.goalId),
+      notifier.fetchLinkedEntries(widget.goalId),
+    ]);
   }
 
   // ----------------------------------------------------------
@@ -435,7 +438,7 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
   Widget _buildLinkedEntryItem(Entry entry, ThemeData theme) {
     return ListTile(
       leading: Icon(
-        _categoryIcon(entry.category),
+        CategoryMeta.iconOf(entry.category),
         size: 20,
         color: theme.colorScheme.primary,
       ),
@@ -504,15 +507,5 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
     } catch (_) {
       return dateStr;
     }
-  }
-
-  IconData _categoryIcon(String category) {
-    return switch (category) {
-      'task' => Icons.check_circle_outline,
-      'note' => Icons.note_outlined,
-      'project' => Icons.folder_outlined,
-      'inbox' => Icons.lightbulb_outline,
-      _ => Icons.article_outlined,
-    };
   }
 }

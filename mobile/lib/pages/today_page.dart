@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../config/constants.dart';
 import '../config/theme.dart';
 import '../providers/entry_provider.dart';
 import '../providers/today_provider.dart';
 import '../widgets/entry_card.dart';
 import '../widgets/morning_digest_card.dart';
 import '../widgets/progress_ring.dart';
-import '../widgets/quick_capture_fab.dart';
+// FAB 由 Shell 层全局管理
 
 // ============================================================
 // TodayPage - 今天 Tab 页面
@@ -91,7 +92,6 @@ class _TodayPageState extends ConsumerState<TodayPage> {
             ? const Center(child: CircularProgressIndicator())
             : _buildContent(context, theme, todayState),
       ),
-      floatingActionButton: const QuickCaptureFAB(),
     );
   }
 
@@ -262,7 +262,7 @@ class _TodayPageState extends ConsumerState<TodayPage> {
   Widget _buildProgressSection(ThemeData theme, TodayState state) {
     final totalTasks = state.todayTasks.length;
     final doneTasks = state.todayTasks.where(
-      (e) => e.status == 'done',
+      (e) => e.status == AppConstants.statusComplete,
     ).length;
 
     return Padding(

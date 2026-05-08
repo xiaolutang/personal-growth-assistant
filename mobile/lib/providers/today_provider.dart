@@ -25,14 +25,16 @@ class MorningDigestState {
   MorningDigestState copyWith({
     MorningDigest? data,
     MorningDigestStatus? status,
-    String? error,
+    Object? error = _sentinel,
   }) {
     return MorningDigestState(
       data: data ?? this.data,
       status: status ?? this.status,
-      error: error,
+      error: identical(error, _sentinel) ? this.error : error as String?,
     );
   }
+
+  static const _sentinel = Object();
 }
 
 // ============================================================
@@ -66,17 +68,19 @@ class TodayState {
     List<Entry>? todayTasks,
     List<Entry>? recentEntries,
     bool? isLoading,
-    String? error,
+    Object? error = _sentinel,
     MorningDigestState? morningDigest,
   }) {
     return TodayState(
       todayTasks: todayTasks ?? this.todayTasks,
       recentEntries: recentEntries ?? this.recentEntries,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: identical(error, _sentinel) ? this.error : error as String?,
       morningDigest: morningDigest ?? this.morningDigest,
     );
   }
+
+  static const _sentinel = Object();
 }
 
 // ============================================================

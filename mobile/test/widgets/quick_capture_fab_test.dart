@@ -356,8 +356,7 @@ void main() {
       expect(find.byType(QuickCaptureFAB), findsNothing);
     });
 
-    testWidgets('TodayPage 自带 QuickCaptureFAB，Shell 层不重复显示',
-        (WidgetTester tester) async {
+    testWidgets('TodayPage 显示全局 FAB', (WidgetTester tester) async {
       final router = GoRouter(
         initialLocation: '/',
         routes: [
@@ -368,7 +367,6 @@ void main() {
                 path: '/',
                 builder: (context, state) => const Scaffold(
                   body: Text('Today'),
-                  floatingActionButton: QuickCaptureFAB(),
                 ),
               ),
             ],
@@ -385,8 +383,7 @@ void main() {
         ),
       );
 
-      // TodayPage mounts its own QuickCaptureFAB
-      // Shell-level FAB is hidden, but page-level FAB is visible
+      // 全局唯一 FAB（由 Shell 层 DraggableFAB 管理）
       expect(find.byType(QuickCaptureFAB), findsOneWidget);
     });
   });

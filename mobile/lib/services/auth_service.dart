@@ -47,13 +47,22 @@ class AuthService {
   Future<User> register({
     required String username,
     required String password,
+    String? email,
   }) async {
+    final data = <String, dynamic>{
+      'username': username,
+      'password': password,
+    };
+    if (email != null && email.isNotEmpty) {
+      data['email'] = email;
+    } else {
+      // 后端要求 email 字段，用 username 占位
+      data['email'] = '$username@placeholder.local';
+    }
+
     final response = await _apiClient.post<Map<String, dynamic>>(
       '/auth/register',
-      data: {
-        'username': username,
-        'password': password,
-      },
+      data: data,
     );
 
     return User.fromJson(response.data!);
@@ -119,23 +128,18 @@ class AuthService {
   // ---- Private ----
 
   Future<void> _saveAuthData(AuthResult authResult) async {
-    await _storage.write(
-      key: ApiConfig.keyJwtToken,
-      value: authResult.token,
-    );
-    await _storage.write(
-      key: ApiConfig.keyUserId,
-      value: authResult.user.id,
-    );
-    await _storage.write(
-      key: ApiConfig.keyUsername,
-      value: authResult.user.username,
-    );
+    await Future.wait([
+      _storage.write(key: ApiConfig.keyJwtToken, value: authResult.token),
+      _storage.write(key: ApiConfig.keyUserId, value: authResult.user.id),
+      _storage.write(key: ApiConfig.keyUsername, value: authResult.user.username),
+    ]);
   }
 
   Future<void> _clearAuthData() async {
-    await _storage.delete(key: ApiConfig.keyJwtToken);
-    await _storage.delete(key: ApiConfig.keyUserId);
-    await _storage.delete(key: ApiConfig.keyUsername);
+    await Future.wait([
+      _storage.delete(key: ApiConfig.keyJwtToken),
+      _storage.delete(key: ApiConfig.keyUserId),
+      _storage.delete(key: ApiConfig.keyUsername),
+    ]);
   }
 }
