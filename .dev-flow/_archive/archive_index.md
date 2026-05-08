@@ -6,6 +6,16 @@
 
 ## 已完成需求包
 
+### R050: Flutter 日常可用
+
+- 状态: 已完成
+- 分支: `feat/R050-flutter-daily-usable`
+- 主题: 注册页 + 全局可拖动 FAB + 首页晨报/快捷录入 + 目标详情页 + 到期通知 + 设置 + 质量收口
+- 目录: `R050_flutter-daily-usable/`
+- 完成时间: 2026-05-08
+- 任务数: 6 (F01-F05, S06)
+- 验证: flutter test 489 + pytest 1431 + vitest 905 + build + 11 步 E2E 集成测试
+
 ### R049: Agent 评估体系运营化
 
 - 状态: 已完成
