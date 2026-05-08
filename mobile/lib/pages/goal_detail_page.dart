@@ -17,6 +17,9 @@ import '../widgets/progress_ring.dart';
 // - 删除里程碑：滑动删除确认
 // - 关联条目列表
 // - loading/empty/error 三态处理
+//
+// 使用独立的 goalDetailProvider(goalId)，
+// 与 GoalsPage 的 goalsProvider 完全隔离
 // ============================================================
 
 class GoalDetailPage extends ConsumerStatefulWidget {
@@ -38,7 +41,7 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
   }
 
   Future<void> _loadData() async {
-    final notifier = ref.read(goalsProvider.notifier);
+    final notifier = ref.read(goalDetailProvider(widget.goalId).notifier);
     await Future.wait([
       notifier.fetchGoalDetail(widget.goalId),
       notifier.fetchMilestones(widget.goalId),
@@ -54,7 +57,7 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
     final goalId = widget.goalId;
     final isCompleted = milestone.status == 'completed';
     final newStatus = isCompleted ? 'pending' : 'completed';
-    ref.read(goalsProvider.notifier).updateMilestone(
+    ref.read(goalDetailProvider(goalId).notifier).updateMilestone(
           goalId,
           milestone.id,
           {'status': newStatus},
@@ -95,7 +98,7 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
                 return;
               }
               Navigator.pop(ctx);
-              ref.read(goalsProvider.notifier).createMilestone(
+              ref.read(goalDetailProvider(widget.goalId).notifier).createMilestone(
                     widget.goalId,
                     {'title': titleController.text.trim()},
                   );
@@ -113,7 +116,7 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(goalsProvider);
+    final state = ref.watch(goalDetailProvider(widget.goalId));
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -130,18 +133,18 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
     );
   }
 
-  Widget _buildBody(GoalsState state, ThemeData theme) {
+  Widget _buildBody(GoalDetailState state, ThemeData theme) {
     // Loading state (initial load)
-    if (state.isLoading && state.selectedGoal == null) {
+    if (state.isLoading && state.goal == null) {
       return const Center(child: CircularProgressIndicator());
     }
 
     // Error state (no goal loaded)
-    if (state.error != null && state.selectedGoal == null) {
+    if (state.error != null && state.goal == null) {
       return _buildErrorState(state.error!, theme);
     }
 
-    final goal = state.selectedGoal;
+    final goal = state.goal;
     if (goal == null) {
       return const SizedBox.shrink();
     }
@@ -332,7 +335,7 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
       },
       onDismissed: (direction) {
         ref
-            .read(goalsProvider.notifier)
+            .read(goalDetailProvider(widget.goalId).notifier)
             .deleteMilestone(widget.goalId, milestone.id);
       },
       background: Container(

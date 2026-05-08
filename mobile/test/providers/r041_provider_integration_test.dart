@@ -106,7 +106,7 @@ void main() {
       expect(state.goals[1].title, 'Build App');
     });
 
-    test('fetchGoalDetail sets selectedGoal from mock API', () async {
+    test('fetchGoalDetail sets goal in goalDetailProvider', () async {
       final mockClient = _createMockClient({
         'GET /goals/g-999': {
           'id': 'g-999',
@@ -124,15 +124,17 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      await container.read(goalsProvider.notifier).fetchGoalDetail('g-999');
+      await container
+          .read(goalDetailProvider('g-999').notifier)
+          .fetchGoalDetail('g-999');
 
-      final state = container.read(goalsProvider);
+      final state = container.read(goalDetailProvider('g-999'));
       expect(state.isLoading, false);
       expect(state.error, isNull);
-      expect(state.selectedGoal, isNotNull);
-      expect(state.selectedGoal!.id, 'g-999');
-      expect(state.selectedGoal!.title, 'Deep Dive Flutter');
-      expect(state.selectedGoal!.progress, 45.0);
+      expect(state.goal, isNotNull);
+      expect(state.goal!.id, 'g-999');
+      expect(state.goal!.title, 'Deep Dive Flutter');
+      expect(state.goal!.progress, 45.0);
     });
 
     test('createMilestone refreshes milestones and goal detail', () async {
@@ -171,27 +173,28 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      // Set initial state with a goal in the list so _refreshGoalInList works
-      container.read(goalsProvider.notifier).state = GoalsState(
-        goals: [const Goal(id: 'g-1', title: 'My Goal')],
+      // Set initial state with a goal in the goals list so syncGoalBackToList works
+      container.read(goalsProvider.notifier).state = const GoalsState(
+        goals: [Goal(id: 'g-1', title: 'My Goal')],
       );
 
       final result = await container
-          .read(goalsProvider.notifier)
+          .read(goalDetailProvider('g-1').notifier)
           .createMilestone('g-1', {'title': 'New Milestone'});
 
       expect(result, true);
-      final state = container.read(goalsProvider);
-      expect(state.error, isNull);
+      final detailState = container.read(goalDetailProvider('g-1'));
+      expect(detailState.error, isNull);
       // Milestones list should be refreshed
-      expect(state.milestones, hasLength(2));
-      expect(state.milestones[0].id, 'm-new');
-      // selectedGoal should be refreshed
-      expect(state.selectedGoal, isNotNull);
-      expect(state.selectedGoal!.id, 'g-1');
-      expect(state.selectedGoal!.progress, 50.0);
-      // Goal in list should also be refreshed
-      expect(state.goals[0].progress, 50.0);
+      expect(detailState.milestones, hasLength(2));
+      expect(detailState.milestones[0].id, 'm-new');
+      // goal should be refreshed
+      expect(detailState.goal, isNotNull);
+      expect(detailState.goal!.id, 'g-1');
+      expect(detailState.goal!.progress, 50.0);
+      // Goal in goals list should also be refreshed via syncGoalBackToList
+      final goalsState = container.read(goalsProvider);
+      expect(goalsState.goals[0].progress, 50.0);
     });
 
     test('fetchGoals handles API error gracefully', () async {
@@ -220,13 +223,13 @@ void main() {
       addTearDown(container.dispose);
 
       await container
-          .read(goalsProvider.notifier)
+          .read(goalDetailProvider('nonexistent').notifier)
           .fetchGoalDetail('nonexistent');
 
-      final state = container.read(goalsProvider);
+      final state = container.read(goalDetailProvider('nonexistent'));
       expect(state.isLoading, false);
       expect(state.error, isNotNull);
-      expect(state.selectedGoal, isNull);
+      expect(state.goal, isNull);
     });
   });
 
