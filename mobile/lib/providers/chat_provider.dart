@@ -27,14 +27,16 @@ class ChatState {
   ChatState copyWith({
     List<ChatMessage>? messages,
     bool? isLoading,
-    String? error,
+    Object? error = _sentinel,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: identical(error, _sentinel) ? this.error : error as String?,
     );
   }
+
+  static const _sentinel = Object();
 }
 
 // ============================================================

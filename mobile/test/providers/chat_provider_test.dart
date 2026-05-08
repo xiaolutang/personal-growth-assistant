@@ -64,6 +64,30 @@ void main() {
       expect(copied.isLoading, false);
       expect(copied.error, isNull);
     });
+
+    // Sentinel pattern tests
+    test('copyWith without error param preserves existing error', () {
+      const state = ChatState(error: 'Existing error', isLoading: true);
+      final copied = state.copyWith(isLoading: false);
+
+      expect(copied.error, 'Existing error');
+      expect(copied.isLoading, false);
+    });
+
+    test('copyWith without error param preserves null error', () {
+      const state = ChatState(isLoading: true);
+      final copied = state.copyWith(isLoading: false);
+
+      expect(copied.error, isNull);
+      expect(copied.isLoading, false);
+    });
+
+    test('copyWith with explicit error null clears error', () {
+      const state = ChatState(error: 'Some error');
+      final copied = state.copyWith(error: null);
+
+      expect(copied.error, isNull);
+    });
   });
 
   group('ChatNotifier with ProviderContainer', () {
