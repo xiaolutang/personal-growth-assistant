@@ -4,23 +4,23 @@
 
 ### 契约对齐
 
-- [ ] B03/B04: 不修改 API 契约，纯内部重构
-- [ ] F05/F06/F09: 不修改 API 契约，纯前端优化
-- [ ] S01/S02/F07/F07b/F08: 不涉及 API，纯 Flutter 优化
+- [x] B03/B04: 不修改 API 契约，纯内部重构
+- [x] F05/F06/F09: 不修改 API 契约，纯前端优化
+- [x] S01/S02/F07/F07b/F08: 不涉及 API，纯 Flutter 优化
 
 ### 依赖对齐
 
-- [ ] S01, S02: 无依赖（P0 bug 修复）
-- [ ] B03: 无依赖
-- [ ] B04 depends_on B03 ✓
-- [ ] F05, F06: 无依赖（前端独立优化）
-- [ ] S11 depends_on 全部 ✓
+- [x] S01, S02: 无依赖（P0 bug 修复）
+- [x] B03: 无依赖
+- [x] B04 depends_on B03 ✓
+- [x] F05, F06: 无依赖（前端独立优化）
+- [x] S11 depends_on 全部 ✓
 
 ### 架构对齐
 
-- [ ] B03: HybridSearchService 通过 EntryService 构造函数注入，不依赖 router deps
-- [ ] F09: 合并后的 MorningDigestCard 放入 components/
-- [ ] 所有任务不违反 architecture.md 不变量和禁止模式
+- [x] B03: HybridSearchService 通过 EntryService 构造函数注入，不依赖 router deps
+- [x] F09: 合并后的 MorningDigestCard 放入 components/
+- [x] 所有任务不违反 architecture.md 不变量和禁止模式
 
 ## R050: Flutter 日常可用
 

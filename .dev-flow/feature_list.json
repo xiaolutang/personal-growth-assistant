@@ -627,11 +627,18 @@
         "frontend npm run build 成功",
         "Docker build 成功（docker build 或 deploy/build.sh）"
       ],
-      "files": [],
+      "files": [
+        "mobile/lib/pages/today_page.dart",
+        "mobile/lib/pages/chat_page.dart",
+        "mobile/lib/pages/review_page.dart",
+        "mobile/lib/pages/tasks_page.dart",
+        "mobile/lib/widgets/entry_card.dart",
+        "mobile/test/pages/today_page_test.dart"
+      ],
       "started_at": "2026-05-08",
-      "completed_at": "2026-05-08",
-      "commit": null,
-      "summary": "质量收口完成。pytest 1473 + vitest 923 + flutter test + analyze 0 errors + build 成功。"
+      "completed_at": "2026-05-09",
+      "commit": "603afdf",
+      "summary": "质量收口完成。pytest 1473 + vitest 923 + flutter 44 tests + analyze 0 issues + build 成功。codex_plugin code-review pass。TodayPage 下拉刷新回归已修复并覆盖测试。"
     }
   ]
 }
