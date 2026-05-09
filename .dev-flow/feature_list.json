@@ -69,6 +69,125 @@
       "completed_at": "2026-04-29"
     }
   ],
+  "workflow": {
+    "name": "R052-chat-isolation-and-today-input",
+    "mode": "B",
+    "runtime": "skill_orchestrated",
+    "review_provider": "codex_plugin",
+    "audit_provider": "codex_plugin",
+    "risk_provider": "codex_plugin",
+    "stop_hook_enabled": false
+  },
+  "active_requirement_cycle": {
+    "id": "R052",
+    "name": "chat-isolation-and-today-input",
+    "branch": "fix/R052-chat-isolation-and-today-input",
+    "status": "active"
+  },
   "archived_phases": [],
-  "features": []
+  "features": [
+    {
+      "id": "S01",
+      "phase": 1,
+      "module": "auth",
+      "name": "聊天用户隔离修复",
+      "description": "修复切换用户后聊天记录残留的 bug：登出时清除 session_id、invalidate chatProvider、清空 messages",
+      "verification": "F2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "用户 A 对话后登出，用户 B 登录进入日知页，消息列表为空",
+        "登出时 session_id 被清除，新登录生成新 session_id",
+        "登出时 chatProvider 被 invalidate，内存中无残留对话",
+        "单用户正常对话功能不受影响"
+      ],
+      "risk_tags": ["auth"],
+      "test_tasks": [
+        "测试登出后 chatProvider 状态为空",
+        "测试登出后 session_id 被清除",
+        "测试新登录后 session_id 是新生成的",
+        "测试单用户对话流程不受影响",
+        "测试 SecureStorage.clear 失败时登出不阻塞（兜底处理）",
+        "测试首次登录用户进入日知页，chatProvider 初始化为空状态"
+      ],
+      "files": [
+        "mobile/lib/providers/chat_provider.dart",
+        "mobile/lib/services/auth_service.dart",
+        "mobile/lib/pages/settings_page.dart"
+      ],
+      "fix_level": "L2",
+      "root_cause_analysis": "登出流程未清理 chat 相关状态（messages 内存 + session_id 存储），导致切换用户后前端残留旧对话",
+      "similar_locations": ["mobile/lib/providers/ 下所有 Provider 的登出清理"],
+      "planning_notes": "后端隔离正确（thread_id 含 user_id），问题仅在前端"
+    },
+    {
+      "id": "F02",
+      "phase": 2,
+      "module": "today-page",
+      "name": "Today 页输入栏改为 AI 对话入口",
+      "description": "将 Today 页底部输入栏从无条件创建 inbox 改为 AI 对话入口：闲聊→AI 回复，灵感/任务→后端 Agent 判断后创建条目。输入栏改为复用 chatProvider 的 SSE 对话能力。",
+      "verification": "F2",
+      "depends_on": ["S01"],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Today 页输入栏发送消息后走 AI 对话（SSE），不再直接创建 inbox",
+        "输入'你好'→AI 回复闲聊，不创建条目",
+        "输入'记录：完成项目报告'→后端 Agent 识别意图后创建条目",
+        "输入栏 placeholder 改为与对话相关的提示（如'和 AI 聊聊...'）",
+        "Today 页对话与日知页对话共享同一个 chatProvider 实例（不创建新 SSE 监听）",
+        "Today 页正在对话中切换到日知页，对话状态保持一致",
+        "Agent 在 Today 页创建条目后，刷新 today 数据以更新最近动态"
+      ],
+      "risk_tags": ["network"],
+      "test_tasks": [
+        "测试 Today 页输入栏发送消息走 SSE 对话",
+        "测试闲聊输入不创建条目",
+        "测试任务类输入经 Agent 处理后创建条目",
+        "测试 Today 页和日知页共享对话状态",
+        "测试空输入不触发发送",
+        "测试 SSE 超时或断网时输入栏显示错误状态",
+        "测试首次进入 Today 页时对话区域为空",
+        "测试 Today 页对话中切换到日知页再切回，对话状态保持"
+      ],
+      "files": [
+        "mobile/lib/pages/today_page.dart",
+        "mobile/lib/providers/chat_provider.dart"
+      ],
+      "planning_notes": "复用现有 chatProvider.sendMessage() 和 SSE 基础设施，Today 页增加对话气泡展示区域。复用同一个 chatProvider Riverpod 实例，不创建新的 SSE 监听。QuickCaptureFAB（悬浮按钮）保持不变，仅改 Today 页底部输入栏。Agent 创建条目后刷新 today 数据"
+    },
+    {
+      "id": "S03",
+      "phase": 3,
+      "module": "quality",
+      "name": "质量收口",
+      "description": "全量验证：pytest + vitest + flutter test + flutter analyze + build。确认修复无回归。",
+      "verification": "F2",
+      "depends_on": ["S01", "F02"],
+      "status": "pending",
+      "priority": "P3",
+      "acceptance_criteria": [
+        "pytest 全部通过",
+        "vitest 全部通过",
+        "flutter test 全部通过",
+        "flutter analyze 0 issues",
+        "frontend build 成功"
+      ],
+      "risk_tags": [],
+      "files": []
+    }
+  ],
+  "summary": {
+    "total": 3,
+    "by_status": {
+      "pending": 3,
+      "completed": 0
+    },
+    "by_priority": {
+      "P0": 1,
+      "P1": 1,
+      "P3": 1
+    }
+  }
 }

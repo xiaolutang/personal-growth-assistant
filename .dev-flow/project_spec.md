@@ -1,70 +1,48 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.51.0
-> 状态：进行中（R051）
-> 活跃分支：chore/R051-code-quality-optimization
+> 版本：v0.52.0
+> 状态：进行中（R052）
+> 活跃分支：fix/R052-chat-isolation-and-today-input
 
 ## 当前范围
 
-R051 项目代码优化：跨三端（Backend + Frontend + Flutter）的代码质量收敛、性能优化和工程健壮性提升。
+R052 聊天用户隔离 + Today 页 AI 对话入口：修复切换用户后聊天记录残留 bug，将 Today 页底部输入栏从无条件创建 inbox 改为 AI 对话入口。
 
 ### 核心问题
 
-经过 16 轮需求迭代（R036-R050），三端积累了可观的优化机会：
+真实使用发现两个关联问题：
 
-1. **Flutter P0 Bug**：goalsProvider 状态共享导致数据错乱、copyWith sentinel 缺失导致 error 被意外清除
-2. **Backend 性能**：feedback sync N+1 串行 HTTP、弃用 asyncio API、HybridSearchService 未复用缓存
-3. **Frontend 性能**：taskStore 全局 tasks 数组导致联动重渲染、列表项缺 React.memo
-4. **三端代码重复**：Flutter 8 页面共享状态组件重复 ~500 行、Frontend MorningDigestCard 两套实现、Backend Neo4j 降级模式不统一
-5. **死代码**：Frontend AgentChat (162 行) + KnowledgeGraph (262 行) + SearchResultCard + ActionIndicator 未使用
+1. **P0 Bug — 用户切换后聊天记录残留**：用户 A 对话后登出，用户 B 登录进入日知页，仍看到 A 的消息。根因：前端登出流程未清理 chat 相关状态（messages 内存 + session_id 存储）。后端隔离正确（thread_id 含 user_id），问题仅在前端。
+2. **产品设计缺陷 — Today 页输入栏功能模糊**：底部输入栏和全局悬浮按钮（FAB）都无条件调用 createInboxEntry()，无意图分类。输入栏用"聊天"隐喻但只创建 inbox，用户输入"你好"也被记为灵感。后端 ReAct Agent 已具备对话 vs 工具调用能力，但该能力仅暴露在 ChatPage tab。
 
-### Phase 1: Flutter P0 Bug 修复（2 tasks）
+### Phase 1: 用户隔离修复（1 task）
 
-1. **S01 goalsProvider 状态隔离**：GoalDetailPage 改用独立 family provider
-2. **S02 copyWith sentinel 修复**：ChatState + EntryListState 统一 sentinel 模式
+1. **S01 聊天用户隔离修复**：登出时清除 session_id、invalidate chatProvider、清空 messages
 
-### Phase 2: Backend 性能优化（2 tasks）
+### Phase 2: Today 页 AI 对话入口（1 task）
 
-3. **B03 弃用 API + HybridSearchService 复用**：asyncio + deps 缓存实例
-4. **B04 N+1 并发化 + 连接管理修复**：feedback sync gather + AnalyticsService _conn()
+2. **F02 Today 页输入栏改为 AI 对话入口**：复用 chatProvider.sendMessage() + SSE，闲聊→AI 回复，灵感/任务→后端 Agent 判断后创建条目
 
-### Phase 3: Frontend 性能 + 死代码（2 tasks）
+### Phase 3: 质量收口（1 task）
 
-5. **F05 taskStore 优化 + React.memo**：selector + memo 包裹
-6. **F06 死代码清理**：删除 AgentChat/KnowledgeGraph/SearchResultCard/ActionIndicator
-
-### Phase 4: Flutter 代码质量（3 tasks）
-
-7. **F07 共享组件提取 + EntryCard/TaskCard 去重**：EmptyState/ErrorState widget + statusIcon/tagRow
-8. **F07b formatDate 统一**：DateFormatter 工具函数替换 5 处重复实现
-9. **F08 ExplorePage TabBarView 优化 + sseService 清理**：tab 隔离 + 死代码
-
-### Phase 5: Frontend + Backend 代码质量（2 tasks）
-
-10. **F09 MorningDigestCard 合并 + BaseDialog 统一**
-11. **B10 Neo4j 降级统一 + goal_service JSON 去重**
-
-### Phase 6: 质量收口（1 task）
-
-12. **S11 全量验证**：pytest + vitest + flutter test + build
+3. **S03 全量验证**：pytest + vitest + flutter test + flutter analyze + build
 
 ## 技术约束
 
-- 纯重构/优化工作，不新增功能
-- 不修改 API 契约（不改接口签名和返回格式）
-- 不引入新依赖
-- 每个任务独立可验证、可回滚
+- S01 为纯 bug 修复，不涉及 API 契约变更
+- F02 复用现有 chatProvider + SSE 基础设施，不新增后端 API
+- F02 不修改 QuickCaptureFAB（FAB 保持纯灵感捕获功能不变）
+- Today 页对话与日知页对话共享同一个 chatProvider 状态
 
 ## 统计
 
 | 指标 | 值 |
 |------|-----|
-| 总任务数 | 12 |
-| P0 | 2（S01, S02）|
-| P1 | 7（B03, B04, F05, F06, F07, F07b, F09）|
-| P2 | 2（F08, B10）|
-| P3 | 1（S11）|
+| 总任务数 | 3 |
+| P0 | 1（S01）|
+| P1 | 1（F02）|
+| P3 | 1（S03）|
 
 ## workflow
 
