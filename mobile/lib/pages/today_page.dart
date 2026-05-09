@@ -4,10 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../config/constants.dart';
 import '../config/theme.dart';
-import '../providers/entry_provider.dart';
+import '../models/chat_message.dart';
+import '../providers/chat_provider.dart';
 import '../providers/today_provider.dart';
+import '../widgets/chat_bubble.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/entry_card.dart';
+import '../widgets/entry_created_card.dart';
 import '../widgets/error_state.dart';
 import '../widgets/morning_digest_card.dart';
 import '../widgets/progress_ring.dart';
@@ -15,6 +18,12 @@ import '../widgets/progress_ring.dart';
 
 // ============================================================
 // TodayPage - 今天 Tab 页面
+//
+// F02: 底部输入栏改为 AI 对话入口：
+// - 闲聊 → AI 回复（不创建条目）
+// - 灵感/任务 → 后端 Agent 判断后创建条目
+// - 复用 chatProvider 的 SSE 对话能力（POST /chat）
+// - page_context.page_type 传 'today'
 // ============================================================
 class TodayPage extends ConsumerStatefulWidget {
   const TodayPage({super.key});
@@ -25,6 +34,7 @@ class TodayPage extends ConsumerStatefulWidget {
 
 class _TodayPageState extends ConsumerState<TodayPage> {
   final _quickInputController = TextEditingController();
+  final _chatScrollController = ScrollController();
 
   @override
   void initState() {
@@ -32,12 +42,37 @@ class _TodayPageState extends ConsumerState<TodayPage> {
     // 页面初始化时加载数据
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(todayProvider.notifier).loadData();
+
+      // F02: 监听 chatProvider 消息变化，检测 created 事件刷新 today 数据
+      ref.listenManual(chatProvider, (previous, next) {
+        _onChatStateChanged(previous, next);
+      });
     });
+  }
+
+  /// 检测 chatProvider 中新增的 created 类型系统消息，触发 today 刷新
+  void _onChatStateChanged(ChatState? previous, ChatState next) {
+    final prevCount = previous?.messages.length ?? 0;
+    final nextCount = next.messages.length;
+
+    // 只在消息数量增加时检查（避免重复刷新）
+    if (nextCount > prevCount) {
+      // 检查新增消息中是否有 created 类型（system 角色且含创建关键字）
+      final newMessages = next.messages.sublist(prevCount);
+      final hasCreated = newMessages.any(
+        (m) => m.role == ChatMessageRole.system && (m.isCreatedCard || m.text.contains('创建')),
+      );
+      if (hasCreated) {
+        // Agent 创建条目后刷新 today 数据以更新最近动态
+        ref.read(todayProvider.notifier).loadData();
+      }
+    }
   }
 
   @override
   void dispose() {
     _quickInputController.dispose();
+    _chatScrollController.dispose();
     super.dispose();
   }
 
@@ -45,43 +80,25 @@ class _TodayPageState extends ConsumerState<TodayPage> {
     await ref.read(todayProvider.notifier).loadData();
   }
 
+  /// F02: 发送消息走 POST /chat SSE 对话（page_type='today'）
   Future<void> _handleQuickSubmit() async {
     final text = _quickInputController.text.trim();
     if (text.isEmpty) return;
 
     _quickInputController.clear();
 
-    final success = await ref
-        .read(entryListProvider.notifier)
-        .createInboxEntry(text);
-
-    if (!mounted) return;
-
-    if (success) {
-      // 刷新 today 数据以更新"最近动态"列表
-      ref.read(todayProvider.notifier).loadData();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('已记录到灵感'),
-          duration: Duration(seconds: 1),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('记录失败，请重试'),
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    // 调用 chatProvider.sendMessage()，传入 page_context
+    ref.read(chatProvider.notifier).sendMessage(
+          text,
+          pageContext: const {'page_type': 'today'},
+        );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final todayState = ref.watch(todayProvider);
+    final chatState = ref.watch(chatProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -92,12 +109,17 @@ class _TodayPageState extends ConsumerState<TodayPage> {
         onRefresh: _handleRefresh,
         child: todayState.isLoading && todayState.todayTasks.isEmpty
             ? const Center(child: CircularProgressIndicator())
-            : _buildContent(context, theme, todayState),
+            : _buildContent(context, theme, todayState, chatState),
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context, ThemeData theme, TodayState state) {
+  Widget _buildContent(
+    BuildContext context,
+    ThemeData theme,
+    TodayState state,
+    ChatState chatState,
+  ) {
     // 错误状态（用 ListView 包裹以保留下拉刷新能力）
     if (state.error != null && state.todayTasks.isEmpty && state.recentEntries.isEmpty) {
       return ListView(
@@ -140,16 +162,62 @@ class _TodayPageState extends ConsumerState<TodayPage> {
 
               // 最近动态
               _buildRecentSection(theme, state),
+
+              // F02: 对话气泡区域（嵌入在主列表下方）
+              if (chatState.messages.isNotEmpty) ...[
+                const Divider(height: 1, indent: AppSpacing.lg, endIndent: AppSpacing.lg),
+                _buildChatSection(theme, chatState),
+              ],
             ],
           ),
         ),
-        // 底部快捷录入栏
-        _buildQuickInputBar(theme),
+        // 底部快捷录入栏（改为 AI 对话入口）
+        _buildQuickInputBar(theme, chatState),
       ],
     );
   }
 
-  Widget _buildQuickInputBar(ThemeData theme) {
+  /// F02: 对话气泡区域（嵌入在内容列表底部）
+  Widget _buildChatSection(ThemeData theme, ChatState chatState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.sm,
+          ),
+          child: Text(
+            'AI 对话',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        ...chatState.messages.map((message) {
+          // 创建确认卡片
+          if (message.isCreatedCard) {
+            return EntryCreatedCard(entry: message.createdEntry!);
+          }
+
+          // AI 消息 + 打字指示器
+          final isLastMessage = message == chatState.messages.last;
+          final showTyping = chatState.isLoading &&
+              message.role == ChatMessageRole.assistant &&
+              isLastMessage;
+
+          return ChatBubble(
+            message: message,
+            showTypingIndicator: showTyping,
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildQuickInputBar(ThemeData theme, ChatState chatState) {
     return Container(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
@@ -173,9 +241,10 @@ class _TodayPageState extends ConsumerState<TodayPage> {
               child: TextField(
                 controller: _quickInputController,
                 textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _handleQuickSubmit(),
+                onSubmitted: chatState.isLoading ? null : (_) => _handleQuickSubmit(),
+                enabled: !chatState.isLoading,
                 decoration: InputDecoration(
-                  hintText: '记一条灵感...',
+                  hintText: '和 AI 聊聊...',
                   hintStyle: TextStyle(
                     color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                     fontSize: AppFontSize.body,
@@ -195,9 +264,19 @@ class _TodayPageState extends ConsumerState<TodayPage> {
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
+            // 发送按钮（对话中显示加载指示器）
             IconButton(
-              onPressed: _handleQuickSubmit,
-              icon: const Icon(Icons.send_rounded),
+              onPressed: chatState.isLoading ? null : _handleQuickSubmit,
+              icon: chatState.isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primary,
+                      ),
+                    )
+                  : const Icon(Icons.send_rounded),
               color: AppColors.primary,
               style: IconButton.styleFrom(
                 backgroundColor: AppColors.primary.withValues(alpha: 0.1),
