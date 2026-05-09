@@ -1,0 +1,171 @@
+{
+  "version": "1.4",
+  "project": "personal-growth-assistant",
+  "status": "active",
+  "updated_at": "2026-05-10",
+  "archived_requirement_cycles": [
+    {
+      "id": "R052",
+      "name": "chat-isolation-and-today-input",
+      "status": "completed",
+      "archive_dir": "_archive/R052_chat-isolation-and-today-input",
+      "total_tasks": 3,
+      "completed_at": "2026-05-09"
+    },
+    {
+      "id": "R051",
+      "name": "code-quality-optimization",
+      "status": "completed",
+      "archive_dir": "_archive/R051_code-quality-optimization",
+      "total_tasks": 12,
+      "completed_at": "2026-05-09"
+    },
+    {
+      "id": "R050",
+      "name": "flutter-daily-usable",
+      "status": "completed",
+      "archive_dir": "_archive/R050_flutter-daily-usable",
+      "total_tasks": 6,
+      "completed_at": "2026-05-08"
+    },
+    {
+      "id": "R049",
+      "name": "eval-operationalization",
+      "status": "completed",
+      "archive_dir": "_archive/R049_eval-operationalization",
+      "total_tasks": 7,
+      "completed_at": "2026-05-07"
+    },
+    {
+      "id": "R048",
+      "name": "creation-experience-upgrade",
+      "status": "completed",
+      "archive_dir": "_archive/R048_creation-experience-upgrade",
+      "total_tasks": 5,
+      "completed_at": "2026-05-03"
+    },
+    {
+      "id": "R047",
+      "name": "task-explore-reboundary",
+      "status": "completed",
+      "archive_dir": "_archive/R047_task-explore-reboundary",
+      "total_tasks": 13,
+      "completed_at": "2026-04-30"
+    },
+    {
+      "id": "R046",
+      "name": "chat-panel-refactor",
+      "status": "completed",
+      "archive_dir": "_archive/R046_chat-panel-refactor",
+      "total_tasks": 5,
+      "completed_at": "2026-04-29"
+    },
+    {
+      "id": "R045",
+      "name": "eval-html-report",
+      "status": "completed",
+      "archive_dir": "_archive/R045_eval-html-report",
+      "total_tasks": 3,
+      "completed_at": "2026-04-29"
+    },
+    {
+      "id": "R044",
+      "name": "unified-react-agent",
+      "status": "completed",
+      "archive_dir": "_archive/R044_unified-react-agent",
+      "total_tasks": 14,
+      "completed_at": "2026-04-29"
+    }
+  ],
+  "workflow": {
+    "name": "R053-today-command-bar",
+    "mode": "B",
+    "runtime": "skill_orchestrated",
+    "review_provider": "codex_plugin",
+    "audit_provider": "codex_plugin",
+    "risk_provider": "codex_plugin",
+    "stop_hook_enabled": false
+  },
+  "active_requirement_cycle": {
+    "id": "R053",
+    "name": "today-command-bar",
+    "branch": "feat/R053-today-command-bar",
+    "status": "active"
+  },
+  "archived_phases": [],
+  "features": [
+    {
+      "id": "B01",
+      "phase": 1,
+      "module": "agent",
+      "name": "后端 command 模式 + redirect 事件",
+      "description": "Agent system prompt 增加 page_type='command' 行为指引：直接执行不追问。新增 SSE `redirect` 事件类型，当闲聊意图时发出 redirect 而非纯 content。Agent command 模式下检测 ask_user 需求时，改为直接执行或返回 follow_up 提示。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "completed",
+      "priority": "P1",
+      "started_at": "2026-05-09T14:35:00",
+      "completed_at": "2026-05-09T21:25:00",
+      "actual_minutes": 150,
+      "commit": "a252200",
+      "summary": "后端 command 模式 + redirect 事件完成，三层隔离（prompt+SSE 拦截+graph 门控）"
+    },
+    {
+      "id": "F01",
+      "phase": 2,
+      "module": "today-page",
+      "name": "CommandBar Provider（独立 SSE）",
+      "description": "新建独立 commandBarProvider，使用 Dio 直接发起 SSE 请求（不经过 SseService 单例），避免与 chatProvider 的 SSE 连接冲突。每次命令生成新 session_id。解析 SSE 事件流产出 CommandResult（success/answer/redirect_chat/error）。",
+      "verification": "F2",
+      "depends_on": ["B01"],
+      "status": "completed",
+      "priority": "P0",
+      "commit": "4521a51",
+      "completed_at": "2026-05-09T22:30:00",
+      "actual_minutes": 45,
+      "summary": "F01 CommandBar Provider 完成：独立 SSE 连接、redirect 事件、debounce、retry"
+    },
+    {
+      "id": "F02",
+      "phase": 3,
+      "module": "today-page",
+      "name": "Today 页命令栏 UI + 错误处理",
+      "description": "将 Today 页从 chatProvider 聊天入口改为 commandBarProvider 命令栏。移除聊天气泡，改为内联结果展示。覆盖全部 CommandResult 类型的 UX：success → toast + 刷新，answer → 内联卡片，redirect → 跳转链接，error → 错误条 + 重试。",
+      "verification": "F2",
+      "depends_on": ["F01"],
+      "status": "completed",
+      "priority": "P0",
+      "commit": "0a0ef20",
+      "completed_at": "2026-05-09T23:00:00",
+      "actual_minutes": 30,
+      "summary": "F02 Today 页命令栏 UI 完成：内联结果、redirect 跳转、错误处理"
+    },
+    {
+      "id": "S03",
+      "phase": 4,
+      "module": "quality",
+      "name": "质量收口",
+      "description": "全量验证：pytest + vitest + flutter test + flutter analyze + build。确认无回归。包含首用 smoke：命令栏第一次输入→结果展示→错误重试。",
+      "verification": "F2",
+      "depends_on": ["B01", "F01", "F02"],
+      "status": "completed",
+      "priority": "P3",
+      "commit": "82a0aa9",
+      "completed_at": "2026-05-10T01:00:00",
+      "actual_minutes": 60,
+      "summary": "质量收口完成：1495 pytest + 923 vitest + flutter test + Docker smoke 全通过"
+    }
+  ],
+  "summary": {
+    "total": 4,
+    "by_status": {
+      "completed": 4,
+      "pending": 0
+    },
+    "by_priority": {
+      "P0": 2,
+      "P1": 1,
+      "P3": 1
+    }
+  }
+}

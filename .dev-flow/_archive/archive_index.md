@@ -6,6 +6,16 @@
 
 ## 已完成需求包
 
+### R053: Today 页智能命令栏
+
+- 状态: 已完成
+- 分支: `feat/R053-today-command-bar`
+- 主题: Today 页底部输入栏改为智能命令栏，AI 判断意图后内联展示结果，闲聊/倾诉 redirect 到日知对话
+- 目录: `R053_today-command-bar/`
+- 完成时间: 2026-05-10
+- 任务数: 4 (B01, F01, F02, S03)
+- 验证: pytest 1495 + vitest 923 + flutter test + 22 e2e 集成测试 + Docker smoke
+
 ### R052: 聊天用户隔离 + Today 页 AI 对话入口
 
 - 状态: 已完成
