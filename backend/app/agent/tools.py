@@ -26,6 +26,8 @@ from app.agent.schemas import (
     GetReviewSummaryOutput,
     AskUserInput,
     AskUserOutput,
+    RedirectToChatInput,
+    RedirectToChatOutput,
     ToolResult,
 )
 
@@ -500,6 +502,40 @@ ask_user_tool = StructuredTool.from_function(
 )
 
 
+async def _redirect_to_chat(
+    reason: str = "conversational",
+    *,
+    dependencies: ToolDependencies,
+    user_id: str = "_default",
+) -> Dict[str, Any]:
+    """标记闲聊/非任务意图，触发前端跳转到日知页面继续对话。
+
+    command 模式专用。其他模式下不应使用此工具。
+
+    Args:
+        reason: 跳转原因
+        dependencies: 依赖容器
+        user_id: 用户ID
+
+    Returns:
+        RedirectToChatOutput 字典
+    """
+    output = RedirectToChatOutput(reason=reason)
+    return output.model_dump()
+
+
+redirect_to_chat_tool = StructuredTool.from_function(
+    coroutine=_redirect_to_chat,
+    name="redirect_to_chat",
+    description=(
+        "当检测到用户意图是闲聊、倾诉、情感交流等非操作类意图时，"
+        "调用此工具将用户引导到日知页面继续深度对话。"
+        "仅在 command 模式下使用。"
+    ),
+    args_schema=RedirectToChatInput,
+)
+
+
 # === Tool 注册表 ===
 
 AGENT_TOOLS: List[StructuredTool] = [
@@ -513,3 +549,6 @@ AGENT_TOOLS: List[StructuredTool] = [
 ]
 
 AGENT_TOOL_NAMES: set[str] = {t.name for t in AGENT_TOOLS}
+
+# command 模式专用工具，不注册到全局 AGENT_TOOLS
+COMMAND_ONLY_TOOLS: List[StructuredTool] = [redirect_to_chat_tool]

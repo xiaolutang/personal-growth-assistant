@@ -292,6 +292,7 @@ class ReActAgentGraph:
         checkpointer: AsyncSqliteSaver,
         max_iterations: int = MAX_ITERATIONS,
         callbacks: list[Any] | None = None,
+        command_only_tools: list[BaseTool] | None = None,
     ):
         self.chat_model = chat_model
         self.tools = tools
@@ -306,8 +307,18 @@ class ReActAgentGraph:
         if callbacks:
             self._callbacks.extend(callbacks)
 
-        # 将 tools 绑定到 chat_model
+        # command 模式专用工具（如 redirect_to_chat）
+        self._command_only_tools = command_only_tools or []
+
+        # 将 tools 绑定到 chat_model（基础版，不含 command-only 工具）
         self.bound_model = chat_model.bind_tools(tools)
+        # command 模式版，额外绑定 command-only 工具
+        if self._command_only_tools:
+            self._command_bound_model = chat_model.bind_tools(
+                tools + self._command_only_tools
+            )
+        else:
+            self._command_bound_model = self.bound_model
 
         # 构建图
         self.graph = self._build_graph()
@@ -322,6 +333,7 @@ class ReActAgentGraph:
         db_path: str | None = None,
         max_iterations: int = MAX_ITERATIONS,
         callbacks: list[Any] | None = None,
+        command_only_tools: list[BaseTool] | None = None,
     ) -> "ReActAgentGraph":
         """工厂方法：创建 ReActAgentGraph 实例。
 
@@ -333,6 +345,7 @@ class ReActAgentGraph:
             db_path: SQLite 数据库路径（checkpointer 用）
             max_iterations: 最大迭代次数
             callbacks: 额外的 callback 列表（如 Langfuse handler）
+            command_only_tools: command 模式专用工具列表
         """
         import aiosqlite
         from openai import AsyncOpenAI
@@ -361,6 +374,7 @@ class ReActAgentGraph:
             checkpointer=checkpointer,
             max_iterations=max_iterations,
             callbacks=callbacks,
+            command_only_tools=command_only_tools,
         )
 
     def _build_graph(self):
@@ -442,7 +456,9 @@ class ReActAgentGraph:
         all_messages = [SystemMessage(content=system_prompt)] + messages
 
         try:
-            response = await self.bound_model.ainvoke(all_messages, config=config)
+            # command 模式使用含 command-only 工具的 bound_model
+            model = self._command_bound_model if page == "command" else self.bound_model
+            response = await model.ainvoke(all_messages, config=config)
         except Exception as e:
             logger.error("ReAct Agent LLM 调用异常: %s", e, exc_info=True)
             return {
@@ -485,8 +501,10 @@ class ReActAgentGraph:
                 "iteration_count": state.get("iteration_count", 0) + 1,
             }
 
-        # 构建 tool 名称 → tool 实例的映射
+        # 构建 tool 名称 → tool 实例的映射（包含 command-only 工具）
         tools_by_name = {t.name: t for t in self.tools}
+        for t in self._command_only_tools:
+            tools_by_name[t.name] = t
 
         tool_messages = []
         for tc in last_ai_message.tool_calls:
@@ -600,9 +618,9 @@ class ReActAgentGraph:
             # 没有 tool_calls，结束
             return ROUTE_END
 
-        # 检查是否包含 ask_user
+        # 检查是否包含 ask_user 或 redirect_to_chat（终止循环的工具）
         for tc in last_ai_message.tool_calls:
-            if tc["name"] == "ask_user":
+            if tc["name"] in ("ask_user", "redirect_to_chat"):
                 return ROUTE_END
 
         # 其他 tool_calls → 继续循环

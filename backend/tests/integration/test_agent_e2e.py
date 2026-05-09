@@ -100,7 +100,7 @@ async def e2e_client(storage, test_user) -> AsyncGenerator[AsyncClient, None]:
     from app.main import app
     from app.services.auth_service import create_access_token
     from app.services.agent_service import AgentService
-    from app.agent.tools import ToolDependencies, AGENT_TOOLS
+    from app.agent.tools import ToolDependencies, AGENT_TOOLS, COMMAND_ONLY_TOOLS
     from app.agent.react_agent import ReActAgentGraph
     from app.routers import parse as parse_module
     from app.routers import deps
@@ -134,6 +134,7 @@ async def e2e_client(storage, test_user) -> AsyncGenerator[AsyncClient, None]:
         chat_model=chat_model,
         tools=AGENT_TOOLS,
         checkpointer=checkpointer,
+        command_only_tools=COMMAND_ONLY_TOOLS,
     )
 
     # 构建 ToolDependencies（注入真实 entry_service）

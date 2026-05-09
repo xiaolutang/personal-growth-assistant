@@ -609,7 +609,7 @@ class TestToolRegistration:
     """Tool 注册表测试"""
 
     def test_all_tools_registered(self):
-        """所有 7 个 tools 都已注册"""
+        """7 个基础 tools 已注册，redirect_to_chat 不在全局列表中"""
         assert len(AGENT_TOOLS) == 7
         expected_names = {
             "create_entry",
@@ -621,6 +621,12 @@ class TestToolRegistration:
             "ask_user",
         }
         assert AGENT_TOOL_NAMES == expected_names
+
+    def test_command_only_tools_registered(self):
+        """redirect_to_chat 在 COMMAND_ONLY_TOOLS 中"""
+        from app.agent.tools import COMMAND_ONLY_TOOLS
+        assert len(COMMAND_ONLY_TOOLS) == 1
+        assert COMMAND_ONLY_TOOLS[0].name == "redirect_to_chat"
 
     def test_tools_have_description(self):
         """所有 tools 都有描述"""

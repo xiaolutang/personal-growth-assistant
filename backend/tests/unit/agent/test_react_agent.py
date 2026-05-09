@@ -765,3 +765,71 @@ class TestPrompts:
 
         prompt = build_system_prompt(current_time="2026-04-28 10:00")
         assert "页面上下文" not in prompt
+
+    def test_build_system_prompt_command_page(self):
+        """command 页面角色 prompt 包含关键指引"""
+        from app.agent.prompts import build_system_prompt
+
+        prompt = build_system_prompt(
+            page="command",
+            current_time="2026-04-28 10:00",
+        )
+        assert "command" in prompt.lower() or "指令" in prompt or "直接" in prompt
+
+    def test_command_role_in_page_role_prompts(self):
+        """PAGE_ROLE_PROMPTS 包含 command 角色"""
+        from app.agent.prompts import PAGE_ROLE_PROMPTS
+
+        assert "command" in PAGE_ROLE_PROMPTS
+        assert "command" in PAGE_ROLE_PROMPTS["command"].lower() or "指令" in PAGE_ROLE_PROMPTS["command"]
+
+
+class TestCommandOnlyTools:
+    """测试 command 模式专用工具隔离"""
+
+    def test_command_only_tools_not_in_agent_tools(self):
+        """redirect_to_chat 不在全局 AGENT_TOOLS 中"""
+        from app.agent.tools import AGENT_TOOLS, AGENT_TOOL_NAMES
+        tool_names = {t.name for t in AGENT_TOOLS}
+        assert "redirect_to_chat" not in tool_names
+        assert "redirect_to_chat" not in AGENT_TOOL_NAMES
+
+    def test_command_only_tools_registered(self):
+        """redirect_to_chat 在 COMMAND_ONLY_TOOLS 中"""
+        from app.agent.tools import COMMAND_ONLY_TOOLS
+        assert len(COMMAND_ONLY_TOOLS) == 1
+        assert COMMAND_ONLY_TOOLS[0].name == "redirect_to_chat"
+
+    def test_graph_with_command_tools(self, checkpointer):
+        """ReActAgentGraph 构造时接受 command_only_tools 并创建独立 bound_model"""
+        from app.agent.tools import AGENT_TOOLS, COMMAND_ONLY_TOOLS
+        from app.agent.react_agent import ReActAgentGraph
+
+        client = MockAsyncOpenAIClient()
+        model = OpenAICompatibleChatModel(client=client, model_name="test")
+
+        graph = ReActAgentGraph(
+            chat_model=model,
+            tools=AGENT_TOOLS,
+            checkpointer=checkpointer,
+            command_only_tools=COMMAND_ONLY_TOOLS,
+        )
+
+        # command_bound_model 应不同于 bound_model
+        assert graph.bound_model is not graph._command_bound_model
+
+    def test_graph_without_command_tools(self, checkpointer):
+        """无 command_only_tools 时两个 bound_model 相同"""
+        from app.agent.tools import AGENT_TOOLS
+        from app.agent.react_agent import ReActAgentGraph
+
+        client = MockAsyncOpenAIClient()
+        model = OpenAICompatibleChatModel(client=client, model_name="test")
+
+        graph = ReActAgentGraph(
+            chat_model=model,
+            tools=AGENT_TOOLS,
+            checkpointer=checkpointer,
+        )
+
+        assert graph.bound_model is graph._command_bound_model
