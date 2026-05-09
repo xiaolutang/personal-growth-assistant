@@ -7,7 +7,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_assistant/config/api_config.dart';
 import 'package:growth_assistant/models/chat_message.dart';
+import 'package:growth_assistant/models/command_result.dart';
 import 'package:growth_assistant/providers/chat_provider.dart';
+import 'package:growth_assistant/providers/command_bar_provider.dart';
 import 'package:growth_assistant/services/api_client.dart';
 import 'package:growth_assistant/services/auth_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -250,5 +252,63 @@ void main() {
     verify(() => mockStorage.delete(key: ApiConfig.keyUserId)).called(1);
     verify(() => mockStorage.delete(key: ApiConfig.keyUsername)).called(1);
     verify(() => mockStorage.delete(key: ApiConfig.keySessionId)).called(1);
+  });
+
+  // ----------------------------------------------------------
+  // 测试 10: logout 后 commandBarProvider 被 invalidate，状态为空
+  // ----------------------------------------------------------
+  test('logout 后 commandBarProvider 被 invalidate，状态为空', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final commandBarNotifier = container.read(commandBarProvider.notifier);
+    commandBarNotifier.state = const CommandBarState(
+      isLoading: true,
+      lastInput: '用户敏感命令',
+      result: CommandResult(
+        type: CommandResultType.answer,
+        message: 'AI 敏感回复',
+        answer: 'AI 敏感回复',
+      ),
+    );
+
+    // 验证状态已写入
+    expect(container.read(commandBarProvider).lastInput, '用户敏感命令');
+    expect(container.read(commandBarProvider).result, isNotNull);
+
+    // invalidate commandBarProvider（模拟 logout）
+    container.invalidate(commandBarProvider);
+
+    // invalidate 后状态应回到初始空状态
+    expect(container.read(commandBarProvider).isLoading, false);
+    expect(container.read(commandBarProvider).result, isNull);
+    expect(container.read(commandBarProvider).lastInput, isNull);
+  });
+
+  // ----------------------------------------------------------
+  // 测试 11: 401 回调后 commandBarProvider 被 invalidate
+  // ----------------------------------------------------------
+  test('401 回调触发后 commandBarProvider 被 invalidate', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final commandBarNotifier = container.read(commandBarProvider.notifier);
+    commandBarNotifier.state = const CommandBarState(
+      isLoading: false,
+      lastInput: '401 前的命令',
+      result: CommandResult(
+        type: CommandResultType.error,
+        message: '连接超时',
+      ),
+    );
+
+    expect(container.read(commandBarProvider).result, isNotNull);
+
+    // 模拟 401 回调：invalidate commandBarProvider
+    container.invalidate(commandBarProvider);
+
+    // 验证状态已清空
+    expect(container.read(commandBarProvider).result, isNull);
+    expect(container.read(commandBarProvider).lastInput, isNull);
   });
 }

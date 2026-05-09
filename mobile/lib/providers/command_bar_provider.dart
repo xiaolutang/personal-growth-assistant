@@ -88,6 +88,11 @@ class CommandBarNotifier extends Notifier<CommandBarState> {
     _doExecute(last);
   }
 
+  /// 清除结果（关闭内联卡片）
+  void clearResult() {
+    state = CommandBarState(lastInput: state.lastInput);
+  }
+
   Future<void> _doExecute(String text) async {
     final authState = ref.read(authProvider);
     final userId = authState.whenOrNull<String>(
@@ -297,7 +302,7 @@ class CommandBarNotifier extends Notifier<CommandBarState> {
           state = CommandBarState(
             isLoading: false,
             lastInput: text,
-            result: CommandResult(
+            result: const CommandResult(
               type: CommandResultType.error,
               message: '响应格式异常',
             ),
