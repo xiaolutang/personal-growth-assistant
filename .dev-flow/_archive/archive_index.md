@@ -6,6 +6,16 @@
 
 ## 已完成需求包
 
+### R051: 项目代码优化
+
+- 状态: 已完成
+- 分支: `chore/R051-code-quality-optimization`
+- 主题: 代码质量优化 — 状态隔离 + 并发优化 + 死代码清理 + 共享组件提取 + Neo4j 降级 + 质量收口
+- 目录: `R051_code-quality-optimization/`
+- 完成时间: 2026-05-09
+- 任务数: 12 (S01, S02, B03, B04, F05, F06, F07, F07b, F08, F09, B10, S11)
+- 验证: pytest 1473 + vitest 923 + flutter 44 + analyze 0 issues + build + codex_plugin code-review pass
+
 ### R050: Flutter 日常可用
 
 - 状态: 已完成
