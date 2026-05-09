@@ -6,6 +6,16 @@
 
 ## 已完成需求包
 
+### R052: 聊天用户隔离 + Today 页 AI 对话入口
+
+- 状态: 已完成
+- 分支: `fix/R052-chat-isolation-and-today-input`
+- 主题: 聊天用户隔离修复（logout + 401 双路径清理）+ Today 页输入栏接入 AI 对话
+- 目录: `R052_chat-isolation-and-today-input/`
+- 完成时间: 2026-05-09
+- 任务数: 3 (S01, F02, S03)
+- 验证: pytest 1473 + vitest 923 + flutter 589 + Docker 集成 + iOS 模拟器集成
+
 ### R051: 项目代码优化
 
 - 状态: 已完成
