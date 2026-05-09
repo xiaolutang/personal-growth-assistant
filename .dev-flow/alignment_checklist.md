@@ -21,7 +21,10 @@
 ### 架构对齐
 
 - [ ] F01: commandBarProvider 独立于 chatProvider，不共享 SseService 实例
-- [ ] F01: 使用 Dio 直接发起 SSE 请求（不经过 SseService 单例），避免与 chatProvider SSE 连接冲突
+- [ ] F01: 使用 Dio 直接发起 SSE 请求（复用 apiClientProvider Dio 实例），避免与 chatProvider SSE 连接冲突
+- [ ] F01: 提取 SseParser 工具类复用 SseService._parseSseBlock 逻辑
+- [ ] F01: 发送新命令时自动取消上次未完成的 SSE 连接 + debounce 300ms
+- [ ] B01: command 模式跳过 session 元数据写入（不污染会话列表）
 - [ ] F01: 遵循 MVVM — Widget → commandBarProvider(Notifier) → Dio SSE
 - [ ] F02: 移除 Today 页对 chatProvider 的全部依赖（import、watch、listener）
 - [ ] F02: 不违反 architecture.md 禁止模式：多 Provider 不监听同一 SSE 连接
@@ -32,12 +35,12 @@
 
 | SSE 事件 | CommandResult 类型 | F02 UX |
 |----------|-------------------|--------|
-| created | task_created / note_created / entry_created | SnackBar toast + todayProvider 刷新 |
-| updated | entry_updated | SnackBar toast + todayProvider 刷新 |
+| created / updated | success | SnackBar toast + todayProvider 刷新 |
 | content (无 tool_call) | answer | 内联卡片展示 |
 | redirect | redirect_chat | "在日知中继续对话 →" 跳转链接 |
-| tool_call(ask_user) | follow_up | 内联追问卡片，允许在同一命令内回复 |
 | error | error | 输入框下方错误条 + 重试按钮 |
+
+> 注：follow_up 已移除，因 B01 command 模式禁止 ask_user 追问。created/updated 合并为 success 简化前端处理。
 
 ### 执行顺序
 
