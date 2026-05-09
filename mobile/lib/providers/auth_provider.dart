@@ -6,6 +6,7 @@ import '../config/api_config.dart';
 import '../models/user.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import 'chat_provider.dart' show chatProvider;
 
 // ============================================================
 // AuthState - 认证状态
@@ -136,13 +137,37 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       // 登出失败不影响本地状态清除
     }
 
+    // 清除 chat 相关状态（invalidate 触发 ChatNotifier 重建，返回空状态）
+    ref.invalidate(chatProvider);
+
     state = const AsyncData<AuthState>(AuthUnauthenticated());
   }
 
   /// 401 回调：清除内存状态 + storage，不调用后端 logout 接口
   void _onApiUnauthorized() {
+    // 清除 chat 相关状态（invalidate 触发 ChatNotifier 重建，返回空状态）
+    ref.invalidate(chatProvider);
+
+    // 清除本地存储的认证数据（包括 session_id）
+    _clearSessionData();
+
     // 直接重置内存状态
     state = const AsyncData<AuthState>(AuthUnauthenticated());
+  }
+
+  /// 清除本地存储的认证数据（用于 401 场景，不调用后端 logout 接口）
+  Future<void> _clearSessionData() async {
+    try {
+      final storage = ref.read(secureStorageProvider);
+      await Future.wait([
+        storage.delete(key: ApiConfig.keyJwtToken),
+        storage.delete(key: ApiConfig.keyUserId),
+        storage.delete(key: ApiConfig.keyUsername),
+        storage.delete(key: ApiConfig.keySessionId),
+      ]);
+    } catch (_) {
+      // SecureStorage.clear 失败时不阻塞登出流程
+    }
   }
 
   /// 获取当前 session_id

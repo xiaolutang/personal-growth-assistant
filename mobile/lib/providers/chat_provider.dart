@@ -44,7 +44,7 @@ class ChatState {
 // ============================================================
 class ChatNotifier extends Notifier<ChatState> {
   StreamSubscription<SseEvent>? _currentSubscription;
-  late final SseService _sseService;
+  late SseService _sseService;
 
   @override
   ChatState build() {
@@ -251,6 +251,16 @@ class ChatNotifier extends Notifier<ChatState> {
     }
 
     return sessionId;
+  }
+
+  /// 清空所有消息和错误状态（用于用户切换时重置对话）
+  void clearMessages() {
+    // 取消正在进行的 SSE 连接
+    _currentSubscription?.cancel();
+    _currentSubscription = null;
+    _sseService.cancel();
+
+    state = const ChatState();
   }
 
 }
