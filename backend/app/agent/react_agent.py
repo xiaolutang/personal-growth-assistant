@@ -84,6 +84,9 @@ MAX_ITERATIONS = 5
 ROUTE_TOOLS = "tools"
 ROUTE_END = "__end__"
 
+# ── 终止循环的工具名称 ──
+TERMINATING_TOOLS = frozenset({"ask_user", "redirect_to_chat"})
+
 
 # ── 自定义 Chat Model（基于 OpenAI 兼容 API）──
 
@@ -456,8 +459,7 @@ class ReActAgentGraph:
         all_messages = [SystemMessage(content=system_prompt)] + messages
 
         try:
-            # command 模式使用含 command-only 工具的 bound_model
-            model = self._command_bound_model if page == "command" else self.bound_model
+            model = self._command_bound_model if self._has_command_tools(page) else self.bound_model
             response = await model.ainvoke(all_messages, config=config)
         except Exception as e:
             logger.error("ReAct Agent LLM 调用异常: %s", e, exc_info=True)
@@ -501,10 +503,13 @@ class ReActAgentGraph:
                 "iteration_count": state.get("iteration_count", 0) + 1,
             }
 
-        # 构建 tool 名称 → tool 实例的映射（包含 command-only 工具）
+        # 构建 tool 名称 → tool 实例的映射
+        # command-only 工具仅在 command 页面下可用
         tools_by_name = {t.name: t for t in self.tools}
-        for t in self._command_only_tools:
-            tools_by_name[t.name] = t
+        page = configurable.get("page", "")
+        if self._has_command_tools(page):
+            for t in self._command_only_tools:
+                tools_by_name[t.name] = t
 
         tool_messages = []
         for tc in last_ai_message.tool_calls:
@@ -618,9 +623,9 @@ class ReActAgentGraph:
             # 没有 tool_calls，结束
             return ROUTE_END
 
-        # 检查是否包含 ask_user 或 redirect_to_chat（终止循环的工具）
+        # 检查是否包含终止循环的工具
         for tc in last_ai_message.tool_calls:
-            if tc["name"] in ("ask_user", "redirect_to_chat"):
+            if tc["name"] in TERMINATING_TOOLS:
                 return ROUTE_END
 
         # 其他 tool_calls → 继续循环
@@ -718,6 +723,10 @@ class ReActAgentGraph:
             stream_mode="updates",
         ):
             yield event
+
+    def _has_command_tools(self, page: str) -> bool:
+        """判断当前 page 是否需要使用 command-only 工具集。"""
+        return bool(self._command_only_tools) and page == "command"
 
     async def clear_thread(self, thread_id: str):
         """清空指定线程的对话历史"""

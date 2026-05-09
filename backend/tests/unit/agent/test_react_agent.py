@@ -21,6 +21,7 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
+from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from app.agent.react_agent import (
@@ -833,3 +834,108 @@ class TestCommandOnlyTools:
         )
 
         assert graph.bound_model is graph._command_bound_model
+
+    @pytest.mark.asyncio
+    async def test_tool_node_rejects_command_only_tool_on_non_command_page(self, checkpointer):
+        """非 command 页面下 _tool_node 不执行 command-only 工具，返回"未知工具"错误"""
+        from app.agent.tools import AGENT_TOOLS, COMMAND_ONLY_TOOLS, ToolDependencies
+        from app.agent.react_agent import ReActAgentGraph, ReActAgentState
+
+        client = MockAsyncOpenAIClient()
+        model = OpenAICompatibleChatModel(client=client, model_name="test")
+
+        graph = ReActAgentGraph(
+            chat_model=model,
+            tools=AGENT_TOOLS,
+            checkpointer=checkpointer,
+            command_only_tools=COMMAND_ONLY_TOOLS,
+        )
+
+        # 模拟 LLM 在非 command 页面下调用了 redirect_to_chat
+        state: ReActAgentState = {
+            "messages": [
+                AIMessage(
+                    content="",
+                    tool_calls=[
+                        {
+                            "id": "tc_redirect_non_cmd",
+                            "name": "redirect_to_chat",
+                            "args": {"reason": "conversational"},
+                            "type": "tool_call",
+                        }
+                    ],
+                ),
+            ],
+            "iteration_count": 1,
+        }
+
+        # 使用 home 页面（非 command）
+        config: RunnableConfig = {
+            "configurable": {
+                "thread_id": "test-non-cmd",
+                "user_id": "user1",
+                "dependencies": MagicMock(spec=ToolDependencies),
+                "page": "home",
+            }
+        }
+
+        result = await graph._tool_node(state, config)
+        tool_msgs = result["messages"]
+
+        # redirect_to_chat 在 home 页面下应被视为"未知工具"
+        assert len(tool_msgs) == 1
+        assert "未知工具" in tool_msgs[0].content
+        assert tool_msgs[0].tool_call_id == "tc_redirect_non_cmd"
+
+    @pytest.mark.asyncio
+    async def test_tool_node_executes_command_only_tool_on_command_page(self, checkpointer):
+        """command 页面下 _tool_node 正常执行 command-only 工具"""
+        from app.agent.tools import AGENT_TOOLS, COMMAND_ONLY_TOOLS, ToolDependencies
+        from app.agent.react_agent import ReActAgentGraph, ReActAgentState
+
+        client = MockAsyncOpenAIClient()
+        model = OpenAICompatibleChatModel(client=client, model_name="test")
+
+        graph = ReActAgentGraph(
+            chat_model=model,
+            tools=AGENT_TOOLS,
+            checkpointer=checkpointer,
+            command_only_tools=COMMAND_ONLY_TOOLS,
+        )
+
+        state: ReActAgentState = {
+            "messages": [
+                AIMessage(
+                    content="",
+                    tool_calls=[
+                        {
+                            "id": "tc_redirect_cmd",
+                            "name": "redirect_to_chat",
+                            "args": {"reason": "conversational"},
+                            "type": "tool_call",
+                        }
+                    ],
+                ),
+            ],
+            "iteration_count": 1,
+        }
+
+        config: RunnableConfig = {
+            "configurable": {
+                "thread_id": "test-cmd",
+                "user_id": "user1",
+                "dependencies": MagicMock(spec=ToolDependencies),
+                "page": "command",
+            }
+        }
+
+        result = await graph._tool_node(state, config)
+        tool_msgs = result["messages"]
+
+        # command 页面下应正常执行
+        assert len(tool_msgs) == 1
+        assert "未知工具" not in tool_msgs[0].content
+        # 应包含 reason 和 target 字段
+        parsed = json.loads(tool_msgs[0].content)
+        assert parsed["reason"] == "conversational"
+        assert parsed["target"] == "chat"

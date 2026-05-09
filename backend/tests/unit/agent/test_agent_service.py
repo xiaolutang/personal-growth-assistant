@@ -1213,3 +1213,68 @@ class TestCommandModeContentEvent:
         # 无 tool_call 的直接回答应该产生 content，不应该 redirect
         assert "content" in event_types
         assert "redirect" not in event_types
+
+
+class TestNonCommandModeRedirectDefensive:
+    """非 command 模式下意外调用 redirect_to_chat → 防御性降级为 content"""
+
+    @pytest.mark.asyncio
+    async def test_home_mode_redirect_to_chat_downgrades_to_content(self):
+        """home 模式下 LLM 意外调用 redirect_to_chat → 降级为 content 而非 redirect"""
+        from langchain_core.messages import AIMessage, ToolMessage
+
+        tool_call_id = "call_redirect_defense_001"
+        events = [
+            {
+                "agent": {
+                    "messages": [
+                        AIMessage(
+                            content="",
+                            tool_calls=[
+                                {
+                                    "id": tool_call_id,
+                                    "name": "redirect_to_chat",
+                                    "args": {"reason": "conversational"},
+                                    "type": "tool_call",
+                                }
+                            ],
+                        )
+                    ]
+                }
+            },
+            {
+                "tools": {
+                    "messages": [
+                        ToolMessage(
+                            content=json.dumps({"reason": "conversational", "target": "chat"}),
+                            tool_call_id=tool_call_id,
+                        ),
+                    ]
+                }
+            },
+        ]
+
+        service = _make_agent_service(stream_events=events)
+
+        # 使用 home 模式（非 command）
+        mock_page_ctx = MagicMock()
+        mock_page_ctx.page_type = "home"
+        mock_page_ctx.entry_id = None
+        mock_page_ctx.extra = None
+
+        result = await _collect_sse(
+            service,
+            text="你好",
+            thread_id="user1:home-sess1",
+            user_id="user1",
+            page_context=mock_page_ctx,
+        )
+
+        event_types = [e[0] for e in result]
+
+        # 不应产生 redirect 事件（降级为 content）
+        assert "redirect" not in event_types
+        # 应产生 content 事件
+        assert "content" in event_types
+        content_events = [d for e, d in result if e == "content"]
+        assert any("日知" in c.get("content", "") for c in content_events)

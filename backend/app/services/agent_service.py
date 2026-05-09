@@ -244,24 +244,19 @@ class AgentService:
                     tool_name = tc.get("name", "")
                     tc_id = tc.get("id", "")
 
-                    # command 模式下 redirect_to_chat → redirect SSE 事件
-                    if tool_name == "redirect_to_chat" and is_command_mode:
-                        reason = tc.get("args", {}).get("reason", "conversational")
-                        yield sse_event("redirect", {
-                            "reason": reason,
-                            "target": "chat",
-                        })
-                        # 记录 call ID 以跳过后续 ToolMessage
-                        intercepted_call_ids.add(tc_id)
+                    # command 模式下拦截特定工具调用
+                    intercepted = self._intercept_command_tool_call(
+                        tc, is_command_mode, intercepted_call_ids,
+                    )
+                    if intercepted is not None:
+                        yield intercepted
                         continue
 
-                    # command 模式下拦截 ask_user，替换为 content
-                    if tool_name == "ask_user" and is_command_mode:
-                        question = tc.get("args", {}).get("question", "")
-                        yield sse_event("content", {
-                            "content": question if question else "请提供更多信息。",
-                        })
+                    # 防御性处理：非 command 模式下 redirect_to_chat 降级为 content
+                    if tool_name == "redirect_to_chat" and not is_command_mode:
+                        logger.warning("非 command 模式下收到 redirect_to_chat 调用，降级为 content")
                         intercepted_call_ids.add(tc_id)
+                        yield sse_event("content", {"content": "这条消息适合在日知中讨论。"})
                         continue
 
                     # 记录 tool_call 开始时间
@@ -338,6 +333,37 @@ class AgentService:
         elif isinstance(msg, HumanMessage):
             # 忽略用户消息（是我们自己注入的）
             pass
+
+    @staticmethod
+    def _intercept_command_tool_call(
+        tc: dict,
+        is_command_mode: bool,
+        intercepted_call_ids: set[str],
+    ) -> str | None:
+        """command 模式下拦截特定工具调用，返回 SSE 事件或 None。
+
+        处理 redirect_to_chat（→ redirect 事件）和 ask_user（→ content 事件）。
+        非 command 模式返回 None，由调用方做防御性处理。
+        """
+        if not is_command_mode:
+            return None
+
+        tool_name = tc.get("name", "")
+        tc_id = tc.get("id", "")
+
+        if tool_name == "redirect_to_chat":
+            reason = tc.get("args", {}).get("reason", "conversational")
+            intercepted_call_ids.add(tc_id)
+            return sse_event("redirect", {"reason": reason, "target": "chat"})
+
+        if tool_name == "ask_user":
+            question = tc.get("args", {}).get("question", "")
+            intercepted_call_ids.add(tc_id)
+            return sse_event("content", {
+                "content": question if question else "请提供更多信息。",
+            })
+
+        return None
 
     @staticmethod
     def _extract_event_type(event_str: str) -> str:
