@@ -50,7 +50,7 @@
   "text": "string (required) — 用户输入文本",
   "session_id": "string (required) — 会话 ID",
   "page_context": {
-    "page_type": "home|tasks|notes|inbox|projects|explore|review|entry_detail",
+    "page_type": "home|today|tasks|notes|inbox|projects|explore|review|entry_detail",
     "entry_id": "string? (entry_detail 页面时必填)",
     "extra": "object?"
   }
