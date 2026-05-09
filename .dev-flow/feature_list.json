@@ -94,7 +94,12 @@
       "description": "修复切换用户后聊天记录残留的 bug：在 AuthNotifier 层（logout + _onApiUnauthorized 两条路径）清除 session_id 并 invalidate chatProvider，确保全局状态一致",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-05-09T10:40:00+0800",
+      "completed_at": "2026-05-09T11:00:00+0800",
+      "commit": "b3445d1",
+      "evidence_file": "evidence/S01.md",
+      "summary": "AuthNotifier 层统一清理 chat 状态（logout + 401 双路径），9 个新测试全部通过",
       "priority": "P0",
       "acceptance_criteria": [
         "用户 A 对话后手动登出，用户 B 登录进入日知页，消息列表为空",
@@ -133,7 +138,12 @@
       "description": "将 Today 页底部输入栏从无条件创建 inbox 改为 AI 对话入口：闲聊→AI 回复，灵感/任务→后端 Agent 判断后创建条目。输入栏复用 chatProvider 的 SSE 对话能力（POST /chat），page_context.page_type 传 'today'。",
       "verification": "F2",
       "depends_on": ["S01"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-05-09T11:10:00+0800",
+      "completed_at": "2026-05-09T11:35:00+0800",
+      "commit": "ab0fd93",
+      "evidence_file": "evidence/F02.md",
+      "summary": "Today 页输入栏改为 AI 对话入口（POST /chat, page_type='today'），12 个新测试通过",
       "priority": "P1",
       "acceptance_criteria": [
         "Today 页输入栏发送消息后走 POST /chat SSE 对话，page_type='today'，不再直接创建 inbox",
@@ -172,7 +182,12 @@
       "description": "全量验证：pytest + vitest + flutter test + flutter analyze + build。确认修复无回归。",
       "verification": "F2",
       "depends_on": ["S01", "F02"],
-      "status": "pending",
+      "status": "completed",
+      "started_at": "2026-05-09T11:40:00+0800",
+      "completed_at": "2026-05-09T11:45:00+0800",
+      "commit": null,
+      "evidence_file": "evidence/S03.md",
+      "summary": "全量验证通过：pytest 1473 + vitest 923 + flutter 589 + analyze 2 warnings(已有) + build pass",
       "priority": "P3",
       "acceptance_criteria": [
         "pytest 全部通过",
@@ -189,8 +204,8 @@
   "summary": {
     "total": 3,
     "by_status": {
-      "pending": 3,
-      "completed": 0
+      "pending": 0,
+      "completed": 3
     },
     "by_priority": {
       "P0": 1,
