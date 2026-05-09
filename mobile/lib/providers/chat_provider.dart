@@ -45,6 +45,7 @@ class ChatState {
 class ChatNotifier extends Notifier<ChatState> {
   StreamSubscription<SseEvent>? _currentSubscription;
   late SseService _sseService;
+  Map<String, dynamic>? _lastPageContext;
 
   @override
   ChatState build() {
@@ -61,7 +62,11 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   /// 发送消息并处理 SSE 事件流
-  Future<void> sendMessage(String text) async {
+  ///
+  /// [pageContext] 页面上下文，透传给后端 POST /chat 的 page_context 字段
+  /// 例如 {'page_type': 'today'} 或 {'page_type': 'home'}
+  Future<void> sendMessage(String text, {Map<String, dynamic>? pageContext}) async {
+    _lastPageContext = pageContext;
     if (text.trim().isEmpty) return;
 
     final authState = ref.read(authProvider);
@@ -103,6 +108,7 @@ class ChatNotifier extends Notifier<ChatState> {
     final stream = _sseService.connect(
       message: text.trim(),
       sessionId: sessionId,
+      pageContext: pageContext,
     );
 
     // 5. 监听 SSE 事件流
@@ -236,7 +242,7 @@ class ChatNotifier extends Notifier<ChatState> {
         messages.removeLast();
       }
       state = state.copyWith(messages: messages, error: null);
-      sendMessage(lastUserMessage.text);
+      sendMessage(lastUserMessage.text, pageContext: _lastPageContext);
     }
   }
 

@@ -163,6 +163,8 @@
         "chatProvider 的 SSE 连接和状态不受 commandBarProvider 影响",
         "commandBarProvider 不会取消或干扰 chatProvider 的活跃 SSE 连接"
       ],
+      "actual_minutes": 45,
+      "summary": "F01 CommandBar Provider 完成：独立 SSE 连接、redirect 事件、debounce、retry",
       "risk_tags": ["network", "first_use"],
       "test_tasks": [
         "测试 executeCommand 调用 POST /chat 并传 page_type='command'",

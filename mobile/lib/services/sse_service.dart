@@ -195,8 +195,36 @@ class SseService {
     }
   }
 
+  /// 共享 SSE 分帧方法：将 bytes chunk 解码、分帧并解析为 SseEvent 列表。
+  /// [buffer] 外部维护的缓冲区，用于保留不完整帧
+  /// [data] 新收到的 bytes chunk
+  static List<SseEvent> parseSseChunks(StringBuffer buffer, List<int> data) {
+    final chunk = utf8.decode(data);
+    buffer.write(chunk);
+
+    final content = buffer.toString();
+    final eventBlocks = content.split('\n\n');
+
+    if (!content.endsWith('\n\n')) {
+      buffer.clear();
+      buffer.write(eventBlocks.removeLast());
+    } else {
+      buffer.clear();
+    }
+
+    final events = <SseEvent>[];
+    for (final block in eventBlocks) {
+      if (block.trim().isEmpty) continue;
+      final parsed = _parseSseBlock(block);
+      if (parsed != null) {
+        events.add(parsed);
+      }
+    }
+    return events;
+  }
+
   /// 解析单个 SSE 事件块
-  SseEvent? _parseSseBlock(String block, String defaultEvent) {
+  static SseEvent? _parseSseBlock(String block, [String defaultEvent = 'message']) {
     String eventType = defaultEvent;
     String? dataStr;
 
