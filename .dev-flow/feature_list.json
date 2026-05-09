@@ -77,6 +77,190 @@
       "completed_at": "2026-04-29"
     }
   ],
+  "workflow": {
+    "name": "R053-today-command-bar",
+    "mode": "B",
+    "runtime": "skill_orchestrated",
+    "review_provider": "codex_plugin",
+    "audit_provider": "codex_plugin",
+    "risk_provider": "codex_plugin",
+    "stop_hook_enabled": false
+  },
+  "active_requirement_cycle": {
+    "id": "R053",
+    "name": "today-command-bar",
+    "branch": "feat/R053-today-command-bar",
+    "status": "active"
+  },
   "archived_phases": [],
-  "features": []
+  "features": [
+    {
+      "id": "B01",
+      "phase": 1,
+      "module": "agent",
+      "name": "后端 command 模式 + redirect 事件",
+      "description": "Agent system prompt 增加 page_type='command' 行为指引：直接执行不追问。新增 SSE `redirect` 事件类型，当闲聊意图时发出 redirect 而非纯 content。Agent command 模式下检测 ask_user 需求时，改为直接执行或返回 follow_up 提示。",
+      "verification": "L2",
+      "depends_on": [],
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Agent prompt 包含 command 模式行为指引（page_type='command' 时触发）",
+        "command 模式下 Agent 不追问（不发 ask_user），直接执行或返回简短回复",
+        "新增 SSE `redirect` 事件：{\"reason\": \"conversational\", \"target\": \"chat\"}",
+        "闲聊意图（如'聊聊最近的焦虑'）→ redirect 事件而非纯 content",
+        "可执行意图（如'完成项目报告'）→ 正常 tool_call + created/updated 事件",
+        "问答意图（如'本周进展'）→ content 事件（简短直接回答）",
+        "现有 /chat 行为不受影响（page_type 非 command 时行为完全不变）",
+        "api_contracts.md 更新 command 模式文档和 redirect 事件"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "测试 page_type='command' + '完成项目报告' → tool_call(create_entry) + created",
+        "测试 page_type='command' + '标记任务 xxx 完成' → tool_call(update_entry) + updated",
+        "测试 page_type='command' + '你好' → redirect 事件",
+        "测试 page_type='command' + '聊聊最近' → redirect 事件（非 content）",
+        "测试 page_type='command' + '本周进展' → content 事件（直接回答）",
+        "测试 page_type='home'（非 command）行为完全不变",
+        "测试 redirect 事件 payload 格式正确",
+        "测试 command 模式不产生 ask_user tool_call"
+      ],
+      "contract_refs": ["CONTRACT-AGENT-CHAT"],
+      "files": [
+        "backend/app/agent/prompts.py",
+        "backend/app/services/agent_service.py"
+      ],
+      "planning_notes": "这是 F01 的前置任务。关键修改：(1) prompts.py system prompt 增加 command mode 分支；(2) agent_service.py 在 command 模式下拦截 ask_user，替换为 redirect 或直接回答。redirect 是新增 SSE 事件类型，不影响现有事件协议"
+    },
+    {
+      "id": "F01",
+      "phase": 2,
+      "module": "today-page",
+      "name": "CommandBar Provider（独立 SSE）",
+      "description": "新建独立 commandBarProvider，使用 Dio 直接发起 SSE 请求（不经过 SseService 单例），避免与 chatProvider 的 SSE 连接冲突。每次命令生成新 session_id。解析 SSE 事件流产出 CommandResult（created/updated/answer/follow_up/redirect/error）。",
+      "verification": "F2",
+      "depends_on": ["B01"],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "commandBarProvider 独立于 chatProvider，不共享任何状态或 SseService 实例",
+        "使用 Dio 直接发起 SSE 请求（新建 SSE 连接，不经过 SseService 单例）",
+        "每次 executeCommand() 生成新 session_id，无对话历史",
+        "调用 POST /chat SSE，page_type='command'",
+        "SSE 事件解析覆盖全部类型：created → created, updated → updated, content → answer, redirect → redirect_chat, error → error",
+        "CommandResult 包含 type + message + 可选 entryId/answer",
+        "isLoading 状态正确管理（发送时 true，完成/失败时 false）",
+        "网络错误、超时 → error 状态，保留输入文本供重试",
+        "chatProvider 的 SSE 连接和状态不受 commandBarProvider 影响",
+        "commandBarProvider 不会取消或干扰 chatProvider 的活跃 SSE 连接"
+      ],
+      "risk_tags": ["network", "first_use"],
+      "test_tasks": [
+        "测试 executeCommand 调用 POST /chat 并传 page_type='command'",
+        "测试每次 executeCommand 生成不同的 session_id",
+        "测试 SSE created 事件 → CommandResult.type = task_created",
+        "测试 SSE updated 事件 → CommandResult.type = entry_updated",
+        "测试 SSE content 事件 → CommandResult.type = answer",
+        "测试 SSE redirect 事件 → CommandResult.type = redirect_chat",
+        "测试 SSE error 事件 → error 状态",
+        "测试 isLoading 状态生命周期：发送→true, 完成→false, 失败→false",
+        "测试网络超时 → error 状态",
+        "测试 commandBarProvider 执行命令时 chatProvider SSE 不受影响",
+        "测试首次命令（空状态）正确执行",
+        "测试 SSE 流中断（部分事件后连接断开）→ error 状态",
+        "测试 malformed SSE payload → 不崩溃，error 状态"
+      ],
+      "contract_refs": ["CONTRACT-AGENT-CHAT"],
+      "files": [
+        "mobile/lib/providers/command_bar_provider.dart",
+        "mobile/lib/models/command_result.dart"
+      ],
+      "planning_notes": "核心架构决策：不使用 SseService 单例，commandBarProvider 内部用 Dio 直接发起 SSE GET/POST 请求。SSE 解析逻辑参考 SseService 但独立实现。每次命令是一次性的：发起连接→接收事件→断开→产出 CommandResult。不维护长连接"
+    },
+    {
+      "id": "F02",
+      "phase": 3,
+      "module": "today-page",
+      "name": "Today 页命令栏 UI + 错误处理",
+      "description": "将 Today 页从 chatProvider 聊天入口改为 commandBarProvider 命令栏。移除聊天气泡，改为内联结果展示。覆盖全部 CommandResult 类型的 UX：created/updated → toast + 刷新，answer → 内联卡片，redirect → 跳转链接，follow_up → 追问卡片，error → 错误条 + 重试。",
+      "verification": "F2",
+      "depends_on": ["F01"],
+      "status": "pending",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Today 页底部输入栏使用 commandBarProvider，完全移除 chatProvider 依赖",
+        "placeholder 改为'输入指令或问题...'",
+        "task_created / note_created / entry_created → SnackBar toast + todayProvider 刷新",
+        "entry_updated → SnackBar toast + todayProvider 刷新",
+        "answer → 内联卡片展示 AI 回答，有关闭按钮",
+        "redirect_chat → 展示'在日知中继续对话 →'，点击切换到日知 tab",
+        "follow_up → 内联追问卡片，展示追问文本",
+        "error → 输入框下方红色错误条 + 重试按钮，输入文本保留",
+        "loading 时输入框禁用 + 发送按钮显示进度指示器",
+        "空输入不触发发送",
+        "移除 _buildChatSection（不再展示聊天气泡）",
+        "移除 _onChatStateChanged 监听器",
+        "移除 chatProvider import"
+      ],
+      "risk_tags": ["first_use"],
+      "test_tasks": [
+        "测试 placeholder 文本为'输入指令或问题...'",
+        "测试发送调用 commandBarProvider.executeCommand",
+        "测试 task_created 结果 → 显示 SnackBar",
+        "测试 entry_updated 结果 → 显示 SnackBar + todayProvider 刷新",
+        "测试 answer 结果 → 显示内联卡片 + 关闭按钮",
+        "测试 redirect_chat 结果 → 显示跳转链接，点击切换到日知 tab",
+        "测试 follow_up 结果 → 显示追问卡片",
+        "测试 error 结果 → 显示错误条 + 重试按钮",
+        "测试重试按钮点击 → 重新执行上次命令",
+        "测试 loading 时输入框禁用",
+        "测试空输入不触发发送",
+        "测试不导入/使用 chatProvider（import 检查）",
+        "测试创建/更新后 todayProvider.loadData 被调用"
+      ],
+      "files": [
+        "mobile/lib/pages/today_page.dart"
+      ],
+      "planning_notes": "核心变更在 today_page.dart：(1) import commandBarProvider 替换 chatProvider；(2) _handleQuickSubmit 改用 commandBarProvider.executeCommand；(3) 删除 _buildChatSection，替换为 _buildCommandResultCard（条件渲染不同 result type）；(4) 删除 _onChatStateChanged；(5) 新增 _buildErrorBar（红色错误条 + 重试按钮）；(6) result type 为 created/updated 时 ScaffoldMessenger SnackBar + ref.read(todayProvider.notifier).loadData()"
+    },
+    {
+      "id": "S03",
+      "phase": 4,
+      "module": "quality",
+      "name": "质量收口",
+      "description": "全量验证：pytest + vitest + flutter test + flutter analyze + build。确认无回归。包含首用 smoke：命令栏第一次输入→结果展示→错误重试。",
+      "verification": "F2",
+      "depends_on": ["B01", "F01", "F02"],
+      "status": "pending",
+      "priority": "P3",
+      "acceptance_criteria": [
+        "pytest 全部通过",
+        "vitest 全部通过",
+        "flutter test 全部通过",
+        "flutter analyze 0 new issues",
+        "frontend build 成功",
+        "smoke: Today 页命令栏首用完整链路（输入→结果→错误→重试）"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "全量测试套件执行",
+        "首用 smoke: 输入'完成报告'→ toast 创建成功",
+        "首用 smoke: 输入'你好'→ redirect 跳转日知",
+        "首用 smoke: 断网后输入→错误条→恢复网络→重试成功"
+      ],
+      "files": []
+    }
+  ],
+  "summary": {
+    "total": 4,
+    "by_status": {
+      "pending": 4,
+      "completed": 0
+    },
+    "by_priority": {
+      "P0": 2,
+      "P1": 1,
+      "P3": 1
+    }
+  }
 }
