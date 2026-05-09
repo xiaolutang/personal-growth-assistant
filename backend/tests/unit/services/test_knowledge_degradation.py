@@ -16,6 +16,7 @@ from app.models.knowledge import (
     KnowledgeMapResponse,
     ConceptStatsResponse,
     KnowledgeGraphResponse,
+    RelatedConceptsResponse,
 )
 
 
@@ -264,11 +265,11 @@ class TestKnowledgeStatsDegradation:
         assert result.relation_count == 0
 
 
-# ==================== get_knowledge_graph 保留 503 行为 ====================
+# ==================== get_knowledge_graph / get_related_concepts 保留 503 ====================
 
 
 class TestKnowledgeGraphNoDegradation:
-    """get_knowledge_graph 应保留 503 行为（不降级）"""
+    """get_knowledge_graph 保留 503 行为（纯 Neo4j 端点，不降级）"""
 
     async def test_neo4j_unavailable_raises_value_error(self):
         """Neo4j 不可用时 get_knowledge_graph 抛 ValueError"""
@@ -366,7 +367,7 @@ class TestConnectionError503Mapping:
     async def test_knowledge_graph_connection_error_returns_503(self):
         """get_knowledge_graph 在 Neo4j 运行时断连时抛 ConnectionError"""
         neo4j_client = MagicMock()
-        neo4j_client.is_connected = True  # is_neo4j_available -> True
+        neo4j_client.is_connected = True
         neo4j_client.get_knowledge_graph = AsyncMock(side_effect=ConnectionError("连接断开"))
 
         service = KnowledgeService(neo4j_client=neo4j_client, sqlite_storage=None)
@@ -384,3 +385,4 @@ class TestConnectionError503Mapping:
 
         with pytest.raises(ConnectionError, match="连接断开"):
             await service.get_related_concepts("Python", user_id="test")
+

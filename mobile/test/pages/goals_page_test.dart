@@ -9,20 +9,14 @@ class _FakeGoalsNotifier extends GoalsNotifier {
   final List<Goal> _goals;
   final bool _isLoading;
   final String? _error;
-  final Goal? _selectedGoal;
-  final List<Milestone> _milestones;
 
   _FakeGoalsNotifier({
     List<Goal> goals = const [],
     bool isLoading = false,
     String? error,
-    Goal? selectedGoal,
-    List<Milestone> milestones = const [],
   })  : _goals = goals,
         _isLoading = isLoading,
-        _error = error,
-        _selectedGoal = selectedGoal,
-        _milestones = milestones;
+        _error = error;
 
   @override
   GoalsState build() {
@@ -30,25 +24,11 @@ class _FakeGoalsNotifier extends GoalsNotifier {
       goals: _goals,
       isLoading: _isLoading,
       error: _error,
-      selectedGoal: _selectedGoal,
-      milestones: _milestones,
     );
   }
 
   @override
   Future<void> fetchGoals({String? status}) async {}
-
-  @override
-  Future<void> fetchGoalDetail(String id) async {}
-
-  @override
-  Future<void> fetchMilestones(String goalId) async {}
-
-  @override
-  Future<void> fetchLinkedEntries(String goalId) async {}
-
-  @override
-  void deselectGoal() {}
 }
 
 // 辅助：注入 provider override 后渲染
@@ -57,8 +37,6 @@ Future<void> _pumpGoalsPage(
   List<Goal> goals = const [],
   bool isLoading = false,
   String? error,
-  Goal? selectedGoal,
-  List<Milestone> milestones = const [],
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -68,8 +46,6 @@ Future<void> _pumpGoalsPage(
             goals: goals,
             isLoading: isLoading,
             error: error,
-            selectedGoal: selectedGoal,
-            milestones: milestones,
           ),
         ),
       ],

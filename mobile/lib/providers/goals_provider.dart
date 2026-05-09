@@ -87,40 +87,26 @@ class Milestone {
 }
 
 // ============================================================
-// GoalsState - 目标页状态
+// GoalsState - 目标列表页状态（仅包含列表相关状态）
 // ============================================================
 class GoalsState {
   final List<Goal> goals;
-  final Goal? selectedGoal;
-  final List<Milestone> milestones;
-  final List<Entry> linkedEntries;
   final bool isLoading;
   final String? error;
 
   const GoalsState({
     this.goals = const [],
-    this.selectedGoal,
-    this.milestones = const [],
-    this.linkedEntries = const [],
     this.isLoading = false,
     this.error,
   });
 
   GoalsState copyWith({
     List<Goal>? goals,
-    Object? selectedGoal = _sentinel,
-    List<Milestone>? milestones,
-    List<Entry>? linkedEntries,
     bool? isLoading,
     Object? error = _sentinel,
   }) {
     return GoalsState(
       goals: goals ?? this.goals,
-      selectedGoal: identical(selectedGoal, _sentinel)
-          ? this.selectedGoal
-          : selectedGoal as Goal?,
-      milestones: milestones ?? this.milestones,
-      linkedEntries: linkedEntries ?? this.linkedEntries,
       isLoading: isLoading ?? this.isLoading,
       error: identical(error, _sentinel) ? this.error : error as String?,
     );
@@ -130,20 +116,12 @@ class GoalsState {
 }
 
 // ============================================================
-// GoalsNotifier - 目标页 Notifier
+// GoalsNotifier - 目标列表页 Notifier（仅负责列表 CRUD）
 // ============================================================
 class GoalsNotifier extends Notifier<GoalsState> {
   @override
   GoalsState build() {
     return const GoalsState();
-  }
-
-  /// 收起选中的目标（清空 selectedGoal 和 milestones）
-  void deselectGoal() {
-    state = state.copyWith(
-      selectedGoal: null,
-      milestones: const [],
-    );
   }
 
   /// 获取目标列表
@@ -171,6 +149,68 @@ class GoalsNotifier extends Notifier<GoalsState> {
     }
   }
 
+  /// 更新列表中某个目标的进度（由 GoalDetailNotifier 调用）
+  void updateGoalInList(Goal updatedGoal) {
+    final newGoals =
+        state.goals.map((g) => g.id == updatedGoal.id ? updatedGoal : g).toList();
+    state = state.copyWith(goals: newGoals);
+  }
+}
+
+/// 目标列表 Provider
+final goalsProvider =
+    NotifierProvider<GoalsNotifier, GoalsState>(() {
+  return GoalsNotifier();
+});
+
+// ============================================================
+// GoalDetailState - 目标详情页独立状态
+// ============================================================
+class GoalDetailState {
+  final Goal? goal;
+  final List<Milestone> milestones;
+  final List<Entry> linkedEntries;
+  final bool isLoading;
+  final String? error;
+
+  const GoalDetailState({
+    this.goal,
+    this.milestones = const [],
+    this.linkedEntries = const [],
+    this.isLoading = false,
+    this.error,
+  });
+
+  GoalDetailState copyWith({
+    Object? goal = _sentinel,
+    List<Milestone>? milestones,
+    List<Entry>? linkedEntries,
+    bool? isLoading,
+    Object? error = _sentinel,
+  }) {
+    return GoalDetailState(
+      goal: identical(goal, _sentinel) ? this.goal : goal as Goal?,
+      milestones: milestones ?? this.milestones,
+      linkedEntries: linkedEntries ?? this.linkedEntries,
+      isLoading: isLoading ?? this.isLoading,
+      error: identical(error, _sentinel) ? this.error : error as String?,
+    );
+  }
+
+  static const _sentinel = Object();
+}
+
+// ============================================================
+// GoalDetailNotifier - 目标详情页 Notifier（独立于列表页）
+// ============================================================
+class GoalDetailNotifier extends FamilyNotifier<GoalDetailState, String> {
+  @override
+  GoalDetailState build(String arg) {
+    return const GoalDetailState();
+  }
+
+  String get _goalId => arg;
+
   /// 获取目标详情
   Future<void> fetchGoalDetail(String id) async {
     state = state.copyWith(isLoading: true, error: null);
@@ -180,7 +220,7 @@ class GoalsNotifier extends Notifier<GoalsState> {
       final response = await apiClient.fetchGoal<Map<String, dynamic>>(id: id);
 
       final goal = Goal.fromJson(response.data!);
-      state = state.copyWith(selectedGoal: goal, isLoading: false);
+      state = state.copyWith(goal: goal, isLoading: false);
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -209,6 +249,26 @@ class GoalsNotifier extends Notifier<GoalsState> {
     }
   }
 
+  /// 获取目标关联的条目列表
+  Future<void> fetchLinkedEntries(String goalId) async {
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.fetchGoalEntries<Map<String, dynamic>>(
+        goalId: goalId,
+      );
+
+      final data = response.data;
+      final items = (data?['entries'] as List<dynamic>?)
+              ?.map((e) => Entry.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [];
+
+      state = state.copyWith(linkedEntries: items);
+    } catch (e) {
+      state = state.copyWith(error: ApiClient.errorMessage(e));
+    }
+  }
+
   /// 创建里程碑
   Future<bool> createMilestone(
     String goalId,
@@ -226,7 +286,7 @@ class GoalsNotifier extends Notifier<GoalsState> {
         fetchMilestones(goalId),
         fetchGoalDetail(goalId),
       ]);
-      _refreshGoalInList(goalId);
+      syncGoalBackToList();
       return true;
     } catch (e) {
       state = state.copyWith(error: ApiClient.errorMessage(e));
@@ -253,7 +313,7 @@ class GoalsNotifier extends Notifier<GoalsState> {
         fetchMilestones(goalId),
         fetchGoalDetail(goalId),
       ]);
-      _refreshGoalInList(goalId);
+      syncGoalBackToList();
       return true;
     } catch (e) {
       state = state.copyWith(error: ApiClient.errorMessage(e));
@@ -276,7 +336,7 @@ class GoalsNotifier extends Notifier<GoalsState> {
       final updated =
           state.milestones.where((m) => m.id != milestoneId).toList();
       state = state.copyWith(milestones: updated);
-      _refreshGoalInList(goalId);
+      syncGoalBackToList();
       return true;
     } catch (e) {
       state = state.copyWith(error: ApiClient.errorMessage(e));
@@ -284,39 +344,16 @@ class GoalsNotifier extends Notifier<GoalsState> {
     }
   }
 
-  /// 获取目标关联的条目列表
-  Future<void> fetchLinkedEntries(String goalId) async {
-    try {
-      final apiClient = ref.read(apiClientProvider);
-      final response = await apiClient.fetchGoalEntries<Map<String, dynamic>>(
-        goalId: goalId,
-      );
-
-      final data = response.data;
-      final items = (data?['entries'] as List<dynamic>?)
-              ?.map((e) => Entry.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [];
-
-      state = state.copyWith(linkedEntries: items);
-    } catch (e) {
-      state = state.copyWith(error: ApiClient.errorMessage(e));
-    }
-  }
-
-  /// 将 selectedGoal 的进度同步回 goals 列表
-  void _refreshGoalInList(String goalId) {
-    final selected = state.selectedGoal;
-    if (selected == null || selected.id != goalId) return;
-    final updatedGoals = state.goals
-        .map((g) => g.id == goalId ? selected : g)
-        .toList();
-    state = state.copyWith(goals: updatedGoals);
+  /// 将当前 goal 的进度同步回 goalsProvider 列表
+  void syncGoalBackToList() {
+    final goal = state.goal;
+    if (goal == null) return;
+    ref.read(goalsProvider.notifier).updateGoalInList(goal);
   }
 }
 
-/// 目标页 Provider
-final goalsProvider =
-    NotifierProvider<GoalsNotifier, GoalsState>(() {
-  return GoalsNotifier();
-});
+/// 目标详情 Provider（family，以 goalId 为参数）
+final goalDetailProvider =
+    NotifierProvider.family<GoalDetailNotifier, GoalDetailState, String>(
+  GoalDetailNotifier.new,
+);

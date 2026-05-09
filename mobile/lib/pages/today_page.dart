@@ -4,15 +4,26 @@ import 'package:go_router/go_router.dart';
 
 import '../config/constants.dart';
 import '../config/theme.dart';
-import '../providers/entry_provider.dart';
+import '../models/command_result.dart';
+import '../providers/command_bar_provider.dart';
 import '../providers/today_provider.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/entry_card.dart';
+import '../widgets/error_state.dart';
 import '../widgets/morning_digest_card.dart';
 import '../widgets/progress_ring.dart';
 // FAB 由 Shell 层全局管理
 
 // ============================================================
 // TodayPage - 今天 Tab 页面
+//
+// F02: 底部输入栏改为智能命令栏：
+// - 用户输入任意内容，AI 判断意图后内联展示结果
+// - 创建/更新 → toast + 刷新
+// - 问答 → 内联卡片
+// - 闲聊 → 跳转日知链接
+// - 错误 → 错误条 + 重试
+// 不走聊天气泡，不共享 chatProvider。
 // ============================================================
 class TodayPage extends ConsumerStatefulWidget {
   const TodayPage({super.key});
@@ -27,10 +38,43 @@ class _TodayPageState extends ConsumerState<TodayPage> {
   @override
   void initState() {
     super.initState();
-    // 页面初始化时加载数据
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(todayProvider.notifier).loadData();
+
+      // 监听 commandBarProvider 结果变化
+      ref.listenManual(commandBarProvider, (previous, next) {
+        _onCommandResultChanged(previous, next);
+      });
     });
+  }
+
+  /// 命令结果变化时处理副作用（SnackBar toast、刷新 today 数据、清空输入框）
+  void _onCommandResultChanged(CommandBarState? previous, CommandBarState next) {
+    final prevResult = previous?.result;
+    final nextResult = next.result;
+
+    // 只在 result 从 null/旧值变为新值时触发
+    if (nextResult == null || nextResult == prevResult) return;
+    if (previous?.isLoading == true && next.isLoading) return;
+
+    // 成功/回答/跳转：清空输入框
+    if (nextResult.type != CommandResultType.error) {
+      _quickInputController.clear();
+    }
+
+    if (nextResult.type == CommandResultType.success) {
+      // success → SnackBar + 刷新 today 数据
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(nextResult.message),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      ref.read(todayProvider.notifier).loadData();
+    }
   }
 
   @override
@@ -43,43 +87,29 @@ class _TodayPageState extends ConsumerState<TodayPage> {
     await ref.read(todayProvider.notifier).loadData();
   }
 
-  Future<void> _handleQuickSubmit() async {
+  /// 命令栏提交：调用 commandBarProvider.executeCommand()
+  void _handleQuickSubmit() {
     final text = _quickInputController.text.trim();
     if (text.isEmpty) return;
 
-    _quickInputController.clear();
+    ref.read(commandBarProvider.notifier).executeCommand(text);
+  }
 
-    final success = await ref
-        .read(entryListProvider.notifier)
-        .createInboxEntry(text);
+  /// 重试上次命令
+  void _handleRetry() {
+    ref.read(commandBarProvider.notifier).retry();
+  }
 
-    if (!mounted) return;
-
-    if (success) {
-      // 刷新 today 数据以更新"最近动态"列表
-      ref.read(todayProvider.notifier).loadData();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('已记录到灵感'),
-          duration: Duration(seconds: 1),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('记录失败，请重试'),
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+  /// 清除命令结果（关闭内联卡片）
+  void _dismissResult() {
+    ref.read(commandBarProvider.notifier).clearResult();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final todayState = ref.watch(todayProvider);
+    final commandState = ref.watch(commandBarProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -90,15 +120,31 @@ class _TodayPageState extends ConsumerState<TodayPage> {
         onRefresh: _handleRefresh,
         child: todayState.isLoading && todayState.todayTasks.isEmpty
             ? const Center(child: CircularProgressIndicator())
-            : _buildContent(context, theme, todayState),
+            : _buildContent(context, theme, todayState, commandState),
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context, ThemeData theme, TodayState state) {
-    // 错误状态
+  Widget _buildContent(
+    BuildContext context,
+    ThemeData theme,
+    TodayState state,
+    CommandBarState commandState,
+  ) {
+    // 错误状态（用 ListView 包裹以保留下拉刷新能力）
     if (state.error != null && state.todayTasks.isEmpty && state.recentEntries.isEmpty) {
-      return _buildError(state);
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: ErrorStateWidget(
+              message: state.error ?? '加载失败',
+              onRetry: _handleRefresh,
+            ),
+          ),
+        ],
+      );
     }
 
     return Column(
@@ -130,20 +176,17 @@ class _TodayPageState extends ConsumerState<TodayPage> {
             ],
           ),
         ),
-        // 底部快捷录入栏
-        _buildQuickInputBar(theme),
+        // 命令栏区域：结果展示 + 输入栏
+        _buildCommandArea(theme, commandState),
       ],
     );
   }
 
-  Widget _buildQuickInputBar(ThemeData theme) {
+  /// 命令栏区域：结果展示 + 错误条 + 输入栏
+  Widget _buildCommandArea(ThemeData theme, CommandBarState commandState) {
+    final result = commandState.result;
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.sm,
-        AppSpacing.sm,
-        AppSpacing.sm,
-      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(
@@ -154,82 +197,203 @@ class _TodayPageState extends ConsumerState<TodayPage> {
       ),
       child: SafeArea(
         top: false,
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: TextField(
-                controller: _quickInputController,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _handleQuickSubmit(),
-                decoration: InputDecoration(
-                  hintText: '记一条灵感...',
-                  hintStyle: TextStyle(
-                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                    fontSize: AppFontSize.body,
-                  ),
-                  filled: true,
-                  fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm + 2,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                    borderSide: BorderSide.none,
-                  ),
-                  isDense: true,
-                ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            IconButton(
-              onPressed: _handleQuickSubmit,
-              icon: const Icon(Icons.send_rounded),
-              color: AppColors.primary,
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              ),
-            ),
+            // 内联结果展示区
+            if (result != null) _buildResultCard(theme, result),
+            // 错误条
+            if (result?.type == CommandResultType.error)
+              _buildCommandErrorBar(theme, result!),
+            // 输入栏
+            _buildQuickInputBar(theme, commandState),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildError(TodayState state) {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.5,
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 48,
-                  color: AppColors.error.withValues(alpha: 0.7),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  state.error ?? '加载失败',
-                  style: TextStyle(
-                    color: AppColors.error.withValues(alpha: 0.8),
-                    fontSize: AppFontSize.body,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                FilledButton.tonal(
-                  onPressed: _handleRefresh,
-                  child: const Text('重试'),
-                ),
-              ],
+  /// 内联结果卡片（answer / redirect_chat）
+  Widget _buildResultCard(ThemeData theme, CommandResult result) {
+    switch (result.type) {
+      case CommandResultType.answer:
+        return _buildAnswerCard(theme, result);
+      case CommandResultType.redirectChat:
+        return _buildRedirectCard(theme);
+      case CommandResultType.success:
+      case CommandResultType.error:
+        return const SizedBox.shrink();
+    }
+  }
+
+  /// AI 回答内联卡片（有关闭按钮）
+  Widget _buildAnswerCard(ThemeData theme, CommandResult result) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.auto_awesome, size: 18, color: AppColors.primary),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              result.answer ?? result.message,
+              style: theme.textTheme.bodyMedium,
             ),
           ),
+          const SizedBox(width: AppSpacing.sm),
+          GestureDetector(
+            onTap: _dismissResult,
+            child: Icon(
+              Icons.close,
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 跳转日知提示卡片
+  Widget _buildRedirectCard(ThemeData theme) {
+    return InkWell(
+      onTap: () {
+        // 跳转前清除 redirect 结果，避免返回时残留卡片
+        ref.read(commandBarProvider.notifier).clearResult();
+        context.go('/chat');
+      },
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm + 2,
         ),
-      ],
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(AppRadius.card),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.chat_bubble_outline, size: 18, color: AppColors.primary),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              '在日知中继续对话',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.primary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 命令错误条（红色 + 重试按钮）
+  Widget _buildCommandErrorBar(ThemeData theme, CommandResult result) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppRadius.button),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, size: 16, color: AppColors.error),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              result.message,
+              style: const TextStyle(
+                fontSize: AppFontSize.caption,
+                color: AppColors.error,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: _handleRetry,
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.error,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text('重试', style: TextStyle(fontSize: AppFontSize.caption)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickInputBar(ThemeData theme, CommandBarState commandState) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.sm,
+        AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _quickInputController,
+              textInputAction: TextInputAction.send,
+              onSubmitted: commandState.isLoading ? null : (_) => _handleQuickSubmit(),
+              enabled: !commandState.isLoading,
+              decoration: InputDecoration(
+                hintText: '输入指令或问题...',
+                hintStyle: TextStyle(
+                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  fontSize: AppFontSize.body,
+                ),
+                filled: true,
+                fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm + 2,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  borderSide: BorderSide.none,
+                ),
+                isDense: true,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          // 发送按钮（loading 时显示进度指示器）
+          IconButton(
+            onPressed: commandState.isLoading ? null : _handleQuickSubmit,
+            icon: commandState.isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primary,
+                    ),
+                  )
+                : const Icon(Icons.send_rounded),
+            color: AppColors.primary,
+            style: IconButton.styleFrom(
+              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -319,29 +483,14 @@ class _TodayPageState extends ConsumerState<TodayPage> {
           ),
         ),
         if (state.todayTasks.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(
+          const Padding(
+            padding: EdgeInsets.symmetric(
               vertical: AppSpacing.xl,
               horizontal: AppSpacing.lg,
             ),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.check_circle_outline,
-                    size: 40,
-                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    '今天暂无任务，点击 + 创建一个吧',
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: AppFontSize.body,
-                    ),
-                  ),
-                ],
-              ),
+            child: EmptyStateWidget(
+              icon: Icons.check_circle_outline,
+              title: '今天暂无任务，点击 + 创建一个吧',
             ),
           )
         else
@@ -376,29 +525,14 @@ class _TodayPageState extends ConsumerState<TodayPage> {
           ),
         ),
         if (state.recentEntries.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(
+          const Padding(
+            padding: EdgeInsets.symmetric(
               vertical: AppSpacing.xl,
               horizontal: AppSpacing.lg,
             ),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.article_outlined,
-                    size: 40,
-                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    '暂无动态，开始记录你的成长吧',
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: AppFontSize.body,
-                    ),
-                  ),
-                ],
-              ),
+            child: EmptyStateWidget(
+              icon: Icons.article_outlined,
+              title: '暂无动态，开始记录你的成长吧',
             ),
           )
         else

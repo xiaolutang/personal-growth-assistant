@@ -6,6 +6,36 @@
 
 ## 已完成需求包
 
+### R053: Today 页智能命令栏
+
+- 状态: 已完成
+- 分支: `feat/R053-today-command-bar`
+- 主题: Today 页底部输入栏改为智能命令栏，AI 判断意图后内联展示结果，闲聊/倾诉 redirect 到日知对话
+- 目录: `R053_today-command-bar/`
+- 完成时间: 2026-05-10
+- 任务数: 4 (B01, F01, F02, S03)
+- 验证: pytest 1495 + vitest 923 + flutter test + 22 e2e 集成测试 + Docker smoke
+
+### R052: 聊天用户隔离 + Today 页 AI 对话入口
+
+- 状态: 已完成
+- 分支: `fix/R052-chat-isolation-and-today-input`
+- 主题: 聊天用户隔离修复（logout + 401 双路径清理）+ Today 页输入栏接入 AI 对话
+- 目录: `R052_chat-isolation-and-today-input/`
+- 完成时间: 2026-05-09
+- 任务数: 3 (S01, F02, S03)
+- 验证: pytest 1473 + vitest 923 + flutter 589 + Docker 集成 + iOS 模拟器集成
+
+### R051: 项目代码优化
+
+- 状态: 已完成
+- 分支: `chore/R051-code-quality-optimization`
+- 主题: 代码质量优化 — 状态隔离 + 并发优化 + 死代码清理 + 共享组件提取 + Neo4j 降级 + 质量收口
+- 目录: `R051_code-quality-optimization/`
+- 完成时间: 2026-05-09
+- 任务数: 12 (S01, S02, B03, B04, F05, F06, F07, F07b, F08, F09, B10, S11)
+- 验证: pytest 1473 + vitest 923 + flutter 44 + analyze 0 issues + build + codex_plugin code-review pass
+
 ### R050: Flutter 日常可用
 
 - 状态: 已完成

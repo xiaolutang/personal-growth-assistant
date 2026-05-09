@@ -2,8 +2,32 @@
   "version": "1.4",
   "project": "personal-growth-assistant",
   "status": "active",
-  "updated_at": "2026-05-08",
+  "updated_at": "2026-05-10",
   "archived_requirement_cycles": [
+    {
+      "id": "R053",
+      "name": "today-command-bar",
+      "status": "completed",
+      "archive_dir": "_archive/R053_today-command-bar",
+      "total_tasks": 4,
+      "completed_at": "2026-05-10"
+    },
+    {
+      "id": "R052",
+      "name": "chat-isolation-and-today-input",
+      "status": "completed",
+      "archive_dir": "_archive/R052_chat-isolation-and-today-input",
+      "total_tasks": 3,
+      "completed_at": "2026-05-09"
+    },
+    {
+      "id": "R051",
+      "name": "code-quality-optimization",
+      "status": "completed",
+      "archive_dir": "_archive/R051_code-quality-optimization",
+      "total_tasks": 12,
+      "completed_at": "2026-05-09"
+    },
     {
       "id": "R050",
       "name": "flutter-daily-usable",
@@ -59,70 +83,13 @@
       "archive_dir": "_archive/R044_unified-react-agent",
       "total_tasks": 14,
       "completed_at": "2026-04-29"
-    },
-    {
-      "id": "R043",
-      "name": "architecture-convergence",
-      "status": "completed",
-      "archive_dir": "_archive/R043_architecture-convergence",
-      "total_tasks": 10,
-      "completed_at": "2026-04-28"
-    },
-    {
-      "id": "R042",
-      "name": "flutter-entry-detail-upgrade",
-      "status": "completed",
-      "archive_dir": "_archive/R042_flutter-entry-detail-upgrade",
-      "total_tasks": 6,
-      "completed_at": "2026-04-27"
-    },
-    {
-      "id": "R041",
-      "name": "health-flutter-pages",
-      "status": "completed",
-      "archive_dir": "_archive/R041_health-flutter-pages",
-      "total_tasks": 11,
-      "completed_at": "2026-04-27"
-    },
-    {
-      "id": "R040",
-      "name": "web-enhancement-cleanup",
-      "status": "completed",
-      "archive_dir": "_archive/R040_web-enhancement-cleanup",
-      "total_tasks": 15,
-      "completed_at": "2026-04-27"
-    },
-    {
-      "id": "R039",
-      "name": "flutter-explore-maintenance",
-      "status": "completed",
-      "archive_dir": "_archive/R039_flutter-explore-maintenance",
-      "total_tasks": 6,
-      "completed_at": "2026-04-27"
-    },
-    {
-      "id": "R038",
-      "name": "engineering-health-and-features",
-      "status": "completed",
-      "archive_dir": "_archive/R038_engineering-health-and-features",
-      "total_tasks": 8,
-      "completed_at": "2026-04-26"
-    },
-    {
-      "id": "R037",
-      "name": "comprehensive-completion",
-      "status": "completed",
-      "archive_dir": "_archive/R037_comprehensive-completion",
-      "total_tasks": 18,
-      "completed_at": "2026-04-26"
-    },
-    {
-      "id": "R036",
-      "name": "residual-cleanup",
-      "status": "completed",
-      "archive_dir": "_archive/R036_residual-cleanup"
     }
   ],
   "archived_phases": [],
-  "features": []
+  "features": [],
+  "summary": {
+    "total": 0,
+    "by_status": {},
+    "by_priority": {}
+  }
 }

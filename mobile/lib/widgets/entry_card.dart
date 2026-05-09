@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../config/constants.dart';
 import '../config/theme.dart';
 import '../models/entry.dart';
+import 'entry_shared.dart';
 
 // ============================================================
 // EntryCard - 条目卡片组件
@@ -57,7 +58,7 @@ class EntryCard extends StatelessWidget {
                     ),
                     if (entry.tags.isNotEmpty) ...[
                       const SizedBox(height: AppSpacing.xs),
-                      _buildTagRow(theme),
+                      EntrySharedWidgets.buildTagRow(entry.tags),
                     ],
                   ],
                 ),
@@ -75,7 +76,7 @@ class EntryCard extends StatelessWidget {
   Widget _buildLeadingIcon(BuildContext context) {
     // 任务类别根据状态显示不同图标
     if (entry.category == AppConstants.categoryTask) {
-      return _buildTaskStatusIcon(context);
+      return EntrySharedWidgets.buildStatusIcon(context, entry.status);
     }
 
     // 其他类别图标
@@ -89,62 +90,6 @@ class EntryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.button),
       ),
       child: Icon(icon, size: 20, color: color),
-    );
-  }
-
-  Widget _buildTaskStatusIcon(BuildContext context) {
-    final status = entry.status;
-    IconData icon;
-    Color color;
-
-    switch (status) {
-      case AppConstants.statusComplete:
-        icon = Icons.check_circle;
-        color = AppColors.completed;
-      case AppConstants.statusDoing:
-        icon = Icons.pending;
-        color = AppColors.doing;
-      case AppConstants.statusWaitStart:
-        icon = Icons.schedule;
-        color = AppColors.waitStart;
-      default:
-        icon = Icons.radio_button_unchecked;
-        color = Theme.of(context).colorScheme.onSurfaceVariant;
-    }
-
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppRadius.button),
-      ),
-      child: Icon(icon, size: 20, color: color),
-    );
-  }
-
-  Widget _buildTagRow(ThemeData theme) {
-    return Wrap(
-      spacing: AppSpacing.xs,
-      children: entry.tags.take(3).map((tag) {
-        return Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: 2,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(AppRadius.button),
-          ),
-          child: Text(
-            tag,
-            style: const TextStyle(
-              fontSize: AppFontSize.caption,
-              color: AppColors.primary,
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 

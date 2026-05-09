@@ -531,3 +531,750 @@ class TestSSEEventHelper:
         result = sse_event("done", {})
         assert "event: done\n" in result
         assert "data: {}\n\n" in result
+
+
+# === B01: Command 模式测试 ===
+
+
+class TestCommandModeRedirect:
+    """command 模式下闲聊意图 → redirect_to_chat tool_call → redirect SSE 事件"""
+
+    @pytest.mark.asyncio
+    async def test_conversational_intent_produces_redirect(self):
+        """闲聊意图（如'你好'）→ Agent 调用 redirect_to_chat → redirect 事件"""
+        from langchain_core.messages import AIMessage, ToolMessage
+
+        # Agent 调用 redirect_to_chat 工具
+        tool_call_id = "call_redirect_001"
+        events = [
+            {
+                "agent": {
+                    "messages": [
+                        AIMessage(
+                            content="",
+                            tool_calls=[
+                                {
+                                    "id": tool_call_id,
+                                    "name": "redirect_to_chat",
+                                    "args": {"reason": "conversational"},
+                                    "type": "tool_call",
+                                }
+                            ],
+                        )
+                    ]
+                }
+            },
+            {
+                "tools": {
+                    "messages": [
+                        ToolMessage(
+                            content=json.dumps({"reason": "conversational", "target": "chat"}),
+                            tool_call_id=tool_call_id,
+                        ),
+                    ]
+                }
+            },
+        ]
+
+        service = _make_agent_service(stream_events=events)
+
+        # 构造 command 模式的 page_context
+        mock_page_ctx = MagicMock()
+        mock_page_ctx.page_type = "command"
+        mock_page_ctx.entry_id = None
+        mock_page_ctx.extra = None
+
+        result = await _collect_sse(
+            service,
+            text="你好",
+            thread_id="user1:cmd-sess1",
+            user_id="user1",
+            page_context=mock_page_ctx,
+        )
+
+        event_types = [e[0] for e in result]
+
+        # 应该有 redirect 事件
+        assert "redirect" in event_types
+        redirect_events = [(e, d) for e, d in result if e == "redirect"]
+        assert len(redirect_events) == 1
+        redirect_data = redirect_events[0][1]
+        assert redirect_data["reason"] == "conversational"
+        assert redirect_data["target"] == "chat"
+
+        # 不应产生 tool_call 事件（redirect_to_chat 被拦截）
+        tool_call_events = [(e, d) for e, d in result if e == "tool_call"]
+        redirect_tc = [tc for _, tc in tool_call_events if tc["tool"] == "redirect_to_chat"]
+        assert len(redirect_tc) == 0, "redirect_to_chat 不应产生 tool_call SSE 事件"
+
+        # 不应产生 tool_result 事件（被拦截的 call ID 跳过 ToolMessage）
+        tool_result_events = [(e, d) for e, d in result if e == "tool_result"]
+        assert len(tool_result_events) == 0, "被拦截的 redirect_to_chat 不应产生 tool_result"
+
+    @pytest.mark.asyncio
+    async def test_conversational_longer_input_produces_redirect(self):
+        """闲聊意图（如'聊聊最近'）→ Agent 调用 redirect_to_chat → redirect 事件"""
+        from langchain_core.messages import AIMessage, ToolMessage
+
+        tool_call_id = "call_redirect_002"
+        events = [
+            {
+                "agent": {
+                    "messages": [
+                        AIMessage(
+                            content="",
+                            tool_calls=[
+                                {
+                                    "id": tool_call_id,
+                                    "name": "redirect_to_chat",
+                                    "args": {"reason": "conversational"},
+                                    "type": "tool_call",
+                                }
+                            ],
+                        )
+                    ]
+                }
+            },
+            {
+                "tools": {
+                    "messages": [
+                        ToolMessage(
+                            content=json.dumps({"reason": "conversational", "target": "chat"}),
+                            tool_call_id=tool_call_id,
+                        ),
+                    ]
+                }
+            },
+        ]
+
+        service = _make_agent_service(stream_events=events)
+
+        mock_page_ctx = MagicMock()
+        mock_page_ctx.page_type = "command"
+        mock_page_ctx.entry_id = None
+        mock_page_ctx.extra = None
+
+        result = await _collect_sse(
+            service,
+            text="聊聊最近",
+            thread_id="user1:cmd-sess2",
+            user_id="user1",
+            page_context=mock_page_ctx,
+        )
+
+        event_types = [e[0] for e in result]
+        assert "redirect" in event_types
+
+
+class TestCommandModeToolCall:
+    """command 模式下可执行意图 → 正常 tool_call + created/updated"""
+
+    @pytest.mark.asyncio
+    async def test_executable_intent_produces_tool_call(self):
+        """可执行意图（如'完成项目报告'）→ tool_call(create_entry) + created"""
+        from langchain_core.messages import AIMessage, ToolMessage
+
+        tool_call_id = "call_cmd_001"
+        events = [
+            {
+                "agent": {
+                    "messages": [
+                        AIMessage(
+                            content="",
+                            tool_calls=[
+                                {
+                                    "id": tool_call_id,
+                                    "name": "create_entry",
+                                    "args": {"category": "task", "title": "完成项目报告"},
+                                    "type": "tool_call",
+                                }
+                            ],
+                        )
+                    ]
+                }
+            },
+            {
+                "tools": {
+                    "messages": [
+                        ToolMessage(
+                            content=json.dumps({
+                                "success": True,
+                                "data": {
+                                    "id": "entry-cmd-001",
+                                    "title": "完成项目报告",
+                                    "category": "task",
+                                    "status": "doing",
+                                },
+                            }),
+                            tool_call_id=tool_call_id,
+                        ),
+                    ]
+                }
+            },
+            {
+                "agent": {
+                    "messages": [
+                        AIMessage(content="已为你创建了任务「完成项目报告」。"),
+                    ]
+                }
+            },
+        ]
+
+        service = _make_agent_service(stream_events=events)
+
+        mock_page_ctx = MagicMock()
+        mock_page_ctx.page_type = "command"
+        mock_page_ctx.entry_id = None
+        mock_page_ctx.extra = None
+
+        result = await _collect_sse(
+            service,
+            text="完成项目报告",
+            thread_id="user1:cmd-sess3",
+            user_id="user1",
+            page_context=mock_page_ctx,
+        )
+
+        event_types = [e[0] for e in result]
+
+        # 应该有正常的 tool_call 和 created 事件，不应有 redirect
+        assert "tool_call" in event_types
+        assert "created" in event_types
+        assert "redirect" not in event_types
+
+    @pytest.mark.asyncio
+    async def test_update_intent_produces_tool_call(self):
+        """可执行意图（如'标记任务 xxx 完成'）→ tool_call(update_entry) + updated"""
+        from langchain_core.messages import AIMessage, ToolMessage
+
+        tool_call_id = "call_cmd_002"
+        events = [
+            {
+                "agent": {
+                    "messages": [
+                        AIMessage(
+                            content="",
+                            tool_calls=[
+                                {
+                                    "id": tool_call_id,
+                                    "name": "update_entry",
+                                    "args": {"entry_id": "e-task-001", "status": "complete"},
+                                    "type": "tool_call",
+                                }
+                            ],
+                        )
+                    ]
+                }
+            },
+            {
+                "tools": {
+                    "messages": [
+                        ToolMessage(
+                            content=json.dumps({
+                                "success": True,
+                                "data": {
+                                    "entry_id": "e-task-001",
+                                    "message": "更新成功",
+                                },
+                            }),
+                            tool_call_id=tool_call_id,
+                        ),
+                    ]
+                }
+            },
+            {
+                "agent": {
+                    "messages": [
+                        AIMessage(content="已将任务标记为完成。"),
+                    ]
+                }
+            },
+        ]
+
+        service = _make_agent_service(stream_events=events)
+
+        mock_page_ctx = MagicMock()
+        mock_page_ctx.page_type = "command"
+        mock_page_ctx.entry_id = None
+        mock_page_ctx.extra = None
+
+        result = await _collect_sse(
+            service,
+            text="标记任务 e-task-001 完成",
+            thread_id="user1:cmd-sess4",
+            user_id="user1",
+            page_context=mock_page_ctx,
+        )
+
+        event_types = [e[0] for e in result]
+        assert "tool_call" in event_types
+        assert "updated" in event_types
+        assert "redirect" not in event_types
+
+
+class TestCommandModeAskUserIntercept:
+    """command 模式下拦截 ask_user tool_call，替换为简短回复"""
+
+    @pytest.mark.asyncio
+    async def test_command_mode_no_ask_user(self):
+        """command 模式下不产生 ask_user tool_call，替换为 content（简短回复）"""
+        from langchain_core.messages import AIMessage, ToolMessage
+
+        # Agent 尝试调用 ask_user（在 command 模式下应该被拦截）
+        # 真实场景中 ask_user 后 Agent 循环终止，不会有后续 agent 回复
+        tool_call_id = "call_ask_cmd_001"
+        events = [
+            {
+                "agent": {
+                    "messages": [
+                        AIMessage(
+                            content="",
+                            tool_calls=[
+                                {
+                                    "id": tool_call_id,
+                                    "name": "ask_user",
+                                    "args": {"question": "你想创建什么？"},
+                                    "type": "tool_call",
+                                }
+                            ],
+                        )
+                    ]
+                }
+            },
+            {
+                "tools": {
+                    "messages": [
+                        ToolMessage(
+                            content=json.dumps({"type": "ask", "question": "你想创建什么？"}),
+                            tool_call_id=tool_call_id,
+                        ),
+                    ]
+                }
+            },
+        ]
+
+        service = _make_agent_service(stream_events=events)
+
+        mock_page_ctx = MagicMock()
+        mock_page_ctx.page_type = "command"
+        mock_page_ctx.entry_id = None
+        mock_page_ctx.extra = None
+
+        result = await _collect_sse(
+            service,
+            text="记一下",
+            thread_id="user1:cmd-sess5",
+            user_id="user1",
+            page_context=mock_page_ctx,
+        )
+
+        event_types = [e[0] for e in result]
+
+        # command 模式下不应产生 ask_user tool_call
+        tool_call_events = [(e, d) for e, d in result if e == "tool_call"]
+        ask_user_calls = [tc for _, tc in tool_call_events if tc["tool"] == "ask_user"]
+        assert len(ask_user_calls) == 0, "command 模式不应产生 ask_user tool_call"
+
+        # 应该产生 content 事件（简短回复），包含原始问题
+        content_events = [(e, d) for e, d in result if e == "content"]
+        assert len(content_events) >= 1, "command 模式拦截 ask_user 后应产生 content 事件"
+        assert "你想创建什么" in content_events[0][1]["content"]
+
+        # 不应产生 ask_user 的 tool_result（被拦截的 call ID 跳过 ToolMessage）
+        tool_result_events = [(e, d) for e, d in result if e == "tool_result"]
+        assert len(tool_result_events) == 0, "command 模式下被拦截的 ask_user 不应产生 tool_result"
+
+
+class TestCommandModeSessionSkip:
+    """command 模式跳过 session 元数据写入"""
+
+    @pytest.mark.asyncio
+    async def test_command_mode_skips_session_touch(self):
+        """command 模式不触发 session 元数据写入"""
+        from langchain_core.messages import AIMessage
+
+        events = [
+            {
+                "agent": {
+                    "messages": [
+                        AIMessage(content="已创建任务。"),
+                    ]
+                }
+            },
+        ]
+
+        service = _make_agent_service(stream_events=events)
+
+        # 设置 mock session store
+        mock_session_store = MagicMock()
+        mock_session_store.session_exists = MagicMock(return_value=False)
+        service.set_session_meta_store(mock_session_store)
+
+        mock_page_ctx = MagicMock()
+        mock_page_ctx.page_type = "command"
+        mock_page_ctx.entry_id = None
+        mock_page_ctx.extra = None
+
+        result = await _collect_sse(
+            service,
+            text="创建任务测试",
+            thread_id="user1:cmd-sess-skip",
+            user_id="user1",
+            page_context=mock_page_ctx,
+        )
+
+        event_types = [e[0] for e in result]
+        assert event_types[-1] == "done"
+
+        # session_store 不应被调用
+        mock_session_store.session_exists.assert_not_called()
+        mock_session_store.create_session.assert_not_called()
+        mock_session_store.touch_session.assert_not_called()
+
+
+class TestCommandModeNonAffecting:
+    """command 模式不影响非 command page_type 行为"""
+
+    @pytest.mark.asyncio
+    async def test_home_mode_no_redirect(self):
+        """home page_type 不产生 redirect 事件"""
+        from langchain_core.messages import AIMessage
+
+        events = [
+            {
+                "agent": {
+                    "messages": [
+                        AIMessage(content="你好！有什么我可以帮你的吗？"),
+                    ]
+                }
+            },
+        ]
+
+        service = _make_agent_service(stream_events=events)
+
+        mock_page_ctx = MagicMock()
+        mock_page_ctx.page_type = "home"
+        mock_page_ctx.entry_id = None
+        mock_page_ctx.extra = None
+
+        result = await _collect_sse(
+            service,
+            text="你好",
+            thread_id="user1:home-sess1",
+            user_id="user1",
+            page_context=mock_page_ctx,
+        )
+
+        event_types = [e[0] for e in result]
+        assert "redirect" not in event_types
+        assert "content" in event_types
+
+    @pytest.mark.asyncio
+    async def test_no_page_context_no_redirect(self):
+        """无 page_context 时不产生 redirect 事件"""
+        from langchain_core.messages import AIMessage
+
+        events = [
+            {
+                "agent": {
+                    "messages": [
+                        AIMessage(content="你好！"),
+                    ]
+                }
+            },
+        ]
+
+        service = _make_agent_service(stream_events=events)
+
+        result = await _collect_sse(
+            service,
+            text="你好",
+            thread_id="user1:noctx-sess1",
+            user_id="user1",
+            page_context=None,
+        )
+
+        event_types = [e[0] for e in result]
+        assert "redirect" not in event_types
+        assert "content" in event_types
+
+    @pytest.mark.asyncio
+    async def test_home_mode_ask_user_normal(self):
+        """home 模式下 ask_user 行为不变"""
+        from langchain_core.messages import AIMessage, ToolMessage
+
+        tool_call_id = "call_home_ask_001"
+        events = [
+            {
+                "messages": [
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": tool_call_id,
+                                "name": "ask_user",
+                                "args": {"question": "你想记什么？"},
+                                "type": "tool_call",
+                            }
+                        ],
+                    ),
+                    ToolMessage(
+                        content=json.dumps({"type": "ask", "question": "你想记什么？"}),
+                        tool_call_id=tool_call_id,
+                    ),
+                    AIMessage(content="你想记什么？"),
+                ]
+            },
+        ]
+
+        service = _make_agent_service(stream_events=events)
+
+        mock_page_ctx = MagicMock()
+        mock_page_ctx.page_type = "home"
+        mock_page_ctx.entry_id = None
+        mock_page_ctx.extra = None
+
+        result = await _collect_sse(
+            service,
+            text="记一下",
+            thread_id="user1:home-sess2",
+            user_id="user1",
+            page_context=mock_page_ctx,
+        )
+
+        event_types = [e[0] for e in result]
+        # home 模式下 ask_user 应该正常产生 tool_call 事件
+        assert "tool_call" in event_types
+        tool_call_events = [(e, d) for e, d in result if e == "tool_call"]
+        ask_user_calls = [tc for _, tc in tool_call_events if tc["tool"] == "ask_user"]
+        assert len(ask_user_calls) == 1
+        # 不应产生 redirect
+        assert "redirect" not in event_types
+
+
+class TestCommandModeContentEvent:
+    """command 模式下问答意图 → content 事件（简短直接回答）"""
+
+    @pytest.mark.asyncio
+    async def test_qa_intent_with_tool_call_produces_content(self):
+        """问答意图（如'本周进展'）→ tool_call(get_review_summary) + content，不产生 redirect"""
+        from langchain_core.messages import AIMessage, ToolMessage
+
+        tool_call_id = "call_cmd_qa_001"
+        events = [
+            {
+                "agent": {
+                    "messages": [
+                        AIMessage(
+                            content="",
+                            tool_calls=[
+                                {
+                                    "id": tool_call_id,
+                                    "name": "get_review_summary",
+                                    "args": {"period": "week"},
+                                    "type": "tool_call",
+                                }
+                            ],
+                        )
+                    ]
+                }
+            },
+            {
+                "tools": {
+                    "messages": [
+                        ToolMessage(
+                            content=json.dumps({
+                                "success": True,
+                                "data": {"completed": 5, "trend": "+20%"},
+                            }),
+                            tool_call_id=tool_call_id,
+                        ),
+                    ]
+                }
+            },
+            {
+                "agent": {
+                    "messages": [
+                        AIMessage(content="本周你完成了 5 个任务，比上周增加了 20%。"),
+                    ]
+                }
+            },
+        ]
+
+        service = _make_agent_service(stream_events=events)
+
+        mock_page_ctx = MagicMock()
+        mock_page_ctx.page_type = "command"
+        mock_page_ctx.entry_id = None
+        mock_page_ctx.extra = None
+
+        result = await _collect_sse(
+            service,
+            text="本周进展",
+            thread_id="user1:cmd-qa1",
+            user_id="user1",
+            page_context=mock_page_ctx,
+        )
+
+        event_types = [e[0] for e in result]
+        # 问答意图（有 tool_call）在 command 模式下应该用 content 而非 redirect
+        assert "tool_call" in event_types
+        assert "content" in event_types
+        assert "redirect" not in event_types
+
+    @pytest.mark.asyncio
+    async def test_qa_with_tool_call_produces_content(self):
+        """问答意图有 tool_call（Agent 查了工具后回答）→ content 事件"""
+        from langchain_core.messages import AIMessage, ToolMessage
+
+        # Agent 先调 search_entries，然后给出最终回答
+        events = [
+            {
+                "agent": {
+                    "messages": [
+                        AIMessage(
+                            content="",
+                            tool_calls=[{"name": "search_entries", "args": {"query": "今天任务"}, "id": "tc-search-1", "type": "tool_call"}],
+                        ),
+                    ]
+                }
+            },
+            {
+                "tools": {
+                    "messages": [
+                        ToolMessage(
+                            content='{"success": true, "data": {"total": 3}}',
+                            tool_call_id="tc-search-1",
+                        ),
+                    ]
+                }
+            },
+            {
+                "agent": {
+                    "messages": [
+                        AIMessage(content="你今天有 3 个待办任务。"),
+                    ]
+                }
+            },
+        ]
+
+        service = _make_agent_service(stream_events=events)
+
+        mock_page_ctx = MagicMock()
+        mock_page_ctx.page_type = "command"
+        mock_page_ctx.entry_id = None
+        mock_page_ctx.extra = None
+
+        result = await _collect_sse(
+            service,
+            text="今天有什么任务",
+            thread_id="user1:cmd-qa-tool",
+            user_id="user1",
+            page_context=mock_page_ctx,
+        )
+
+        event_types = [e[0] for e in result]
+        # 有 tool_call 的 Q&A 应该产生 content
+        assert "content" in event_types
+        assert "redirect" not in event_types
+
+    @pytest.mark.asyncio
+    async def test_direct_answer_without_tool_call_produces_content(self):
+        """command 模式下无 tool_call 的直接回答/简短澄清 → content 事件"""
+        from langchain_core.messages import AIMessage
+
+        # Agent 按指令直接回答，不调工具
+        events = [
+            {
+                "agent": {
+                    "messages": [
+                        AIMessage(content="请告诉我你想创建什么内容的任务。"),
+                    ]
+                }
+            },
+        ]
+
+        service = _make_agent_service(stream_events=events)
+
+        mock_page_ctx = MagicMock()
+        mock_page_ctx.page_type = "command"
+        mock_page_ctx.entry_id = None
+        mock_page_ctx.extra = None
+
+        result = await _collect_sse(
+            service,
+            text="帮我创建一个任务",
+            thread_id="user1:cmd-clarify",
+            user_id="user1",
+            page_context=mock_page_ctx,
+        )
+
+        event_types = [e[0] for e in result]
+        # 无 tool_call 的直接回答应该产生 content，不应该 redirect
+        assert "content" in event_types
+        assert "redirect" not in event_types
+
+
+class TestNonCommandModeRedirectDefensive:
+    """非 command 模式下意外调用 redirect_to_chat → 防御性降级为 content"""
+
+    @pytest.mark.asyncio
+    async def test_home_mode_redirect_to_chat_downgrades_to_content(self):
+        """home 模式下 LLM 意外调用 redirect_to_chat → 降级为 content 而非 redirect"""
+        from langchain_core.messages import AIMessage, ToolMessage
+
+        tool_call_id = "call_redirect_defense_001"
+        events = [
+            {
+                "agent": {
+                    "messages": [
+                        AIMessage(
+                            content="",
+                            tool_calls=[
+                                {
+                                    "id": tool_call_id,
+                                    "name": "redirect_to_chat",
+                                    "args": {"reason": "conversational"},
+                                    "type": "tool_call",
+                                }
+                            ],
+                        )
+                    ]
+                }
+            },
+            {
+                "tools": {
+                    "messages": [
+                        ToolMessage(
+                            content=json.dumps({"reason": "conversational", "target": "chat"}),
+                            tool_call_id=tool_call_id,
+                        ),
+                    ]
+                }
+            },
+        ]
+
+        service = _make_agent_service(stream_events=events)
+
+        # 使用 home 模式（非 command）
+        mock_page_ctx = MagicMock()
+        mock_page_ctx.page_type = "home"
+        mock_page_ctx.entry_id = None
+        mock_page_ctx.extra = None
+
+        result = await _collect_sse(
+            service,
+            text="你好",
+            thread_id="user1:home-sess1",
+            user_id="user1",
+            page_context=mock_page_ctx,
+        )
+
+        event_types = [e[0] for e in result]
+
+        # 不应产生 redirect 事件（降级为 content）
+        assert "redirect" not in event_types
+        # 应产生 content 事件
+        assert "content" in event_types
+        content_events = [d for e, d in result if e == "content"]
+        assert any("日知" in c.get("content", "") for c in content_events)

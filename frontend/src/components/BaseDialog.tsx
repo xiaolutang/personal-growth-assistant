@@ -15,6 +15,10 @@ interface BaseDialogProps {
   onCancel?: () => void;
   loading?: boolean;
   confirmDisabled?: boolean;
+  /** 是否允许点击遮罩关闭弹窗，默认 true */
+  backdropClickClose?: boolean;
+  /** 弹窗最大宽度 Tailwind class，默认 "max-w-md" */
+  maxWidth?: string;
 }
 
 export function BaseDialog({
@@ -30,6 +34,8 @@ export function BaseDialog({
   onCancel,
   loading = false,
   confirmDisabled = false,
+  backdropClickClose = true,
+  maxWidth = "max-w-md",
 }: BaseDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -56,6 +62,14 @@ export function BaseDialog({
     }
   }, [onCancel, handleClose]);
 
+  const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDialogElement>) => {
+    if (!backdropClickClose) return;
+    // dialog 元素的点击：如果 target 就是 dialog 自身，说明点击了遮罩区域
+    if (e.target === dialogRef.current) {
+      handleClose();
+    }
+  }, [backdropClickClose, handleClose]);
+
   if (!open) return null;
 
   // 判断是否需要渲染默认 footer
@@ -65,9 +79,10 @@ export function BaseDialog({
     <dialog
       ref={dialogRef}
       onClose={handleClose}
-      className="rounded-xl p-0 bg-transparent backdrop:bg-black/40 max-w-md w-full max-sm:max-w-full max-sm:m-0 max-sm:mt-auto max-sm:rounded-b-none max-sm:h-[90vh] max-sm:rounded-t-xl"
+      onClick={handleBackdropClick}
+      className={`rounded-xl p-0 bg-transparent backdrop:bg-black/40 ${maxWidth} w-full max-sm:max-w-full max-sm:m-0 max-sm:mt-auto max-sm:rounded-b-none max-sm:h-[90vh] max-sm:rounded-t-xl`}
     >
-      <div className="bg-card rounded-xl p-6 shadow-lg flex flex-col max-sm:h-full max-sm:rounded-b-none">
+      <div className="bg-card rounded-xl p-6 shadow-lg flex flex-col max-h-[90vh] max-sm:h-full max-sm:rounded-b-none">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">{title}</h2>
@@ -82,7 +97,9 @@ export function BaseDialog({
         </div>
 
         {/* Content */}
-        {children}
+        <div className="flex-1 overflow-y-auto">
+          {children}
+        </div>
 
         {/* Default Footer */}
         {hasDefaultFooter && (

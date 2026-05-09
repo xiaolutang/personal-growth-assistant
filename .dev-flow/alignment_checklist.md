@@ -1,83 +1,50 @@
 # 对齐清单
 
-## R050: Flutter 日常可用
+## R053: Today 页智能命令栏
 
 ### 契约对齐
 
-- [x] F01: 复用 POST /auth/register（注册）+ POST /auth/login（登录）
-- [x] F02: 复用 POST /entries（createEntry, category=inbox）
-- [x] F03: 复用 GET /review/morning-digest + POST /entries（快捷录入）
-- [x] F04: 复用 GET /goals/{id} + 里程碑 CRUD + 关联条目端点
-- [x] F05: 复用 GET /entries?due=today + flutter_local_notifications
+- [ ] B01: POST /chat page_type 新增 'command'，Agent 直接执行不追问
+- [ ] B01: 新增 SSE `redirect` 事件类型（conversational intent → redirect to chat）
+- [ ] F01: 使用 POST /chat SSE + page_type='command'，不共享 chatProvider
+- [ ] F01: 每次命令生成新 session_id（无状态）
+- [ ] F02: 不修改 QuickCaptureFAB（保持独立灵感捕获功能）
+- [ ] F02: 不修改 chat_page.dart（日知页保持不变）
 
 ### 依赖对齐
 
-- [x] F01 无外部依赖
-- [x] F02 无外部依赖（全局 FAB 组件 + inbox provider）
-- [x] F03 depends_on F02 ✓（快捷录入使用 createInboxEntry）
-- [x] F04 无外部依赖（目标详情独立页）
-- [x] F05 无外部依赖（通知服务 + 设置页）
-- [x] S06 depends_on F01+F02+F03+F04+F05 ✓
+- [ ] B01: 无依赖（后端 Agent 提示词 + redirect 事件）
+- [ ] F01 depends_on B01 ✓（前端需后端 redirect 事件信号）
+- [ ] F02 depends_on F01 ✓（UI 使用 commandBarProvider）
+- [ ] S03 depends_on B01 + F01 + F02 ✓
 
 ### 架构对齐
 
-- [x] Flutter MVVM 分层：Widget → Riverpod Notifier → ApiClient
-- [x] QuickCaptureFAB 统一捕获组件，Shell 层和页面层共用
-- [x] inbox 创建权威收敛：entry_provider.createInboxEntry → inbox_provider.createInboxItem
-- [x] 通知导航接线：NotificationService.onNotificationTap → GoRouter.go(payload)
-- [x] BottomNavShell._shouldShowFab 条件隐藏（/entries/*, /goals/:id, /）
-- [x] 不违反 architecture.md 不变量：user_id 隔离、JWT 认证守卫、MVVM 分层
+- [ ] F01: commandBarProvider 独立于 chatProvider，不共享 SseService 实例
+- [ ] F01: 使用 Dio 直接发起 SSE 请求（复用 apiClientProvider Dio 实例），避免与 chatProvider SSE 连接冲突
+- [ ] F01: 提取 SseParser 工具类复用 SseService._parseSseBlock 逻辑
+- [ ] F01: 发送新命令时自动取消上次未完成的 SSE 连接 + debounce 300ms
+- [ ] B01: command 模式跳过 session 元数据写入（不污染会话列表）
+- [ ] F01: 遵循 MVVM — Widget → commandBarProvider(Notifier) → Dio SSE
+- [ ] F02: 移除 Today 页对 chatProvider 的全部依赖（import、watch、listener）
+- [ ] F02: 不违反 architecture.md 禁止模式：多 Provider 不监听同一 SSE 连接
+- [ ] B01: Agent prompt 变更不影响现有 /chat 行为（非 command page_type 行为不变）
+- [ ] 所有任务不违反 architecture.md 不变量：user_id 隔离、JWT 认证、MVVM 分层
+
+### 命令结果类型对齐
+
+| SSE 事件 | CommandResult 类型 | F02 UX |
+|----------|-------------------|--------|
+| created / updated | success | SnackBar toast + todayProvider 刷新 |
+| content (无 tool_call) | answer | 内联卡片展示 |
+| redirect | redirect_chat | "在日知中继续对话 →" 跳转链接 |
+| error | error | 输入框下方错误条 + 重试按钮 |
+
+> 注：follow_up 已移除，因 B01 command 模式禁止 ask_user 追问。created/updated 合并为 success 简化前端处理。
 
 ### 执行顺序
 
-- [x] Phase 1: F01（注册）
-- [x] Phase 2: F02 + F03（FAB + 首页升级，可并行）
-- [x] Phase 3: F04 + F05（目标详情 + 通知，可并行）
-- [x] Phase 4: S06（质量收口）
-
-## R048: 创建体验升级
-
-### 契约对齐
-
-- [x] 无新增 API 契约：复用已有 POST /entries（createEntry），所有 7 种类型均支持
-- [x] 无后端改动：纯前端需求，createEntry API 已满足全部字段需求
-
-### 依赖对齐
-
-- [x] S01 无外部依赖（通用组件）
-- [x] F02 depends_on S01 ✓（任务页使用 CreateDialog）
-- [x] F03 depends_on S01 ✓（首页使用 CreateDialog 的"更多类型"入口）
-- [x] F04 depends_on S01 ✓（探索页使用 CreateDialog）
-- [ ] F05 depends_on S01 + F03（智能提示增强 CreateDialog + QuickCaptureBar）
-
-### 架构对齐
-
-- [x] CreateDialog 位于 components/，符合 pages/ → components/ → lib/ 单向依赖
-- [x] QuickCaptureBar 位于 pages/home/，仅被 Home.tsx 使用
-- [x] 写操作通过 taskStore.createEntry（符合"写操作优先通过 store"规范）
-- [x] 不引入新 API 端点，不硬编码后端枚举值（使用 categoryConfig）
-
-### 执行顺序
-
-- [x] Phase 1: S01（基础组件）
-- [x] Phase 2: F02 + F03 + F04（可并行）— F03 done, F04 done
-- [ ] Phase 3: F05（增强，可延后）
-
-## R047: 任务/探索 Tab 边界重新划分
-
-### 契约对齐
-
-- [ ] S01: POST /entries/{id}/convert 契约已定义 (CONTRACT-CONVERT)
-- [ ] B02: GET /entries?category_group 契约已定义 (CONTRACT-CATEGORY-GROUP)
-
-### 依赖对齐
-
-- [ ] S01 无外部依赖
-- [ ] B02 无外部依赖
-- [ ] F03-F12 链式依赖
-
-### 架构对齐
-
-- [ ] 变更在现有 routers/services/infrastructure 分层内
-- [ ] 不涉及三层存储架构变更
-- [ ] 不涉及认证/权限变更
+- [ ] Phase 1: B01（后端 command 模式 + redirect 事件）
+- [ ] Phase 2: F01（CommandBar Provider + 独立 SSE）
+- [ ] Phase 3: F02（Today 页命令栏 UI + 移除 chatProvider 依赖）
+- [ ] Phase 4: S03（质量收口 + smoke）

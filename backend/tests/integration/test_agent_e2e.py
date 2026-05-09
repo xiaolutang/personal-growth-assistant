@@ -100,7 +100,7 @@ async def e2e_client(storage, test_user) -> AsyncGenerator[AsyncClient, None]:
     from app.main import app
     from app.services.auth_service import create_access_token
     from app.services.agent_service import AgentService
-    from app.agent.tools import ToolDependencies, AGENT_TOOLS
+    from app.agent.tools import ToolDependencies, AGENT_TOOLS, COMMAND_ONLY_TOOLS
     from app.agent.react_agent import ReActAgentGraph
     from app.routers import parse as parse_module
     from app.routers import deps
@@ -134,6 +134,7 @@ async def e2e_client(storage, test_user) -> AsyncGenerator[AsyncClient, None]:
         chat_model=chat_model,
         tools=AGENT_TOOLS,
         checkpointer=checkpointer,
+        command_only_tools=COMMAND_ONLY_TOOLS,
     )
 
     # 构建 ToolDependencies（注入真实 entry_service）
@@ -859,3 +860,369 @@ class TestAgentServiceSSEOrchestration:
         assert len(tool_result_events) >= 1
         assert tool_result_events[0]["success"] is False
         assert "不存在" in tool_result_events[0]["result"]["error"]
+
+
+# === Command 模式 E2E 测试 ===
+
+
+class TestAgentE2ECommandMode:
+    """Command 模式端到端测试：redirect / ask_user 拦截 / 正常工具调用 / session 隔离"""
+
+    @pytest.mark.asyncio
+    async def test_command_redirect_to_chat(self, e2e_client):
+        """command 模式下 redirect_to_chat → redirect SSE 事件"""
+        mock_client = e2e_client._mock_llm_client
+
+        mock_client.chat.completions.create = AsyncMock(
+            side_effect=[
+                make_openai_response(
+                    content="",
+                    tool_calls=[
+                        make_tool_call(
+                            "redirect_to_chat",
+                            {"reason": "conversational"},
+                            "call_redirect_1",
+                        )
+                    ],
+                ),
+            ]
+        )
+
+        response = await e2e_client.post(
+            "/chat",
+            json={
+                "text": "你好啊",
+                "session_id": "e2e-cmd-redirect",
+                "page_context": {"page_type": "command"},
+            },
+        )
+
+        assert response.status_code == 200
+        events = await collect_sse_bytes(response)
+        event_types = [e[0] for e in events]
+
+        # 验证有 redirect 事件
+        assert "redirect" in event_types, f"缺少 redirect 事件，实际: {event_types}"
+        redirect_events = [d for e, d in events if e == "redirect"]
+        assert redirect_events[0]["target"] == "chat"
+        assert redirect_events[0]["reason"] == "conversational"
+
+        # redirect 不应有 tool_result（被拦截了）
+        assert "tool_result" not in event_types
+
+        # done 在最后
+        assert event_types[-1] == "done"
+
+    @pytest.mark.asyncio
+    async def test_command_ask_user_intercepted_as_content(self, e2e_client):
+        """command 模式下 ask_user 被拦截为 content 事件"""
+        mock_client = e2e_client._mock_llm_client
+
+        mock_client.chat.completions.create = AsyncMock(
+            side_effect=[
+                make_openai_response(
+                    content="",
+                    tool_calls=[
+                        make_tool_call(
+                            "ask_user",
+                            {"question": "你想创建什么？"},
+                            "call_ask_cmd_1",
+                        )
+                    ],
+                ),
+            ]
+        )
+
+        response = await e2e_client.post(
+            "/chat",
+            json={
+                "text": "帮我创建",
+                "session_id": "e2e-cmd-ask",
+                "page_context": {"page_type": "command"},
+            },
+        )
+
+        assert response.status_code == 200
+        events = await collect_sse_bytes(response)
+        event_types = [e[0] for e in events]
+
+        # ask_user 被拦截为 content
+        assert "content" in event_types, f"缺少 content 事件，实际: {event_types}"
+        content_events = [d for e, d in events if e == "content"]
+        assert "你想创建什么？" in content_events[0]["content"]
+
+        # 不应有 tool_result（ask_user 被拦截）
+        assert "tool_result" not in event_types
+
+        assert event_types[-1] == "done"
+
+    @pytest.mark.asyncio
+    async def test_command_create_entry_works(self, e2e_client):
+        """command 模式下正常工具调用（create_entry）正常执行"""
+        mock_client = e2e_client._mock_llm_client
+
+        mock_client.chat.completions.create = AsyncMock(
+            side_effect=[
+                make_openai_response(
+                    content="",
+                    tool_calls=[
+                        make_tool_call(
+                            "create_entry",
+                            {"category": "inbox", "title": "一个灵感"},
+                            "call_create_cmd_1",
+                        )
+                    ],
+                ),
+                make_openai_response(content="已记录。"),
+            ]
+        )
+
+        response = await e2e_client.post(
+            "/chat",
+            json={
+                "text": "记灵感 一个灵感",
+                "session_id": "e2e-cmd-create",
+                "page_context": {"page_type": "command"},
+            },
+        )
+
+        assert response.status_code == 200
+        events = await collect_sse_bytes(response)
+        event_types = [e[0] for e in events]
+
+        # 正常工具调用序列
+        assert "tool_call" in event_types
+        assert "tool_result" in event_types
+        assert event_types[-1] == "done"
+
+        # 不应有 redirect
+        assert "redirect" not in event_types
+
+    @pytest.mark.asyncio
+    async def test_non_command_no_redirect_event(self, e2e_client):
+        """非 command 模式下 redirect_to_chat 降级为 content，无 redirect 事件"""
+        mock_client = e2e_client._mock_llm_client
+
+        mock_client.chat.completions.create = AsyncMock(
+            side_effect=[
+                make_openai_response(
+                    content="",
+                    tool_calls=[
+                        make_tool_call(
+                            "redirect_to_chat",
+                            {"reason": "conversational"},
+                            "call_redirect_non_cmd",
+                        )
+                    ],
+                ),
+            ]
+        )
+
+        response = await e2e_client.post(
+            "/chat",
+            json={
+                "text": "你好",
+                "session_id": "e2e-non-cmd-redirect",
+                # 无 page_context → 非 command 模式
+            },
+        )
+
+        assert response.status_code == 200
+        events = await collect_sse_bytes(response)
+        event_types = [e[0] for e in events]
+
+        # 非 command 模式不应有 redirect 事件
+        assert "redirect" not in event_types, f"不应有 redirect 事件，实际: {event_types}"
+
+        # done 在最后
+        assert event_types[-1] == "done"
+
+    @pytest.mark.asyncio
+    async def test_command_session_metadata_skipped(self, e2e_client):
+        """command 模式下不创建 session 元数据"""
+        from app.routers import parse as parse_module
+
+        mock_client = e2e_client._mock_llm_client
+
+        mock_client.chat.completions.create = AsyncMock(
+            return_value=make_openai_response(content="好的。")
+        )
+
+        # 注入 mock session meta store 来验证
+        mock_session_store = MagicMock()
+        mock_session_store.session_exists = MagicMock(return_value=False)
+        mock_session_store.create_session = MagicMock()
+        e2e_client._agent_service.set_session_meta_store(mock_session_store)
+
+        try:
+            response = await e2e_client.post(
+                "/chat",
+                json={
+                    "text": "测试",
+                    "session_id": "e2e-cmd-session",
+                    "page_context": {"page_type": "command"},
+                },
+            )
+
+            assert response.status_code == 200
+            events = await collect_sse_bytes(response)
+            event_types = [e[0] for e in events]
+            assert event_types[-1] == "done"
+
+            # command 模式下 create_session 不应被调用
+            mock_session_store.create_session.assert_not_called()
+        finally:
+            e2e_client._agent_service.set_session_meta_store(None)
+
+
+# === Command 模式 SSE 编排测试（不依赖 HTTP） ===
+
+
+class TestAgentServiceCommandModeSSE:
+    """直接测试 AgentService.chat() 的 command 模式 SSE 编排"""
+
+    @pytest.mark.asyncio
+    async def test_command_redirect_sse(self):
+        """command 模式下 redirect_to_chat 生成 redirect 事件"""
+        from app.services.agent_service import AgentService
+        from app.agent.tools import ToolDependencies
+
+        service = AgentService()
+        mock_agent = MagicMock()
+
+        async def _stream(**kwargs):
+            yield {
+                "messages": [
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "call_redirect",
+                                "name": "redirect_to_chat",
+                                "args": {"reason": "emotional"},
+                                "type": "tool_call",
+                            }
+                        ],
+                    ),
+                ]
+            }
+
+        mock_agent.stream = MagicMock(side_effect=_stream)
+        service.set_react_agent(mock_agent)
+        service.set_dependencies(ToolDependencies())
+
+        raw = ""
+        async for chunk in service.chat(
+            text="今天心情不好",
+            thread_id="test:cmd-redirect",
+            user_id="test",
+            page_context=MagicMock(page_type="command"),
+        ):
+            raw += chunk
+
+        events = parse_sse_events(raw)
+        event_types = [e[0] for e in events]
+
+        assert "redirect" in event_types
+        redirect_events = [d for e, d in events if e == "redirect"]
+        assert redirect_events[0]["reason"] == "emotional"
+        assert redirect_events[0]["target"] == "chat"
+        assert event_types[-1] == "done"
+
+    @pytest.mark.asyncio
+    async def test_command_ask_user_intercepted_sse(self):
+        """command 模式下 ask_user 被拦截为 content 事件"""
+        from app.services.agent_service import AgentService
+        from app.agent.tools import ToolDependencies
+
+        service = AgentService()
+        mock_agent = MagicMock()
+
+        async def _stream(**kwargs):
+            yield {
+                "messages": [
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "call_ask",
+                                "name": "ask_user",
+                                "args": {"question": "请提供更多信息"},
+                                "type": "tool_call",
+                            }
+                        ],
+                    ),
+                ]
+            }
+
+        mock_agent.stream = MagicMock(side_effect=_stream)
+        service.set_react_agent(mock_agent)
+        service.set_dependencies(ToolDependencies())
+
+        raw = ""
+        async for chunk in service.chat(
+            text="删除",
+            thread_id="test:cmd-ask",
+            user_id="test",
+            page_context=MagicMock(page_type="command"),
+        ):
+            raw += chunk
+
+        events = parse_sse_events(raw)
+        event_types = [e[0] for e in events]
+
+        # ask_user 被拦截为 content
+        assert "content" in event_types
+        content_events = [d for e, d in events if e == "content"]
+        assert content_events[0]["content"] == "请提供更多信息"
+        # 不应有 tool_result
+        assert "tool_result" not in event_types
+        assert event_types[-1] == "done"
+
+    @pytest.mark.asyncio
+    async def test_non_command_redirect_downgraded(self):
+        """非 command 模式下 redirect_to_chat 降级为 content"""
+        from app.services.agent_service import AgentService
+        from app.agent.tools import ToolDependencies
+
+        service = AgentService()
+        mock_agent = MagicMock()
+
+        async def _stream(**kwargs):
+            yield {
+                "messages": [
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "call_redirect_non",
+                                "name": "redirect_to_chat",
+                                "args": {"reason": "conversational"},
+                                "type": "tool_call",
+                            }
+                        ],
+                    ),
+                ]
+            }
+
+        mock_agent.stream = MagicMock(side_effect=_stream)
+        service.set_react_agent(mock_agent)
+        service.set_dependencies(ToolDependencies())
+
+        raw = ""
+        async for chunk in service.chat(
+            text="你好",
+            thread_id="test:non-cmd",
+            user_id="test",
+            # 无 page_context → 非 command
+        ):
+            raw += chunk
+
+        events = parse_sse_events(raw)
+        event_types = [e[0] for e in events]
+
+        # 不应有 redirect
+        assert "redirect" not in event_types
+        # 应有 content（降级）
+        assert "content" in event_types
+        assert event_types[-1] == "done"

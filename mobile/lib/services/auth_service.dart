@@ -140,6 +140,7 @@ class AuthService {
       _storage.delete(key: ApiConfig.keyJwtToken),
       _storage.delete(key: ApiConfig.keyUserId),
       _storage.delete(key: ApiConfig.keyUsername),
+      _storage.delete(key: ApiConfig.keySessionId),
     ]);
   }
 }

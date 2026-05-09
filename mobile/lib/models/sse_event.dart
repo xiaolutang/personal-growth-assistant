@@ -98,6 +98,7 @@ class SseEventType {
   static const String deleted = 'deleted';
   static const String confirm = 'confirm';
   static const String results = 'results';
+  static const String redirect = 'redirect';
   static const String done = 'done';
   static const String error = 'error';
 }

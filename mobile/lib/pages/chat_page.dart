@@ -5,6 +5,7 @@ import '../config/theme.dart';
 import '../models/chat_message.dart';
 import '../providers/chat_provider.dart';
 import '../widgets/chat_bubble.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/entry_created_card.dart';
 
 // ============================================================
@@ -71,7 +72,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     ChatState chatState,
   ) {
     if (chatState.messages.isEmpty) {
-      return _buildEmptyState(theme);
+      return const EmptyStateWidget(
+        icon: Icons.chat_bubble_outline,
+        title: '开始和 AI 对话吧',
+        subtitle: '记录灵感、管理任务、整理笔记...',
+      );
     }
 
     // 监听消息变化，自动滚动
@@ -101,35 +106,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           showTypingIndicator: showTyping,
         );
       },
-    );
-  }
-
-  Widget _buildEmptyState(ThemeData theme) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.chat_bubble_outline,
-            size: 56,
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            '开始和 AI 对话吧',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            '记录灵感、管理任务、整理笔记...',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-            ),
-          ),
-        ],
-      ),
     );
   }
 

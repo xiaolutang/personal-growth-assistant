@@ -6,6 +6,9 @@ import '../config/constants.dart';
 import '../config/theme.dart';
 import '../models/entry.dart';
 import '../providers/inbox_provider.dart';
+import '../utils/date_formatter.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/error_state.dart';
 
 // ============================================================
 // InboxPage - 灵感收集页
@@ -157,11 +160,18 @@ class _InboxPageState extends ConsumerState<InboxPage> {
     }
 
     if (state.error != null && state.entries.isEmpty) {
-      return _buildErrorState(state.error!, theme);
+      return ErrorStateWidget(
+        message: state.error!,
+        onRetry: _loadInbox,
+      );
     }
 
     if (state.entries.isEmpty) {
-      return _buildEmptyState(theme);
+      return const EmptyStateWidget(
+        icon: Icons.lightbulb_outline,
+        title: '随时记录灵感',
+        subtitle: '在下方输入框快速记录，稍后再整理为任务或笔记',
+      );
     }
 
     return RefreshIndicator(
@@ -212,7 +222,7 @@ class _InboxPageState extends ConsumerState<InboxPage> {
                     if (entry.createdAt != null) ...[
                       const SizedBox(height: AppSpacing.xs),
                       Text(
-                        _formatTime(entry.createdAt!),
+                        DateFormatter.formatRelative(entry.createdAt!),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant
                               .withValues(alpha: 0.6),
@@ -229,75 +239,6 @@ class _InboxPageState extends ConsumerState<InboxPage> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  // ---- 空状态 ----
-
-  Widget _buildEmptyState(ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.lightbulb_outline,
-              size: 64,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              '随时记录灵感',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              '在下方输入框快速记录，稍后再整理为任务或笔记',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color:
-                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ---- 错误状态 ----
-
-  Widget _buildErrorState(String error, ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: theme.colorScheme.error.withValues(alpha: 0.6),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              error,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            ElevatedButton(
-              onPressed: _loadInbox,
-              child: const Text('重试'),
-            ),
-          ],
         ),
       ),
     );
@@ -340,24 +281,5 @@ class _InboxPageState extends ConsumerState<InboxPage> {
         ],
       ),
     );
-  }
-
-  // ---- 时间格式化 ----
-
-  String _formatTime(String isoString) {
-    try {
-      final dt = DateTime.parse(isoString).toLocal();
-      final now = DateTime.now();
-      final diff = now.difference(dt);
-
-      if (diff.inMinutes < 1) return '刚刚';
-      if (diff.inHours < 1) return '${diff.inMinutes} 分钟前';
-      if (diff.inDays < 1) return '${diff.inHours} 小时前';
-      if (diff.inDays < 7) return '${diff.inDays} 天前';
-
-      return '${dt.month}/${dt.day} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    } catch (_) {
-      return '';
-    }
   }
 }

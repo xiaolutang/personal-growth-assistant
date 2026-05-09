@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo } from "react";
 import { Scale, Clock, Pause } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,7 @@ interface DecisionCardProps {
   onClickOverride?: (task: Task) => void;
 }
 
-export function DecisionCard({ decision, selectable = false, selected = false, onSelect, onClickOverride }: DecisionCardProps) {
+export const DecisionCard = memo(function DecisionCard({ decision, selectable = false, selected = false, onSelect, onClickOverride }: DecisionCardProps) {
   const storeUpdateEntry = useTaskStore((state) => state.updateEntry);
   const storeCreateEntry = useTaskStore((state) => state.createEntry);
 
@@ -264,7 +264,7 @@ export function DecisionCard({ decision, selectable = false, selected = false, o
       />
     </>
   );
-}
+});
 
 /** 从 content 中提取决策结果 */
 function extractDecisionResult(content: string): { choice: string; reason: string } | null {

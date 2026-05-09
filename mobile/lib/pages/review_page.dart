@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/theme.dart';
 import '../providers/review_provider.dart';
+import '../widgets/error_state.dart';
 
 // ============================================================
 // ReviewPage - 统计回顾页
@@ -85,23 +86,9 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
     }
 
     if (state.error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline,
-                size: 48, color: theme.colorScheme.error,),
-            const SizedBox(height: AppSpacing.md),
-            Text(state.error!,
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.colorScheme.error),),
-            const SizedBox(height: AppSpacing.lg),
-            FilledButton.tonal(
-              onPressed: _loadAll,
-              child: const Text('重试'),
-            ),
-          ],
-        ),
+      return ErrorStateWidget(
+        message: state.error!,
+        onRetry: _loadAll,
       );
     }
 

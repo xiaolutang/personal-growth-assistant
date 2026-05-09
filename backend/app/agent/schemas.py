@@ -170,3 +170,23 @@ class AskUserOutput(BaseModel):
     """
     type: Literal["ask"] = Field(default="ask", description="类型标识，固定为 'ask'")
     question: str = Field(..., description="向用户提出的问题")
+
+
+# === redirect_to_chat ===
+
+class RedirectToChatInput(BaseModel):
+    """跳转到日知对话输入
+
+    command 模式下，当检测到闲聊、倾诉、情感交流等非任务意图时调用。
+    触发 SSE redirect 事件，引导用户到日知页面继续深度对话。
+    """
+    reason: str = Field(
+        default="conversational",
+        description="跳转原因，如 conversational、emotional_support 等",
+    )
+
+
+class RedirectToChatOutput(BaseModel):
+    """跳转到日知对话输出"""
+    reason: str = Field(..., description="跳转原因")
+    target: str = Field(default="chat", description="跳转目标页面")

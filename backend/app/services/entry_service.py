@@ -57,9 +57,14 @@ class EntryService:
         """检查类型转换是否合法"""
         return (from_cat.value, to_cat.value) in EntryService.VALID_CONVERSIONS
 
-    def __init__(self, storage: SyncService):
+    def __init__(self, storage: SyncService, hybrid_search: Optional["HybridSearchService"] = None):
         self.storage = storage
+        self._hybrid_search = hybrid_search  # 可选注入，由 deps.py 提供
         self._goal_service = None  # 通过 set_goal_service 注入
+
+    def set_hybrid_search(self, hybrid_search: "HybridSearchService"):
+        """设置混合搜索服务（由 deps.py 注入）"""
+        self._hybrid_search = hybrid_search
 
     def set_goal_service(self, goal_service):
         """设置目标服务（由 deps.py 注入）"""
@@ -311,10 +316,9 @@ class EntryService:
                         ))
 
         # 级别 3：搜索相关（混合搜索：向量 + 全文）
-        if len(results) < limit:
+        if len(results) < limit and self._hybrid_search:
             try:
-                search_service = HybridSearchService(self.storage)
-                search_results = await search_service.search(
+                search_results = await self._hybrid_search.search(
                     query=entry.title or entry.content or "",
                     user_id=user_id,
                     limit=limit * 2,
@@ -667,10 +671,9 @@ class EntryService:
     async def search_entries(self, query: str, limit: int = 10, user_id: str = "_default") -> SearchResult:
         """搜索条目 - 使用混合搜索（向量 + 全文）"""
 
-        # 优先使用混合搜索（需要 Qdrant 和 SQLite 都可用）
-        if self.storage.qdrant and self.storage.sqlite:
-            hybrid = HybridSearchService(self.storage)
-            entries = await hybrid.search(query, user_id=user_id, limit=limit)
+        # 优先使用注入的混合搜索实例（需要 Qdrant 和 SQLite 都可用）
+        if self._hybrid_search and self.storage.qdrant and self.storage.sqlite:
+            entries = await self._hybrid_search.search(query, user_id=user_id, limit=limit)
             return SearchResult(entries=entries, query=query)
 
         # 回退：仅 SQLite 全文搜索

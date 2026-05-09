@@ -98,15 +98,114 @@ class ExploreState {
 
 // ============================================================
 // ExploreNotifier - 探索页 Notifier
+//
+// Per-tab 缓存：内部维护 Map<int, List<Entry>> 缓存，
+// 切换 tab 时读缓存，仅首次或 refresh 时请求 API。
 // ============================================================
 class ExploreNotifier extends Notifier<ExploreState> {
+  /// Per-tab entries 缓存
+  final Map<int, List<Entry>> _tabCache = {};
+
+  /// Per-tab error 缓存（null = 无错误，有值 = 该 tab 上次加载失败）
+  final Map<int, String?> _tabErrors = {};
+
+  /// 当前激活的 tab index（用于判断切换）
+  int _activeTabIndex = 0;
+
   @override
   ExploreState build() {
     return const ExploreState();
   }
 
-  /// 加载条目列表（带过滤参数）
+  /// 加载条目列表
+  ///
+  /// [tabIndex] 传入 tab 索引以启用 per-tab 缓存。
+  /// - 首次进入 tab：从 API 获取数据并写入缓存
+  /// - 再次进入 tab：从缓存读取，不触发重复 API
+  /// - 不传 tabIndex：直接请求 API（向后兼容搜索等场景）
   Future<void> loadEntries({
+    int? tabIndex,
+    String? type,
+    String? status,
+    String? tags,
+    String? startDate,
+    String? endDate,
+  }) async {
+    // 不指定 tabIndex 时，直接请求 API（搜索模式等场景）
+    if (tabIndex == null) {
+      await _fetchFromApi(
+        type: type,
+        status: status,
+        tags: tags,
+        startDate: startDate,
+        endDate: endDate,
+      );
+      return;
+    }
+
+    // 切换到同一 tab，不需要操作
+    if (tabIndex == _activeTabIndex && _tabCache.containsKey(tabIndex)) {
+      // 从缓存恢复 state
+      state = state.copyWith(
+        entries: _tabCache[tabIndex]!,
+        error: _tabErrors[tabIndex],
+        isLoading: false,
+      );
+      return;
+    }
+
+    _activeTabIndex = tabIndex;
+
+    // 缓存命中：直接从缓存恢复
+    if (_tabCache.containsKey(tabIndex)) {
+      state = state.copyWith(
+        entries: _tabCache[tabIndex]!,
+        error: _tabErrors[tabIndex],
+        isLoading: false,
+      );
+      return;
+    }
+
+    // 缓存未命中：从 API 加载
+    await _fetchFromApi(
+      tabIndex: tabIndex,
+      type: type,
+      status: status,
+      tags: tags,
+      startDate: startDate,
+      endDate: endDate,
+    );
+  }
+
+  /// 刷新指定 tab（清空缓存并重新请求）
+  Future<void> refreshTab({
+    required int tabIndex,
+    String? type,
+    String? status,
+    String? tags,
+    String? startDate,
+    String? endDate,
+  }) async {
+    _tabCache.remove(tabIndex);
+    _tabErrors.remove(tabIndex);
+    _activeTabIndex = tabIndex;
+
+    await _fetchFromApi(
+      tabIndex: tabIndex,
+      type: type,
+      status: status,
+      tags: tags,
+      startDate: startDate,
+      endDate: endDate,
+    );
+  }
+
+  /// 内部方法：实际请求 API
+  ///
+  /// 如果指定了 tabIndex，在 API 响应返回后检查用户是否仍在此 tab。
+  /// 若已切换到其他 tab，仅更新缓存不更新全局 state（防止慢响应覆盖）。
+  Future<void> _fetchFromApi({
+    int? tabIndex,
     String? type,
     String? status,
     String? tags,
@@ -126,12 +225,37 @@ class ExploreNotifier extends Notifier<ExploreState> {
       );
 
       final entries = parseEntries(response.data);
-      state = state.copyWith(entries: entries, isLoading: false);
+
+      // 如果指定了 tabIndex，写入缓存
+      if (tabIndex != null) {
+        _tabCache[tabIndex] = entries;
+        _tabErrors[tabIndex] = null;
+      }
+
+      // 仅当用户仍在当前 tab 时更新全局 state
+      if (tabIndex == null || tabIndex == _activeTabIndex) {
+        state = state.copyWith(entries: entries, isLoading: false);
+      } else {
+        // 用户已切换到其他 tab，仅清除 loading（不覆盖当前显示内容）
+        state = state.copyWith(isLoading: false);
+      }
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: ApiClient.errorMessage(e),
-      );
+      final errorMsg = ApiClient.errorMessage(e);
+
+      // 如果指定了 tabIndex，写入错误缓存
+      if (tabIndex != null) {
+        _tabErrors[tabIndex] = errorMsg;
+      }
+
+      // 仅当用户仍在当前 tab 时更新全局 state 的 error
+      if (tabIndex == null || tabIndex == _activeTabIndex) {
+        state = state.copyWith(
+          isLoading: false,
+          error: errorMsg,
+        );
+      } else {
+        state = state.copyWith(isLoading: false);
+      }
     }
   }
 
@@ -176,6 +300,8 @@ class ExploreNotifier extends Notifier<ExploreState> {
       final updatedEntries =
           state.entries.where((e) => e.id != id).toList();
       state = state.copyWith(entries: updatedEntries);
+      // 同步更新当前 tab 缓存
+      _syncCacheAfterMutation(updatedEntries);
       return true;
     } catch (e) {
       state = state.copyWith(error: ApiClient.errorMessage(e));
@@ -200,6 +326,8 @@ class ExploreNotifier extends Notifier<ExploreState> {
         return e;
       }).toList();
       state = state.copyWith(entries: updatedEntries);
+      // 同步更新当前 tab 缓存
+      _syncCacheAfterMutation(updatedEntries);
       return true;
     } catch (e) {
       state = state.copyWith(error: ApiClient.errorMessage(e));
@@ -244,6 +372,8 @@ class ExploreNotifier extends Notifier<ExploreState> {
     final updatedEntries =
         state.entries.where((e) => !successIdSet.contains(e.id)).toList();
     state = state.copyWith(entries: updatedEntries);
+    // 同步更新当前 tab 缓存
+    _syncCacheAfterMutation(updatedEntries);
 
     return result;
   }
@@ -270,6 +400,8 @@ class ExploreNotifier extends Notifier<ExploreState> {
       return e;
     }).toList();
     state = state.copyWith(entries: updatedEntries);
+    // 同步更新当前 tab 缓存
+    _syncCacheAfterMutation(updatedEntries);
 
     return result;
   }
@@ -336,6 +468,13 @@ class ExploreNotifier extends Notifier<ExploreState> {
   /// 清除选中
   void clearSelection() {
     state = state.copyWith(selectedIds: {});
+  }
+
+  /// mutation 后同步更新当前活跃 tab 的缓存
+  /// 搜索模式下不更新缓存（搜索结果是临时的，不应污染 tab 缓存）
+  void _syncCacheAfterMutation(List<Entry> updatedEntries) {
+    if (state.searchQuery.isNotEmpty) return;
+    _tabCache[_activeTabIndex] = updatedEntries;
   }
 }
 

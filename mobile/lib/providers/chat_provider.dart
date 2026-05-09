@@ -27,14 +27,16 @@ class ChatState {
   ChatState copyWith({
     List<ChatMessage>? messages,
     bool? isLoading,
-    String? error,
+    Object? error = _sentinel,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: identical(error, _sentinel) ? this.error : error as String?,
     );
   }
+
+  static const _sentinel = Object();
 }
 
 // ============================================================
@@ -42,22 +44,29 @@ class ChatState {
 // ============================================================
 class ChatNotifier extends Notifier<ChatState> {
   StreamSubscription<SseEvent>? _currentSubscription;
-  SseService? _currentSseService;
+  late SseService _sseService;
+  Map<String, dynamic>? _lastPageContext;
 
   @override
   ChatState build() {
+    // 缓存 SseService 引用（避免 dispose 时 read 已销毁的 container）
+    _sseService = ref.read(sseServiceProvider);
+
     // 清理旧的 SSE 连接和订阅
     ref.onDispose(() {
-      _currentSseService?.cancel();
+      _sseService.cancel();
       _currentSubscription?.cancel();
-      _currentSseService = null;
       _currentSubscription = null;
     });
     return const ChatState();
   }
 
   /// 发送消息并处理 SSE 事件流
-  Future<void> sendMessage(String text) async {
+  ///
+  /// [pageContext] 页面上下文，透传给后端 POST /chat 的 page_context 字段
+  /// 例如 {'page_type': 'today'} 或 {'page_type': 'home'}
+  Future<void> sendMessage(String text, {Map<String, dynamic>? pageContext}) async {
+    _lastPageContext = pageContext;
     if (text.trim().isEmpty) return;
 
     final authState = ref.read(authProvider);
@@ -91,16 +100,15 @@ class ChatNotifier extends Notifier<ChatState> {
     // 3. 获取或创建 session_id
     final sessionId = await _getOrCreateSessionId();
 
-    // 4. 调用 SseService
-    // 取消之前的 SSE 连接
-    _currentSseService?.cancel();
+    // 4. 调用 SseService（使用单例）
+    // 取消之前的 SSE 连接和订阅
     _currentSubscription?.cancel();
+    _sseService.cancel();
 
-    final sseService = _createSseService();
-    _currentSseService = sseService;
-    final stream = sseService.connect(
+    final stream = _sseService.connect(
       message: text.trim(),
       sessionId: sessionId,
+      pageContext: pageContext,
     );
 
     // 5. 监听 SSE 事件流
@@ -234,7 +242,7 @@ class ChatNotifier extends Notifier<ChatState> {
         messages.removeLast();
       }
       state = state.copyWith(messages: messages, error: null);
-      sendMessage(lastUserMessage.text);
+      sendMessage(lastUserMessage.text, pageContext: _lastPageContext);
     }
   }
 
@@ -251,12 +259,16 @@ class ChatNotifier extends Notifier<ChatState> {
     return sessionId;
   }
 
-  /// 创建 SseService 实例
-  SseService _createSseService() {
-    final apiClient = ref.read(apiClientProvider);
-    final storage = ref.read(secureStorageProvider);
-    return SseService(apiClient: apiClient, storage: storage);
+  /// 清空所有消息和错误状态（用于用户切换时重置对话）
+  void clearMessages() {
+    // 取消正在进行的 SSE 连接
+    _currentSubscription?.cancel();
+    _currentSubscription = null;
+    _sseService.cancel();
+
+    state = const ChatState();
   }
+
 }
 
 /// SseService 单例 Provider

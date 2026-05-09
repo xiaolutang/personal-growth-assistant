@@ -18,7 +18,6 @@ export function resetStore() {
     tasks: [],
     error: null,
     serviceUnavailable: false,
-    isFetching: false,
     isCreating: false,
     isLoading: false,
     searchResults: [],

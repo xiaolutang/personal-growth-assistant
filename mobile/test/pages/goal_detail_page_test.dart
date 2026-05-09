@@ -6,43 +6,37 @@ import 'package:growth_assistant/pages/goal_detail_page.dart';
 import 'package:growth_assistant/providers/goals_provider.dart';
 import 'package:growth_assistant/widgets/progress_ring.dart';
 
-// Fake GoalsNotifier for testing
-class _FakeGoalsNotifier extends GoalsNotifier {
-  final List<Goal> _goals;
+// Fake GoalDetailNotifier for testing
+class _FakeGoalDetailNotifier extends FamilyNotifier<GoalDetailState, String>
+    implements GoalDetailNotifier {
+  final Goal? _goal;
   final bool _isLoading;
   final String? _error;
-  final Goal? _selectedGoal;
   final List<Milestone> _milestones;
   final List<Entry> _linkedEntries;
 
-  _FakeGoalsNotifier({
-    List<Goal> goals = const [],
+  _FakeGoalDetailNotifier({
+    Goal? goal,
     bool isLoading = false,
     String? error,
-    Goal? selectedGoal,
     List<Milestone> milestones = const [],
     List<Entry> linkedEntries = const [],
-  })  : _goals = goals,
+  })  : _goal = goal,
         _isLoading = isLoading,
         _error = error,
-        _selectedGoal = selectedGoal,
         _milestones = milestones,
         _linkedEntries = linkedEntries;
 
   @override
-  GoalsState build() {
-    return GoalsState(
-      goals: _goals,
+  GoalDetailState build(String arg) {
+    return GoalDetailState(
+      goal: _goal,
       isLoading: _isLoading,
       error: _error,
-      selectedGoal: _selectedGoal,
       milestones: _milestones,
       linkedEntries: _linkedEntries,
     );
   }
-
-  @override
-  Future<void> fetchGoals({String? status}) async {}
 
   @override
   Future<void> fetchGoalDetail(String id) async {}
@@ -54,29 +48,42 @@ class _FakeGoalsNotifier extends GoalsNotifier {
   Future<void> fetchLinkedEntries(String goalId) async {}
 
   @override
-  void deselectGoal() {}
+  Future<bool> createMilestone(String goalId, Map<String, dynamic> data) async =>
+      true;
+
+  @override
+  Future<bool> updateMilestone(
+    String goalId,
+    String milestoneId,
+    Map<String, dynamic> data,
+  ) async =>
+      true;
+
+  @override
+  Future<bool> deleteMilestone(String goalId, String milestoneId) async => true;
+
+  @override
+  void syncGoalBackToList() {}
 }
 
 // Helper: pump GoalDetailPage with provider overrides
 Future<void> _pumpGoalDetailPage(
   WidgetTester tester, {
   required String goalId,
-  List<Goal> goals = const [],
   bool isLoading = false,
   String? error,
-  Goal? selectedGoal,
+  Goal? goal,
   List<Milestone> milestones = const [],
   List<Entry> linkedEntries = const [],
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        goalsProvider.overrideWith(
-          () => _FakeGoalsNotifier(
-            goals: goals,
+        goalDetailProvider.overrideWith(
+          () => _FakeGoalDetailNotifier(
+            goal: goal,
             isLoading: isLoading,
             error: error,
-            selectedGoal: selectedGoal,
             milestones: milestones,
             linkedEntries: linkedEntries,
           ),
@@ -148,7 +155,7 @@ void main() {
         tester,
         goalId: goalId,
         isLoading: true,
-        selectedGoal: null,
+        goal: null,
       );
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -159,7 +166,7 @@ void main() {
         tester,
         goalId: goalId,
         error: '网络连接失败',
-        selectedGoal: null,
+        goal: null,
       );
 
       expect(find.text('网络连接失败'), findsOneWidget);
@@ -177,7 +184,7 @@ void main() {
       await _pumpGoalDetailPage(
         tester,
         goalId: goalId,
-        selectedGoal: goal,
+        goal: goal,
       );
 
       expect(find.text('学习 Flutter'), findsOneWidget);
@@ -197,7 +204,7 @@ void main() {
       await _pumpGoalDetailPage(
         tester,
         goalId: goalId,
-        selectedGoal: goal,
+        goal: goal,
       );
 
       expect(find.text('1月1日'), findsOneWidget);
@@ -219,7 +226,7 @@ void main() {
       await _pumpGoalDetailPage(
         tester,
         goalId: goalId,
-        selectedGoal: goal,
+        goal: goal,
         milestones: milestones,
       );
 
@@ -237,7 +244,7 @@ void main() {
       await _pumpGoalDetailPage(
         tester,
         goalId: goalId,
-        selectedGoal: goal,
+        goal: goal,
         milestones: [],
       );
 
@@ -254,7 +261,7 @@ void main() {
       await _pumpGoalDetailPage(
         tester,
         goalId: goalId,
-        selectedGoal: goal,
+        goal: goal,
         linkedEntries: entries,
       );
 
@@ -270,7 +277,7 @@ void main() {
       await _pumpGoalDetailPage(
         tester,
         goalId: goalId,
-        selectedGoal: goal,
+        goal: goal,
         linkedEntries: [],
       );
 
@@ -288,7 +295,7 @@ void main() {
       await _pumpGoalDetailPage(
         tester,
         goalId: goalId,
-        selectedGoal: goal,
+        goal: goal,
         milestones: [],
         linkedEntries: [],
       );
@@ -306,7 +313,7 @@ void main() {
       await _pumpGoalDetailPage(
         tester,
         goalId: goalId,
-        selectedGoal: goal,
+        goal: goal,
       );
 
       // FAB exists
@@ -335,7 +342,7 @@ void main() {
       await _pumpGoalDetailPage(
         tester,
         goalId: goalId,
-        selectedGoal: goal,
+        goal: goal,
         milestones: milestones,
       );
 
@@ -360,7 +367,7 @@ void main() {
       await _pumpGoalDetailPage(
         tester,
         goalId: goalId,
-        selectedGoal: goal,
+        goal: goal,
         milestones: milestones,
       );
 
@@ -371,7 +378,7 @@ void main() {
       await _pumpGoalDetailPage(
         tester,
         goalId: goalId,
-        selectedGoal: _makeGoal(id: goalId),
+        goal: _makeGoal(id: goalId),
       );
 
       expect(find.text('目标详情'), findsOneWidget);

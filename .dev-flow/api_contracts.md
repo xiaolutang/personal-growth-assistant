@@ -50,7 +50,7 @@
   "text": "string (required) — 用户输入文本",
   "session_id": "string (required) — 会话 ID",
   "page_context": {
-    "page_type": "home|tasks|notes|inbox|projects|explore|review|entry_detail",
+    "page_type": "home|today|command|tasks|notes|inbox|projects|explore|review|entry_detail",
     "entry_id": "string? (entry_detail 页面时必填)",
     "extra": "object?"
   }
@@ -72,7 +72,7 @@ event: tool_result
 data: {"tool_call_id": "call_xxx", "tool": "create_entry", "result": {"id": "xxx", "type": "note"}, "success": true}
 
 event: content
-data: {"text": "已为你创建了笔记"}
+data: {"content": "已为你创建了笔记"}
 
 event: created
 data: {"id": "xxx", "type": "note", "content": "..."}
@@ -85,6 +85,9 @@ data: {"message": "操作失败：..."}
 
 event: done
 data: {}
+
+event: redirect
+data: {"reason": "conversational", "target": "chat"}
 ```
 
 ### SSE 事件顺序
@@ -100,6 +103,14 @@ data: {}
 3. 前端收到 done 后输入框自动聚焦，展示追问文本
 4. 用户输入回复 → 同 session_id 再次 POST /chat
 5. Checkpointer 自动恢复对话历史，Agent 继续推理
+
+### command 模式（page_type='command'）
+
+当 page_type='command' 时：
+- Agent 行为：直接执行、不追问、不展开对话。意图明确→调工具；闲聊意图→发 `redirect` 事件
+- 每次请求使用新 session_id（无状态，不持久化对话）
+- 新增 SSE 事件：`redirect` — 表示建议跳转到其他页面继续
+- 前端解析事件流后展示内联结果（toast/卡片/跳转），不展示聊天气泡
 
 ## CONTRACT-FEEDBACK: POST /feedback（扩展）
 

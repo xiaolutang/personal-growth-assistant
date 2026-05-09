@@ -5,6 +5,8 @@ import '../config/constants.dart';
 import '../config/theme.dart';
 import '../models/entry.dart';
 import '../providers/goals_provider.dart';
+import '../utils/date_formatter.dart';
+import '../widgets/error_state.dart';
 import '../widgets/progress_ring.dart';
 
 // ============================================================
@@ -17,6 +19,9 @@ import '../widgets/progress_ring.dart';
 // - 删除里程碑：滑动删除确认
 // - 关联条目列表
 // - loading/empty/error 三态处理
+//
+// 使用独立的 goalDetailProvider(goalId)，
+// 与 GoalsPage 的 goalsProvider 完全隔离
 // ============================================================
 
 class GoalDetailPage extends ConsumerStatefulWidget {
@@ -38,7 +43,7 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
   }
 
   Future<void> _loadData() async {
-    final notifier = ref.read(goalsProvider.notifier);
+    final notifier = ref.read(goalDetailProvider(widget.goalId).notifier);
     await Future.wait([
       notifier.fetchGoalDetail(widget.goalId),
       notifier.fetchMilestones(widget.goalId),
@@ -54,7 +59,7 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
     final goalId = widget.goalId;
     final isCompleted = milestone.status == 'completed';
     final newStatus = isCompleted ? 'pending' : 'completed';
-    ref.read(goalsProvider.notifier).updateMilestone(
+    ref.read(goalDetailProvider(goalId).notifier).updateMilestone(
           goalId,
           milestone.id,
           {'status': newStatus},
@@ -95,7 +100,7 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
                 return;
               }
               Navigator.pop(ctx);
-              ref.read(goalsProvider.notifier).createMilestone(
+              ref.read(goalDetailProvider(widget.goalId).notifier).createMilestone(
                     widget.goalId,
                     {'title': titleController.text.trim()},
                   );
@@ -113,7 +118,7 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(goalsProvider);
+    final state = ref.watch(goalDetailProvider(widget.goalId));
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -130,18 +135,21 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
     );
   }
 
-  Widget _buildBody(GoalsState state, ThemeData theme) {
+  Widget _buildBody(GoalDetailState state, ThemeData theme) {
     // Loading state (initial load)
-    if (state.isLoading && state.selectedGoal == null) {
+    if (state.isLoading && state.goal == null) {
       return const Center(child: CircularProgressIndicator());
     }
 
     // Error state (no goal loaded)
-    if (state.error != null && state.selectedGoal == null) {
-      return _buildErrorState(state.error!, theme);
+    if (state.error != null && state.goal == null) {
+      return ErrorStateWidget(
+        message: state.error!,
+        onRetry: _loadData,
+      );
     }
 
-    final goal = state.selectedGoal;
+    final goal = state.goal;
     if (goal == null) {
       return const SizedBox.shrink();
     }
@@ -213,7 +221,7 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
       children: [
         if (goal.startDate != null)
           Text(
-            _formatDate(goal.startDate!),
+            DateFormatter.formatShortDate(goal.startDate!),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.outline,
             ),
@@ -230,7 +238,7 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
           ),
         if (goal.endDate != null)
           Text(
-            _formatDate(goal.endDate!),
+            DateFormatter.formatShortDate(goal.endDate!),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.outline,
             ),
@@ -332,7 +340,7 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
       },
       onDismissed: (direction) {
         ref
-            .read(goalsProvider.notifier)
+            .read(goalDetailProvider(widget.goalId).notifier)
             .deleteMilestone(widget.goalId, milestone.id);
       },
       background: Container(
@@ -362,7 +370,7 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
         ),
         subtitle: milestone.dueDate != null
             ? Text(
-                _formatDate(milestone.dueDate!),
+                DateFormatter.formatShortDate(milestone.dueDate!),
                 style: theme.textTheme.bodySmall,
               )
             : null,
@@ -460,52 +468,5 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
           : null,
     );
   }
-
-  // ----------------------------------------------------------
-  // Error State
-  // ----------------------------------------------------------
-
-  Widget _buildErrorState(String error, ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: theme.colorScheme.error.withValues(alpha: 0.6),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              error,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            ElevatedButton(
-              onPressed: _loadData,
-              child: const Text('重试'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ----------------------------------------------------------
-  // Helpers
-  // ----------------------------------------------------------
-
-  String _formatDate(String dateStr) {
-    try {
-      final dateTime = DateTime.parse(dateStr);
-      return '${dateTime.month}月${dateTime.day}日';
-    } catch (_) {
-      return dateStr;
-    }
-  }
 }
+

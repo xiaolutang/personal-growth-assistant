@@ -1,4 +1,3 @@
-export { AgentChat } from "./AgentChat";
 export { MessageList } from "./MessageList";
 export { UserMessage } from "./UserMessage";
 export { AgentMessage } from "./AgentMessage";

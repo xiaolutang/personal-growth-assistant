@@ -39,6 +39,7 @@ _PAGE_TYPE_TO_AGENT_PAGE: dict[str, str] = {
     "inbox": "home",
     "projects": "home",
     "graph": "explore",
+    "command": "command",
 }
 
 
@@ -150,8 +151,13 @@ class AgentService:
         # 构建页面上下文
         page, page_context_str = await self._build_agent_context(page_context, user_id)
 
+        # 判断是否 command 模式
+        page_type = getattr(page_context, "page_type", "") if page_context else ""
+        is_command_mode = page_type == "command"
+
         # Touch session 元数据，确保活跃对话出现在会话列表中
-        if not skip_touch_session and self._session_meta_store is not None:
+        # command 模式跳过 session 元数据写入（不污染会话列表）
+        if not skip_touch_session and not is_command_mode and self._session_meta_store is not None:
             try:
                 # thread_id 格式: {user_id}:{session_id}
                 session_id = thread_id.split(":", 1)[-1] if ":" in thread_id else thread_id
@@ -169,6 +175,8 @@ class AgentService:
             has_error = False
             # 跟踪工具调用时间，用于计算延迟
             tool_call_timestamps: dict[str, float] = {}
+            # 跟踪被拦截的 call IDs（command 模式下跳过对应 ToolMessage）
+            intercepted_call_ids: set[str] = set()
 
             async for state in self._agent.stream(
                 message=text,
@@ -191,13 +199,15 @@ class AgentService:
                     else:
                         continue
                     for msg in messages:
-                        async for event in self._process_message(msg, tool_call_timestamps):
+                        async for event in self._process_message(msg, tool_call_timestamps, is_command_mode, intercepted_call_ids):
                             event_type = self._extract_event_type(event)
                             if event_type == "content":
                                 has_content = True
                             elif event_type == "error":
                                 has_error = True
                             elif event_type == "created" or event_type == "updated":
+                                has_content = True
+                            elif event_type == "redirect":
                                 has_content = True
                             yield event
 
@@ -209,15 +219,21 @@ class AgentService:
             yield sse_event("error", {"message": f"处理失败: {str(e)}"})
             yield sse_event("done", {})
 
-    async def _process_message(self, msg: Any, tool_call_timestamps: dict[str, float]) -> AsyncGenerator[str, None]:
+    async def _process_message(self, msg: Any, tool_call_timestamps: dict[str, float], is_command_mode: bool = False, intercepted_call_ids: set[str] | None = None) -> AsyncGenerator[str, None]:
         """将单条 LangChain message 转换为 SSE 事件。
 
         处理规则：
         - AIMessage with tool_calls → thinking (如有 content) + tool_call 事件
-        - AIMessage without tool_calls → content 事件（如有 content）
+          - command 模式下 redirect_to_chat → redirect SSE 事件（终止循环）
+          - command 模式下 ask_user → 拦截为 content，记录 call ID
+        - AIMessage without tool_calls → content 事件
         - ToolMessage → tool_result 事件 + 可能的 created/updated 事件
+          - 跳过已拦截的 call IDs
         - HumanMessage → 忽略（我们自己发送的）
         """
+        if intercepted_call_ids is None:
+            intercepted_call_ids = set()
+
         if isinstance(msg, AIMessage):
             # 如果有 tool_calls，中间过程用 thinking 事件
             if msg.tool_calls:
@@ -227,6 +243,22 @@ class AgentService:
                 for tc in msg.tool_calls:
                     tool_name = tc.get("name", "")
                     tc_id = tc.get("id", "")
+
+                    # command 模式下拦截特定工具调用
+                    intercepted = self._intercept_command_tool_call(
+                        tc, is_command_mode, intercepted_call_ids,
+                    )
+                    if intercepted is not None:
+                        yield intercepted
+                        continue
+
+                    # 防御性处理：非 command 模式下 redirect_to_chat 降级为 content
+                    if tool_name == "redirect_to_chat" and not is_command_mode:
+                        logger.warning("非 command 模式下收到 redirect_to_chat 调用，降级为 content")
+                        intercepted_call_ids.add(tc_id)
+                        yield sse_event("content", {"content": "这条消息适合在日知中讨论。"})
+                        continue
+
                     # 记录 tool_call 开始时间
                     tool_call_timestamps[tc_id] = time.monotonic()
                     if tool_name == "ask_user":
@@ -237,11 +269,15 @@ class AgentService:
                         "args": tc.get("args", {}),
                     })
             else:
-                # 无 tool_calls = 最终回复，用 content 事件
+                # 无 tool_calls = 最终回复
                 if msg.content:
                     yield sse_event("content", {"content": msg.content})
 
         elif isinstance(msg, ToolMessage):
+            # 跳过已拦截的 call IDs（command 模式下 ask_user / redirect_to_chat）
+            if msg.tool_call_id in intercepted_call_ids:
+                return
+
             # 解析 tool 结果
             tool_name = ""
             success = True
@@ -297,6 +333,37 @@ class AgentService:
         elif isinstance(msg, HumanMessage):
             # 忽略用户消息（是我们自己注入的）
             pass
+
+    @staticmethod
+    def _intercept_command_tool_call(
+        tc: dict,
+        is_command_mode: bool,
+        intercepted_call_ids: set[str],
+    ) -> str | None:
+        """command 模式下拦截特定工具调用，返回 SSE 事件或 None。
+
+        处理 redirect_to_chat（→ redirect 事件）和 ask_user（→ content 事件）。
+        非 command 模式返回 None，由调用方做防御性处理。
+        """
+        if not is_command_mode:
+            return None
+
+        tool_name = tc.get("name", "")
+        tc_id = tc.get("id", "")
+
+        if tool_name == "redirect_to_chat":
+            reason = tc.get("args", {}).get("reason", "conversational")
+            intercepted_call_ids.add(tc_id)
+            return sse_event("redirect", {"reason": reason, "target": "chat"})
+
+        if tool_name == "ask_user":
+            question = tc.get("args", {}).get("question", "")
+            intercepted_call_ids.add(tc_id)
+            return sse_event("content", {
+                "content": question if question else "请提供更多信息。",
+            })
+
+        return None
 
     @staticmethod
     def _extract_event_type(event_str: str) -> str:

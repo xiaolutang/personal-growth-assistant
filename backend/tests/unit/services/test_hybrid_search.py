@@ -246,6 +246,26 @@ class TestHybridSearchService:
         assert len(results) == 3
 
 
+class TestB03AsyncioApiUsage:
+    """B03: asyncio.get_running_loop() 替换验证"""
+
+    def test_search_uses_get_running_loop_not_get_event_loop(self):
+        """search 方法源码中不应包含 get_event_loop 调用"""
+        import inspect
+        source = inspect.getsource(HybridSearchService.search)
+        assert "get_event_loop" not in source, (
+            "search 方法中仍使用 asyncio.get_event_loop()，应替换为 asyncio.get_running_loop()"
+        )
+
+    def test_search_uses_get_running_loop(self):
+        """search 方法源码应包含 get_running_loop"""
+        import inspect
+        source = inspect.getsource(HybridSearchService.search)
+        assert "get_running_loop" in source, (
+            "search 方法中应使用 asyncio.get_running_loop()"
+        )
+
+
 class TestHybridSearchResult:
     """HybridSearchResult 数据类测试"""
 

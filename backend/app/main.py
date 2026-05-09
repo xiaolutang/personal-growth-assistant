@@ -160,7 +160,7 @@ async def lifespan(app: FastAPI):
         try:
             from app.services.agent_service import AgentService
             from app.agent.react_agent import ReActAgentGraph
-            from app.agent.tools import ToolDependencies, AGENT_TOOLS
+            from app.agent.tools import ToolDependencies, AGENT_TOOLS, COMMAND_ONLY_TOOLS
 
             if settings.LLM_API_KEY and settings.LLM_BASE_URL and settings.LLM_MODEL:
                 # 构建 ToolDependencies
@@ -176,6 +176,7 @@ async def lifespan(app: FastAPI):
                     base_url=settings.LLM_BASE_URL,
                     model=settings.LLM_MODEL,
                     tools=AGENT_TOOLS,
+                    command_only_tools=COMMAND_ONLY_TOOLS,
                 )
 
                 # 创建并注入 AgentService

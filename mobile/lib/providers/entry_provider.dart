@@ -24,14 +24,16 @@ class EntryListState {
   EntryListState copyWith({
     List<Entry>? entries,
     bool? isLoading,
-    String? error,
+    Object? error = _sentinel,
   }) {
     return EntryListState(
       entries: entries ?? this.entries,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: identical(error, _sentinel) ? this.error : error as String?,
     );
   }
+
+  static const _sentinel = Object();
 }
 
 // ============================================================

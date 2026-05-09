@@ -6,6 +6,8 @@ import '../config/constants.dart';
 import '../config/theme.dart';
 import '../models/entry.dart';
 import '../providers/entry_provider.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/error_state.dart';
 import '../widgets/task_card.dart';
 
 // ============================================================
@@ -152,11 +154,18 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     }
 
     if (state.error != null && state.entries.isEmpty) {
-      return _buildErrorState(state.error!, theme);
+      return ErrorStateWidget(
+        message: state.error!,
+        onRetry: _loadTasks,
+      );
     }
 
     if (state.entries.isEmpty) {
-      return _buildEmptyState(theme);
+      return const EmptyStateWidget(
+        icon: Icons.check_circle_outline,
+        title: '暂无任务',
+        subtitle: '通过 AI 对话创建任务，或点击首页快速操作添加',
+      );
     }
 
     // 数据刷新时同步本地排序（保留已有排序或重置）
@@ -285,70 +294,6 @@ class _TasksPageState extends ConsumerState<TasksPage> {
             },
           ),
       ],
-    );
-  }
-
-  Widget _buildEmptyState(ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.check_circle_outline,
-              size: 64,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              '暂无任务',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              '通过 AI 对话创建任务，或点击首页快速操作添加',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorState(String error, ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: theme.colorScheme.error.withValues(alpha: 0.6),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              error,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            ElevatedButton(
-              onPressed: _loadTasks,
-              child: const Text('重试'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

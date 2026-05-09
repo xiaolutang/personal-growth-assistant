@@ -39,6 +39,23 @@ class GoalService:
         except Exception as e:
             logger.warning("写入进度快照失败: %s", e)
 
+    def _parse_json_fields(self, row: dict[str, Any]) -> None:
+        """就地解析 auto_tags / checklist_items JSON 字段
+
+        字符串 → 解析为 list；None/空 → None；已是 list → 不变。
+        """
+        if row.get("auto_tags"):
+            if isinstance(row["auto_tags"], str):
+                row["auto_tags"] = json.loads(row["auto_tags"])
+        else:
+            row["auto_tags"] = None
+
+        if row.get("checklist_items"):
+            if isinstance(row["checklist_items"], str):
+                row["checklist_items"] = json.loads(row["checklist_items"])
+        else:
+            row["checklist_items"] = None
+
     def _row_to_response_with_current(
         self, row: dict[str, Any], *, current_value: int, linked_entries_count: int = 0
     ) -> dict[str, Any]:
@@ -46,17 +63,7 @@ class GoalService:
         result = dict(row)
 
         # 解析 JSON 字段
-        if result.get("auto_tags"):
-            if isinstance(result["auto_tags"], str):
-                result["auto_tags"] = json.loads(result["auto_tags"])
-        else:
-            result["auto_tags"] = None
-
-        if result.get("checklist_items"):
-            if isinstance(result["checklist_items"], str):
-                result["checklist_items"] = json.loads(result["checklist_items"])
-        else:
-            result["checklist_items"] = None
+        self._parse_json_fields(result)
 
         result["current_value"] = current_value
         result["progress_percentage"] = _calculate_progress(current_value, result["target_value"])
@@ -69,17 +76,7 @@ class GoalService:
         result = dict(row)
 
         # 解析 JSON 字段
-        if result.get("auto_tags"):
-            if isinstance(result["auto_tags"], str):
-                result["auto_tags"] = json.loads(result["auto_tags"])
-        else:
-            result["auto_tags"] = None
-
-        if result.get("checklist_items"):
-            if isinstance(result["checklist_items"], str):
-                result["checklist_items"] = json.loads(result["checklist_items"])
-        else:
-            result["checklist_items"] = None
+        self._parse_json_fields(result)
 
         # 计算 current_value
         metric_type = result["metric_type"]

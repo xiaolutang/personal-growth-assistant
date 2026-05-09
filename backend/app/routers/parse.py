@@ -34,7 +34,7 @@ class PageContext(BaseModel):
     """页面级上下文，标识用户当前所在的页面"""
     page_type: str = Field(
         ...,
-        description="页面类型: home/explore/entry/review/graph",
+        description="页面类型: home/today/command/tasks/notes/inbox/projects/explore/entry_detail/review",
     )
     entry_id: Optional[str] = Field(default=None, description="当前查看的条目 ID（entry 页面时使用）")
     extra: Optional[dict] = Field(default=None, description="附加上下文信息")
@@ -71,6 +71,7 @@ async def chat(request: ChatRequest, user: User = Depends(get_current_user)):
     - event: content    - 流式内容
     - event: created    - 创建成功
     - event: updated    - 更新成功
+    - event: redirect   - 跳转引导（command 模式下闲聊/寒暄）
     - event: done       - 完成
     - event: error      - 错误
     """
@@ -91,13 +92,25 @@ async def chat(request: ChatRequest, user: User = Depends(get_current_user)):
         )
 
     async def agent_generate():
-        async for event in _agent_service.chat(
-            text=request.text,
-            thread_id=thread_id,
-            user_id=user.id,
-            page_context=request.page_context,
-        ):
-            yield event
+        # command 模式：使用临时 thread_id，避免 checkpoint 持久化
+        is_command = request.page_context and request.page_context.page_type == "command"
+        cmd_thread_id = f"__cmd__:{thread_id}" if is_command else thread_id
+
+        try:
+            async for event in _agent_service.chat(
+                text=request.text,
+                thread_id=cmd_thread_id,
+                user_id=user.id,
+                page_context=request.page_context,
+            ):
+                yield event
+        finally:
+            # command 模式：清理临时 checkpoint，避免孤儿线程
+            if is_command and _agent_service and _agent_service.agent is not None:
+                try:
+                    await _agent_service.agent.clear_thread(cmd_thread_id)
+                except Exception:
+                    logger.debug("清理 command checkpoint 失败", exc_info=True)
 
     return StreamingResponse(
         agent_generate(),

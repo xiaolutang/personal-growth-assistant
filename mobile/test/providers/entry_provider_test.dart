@@ -40,6 +40,30 @@ void main() {
       expect(copied.isLoading, true);
       expect(copied.error, isNull);
     });
+
+    // Sentinel pattern tests
+    test('copyWith without error param preserves existing error', () {
+      const state = EntryListState(error: 'Network error', isLoading: true);
+      final copied = state.copyWith(isLoading: false);
+
+      expect(copied.error, 'Network error');
+      expect(copied.isLoading, false);
+    });
+
+    test('copyWith without error param preserves null error', () {
+      const state = EntryListState(isLoading: true);
+      final copied = state.copyWith(isLoading: false);
+
+      expect(copied.error, isNull);
+      expect(copied.isLoading, false);
+    });
+
+    test('copyWith with explicit error null clears error', () {
+      const state = EntryListState(error: 'Some error');
+      final copied = state.copyWith(error: null);
+
+      expect(copied.error, isNull);
+    });
   });
 
   group('EntryDetailState', () {

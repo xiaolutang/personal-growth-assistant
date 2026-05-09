@@ -6,7 +6,9 @@ import '../config/theme.dart';
 import '../models/entry.dart';
 import '../providers/explore_provider.dart';
 import '../widgets/batch_action_bar.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/entry_card.dart';
+import '../widgets/error_state.dart';
 
 // ============================================================
 // ExplorePage - 探索页（View 层，消费 explore_provider 状态）
@@ -52,16 +54,24 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
     _tabController = TabController(length: _tabs.length, vsync: this);
     _tabController.addListener(_onTabChanged);
     _searchFocusNode.addListener(_onSearchFocusChanged);
-    // 初始加载
+    // 初始加载 tab 0
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(exploreProvider.notifier).loadEntries();
+      final tab = _tabs[0];
+      ref.read(exploreProvider.notifier).loadEntries(
+            tabIndex: 0,
+            type: tab.type,
+          );
     });
   }
 
   void _onTabChanged() {
     if (!_tabController.indexIsChanging) {
-      final tab = _tabs[_tabController.index];
-      ref.read(exploreProvider.notifier).loadEntries(type: tab.type);
+      final index = _tabController.index;
+      final tab = _tabs[index];
+      ref.read(exploreProvider.notifier).loadEntries(
+            tabIndex: index,
+            type: tab.type,
+          );
     }
   }
 
@@ -76,9 +86,13 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
     _searchController.clear();
     _searchFocusNode.unfocus();
     ref.read(exploreProvider.notifier).clearSearch();
-    // 恢复当前 Tab 的列表
-    final tab = _tabs[_tabController.index];
-    ref.read(exploreProvider.notifier).loadEntries(type: tab.type);
+    // 恢复当前 Tab 的列表（从缓存）
+    final index = _tabController.index;
+    final tab = _tabs[index];
+    ref.read(exploreProvider.notifier).loadEntries(
+          tabIndex: index,
+          type: tab.type,
+        );
   }
 
   void _submitSearch(String query) {
@@ -203,7 +217,7 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
     }
   }
 
-  /// 刷新当前列表（搜索模式保留 query）
+  /// 刷新当前列表（搜索模式保留 query，否则 refresh 当前 tab）
   Future<void> _refreshList() async {
     final state = ref.read(exploreProvider);
     if (state.searchQuery.isNotEmpty) {
@@ -211,8 +225,12 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
           .read(exploreProvider.notifier)
           .searchEntries(state.searchQuery);
     } else {
-      final tab = _tabs[_tabController.index];
-      await ref.read(exploreProvider.notifier).loadEntries(type: tab.type);
+      final index = _tabController.index;
+      final tab = _tabs[index];
+      await ref.read(exploreProvider.notifier).refreshTab(
+            tabIndex: index,
+            type: tab.type,
+          );
     }
   }
 
@@ -330,68 +348,34 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
 
     // 错误态
     if (state.error != null && state.entries.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 48,
-              color: theme.colorScheme.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              state.error!,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            FilledButton.tonal(
-              onPressed: () {
-                if (state.searchQuery.isNotEmpty) {
-                  ref
-                      .read(exploreProvider.notifier)
-                      .searchEntries(state.searchQuery);
-                } else {
-                  final tab = _tabs[_tabController.index];
-                  ref
-                      .read(exploreProvider.notifier)
-                      .loadEntries(type: tab.type);
-                }
-              },
-              child: const Text('重试'),
-            ),
-          ],
-        ),
+      return ErrorStateWidget(
+        message: state.error!,
+        onRetry: () {
+          if (state.searchQuery.isNotEmpty) {
+            ref
+                .read(exploreProvider.notifier)
+                .searchEntries(state.searchQuery);
+          } else {
+            final index = _tabController.index;
+            final tab = _tabs[index];
+            ref.read(exploreProvider.notifier).refreshTab(
+                  tabIndex: index,
+                  type: tab.type,
+                );
+          }
+        },
       );
     }
 
     // 空状态
     if (state.entries.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              state.searchQuery.isNotEmpty
-                  ? Icons.search_off
-                  : Icons.explore_outlined,
-              size: 48,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              state.searchQuery.isNotEmpty
-                  ? '未找到「${state.searchQuery}」相关条目'
-                  : '暂无条目',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
+      return EmptyStateWidget(
+        icon: state.searchQuery.isNotEmpty
+            ? Icons.search_off
+            : Icons.explore_outlined,
+        title: state.searchQuery.isNotEmpty
+            ? '未找到「${state.searchQuery}」相关条目'
+            : '暂无条目',
       );
     }
 
