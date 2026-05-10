@@ -8,6 +8,7 @@ import '../models/entry.dart';
 import '../providers/entry_provider.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_state.dart';
+import '../widgets/skeleton_loading.dart';
 import '../widgets/task_card.dart';
 
 // ============================================================
@@ -20,6 +21,7 @@ import '../widgets/task_card.dart';
 // - 点击状态图标切换任务状态
 // - 下拉刷新
 // - 空列表引导文案
+// - 左滑完成、右滑删除（Dismissible + 乐观更新）
 // ============================================================
 
 /// 筛选 Tab 枚举
@@ -96,6 +98,118 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     }
   }
 
+  // ---- 滑动操作 ----
+
+  /// 左滑完成（乐观更新 + SnackBar 撤销）
+  void _handleCompleteDismiss(Entry entry, int globalIndex) {
+    final originalEntry = entry;
+    final originalIndex = globalIndex;
+
+    // 从本地列表移除
+    setState(() {
+      _reorderedEntries.removeAt(globalIndex);
+    });
+
+    // 后台调用 API
+    _performCompleteWithUndo(originalEntry, originalIndex);
+  }
+
+  Future<void> _performCompleteWithUndo(
+      Entry entry,
+      int originalIndex,) async {
+    final success = await ref
+        .read(entryListProvider.notifier)
+        .updateEntryStatus(entry.id, AppConstants.statusComplete);
+
+    if (!mounted) return;
+
+    if (success) {
+      // 刷新 provider 状态以反映完成
+      ref.read(entryListProvider.notifier).fetchEntries(
+            type: AppConstants.categoryTask,
+            status: _statusFilter,
+          );
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('任务已完成'),
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: '撤销',
+            onPressed: () {
+              // 撤销：恢复到原状态
+              ref
+                  .read(entryListProvider.notifier)
+                  .updateEntryStatus(entry.id, entry.status ?? AppConstants.statusWaitStart);
+            },
+          ),
+        ),
+      );
+    } else {
+      // API 失败：回滚本地列表
+      _rollbackEntry(entry, originalIndex);
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('完成操作失败，请重试')),
+      );
+    }
+  }
+
+  /// 右滑删除（乐观更新 + SnackBar 撤销）
+  void _handleDeleteDismiss(Entry entry, int globalIndex) {
+    final originalEntry = entry;
+    final originalIndex = globalIndex;
+
+    // 从本地列表移除
+    setState(() {
+      _reorderedEntries.removeAt(globalIndex);
+    });
+
+    // 后台调用 API
+    _performDeleteWithUndo(originalEntry, originalIndex);
+  }
+
+  Future<void> _performDeleteWithUndo(
+      Entry entry,
+      int originalIndex,) async {
+    final success =
+        await ref.read(entryListProvider.notifier).deleteEntry(entry.id);
+
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('任务已删除'),
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: '撤销',
+            onPressed: () {
+              // 撤销删除：恢复条目
+              ref.read(entryListProvider.notifier).restoreEntry(entry, originalIndex);
+            },
+          ),
+        ),
+      );
+    } else {
+      // API 失败：回滚本地列表
+      _rollbackEntry(entry, originalIndex);
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('删除失败，请重试')),
+      );
+    }
+  }
+
+  /// 回滚条目到本地列表原位
+  void _rollbackEntry(Entry entry, int originalIndex) {
+    setState(() {
+      final insertAt = originalIndex.clamp(0, _reorderedEntries.length);
+      _reorderedEntries.insert(insertAt, entry);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final entryState = ref.watch(entryListProvider);
@@ -150,7 +264,9 @@ class _TasksPageState extends ConsumerState<TasksPage> {
 
   Widget _buildBody(EntryListState state, ThemeData theme) {
     if (state.isLoading && state.entries.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const SingleChildScrollView(
+        child: SkeletonList(itemCount: 3),
+      );
     }
 
     if (state.error != null && state.entries.isEmpty) {
@@ -214,6 +330,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     return idsA.length == idsB.length && idsA.containsAll(idsB);
   }
 
+  /// 查找条目在 _reorderedEntries 中的全局索引
+  int _globalIndexOf(String entryId) {
+    return _reorderedEntries.indexWhere((e) => e.id == entryId);
+  }
+
   Widget _buildGroup(String label, List<Entry> entries) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,13 +356,8 @@ class _TasksPageState extends ConsumerState<TasksPage> {
           ),
         ),
         if (entries.length == 1)
-          // 单条目无法拖拽排序，直接显示
-          TaskCard(
-            entry: entries.first,
-            onTap: () => context.push('/entries/${entries.first.id}'),
-            onStatusChanged: (newStatus) =>
-                _onStatusChanged(entries.first, newStatus),
-          )
+          // 单条目：用 Dismissible 包裹
+          _buildDismissibleTaskCard(entries.first)
         else
           ReorderableListView.builder(
             shrinkWrap: true,
@@ -284,16 +400,76 @@ class _TasksPageState extends ConsumerState<TasksPage> {
               final entry = entries[index];
               return KeyedSubtree(
                 key: ValueKey(entry.id),
-                child: TaskCard(
-                  entry: entry,
-                  onTap: () => context.push('/entries/${entry.id}'),
-                  onStatusChanged: (newStatus) =>
-                      _onStatusChanged(entry, newStatus),
-                ),
+                child: _buildDismissibleTaskCard(entry),
               );
             },
           ),
       ],
+    );
+  }
+
+  /// 构建包裹 Dismissible 的 TaskCard
+  Widget _buildDismissibleTaskCard(Entry entry) {
+    final globalIndex = _globalIndexOf(entry.id);
+
+    return Dismissible(
+      key: ValueKey('dismissible_${entry.id}'),
+      // 左滑：完成（绿色背景）
+      background: Container(
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.success,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+        ),
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: AppSpacing.xl),
+        child: const Icon(Icons.check, color: Colors.white),
+      ),
+      // 右滑：删除（红色背景）
+      secondaryBackground: Container(
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.error,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+        ),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: AppSpacing.xl),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      confirmDismiss: (direction) async {
+        // 防止对已完成的任务再次左滑完成
+        if (direction == DismissDirection.startToEnd &&
+            entry.status == AppConstants.statusComplete) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('任务已完成，无需重复操作')),
+            );
+          }
+          return false;
+        }
+        return true;
+      },
+      onDismissed: (direction) {
+        if (direction == DismissDirection.startToEnd) {
+          // 左滑 → 完成
+          _handleCompleteDismiss(entry, globalIndex);
+        } else {
+          // 右滑 → 删除
+          _handleDeleteDismiss(entry, globalIndex);
+        }
+      },
+      child: TaskCard(
+        entry: entry,
+        onTap: () => context.push('/entries/${entry.id}'),
+        onStatusChanged: (newStatus) =>
+            _onStatusChanged(entry, newStatus),
+      ),
     );
   }
 

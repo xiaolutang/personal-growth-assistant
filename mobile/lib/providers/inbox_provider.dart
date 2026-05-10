@@ -113,6 +113,39 @@ class InboxNotifier extends Notifier<InboxState> {
     }
   }
 
+  /// 删除收件箱条目（本地乐观更新 + API 调用，失败时回滚）
+  Future<bool> deleteEntry(String entryId) async {
+    final originalEntries = state.entries;
+    final index = originalEntries.indexWhere((e) => e.id == entryId);
+    if (index == -1) return false;
+
+    final removedEntry = originalEntries[index];
+    final updatedEntries = [...originalEntries]..removeAt(index);
+    state = state.copyWith(entries: updatedEntries);
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.deleteEntry<Map<String, dynamic>>(id: entryId);
+      return true;
+    } catch (e) {
+      // 回滚：插回原位
+      final restoredEntries = [...state.entries]..insert(index, removedEntry);
+      state = state.copyWith(
+        entries: restoredEntries,
+        error: ApiClient.errorMessage(e),
+      );
+      return false;
+    }
+  }
+
+  /// 恢复已删除的条目到指定位置（用于撤销操作）
+  void restoreEntry(Entry entry, int originalIndex) {
+    final entries = [...state.entries];
+    final insertAt = originalIndex.clamp(0, entries.length);
+    entries.insert(insertAt, entry);
+    state = state.copyWith(entries: entries);
+  }
+
   /// 设置新建条目文本
   void setNewEntryText(String text) {
     state = state.copyWith(newEntryText: text);

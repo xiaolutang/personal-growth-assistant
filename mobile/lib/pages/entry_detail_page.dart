@@ -9,6 +9,7 @@ import '../models/entry.dart';
 import '../providers/entry_provider.dart';
 import '../utils/date_formatter.dart';
 import '../widgets/error_state.dart';
+import '../widgets/skeleton_loading.dart';
 
 // ============================================================
 // EntryDetailPage - 条目详情页
@@ -261,7 +262,9 @@ class _EntryDetailPageState extends ConsumerState<EntryDetailPage> {
 
   Widget _buildBody(EntryDetailState state, ThemeData theme) {
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const SingleChildScrollView(
+        child: SkeletonLoading(layout: SkeletonLayout.listCard),
+      );
     }
 
     if (state.notFound) {

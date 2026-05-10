@@ -11,6 +11,7 @@ import '../widgets/empty_state.dart';
 import '../widgets/entry_card.dart';
 import '../widgets/error_state.dart';
 import '../widgets/morning_digest_card.dart';
+import '../widgets/skeleton_loading.dart';
 import '../widgets/progress_ring.dart';
 // FAB 由 Shell 层全局管理
 
@@ -119,7 +120,9 @@ class _TodayPageState extends ConsumerState<TodayPage> {
       body: RefreshIndicator(
         onRefresh: _handleRefresh,
         child: todayState.isLoading && todayState.todayTasks.isEmpty
-            ? const Center(child: CircularProgressIndicator())
+            ? const SingleChildScrollView(
+                child: SkeletonList(itemCount: 3),
+              )
             : _buildContent(context, theme, todayState, commandState),
       ),
     );

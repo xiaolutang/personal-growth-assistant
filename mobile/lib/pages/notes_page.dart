@@ -6,8 +6,10 @@ import '../providers/notes_provider.dart';
 import '../config/theme.dart';
 import '../models/entry.dart';
 import '../utils/date_formatter.dart';
+import '../utils/debouncer.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_state.dart';
+import '../widgets/skeleton_loading.dart';
 
 class NotesPage extends ConsumerStatefulWidget {
   const NotesPage({super.key});
@@ -18,6 +20,7 @@ class NotesPage extends ConsumerStatefulWidget {
 
 class _NotesPageState extends ConsumerState<NotesPage> {
   final _searchController = TextEditingController();
+  final _debouncer = Debouncer();
 
   @override
   void initState() {
@@ -29,6 +32,7 @@ class _NotesPageState extends ConsumerState<NotesPage> {
 
   @override
   void dispose() {
+    _debouncer.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -39,9 +43,9 @@ class _NotesPageState extends ConsumerState<NotesPage> {
 
   void _handleSearch(String query) {
     if (query.isEmpty) {
-      ref.read(notesProvider.notifier).fetchNotes();
+      _debouncer.immediateRun(() => ref.read(notesProvider.notifier).fetchNotes());
     } else {
-      ref.read(notesProvider.notifier).searchNotes(query);
+      _debouncer.run(() => ref.read(notesProvider.notifier).searchNotes(query));
     }
   }
 
@@ -70,7 +74,7 @@ class _NotesPageState extends ConsumerState<NotesPage> {
                         icon: const Icon(Icons.clear),
                         onPressed: () {
                           _searchController.clear();
-                          ref.read(notesProvider.notifier).fetchNotes();
+                          _debouncer.immediateRun(() => ref.read(notesProvider.notifier).fetchNotes());
                         },
                       )
                     : null,
@@ -95,7 +99,9 @@ class _NotesPageState extends ConsumerState<NotesPage> {
   Widget _buildBody(NotesState state, ThemeData theme) {
     // 1. Loading
     if (state.isLoading && state.entries.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const SingleChildScrollView(
+        child: SkeletonList(itemCount: 3),
+      );
     }
     // 2. Error
     if (state.error != null && state.entries.isEmpty) {
