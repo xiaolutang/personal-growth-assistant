@@ -42,6 +42,8 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   List<Entry> _reorderedEntries = [];
   // 延迟删除的 Timer Map（per-entry，支持多条目并行删除）
   final Map<String, Timer> _pendingDeleteTimers = {};
+  // 待删除的 entry ID 集合（sync 时过滤掉，避免被 provider 数据覆盖回来）
+  final Set<String> _pendingDeleteIds = {};
 
   @override
   void initState() {
@@ -183,6 +185,9 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     // 取消该条目的前一个待删除 Timer（如有）
     _pendingDeleteTimers[entry.id]?.cancel();
 
+    // 标记为待删除（防止 sync 逻辑用 provider 数据覆盖回来）
+    _pendingDeleteIds.add(entry.id);
+
     // 从本地列表移除
     setState(() {
       _reorderedEntries.removeAt(globalIndex);
@@ -191,6 +196,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     // 延迟 4 秒后才真正调用删除 API
     _pendingDeleteTimers[entry.id] = Timer(const Duration(seconds: 4), () async {
       _pendingDeleteTimers.remove(entry.id);
+      _pendingDeleteIds.remove(entry.id);
       final success =
           await ref.read(entryListProvider.notifier).deleteEntry(entry.id);
       if (!success && mounted) {
@@ -214,6 +220,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
             // 撤销：取消延迟删除 + 恢复到本地列表原位
             _pendingDeleteTimers[entry.id]?.cancel();
             _pendingDeleteTimers.remove(entry.id);
+            _pendingDeleteIds.remove(entry.id);
             _rollbackEntry(entry, globalIndex);
           },
         ),
@@ -304,10 +311,14 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     }
 
     // 数据刷新时同步本地排序（保留已有排序或重置）
+    // 过滤掉待删除的 entry（延迟删除模式下 provider 尚未移除）
+    final providerEntries =
+        state.entries.where((e) => !_pendingDeleteIds.contains(e.id)).toList();
+
     if (_reorderedEntries.isEmpty ||
-        _reorderedEntries.length != state.entries.length ||
-        !_sameEntryIds(_reorderedEntries, state.entries)) {
-      _reorderedEntries = List.of(state.entries);
+        _reorderedEntries.length != providerEntries.length ||
+        !_sameEntryIds(_reorderedEntries, providerEntries)) {
+      _reorderedEntries = List.of(providerEntries);
     } else {
       // IDs 相同但 entry 数据可能已变（如乐观状态更新），保留排序但刷新数据
       _reorderedEntries = _reorderedEntries
