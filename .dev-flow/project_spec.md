@@ -7,7 +7,7 @@
 
 ## 当前范围
 
-R056 品牌重命名：将项目名称从「个人成长助手」统一为「日知」。涵盖 Flutter 包名重构、平台配置、后端/前端/部署/文档展示名称统一。
+R056 品牌重命名：将项目名称统一为「日知」。涵盖 Flutter 包名重构、平台配置、后端/前端/部署/文档展示名称统一。
 
 ### 核心目标
 
@@ -35,8 +35,8 @@ R056 品牌重命名：将项目名称从「个人成长助手」统一为「日
 
 | 上下文 | 新名称 | 旧名称 |
 |--------|--------|--------|
-| 产品名（中文） | 日知 | 个人成长助手 |
-| 产品名（英文） | RiZhi | Personal Growth Assistant |
+| 产品名（中文） | 日知 | （旧名已替换） |
+| 产品名（英文） | RiZhi | （旧名已替换） |
 | Flutter 包名 | rizhi | growth_assistant |
 | Android applicationId | com.rizhi.app | com.growth.growth_assistant |
 | iOS bundle identifier | com.rizhi.app | com.growth.growthAssistant |

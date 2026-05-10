@@ -173,15 +173,15 @@ PROJECTS_DEF = [
         "content_extract": "full",  # full = 整个文件内容
     },
     {
-        "title": "个人成长助手开发",
+        "title": "日知开发",
         "status": "doing",
         "priority": "high",
-        "tags": ["个人成长助手", "产品", "开发"],
+        "tags": ["日知", "产品", "开发"],
         "content_source": "inbox.md",
         # 从 inbox 中提取产品规划相关内容合并
         "content_inbox_ids": ["I5", "I9", "I11"],
         "content_extra": "projects.md",  # 从 projects.md 提取助手相关章节
-        "content_extra_section": "项目一：个人成长助手",
+        "content_extra_section": "项目一：日知",
     },
     {
         "title": "自媒体运营",
@@ -444,10 +444,10 @@ def migrate(dry_run: bool = False):
     )
     migrator.project_ids.append(p1_id)
 
-    # P2: 个人成长助手开发 - 提取助手相关内容
+    # P2: 日知开发 - 提取助手相关内容
     p2_content_parts = []
-    # 从 projects.md 提取个人成长助手章节
-    p2_section = extract_section(projects_src, "项目一：个人成长助手")
+    # 从 projects.md 提取日知章节
+    p2_section = extract_section(projects_src, "项目一：日知")
     if p2_section:
         p2_content_parts.append(p2_section)
     # 从 inbox 提取产品规划相关（I5, I9, I11）
@@ -645,7 +645,7 @@ def migrate(dry_run: bool = False):
     print("=" * 60)
     print(f"  Projects created: 4")
     print(f"    P1: AI 应用开发转型 → {migrator.project_ids[0]}")
-    print(f"    P2: 个人成长助手开发 → {migrator.project_ids[1]}")
+    print(f"    P2: 日知开发 → {migrator.project_ids[1]}")
     print(f"    P3: 自媒体运营 → {migrator.project_ids[2]}")
     print(f"    P4: 教学辅助系统 → {migrator.project_ids[3]}")
     print(f"  Tasks created: {len(TASKS_DEF)}")

@@ -1,4 +1,4 @@
-# Personal Growth Assistant - Design System
+# 日知 - Design System
 
 设计规范文档，确保 UI 一致性。
 

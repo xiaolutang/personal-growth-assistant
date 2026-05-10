@@ -1,4 +1,4 @@
-# 个人成长助手 生产部署配置（单容器模式）
+# 日知 生产部署配置（单容器模式）
 # 使用方式: docker compose -f deploy/docker-compose.yml up -d
 #
 # 前置条件:

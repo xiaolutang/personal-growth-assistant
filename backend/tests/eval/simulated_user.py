@@ -183,7 +183,7 @@ class LLMSimulatedUser(SimulatedUser):
         )
     """
 
-    DEFAULT_USER_PERSONA = """你是一个使用个人成长助手的用户。你会：
+    DEFAULT_USER_PERSONA = """你是一个使用日知的用户。你会：
 - 用简洁自然的中文回复
 - 提供具体的技术话题和学习内容
 - 有时会改变主意或补充信息

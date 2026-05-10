@@ -51,7 +51,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight">
-                欢迎来到个人成长助手
+                欢迎来到日知
               </h1>
               <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
                 记录想法、管理任务、追踪项目，让每一天的成长清晰可见。

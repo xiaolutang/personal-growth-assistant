@@ -36,7 +36,7 @@ vi.mock("@/stores/taskStore", () => ({
 function createProject(overrides: Partial<Task> = {}): Task {
   return {
     id: "project-001",
-    title: "个人成长助手",
+    title: "日知",
     content: "一个帮助个人成长的工具",
     category: "project",
     status: "doing",
@@ -87,7 +87,7 @@ describe("ProjectCard", () => {
   describe("基础渲染", () => {
     it("显示项目标题", async () => {
       renderWithRouter(<ProjectCard project={createProject()} />);
-      expect(screen.getByText("个人成长助手")).toBeInTheDocument();
+      expect(screen.getByText("日知")).toBeInTheDocument();
     });
 
     it("显示最近更新时间", async () => {
@@ -272,7 +272,7 @@ describe("ProjectCard", () => {
       });
 
       // 卡片标题仍然显示
-      expect(screen.getByText("个人成长助手")).toBeInTheDocument();
+      expect(screen.getByText("日知")).toBeInTheDocument();
       // 进度条显示灰色「加载失败」
       expect(screen.getByText("加载失败")).toBeInTheDocument();
       const bar = screen.getByTestId("progress-bar-fill");

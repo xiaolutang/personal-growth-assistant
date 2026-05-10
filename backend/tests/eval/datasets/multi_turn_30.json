@@ -123,7 +123,7 @@
     "turns": [
       {"role": "user", "content": "帮我添加一个项目进度"},
       {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["什么项目", "项目名"]},
-      {"role": "user", "content": "个人成长助手项目"},
+      {"role": "user", "content": "日知项目"},
       {"role": "agent", "expected_tools": ["ask_user"], "expected_response_contains": ["进度", "描述"]},
       {"role": "user", "content": "完成了评估框架的开发"},
       {"role": "agent", "expected_tools": ["create_entry"], "expected_args": {"category": "project"}}

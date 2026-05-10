@@ -114,7 +114,7 @@ class MorningDigestMixin:
         }
 
         system_prompt = (
-            "你是个人成长助手「日知」，请分析用户近 30 天的行为数据，"
+            "你是「日知」，请分析用户近 30 天的行为数据，"
             "生成最多 5 条有价值的中文洞察。每条洞察为一句简洁的描述。"
             "请直接返回一个 JSON 数组，例如 [\"洞察1\", \"洞察2\"]。"
             "不要返回其他内容。如果数据不足以生成洞察，返回空数组 []。"
@@ -278,7 +278,7 @@ class MorningDigestMixin:
         if self._llm_caller:
             try:
                 system_prompt = (
-                    "你是个人成长助手「日知」，请为用户推荐今天最值得关注的一件事。"
+                    "你是「日知」，请为用户推荐今天最值得关注的一件事。"
                     "返回 JSON 格式：{\"title\": \"标题\", \"description\": \"描述\", \"target_entry_id\": \"id或null\"}"
                 )
                 context_data = {
@@ -582,7 +582,7 @@ class MorningDigestMixin:
                 has_goals = "active_goals" in stats_data
                 has_tags = "top_tags_30d" in stats_data
                 morning_prompt = (
-                    "你是个人成长助手「日知」，请根据以下数据为用户生成一段个性化的早安建议（2-3句话）。"
+                    "你是「日知」，请根据以下数据为用户生成一段个性化的早安建议（2-3句话）。"
                     "建议应具体、可执行，直接关联用户的目标和近期关注领域。"
                 )
                 if has_goals:

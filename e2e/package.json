@@ -1,7 +1,7 @@
 {
-  "name": "personal-growth-assistant-e2e",
+  "name": "rizhi-e2e",
   "version": "1.0.0",
-  "description": "E2E tests for Personal Growth Assistant",
+  "description": "E2E tests for 日知",
   "scripts": {
     "test": "playwright test",
     "test:ui": "playwright test --ui",

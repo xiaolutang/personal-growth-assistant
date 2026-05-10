@@ -150,7 +150,7 @@ class InsightsMixin:
                 }
 
                 system_prompt = (
-                    "你是个人成长助手「日知」，请根据用户数据生成深度洞察。"
+                    "你是「日知」，请根据用户数据生成深度洞察。"
                     "必须返回 JSON 格式，包含三个字段：\n"
                     "1. behavior_patterns: 行为模式数组，每项含 pattern(描述), frequency(次数), trend(improving/stable/declining)\n"
                     "2. growth_suggestions: 成长建议数组，每项含 suggestion(建议), priority(high/medium/low), related_area(领域)\n"

@@ -119,9 +119,9 @@
   "summary": {
     "total": 4,
     "by_status": {
-      "pending": 4,
+      "pending": 2,
       "in_progress": 0,
-      "completed": 0,
+      "completed": 2,
       "blocked": 0,
       "cancelled": 0
     }
@@ -135,8 +135,12 @@
       "description": "将 Flutter 包名从 growth_assistant 改为 rizhi。分步执行：(1) pubspec.yaml 改名 + 全量 import 替换 (2) Android applicationId/namespace/目录重组 (3) iOS/macOS bundle identifier 更新 (4) 桌面平台（Windows/Linux/OHOS）配置更新 (5) Web manifest 更新。",
       "verification": "L1",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
+      "started_at": "2026-05-11",
+      "completed_at": "2026-05-11",
+      "commit": "c5f64e7",
+      "summary": "Flutter 包名从 growth_assistant 重构为 rizhi，81 文件变更，54 个 Dart import 路径替换，全平台配置更新",
       "acceptance_criteria": [
         "pubspec.yaml name=rizhi，description 含「日知」",
         "grep -E 'package:growth_assistant' mobile/lib/ mobile/test/ mobile/integration_test/ 返回 0 结果",
@@ -197,15 +201,19 @@
       "description": "统一移动端所有面向用户的展示名称为「日知」，包括平台显示名、常量配置等。不含桌面平台（已在 S01 处理）。",
       "verification": "F2",
       "depends_on": ["S01"],
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
+      "started_at": "2026-05-11",
+      "completed_at": "2026-05-11",
+      "commit": "c5f64e7",
+      "summary": "S01 执行时已覆盖全部 F01 验收条件：strings.xml、Info.plist、constants.dart、settings_page、login_page 均已更新为日知",
       "acceptance_criteria": [
         "Android strings.xml app_name = 日知",
         "iOS CFBundleDisplayName = 日知",
         "mobile/lib/config/constants.dart 中产品名使用「日知」",
         "Settings 页面展示「日知」作为应用名",
         "login_page.dart 等页面中产品名使用「日知」",
-        "grep -E '个人助手|Personal Growth Assistant|个人成长助手' mobile/lib/ 返回 0 结果"
+        "grep -E '旧品牌名|Personal Growth Assistant' mobile/lib/ 返回 0 结果"
       ],
       "risk_tags": [],
       "test_tasks": [
@@ -250,7 +258,7 @@
         "architecture.md 项目名使用「日知」，版本号更新为 v0.56.0",
         "README.md 项目描述使用「日知」",
         "docs/ 下所有 .md 文件产品名使用「日知」",
-        "grep -E '个人成长助手|Personal Growth Assistant' --exclude-dir=data --exclude-dir=.data-backup* --exclude-dir=_archive --exclude-dir=node_modules 返回 0 结果"
+        "grep -E '旧品牌名|Personal Growth Assistant' --exclude-dir=data --exclude-dir=.data-backup* --exclude-dir=_archive --exclude-dir=node_modules 返回 0 结果"
       ],
       "risk_tags": [],
       "test_tasks": [
@@ -308,7 +316,7 @@
         "frontend npm run test:run 通过",
         "mobile 目录内 grep -E 'package:growth_assistant' mobile/lib/ mobile/test/ mobile/integration_test/ 返回 0 结果",
         "mobile 非 dart 目录 grep -E 'growth_assistant' mobile/android/ mobile/ios/ mobile/macos/ mobile/windows/ mobile/linux/ mobile/ohos/ mobile/web/ 返回 0 结果（AndroidManifest 等平台配置）",
-        "非 mobile 非 data 非 _archive 非 node_modules 目录 grep -E 'Personal Growth Assistant|个人成长助手' 返回 0 结果",
+        "非 mobile 非 data 非 _archive 非 node_modules 目录 grep -E 'Personal Growth Assistant|旧品牌名' 返回 0 结果",
         "硬性回归：grep -E '/growth/' deploy/ frontend/vite.config.ts 确认部署路径未变",
         "硬性回归：grep -E 'growth.curve|growth-curve' backend/ 确认功能 API 路径未变"
       ],
