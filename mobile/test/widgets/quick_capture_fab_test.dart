@@ -18,14 +18,20 @@ class _FakeApiClient extends ApiClient {
   Map<String, dynamic>? lastCreateEntryData;
 
   @override
-  Future<Response<T>> createEntry<T>({required Map<String, dynamic> data}) {
+  Future<Response<T>> createEntry<T>({
+    required Map<String, dynamic> data,
+  }) {
     lastCreateEntryData = data;
     if (createEntryShouldSucceed) {
       return Future.value(Response<T>(
         requestOptions: RequestOptions(path: '/entries'),
         statusCode: 201,
-        data: {'id': 'test-id', 'title': data['title'], 'category': data['category']} as T,
-      ));
+        data: <String, dynamic>{
+          'id': 'test-id',
+          'title': data['title'],
+          'category': data['category'],
+        } as T,
+      ),);
     }
     throw DioException(
       requestOptions: RequestOptions(path: '/entries'),
@@ -50,8 +56,8 @@ class _FakeApiClient extends ApiClient {
     return Future.value(Response<T>(
       requestOptions: RequestOptions(path: '/entries'),
       statusCode: 200,
-      data: {'entries': <Map<String, dynamic>>[]} as T,
-    ));
+      data: <String, dynamic>{'entries': <Map<String, dynamic>>[]} as T,
+    ),);
   }
 }
 
@@ -96,7 +102,7 @@ void main() {
     fakeApiClient = _FakeApiClient();
   });
 
-  group('QuickCaptureFAB', () {
+  group('QuickCaptureFAB 展开收起', () {
     testWidgets('FAB 在 ShellRoute 子页面可见', (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -111,12 +117,12 @@ void main() {
         ),
       );
 
-      // FAB should be visible on tasks page (within ShellRoute, not /)
       expect(find.byType(QuickCaptureFAB), findsOneWidget);
+      // 主 FAB 按钮（hybrid_fab）
       expect(find.byType(FloatingActionButton), findsOneWidget);
     });
 
-    testWidgets('点击 FAB 弹出 BottomSheet', (WidgetTester tester) async {
+    testWidgets('点击 FAB 展开三个子按钮', (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -130,17 +136,22 @@ void main() {
         ),
       );
 
-      // Tap FAB
+      // 初始状态：子按钮不可见
+      expect(find.text('记灵感'), findsNothing);
+      expect(find.text('建任务'), findsNothing);
+      expect(find.text('AI 创建'), findsNothing);
+
+      // 点击主 FAB 展开
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
 
-      // BottomSheet should be visible with title and input
-      expect(find.text('快速捕获灵感'), findsOneWidget);
-      expect(find.byType(TextField), findsOneWidget);
-      expect(find.text('保存'), findsOneWidget);
+      // 展开后：三个子按钮可见
+      expect(find.text('记灵感'), findsOneWidget);
+      expect(find.text('建任务'), findsOneWidget);
+      expect(find.text('AI 创建'), findsOneWidget);
     });
 
-    testWidgets('BottomSheet 关闭交互', (WidgetTester tester) async {
+    testWidgets('再次点击 FAB 收起子按钮', (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -154,20 +165,49 @@ void main() {
         ),
       );
 
-      // Open bottom sheet
+      // 展开
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
+      expect(find.text('记灵感'), findsOneWidget);
 
-      expect(find.text('快速捕获灵感'), findsOneWidget);
-
-      // Close by pressing close button
-      await tester.tap(find.byIcon(Icons.close));
+      // 再次点击收起（使用 heroTag 定位主 FAB）
+      await tester.tap(find.byWidgetPredicate(
+        (w) => w is FloatingActionButton && w.heroTag == 'hybrid_fab',
+      ));
       await tester.pumpAndSettle();
-
-      expect(find.text('快速捕获灵感'), findsNothing);
+      expect(find.text('记灵感'), findsNothing);
     });
 
-    testWidgets('输入内容提交 -> mock POST /entries -> 验证参数',
+    testWidgets('点击空白区域收起 FAB', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            apiClientProvider.overrideWithValue(fakeApiClient),
+          ],
+          child: MaterialApp.router(
+            routerConfig: _testRouter(
+              child: const Scaffold(body: Text('Tasks')),
+            ),
+          ),
+        ),
+      );
+
+      // 展开
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      expect(find.text('记灵感'), findsOneWidget);
+
+      // 点击空白区域（屏幕左上角）
+      await tester.tapAt(Offset.zero);
+      await tester.pumpAndSettle();
+
+      // FAB 应收起
+      expect(find.text('记灵感'), findsNothing);
+    });
+  });
+
+  group('记灵感入口', () {
+    testWidgets('点击「记灵感」弹出灵感 BottomSheet',
         (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -182,19 +222,77 @@ void main() {
         ),
       );
 
-      // Open bottom sheet
+      // 展开 FAB
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
 
-      // Enter text
+      // 点击「记灵感」子按钮
+      await tester.tap(find.byIcon(Icons.lightbulb_outline));
+      await tester.pumpAndSettle();
+
+      // BottomSheet 应该弹出
+      expect(find.text('快速捕获灵感'), findsOneWidget);
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('保存'), findsOneWidget);
+    });
+
+    testWidgets('灵感 BottomSheet 关闭交互', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            apiClientProvider.overrideWithValue(fakeApiClient),
+          ],
+          child: MaterialApp.router(
+            routerConfig: _testRouter(
+              child: const Scaffold(body: Text('Tasks')),
+            ),
+          ),
+        ),
+      );
+
+      // 展开并点击记灵感
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.lightbulb_outline));
+      await tester.pumpAndSettle();
+
+      expect(find.text('快速捕获灵感'), findsOneWidget);
+
+      // 关闭
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+
+      expect(find.text('快速捕获灵感'), findsNothing);
+    });
+
+    testWidgets('输入内容提交 -> 创建 inbox 条目',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            apiClientProvider.overrideWithValue(fakeApiClient),
+          ],
+          child: MaterialApp.router(
+            routerConfig: _testRouter(
+              child: const Scaffold(body: Text('Tasks')),
+            ),
+          ),
+        ),
+      );
+
+      // 展开并点击记灵感
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.lightbulb_outline));
+      await tester.pumpAndSettle();
+
+      // 输入并提交
       await tester.enterText(find.byType(TextField), '我的灵感笔记');
       await tester.pump();
-
-      // Submit
       await tester.tap(find.text('保存'));
       await tester.pumpAndSettle();
 
-      // Verify API was called with correct parameters
+      // 验证 API 调用
       expect(fakeApiClient.lastCreateEntryData, isNotNull);
       expect(fakeApiClient.lastCreateEntryData!['category'], 'inbox');
       expect(fakeApiClient.lastCreateEntryData!['title'], '我的灵感笔记');
@@ -214,29 +312,29 @@ void main() {
         ),
       );
 
-      // Open bottom sheet
+      // 展开并点击记灵感
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.lightbulb_outline));
+      await tester.pumpAndSettle();
 
-      // Find the save button
+      // 保存按钮应禁用
       final saveButton = tester.widget<FilledButton>(
         find.byType(FilledButton),
       );
       expect(saveButton.enabled, isFalse);
 
-      // Type something then clear - button should still be disabled for whitespace
+      // 输入空格仍禁用
       await tester.enterText(find.byType(TextField), '   ');
       await tester.pump();
-
       final saveButton2 = tester.widget<FilledButton>(
         find.byType(FilledButton),
       );
       expect(saveButton2.enabled, isFalse);
 
-      // Type valid text - button should be enabled
+      // 输入有效内容启用
       await tester.enterText(find.byType(TextField), 'hello');
       await tester.pump();
-
       final saveButton3 = tester.widget<FilledButton>(
         find.byType(FilledButton),
       );
@@ -260,22 +358,21 @@ void main() {
         ),
       );
 
-      // Open bottom sheet
+      // 展开并点击记灵感
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.lightbulb_outline));
+      await tester.pumpAndSettle();
 
-      // Enter text and submit
+      // 输入并提交
       await tester.enterText(find.byType(TextField), '失败的灵感');
       await tester.pump();
-
       await tester.tap(find.text('保存'));
       await tester.pumpAndSettle();
 
-      // BottomSheet should still be visible (not closed)
+      // BottomSheet 应保持打开
       expect(find.text('快速捕获灵感'), findsOneWidget);
-      expect(find.byType(TextField), findsOneWidget);
-
-      // Error SnackBar should be shown
+      // 错误 SnackBar
       expect(find.text('保存失败，请重试'), findsOneWidget);
     });
 
@@ -294,21 +391,21 @@ void main() {
         ),
       );
 
-      // Open bottom sheet
+      // 展开并点击记灵感
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.lightbulb_outline));
+      await tester.pumpAndSettle();
 
-      // Enter text and submit
+      // 输入并提交
       await tester.enterText(find.byType(TextField), '成功的灵感');
       await tester.pump();
-
       await tester.tap(find.text('保存'));
       await tester.pumpAndSettle();
 
-      // BottomSheet should be closed
+      // BottomSheet 关闭
       expect(find.text('快速捕获灵感'), findsNothing);
-
-      // Success SnackBar should be shown
+      // 成功 SnackBar
       expect(find.text('灵感已保存'), findsOneWidget);
     });
   });
