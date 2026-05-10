@@ -1,5 +1,15 @@
 # API 契约
 
+## R056 品牌重命名
+
+本轮不改 API 路径、Schema 或行为。只改 OpenAPI 描述中的品牌元数据（title/description）。
+`npm run gen:types` 重新生成前端类型，生成差异应仅限描述文本变化。
+
+**不允许变化的范围：**
+- `/growth/` 部署路径
+- `/review/growth-curve` 等功能 API 路径
+- 请求/响应 Schema 结构
+
 ## 契约索引
 
 ### R047 新增/修改契约（任务/探索 Tab 边界重新划分）
