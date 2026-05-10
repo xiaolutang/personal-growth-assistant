@@ -6,6 +6,7 @@ import 'package:growth_assistant/config/constants.dart';
 import 'package:growth_assistant/models/entry.dart';
 import 'package:growth_assistant/pages/inbox_page.dart';
 import 'package:growth_assistant/providers/inbox_provider.dart';
+import 'package:growth_assistant/widgets/skeleton_loading.dart';
 
 // 测试用 Entry 工厂
 Entry _makeInboxEntry({
@@ -108,7 +109,7 @@ void main() {
 
       expect(find.text('随时记录灵感'), findsOneWidget);
       expect(
-        find.text('在下方输入框快速记录，稍后再整理为任务或笔记'),
+        find.text('点击右下角按钮，快速记录灵感'),
         findsOneWidget,
       );
     });
@@ -127,7 +128,7 @@ void main() {
     testWidgets('加载中显示进度指示器', (WidgetTester tester) async {
       await _pumpInboxPage(tester, entries: [], isLoading: true);
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(SkeletonLoading), findsWidgets);
     });
 
     testWidgets('灵感列表渲染标题', (WidgetTester tester) async {
@@ -142,11 +143,10 @@ void main() {
       expect(find.text('Dart 灵感 2'), findsOneWidget);
     });
 
-    testWidgets('底部输入栏存在', (WidgetTester tester) async {
+    testWidgets('空状态显示灯泡图标', (WidgetTester tester) async {
       await _pumpInboxPage(tester, entries: []);
 
-      expect(find.byType(TextField), findsOneWidget);
-      expect(find.text('记录灵感...'), findsOneWidget);
+      expect(find.byIcon(Icons.lightbulb_outline), findsOneWidget);
     });
 
     testWidgets('AppBar 标题为"灵感"', (WidgetTester tester) async {

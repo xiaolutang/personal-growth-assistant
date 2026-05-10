@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_assistant/pages/review_page.dart';
 import 'package:growth_assistant/providers/review_provider.dart';
+import 'package:growth_assistant/widgets/skeleton_loading.dart';
 
 // Fake ReviewNotifier，直接返回预设状态
 class _FakeReviewNotifier extends ReviewNotifier {
@@ -80,7 +81,7 @@ void main() {
     testWidgets('加载中显示进度指示器', (WidgetTester tester) async {
       await _pumpReviewPage(tester, isLoading: true);
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(SkeletonLoading), findsWidgets);
     });
 
     testWidgets('错误状态显示错误信息和重试按钮', (WidgetTester tester) async {

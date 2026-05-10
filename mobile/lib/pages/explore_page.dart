@@ -9,6 +9,7 @@ import '../widgets/batch_action_bar.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/entry_card.dart';
 import '../widgets/error_state.dart';
+import '../widgets/skeleton_loading.dart';
 
 // ============================================================
 // ExplorePage - 探索页（View 层，消费 explore_provider 状态）
@@ -343,7 +344,9 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
 
     // 加载态
     if (state.isLoading && state.entries.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const SingleChildScrollView(
+        child: SkeletonList(itemCount: 3),
+      );
     }
 
     // 错误态

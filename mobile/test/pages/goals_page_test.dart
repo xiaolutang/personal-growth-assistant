@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_assistant/pages/goals_page.dart';
 import 'package:growth_assistant/providers/goals_provider.dart';
+import 'package:growth_assistant/widgets/skeleton_loading.dart';
 
 // Fake GoalsNotifier，直接返回预设状态
 class _FakeGoalsNotifier extends GoalsNotifier {
@@ -98,7 +99,7 @@ void main() {
     testWidgets('加载中显示进度指示器', (WidgetTester tester) async {
       await _pumpGoalsPage(tester, goals: [], isLoading: true);
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(SkeletonLoading), findsWidgets);
     });
 
     testWidgets('目标列表渲染标题和进度条', (WidgetTester tester) async {

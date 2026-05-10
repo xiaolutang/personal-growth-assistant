@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/theme.dart';
 import '../providers/review_provider.dart';
 import '../widgets/error_state.dart';
+import '../widgets/skeleton_loading.dart';
 
 // ============================================================
 // ReviewPage - 统计回顾页
@@ -82,7 +83,9 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
   // ----------------------------------------------------------
   Widget _buildBody(ReviewState state, ThemeData theme) {
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const SingleChildScrollView(
+        child: SkeletonList(itemCount: 3),
+      );
     }
 
     if (state.error != null) {

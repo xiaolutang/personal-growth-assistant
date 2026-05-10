@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +11,7 @@ import '../providers/inbox_provider.dart';
 import '../utils/date_formatter.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_state.dart';
+import '../widgets/skeleton_loading.dart';
 
 // ============================================================
 // InboxPage - 灵感收集页
@@ -16,6 +19,7 @@ import '../widgets/error_state.dart';
 // 功能：
 // - 展示灵感列表，每项显示标题和时间
 // - 长按条目弹出转换菜单（转为任务/笔记/项目）
+// - 左滑删除（Dismissible + 乐观更新 + SnackBar 撤销）
 // - 空列表引导文案（引导使用全局 FAB 创建灵感）
 // - 下拉刷新
 // ============================================================
@@ -28,12 +32,23 @@ class InboxPage extends ConsumerStatefulWidget {
 }
 
 class _InboxPageState extends ConsumerState<InboxPage> {
+  // 延迟删除的 Timer Map（per-entry）
+  final Map<String, Timer> _pendingDeleteTimers = {};
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInbox();
     });
+  }
+
+  @override
+  void dispose() {
+    for (final timer in _pendingDeleteTimers.values) {
+      timer.cancel();
+    }
+    super.dispose();
   }
 
   void _loadInbox() {
@@ -106,6 +121,53 @@ class _InboxPageState extends ConsumerState<InboxPage> {
     }
   }
 
+  // ---- 滑动删除操作 ----
+
+  /// 处理左滑删除（延迟删除 + SnackBar 撤销）
+  /// 立即从 provider state 移除（触发 UI 更新），4 秒后才调用后端 API
+  void _handleDeleteDismiss(Entry entry, int index) {
+    final originalEntry = entry;
+    final originalIndex = index;
+
+    // 取消该条目的前一个待删除 Timer
+    _pendingDeleteTimers[entry.id]?.cancel();
+
+    // 立即从 provider state 移除（乐观更新）
+    ref.read(inboxProvider.notifier).removeEntryLocally(entry.id);
+
+    // 延迟 4 秒后才真正调用删除 API
+    _pendingDeleteTimers[entry.id] = Timer(const Duration(seconds: 4), () async {
+      _pendingDeleteTimers.remove(entry.id);
+      final success =
+          await ref.read(inboxProvider.notifier).deleteEntryFromBackend(entry.id);
+      if (!success && mounted) {
+        // API 失败：恢复条目到原位
+        ref.read(inboxProvider.notifier).restoreEntry(originalEntry, originalIndex);
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('删除失败，请重试')),
+        );
+      }
+    });
+
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('灵感已删除'),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: '撤销',
+          onPressed: () {
+            // 撤销：取消延迟删除 + 恢复到 provider 列表原位
+            _pendingDeleteTimers[entry.id]?.cancel();
+            _pendingDeleteTimers.remove(entry.id);
+            ref.read(inboxProvider.notifier).restoreEntry(originalEntry, originalIndex);
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(inboxProvider);
@@ -124,7 +186,9 @@ class _InboxPageState extends ConsumerState<InboxPage> {
 
   Widget _buildBody(InboxState state, ThemeData theme) {
     if (state.isLoading && state.entries.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const SingleChildScrollView(
+        child: SkeletonList(itemCount: 3),
+      );
     }
 
     if (state.error != null && state.entries.isEmpty) {
@@ -149,9 +213,35 @@ class _InboxPageState extends ConsumerState<InboxPage> {
         itemCount: state.entries.length,
         itemBuilder: (context, index) {
           final entry = state.entries[index];
-          return _buildInboxItem(entry, theme);
+          return _buildDismissibleInboxItem(entry, index, theme);
         },
       ),
+    );
+  }
+
+  /// 构建包裹 Dismissible 的收件箱条目
+  Widget _buildDismissibleInboxItem(Entry entry, int index, ThemeData theme) {
+    return Dismissible(
+      key: ValueKey('dismissible_${entry.id}'),
+      // 只支持左滑删除
+      direction: DismissDirection.startToEnd,
+      background: Container(
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.error,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+        ),
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: AppSpacing.xl),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      onDismissed: (direction) {
+        _handleDeleteDismiss(entry, index);
+      },
+      child: _buildInboxItem(entry, theme),
     );
   }
 

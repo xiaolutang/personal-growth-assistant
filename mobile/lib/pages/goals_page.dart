@@ -7,6 +7,7 @@ import '../providers/goals_provider.dart';
 import '../utils/date_formatter.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_state.dart';
+import '../widgets/skeleton_loading.dart';
 
 // ============================================================
 // GoalsPage - 目标管理页
@@ -61,7 +62,9 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
 
   Widget _buildBody(GoalsState state, ThemeData theme) {
     if (state.isLoading && state.goals.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const SingleChildScrollView(
+        child: SkeletonList(itemCount: 3),
+      );
     }
 
     if (state.error != null && state.goals.isEmpty) {

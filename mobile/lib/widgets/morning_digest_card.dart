@@ -4,6 +4,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import '../config/theme.dart';
 import '../models/morning_digest.dart';
 import '../providers/today_provider.dart';
+import 'skeleton_loading.dart';
 
 // ============================================================
 // MorningDigestCard - 晨报摘要卡片
@@ -34,7 +35,7 @@ class MorningDigestCard extends StatelessWidget {
 
     // loading 态 → 骨架屏
     if (morningDigest.status == MorningDigestStatus.loading) {
-      return const _DigestSkeleton();
+      return const SkeletonLoading(layout: SkeletonLayout.listCard);
     }
 
     // loaded 但无数据 → 不显示
@@ -312,103 +313,6 @@ class _DigestContent extends StatelessWidget {
               ),
             ),
       ],
-    );
-  }
-}
-
-// ============================================================
-// _DigestSkeleton - 加载骨架屏
-// ============================================================
-class _DigestSkeleton extends StatefulWidget {
-  const _DigestSkeleton();
-
-  @override
-  State<_DigestSkeleton> createState() => _DigestSkeletonState();
-}
-
-class _DigestSkeletonState extends State<_DigestSkeleton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.sm,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.card),
-      ),
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 标题行
-            Row(
-              children: [
-                _shimmerBox(20, 20, const Radius.circular(4)),
-                const SizedBox(width: AppSpacing.sm),
-                _shimmerBox(40, 16, const Radius.circular(4)),
-                const Spacer(),
-                _shimmerBox(80, 12, const Radius.circular(4)),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            // 摘要区域
-            _shimmerBox(double.infinity, 14, const Radius.circular(4)),
-            const SizedBox(height: AppSpacing.sm),
-            _shimmerBox(double.infinity, 14, const Radius.circular(4)),
-            const SizedBox(height: AppSpacing.sm),
-            _shimmerBox(200, 14, const Radius.circular(4)),
-            const SizedBox(height: AppSpacing.md),
-            // chips
-            Row(
-              children: [
-                _shimmerBox(60, 24, const Radius.circular(AppRadius.button)),
-                const SizedBox(width: AppSpacing.sm),
-                _shimmerBox(60, 24, const Radius.circular(AppRadius.button)),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _shimmerBox(double width, double height, Radius borderRadius) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Container(
-          width: width,
-          height: height,
-          decoration: BoxDecoration(
-            color: Colors.grey
-                .withValues(alpha: 0.15 + 0.1 * _controller.value),
-            borderRadius: BorderRadius.all(borderRadius),
-          ),
-        );
-      },
     );
   }
 }

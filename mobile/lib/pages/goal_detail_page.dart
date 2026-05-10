@@ -8,6 +8,7 @@ import '../providers/goals_provider.dart';
 import '../utils/date_formatter.dart';
 import '../widgets/error_state.dart';
 import '../widgets/progress_ring.dart';
+import '../widgets/skeleton_loading.dart';
 
 // ============================================================
 // GoalDetailPage - 目标详情独立页
@@ -138,7 +139,9 @@ class _GoalDetailPageState extends ConsumerState<GoalDetailPage> {
   Widget _buildBody(GoalDetailState state, ThemeData theme) {
     // Loading state (initial load)
     if (state.isLoading && state.goal == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const SingleChildScrollView(
+        child: SkeletonLoading(layout: SkeletonLayout.listCard),
+      );
     }
 
     // Error state (no goal loaded)

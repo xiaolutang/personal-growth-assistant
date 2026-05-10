@@ -6,6 +6,7 @@ import 'package:growth_assistant/config/constants.dart';
 import 'package:growth_assistant/models/entry.dart';
 import 'package:growth_assistant/pages/tasks_page.dart';
 import 'package:growth_assistant/providers/entry_provider.dart';
+import 'package:growth_assistant/widgets/skeleton_loading.dart';
 
 // 测试用 Entry 工厂
 Entry _makeEntry({
@@ -139,7 +140,7 @@ void main() {
     testWidgets('加载中显示进度指示器', (WidgetTester tester) async {
       await _pumpTasksPage(tester, entries: [], isLoading: true);
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(SkeletonLoading), findsWidgets);
     });
 
     testWidgets('按状态分组显示任务', (WidgetTester tester) async {

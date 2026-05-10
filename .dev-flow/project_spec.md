@@ -1,63 +1,56 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.54.0
-> 状态：进行中（R054）
-> 活跃分支：feat/R054-fab-hybrid-upgrade
+> 版本：v0.55.0
+> 状态：进行中（R055）
+> 活跃分支：feat/R055-interaction-basics
 
 ## 当前范围
 
-R054 FAB 混合模式升级：将全局 FAB 从单一灵感记录升级为混合模式（灵感/任务/AI 智能创建），同时移除 Inbox 页底部输入栏消除功能冗余。
+R055 交互基础补齐：统一骨架屏加载、页面转场动画、搜索防抖、列表滑动操作。纯 Flutter 前端变更，不涉及后端。
 
-### 核心设计决策
+### 核心目标
 
-决策记录：`.dev-flow/decisions/2026-05-10--fab-upgrade-and-input-consolidation.md`
+| # | 改进项 | 范围 | 优先级 |
+|---|--------|------|--------|
+| 1 | 骨架屏统一 | 9 个页面全屏 loading 替换为 SkeletonLoading | P0 |
+| 2 | 页面转场动画 | 详情页 slide + 设置页 fade | P1 |
+| 3 | 搜索防抖 | Notes 页搜索 300ms 防抖 | P0 |
+| 4 | 列表滑动操作 | Tasks/Inbox Dismissible 滑动操作 | P0 |
 
-**方案 C（混合模式）**：FAB 展开后提供 3 个选项：
+### Phase 1: 基础组件（2 tasks）
 
-| 选项 | 行为 | 实现方式 |
-|------|------|---------|
-| 记灵感 | 直接创建 inbox 条目 | 复用 createInboxEntry |
-| 建任务 | 弹出任务创建 Sheet | 参考 QuickActions.CreateTaskSheet |
-| AI 智能创建 | AI 意图识别 + 内联结果 | 复用 commandBarProvider（R053） |
+1. **F01 通用骨架屏组件**：从 _DigestSkeleton 提取泛化，支持 list-card/text-line 预设
+2. **F02 搜索防抖工具**：Debouncer utility，300ms 默认延迟
 
-### 输入入口整合
+### Phase 2: 页面集成（4 tasks）
 
-| 入口 | 决策 | 理由 |
-|------|------|------|
-| FAB | 升级为混合模式 | 全局快速入口 |
-| Today 命令栏 | 保留 | 今日视角差异化 |
-| Chat 对话 | 保留 | 深度对话场景不同 |
-| Inbox 页输入栏 | 移除 | 与 FAB 灵感功能重复 |
-
-### Phase 1: FAB 组件升级（1 task）
-
-1. **F01 HybridFAB 混合模式升级**：展开式 FAB，3 个选项（灵感/任务/AI）
-
-### Phase 2: 清理（1 task）
-
-2. **F02 移除 Inbox 页底部输入栏**
+3. **F03 列表页骨架屏统一**：9 个页面全屏 loading 替换（依赖 F01）
+4. **F04 Notes 搜索防抖**：接入 Debouncer（依赖 F02）
+5. **F05 列表滑动操作**：Tasks/Inbox Dismissible + SnackBar 撤销
+6. **F06 页面转场动画**：详情页 slide + 设置页 fade
 
 ### Phase 3: 质量收口（1 task）
 
-3. **S03 全量验证**
+7. **S07 R055 质量收口**：测试补充 + analyze 通过
 
 ## 技术约束
 
 - 纯 Flutter 前端变更，不涉及后端
-- 复用 commandBarProvider（R053 已交付）驱动 AI 入口
-- 参考已有 QuickActions 组件的展开动画模式
-- 保持 DraggableFAB 可拖动吸附功能
-- 无 network/auth/first_use 风险
+- 骨架屏不引入第三方 shimmer 包，纯 AnimationController 实现
+- 转场动画使用 GoRouter pageBuilder，不引入额外路由包
+- 滑动操作使用 Flutter 内置 Dismissible widget
+- 遵循 MVVM：View → ViewModel(Riverpod) → Model
+- 禁止 Widget 直接调用 ApiClient
 
 ## 统计
 
 | 指标 | 值 |
 |------|-----|
-| 总任务数 | 3 |
-| P0 | 1（F01）|
-| P1 | 1（F02）|
-| P2 | 1（S03）|
+| 总任务数 | 7 |
+| P0 | 4（F01/F02/F03/F04/F05）|
+| P1 | 1（F06）|
+| P2 | 1（S07）|
 
 ## workflow
 
