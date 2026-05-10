@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../models/command_result.dart';
+import '../providers/command_bar_provider.dart';
+import '../providers/today_provider.dart';
 import 'draggable_fab.dart';
 import 'quick_capture_fab.dart';
 
-class BottomNavShell extends StatefulWidget {
+class BottomNavShell extends ConsumerStatefulWidget {
   final Widget child;
 
   const BottomNavShell({super.key, required this.child});
 
   @override
-  State<BottomNavShell> createState() => _BottomNavShellState();
+  ConsumerState<BottomNavShell> createState() => _BottomNavShellState();
 }
 
-class _BottomNavShellState extends State<BottomNavShell> {
+class _BottomNavShellState extends ConsumerState<BottomNavShell> {
+  /// FAB 展开状态，由 QuickCaptureFAB 回调更新
+  bool _isFabExpanded = false;
+
   void _showMoreMenu() {
     showModalBottomSheet(
       context: context,
@@ -99,9 +106,78 @@ class _BottomNavShellState extends State<BottomNavShell> {
     return true;
   }
 
+  /// 判断当前是否在 Today 页面（Today 页面有自己的 commandBar 结果展示）
+  bool _isOnTodayPage() {
+    final location = GoRouterState.of(context).uri.path;
+    return location == '/';
+  }
+
+  /// 全局监听 commandBarProvider 结果变化，在非 Today 页面提供 SnackBar 反馈
+  void _onCommandResultChanged(CommandBarState? previous, CommandBarState next) {
+    final prevResult = previous?.result;
+    final nextResult = next.result;
+
+    // 只在 result 变化时触发
+    if (nextResult == null || nextResult == prevResult) return;
+    if (previous?.isLoading == true && next.isLoading) return;
+
+    // Today 页面有自己的内联展示，不需要全局 SnackBar
+    if (_isOnTodayPage()) return;
+
+    switch (nextResult.type) {
+      case CommandResultType.success:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(nextResult.message),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        // success 后刷新 today 数据（因为可能创建了新条目）
+        ref.read(todayProvider.notifier).loadData();
+      case CommandResultType.error:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(nextResult.message),
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      case CommandResultType.answer:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(nextResult.answer ?? nextResult.message),
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      case CommandResultType.redirectChat:
+        // redirect 类型：提示用户跳转
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('已转至日知对话'),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: '前往',
+              onPressed: () {
+                ref.read(commandBarProvider.notifier).clearResult();
+                context.go('/chat');
+              },
+            ),
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final showFab = _shouldShowFab();
+
+    // 监听 commandBarProvider 结果变化
+    ref.listen(commandBarProvider, (previous, next) {
+      _onCommandResultChanged(previous, next);
+    });
 
     return Stack(
       children: [
@@ -154,7 +230,24 @@ class _BottomNavShellState extends State<BottomNavShell> {
             ],
           ),
         ),
-        if (showFab) const DraggableFAB(child: QuickCaptureFAB()),
+        // FAB 展开时的透明屏障层：点击空白区域收起 FAB
+        if (showFab && _isFabExpanded)
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () => setState(() => _isFabExpanded = false),
+              behavior: HitTestBehavior.opaque,
+              child: const SizedBox.expand(),
+            ),
+          ),
+        // 全局 FAB
+        if (showFab)
+          DraggableFAB(
+            child: QuickCaptureFAB(
+              onExpandChanged: (expanded) {
+                setState(() => _isFabExpanded = expanded);
+              },
+            ),
+          ),
       ],
     );
   }
