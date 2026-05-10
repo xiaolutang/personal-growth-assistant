@@ -170,8 +170,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('记灵感'), findsOneWidget);
 
-      // 再次点击收起
-      await tester.tap(find.byType(FloatingActionButton));
+      // 再次点击收起（使用 heroTag 定位主 FAB）
+      await tester.tap(find.byWidgetPredicate(
+        (w) => w is FloatingActionButton && w.heroTag == 'hybrid_fab',
+      ));
       await tester.pumpAndSettle();
       expect(find.text('记灵感'), findsNothing);
     });

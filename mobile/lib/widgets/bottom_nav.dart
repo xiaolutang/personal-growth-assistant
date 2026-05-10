@@ -21,6 +21,9 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
   /// FAB 展开状态，由 QuickCaptureFAB 回调更新
   bool _isFabExpanded = false;
 
+  /// FAB 的 GlobalKey，用于屏障层点击时通知 FAB 收起
+  final _fabKey = GlobalKey<QuickCaptureFABState>();
+
   void _showMoreMenu() {
     showModalBottomSheet(
       context: context,
@@ -234,7 +237,10 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
         if (showFab && _isFabExpanded)
           Positioned.fill(
             child: GestureDetector(
-              onTap: () => setState(() => _isFabExpanded = false),
+              onTap: () {
+                _fabKey.currentState?.collapse();
+                setState(() => _isFabExpanded = false);
+              },
               behavior: HitTestBehavior.opaque,
               child: const SizedBox.expand(),
             ),
@@ -243,6 +249,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
         if (showFab)
           DraggableFAB(
             child: QuickCaptureFAB(
+              key: _fabKey,
               onExpandChanged: (expanded) {
                 setState(() => _isFabExpanded = expanded);
               },

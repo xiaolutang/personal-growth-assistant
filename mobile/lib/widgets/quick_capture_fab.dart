@@ -25,10 +25,10 @@ class QuickCaptureFAB extends ConsumerStatefulWidget {
   const QuickCaptureFAB({super.key, this.onExpandChanged});
 
   @override
-  ConsumerState<QuickCaptureFAB> createState() => _QuickCaptureFABState();
+  ConsumerState<QuickCaptureFAB> createState() => QuickCaptureFABState();
 }
 
-class _QuickCaptureFABState extends ConsumerState<QuickCaptureFAB>
+class QuickCaptureFABState extends ConsumerState<QuickCaptureFAB>
     with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
   late AnimationController _animController;
@@ -74,6 +74,9 @@ class _QuickCaptureFABState extends ConsumerState<QuickCaptureFAB>
     widget.onExpandChanged?.call(false);
   }
 
+  /// 公开的收起方法，供 Shell 层通过 GlobalKey 调用
+  void collapse() => _collapse();
+
   // ---- 记灵感 ----
   Future<void> _handleInbox() async {
     _collapse();
@@ -83,7 +86,7 @@ class _QuickCaptureFABState extends ConsumerState<QuickCaptureFAB>
       context: context,
       isScrollControlled: true,
       builder: (sheetContext) => _CaptureBottomSheet(
-        onSubmit: (title) async {
+        onCapture: (title) async {
           final notifier = ref.read(entryListProvider.notifier);
           return notifier.createInboxEntry(title);
         },
@@ -99,29 +102,17 @@ class _QuickCaptureFABState extends ConsumerState<QuickCaptureFAB>
       onSubmit: (title) async {
         final notifier = ref.read(todayProvider.notifier);
         final success = await notifier.createTask(title);
-        // 同步刷新 entryListProvider，保证 Tasks 页立即可见
         if (success) {
           ref.invalidate(entryListProvider);
         }
-        if (!success) {
-          // CreateTaskSheet 内部会显示错误
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('创建任务失败，请重试'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          }
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('任务已创建'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          }
+        if (mounted) {
+          final message = success ? '任务已创建' : '创建任务失败，请重试';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              duration: const Duration(seconds: 2),
+            ),
+          );
         }
         return success;
       },
@@ -137,7 +128,7 @@ class _QuickCaptureFABState extends ConsumerState<QuickCaptureFAB>
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
       ),
-      builder: (sheetContext) => _AICommandSheet(ref: ref),
+      builder: (sheetContext) => const _AICommandSheet(),
     );
   }
 
@@ -240,20 +231,28 @@ class _QuickCaptureFABState extends ConsumerState<QuickCaptureFAB>
 }
 
 // ============================================================
-// _CaptureBottomSheet - 灵感捕获底部弹窗
+// _InputSheet — 通用输入底部弹窗基类
 //
-// 复用原有逻辑，通过 onSubmit 回调创建 inbox 条目。
+// 提供统一的标题栏 + TextField + 提交按钮布局，
+// 子类只需 override _onSubmit 提供差异化提交逻辑。
 // ============================================================
-class _CaptureBottomSheet extends ConsumerStatefulWidget {
-  final Future<bool> Function(String title) onSubmit;
+abstract class _InputSheet extends ConsumerStatefulWidget {
+  final String title;
+  final IconData icon;
+  final String hintText;
+  final String buttonText;
+  final Widget? prefixIcon;
 
-  const _CaptureBottomSheet({required this.onSubmit});
-
-  @override
-  ConsumerState<_CaptureBottomSheet> createState() => _CaptureBottomSheetState();
+  const _InputSheet({
+    required this.title,
+    required this.icon,
+    required this.hintText,
+    required this.buttonText,
+    this.prefixIcon,
+  });
 }
 
-class _CaptureBottomSheetState extends ConsumerState<_CaptureBottomSheet> {
+abstract class _InputSheetState<T extends _InputSheet> extends ConsumerState<T> {
   final _controller = TextEditingController();
   bool _isSubmitting = false;
 
@@ -266,33 +265,15 @@ class _CaptureBottomSheetState extends ConsumerState<_CaptureBottomSheet> {
   bool get _canSubmit =>
       _controller.text.trim().isNotEmpty && !_isSubmitting;
 
+  /// 子类实现具体提交逻辑
+  Future<void> onSubmit(String text);
+
   Future<void> _submit() async {
-    final title = _controller.text.trim();
-    if (title.isEmpty || _isSubmitting) return;
+    final text = _controller.text.trim();
+    if (text.isEmpty || _isSubmitting) return;
 
     setState(() => _isSubmitting = true);
-
-    final success = await widget.onSubmit(title);
-
-    if (!mounted) return;
-
-    if (success) {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('灵感已保存'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    } else {
-      setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('保存失败，请重试'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
+    await onSubmit(text);
   }
 
   @override
@@ -311,12 +292,12 @@ class _CaptureBottomSheetState extends ConsumerState<_CaptureBottomSheet> {
         children: [
           Row(
             children: [
-              const Icon(Icons.lightbulb_outline, size: 20),
-              const SizedBox(width: 8),
-              const Expanded(
+              Icon(widget.icon, size: 20),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
                 child: Text(
-                  '快速捕获灵感',
-                  style: TextStyle(
+                  widget.title,
+                  style: const TextStyle(
                     fontSize: AppFontSize.title,
                     fontWeight: FontWeight.w600,
                   ),
@@ -335,8 +316,9 @@ class _CaptureBottomSheetState extends ConsumerState<_CaptureBottomSheet> {
             maxLines: 3,
             minLines: 1,
             textInputAction: TextInputAction.newline,
-            decoration: const InputDecoration(
-              hintText: '记下你的想法...',
+            decoration: InputDecoration(
+              hintText: widget.hintText,
+              prefixIcon: widget.prefixIcon,
             ),
             onSubmitted: (_) {
               if (_canSubmit) _submit();
@@ -359,7 +341,7 @@ class _CaptureBottomSheetState extends ConsumerState<_CaptureBottomSheet> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('保存'),
+                      : Text(widget.buttonText),
                 );
               },
             ),
@@ -370,122 +352,67 @@ class _CaptureBottomSheetState extends ConsumerState<_CaptureBottomSheet> {
   }
 }
 
-// ============================================================
-// _AICommandSheet - AI 智能创建底部弹窗
-//
-// 弹出输入框，提交后调用 commandBarProvider.executeCommand，
-// 内联展示结果（成功 toast / AI 回答 / redirect 跳转链接）。
-// ============================================================
-class _AICommandSheet extends ConsumerStatefulWidget {
-  const _AICommandSheet({required this.ref});
+// ---- 记灵感 BottomSheet ----
 
-  final WidgetRef ref;
+class _CaptureBottomSheet extends _InputSheet {
+  final Future<bool> Function(String title) onCapture;
+
+  const _CaptureBottomSheet({required this.onCapture})
+      : super(
+          title: '快速捕获灵感',
+          icon: Icons.lightbulb_outline,
+          hintText: '记下你的想法...',
+          buttonText: '保存',
+        );
+
+  @override
+  ConsumerState<_CaptureBottomSheet> createState() =>
+      _CaptureBottomSheetState();
+}
+
+class _CaptureBottomSheetState extends _InputSheetState<_CaptureBottomSheet> {
+  @override
+  Future<void> onSubmit(String text) async {
+    final success = await widget.onCapture(text);
+
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('灵感已保存'), duration: Duration(seconds: 2)),
+      );
+    } else {
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('保存失败，请重试'), duration: Duration(seconds: 2)),
+      );
+    }
+  }
+}
+
+// ---- AI 智能创建 BottomSheet ----
+
+class _AICommandSheet extends _InputSheet {
+  const _AICommandSheet()
+      : super(
+          title: 'AI 智能创建',
+          icon: Icons.auto_awesome,
+          hintText: '告诉 AI 你想做什么...',
+          buttonText: '发送',
+          prefixIcon: const Icon(Icons.auto_awesome, size: 20),
+        );
 
   @override
   ConsumerState<_AICommandSheet> createState() => _AICommandSheetState();
 }
 
-class _AICommandSheetState extends ConsumerState<_AICommandSheet> {
-  final _controller = TextEditingController();
-  bool _isSubmitting = false;
-
+class _AICommandSheetState extends _InputSheetState<_AICommandSheet> {
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    final text = _controller.text.trim();
-    if (text.isEmpty || _isSubmitting) return;
-
-    setState(() => _isSubmitting = true);
-
-    // 调用 commandBarProvider 执行命令
-    widget.ref.read(commandBarProvider.notifier).executeCommand(text);
-
-    // 关闭 BottomSheet，结果由内联卡片展示（commandBarProvider 的 state 变化）
+  Future<void> onSubmit(String text) async {
+    ref.read(commandBarProvider.notifier).executeCommand(text);
     if (mounted) {
       Navigator.of(context).pop();
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.lg,
-        right: AppSpacing.lg,
-        top: AppSpacing.xl,
-        bottom: bottomInset + AppSpacing.lg,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.auto_awesome, size: 20),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'AI 智能创建',
-                  style: TextStyle(
-                    fontSize: AppFontSize.title,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          TextField(
-            controller: _controller,
-            autofocus: true,
-            maxLines: 3,
-            minLines: 1,
-            textInputAction: TextInputAction.newline,
-            decoration: const InputDecoration(
-              hintText: '告诉 AI 你想做什么...',
-              prefixIcon: Icon(Icons.auto_awesome, size: 20),
-            ),
-            onSubmitted: (_) {
-              if (_controller.text.trim().isNotEmpty && !_isSubmitting) {
-                _submit();
-              }
-            },
-          ),
-          const SizedBox(height: AppSpacing.md),
-          SizedBox(
-            width: double.infinity,
-            child: ListenableBuilder(
-              listenable: _controller,
-              builder: (context, _) {
-                final canSubmit =
-                    _controller.text.trim().isNotEmpty && !_isSubmitting;
-                return FilledButton(
-                  onPressed: canSubmit ? _submit : null,
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('发送'),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
