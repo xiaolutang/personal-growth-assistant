@@ -8,6 +8,7 @@ import 'package:growth_assistant/pages/entry_detail_page.dart';
 import 'package:growth_assistant/providers/entry_provider.dart';
 import 'package:growth_assistant/providers/auth_provider.dart';
 import 'package:growth_assistant/services/api_client.dart';
+import 'package:growth_assistant/widgets/skeleton_loading.dart';
 
 // ================================================================
 // Helper: 创建测试用 Entry
@@ -406,14 +407,14 @@ void main() {
     // ============================================================
     // loading / notFound / error
     // ============================================================
-    testWidgets('loading 态显示进度指示器', (WidgetTester tester) async {
+    testWidgets('loading 态显示骨架屏', (WidgetTester tester) async {
       final container = await _pumpDetailPage(tester);
 
       container.read(entryDetailProvider('test-id').notifier).state =
           const EntryDetailState(isLoading: true);
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(SkeletonLoading), findsOneWidget);
     });
 
     testWidgets('notFound 显示不存在提示', (WidgetTester tester) async {

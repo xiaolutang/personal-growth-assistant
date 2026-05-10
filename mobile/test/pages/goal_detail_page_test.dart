@@ -5,6 +5,7 @@ import 'package:growth_assistant/models/entry.dart';
 import 'package:growth_assistant/pages/goal_detail_page.dart';
 import 'package:growth_assistant/providers/goals_provider.dart';
 import 'package:growth_assistant/widgets/progress_ring.dart';
+import 'package:growth_assistant/widgets/skeleton_loading.dart';
 
 // Fake GoalDetailNotifier for testing
 class _FakeGoalDetailNotifier extends FamilyNotifier<GoalDetailState, String>
@@ -158,7 +159,7 @@ void main() {
         goal: null,
       );
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(SkeletonLoading), findsOneWidget);
     });
 
     testWidgets('错误状态显示错误信息和重试按钮', (WidgetTester tester) async {

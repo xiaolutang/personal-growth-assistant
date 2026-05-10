@@ -117,7 +117,7 @@
       "description": "从 morning_digest_card.dart 的 _DigestSkeleton 提取并泛化，创建可复用的 SkeletonLoading widget。支持列表卡片、文本行等常用骨架模式，shimmer 动画周期 1500ms，适配深色模式。不引入第三方 shimmer 包。",
       "verification": "F1",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "acceptance_criteria": [
         "SkeletonLoading widget 支持 list-card 和 text-line 两种预设布局",
@@ -138,8 +138,15 @@
           ]
         }
       ],
+      "started_at": "2026-05-10",
+      "completed_at": "2026-05-10",
+      "commit": "4adf666",
+      "summary": "通用骨架屏组件 + 替换 morning_digest_card 私有实现，13 测试全绿",
+      "evidence_file": ".dev-flow/evidence/F01.md",
       "files": [
-        "mobile/lib/widgets/skeleton_loading.dart"
+        "mobile/lib/widgets/skeleton_loading.dart",
+        "mobile/test/widgets/skeleton_loading_test.dart",
+        "mobile/lib/widgets/morning_digest_card.dart"
       ]
     },
     {
@@ -150,7 +157,7 @@
       "description": "创建通用 Debouncer utility，默认 300ms 延迟。支持与 TextEditingController listener 配合使用，延迟执行前取消上一次调用，提供 dispose() 清理 Timer。",
       "verification": "F1",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "acceptance_criteria": [
         "Debouncer 类支持可配置延迟（默认 300ms）",
@@ -173,7 +180,12 @@
       "files": [
         "mobile/lib/utils/debouncer.dart",
         "mobile/test/utils/debouncer_test.dart"
-      ]
+      ],
+      "started_at": "2026-05-10",
+      "completed_at": "2026-05-10",
+      "commit": "pending",
+      "summary": "Debouncer 防抖工具 + fakeAsync 11 测试全绿",
+      "evidence_file": ".dev-flow/evidence/F02.md"
     },
     {
       "id": "F03",
@@ -183,7 +195,7 @@
       "description": "将 Tasks/Notes/Inbox/Explore/Review/Today/Goals/GoalDetail/EntryDetail 共 9 个页面的全屏 CircularProgressIndicator 替换为 SkeletonLoading。每个页面根据其列表卡片布局选择合适的骨架预设。按钮内的 spinner 保持不变。",
       "verification": "F2",
       "depends_on": ["F01"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "acceptance_criteria": [
         "9 个页面的全屏 loading 均改为 SkeletonLoading 骨架屏",
@@ -226,7 +238,7 @@
       "description": "在 notes_page.dart 的 _handleSearch 中接入 Debouncer，搜索输入 300ms 防抖。清空搜索框时调用 immediateRun 立即刷新。页面 dispose 时清理 Debouncer 资源。",
       "verification": "F2",
       "depends_on": ["F02"],
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "acceptance_criteria": [
         "连续输入时不会每次击键都触发 searchNotes",
@@ -259,7 +271,7 @@
       "description": "为 Tasks 和 Inbox 列表项添加 Dismissible 滑动操作。采用乐观更新策略：滑动后立即从本地列表移除条目，后台调用 API。成功则保持；失败则回滚到列表原位并提示错误。SnackBar 带「撤销」按钮可恢复。",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "acceptance_criteria": [
         "Tasks 列表项左滑显示绿色「完成」背景并执行完成操作",
@@ -285,8 +297,15 @@
       ],
       "files": [
         "mobile/lib/pages/tasks_page.dart",
-        "mobile/lib/pages/inbox_page.dart"
-      ]
+        "mobile/lib/pages/inbox_page.dart",
+        "mobile/lib/providers/entry_provider.dart",
+        "mobile/lib/providers/inbox_provider.dart"
+      ],
+      "started_at": "2026-05-10",
+      "completed_at": "2026-05-10",
+      "commit": "pending",
+      "summary": "Tasks/Inbox Dismissible 滑动操作 + 乐观更新 + SnackBar 撤销",
+      "evidence_file": ".dev-flow/evidence/F05.md"
     },
     {
       "id": "F06",
@@ -296,7 +315,7 @@
       "description": "在 GoRouter 路由配置中添加自定义 pageBuilder，为详情页（EntryDetail、GoalDetail）添加 slide-in/out 转场动画，为设置页添加 fade 过渡。ShellRoute 内主页面切换保持系统默认。",
       "verification": "F2",
       "depends_on": [],
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
       "acceptance_criteria": [
         "EntryDetail/GoalDetail 页面 push 时从右滑入，pop 时向右滑出",
@@ -355,7 +374,8 @@
   "summary": {
     "total": 7,
     "by_status": {
-      "pending": 7
+      "completed": 6,
+      "pending": 1
     },
     "by_priority": {
       "P0": 5,

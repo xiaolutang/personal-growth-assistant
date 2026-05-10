@@ -1,50 +1,42 @@
 # 对齐清单
 
-## R053: Today 页智能命令栏
+## R055: 交互基础补齐
 
-### 契约对齐
+### 用户路径对齐
 
-- [ ] B01: POST /chat page_type 新增 'command'，Agent 直接执行不追问
-- [ ] B01: 新增 SSE `redirect` 事件类型（conversational intent → redirect to chat）
-- [ ] F01: 使用 POST /chat SSE + page_type='command'，不共享 chatProvider
-- [ ] F01: 每次命令生成新 session_id（无状态）
-- [ ] F02: 不修改 QuickCaptureFAB（保持独立灵感捕获功能）
-- [ ] F02: 不修改 chat_page.dart（日知页保持不变）
-
-### 依赖对齐
-
-- [ ] B01: 无依赖（后端 Agent 提示词 + redirect 事件）
-- [ ] F01 depends_on B01 ✓（前端需后端 redirect 事件信号）
-- [ ] F02 depends_on F01 ✓（UI 使用 commandBarProvider）
-- [ ] S03 depends_on B01 + F01 + F02 ✓
+- [ ] F01/F03: 打开列表页 → 看到 shimmer 骨架 → 数据加载后切换到真实内容（9 个页面）
+- [ ] F02/F04: 在 Notes 页搜索 → 连续输入 → 300ms 后触发搜索
+- [ ] F05: 在 Tasks 页左滑 → 完成任务 → SnackBar 撤销
+- [ ] F05: 在 Inbox 页左滑 → 删除条目 → SnackBar 撤销
+- [ ] F06: 点击条目 → 进入详情 → 右滑入 → 返回 → 右滑出
 
 ### 架构对齐
 
-- [ ] F01: commandBarProvider 独立于 chatProvider，不共享 SseService 实例
-- [ ] F01: 使用 Dio 直接发起 SSE 请求（复用 apiClientProvider Dio 实例），避免与 chatProvider SSE 连接冲突
-- [ ] F01: 提取 SseParser 工具类复用 SseService._parseSseBlock 逻辑
-- [ ] F01: 发送新命令时自动取消上次未完成的 SSE 连接 + debounce 300ms
-- [ ] B01: command 模式跳过 session 元数据写入（不污染会话列表）
-- [ ] F01: 遵循 MVVM — Widget → commandBarProvider(Notifier) → Dio SSE
-- [ ] F02: 移除 Today 页对 chatProvider 的全部依赖（import、watch、listener）
-- [ ] F02: 不违反 architecture.md 禁止模式：多 Provider 不监听同一 SSE 连接
-- [ ] B01: Agent prompt 变更不影响现有 /chat 行为（非 command page_type 行为不变）
-- [ ] 所有任务不违反 architecture.md 不变量：user_id 隔离、JWT 认证、MVVM 分层
+- [ ] F01-F06: 均在 View 层操作，不涉及 ViewModel/Model 变更
+- [ ] F05: Dismissible 通过 Riverpod provider 操作数据，Widget 不直接调用 ApiClient
+- [ ] F02: Debouncer 是纯工具类，不引入 Provider 依赖
+- [ ] F06: 使用 GoRouter pageBuilder 替代 builder，不引入额外路由包
+- [ ] 所有任务不违反 architecture.md 禁止模式
 
-### 命令结果类型对齐
+### 依赖对齐
 
-| SSE 事件 | CommandResult 类型 | F02 UX |
-|----------|-------------------|--------|
-| created / updated | success | SnackBar toast + todayProvider 刷新 |
-| content (无 tool_call) | answer | 内联卡片展示 |
-| redirect | redirect_chat | "在日知中继续对话 →" 跳转链接 |
-| error | error | 输入框下方错误条 + 重试按钮 |
+- [ ] F01: 无依赖 ✓
+- [ ] F02: 无依赖 ✓
+- [ ] F03 depends_on F01 ✓（需要 SkeletonLoading 组件）
+- [ ] F04 depends_on F02 ✓（需要 Debouncer 工具）
+- [ ] F05: 无依赖 ✓
+- [ ] F06: 无依赖 ✓
+- [ ] S07 depends_on F03 + F04 + F05 + F06 ✓
 
-> 注：follow_up 已移除，因 B01 command 模式禁止 ask_user 追问。created/updated 合并为 success 简化前端处理。
+### 完成性检查
+
+- [ ] 所有 P0 任务有 acceptance_criteria
+- [ ] 依赖链完整无循环
+- [ ] 按钮内 spinner（CircularProgressIndicator）不被 F03 误改
+- [ ] 无 risk_tags 任务（骨架屏/防抖/滑动/转场均无网络/认证/首用风险）
 
 ### 执行顺序
 
-- [ ] Phase 1: B01（后端 command 模式 + redirect 事件）
-- [ ] Phase 2: F01（CommandBar Provider + 独立 SSE）
-- [ ] Phase 3: F02（Today 页命令栏 UI + 移除 chatProvider 依赖）
-- [ ] Phase 4: S03（质量收口 + smoke）
+- [ ] Phase 1: F01 + F02（基础组件，可并行）
+- [ ] Phase 2: F03 + F04 + F05 + F06（页面集成，F03/F04 有依赖，F05/F06 可并行）
+- [ ] Phase 3: S07（质量收口）
