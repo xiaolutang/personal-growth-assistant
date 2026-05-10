@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:growth_assistant/providers/auth_provider.dart';
-import 'package:growth_assistant/providers/entry_provider.dart';
-import 'package:growth_assistant/services/api_client.dart';
-import 'package:growth_assistant/widgets/bottom_nav.dart';
-import 'package:growth_assistant/widgets/quick_capture_fab.dart';
+import 'package:rizhi/providers/auth_provider.dart';
+import 'package:rizhi/providers/entry_provider.dart';
+import 'package:rizhi/services/api_client.dart';
+import 'package:rizhi/widgets/bottom_nav.dart';
+import 'package:rizhi/widgets/quick_capture_fab.dart';
 
 
 /// Fake ApiClient for tests

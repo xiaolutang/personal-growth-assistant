@@ -1,11 +1,11 @@
 {
-    "name": "growth_assistant",
-    "short_name": "growth_assistant",
+    "name": "rizhi",
+    "short_name": "rizhi",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "日知 — 个人成长管理助手",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

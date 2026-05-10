@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'config/routes.dart';
+import 'config/constants.dart';
 import 'config/theme.dart';
 import 'providers/notification_provider.dart';
 
@@ -64,7 +65,7 @@ class _GrowthAppState extends ConsumerState<GrowthApp> {
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
-      title: '个人成长助手',
+      title: AppConstants.appName,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       routerConfig: router,

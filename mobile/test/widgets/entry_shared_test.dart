@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/config/constants.dart';
-import 'package:growth_assistant/widgets/entry_shared.dart';
+import 'package:rizhi/config/constants.dart';
+import 'package:rizhi/widgets/entry_shared.dart';
 
 /// Helper to pump EntrySharedWidgets.buildStatusIcon in a testable way
 Future<void> _pumpStatusIcon(WidgetTester tester, String? status) async {

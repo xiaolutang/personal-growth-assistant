@@ -3,13 +3,13 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/models/entry.dart';
-import 'package:growth_assistant/providers/auth_provider.dart';
-import 'package:growth_assistant/providers/goals_provider.dart';
-import 'package:growth_assistant/providers/review_provider.dart';
-import 'package:growth_assistant/providers/notes_provider.dart';
-import 'package:growth_assistant/providers/inbox_provider.dart';
-import 'package:growth_assistant/services/api_client.dart';
+import 'package:rizhi/models/entry.dart';
+import 'package:rizhi/providers/auth_provider.dart';
+import 'package:rizhi/providers/goals_provider.dart';
+import 'package:rizhi/providers/review_provider.dart';
+import 'package:rizhi/providers/notes_provider.dart';
+import 'package:rizhi/providers/inbox_provider.dart';
+import 'package:rizhi/services/api_client.dart';
 
 // ============================================================
 // Mock Dio HttpClientAdapter - 拦截 HTTP 请求并返回预设响应

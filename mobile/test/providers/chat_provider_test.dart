@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/models/chat_message.dart';
-import 'package:growth_assistant/providers/chat_provider.dart';
-import 'package:growth_assistant/services/sse_service.dart';
+import 'package:rizhi/models/chat_message.dart';
+import 'package:rizhi/providers/chat_provider.dart';
+import 'package:rizhi/services/sse_service.dart';
 
 ChatMessage makeMessage(String id) {
   return ChatMessage(

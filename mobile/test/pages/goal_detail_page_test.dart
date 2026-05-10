@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/models/entry.dart';
-import 'package:growth_assistant/pages/goal_detail_page.dart';
-import 'package:growth_assistant/providers/goals_provider.dart';
-import 'package:growth_assistant/widgets/progress_ring.dart';
-import 'package:growth_assistant/widgets/skeleton_loading.dart';
+import 'package:rizhi/models/entry.dart';
+import 'package:rizhi/pages/goal_detail_page.dart';
+import 'package:rizhi/providers/goals_provider.dart';
+import 'package:rizhi/widgets/progress_ring.dart';
+import 'package:rizhi/widgets/skeleton_loading.dart';
 
 // Fake GoalDetailNotifier for testing
 class _FakeGoalDetailNotifier extends FamilyNotifier<GoalDetailState, String>

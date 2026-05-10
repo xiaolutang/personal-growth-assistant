@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:growth_assistant/main.dart';
+import 'package:rizhi/main.dart';
 
 void main() {
   testWidgets('App redirects to login when unauthenticated',
@@ -11,7 +11,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 未认证时应重定向到登录页
-    expect(find.text('个人成长助手'), findsOneWidget);
+    expect(find.text('日知'), findsOneWidget);
     expect(find.text('登录'), findsOneWidget);
   });
 

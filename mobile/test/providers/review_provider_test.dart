@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/providers/review_provider.dart';
+import 'package:rizhi/providers/review_provider.dart';
 
 void main() {
   group('ReviewState', () {

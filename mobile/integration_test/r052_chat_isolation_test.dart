@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:growth_assistant/main.dart' as app;
+import 'package:rizhi/main.dart' as app;
 
 // ============================================================
 // R052 iOS 集成测试 — 聊天用户隔离 + Today 页 AI 对话入口

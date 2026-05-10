@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../config/constants.dart';
 import '../config/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
@@ -110,6 +111,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
           // 关于
           _buildSectionHeader(theme, '关于'),
+          ListTile(
+            leading: const Icon(Icons.apps),
+            title: const Text('应用名称'),
+            subtitle: Text(AppConstants.appName),
+          ),
           const ListTile(
             leading: Icon(Icons.info_outline),
             title: Text('版本'),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/widgets/error_state.dart';
+import 'package:rizhi/widgets/error_state.dart';
 
 void main() {
   group('ErrorStateWidget', () {

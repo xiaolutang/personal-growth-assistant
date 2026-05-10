@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/utils/date_formatter.dart';
+import 'package:rizhi/utils/date_formatter.dart';
 
 void main() {
   // ----------------------------------------------------------

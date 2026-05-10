@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:growth_assistant/config/theme.dart';
+import 'package:rizhi/config/theme.dart';
 
 // ============================================================
 // SkeletonLayout - 骨架屏布局模式

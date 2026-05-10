@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:growth_assistant/widgets/bottom_nav.dart';
+import 'package:rizhi/widgets/bottom_nav.dart';
 
 // 构建测试用的 GoRouter
 GoRouter _testRouter({required Widget child}) {

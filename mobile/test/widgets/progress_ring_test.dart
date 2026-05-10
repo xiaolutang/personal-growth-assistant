@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/widgets/progress_ring.dart';
+import 'package:rizhi/widgets/progress_ring.dart';
 
 void main() {
   group('ProgressRing', () {

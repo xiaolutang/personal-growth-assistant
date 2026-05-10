@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/config/theme.dart';
-import 'package:growth_assistant/models/chat_message.dart';
-import 'package:growth_assistant/widgets/chat_bubble.dart';
+import 'package:rizhi/config/theme.dart';
+import 'package:rizhi/models/chat_message.dart';
+import 'package:rizhi/widgets/chat_bubble.dart';
 
 void main() {
   group('ChatBubble', () {

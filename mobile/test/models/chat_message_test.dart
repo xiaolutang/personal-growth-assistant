@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/models/chat_message.dart';
-import 'package:growth_assistant/models/entry.dart';
+import 'package:rizhi/models/chat_message.dart';
+import 'package:rizhi/models/entry.dart';
 
 void main() {
   group('ChatMessage', () {

@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.growth" "\0"
-            VALUE "FileDescription", "growth_assistant" "\0"
+            VALUE "CompanyName", "com.rizhi.app" "\0"
+            VALUE "FileDescription", "rizhi" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "growth_assistant" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.growth. All rights reserved." "\0"
-            VALUE "OriginalFilename", "growth_assistant.exe" "\0"
-            VALUE "ProductName", "growth_assistant" "\0"
+            VALUE "InternalName", "rizhi" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.rizhi.app. All rights reserved." "\0"
+            VALUE "OriginalFilename", "rizhi.exe" "\0"
+            VALUE "ProductName", "rizhi" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
