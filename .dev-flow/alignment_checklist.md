@@ -8,14 +8,14 @@
 - [ ] F02/F04: 在 Notes 页搜索 → 连续输入 → 300ms 后触发搜索
 - [ ] F05: 在 Tasks 页左滑 → 完成任务 → SnackBar 撤销
 - [ ] F05: 在 Inbox 页左滑 → 删除条目 → SnackBar 撤销
-- [ ] F06: 点击条目 → 进入详情 → 右滑入 → 返回 → 右滑出
+- [x] F06: 点击条目 → 进入详情 → 右滑入 → 返回 → 右滑出（iOS CupertinoPage + Android CustomTransitionPage）
 
 ### 架构对齐
 
 - [ ] F01-F06: 均在 View 层操作，不涉及 ViewModel/Model 变更
 - [ ] F05: Dismissible 通过 Riverpod provider 操作数据，Widget 不直接调用 ApiClient
 - [ ] F02: Debouncer 是纯工具类，不引入 Provider 依赖
-- [ ] F06: 使用 GoRouter pageBuilder 替代 builder，不引入额外路由包
+- [x] F06: 使用 GoRouter pageBuilder 替代 builder，iOS 用 CupertinoPage 保留 swipe back，Android 用 CustomTransitionPage
 - [ ] 所有任务不违反 architecture.md 禁止模式
 
 ### 依赖对齐

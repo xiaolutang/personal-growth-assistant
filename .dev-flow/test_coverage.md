@@ -9,5 +9,5 @@
 | 列表页骨架屏 | F03 | manual | 9 页面全屏 loading 替换验证 | pending | — |
 | Notes 搜索防抖 | F04 | unit+F2 | 快速连续输入只触发一次/清空立即 fetch/页面销毁资源释放 | pending | — |
 | 列表滑动操作 | F05 | unit+F2 | Tasks 左滑完成/右滑删除/Inbox 左滑删除/撤销恢复 | pending | — |
-| 页面转场动画 | F06 | manual | 详情页 slide/设置页 fade/iOS swipe back | pending | — |
+| 页面转场动画 | F06 | manual | 详情页 slide/设置页 fade/iOS swipe back | completed | iOS CupertinoPage + Android CustomTransitionPage |
 | 质量收口 | S07 | integration | flutter analyze 0 warnings/全量测试通过 | pending | — |
