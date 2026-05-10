@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -115,9 +117,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: ':id',
                 pageBuilder: (context, state) {
                   final id = state.pathParameters['id']!;
+                  final child = GoalDetailPage(goalId: id);
+                  if (Platform.isIOS) {
+                    return CupertinoPage(key: state.pageKey, child: child);
+                  }
                   return CustomTransitionPage(
                     key: state.pageKey,
-                    child: GoalDetailPage(goalId: id),
+                    child: child,
                     transitionsBuilder:
                         (context, animation, secondaryAnimation, child) {
                       return SlideTransition(
@@ -141,22 +147,32 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/settings',
             name: 'settings',
-            pageBuilder: (context, state) => CustomTransitionPage(
-              key: state.pageKey,
-              child: const SettingsPage(),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                return FadeTransition(opacity: animation, child: child);
-              },
-            ),
+            pageBuilder: (context, state) {
+              const child = SettingsPage();
+              if (Platform.isIOS) {
+                return CupertinoPage(key: state.pageKey, child: child);
+              }
+              return CustomTransitionPage(
+                key: state.pageKey,
+                child: child,
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+              );
+            },
           ),
           GoRoute(
             path: '/entries/:id',
             pageBuilder: (context, state) {
               final id = state.pathParameters['id']!;
+              final child = EntryDetailPage(entryId: id);
+              if (Platform.isIOS) {
+                return CupertinoPage(key: state.pageKey, child: child);
+              }
               return CustomTransitionPage(
                 key: state.pageKey,
-                child: EntryDetailPage(entryId: id),
+                child: child,
                 transitionsBuilder:
                     (context, animation, secondaryAnimation, child) {
                   return SlideTransition(

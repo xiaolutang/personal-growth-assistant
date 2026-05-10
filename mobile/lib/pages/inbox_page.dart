@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -30,12 +32,21 @@ class InboxPage extends ConsumerStatefulWidget {
 }
 
 class _InboxPageState extends ConsumerState<InboxPage> {
+  // 延迟删除的 Timer（用于撤销取消）
+  Timer? _pendingDeleteTimer;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInbox();
     });
+  }
+
+  @override
+  void dispose() {
+    _pendingDeleteTimer?.cancel();
+    super.dispose();
   }
 
   void _loadInbox() {
@@ -110,45 +121,44 @@ class _InboxPageState extends ConsumerState<InboxPage> {
 
   // ---- 滑动删除操作 ----
 
-  /// 处理左滑删除（乐观更新 + SnackBar 撤销）
+  /// 处理左滑删除（延迟删除 + SnackBar 撤销）
+  /// 撤销期内不调用后端 API，撤销只是取消延迟删除
   void _handleDeleteDismiss(Entry entry, int index) {
     final originalEntry = entry;
     final originalIndex = index;
 
-    // 后台调用 API
-    _performDeleteWithUndo(originalEntry, originalIndex);
-  }
+    // 取消前一个待删除 Timer
+    _pendingDeleteTimer?.cancel();
 
-  Future<void> _performDeleteWithUndo(
-      Entry entry,
-      int originalIndex,) async {
-    final success =
-        await ref.read(inboxProvider.notifier).deleteEntry(entry.id);
+    // 延迟 4 秒后才真正调用删除 API
+    _pendingDeleteTimer = Timer(const Duration(seconds: 4), () async {
+      final success =
+          await ref.read(inboxProvider.notifier).deleteEntry(entry.id);
+      if (!success && mounted) {
+        // API 失败：provider 会自动回滚
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('删除失败，请重试')),
+        );
+      }
+    });
 
-    if (!mounted) return;
-
-    if (success) {
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('灵感已删除'),
-          duration: const Duration(seconds: 4),
-          action: SnackBarAction(
-            label: '撤销',
-            onPressed: () {
-              // 撤销删除：恢复条目到原位
-              ref.read(inboxProvider.notifier).restoreEntry(entry, originalIndex);
-            },
-          ),
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('灵感已删除'),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: '撤销',
+          onPressed: () {
+            // 撤销：取消延迟删除 + 恢复到 provider 列表原位
+            _pendingDeleteTimer?.cancel();
+            _pendingDeleteTimer = null;
+            ref.read(inboxProvider.notifier).restoreEntry(originalEntry, originalIndex);
+          },
         ),
-      );
-    } else {
-      // API 失败：provider 已自动回滚
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('删除失败，请重试')),
-      );
-    }
+      ),
+    );
   }
 
   @override

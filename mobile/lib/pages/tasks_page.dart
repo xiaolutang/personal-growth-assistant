@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -38,6 +40,8 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   TaskFilter _currentFilter = TaskFilter.all;
   // 本地拖拽排序状态（不持久化）
   List<Entry> _reorderedEntries = [];
+  // 延迟删除的 Timer（用于撤销取消）
+  Timer? _pendingDeleteTimer;
 
   @override
   void initState() {
@@ -46,6 +50,12 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadTasks();
     });
+  }
+
+  @override
+  void dispose() {
+    _pendingDeleteTimer?.cancel();
+    super.dispose();
   }
 
   void _loadTasks() {
@@ -136,11 +146,21 @@ class _TasksPageState extends ConsumerState<TasksPage> {
           duration: const Duration(seconds: 4),
           action: SnackBarAction(
             label: '撤销',
-            onPressed: () {
-              // 撤销：恢复到原状态
-              ref
+            onPressed: () async {
+              // 撤销：恢复到原状态并刷新列表
+              final originalStatus = entry.status ?? AppConstants.statusWaitStart;
+              await ref
                   .read(entryListProvider.notifier)
-                  .updateEntryStatus(entry.id, entry.status ?? AppConstants.statusWaitStart);
+                  .updateEntryStatus(entry.id, originalStatus);
+              if (mounted) {
+                // 重新插入到本地列表原位
+                _rollbackEntry(entry, originalIndex);
+                // 刷新 provider 以同步最新数据
+                ref.read(entryListProvider.notifier).fetchEntries(
+                      type: AppConstants.categoryTask,
+                      status: _statusFilter,
+                    );
+              }
             },
           ),
         ),
@@ -155,51 +175,47 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     }
   }
 
-  /// 右滑删除（乐观更新 + SnackBar 撤销）
+  /// 右滑删除（延迟删除 + SnackBar 撤销）
+  /// 撤销期内不调用后端 API，撤销只是取消延迟删除
   void _handleDeleteDismiss(Entry entry, int globalIndex) {
-    final originalEntry = entry;
-    final originalIndex = globalIndex;
+    // 取消前一个待删除 Timer
+    _pendingDeleteTimer?.cancel();
 
     // 从本地列表移除
     setState(() {
       _reorderedEntries.removeAt(globalIndex);
     });
 
-    // 后台调用 API
-    _performDeleteWithUndo(originalEntry, originalIndex);
-  }
+    // 延迟 4 秒后才真正调用删除 API
+    _pendingDeleteTimer = Timer(const Duration(seconds: 4), () async {
+      final success =
+          await ref.read(entryListProvider.notifier).deleteEntry(entry.id);
+      if (!success && mounted) {
+        // API 失败：回滚本地列表
+        _rollbackEntry(entry, globalIndex);
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('删除失败，请重试')),
+        );
+      }
+    });
 
-  Future<void> _performDeleteWithUndo(
-      Entry entry,
-      int originalIndex,) async {
-    final success =
-        await ref.read(entryListProvider.notifier).deleteEntry(entry.id);
-
-    if (!mounted) return;
-
-    if (success) {
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('任务已删除'),
-          duration: const Duration(seconds: 4),
-          action: SnackBarAction(
-            label: '撤销',
-            onPressed: () {
-              // 撤销删除：恢复条目
-              ref.read(entryListProvider.notifier).restoreEntry(entry, originalIndex);
-            },
-          ),
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('任务已删除'),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: '撤销',
+          onPressed: () {
+            // 撤销：取消延迟删除 + 恢复到本地列表原位
+            _pendingDeleteTimer?.cancel();
+            _pendingDeleteTimer = null;
+            _rollbackEntry(entry, globalIndex);
+          },
         ),
-      );
-    } else {
-      // API 失败：回滚本地列表
-      _rollbackEntry(entry, originalIndex);
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('删除失败，请重试')),
-      );
-    }
+      ),
+    );
   }
 
   /// 回滚条目到本地列表原位
