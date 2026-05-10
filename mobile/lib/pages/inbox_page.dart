@@ -15,9 +15,8 @@ import '../widgets/error_state.dart';
 //
 // 功能：
 // - 展示灵感列表，每项显示标题和时间
-// - 底部快速输入栏支持直接创建灵感
 // - 长按条目弹出转换菜单（转为任务/笔记/项目）
-// - 空列表引导文案
+// - 空列表引导文案（引导使用全局 FAB 创建灵感）
 // - 下拉刷新
 // ============================================================
 
@@ -29,8 +28,6 @@ class InboxPage extends ConsumerStatefulWidget {
 }
 
 class _InboxPageState extends ConsumerState<InboxPage> {
-  final _inputController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
@@ -39,36 +36,12 @@ class _InboxPageState extends ConsumerState<InboxPage> {
     });
   }
 
-  @override
-  void dispose() {
-    _inputController.dispose();
-    super.dispose();
-  }
-
   void _loadInbox() {
     ref.read(inboxProvider.notifier).fetchInbox();
   }
 
   Future<void> _onRefresh() async {
     await ref.read(inboxProvider.notifier).fetchInbox();
-  }
-
-  Future<void> _handleCreate() async {
-    final text = _inputController.text.trim();
-    if (text.isEmpty) return;
-
-    _inputController.clear();
-    ref.read(inboxProvider.notifier).setNewEntryText('');
-
-    final success =
-        await ref.read(inboxProvider.notifier).createInboxItem(text);
-
-    if (!success && mounted) {
-      final error = ref.read(inboxProvider).error ?? '创建失败，请重试';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
-    }
   }
 
   void _showConvertMenu(Entry entry) {
@@ -143,12 +116,7 @@ class _InboxPageState extends ConsumerState<InboxPage> {
         title: const Text('灵感'),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          Expanded(child: _buildBody(state, theme)),
-          _buildInputBar(theme),
-        ],
-      ),
+      body: _buildBody(state, theme),
     );
   }
 
@@ -170,7 +138,7 @@ class _InboxPageState extends ConsumerState<InboxPage> {
       return const EmptyStateWidget(
         icon: Icons.lightbulb_outline,
         title: '随时记录灵感',
-        subtitle: '在下方输入框快速记录，稍后再整理为任务或笔记',
+        subtitle: '点击右下角按钮，快速记录灵感',
       );
     }
 
@@ -240,45 +208,6 @@ class _InboxPageState extends ConsumerState<InboxPage> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  // ---- 底部快速输入栏 ----
-
-  Widget _buildInputBar(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(
-          top: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _inputController,
-              decoration: InputDecoration(
-                hintText: '记录灵感...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.button),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-              ),
-              onSubmitted: (_) => _handleCreate(),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          IconButton.filled(
-            onPressed: _handleCreate,
-            icon: const Icon(Icons.send),
-          ),
-        ],
       ),
     );
   }
