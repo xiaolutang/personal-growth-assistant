@@ -102,6 +102,76 @@ Future<void> _pumpInboxPage(
   await tester.pump();
 }
 
+// Mutable InboxNotifier for swipe tests
+class _MutableInboxNotifier extends InboxNotifier {
+  late List<Entry> _entries;
+  final List<String> removeEntryLocallyCalls = [];
+  final List<String> deleteEntryFromBackendCalls = [];
+  final List<(Entry, int)> restoreEntryCalls = [];
+  bool deleteBackendSuccess = true;
+
+  _MutableInboxNotifier({required List<Entry> entries}) {
+    _entries = List.of(entries);
+  }
+
+  @override
+  InboxState build() => InboxState(entries: _entries);
+
+  @override
+  Future<void> fetchInbox() async {}
+
+  @override
+  Future<bool> createInboxItem(String title) async => false;
+
+  @override
+  Future<bool> convertCategory(String id, String newCategory) async => false;
+
+  @override
+  void setNewEntryText(String text) {}
+
+  @override
+  void removeEntryLocally(String entryId) {
+    removeEntryLocallyCalls.add(entryId);
+    _entries = _entries.where((e) => e.id != entryId).toList();
+    state = InboxState(entries: _entries);
+  }
+
+  @override
+  Future<bool> deleteEntryFromBackend(String entryId) async {
+    deleteEntryFromBackendCalls.add(entryId);
+    return deleteBackendSuccess;
+  }
+
+  @override
+  void restoreEntry(Entry entry, int originalIndex) {
+    restoreEntryCalls.add((entry, originalIndex));
+    final insertAt = originalIndex.clamp(0, _entries.length);
+    _entries.insert(insertAt, entry);
+    state = InboxState(entries: _entries);
+  }
+}
+
+Future<_MutableInboxNotifier> _pumpInboxPageTracking(
+  WidgetTester tester, {
+  List<Entry> entries = const [],
+}) async {
+  late _MutableInboxNotifier notifier;
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        inboxProvider.overrideWith(() {
+          return notifier = _MutableInboxNotifier(entries: entries);
+        }),
+      ],
+      child: MaterialApp.router(
+        routerConfig: _testRouter(),
+      ),
+    ),
+  );
+  await tester.pump();
+  return notifier;
+}
+
 void main() {
   group('InboxPage', () {
     testWidgets('空列表显示空状态引导文案', (WidgetTester tester) async {
@@ -153,6 +223,53 @@ void main() {
       await _pumpInboxPage(tester, entries: []);
 
       expect(find.text('灵感'), findsOneWidget);
+    });
+  });
+
+  group('InboxPage 滑动操作', () {
+    testWidgets('左滑删除显示 SnackBar', (tester) async {
+      final notifier = await _pumpInboxPageTracking(
+        tester,
+        entries: [_makeInboxEntry(id: '1')],
+      );
+
+      // 左滑（startToEnd = 删除）
+      await tester.drag(
+        find.byKey(const ValueKey('dismissible_1')),
+        const Offset(500, 0),
+      );
+      await tester.pumpAndSettle();
+
+      // 验证 removeEntryLocally 被调用
+      expect(notifier.removeEntryLocallyCalls, ['1']);
+
+      // 验证 SnackBar 显示
+      expect(find.text('灵感已删除'), findsOneWidget);
+      expect(find.text('撤销'), findsOneWidget);
+    });
+
+    testWidgets('撤销删除恢复条目', (tester) async {
+      final notifier = await _pumpInboxPageTracking(
+        tester,
+        entries: [_makeInboxEntry(id: '1'), _makeInboxEntry(id: '2')],
+      );
+
+      // 左滑删除第一条
+      await tester.drag(
+        find.byKey(const ValueKey('dismissible_1')),
+        const Offset(500, 0),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('灵感已删除'), findsOneWidget);
+
+      // 点击撤销
+      await tester.tap(find.text('撤销'));
+      await tester.pumpAndSettle();
+
+      // 验证条目被恢复
+      expect(notifier.restoreEntryCalls, isNotEmpty);
+      expect(notifier.restoreEntryCalls.first.$1.id, '1');
     });
   });
 }

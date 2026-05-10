@@ -114,6 +114,68 @@ class _MutableEntryListNotifier extends EntryListNotifier {
   }
 }
 
+// Tracking EntryListNotifier for swipe tests
+class _TrackingEntryListNotifier extends EntryListNotifier {
+  List<Entry> _entries;
+  int fetchEntriesCallCount = 0;
+  final List<(String, String)> updateEntryStatusCalls = [];
+  final List<String> deleteEntryCalls = [];
+  bool deleteSuccess = true;
+  bool updateStatusSuccess = true;
+
+  _TrackingEntryListNotifier({required List<Entry> entries})
+      : _entries = entries;
+
+  @override
+  EntryListState build() => EntryListState(entries: _entries);
+
+  @override
+  Future<void> fetchEntries({String? type, String? status}) async {
+    fetchEntriesCallCount++;
+  }
+
+  @override
+  Future<bool> updateEntryStatus(String entryId, String newStatus) async {
+    updateEntryStatusCalls.add((entryId, newStatus));
+    if (updateStatusSuccess) {
+      // 同步更新 provider 状态，让 widget 重建时拿到正确的分组数据
+      _entries = _entries.map((e) {
+        if (e.id == entryId) return e.copyWith(status: newStatus);
+        return e;
+      }).toList();
+      state = EntryListState(entries: _entries);
+    }
+    return updateStatusSuccess;
+  }
+
+  @override
+  Future<bool> deleteEntry(String entryId) async {
+    deleteEntryCalls.add(entryId);
+    return deleteSuccess;
+  }
+}
+
+Future<_TrackingEntryListNotifier> _pumpTasksPageTracking(
+  WidgetTester tester, {
+  List<Entry> entries = const [],
+}) async {
+  late _TrackingEntryListNotifier notifier;
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        entryListProvider.overrideWith(() {
+          return notifier = _TrackingEntryListNotifier(entries: entries);
+        }),
+      ],
+      child: MaterialApp.router(
+        routerConfig: _testRouter(),
+      ),
+    ),
+  );
+  await tester.pump();
+  return notifier;
+}
+
 void main() {
   group('TasksPage', () {
     testWidgets('空列表显示空状态引导文案', (WidgetTester tester) async {
@@ -317,6 +379,70 @@ void main() {
 
       expect(find.text('已暂停 (2)'), findsOneWidget);
       expect(find.byType(ReorderableListView), findsOneWidget);
+    });
+  });
+
+  group('TasksPage 滑动操作', () {
+    testWidgets('左滑完成显示 SnackBar', (tester) async {
+      final notifier = await _pumpTasksPageTracking(
+        tester,
+        entries: [
+          _makeEntry(id: '1', status: 'doing'),
+          _makeEntry(id: '2', status: 'doing'),
+        ],
+      );
+
+      // 左滑第一条（startToEnd = 从左到右拖拽 = 完成）
+      await tester.drag(
+        find.byKey(const ValueKey('dismissible_1')),
+        const Offset(500, 0),
+      );
+      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // 验证完成操作被调用
+      expect(notifier.updateEntryStatusCalls, isNotEmpty);
+      expect(notifier.updateEntryStatusCalls.first.$2, 'complete');
+
+      // 验证 SnackBar 显示
+      expect(find.text('任务已完成'), findsOneWidget);
+      expect(find.text('撤销'), findsOneWidget);
+    });
+
+    testWidgets('右滑删除显示 SnackBar', (tester) async {
+      final notifier = await _pumpTasksPageTracking(
+        tester,
+        entries: [_makeEntry(id: '1', status: 'doing')],
+      );
+
+      // 右滑（endToStart = 从右到左拖拽 = 删除）
+      await tester.drag(
+        find.byKey(const ValueKey('dismissible_1')),
+        const Offset(-500, 0),
+      );
+      await tester.pumpAndSettle();
+
+      // 验证 SnackBar 显示
+      expect(find.text('任务已删除'), findsOneWidget);
+      expect(find.text('撤销'), findsOneWidget);
+    });
+
+    testWidgets('已完成的任务左滑提示无需重复操作', (tester) async {
+      await _pumpTasksPageTracking(
+        tester,
+        entries: [_makeEntry(id: '1', status: 'complete')],
+      );
+
+      // 左滑已完成的任务
+      await tester.drag(
+        find.byKey(const ValueKey('dismissible_1')),
+        const Offset(500, 0),
+      );
+      await tester.pumpAndSettle();
+
+      // 条目不应消失，应显示提示
+      expect(find.text('任务已完成，无需重复操作'), findsOneWidget);
     });
   });
 }

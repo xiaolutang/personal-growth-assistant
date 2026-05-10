@@ -96,6 +96,50 @@ Future<void> _pumpNotesPage(
   await tester.pump();
 }
 
+// Tracking NotesNotifier for debounce tests
+class _TrackingNotesNotifier extends NotesNotifier {
+  final List<Entry> _entries;
+  int fetchNotesCallCount = 0;
+  final List<String> searchNotesCalls = [];
+
+  _TrackingNotesNotifier({required List<Entry> entries})
+      : _entries = entries;
+
+  @override
+  NotesState build() => NotesState(entries: _entries);
+
+  @override
+  Future<void> fetchNotes() async {
+    fetchNotesCallCount++;
+  }
+
+  @override
+  Future<void> searchNotes(String query) async {
+    searchNotesCalls.add(query);
+  }
+}
+
+Future<_TrackingNotesNotifier> _pumpNotesPageTracking(
+  WidgetTester tester, {
+  List<Entry> entries = const [],
+}) async {
+  late _TrackingNotesNotifier notifier;
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        notesProvider.overrideWith(() {
+          return notifier = _TrackingNotesNotifier(entries: entries);
+        }),
+      ],
+      child: MaterialApp.router(
+        routerConfig: _testRouter(),
+      ),
+    ),
+  );
+  await tester.pump();
+  return notifier;
+}
+
 void main() {
   group('NotesPage', () {
     testWidgets('空列表显示空状态引导文案', (WidgetTester tester) async {
@@ -162,6 +206,64 @@ void main() {
       await _pumpNotesPage(tester, entries: []);
 
       expect(find.text('笔记'), findsOneWidget);
+    });
+  });
+
+  group('NotesPage 搜索防抖', () {
+    testWidgets('输入搜索文字 300ms 后触发 searchNotes', (tester) async {
+      final notifier = await _pumpNotesPageTracking(
+        tester,
+        entries: [_makeNote(id: '1')],
+      );
+
+      await tester.enterText(find.byType(TextField), 'Flutter');
+
+      // 300ms 内不应触发
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(notifier.searchNotesCalls, isEmpty);
+
+      // 300ms 后触发
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(notifier.searchNotesCalls, ['Flutter']);
+    });
+
+    testWidgets('清空搜索框立即触发 fetchNotes', (tester) async {
+      final notifier = await _pumpNotesPageTracking(
+        tester,
+        entries: [_makeNote(id: '1')],
+      );
+
+      // 输入搜索文字
+      await tester.enterText(find.byType(TextField), 'Flutter');
+      await tester.pump();
+
+      // 清空搜索框 → onChanged('') → immediateRun → fetchNotes
+      await tester.enterText(find.byType(TextField), '');
+      await tester.pump();
+
+      // fetchNotes: 1 from initState + 1 from clear
+      expect(notifier.fetchNotesCallCount, 2);
+    });
+
+    testWidgets('快速连续输入只触发最后一次 searchNotes', (tester) async {
+      final notifier = await _pumpNotesPageTracking(
+        tester,
+        entries: [_makeNote(id: '1')],
+      );
+
+      await tester.enterText(find.byType(TextField), 'F');
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.enterText(find.byType(TextField), 'Fl');
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.enterText(find.byType(TextField), 'Flu');
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // debounce 还未触发
+      expect(notifier.searchNotesCalls, isEmpty);
+
+      // 等 300ms 让最后一次 debounce 触发
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(notifier.searchNotesCalls, ['Flu']);
     });
   });
 }
