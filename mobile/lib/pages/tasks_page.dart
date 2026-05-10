@@ -40,8 +40,8 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   TaskFilter _currentFilter = TaskFilter.all;
   // 本地拖拽排序状态（不持久化）
   List<Entry> _reorderedEntries = [];
-  // 延迟删除的 Timer（用于撤销取消）
-  Timer? _pendingDeleteTimer;
+  // 延迟删除的 Timer Map（per-entry，支持多条目并行删除）
+  final Map<String, Timer> _pendingDeleteTimers = {};
 
   @override
   void initState() {
@@ -54,7 +54,9 @@ class _TasksPageState extends ConsumerState<TasksPage> {
 
   @override
   void dispose() {
-    _pendingDeleteTimer?.cancel();
+    for (final timer in _pendingDeleteTimers.values) {
+      timer.cancel();
+    }
     super.dispose();
   }
 
@@ -178,8 +180,8 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   /// 右滑删除（延迟删除 + SnackBar 撤销）
   /// 撤销期内不调用后端 API，撤销只是取消延迟删除
   void _handleDeleteDismiss(Entry entry, int globalIndex) {
-    // 取消前一个待删除 Timer
-    _pendingDeleteTimer?.cancel();
+    // 取消该条目的前一个待删除 Timer（如有）
+    _pendingDeleteTimers[entry.id]?.cancel();
 
     // 从本地列表移除
     setState(() {
@@ -187,7 +189,8 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     });
 
     // 延迟 4 秒后才真正调用删除 API
-    _pendingDeleteTimer = Timer(const Duration(seconds: 4), () async {
+    _pendingDeleteTimers[entry.id] = Timer(const Duration(seconds: 4), () async {
+      _pendingDeleteTimers.remove(entry.id);
       final success =
           await ref.read(entryListProvider.notifier).deleteEntry(entry.id);
       if (!success && mounted) {
@@ -209,8 +212,8 @@ class _TasksPageState extends ConsumerState<TasksPage> {
           label: '撤销',
           onPressed: () {
             // 撤销：取消延迟删除 + 恢复到本地列表原位
-            _pendingDeleteTimer?.cancel();
-            _pendingDeleteTimer = null;
+            _pendingDeleteTimers[entry.id]?.cancel();
+            _pendingDeleteTimers.remove(entry.id);
             _rollbackEntry(entry, globalIndex);
           },
         ),

@@ -32,8 +32,8 @@ class InboxPage extends ConsumerStatefulWidget {
 }
 
 class _InboxPageState extends ConsumerState<InboxPage> {
-  // 延迟删除的 Timer（用于撤销取消）
-  Timer? _pendingDeleteTimer;
+  // 延迟删除的 Timer Map（per-entry）
+  final Map<String, Timer> _pendingDeleteTimers = {};
 
   @override
   void initState() {
@@ -45,7 +45,9 @@ class _InboxPageState extends ConsumerState<InboxPage> {
 
   @override
   void dispose() {
-    _pendingDeleteTimer?.cancel();
+    for (final timer in _pendingDeleteTimers.values) {
+      timer.cancel();
+    }
     super.dispose();
   }
 
@@ -122,20 +124,25 @@ class _InboxPageState extends ConsumerState<InboxPage> {
   // ---- 滑动删除操作 ----
 
   /// 处理左滑删除（延迟删除 + SnackBar 撤销）
-  /// 撤销期内不调用后端 API，撤销只是取消延迟删除
+  /// 立即从 provider state 移除（触发 UI 更新），4 秒后才调用后端 API
   void _handleDeleteDismiss(Entry entry, int index) {
     final originalEntry = entry;
     final originalIndex = index;
 
-    // 取消前一个待删除 Timer
-    _pendingDeleteTimer?.cancel();
+    // 取消该条目的前一个待删除 Timer
+    _pendingDeleteTimers[entry.id]?.cancel();
+
+    // 立即从 provider state 移除（乐观更新）
+    ref.read(inboxProvider.notifier).removeEntryLocally(entry.id);
 
     // 延迟 4 秒后才真正调用删除 API
-    _pendingDeleteTimer = Timer(const Duration(seconds: 4), () async {
+    _pendingDeleteTimers[entry.id] = Timer(const Duration(seconds: 4), () async {
+      _pendingDeleteTimers.remove(entry.id);
       final success =
-          await ref.read(inboxProvider.notifier).deleteEntry(entry.id);
+          await ref.read(inboxProvider.notifier).deleteEntryFromBackend(entry.id);
       if (!success && mounted) {
-        // API 失败：provider 会自动回滚
+        // API 失败：恢复条目到原位
+        ref.read(inboxProvider.notifier).restoreEntry(originalEntry, originalIndex);
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('删除失败，请重试')),
@@ -152,8 +159,8 @@ class _InboxPageState extends ConsumerState<InboxPage> {
           label: '撤销',
           onPressed: () {
             // 撤销：取消延迟删除 + 恢复到 provider 列表原位
-            _pendingDeleteTimer?.cancel();
-            _pendingDeleteTimer = null;
+            _pendingDeleteTimers[entry.id]?.cancel();
+            _pendingDeleteTimers.remove(entry.id);
             ref.read(inboxProvider.notifier).restoreEntry(originalEntry, originalIndex);
           },
         ),

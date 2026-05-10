@@ -149,9 +149,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'settings',
             pageBuilder: (context, state) {
               const child = SettingsPage();
-              if (Platform.isIOS) {
-                return CupertinoPage(key: state.pageKey, child: child);
-              }
+              // 设置页统一使用 fade 过渡（不需要 swipe back）
               return CustomTransitionPage(
                 key: state.pageKey,
                 child: child,

@@ -146,6 +146,23 @@ class InboxNotifier extends Notifier<InboxState> {
     state = state.copyWith(entries: entries);
   }
 
+  /// 仅从本地 state 移除条目（不调用 API，用于延迟删除模式）
+  void removeEntryLocally(String entryId) {
+    final updatedEntries = state.entries.where((e) => e.id != entryId).toList();
+    state = state.copyWith(entries: updatedEntries);
+  }
+
+  /// 仅调用后端删除 API（不做本地状态变更，用于延迟删除模式）
+  Future<bool> deleteEntryFromBackend(String entryId) async {
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.deleteEntry<Map<String, dynamic>>(id: entryId);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// 设置新建条目文本
   void setNewEntryText(String text) {
     state = state.copyWith(newEntryText: text);
