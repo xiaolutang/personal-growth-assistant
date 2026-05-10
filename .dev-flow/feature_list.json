@@ -3,13 +3,15 @@
   "project": "personal-growth-assistant",
   "status": "active",
   "updated_at": "2026-05-10",
-  "active_requirement_cycle": {
-    "id": "R054",
-    "name": "fab-hybrid-upgrade",
-    "status": "active",
-    "branch": "feat/R054-fab-hybrid-upgrade"
-  },
   "archived_requirement_cycles": [
+    {
+      "id": "R054",
+      "name": "fab-hybrid-upgrade",
+      "status": "completed",
+      "archive_dir": "_archive/R054_fab-hybrid-upgrade",
+      "total_tasks": 3,
+      "completed_at": "2026-05-10"
+    },
     {
       "id": "R053",
       "name": "today-command-bar",
@@ -92,116 +94,5 @@
     }
   ],
   "archived_phases": [],
-  "workflow": {
-    "name": "XLFoundry",
-    "mode": "B",
-    "runtime": "skill_orchestrated",
-    "review_provider": "codex_plugin",
-    "audit_provider": "codex_plugin",
-    "risk_provider": "codex_plugin"
-  },
-  "features": [
-    {
-      "id": "F01",
-      "phase": "fab-core",
-      "module": "mobile/widgets",
-      "name": "HybridFAB 混合模式升级",
-      "description": "将 QuickCaptureFAB 升级为展开式混合 FAB，提供 3 个选项：\n1. 记灵感 — 直接创建 inbox 条目（复用现有 createInboxEntry）\n2. 建任务 — 弹出任务创建 BottomSheet（参考 QuickActions.CreateTaskSheet）\n3. AI 智能创建 — 弹出输入框，调用 commandBarProvider.executeCommand，内联展示结果\n\n参考已有 QuickActions 组件的展开动画和布局模式，统一交互风格。",
-      "verification": "F1",
-      "depends_on": [],
-      "status": "completed",
-      "priority": "P0",
-      "started_at": "2026-05-10T16:00:00+08:00",
-      "completed_at": "2026-05-10T16:25:00+08:00",
-      "commit": "a3faa1e",
-      "summary": "HybridFAB 混合模式升级完成：3 子按钮（灵感/任务/AI）+ 展开动画 + 错误处理 + 全局结果监听",
-      "evidence_file": ".dev-flow/evidence/F01.md",
-      "acceptance_criteria": [
-        "FAB 点击展开为 3 个子按钮（灵感/任务/AI），动画流畅",
-        "记灵感：直接创建 inbox 条目，toast 提示成功",
-        "建任务：弹出 CreateTaskSheet，输入标题后创建 task 条目",
-        "AI 智能创建：弹出输入框，提交后调用 commandBarProvider，内联展示结果（成功 toast / AI 回答 / redirect 跳转链接）",
-        "收起动画正常，点击空白区域自动收起",
-        "可拖动吸附功能保持（DraggableFAB 包装）",
-        "三个入口后端调用失败时均有用户可见错误提示（toast 或内联错误条），不允许静默失败",
-        "快速连续点击不会触发重复请求（防抖或 loading 态）"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        { "type": "manual", "description": "验证 FAB 三个入口正常流程", "scenarios": ["灵感创建成功+toast", "任务创建成功+列表刷新", "AI 命令返回内联结果"] },
-        { "type": "manual", "description": "验证失败分支", "scenarios": ["后端不可用时灵感创建失败提示", "AI 命令超时/空结果错误展示", "快速连续点击不重复提交"] },
-        { "type": "manual", "description": "验证展开/收起交互", "scenarios": ["点击空白收起", "切换 tab 后 FAB 状态重置", "展开态切后台再返回"] }
-      ],
-      "files": [
-        "mobile/lib/widgets/quick_capture_fab.dart",
-        "mobile/lib/widgets/quick_actions.dart"
-      ]
-    },
-    {
-      "id": "F02",
-      "phase": "inbox-cleanup",
-      "module": "mobile/pages",
-      "name": "移除 Inbox 页底部输入栏",
-      "description": "移除 Inbox 页底部的快速输入栏（_buildInputBar），Inbox 页回归浏览和管理定位。创建灵感统一走 FAB。\n\n调整布局：移除输入栏后，列表区域扩展到底部。如果列表为空，显示引导文案提示用户使用 FAB 创建灵感。",
-      "verification": "F1",
-      "depends_on": ["F01"],
-      "status": "completed",
-      "started_at": "2026-05-10T16:25:00+08:00",
-      "completed_at": "2026-05-10T16:30:00+08:00",
-      "commit": "f055575",
-      "summary": "移除 Inbox 页底部输入栏，更新空列表引导文案指向 FAB",
-      "evidence_file": null,
-      "priority": "P1",
-      "acceptance_criteria": [
-        "Inbox 页底部输入栏已移除",
-        "列表区域正常展示，无布局异常",
-        "空列表状态下显示引导提示（如：点击右下角按钮记录灵感）",
-        "Inbox 页其他功能（列表、滑动删除、跳转详情）不受影响"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        { "type": "manual", "description": "验证移除输入栏后的回归", "scenarios": ["列表正常展示和滚动", "滑动删除功能正常", "点击条目跳转详情正常"] },
-        { "type": "manual", "description": "验证空列表引导", "scenarios": ["空列表显示 FAB 引导文案", "FAB 创建后列表自动刷新"] }
-      ],
-      "files": [
-        "mobile/lib/pages/inbox_page.dart"
-      ]
-    },
-    {
-      "id": "S03",
-      "phase": "quality",
-      "module": "mobile",
-      "name": "R054 质量收口",
-      "description": "全量验证 R054 所有变更：HybridFAB 三个入口功能正确、Inbox 页清理完整、无回归问题。",
-      "verification": "F2",
-      "depends_on": ["F01", "F02"],
-      "status": "completed",
-      "started_at": "2026-05-10T16:30:00+08:00",
-      "completed_at": "2026-05-10T16:32:00+08:00",
-      "commit": "pending",
-      "summary": "全量验证通过：flutter analyze 0 issues, 1495 后端测试 passed, 923 前端测试 passed",
-      "priority": "P2",
-      "acceptance_criteria": [
-        "在 Today/Explore/Inbox/Notes 四个 tab 分别点击 FAB，展开动画和三个入口均正常",
-        "在 Today tab 点击 FAB 创建灵感，切换到 Inbox tab 确认列表已刷新",
-        "FAB AI 入口执行命令时 Today 命令栏不受影响（独立 SSE 连接）",
-        "Chat 页对话功能不受影响，消息收发正常",
-        "Inbox 页无输入栏残留，列表和删除功能正常",
-        "连续快速操作 FAB 各入口 10 次无布局溢出或状态异常"
-      ],
-      "risk_tags": [],
-      "files": []
-    }
-  ],
-  "summary": {
-    "total": 3,
-    "by_status": {
-      "completed": 3
-    },
-    "by_priority": {
-      "P0": 1,
-      "P1": 1,
-      "P2": 1
-    }
-  }
+  "features": []
 }

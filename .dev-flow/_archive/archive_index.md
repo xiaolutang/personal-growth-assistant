@@ -6,6 +6,16 @@
 
 ## 已完成需求包
 
+### R054: FAB 混合模式升级
+
+- 状态: 已完成
+- 分支: `feat/R054-fab-hybrid-upgrade`
+- 主题: 全局 FAB 从单一灵感记录升级为展开式混合模式（灵感/任务/AI），移除 Inbox 页输入栏
+- 目录: `R054_fab-hybrid-upgrade/`
+- 完成时间: 2026-05-10
+- 任务数: 3 (F01, F02, S03)
+- 验证: flutter analyze 0 + flutter test 15 + pytest 1495 + vitest 923 + simplify 收敛
+
 ### R053: Today 页智能命令栏
 
 - 状态: 已完成
