@@ -1,58 +1,63 @@
 # 项目说明
 
 > 项目：personal-growth-assistant
-> 版本：v0.53.0
-> 状态：进行中（R053）
-> 活跃分支：feat/R053-today-command-bar
+> 版本：v0.54.0
+> 状态：进行中（R054）
+> 活跃分支：feat/R054-fab-hybrid-upgrade
 
 ## 当前范围
 
-R053 Today 页智能命令栏：将 Today 页底部输入栏从 AI 聊天入口改为智能命令栏（Command Bar），实现「输入 → AI 意图识别 → 内联结果」的原子操作模式。
+R054 FAB 混合模式升级：将全局 FAB 从单一灵感记录升级为混合模式（灵感/任务/AI 智能创建），同时移除 Inbox 页底部输入栏消除功能冗余。
 
 ### 核心设计决策
 
-真实使用验收（R052）发现 Today 页输入栏交互混乱：
-- 输入后无即时反馈（对话内容藏在日知 tab）
-- 与日知页共享 chatProvider 导致消息出现在两个页面
-- FAB 和输入栏功能重叠但行为不同
+决策记录：`.dev-flow/decisions/2026-05-10--fab-upgrade-and-input-consolidation.md`
 
-**解决方案：三个入口职责清晰分离**
+**方案 C（混合模式）**：FAB 展开后提供 3 个选项：
 
-| 入口 | 职责 | 交互模式 |
+| 选项 | 行为 | 实现方式 |
 |------|------|---------|
-| Today 命令栏 | 快速执行（创建任务/记录/提问） | 输入→内联结果，无对话历史 |
-| 日知 | 深度 AI 对话 | 全屏聊天 |
-| FAB | 快速记录灵感 | 最短路径，1 步完成 |
+| 记灵感 | 直接创建 inbox 条目 | 复用 createInboxEntry |
+| 建任务 | 弹出任务创建 Sheet | 参考 QuickActions.CreateTaskSheet |
+| AI 智能创建 | AI 意图识别 + 内联结果 | 复用 commandBarProvider（R053） |
 
-### Phase 1: CommandBar Provider（1 task）
+### 输入入口整合
 
-1. **F01 CommandBar Provider**：独立 Provider，每次命令无状态，POST /chat + page_type='command'
+| 入口 | 决策 | 理由 |
+|------|------|------|
+| FAB | 升级为混合模式 | 全局快速入口 |
+| Today 命令栏 | 保留 | 今日视角差异化 |
+| Chat 对话 | 保留 | 深度对话场景不同 |
+| Inbox 页输入栏 | 移除 | 与 FAB 灵感功能重复 |
 
-### Phase 2: UI + 后端优化（2 tasks）
+### Phase 1: FAB 组件升级（1 task）
 
-2. **F02 Today 页命令栏 UI**：替换聊天区域，内联结果展示
-3. **B01 后端 command 模式提示词**：Agent 更直接、不追问
+1. **F01 HybridFAB 混合模式升级**：展开式 FAB，3 个选项（灵感/任务/AI）
+
+### Phase 2: 清理（1 task）
+
+2. **F02 移除 Inbox 页底部输入栏**
 
 ### Phase 3: 质量收口（1 task）
 
-4. **S03 全量验证**
+3. **S03 全量验证**
 
 ## 技术约束
 
-- F01 新建独立 Provider，不修改 chatProvider
-- F02 移除 Today 页对 chatProvider 的全部依赖
-- B01 仅修改 Agent 提示词，不涉及 API 变更
-- POST /chat 接口不变，仅新增 page_type='command' 使用场景
-- FAB（QuickCaptureFAB）保持不变
+- 纯 Flutter 前端变更，不涉及后端
+- 复用 commandBarProvider（R053 已交付）驱动 AI 入口
+- 参考已有 QuickActions 组件的展开动画模式
+- 保持 DraggableFAB 可拖动吸附功能
+- 无 network/auth/first_use 风险
 
 ## 统计
 
 | 指标 | 值 |
 |------|-----|
-| 总任务数 | 4 |
-| P0 | 2（F01, F02）|
-| P2 | 1（B01）|
-| P3 | 1（S03）|
+| 总任务数 | 3 |
+| P0 | 1（F01）|
+| P1 | 1（F02）|
+| P2 | 1（S03）|
 
 ## workflow
 
