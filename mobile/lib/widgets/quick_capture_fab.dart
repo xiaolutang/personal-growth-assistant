@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/theme.dart';
 import '../providers/entry_provider.dart';
 import '../providers/today_provider.dart';
-import 'quick_actions.dart' show CreateTaskSheet;
+import 'create_task_sheet.dart' show CreateTaskSheet;
 
 // ============================================================
 // QuickCaptureFAB - 全局混合浮动按钮（展开式）
@@ -164,7 +164,7 @@ class QuickCaptureFABState extends ConsumerState<QuickCaptureFAB>
     );
   }
 
-  /// 构建子按钮（标签 + 圆形图标），参考 QuickActions._buildSubButton
+  /// 构建子按钮（标签 + 圆形图标）
   Widget _buildSubButton({
     required String label,
     required IconData icon,

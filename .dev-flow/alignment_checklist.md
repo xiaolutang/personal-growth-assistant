@@ -18,3 +18,8 @@
 - [x] F02: 点我的→回顾 → /review；我的→目标 → /goals；我的→设置 → /settings（高亮我的 Tab）
 - [x] F02: 点对话 Tab → 进入 chat 页面（完整 AI 对话）
 - [x] F02: flutter analyze + flutter test 通过
+- [x] F03: quick_actions.dart 已删除，QuickActions 零引用
+- [x] F03: CreateTaskSheet 迁出为独立文件 create_task_sheet.dart
+- [x] F03: 建任务失败时 BottomSheet 保持可重试（回归 F01 契约）
+- [x] F03: 记灵感/建任务成功后 Today 自动刷新（回归 F01 契约，有自动化断言）
+- [x] F03: flutter analyze + flutter test 通过

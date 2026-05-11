@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:rizhi/models/entry.dart';
+import 'package:rizhi/models/morning_digest.dart';
 import 'package:rizhi/providers/auth_provider.dart';
 import 'package:rizhi/providers/entry_provider.dart';
+import 'package:rizhi/providers/today_provider.dart';
 import 'package:rizhi/services/api_client.dart';
 import 'package:rizhi/widgets/bottom_nav.dart';
 import 'package:rizhi/widgets/quick_capture_fab.dart';
@@ -632,4 +635,98 @@ void main() {
       expect(fakeApiClient.lastCreateEntryData!['title'], '前后有空格');
     });
   });
+
+  group('Today 刷新回归', () {
+    int loadDataCallCount = 0;
+
+    setUp(() {
+      loadDataCallCount = 0;
+    });
+
+    /// 构建带有 loadData 拦截的测试 Widget
+    Future<void> _buildTestApp(WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            apiClientProvider.overrideWithValue(fakeApiClient),
+            todayProvider.overrideWith(() => _FakeTodayNotifier(() {
+                  loadDataCallCount++;
+                })),
+          ],
+          child: MaterialApp.router(
+            routerConfig: _testRouter(
+              child: const Scaffold(body: Text('Tasks')),
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('记灵感成功后触发 todayProvider.loadData',
+        (WidgetTester tester) async {
+      await _buildTestApp(tester);
+
+      // 展开 FAB
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      // 点击记灵感
+      await tester.tap(find.byIcon(Icons.lightbulb_outline));
+      await tester.pumpAndSettle();
+
+      // 输入并提交
+      await tester.enterText(find.byType(TextField), '灵感内容');
+      await tester.pump();
+      await tester.tap(find.text('保存'));
+      await tester.pumpAndSettle();
+
+      // 验证 loadData 被调用
+      expect(loadDataCallCount, greaterThan(0),
+          reason: '记灵感成功后应调用 todayProvider.loadData()');
+    });
+
+    testWidgets('建任务成功后触发 todayProvider.loadData',
+        (WidgetTester tester) async {
+      await _buildTestApp(tester);
+
+      // 展开 FAB
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      // 点击建任务
+      await tester.tap(find.byIcon(Icons.add_task));
+      await tester.pumpAndSettle();
+
+      // 输入并提交
+      await tester.enterText(find.byType(TextField), '新任务');
+      await tester.pump();
+      await tester.tap(find.text('创建'));
+      await tester.pumpAndSettle();
+
+      // 验证 loadData 被调用
+      expect(loadDataCallCount, greaterThan(0),
+          reason: '建任务成功后应调用 todayProvider.loadData()');
+    });
+  });
+}
+
+/// Fake TodayNotifier，拦截 loadData 调用
+class _FakeTodayNotifier extends TodayNotifier {
+  final void Function() onLoadData;
+
+  _FakeTodayNotifier(this.onLoadData);
+
+  @override
+  TodayState build() {
+    return TodayState(
+      todayTasks: [],
+      recentEntries: [],
+      morningDigest: const MorningDigestState(),
+    );
+  }
+
+  @override
+  Future<void> loadData() async {
+    onLoadData();
+  }
 }

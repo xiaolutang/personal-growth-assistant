@@ -8,7 +8,7 @@
 
 | 需求包 | 状态 | 任务数 |
 |--------|------|--------|
-| R057 导航重构 | active | 2 tasks (2 completed) |
+| R057 导航重构 | active | 4 tasks (3 completed, 1 pending) |
 
 ### R057: 导航重构 — 模块映射
 
@@ -16,6 +16,8 @@
 |---------|------|------|------|------|
 | F01 | mobile | 命令栏体系下线 + Today 纯仪表盘 + FAB 简化 | completed | today_page.dart, quick_capture_fab.dart, bottom_nav.dart, auth_provider.dart |
 | F02 | mobile | 底部 Tab 重构 + 菜单精简 | completed | bottom_nav.dart, bottom_nav_test.dart |
+| F03 | mobile | QuickActions 死代码清理 + CreateTaskSheet 迁出 | completed | create_task_sheet.dart, quick_capture_fab.dart, quick_capture_fab_test.dart |
+| F04 | mobile | 路由常量提取 + build 优化 + doneTasks 去重 | pending | app_routes.dart, bottom_nav.dart, today_page.dart |
 
 ## 归档需求包
 
@@ -41,4 +43,4 @@
 |------|--------|------|
 | 后端测试 | 1495 passed | 全绿 |
 | 前端测试 | 923 passed | 全绿 |
-| Flutter 测试 | 16 passed (bottom_nav) | 全绿 |
+| Flutter 测试 | 19 passed (quick_capture_fab) + 16 passed (bottom_nav) | 全绿 |
