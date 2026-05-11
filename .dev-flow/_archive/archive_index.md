@@ -6,6 +6,16 @@
 
 ## 已完成需求包
 
+### R056: 品牌重命名为「日知」
+
+- 状态: 已完成
+- 分支: `chore/R056-brand-rename-to-rizhi`
+- 主题: Flutter 包名重构 + 展示名称统一 + 后端/前端/部署/文档品牌统一 + 质量收口
+- 目录: `R056_brand-rename-to-rizhi/`
+- 完成时间: 2026-05-11
+- 任务数: 4 (S01, F01, S02, S03)
+- 验证: flutter analyze 0 + backend 1495 tests + frontend 923 tests + flutter 648 tests + 旧品牌名 grep 清零
+
 ### R055: 交互基础补齐
 
 - 状态: 已完成

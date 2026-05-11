@@ -1,0 +1,332 @@
+{
+  "version": "1.4",
+  "project": "personal-growth-assistant",
+  "status": "active",
+  "updated_at": "2026-05-11",
+  "archived_requirement_cycles": [
+    {
+      "id": "R055",
+      "name": "interaction-basics",
+      "status": "completed",
+      "archive_dir": "_archive/R055_interaction-basics",
+      "total_tasks": 7,
+      "completed_at": "2026-05-10"
+    },
+    {
+      "id": "R054",
+      "name": "fab-hybrid-upgrade",
+      "status": "completed",
+      "archive_dir": "_archive/R054_fab-hybrid-upgrade",
+      "total_tasks": 3,
+      "completed_at": "2026-05-10"
+    },
+    {
+      "id": "R053",
+      "name": "today-command-bar",
+      "status": "completed",
+      "archive_dir": "_archive/R053_today-command-bar",
+      "total_tasks": 4,
+      "completed_at": "2026-05-10"
+    },
+    {
+      "id": "R052",
+      "name": "chat-isolation-and-today-input",
+      "status": "completed",
+      "archive_dir": "_archive/R052_chat-isolation-and-today-input",
+      "total_tasks": 3,
+      "completed_at": "2026-05-09"
+    },
+    {
+      "id": "R051",
+      "name": "code-quality-optimization",
+      "status": "completed",
+      "archive_dir": "_archive/R051_code-quality-optimization",
+      "total_tasks": 12,
+      "completed_at": "2026-05-09"
+    },
+    {
+      "id": "R050",
+      "name": "flutter-daily-usable",
+      "status": "completed",
+      "archive_dir": "_archive/R050_flutter-daily-usable",
+      "total_tasks": 6,
+      "completed_at": "2026-05-08"
+    },
+    {
+      "id": "R049",
+      "name": "eval-operationalization",
+      "status": "completed",
+      "archive_dir": "_archive/R049_eval-operationalization",
+      "total_tasks": 7,
+      "completed_at": "2026-05-07"
+    },
+    {
+      "id": "R048",
+      "name": "creation-experience-upgrade",
+      "status": "completed",
+      "archive_dir": "_archive/R048_creation-experience-upgrade",
+      "total_tasks": 5,
+      "completed_at": "2026-05-03"
+    },
+    {
+      "id": "R047",
+      "name": "task-explore-reboundary",
+      "status": "completed",
+      "archive_dir": "_archive/R047_task-explore-reboundary",
+      "total_tasks": 13,
+      "completed_at": "2026-04-30"
+    },
+    {
+      "id": "R046",
+      "name": "chat-panel-refactor",
+      "status": "completed",
+      "archive_dir": "_archive/R046_chat-panel-refactor",
+      "total_tasks": 5,
+      "completed_at": "2026-04-29"
+    },
+    {
+      "id": "R045",
+      "name": "eval-html-report",
+      "status": "completed",
+      "archive_dir": "_archive/R045_eval-html-report",
+      "total_tasks": 3,
+      "completed_at": "2026-04-29"
+    },
+    {
+      "id": "R044",
+      "name": "unified-react-agent",
+      "status": "completed",
+      "archive_dir": "_archive/R044_unified-react-agent",
+      "total_tasks": 14,
+      "completed_at": "2026-04-29"
+    }
+  ],
+  "archived_phases": [],
+  "active_requirement_cycle": {
+    "id": "R056",
+    "name": "brand-rename-to-rizhi",
+    "branch": "chore/R056-brand-rename-to-rizhi",
+    "status": "active"
+  },
+  "workflow": {
+    "name": "品牌重命名",
+    "mode": "B",
+    "runtime": "skill_orchestrated",
+    "review_provider": "codex_plugin",
+    "audit_provider": "codex_plugin",
+    "risk_provider": "codex_plugin"
+  },
+  "summary": {
+    "total": 4,
+    "by_status": {
+      "pending": 0,
+      "in_progress": 0,
+      "completed": 4,
+      "blocked": 0,
+      "cancelled": 0
+    }
+  },
+  "features": [
+    {
+      "id": "S01",
+      "phase": 1,
+      "module": "shared",
+      "name": "Flutter 包名 + 导入路径重构",
+      "description": "将 Flutter 包名从 growth_assistant 改为 rizhi。分步执行：(1) pubspec.yaml 改名 + 全量 import 替换 (2) Android applicationId/namespace/目录重组 (3) iOS/macOS bundle identifier 更新 (4) 桌面平台（Windows/Linux/OHOS）配置更新 (5) Web manifest 更新。",
+      "verification": "L1",
+      "depends_on": [],
+      "status": "completed",
+      "priority": 1,
+      "started_at": "2026-05-11",
+      "completed_at": "2026-05-11",
+      "commit": "c5f64e7",
+      "summary": "Flutter 包名从 growth_assistant 重构为 rizhi，81 文件变更，54 个 Dart import 路径替换，全平台配置更新",
+      "acceptance_criteria": [
+        "pubspec.yaml name=rizhi，description 含「日知」",
+        "grep -E 'package:growth_assistant' mobile/lib/ mobile/test/ mobile/integration_test/ 返回 0 结果",
+        "Android build.gradle namespace='com.rizhi.app' applicationId='com.rizhi.app'",
+        "Android MainActivity.kt 在 kotlin/com/rizhi/app/ 目录下，package com.rizhi.app",
+        "iOS project.pbxproj PRODUCT_BUNDLE_IDENTIFIER = com.rizhi.app（含 RunnerTests）",
+        "iOS Info.plist CFBundleName = 日知",
+        "macOS AppInfo.xcconfig PRODUCT_NAME = 日知, PRODUCT_BUNDLE_IDENTIFIER = com.rizhi.app",
+        "Windows Runner.rc 和 main.cpp 中 growth_assistant 改为 rizhi",
+        "Linux my_application.cc 中窗口标题改为 日知",
+        "OHOS app.json5 bundleName = com.rizhi.app，oh-package.json5 name = rizhi",
+        "OHOS 所有 string.json 中 app_name 改为 日知",
+        "Web manifest.json name='rizhi' short_name='rizhi' description 含「日知」",
+        "Web index.html title = 日知，apple-mobile-web-app-title = 日知",
+        "flutter analyze 通过，0 error"
+      ],
+      "risk_tags": ["config"],
+      "test_tasks": [
+        "flutter analyze 通过 — 验证所有 import 路径正确",
+        "Android 构建：applicationId 变更后 debug APK 可正常安装启动",
+        "iOS 构建：bundle id 变更后可正常编译运行",
+        "Web 构建：manifest.json + index.html 变更后 PWA 名称展示为「日知」",
+        "首启验证：新包名安装后首次打开不崩溃",
+        "现有用户升级说明：applicationId/bundleId 变更后已安装用户需卸载重装（个人开发项目，无应用商店发布）",
+        "macOS/Windows/Linux/OHOS：平台配置已更新，但无 CI 验证，执行时手动抽检一个平台确认"
+      ],
+      "files": [
+        "mobile/pubspec.yaml",
+        "mobile/android/app/build.gradle",
+        "mobile/android/app/src/main/AndroidManifest.xml",
+        "mobile/android/app/src/main/kotlin/com/growth/growth_assistant/MainActivity.kt",
+        "mobile/ios/Runner/Info.plist",
+        "mobile/ios/Runner.xcodeproj/project.pbxproj",
+        "mobile/macos/Runner/Configs/AppInfo.xcconfig",
+        "mobile/windows/CMakeLists.txt",
+        "mobile/windows/runner/Runner.rc",
+        "mobile/windows/runner/main.cpp",
+        "mobile/linux/CMakeLists.txt",
+        "mobile/linux/runner/my_application.cc",
+        "mobile/ohos/AppScope/app.json5",
+        "mobile/ohos/oh-package.json5",
+        "mobile/ohos/AppScope/resources/base/element/string.json",
+        "mobile/ohos/entry/src/main/resources/base/element/string.json",
+        "mobile/ohos/entry/src/main/resources/en_US/element/string.json",
+        "mobile/ohos/entry/src/main/resources/zh_CN/element/string.json",
+        "mobile/web/manifest.json",
+        "mobile/web/index.html",
+        "mobile/lib/ (所有 .dart import 路径)",
+        "mobile/test/ (所有 .dart import 路径)",
+        "mobile/integration_test/ (所有 .dart import 路径)"
+      ]
+    },
+    {
+      "id": "F01",
+      "phase": 2,
+      "module": "mobile",
+      "name": "Mobile 展示名称统一",
+      "description": "统一移动端所有面向用户的展示名称为「日知」，包括平台显示名、常量配置等。不含桌面平台（已在 S01 处理）。",
+      "verification": "F2",
+      "depends_on": ["S01"],
+      "status": "completed",
+      "priority": 2,
+      "started_at": "2026-05-11",
+      "completed_at": "2026-05-11",
+      "commit": "c5f64e7",
+      "summary": "S01 执行时已覆盖全部 F01 验收条件：strings.xml、Info.plist、constants.dart、settings_page、login_page 均已更新为日知",
+      "acceptance_criteria": [
+        "Android strings.xml app_name = 日知",
+        "iOS CFBundleDisplayName = 日知",
+        "mobile/lib/config/constants.dart 中产品名使用「日知」",
+        "Settings 页面展示「日知」作为应用名",
+        "login_page.dart 等页面中产品名使用「日知」",
+        "grep -E '旧品牌名|Personal Growth Assistant' mobile/lib/ 返回 0 结果"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "Android 启动后应用名显示为「日知」",
+        "iOS 启动后应用名显示为「日知」",
+        "Settings 页展示「日知」版本信息",
+        "搜索 mobile/lib/ 确认无旧品牌名残留"
+      ],
+      "files": [
+        "mobile/android/app/src/main/res/values/strings.xml",
+        "mobile/ios/Runner/Info.plist",
+        "mobile/lib/config/constants.dart",
+        "mobile/lib/main.dart",
+        "mobile/lib/pages/settings_page.dart",
+        "mobile/lib/pages/login_page.dart"
+      ]
+    },
+    {
+      "id": "S02",
+      "phase": 2,
+      "module": "shared",
+      "name": "后端+前端+部署+文档 名称统一",
+      "description": "统一后端、前端、部署脚本和文档中的产品名称为「日知」。不改用户数据文件和归档快照。OpenAPI 生成产物（api-schema.json、api.generated.ts）不手改，由 npm run gen:types 重新生成。",
+      "verification": "L1",
+      "depends_on": ["S01"],
+      "status": "completed",
+      "priority": 2,
+      "started_at": "2026-05-11",
+      "completed_at": "2026-05-11",
+      "commit": "d015910",
+      "summary": "后端+前端+部署+文档品牌统一为日知，38 文件变更，npm run gen:types 重新生成，全部测试通过",
+        "backend/pyproject.toml name 使用 rizhi",
+        "backend/app/main.py title/description 使用「日知」",
+        "backend/app/agent/prompts.py Agent 自我介绍为「日知」",
+        "backend/app/core/config.py 项目名使用「日知」",
+        "backend/app/mcp/README.md 产品名使用「日知」",
+        "e2e/package.json name 使用 rizhi",
+        "frontend/index.html title 包含「日知」",
+        "frontend/vite.config.ts PWA manifest name 使用「日知」（如有）",
+        "frontend/design-system.md 产品名使用「日知」",
+        "frontend/src/types/api.generated.ts 由 npm run gen:types 重新生成（类型权威）",
+        "frontend/src/types/api-schema.json 同上（中间生成产物，不手改）",
+        "deploy/docker-compose.yml 注释和 deploy.sh DISPLAY_NAME 使用「日知」",
+        "CLAUDE.md 项目描述使用「日知」",
+        "architecture.md 项目名使用「日知」，版本号更新为 v0.56.0",
+        "README.md 项目描述使用「日知」",
+        "docs/ 下所有 .md 文件产品名使用「日知」",
+        "grep -E '旧品牌名|Personal Growth Assistant' --exclude-dir=data --exclude-dir=.data-backup* --exclude-dir=_archive --exclude-dir=node_modules 返回 0 结果"
+      ],
+      "risk_tags": [],
+      "test_tasks": [
+        "npm run gen:types 执行成功，api.generated.ts 更新",
+        "npm run build 成功无类型错误",
+        "grep 验证后端/前端/部署/文档中无旧品牌名",
+        "硬性保护：/growth/ 部署路径和 growth 功能 API 路径（如 /review/growth-curve）不被改动"
+      ],
+      "files": [
+        "backend/pyproject.toml",
+        "backend/app/main.py",
+        "backend/app/agent/prompts.py",
+        "backend/app/agent/schemas.py",
+        "backend/app/core/config.py",
+        "backend/app/routers/feedback.py",
+        "backend/app/mcp/README.md",
+        "backend/tests/unit/agent/test_agent_service.py",
+        "backend/tests/unit/agent/test_react_agent.py",
+        "backend/tests/integration/test_agent_e2e.py",
+        "backend/tests/eval/simulated_user.py",
+        "e2e/package.json",
+        "frontend/index.html",
+        "frontend/vite.config.ts",
+        "frontend/design-system.md",
+        "frontend/src/pages/tasks/__tests__/ProjectCard.test.tsx",
+        "deploy/docker-compose.yml",
+        "deploy/deploy.sh",
+        "CLAUDE.md",
+        ".dev-flow/architecture.md",
+        ".dev-flow/project_spec.md",
+        "README.md",
+        "docs/architecture.md",
+        "docs/product-design.md",
+        "docs/technical-architecture.md",
+        "docs/competitor-analysis.md"
+      ]
+    },
+    {
+      "id": "S03",
+      "phase": 3,
+      "module": "shared",
+      "name": "R056 质量收口",
+      "description": "纯验证任务：确认 S01/F01/S02 覆盖范围内的旧品牌名称已全部清零，构建和测试通过。不承担发现新遗漏的职责。",
+      "verification": "L1",
+      "depends_on": ["F01", "S02"],
+      "status": "completed",
+      "priority": 3,
+      "started_at": "2026-05-11",
+      "completed_at": "2026-05-11",
+      "summary": "质量收口完成：flutter analyze 0 error、backend 1495 tests、frontend 923 tests+build 通过、旧品牌名 grep 清零、/growth/ 和 growth-curve 硬性回归通过",
+      "acceptance_criteria": [
+        "flutter analyze 通过",
+        "flutter test 通过",
+        "backend pytest 通过",
+        "frontend npm run gen:types 通过（重新生成 api.generated.ts + api-schema.json）",
+        "frontend npm run build 通过",
+        "frontend npm run lint 通过",
+        "frontend npm run test:run 通过",
+        "mobile 目录内 grep -E 'package:growth_assistant' mobile/lib/ mobile/test/ mobile/integration_test/ 返回 0 结果",
+        "mobile 非 dart 目录 grep -E 'growth_assistant' mobile/android/ mobile/ios/ mobile/macos/ mobile/windows/ mobile/linux/ mobile/ohos/ mobile/web/ 返回 0 结果（AndroidManifest 等平台配置）",
+        "非 mobile 非 data 非 _archive 非 node_modules 目录 grep -E 'Personal Growth Assistant|旧品牌名' 返回 0 结果",
+        "硬性回归：grep -E '/growth/' deploy/ frontend/vite.config.ts 确认部署路径未变",
+        "硬性回归：grep -E 'growth.curve|growth-curve' backend/ 确认功能 API 路径未变"
+      ],
+      "risk_tags": []
+    }
+  ]
+}
