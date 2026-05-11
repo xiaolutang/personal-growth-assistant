@@ -119,9 +119,9 @@
   "summary": {
     "total": 4,
     "by_status": {
-      "pending": 2,
+      "pending": 1,
       "in_progress": 0,
-      "completed": 2,
+      "completed": 3,
       "blocked": 0,
       "cancelled": 0
     }
@@ -239,9 +239,12 @@
       "description": "统一后端、前端、部署脚本和文档中的产品名称为「日知」。不改用户数据文件和归档快照。OpenAPI 生成产物（api-schema.json、api.generated.ts）不手改，由 npm run gen:types 重新生成。",
       "verification": "L1",
       "depends_on": ["S01"],
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
-      "acceptance_criteria": [
+      "started_at": "2026-05-11",
+      "completed_at": "2026-05-11",
+      "commit": "d015910",
+      "summary": "后端+前端+部署+文档品牌统一为日知，38 文件变更，npm run gen:types 重新生成，全部测试通过",
         "backend/pyproject.toml name 使用 rizhi",
         "backend/app/main.py title/description 使用「日知」",
         "backend/app/agent/prompts.py Agent 自我介绍为「日知」",
