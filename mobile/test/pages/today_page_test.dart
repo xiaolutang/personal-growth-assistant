@@ -331,4 +331,49 @@ void main() {
       expect(trackingNotifier.loadDataCallCount, 2);
     });
   });
+
+  group('进度计数回归', () {
+    testWidgets('混合已完成/未完成任务时进度文案正确', (tester) async {
+      final tasks = [
+        Entry(id: '1', title: '任务A', category: 'task', status: 'complete'),
+        Entry(id: '2', title: '任务B', category: 'task', status: 'todo'),
+        Entry(id: '3', title: '任务C', category: 'task', status: 'complete'),
+        Entry(id: '4', title: '任务D', category: 'task', status: 'todo'),
+      ];
+      final state = TodayState(todayTasks: tasks);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            todayProvider.overrideWith(() => _FakeTodayNotifier(state)),
+          ],
+          child: const MaterialApp(home: TodayPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 2/4 completed → completionRate = 0.5 → doneTasks = (0.5 * 4).round() = 2
+      expect(find.text('已完成 2 / 4 个任务'), findsOneWidget);
+    });
+
+    testWidgets('全部完成时进度文案正确', (tester) async {
+      final tasks = [
+        Entry(id: '1', title: '任务A', category: 'task', status: 'complete'),
+        Entry(id: '2', title: '任务B', category: 'task', status: 'complete'),
+      ];
+      final state = TodayState(todayTasks: tasks);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            todayProvider.overrideWith(() => _FakeTodayNotifier(state)),
+          ],
+          child: const MaterialApp(home: TodayPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('已完成 2 / 2 个任务'), findsOneWidget);
+    });
+  });
 }

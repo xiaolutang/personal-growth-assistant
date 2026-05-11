@@ -55,13 +55,15 @@ class TodayState {
     this.morningDigest = const MorningDigestState(),
   });
 
+  /// 已完成任务数
+  int get completedTaskCount => todayTasks.where(
+        (e) => e.status == AppConstants.statusComplete,
+      ).length;
+
   /// 今日完成率 (0.0 ~ 1.0)
   double get completionRate {
     if (todayTasks.isEmpty) return 0.0;
-    final done = todayTasks.where(
-      (e) => e.status == AppConstants.statusComplete,
-    ).length;
-    return done / todayTasks.length;
+    return completedTaskCount / todayTasks.length;
   }
 
   TodayState copyWith({

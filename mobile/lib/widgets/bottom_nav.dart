@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../config/app_routes.dart';
 import 'draggable_fab.dart';
 import 'quick_capture_fab.dart';
 
@@ -32,7 +33,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
               title: const Text('回顾'),
               onTap: () {
                 Navigator.pop(context);
-                this.context.go('/review');
+                this.context.go(AppRoutes.review);
               },
             ),
             ListTile(
@@ -40,7 +41,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
               title: const Text('目标'),
               onTap: () {
                 Navigator.pop(context);
-                this.context.go('/goals');
+                this.context.go(AppRoutes.goals);
               },
             ),
             ListTile(
@@ -48,7 +49,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
               title: const Text('设置'),
               onTap: () {
                 Navigator.pop(context);
-                this.context.push('/settings');
+                this.context.push(AppRoutes.settings);
               },
             ),
           ],
@@ -57,44 +58,42 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
     );
   }
 
-  int _currentIndex() {
-    final location = GoRouterState.of(context).uri.path;
-    if (location.startsWith('/chat')) return 1;
-    if (location.startsWith('/tasks')) return 2;
-    if (location.startsWith('/explore') ||
-        location.startsWith('/notes') ||
-        location.startsWith('/inbox')) {
+  int _currentIndex(String location) {
+    if (location.startsWith(AppRoutes.chat)) return 1;
+    if (location.startsWith(AppRoutes.tasks)) return 2;
+    if (location.startsWith(AppRoutes.explore) ||
+        location.startsWith(AppRoutes.notes) ||
+        location.startsWith(AppRoutes.inbox)) {
       return 3;
     }
     return 0; // default: today
   }
 
-  bool _isOnMoreRoute() {
-    final location = GoRouterState.of(context).uri.path;
-    return location.startsWith('/review') ||
-        location.startsWith('/goals') ||
-        location.startsWith('/settings');
+  bool _isOnMoreRoute(String location) {
+    return location.startsWith(AppRoutes.review) ||
+        location.startsWith(AppRoutes.goals) ||
+        location.startsWith(AppRoutes.settings);
   }
 
   /// 判断当前路由是否应该显示 FAB
   /// 全局唯一 FAB，仅条目详情页和目标详情页隐藏
-  bool _shouldShowFab() {
-    final location = GoRouterState.of(context).uri.path;
-    if (location.startsWith('/entries/')) return false;
-    if (RegExp(r'^/goals/[^/]+$').hasMatch(location)) return false;
+  bool _shouldShowFab(String location) {
+    if (AppRoutes.isEntryDetail(location)) return false;
+    if (AppRoutes.isGoalDetail(location)) return false;
     return true;
   }
 
   @override
   Widget build(BuildContext context) {
-    final showFab = _shouldShowFab();
+    final location = GoRouterState.of(context).uri.path;
+    final showFab = _shouldShowFab(location);
 
     return Stack(
       children: [
         Scaffold(
           body: widget.child,
           bottomNavigationBar: NavigationBar(
-            selectedIndex: _isOnMoreRoute() ? 4 : _currentIndex(),
+            selectedIndex: _isOnMoreRoute(location) ? 4 : _currentIndex(location),
             onDestinationSelected: (index) {
               if (index == 4) {
                 _showMoreMenu();
@@ -102,13 +101,13 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
               }
               switch (index) {
                 case 0:
-                  context.go('/');
+                  context.go(AppRoutes.today);
                 case 1:
-                  context.go('/chat');
+                  context.go(AppRoutes.chat);
                 case 2:
-                  context.go('/tasks');
+                  context.go(AppRoutes.tasks);
                 case 3:
-                  context.go('/explore');
+                  context.go(AppRoutes.explore);
               }
             },
             destinations: const [

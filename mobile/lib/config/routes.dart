@@ -20,6 +20,7 @@ import '../pages/today_page.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
 import '../widgets/bottom_nav.dart';
+import 'app_routes.dart';
 
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -31,17 +32,17 @@ String? _authRedirect(Ref ref, GoRouterState state) {
         data: (s) => s,
       ) is AuthAuthenticated;
 
-  final isLoggingIn = state.uri.path == '/login';
-  final isRegistering = state.uri.path == '/register';
+  final isLoggingIn = state.uri.path == AppRoutes.login;
+  final isRegistering = state.uri.path == AppRoutes.register;
 
   // 未认证且不在登录/注册页 → 重定向到登录页
   if (!isAuthenticated && !isLoggingIn && !isRegistering) {
-    return '/login';
+    return AppRoutes.login;
   }
 
   // 已认证且在登录/注册页 → 重定向到首页
   if (isAuthenticated && (isLoggingIn || isRegistering)) {
-    return '/';
+    return AppRoutes.today;
   }
 
   return null;
@@ -55,16 +56,16 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
-    initialLocation: '/',
+    initialLocation: AppRoutes.today,
     refreshListenable: _AuthStateListener(ref),
     redirect: (context, state) => _authRedirect(ref, state),
     routes: [
       GoRoute(
-        path: '/login',
+        path: AppRoutes.login,
         builder: (context, state) => const LoginPage(),
       ),
       GoRoute(
-        path: '/register',
+        path: AppRoutes.register,
         builder: (context, state) => const RegisterPage(),
       ),
       ShellRoute(
@@ -74,42 +75,42 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
         routes: [
           GoRoute(
-            path: '/',
+            path: AppRoutes.today,
             name: 'today',
             builder: (context, state) => const TodayPage(),
           ),
           GoRoute(
-            path: '/chat',
+            path: AppRoutes.chat,
             name: 'chat',
             builder: (context, state) => const ChatPage(),
           ),
           GoRoute(
-            path: '/explore',
+            path: AppRoutes.explore,
             name: 'explore',
             builder: (context, state) => const ExplorePage(),
           ),
           GoRoute(
-            path: '/tasks',
+            path: AppRoutes.tasks,
             name: 'tasks',
             builder: (context, state) => const TasksPage(),
           ),
           GoRoute(
-            path: '/notes',
+            path: AppRoutes.notes,
             name: 'notes',
             builder: (context, state) => const NotesPage(),
           ),
           GoRoute(
-            path: '/inbox',
+            path: AppRoutes.inbox,
             name: 'inbox',
             builder: (context, state) => const InboxPage(),
           ),
           GoRoute(
-            path: '/review',
+            path: AppRoutes.review,
             name: 'review',
             builder: (context, state) => const ReviewPage(),
           ),
           GoRoute(
-            path: '/goals',
+            path: AppRoutes.goals,
             name: 'goals',
             builder: (context, state) => const GoalsPage(),
             routes: [
@@ -145,7 +146,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           GoRoute(
-            path: '/settings',
+            path: AppRoutes.settings,
             name: 'settings',
             pageBuilder: (context, state) {
               const child = SettingsPage();
@@ -161,7 +162,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           ),
           GoRoute(
-            path: '/entries/:id',
+            path: AppRoutes.entryDetail,
             pageBuilder: (context, state) {
               final id = state.pathParameters['id']!;
               final child = EntryDetailPage(entryId: id);

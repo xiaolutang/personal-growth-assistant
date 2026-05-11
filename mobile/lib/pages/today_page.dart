@@ -136,9 +136,7 @@ class _TodayPageState extends ConsumerState<TodayPage> {
 
   Widget _buildProgressSection(ThemeData theme, TodayState state) {
     final totalTasks = state.todayTasks.length;
-    final doneTasks = state.todayTasks.where(
-      (e) => e.status == AppConstants.statusComplete,
-    ).length;
+    final doneTasks = state.completedTaskCount;
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
