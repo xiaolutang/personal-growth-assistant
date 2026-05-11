@@ -44,30 +44,6 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.lightbulb),
-              title: const Text('灵感'),
-              onTap: () {
-                Navigator.pop(context);
-                this.context.go('/inbox');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.explore),
-              title: const Text('探索'),
-              onTap: () {
-                Navigator.pop(context);
-                this.context.go('/explore');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.chat_bubble),
-              title: const Text('对话'),
-              onTap: () {
-                Navigator.pop(context);
-                this.context.go('/chat');
-              },
-            ),
-            ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('设置'),
               onTap: () {
@@ -85,7 +61,11 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
     final location = GoRouterState.of(context).uri.path;
     if (location.startsWith('/chat')) return 1;
     if (location.startsWith('/tasks')) return 2;
-    if (location.startsWith('/notes')) return 3;
+    if (location.startsWith('/explore') ||
+        location.startsWith('/notes') ||
+        location.startsWith('/inbox')) {
+      return 3;
+    }
     return 0; // default: today
   }
 
@@ -93,8 +73,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
     final location = GoRouterState.of(context).uri.path;
     return location.startsWith('/review') ||
         location.startsWith('/goals') ||
-        location.startsWith('/inbox') ||
-        location.startsWith('/explore');
+        location.startsWith('/settings');
   }
 
   /// 判断当前路由是否应该显示 FAB
@@ -129,7 +108,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
                 case 2:
                   context.go('/tasks');
                 case 3:
-                  context.go('/notes');
+                  context.go('/explore');
               }
             },
             destinations: const [
@@ -141,7 +120,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
               NavigationDestination(
                 icon: Icon(Icons.chat_bubble_outline),
                 selectedIcon: Icon(Icons.chat_bubble),
-                label: '日知',
+                label: '对话',
               ),
               NavigationDestination(
                 icon: Icon(Icons.check_circle_outline),
@@ -149,14 +128,14 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
                 label: '任务',
               ),
               NavigationDestination(
-                icon: Icon(Icons.note_outlined),
-                selectedIcon: Icon(Icons.note),
-                label: '笔记',
+                icon: Icon(Icons.explore_outlined),
+                selectedIcon: Icon(Icons.explore),
+                label: '探索',
               ),
               NavigationDestination(
-                icon: Icon(Icons.more_horiz),
-                selectedIcon: Icon(Icons.more_horiz),
-                label: '更多',
+                icon: Icon(Icons.person_outline),
+                selectedIcon: Icon(Icons.person),
+                label: '我的',
               ),
             ],
           ),
