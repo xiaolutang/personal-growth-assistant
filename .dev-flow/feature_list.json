@@ -119,9 +119,9 @@
   "summary": {
     "total": 4,
     "by_status": {
-      "pending": 1,
+      "pending": 0,
       "in_progress": 0,
-      "completed": 3,
+      "completed": 4,
       "blocked": 0,
       "cancelled": 0
     }
@@ -307,8 +307,11 @@
       "description": "纯验证任务：确认 S01/F01/S02 覆盖范围内的旧品牌名称已全部清零，构建和测试通过。不承担发现新遗漏的职责。",
       "verification": "L1",
       "depends_on": ["F01", "S02"],
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
+      "started_at": "2026-05-11",
+      "completed_at": "2026-05-11",
+      "summary": "质量收口完成：flutter analyze 0 error、backend 1495 tests、frontend 923 tests+build 通过、旧品牌名 grep 清零、/growth/ 和 growth-curve 硬性回归通过",
       "acceptance_criteria": [
         "flutter analyze 通过",
         "flutter test 通过",
