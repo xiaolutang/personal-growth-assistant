@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/theme.dart';
-import '../providers/command_bar_provider.dart';
 import '../providers/entry_provider.dart';
 import '../providers/today_provider.dart';
 import 'quick_actions.dart' show CreateTaskSheet;
@@ -10,10 +9,9 @@ import 'quick_actions.dart' show CreateTaskSheet;
 // ============================================================
 // QuickCaptureFAB - 全局混合浮动按钮（展开式）
 //
-// 点击展开为 3 个子按钮：
+// 点击展开为 2 个子按钮：
 // 1. 记灵感 — 直接创建 inbox 条目
 // 2. 建任务 — 弹出 CreateTaskSheet
-// 3. AI 智能创建 — 弹出输入框，调用 commandBarProvider
 //
 // 使用方式：放在 Stack 内 DraggableFAB 中。
 // onExpandChanged 回调通知 Shell 层展开状态，用于点击空白收起。
@@ -88,7 +86,12 @@ class QuickCaptureFABState extends ConsumerState<QuickCaptureFAB>
       builder: (sheetContext) => _CaptureBottomSheet(
         onCapture: (title) async {
           final notifier = ref.read(entryListProvider.notifier);
-          return notifier.createInboxEntry(title);
+          final success = await notifier.createInboxEntry(title);
+          if (success) {
+            // 记灵感成功后刷新 Today 数据（覆盖当前在 Today 和从其他 Tab 返回两种场景）
+            ref.read(todayProvider.notifier).loadData();
+          }
+          return success;
         },
       ),
     );
@@ -104,6 +107,8 @@ class QuickCaptureFABState extends ConsumerState<QuickCaptureFAB>
         final success = await notifier.createTask(title);
         if (success) {
           ref.invalidate(entryListProvider);
+          // 建任务成功后刷新 Today 数据（覆盖当前在 Today 和从其他 Tab 返回两种场景）
+          ref.read(todayProvider.notifier).loadData();
         }
         if (mounted) {
           final message = success ? '任务已创建' : '创建任务失败，请重试';
@@ -119,19 +124,6 @@ class QuickCaptureFABState extends ConsumerState<QuickCaptureFAB>
     );
   }
 
-  // ---- AI 智能创建 ----
-  void _handleAICommand() {
-    _collapse();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
-      ),
-      builder: (sheetContext) => const _AICommandSheet(),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -140,14 +132,6 @@ class QuickCaptureFABState extends ConsumerState<QuickCaptureFAB>
       children: [
         // 子按钮们（从下往上排列）
         if (_isExpanded) ...[
-          // 3. AI 智能创建
-          _buildSubButton(
-            label: 'AI 创建',
-            icon: Icons.auto_awesome,
-            color: AppColors.primary,
-            onPressed: _handleAICommand,
-          ),
-          const SizedBox(height: AppSpacing.sm),
           // 2. 建任务
           _buildSubButton(
             label: '建任务',
@@ -241,14 +225,12 @@ abstract class _InputSheet extends ConsumerStatefulWidget {
   final IconData icon;
   final String hintText;
   final String buttonText;
-  final Widget? prefixIcon;
 
   const _InputSheet({
     required this.title,
     required this.icon,
     required this.hintText,
     required this.buttonText,
-    this.prefixIcon,
   });
 }
 
@@ -318,7 +300,6 @@ abstract class _InputSheetState<T extends _InputSheet> extends ConsumerState<T> 
             textInputAction: TextInputAction.newline,
             decoration: InputDecoration(
               hintText: widget.hintText,
-              prefixIcon: widget.prefixIcon,
             ),
             onSubmitted: (_) {
               if (_canSubmit) _submit();
@@ -387,32 +368,6 @@ class _CaptureBottomSheetState extends _InputSheetState<_CaptureBottomSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('保存失败，请重试'), duration: Duration(seconds: 2)),
       );
-    }
-  }
-}
-
-// ---- AI 智能创建 BottomSheet ----
-
-class _AICommandSheet extends _InputSheet {
-  const _AICommandSheet()
-      : super(
-          title: 'AI 智能创建',
-          icon: Icons.auto_awesome,
-          hintText: '告诉 AI 你想做什么...',
-          buttonText: '发送',
-          prefixIcon: const Icon(Icons.auto_awesome, size: 20),
-        );
-
-  @override
-  ConsumerState<_AICommandSheet> createState() => _AICommandSheetState();
-}
-
-class _AICommandSheetState extends _InputSheetState<_AICommandSheet> {
-  @override
-  Future<void> onSubmit(String text) async {
-    ref.read(commandBarProvider.notifier).executeCommand(text);
-    if (mounted) {
-      Navigator.of(context).pop();
     }
   }
 }

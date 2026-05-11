@@ -196,8 +196,6 @@ class TodayNotifier extends Notifier<TodayState> {
         },
       );
 
-      // 创建成功后刷新数据
-      await loadData();
       return true;
     } catch (e) {
       state = state.copyWith(

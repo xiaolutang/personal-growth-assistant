@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rizhi/models/sse_event.dart';
+import 'package:rizhi/services/sse_service.dart';
 
 void main() {
   group('SseEvent', () {
@@ -159,6 +162,140 @@ void main() {
       expect(event.isError, isTrue);
       expect(event.isDone, isFalse);
       expect(event.errorMessage, '连接超时');
+    });
+  });
+
+  group('SseService.parseSseChunks — streaming event parsing', () {
+    test('parses created event with entry id', () {
+      final buffer = StringBuffer();
+      final chunk = utf8.encode(
+        'event: created\n'
+        'data: {"id":"e1","title":"报告"}\n\n',
+      );
+
+      final events = SseService.parseSseChunks(buffer, chunk);
+
+      expect(events, hasLength(1));
+      expect(events[0].type, 'created');
+      expect(events[0].data['id'], 'e1');
+    });
+
+    test('parses updated event', () {
+      final buffer = StringBuffer();
+      final chunk = utf8.encode(
+        'event: updated\n'
+        'data: {"id":"e2"}\n\n',
+      );
+
+      final events = SseService.parseSseChunks(buffer, chunk);
+
+      expect(events, hasLength(1));
+      expect(events[0].type, 'updated');
+    });
+
+    test('parses content event', () {
+      final buffer = StringBuffer();
+      final chunk = utf8.encode(
+        'event: content\n'
+        'data: {"content":"本周进展良好"}\n\n',
+      );
+
+      final events = SseService.parseSseChunks(buffer, chunk);
+
+      expect(events, hasLength(1));
+      expect(events[0].type, 'content');
+      expect(events[0].contentText, '本周进展良好');
+    });
+
+    test('parses redirect event', () {
+      final buffer = StringBuffer();
+      final chunk = utf8.encode(
+        'event: redirect\n'
+        'data: {"reason":"conversational","target":"chat"}\n\n',
+      );
+
+      final events = SseService.parseSseChunks(buffer, chunk);
+
+      expect(events, hasLength(1));
+      expect(events[0].type, 'redirect');
+      expect(events[0].data['reason'], 'conversational');
+      expect(events[0].data['target'], 'chat');
+    });
+
+    test('parses done event', () {
+      final buffer = StringBuffer();
+      final chunk = utf8.encode('event: done\ndata: {}\n\n');
+
+      final events = SseService.parseSseChunks(buffer, chunk);
+
+      expect(events, hasLength(1));
+      expect(events[0].isDone, true);
+    });
+
+    test('parses error event', () {
+      final buffer = StringBuffer();
+      final chunk = utf8.encode(
+        'event: error\n'
+        'data: {"message":"服务不可用"}\n\n',
+      );
+
+      final events = SseService.parseSseChunks(buffer, chunk);
+
+      expect(events, hasLength(1));
+      expect(events[0].isError, true);
+      expect(events[0].errorMessage, '服务不可用');
+    });
+
+    test('full lifecycle: content + done', () {
+      final buffer = StringBuffer();
+      final chunk = utf8.encode(
+        'event: content\n'
+        'data: {"content":"hello"}\n\n'
+        'event: done\n'
+        'data: {}\n\n',
+      );
+
+      final events = SseService.parseSseChunks(buffer, chunk);
+
+      expect(events, hasLength(2));
+      expect(events[0].type, 'content');
+      expect(events[1].isDone, true);
+    });
+
+    test('buffers incomplete event across chunks', () {
+      final buffer = StringBuffer();
+      final chunk1 = utf8.encode('event: content\ndata: {"content":"hel');
+      final chunk2 = utf8.encode('lo"}\n\n');
+
+      final events1 = SseService.parseSseChunks(buffer, chunk1);
+      expect(events1, isEmpty);
+
+      final events2 = SseService.parseSseChunks(buffer, chunk2);
+      expect(events2, hasLength(1));
+      expect(events2[0].contentText, 'hello');
+    });
+
+    test('handles malformed JSON as raw data', () {
+      final buffer = StringBuffer();
+      final chunk = utf8.encode(
+        'event: content\n'
+        'data: {invalid json}\n\n',
+      );
+
+      final events = SseService.parseSseChunks(buffer, chunk);
+
+      expect(events, hasLength(1));
+      expect(events[0].data['raw'], '{invalid json}');
+      expect(events[0].contentText, isNull);
+    });
+
+    test('skips empty blocks', () {
+      final buffer = StringBuffer();
+      final chunk = utf8.encode('\n\n\n\n');
+
+      final events = SseService.parseSseChunks(buffer, chunk);
+
+      expect(events, isEmpty);
     });
   });
 }

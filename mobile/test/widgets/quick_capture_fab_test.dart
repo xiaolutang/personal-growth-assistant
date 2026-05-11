@@ -15,6 +15,7 @@ class _FakeApiClient extends ApiClient {
   _FakeApiClient() : super(baseUrl: 'http://fake.test');
 
   bool createEntryShouldSucceed = true;
+  bool postShouldSucceed = true;
   Map<String, dynamic>? lastCreateEntryData;
 
   @override
@@ -38,6 +39,33 @@ class _FakeApiClient extends ApiClient {
       type: DioExceptionType.badResponse,
       response: Response(
         requestOptions: RequestOptions(path: '/entries'),
+        statusCode: 500,
+      ),
+    );
+  }
+
+  @override
+  Future<Response<T>> post<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) {
+    if (postShouldSucceed) {
+      return Future.value(Response<T>(
+        requestOptions: RequestOptions(path: path),
+        statusCode: 201,
+        data: <String, dynamic>{
+          'id': 'test-id',
+          'title': 'test',
+        } as T,
+      ),);
+    }
+    throw DioException(
+      requestOptions: RequestOptions(path: path),
+      type: DioExceptionType.badResponse,
+      response: Response(
+        requestOptions: RequestOptions(path: path),
         statusCode: 500,
       ),
     );
@@ -122,7 +150,7 @@ void main() {
       expect(find.byType(FloatingActionButton), findsOneWidget);
     });
 
-    testWidgets('点击 FAB 展开三个子按钮', (WidgetTester tester) async {
+    testWidgets('点击 FAB 展开两个子按钮（记灵感/建任务）', (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -145,10 +173,10 @@ void main() {
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
 
-      // 展开后：三个子按钮可见
+      // 展开后：恰好 2 个子按钮可见（记灵感、建任务），无 AI 创建
       expect(find.text('记灵感'), findsOneWidget);
       expect(find.text('建任务'), findsOneWidget);
-      expect(find.text('AI 创建'), findsOneWidget);
+      expect(find.text('AI 创建'), findsNothing);
     });
 
     testWidgets('再次点击 FAB 收起子按钮', (WidgetTester tester) async {
@@ -407,6 +435,75 @@ void main() {
       expect(find.text('快速捕获灵感'), findsNothing);
       // 成功 SnackBar
       expect(find.text('灵感已保存'), findsOneWidget);
+    });
+  });
+
+  group('建任务入口', () {
+    testWidgets('点击「建任务」弹出创建任务 BottomSheet',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            apiClientProvider.overrideWithValue(fakeApiClient),
+          ],
+          child: MaterialApp.router(
+            routerConfig: _testRouter(
+              child: const Scaffold(body: Text('Tasks')),
+            ),
+          ),
+        ),
+      );
+
+      // 展开 FAB
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      // 点击「建任务」子按钮
+      await tester.tap(find.byIcon(Icons.add_task));
+      await tester.pumpAndSettle();
+
+      // BottomSheet 应该弹出
+      expect(find.text('新建任务'), findsOneWidget);
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('创建'), findsOneWidget);
+    });
+
+    testWidgets('建任务失败时显示错误提示', (WidgetTester tester) async {
+      fakeApiClient.postShouldSucceed = false;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            apiClientProvider.overrideWithValue(fakeApiClient),
+          ],
+          child: MaterialApp.router(
+            routerConfig: _testRouter(
+              child: const Scaffold(body: Text('Tasks')),
+            ),
+          ),
+        ),
+      );
+
+      // 展开 FAB
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      // 点击「建任务」
+      await tester.tap(find.byIcon(Icons.add_task));
+      await tester.pumpAndSettle();
+
+      // 输入并提交
+      await tester.enterText(find.byType(TextField), '失败的任务');
+      await tester.pump();
+      await tester.tap(find.text('创建'));
+      // CircularProgressIndicator 动画会阻止 pumpAndSettle 完成，使用 pump 代替
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      // 错误 SnackBar（因为 ApiClient 的 post 方法未被 override，会抛异常）
+      // todayProvider.createTask 会调用 ApiClient.post，默认 _FakeApiClient 未 override post
+      // 所以 createTask 返回 false，显示 '创建任务失败，请重试'
+      expect(find.text('创建任务失败，请重试'), findsOneWidget);
     });
   });
 
