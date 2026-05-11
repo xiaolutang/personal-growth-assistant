@@ -1,45 +1,20 @@
 # 对齐清单
 
-## R056: 品牌重命名（个人助手 → 日知）
+## R057: 导航重构（底部 Tab + FAB + Today 仪表盘）
 
 ### 用户路径对齐
 
-- [ ] S01: 应用安装/启动 → 包名和 bundle id 正确 → 不崩溃
-- [ ] F01: 打开应用 → 看到「日知」作为应用名 → 各页面标题正确
-- [ ] S02: 后端 API 文档展示「日知」→ 部署脚本使用「日知」→ 文档统一
-
-### 升级路径决策
-
-- [x] applicationId/bundleId 变更后，已安装用户需卸载重装（个人开发项目，无应用商店发布，无正式用户需要迁移）
-- [x] 不需要数据迁移工具（本地数据随 app 重装清空，云端数据不受影响）
-
-### 架构对齐
-
-- [ ] S01: 包名变更不影响架构分层（MVVM 不变）
-- [ ] S02: OpenAPI 生成产物（api-schema.json 和 api.generated.ts）通过 `npm run gen:types` 重新生成，不手改。类型权威是 api.generated.ts
-- [ ] S02: `frontend/vite.config.ts` 中 `FRONTEND_BASE_PATH` 路径名 `/growth/` 不改（部署路径，非品牌名）
-- [ ] 所有任务不违反 architecture.md 禁止模式
-- [ ] 不修改 `data/` 目录用户数据
-- [ ] 不修改 `.dev-flow/_archive/` 历史快照
-
-### 依赖对齐
-
-- [ ] S01: 无依赖 ✓
-- [ ] F01 depends_on S01 ✓（import 路径必须先改完）
-- [ ] S02 depends_on S01 ✓（同上）
-- [ ] S03 depends_on F01 + S02 ✓
-
-### 命名范围对齐
-
-- [ ] 改：Flutter 包名、applicationId、bundle identifier、展示名称、文档描述
-- [ ] 不改：仓库目录名 personal-growth-assistant、用户数据 data/、归档快照 _archive/
-- [ ] 不改：API 路径中 growth 相关（如 /review/growth-curve）— 这是功能路径不是品牌名
-- [ ] 不改：FRONTEND_BASE_PATH=/growth/ — 部署路径，非品牌名
-- [ ] 不改：frontend api-schema.json — 生成产物，由 npm run gen:types 重新生成
-
-### 完成性检查
-
-- [ ] 所有 P0 任务有 acceptance_criteria
-- [ ] 依赖链完整无循环
-- [ ] S01 有 config risk test_tasks
-- [ ] S03 是纯验证任务，不承担发现新遗漏职责
+- [x] F01: 打开 Today 页 → 无底部输入栏 → 只有晨报/进度/任务/动态
+- [x] F01: Today 成功态、空态为纯仪表盘；页面加载失败时标准错误态+刷新（无命令执行错误条）
+- [x] F01: 任意页面点 FAB → 展开只有记灵感+建任务（无 AI 创建）
+- [x] F01: 建任务失败时显示错误提示
+- [x] F01: 记灵感/建任务成功后 Today 最近动态自动刷新
+- [x] F01: flutter analyze + flutter test 通过
+- [x] F01: grep commandBarProvider/CommandResult 零引用
+- [x] F02: 底部 Tab 显示 今天/对话/任务/探索/我的
+- [x] F02: 点探索 Tab → 进入 /explore 页面（已有内容不变）
+- [x] F02: /notes 和 /inbox 深层链接渲染各自 Page 并高亮探索 Tab
+- [x] F02: 点我的 Tab → 弹出菜单只有 回顾/目标/设置
+- [x] F02: 点我的→回顾 → /review；我的→目标 → /goals；我的→设置 → /settings（高亮我的 Tab）
+- [x] F02: 点对话 Tab → 进入 chat 页面（完整 AI 对话）
+- [x] F02: flutter analyze + flutter test 通过

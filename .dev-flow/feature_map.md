@@ -1,44 +1,44 @@
 # 功能图
 
-> 项目：personal-growth-assistant
-> 活跃需求包：R050 Flutter 日常可用
-> 最后更新：2026-05-07
+> 项目：rizhi
+> 活跃需求包：R057 导航重构
+> 最后更新：2026-05-11
 
 ## 活跃需求包
 
 | 需求包 | 状态 | 任务数 |
 |--------|------|--------|
-| R050 Flutter 日常可用 | active | 6 tasks (6 completed) |
+| R057 导航重构 | active | 2 tasks (2 completed) |
 
-### R050: Flutter 日常可用 — 模块映射
+### R057: 导航重构 — 模块映射
 
 | 任务 ID | 模块 | 描述 | 状态 | 文件 |
 |---------|------|------|------|------|
-| F01 | auth | 注册页 + 忘记密码提示 | completed | mobile/lib/pages/register_page.dart, login_page.dart |
-| F02 | capture | 全局 FAB 快速捕获 | completed | mobile/lib/widgets/quick_capture_fab.dart, bottom_nav.dart |
-| F03 | home | 首页升级 — 晨报卡片 + 快捷录入栏 | completed | mobile/lib/pages/today_page.dart, widgets/morning_digest_card.dart |
-| F04 | goals | 目标详情独立页 | completed | mobile/lib/pages/goal_detail_page.dart |
-| F05 | notifications | 到期通知 + 设置入口 | completed | mobile/lib/services/notification_service.dart, pages/settings_page.dart |
-| S06 | quality | 质量收口 | completed | — |
+| F01 | mobile | 命令栏体系下线 + Today 纯仪表盘 + FAB 简化 | completed | today_page.dart, quick_capture_fab.dart, bottom_nav.dart, auth_provider.dart |
+| F02 | mobile | 底部 Tab 重构 + 菜单精简 | completed | bottom_nav.dart, bottom_nav_test.dart |
 
 ## 归档需求包
 
 | 需求包 | 归档目录 | 状态 |
 |--------|---------|------|
+| R056 品牌更名为日知 | _archive/R056_brand-rename-to-rizhi | completed |
+| R055 交互基础 | _archive/R055_interaction-basics | completed |
+| R054 FAB 混合升级 | _archive/R054_fab-hybrid-upgrade | completed |
+| R053 Today 命令栏 | _archive/R053_today-command-bar | completed |
+| R052 对话隔离+Today 输入 | _archive/R052_chat-isolation-and-today-input | completed |
+| R051 代码质量优化 | _archive/R051_code-quality-optimization | completed |
+| R050 Flutter 日常可用 | _archive/R050_flutter-daily-usable | completed |
 | R049 评估运营化 | _archive/R049_eval-operationalization | completed |
 | R048 创建体验升级 | _archive/R048_creation-experience-upgrade | completed |
 | R047 任务/探索 Tab 边界重新划分 | _archive/R047_task-explore-reboundary | completed |
 | R046 对话面板重构 | _archive/R046_chat-panel-refactor | completed |
 | R045 评估 HTML 报告 | _archive/R045_eval-html-report | completed |
 | R044 统一 React Agent | _archive/R044_unified-react-agent | completed |
-| R043 架构收敛 | _archive/R043_architecture-convergence | completed |
-| R042 Flutter 条目详情升级 | _archive/R042_flutter-entry-detail-upgrade | completed |
-| R041 Flutter 页面补齐 | _archive/R041_health-flutter-pages | completed |
 
 ## 测试汇总
 
 | 项目 | 测试数 | 状态 |
 |------|--------|------|
-| 后端测试 | 1431 passed | 全绿 |
-| 前端测试 | 905 passed | 全绿 |
-| Flutter 测试 | 456 passed | 全绿 |
+| 后端测试 | 1495 passed | 全绿 |
+| 前端测试 | 923 passed | 全绿 |
+| Flutter 测试 | 16 passed (bottom_nav) | 全绿 |
