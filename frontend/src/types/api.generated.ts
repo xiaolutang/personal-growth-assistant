@@ -758,6 +758,7 @@ export interface paths {
          *     - event: content    - 流式内容
          *     - event: created    - 创建成功
          *     - event: updated    - 更新成功
+         *     - event: redirect   - 跳转引导（command 模式下闲聊/寒暄）
          *     - event: done       - 完成
          *     - event: error      - 错误
          */
@@ -3081,7 +3082,7 @@ export interface components {
         PageContext: {
             /**
              * Page Type
-             * @description 页面类型: home/explore/entry/review/graph
+             * @description 页面类型: home/today/command/tasks/notes/inbox/projects/explore/entry_detail/review
              */
             page_type: string;
             /**
@@ -3579,10 +3580,6 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
-            /** Input */
-            input?: unknown;
-            /** Context */
-            ctx?: Record<string, never>;
         };
         /**
          * VsLastPeriod

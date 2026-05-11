@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/pages/login_page.dart';
+import 'package:rizhi/pages/login_page.dart';
 
 void main() {
   group('LoginPage Widget', () {
@@ -15,7 +15,7 @@ void main() {
       );
 
       // 验证标题
-      expect(find.text('个人成长助手'), findsOneWidget);
+      expect(find.text('日知'), findsOneWidget);
 
       // 验证输入框
       expect(find.byType(TextFormField), findsNWidgets(2));

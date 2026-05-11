@@ -538,7 +538,7 @@ class TestAgentE2ESSESequence:
 
         mock_client.chat.completions.create = AsyncMock(
             return_value=make_openai_response(
-                content="你好！我是日知，你的个人成长助手。有什么可以帮你的吗？"
+                content="你好！我是日知，有什么可以帮你的吗？"
             )
         )
 

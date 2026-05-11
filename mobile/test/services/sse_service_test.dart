@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/models/sse_event.dart';
+import 'package:rizhi/models/sse_event.dart';
 
 void main() {
   group('SseEvent', () {

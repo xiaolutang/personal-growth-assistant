@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:growth_assistant/services/api_client.dart';
-import 'package:growth_assistant/services/notification_service.dart';
+import 'package:rizhi/services/api_client.dart';
+import 'package:rizhi/services/notification_service.dart';
 
 import '../helpers/mock_api_client.dart';
 

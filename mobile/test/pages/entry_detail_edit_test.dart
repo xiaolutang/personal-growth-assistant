@@ -2,13 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/config/constants.dart';
-import 'package:growth_assistant/models/entry.dart';
-import 'package:growth_assistant/pages/entry_detail_page.dart';
-import 'package:growth_assistant/providers/entry_provider.dart';
-import 'package:growth_assistant/providers/auth_provider.dart';
-import 'package:growth_assistant/services/api_client.dart';
-import 'package:growth_assistant/widgets/skeleton_loading.dart';
+import 'package:rizhi/config/constants.dart';
+import 'package:rizhi/models/entry.dart';
+import 'package:rizhi/pages/entry_detail_page.dart';
+import 'package:rizhi/providers/entry_provider.dart';
+import 'package:rizhi/providers/auth_provider.dart';
+import 'package:rizhi/services/api_client.dart';
+import 'package:rizhi/widgets/skeleton_loading.dart';
 
 // ================================================================
 // Helper: 创建测试用 Entry

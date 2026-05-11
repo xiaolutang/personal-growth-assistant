@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:growth_assistant/main.dart' as app;
+import 'package:rizhi/main.dart' as app;
 
 // ============================================================
 // R050 集成测试 — 完整用户旅程（真实后端 + iOS 模拟器）

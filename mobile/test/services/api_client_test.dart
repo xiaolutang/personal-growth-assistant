@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/config/api_config.dart';
-import 'package:growth_assistant/services/api_client.dart';
+import 'package:rizhi/config/api_config.dart';
+import 'package:rizhi/services/api_client.dart';
 
 /// Mock Dio HttpClientAdapter，拦截请求并返回预设响应
 class _MockHttpClientAdapter implements HttpClientAdapter {

@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/models/entry.dart';
-import 'package:growth_assistant/providers/auth_provider.dart';
-import 'package:growth_assistant/providers/entry_provider.dart';
-import 'package:growth_assistant/services/api_client.dart';
+import 'package:rizhi/models/entry.dart';
+import 'package:rizhi/providers/auth_provider.dart';
+import 'package:rizhi/providers/entry_provider.dart';
+import 'package:rizhi/services/api_client.dart';
 
 void main() {
   group('EntryListState', () {

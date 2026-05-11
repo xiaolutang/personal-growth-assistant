@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/widgets/empty_state.dart';
+import 'package:rizhi/widgets/empty_state.dart';
 
 void main() {
   group('EmptyStateWidget', () {

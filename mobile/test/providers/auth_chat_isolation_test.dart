@@ -5,13 +5,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/config/api_config.dart';
-import 'package:growth_assistant/models/chat_message.dart';
-import 'package:growth_assistant/models/command_result.dart';
-import 'package:growth_assistant/providers/chat_provider.dart';
-import 'package:growth_assistant/providers/command_bar_provider.dart';
-import 'package:growth_assistant/services/api_client.dart';
-import 'package:growth_assistant/services/auth_service.dart';
+import 'package:rizhi/config/api_config.dart';
+import 'package:rizhi/models/chat_message.dart';
+import 'package:rizhi/models/command_result.dart';
+import 'package:rizhi/providers/chat_provider.dart';
+import 'package:rizhi/providers/command_bar_provider.dart';
+import 'package:rizhi/services/api_client.dart';
+import 'package:rizhi/services/auth_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockSecureStorage extends Mock implements FlutterSecureStorage {}

@@ -20,8 +20,8 @@ class Settings(BaseSettings):
     )
 
     # 应用配置
-    APP_NAME: str = "Personal Growth Assistant"
-    APP_VERSION: str = "0.3.0"
+    APP_NAME: str = "日知"
+    APP_VERSION: str = "0.56.0"
     DEBUG: bool = False
 
     # 数据目录（默认使用项目根目录的 data/）
@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     # LangSmith 可观测性配置（可选）
     LANGSMITH_API_KEY: Optional[str] = None
     LANGSMITH_TRACING: bool = False
-    LANGSMITH_PROJECT: str = "personal-growth-assistant"
+    LANGSMITH_PROJECT: str = "rizhi"
 
     # Langfuse 可观测性配置（可选）
     LANGFUSE_PUBLIC_KEY: Optional[str] = None

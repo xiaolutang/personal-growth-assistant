@@ -1,4 +1,4 @@
-"""Personal Growth Assistant API"""
+"""日知 API"""
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -65,7 +65,7 @@ async def lifespan(app: FastAPI):
         try:
             _log_handler = setup_remote_logging(
                 endpoint=settings.LOG_SERVICE_URL,
-                service_name="personal-growth-assistant",
+                service_name="rizhi",
                 component="backend",
                 level=settings.LOG_LEVEL,
             )
@@ -209,9 +209,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Personal Growth Assistant",
-    description="个人成长管理助手 - 从自然语言解析任务（LangGraph 版）",
-    version="0.3.0",
+    title="日知",
+    description="日知 - 整合任务管理、灵感收集、学习笔记、项目追踪",
+    version="0.56.0",
     lifespan=lifespan,
     root_path=os.getenv("ROOT_PATH", ""),
 )

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/models/entry.dart';
-import 'package:growth_assistant/providers/inbox_provider.dart';
+import 'package:rizhi/models/entry.dart';
+import 'package:rizhi/providers/inbox_provider.dart';
 
 void main() {
   group('InboxState', () {

@@ -447,7 +447,7 @@ class TestAgentServiceNewSession:
         events = [
             {
                 "messages": [
-                    AIMessage(content="你好！我是日知，你的个人成长助手。"),
+                    AIMessage(content="你好！我是日知。"),
                 ]
             },
         ]

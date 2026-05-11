@@ -9,7 +9,7 @@ import '../models/entry.dart';
 class AppConstants {
   AppConstants._();
 
-  static const String appName = '个人成长助手';
+  static const String appName = '日知';
   static const String apiBaseUrl = 'http://localhost:8001';
 
   // Category types

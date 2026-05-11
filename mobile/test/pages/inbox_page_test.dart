@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:growth_assistant/config/constants.dart';
-import 'package:growth_assistant/models/entry.dart';
-import 'package:growth_assistant/pages/inbox_page.dart';
-import 'package:growth_assistant/providers/inbox_provider.dart';
-import 'package:growth_assistant/widgets/skeleton_loading.dart';
+import 'package:rizhi/config/constants.dart';
+import 'package:rizhi/models/entry.dart';
+import 'package:rizhi/pages/inbox_page.dart';
+import 'package:rizhi/providers/inbox_provider.dart';
+import 'package:rizhi/widgets/skeleton_loading.dart';
 
 // 测试用 Entry 工厂
 Entry _makeInboxEntry({

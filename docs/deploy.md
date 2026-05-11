@@ -1,4 +1,4 @@
-# 个人成长助手 - 发布流程
+# 日知 - 发布流程
 
 ## 架构概述
 
@@ -15,7 +15,7 @@ Traefik 网关 (localhost:443 HTTPS)
 | 服务 | 容器名 | 网络 | 说明 |
 |------|--------|------|------|
 | Traefik | traefik | gateway | 统一入口网关（基础设施层） |
-| 个人成长助手 | pga | gateway + infra-network | 单容器（API + 前端） |
+| 日知 | pga | gateway + infra-network | 单容器（API + 前端） |
 | Neo4j | neo4j | infra-network | 知识图谱（基础设施层） |
 | Qdrant | qdrant | infra-network | 向量检索（基础设施层） |
 | log-service | log-service | gateway + infra-network | 日志服务（基础设施层） |

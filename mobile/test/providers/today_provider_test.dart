@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/models/entry.dart';
-import 'package:growth_assistant/models/morning_digest.dart';
-import 'package:growth_assistant/providers/today_provider.dart';
+import 'package:rizhi/models/entry.dart';
+import 'package:rizhi/models/morning_digest.dart';
+import 'package:rizhi/providers/today_provider.dart';
 
 void main() {
   group('TodayState', () {

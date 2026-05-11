@@ -13,10 +13,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/models/command_result.dart';
-import 'package:growth_assistant/providers/command_bar_provider.dart';
-import 'package:growth_assistant/providers/today_provider.dart';
-import 'package:growth_assistant/pages/today_page.dart';
+import 'package:rizhi/models/command_result.dart';
+import 'package:rizhi/providers/command_bar_provider.dart';
+import 'package:rizhi/providers/today_provider.dart';
+import 'package:rizhi/pages/today_page.dart';
 
 /// Fake TodayNotifier that tracks loadData calls
 class _FakeTodayNotifier extends TodayNotifier {

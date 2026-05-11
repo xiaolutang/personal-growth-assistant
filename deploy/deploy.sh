@@ -1,5 +1,5 @@
 #!/bin/bash
-# 个人成长助手 部署脚本
+# 日知 部署脚本
 # 使用方式: ./deploy/deploy.sh [--no-cache]
 set -euo pipefail
 
@@ -8,8 +8,8 @@ INFRA_DIR="${INFRA_DIR:-$(cd "$(dirname "$0")" && pwd)/../../ai_rules/infrastruc
 source "$INFRA_DIR/deploy-lib.sh"
 
 # ===== 项目声明 =====
-PROJECT_NAME="personal-growth-assistant"
-DISPLAY_NAME="个人成长助手"
+PROJECT_NAME="rizhi"
+DISPLAY_NAME="日知"
 COMPOSE_FILE="deploy/docker-compose.yml"
 HEALTH_PATH="/growth/api/health"
 ACCESS_URLS=(

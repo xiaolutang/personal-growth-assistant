@@ -4,11 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:growth_assistant/pages/settings_page.dart';
-import 'package:growth_assistant/providers/auth_provider.dart';
-import 'package:growth_assistant/providers/notification_provider.dart';
-import 'package:growth_assistant/services/api_client.dart';
-import 'package:growth_assistant/services/notification_service.dart';
+import 'package:rizhi/pages/settings_page.dart';
+import 'package:rizhi/providers/auth_provider.dart';
+import 'package:rizhi/providers/notification_provider.dart';
+import 'package:rizhi/services/api_client.dart';
+import 'package:rizhi/services/notification_service.dart';
 
 import '../helpers/mock_api_client.dart';
 
@@ -51,6 +51,9 @@ void main() {
 
       // 验证退出登录按钮
       expect(find.text('退出登录'), findsOneWidget);
+
+      // 验证应用名称显示
+      expect(find.text('日知'), findsOneWidget);
     });
 
     testWidgets('notification switch shows correct initial state',

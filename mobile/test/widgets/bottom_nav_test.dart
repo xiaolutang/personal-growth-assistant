@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:growth_assistant/widgets/bottom_nav.dart';
+import 'package:rizhi/providers/command_bar_provider.dart';
+import 'package:rizhi/providers/today_provider.dart';
+import 'package:rizhi/widgets/bottom_nav.dart';
 
 // 构建测试用的 GoRouter
 GoRouter _testRouter({required Widget child}) {
@@ -47,9 +50,11 @@ void main() {
   group('BottomNavShell', () {
     testWidgets('渲染 5 个 NavigationDestination', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp.router(
-          routerConfig: _testRouter(
-            child: BottomNavShell(child: const SizedBox()),
+        ProviderScope(
+          child: MaterialApp.router(
+            routerConfig: _testRouter(
+              child: BottomNavShell(child: const SizedBox()),
+            ),
           ),
         ),
       );
@@ -63,9 +68,11 @@ void main() {
 
     testWidgets('默认选中第一个 Tab（今天）', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp.router(
-          routerConfig: _testRouter(
-            child: BottomNavShell(child: const SizedBox()),
+        ProviderScope(
+          child: MaterialApp.router(
+            routerConfig: _testRouter(
+              child: BottomNavShell(child: const SizedBox()),
+            ),
           ),
         ),
       );
@@ -78,9 +85,11 @@ void main() {
 
     testWidgets('点击更多 Tab 弹出底部菜单', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp.router(
-          routerConfig: _testRouter(
-            child: BottomNavShell(child: const SizedBox()),
+        ProviderScope(
+          child: MaterialApp.router(
+            routerConfig: _testRouter(
+              child: BottomNavShell(child: const SizedBox()),
+            ),
           ),
         ),
       );
@@ -99,9 +108,11 @@ void main() {
 
     testWidgets('底部菜单包含正确的图标', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp.router(
-          routerConfig: _testRouter(
-            child: BottomNavShell(child: const SizedBox()),
+        ProviderScope(
+          child: MaterialApp.router(
+            routerConfig: _testRouter(
+              child: BottomNavShell(child: const SizedBox()),
+            ),
           ),
         ),
       );
@@ -119,9 +130,11 @@ void main() {
 
     testWidgets('渲染 NavigationBar', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp.router(
-          routerConfig: _testRouter(
-            child: BottomNavShell(child: const SizedBox()),
+        ProviderScope(
+          child: MaterialApp.router(
+            routerConfig: _testRouter(
+              child: BottomNavShell(child: const SizedBox()),
+            ),
           ),
         ),
       );
@@ -131,10 +144,12 @@ void main() {
 
     testWidgets('子组件正确渲染', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp.router(
-          routerConfig: _testRouter(
-            child: BottomNavShell(
-              child: const Text('Child Content'),
+        ProviderScope(
+          child: MaterialApp.router(
+            routerConfig: _testRouter(
+              child: BottomNavShell(
+                child: const Text('Child Content'),
+              ),
             ),
           ),
         ),

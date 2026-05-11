@@ -1,4 +1,4 @@
-# 个人成长助手 - MCP Server
+# 日知 - MCP Server
 
 > Claude Code / Cursor 可直接操作你的成长数据
 

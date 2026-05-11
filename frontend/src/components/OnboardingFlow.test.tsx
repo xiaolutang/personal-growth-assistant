@@ -29,7 +29,7 @@ describe("OnboardingFlow", () => {
     render(<OnboardingFlow onComplete={onComplete} />);
 
     // 欢迎步骤可见
-    expect(screen.getByText("欢迎来到个人成长助手")).toBeInTheDocument();
+    expect(screen.getByText("欢迎来到日知")).toBeInTheDocument();
 
     // 点击「开始使用」进入引导步骤
     await user.click(screen.getByRole("button", { name: /开始使用/ }));

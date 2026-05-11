@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/pages/goals_page.dart';
-import 'package:growth_assistant/providers/goals_provider.dart';
-import 'package:growth_assistant/widgets/skeleton_loading.dart';
+import 'package:rizhi/pages/goals_page.dart';
+import 'package:rizhi/providers/goals_provider.dart';
+import 'package:rizhi/widgets/skeleton_loading.dart';
 
 // Fake GoalsNotifier，直接返回预设状态
 class _FakeGoalsNotifier extends GoalsNotifier {

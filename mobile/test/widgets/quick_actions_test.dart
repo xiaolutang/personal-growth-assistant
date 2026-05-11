@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:growth_assistant/widgets/quick_actions.dart';
+import 'package:rizhi/widgets/quick_actions.dart';
 
 /// Find the main FAB by looking for the one containing the add icon.
 Finder _findMainFab() {

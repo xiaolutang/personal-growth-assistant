@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart' hide Response;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/providers/goals_provider.dart';
+import 'package:rizhi/providers/goals_provider.dart';
 
 import '../../lib/providers/auth_provider.dart' show apiClientProvider;
 

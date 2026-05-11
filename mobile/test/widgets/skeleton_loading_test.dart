@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/config/theme.dart';
-import 'package:growth_assistant/widgets/skeleton_loading.dart';
+import 'package:rizhi/config/theme.dart';
+import 'package:rizhi/widgets/skeleton_loading.dart';
 
 /// 辅助函数：找到所有 shimmer Container（有 BoxDecoration 且 color 非 null）
 Iterable<Container> _findShimmerContainers(WidgetTester tester) {

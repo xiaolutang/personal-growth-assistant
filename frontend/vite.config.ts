@@ -17,9 +17,9 @@ export default defineConfig({
       includeAssets: ['vite.svg'],
       manifest: {
         lang: 'zh-CN',
-        name: 'Growth Assistant - 个人成长助手',
-        short_name: 'Growth',
-        description: '个人成长管理助手 — 任务、灵感、笔记、知识图谱',
+        name: '日知',
+        short_name: '日知',
+        description: '日知 — 任务、灵感、笔记、知识图谱',
         theme_color: '#6366F1',
         background_color: '#ffffff',
         display: 'standalone',

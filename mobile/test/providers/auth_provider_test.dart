@@ -1,11 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:growth_assistant/config/api_config.dart';
-import 'package:growth_assistant/models/user.dart';
-import 'package:growth_assistant/providers/auth_provider.dart';
-import 'package:growth_assistant/services/api_client.dart';
-import 'package:growth_assistant/services/auth_service.dart';
+import 'package:rizhi/config/api_config.dart';
+import 'package:rizhi/models/user.dart';
+import 'package:rizhi/providers/auth_provider.dart';
+import 'package:rizhi/services/api_client.dart';
+import 'package:rizhi/services/auth_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockSecureStorage extends Mock implements FlutterSecureStorage {}

@@ -1,4 +1,4 @@
-package com.growth.growth_assistant
+package com.rizhi.app
 
 import io.flutter.embedding.android.FlutterActivity
 

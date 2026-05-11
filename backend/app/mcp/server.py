@@ -1,4 +1,4 @@
-"""MCP Server - 个人成长助手（初始化 + 路由分发 + main）"""
+"""MCP Server - 日知（初始化 + 路由分发 + main）"""
 import asyncio
 import logging
 import os

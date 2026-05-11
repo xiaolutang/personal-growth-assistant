@@ -571,7 +571,7 @@ class TestReActAgentGraphIntegration:
         mock_client = MockAsyncOpenAIClient(
             responses=[
                 MockAsyncOpenAIClient._make_response(
-                    content="你好！我是日知，你的个人成长助手。"
+                    content="你好！我是日知。"
                 )
             ]
         )

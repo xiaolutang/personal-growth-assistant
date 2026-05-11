@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-Personal Growth Assistant - 个人成长管理助手，整合任务管理、灵感收集、学习笔记、项目追踪。
+日知 (RiZhi) - AI 成长管理工具，整合任务管理、灵感收集、学习笔记、项目追踪。
 
 ## 常用命令
 

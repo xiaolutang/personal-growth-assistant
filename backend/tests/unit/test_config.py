@@ -13,8 +13,8 @@ class TestSettings:
         """测试默认值"""
         settings = Settings()
 
-        assert settings.APP_NAME == "Personal Growth Assistant"
-        assert settings.APP_VERSION == "0.3.0"
+        assert settings.APP_NAME == "日知"
+        assert settings.APP_VERSION == "0.56.0"
         assert settings.DEBUG is False
         # DATA_DIR 现在使用绝对路径（基于项目根目录）
         assert settings.DATA_DIR.endswith("/data")

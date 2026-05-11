@@ -637,7 +637,7 @@ class ReviewService(MorningDigestMixin, InsightsMixin):
         import json
 
         system_prompt = system_prompt_override or (
-            "你是个人成长助手「日知」，请根据以下数据生成一段简短的中文总结（2-3句话），"
+            "你是「日知」，请根据以下数据生成一段简短的中文总结（2-3句话），"
             "包含关键成就和建议。"
         )
 
