@@ -6,6 +6,16 @@
 
 ## 已完成需求包
 
+### R057: 导航重构
+
+- 状态: 已完成
+- 分支: `feat/R057-nav-restructure`
+- 主题: Today 命令栏下线 + Tab 重构 + 菜单精简 + 路由常量收敛
+- 目录: `R057_nav-restructure/`
+- 完成时间: 2026-05-11
+- 任务数: 4 (F01-F04)
+- 验证: flutter analyze 0 + backend 1495 + frontend 923 + flutter 全绿 + codex_plugin code-review pass
+
 ### R056: 品牌重命名为「日知」
 
 - 状态: 已完成

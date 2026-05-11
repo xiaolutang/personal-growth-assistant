@@ -5,6 +5,14 @@
   "updated_at": "2026-05-11",
   "archived_requirement_cycles": [
     {
+      "id": "R057",
+      "name": "nav-restructure",
+      "status": "completed",
+      "archive_dir": "_archive/R057_nav-restructure",
+      "total_tasks": 4,
+      "completed_at": "2026-05-11"
+    },
+    {
       "id": "R056",
       "name": "brand-rename-to-rizhi",
       "status": "completed",
@@ -110,233 +118,15 @@
     }
   ],
   "archived_phases": [],
-  "active_requirement_cycle": {
-    "id": "R057",
-    "name": "nav-restructure",
-    "branch": "feat/R057-nav-restructure",
-    "status": "active"
-  },
-  "workflow": {
-    "name": "导航重构",
-    "mode": "B",
-    "runtime": "skill_orchestrated",
-    "review_provider": "codex_plugin",
-    "audit_provider": "codex_plugin",
-    "risk_provider": "codex_plugin"
-  },
   "summary": {
-    "total": 4,
+    "total": 0,
     "by_status": {
-      "pending": 1,
+      "pending": 0,
       "in_progress": 0,
-      "completed": 3,
-      "completed": 2,
+      "completed": 0,
       "blocked": 0,
       "cancelled": 0
     }
   },
-  "features": [
-    {
-      "id": "F01",
-      "phase": 1,
-      "module": "mobile",
-      "name": "命令栏体系下线 + Today 纯仪表盘 + FAB 简化",
-      "description": "一次性移除 commandBarProvider 整条链路：Today 页命令栏 UI 和逻辑、FAB 的 AI 创建子按钮及 _AICommandSheet、bottom_nav.dart 的全局命令结果 SnackBar、auth_provider.dart 的 invalidate 引用。Today 页变为纯仪表盘（页面级加载失败仍显示标准错误态+重试，命令执行相关的结果卡片/错误条/重试 UI 全部移除）。FAB 只保留记灵感和建任务。删除 command_bar_provider.dart、command_result.dart 及依赖它们的旧测试文件。更新 quick_capture_fab_test.dart、today_page_test.dart 和 auth_chat_isolation_test.dart。完成后 flutter analyze + flutter test 通过。",
-      "verification": "F2",
-      "depends_on": [],
-      "status": "completed",
-      "priority": 1,
-      "started_at": "2026-05-11T12:00:00",
-      "completed_at": "2026-05-11T12:30:00",
-      "commit": "48f8479",
-      "evidence_file": ".dev-flow/evidence/F01.md",
-      "summary": "移除 commandBarProvider 整条链路，Today 变纯仪表盘，FAB 简化为 2 子按钮，flutter analyze + flutter test 通过",
-      "acceptance_criteria": [
-        "flutter analyze 通过，0 error",
-        "flutter test 通过",
-        "Today 页底部无输入框、无命令栏、无命令结果卡片、无命令执行错误条",
-        "Today 页在成功态、空态下展示纯仪表盘内容（晨报/进度/任务/动态），页面级加载失败时保留标准 ErrorStateWidget（含 onRetry 重试按钮）",
-        "Today 页下拉刷新正常工作",
-        "记灵感/建任务成功后 Today 最近动态自动刷新：在 quick_capture_fab.dart 成功回调中显式调用 ref.read(todayProvider.notifier).loadData()，覆盖当前在 Today 页和从其他 Tab 返回两种场景",
-        "FAB 展开后只有 2 个子按钮：记灵感、建任务",
-        "无「AI 创建」子按钮，_AICommandSheet 和 _AICommandSheetState 类已删除",
-        "建任务 BottomSheet 创建失败时显示错误提示",
-        "command_bar_provider.dart 文件已删除",
-        "models/command_result.dart 文件已删除",
-        "auth_provider.dart 中 commandBarProvider invalidate 引用已删除",
-        "bottom_nav.dart 中 commandBarProvider/CommandResult import 和 _onCommandResultChanged/_isOnTodayPage 已移除",
-        "bottom_nav_test.dart 中 command_bar_provider import 和相关断言已移除",
-        "test/pages/today_chat_test.dart 已删除",
-        "test/providers/command_bar_provider_test.dart 已删除",
-        "test/providers/auth_chat_isolation_test.dart 中 commandBarProvider 断言已移除，保留 chat/session 隔离验证",
-        "test/widgets/quick_capture_fab_test.dart 中 AI 创建断言已移除，补建任务失败路径",
-        "grep -r 'commandBarProvider|CommandBarState|CommandResult|command_bar_provider|command_result' mobile/lib/ mobile/test/ 返回 0 结果"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "Today 页渲染：验证晨报、进度、任务、动态四个区块正常展示",
-        "Today 页无 command UI：确认无 TextField/命令结果卡片/命令执行错误条",
-        "Today 页空态：数据为空时展示纯仪表盘空态（各区块显示空态文案，非骨架屏）",
-        "Today 页错误态：页面加载失败时保留标准 ErrorStateWidget（含 onRetry），无命令执行相关 UI",
-        "Today 页下拉刷新：触发刷新后数据更新",
-        "FAB 展开：恰好 2 个子按钮（记灵感/建任务），无 AI 创建",
-        "记灵感：BottomSheet 弹出，输入并保存成功",
-        "记灵感失败：API 失败时显示错误提示",
-        "建任务：BottomSheet 弹出，输入并创建成功",
-        "建任务失败：创建失败时显示错误提示",
-        "记灵感后 Today 刷新：创建灵感后返回 Today，最近动态已更新（覆盖当前在 Today 和从其他 Tab 返回两种场景）",
-        "建任务后 Today 刷新：创建任务后返回 Today，今日任务已更新（覆盖当前在 Today 和从其他 Tab 返回两种场景）",
-        "grep 验证：commandBarProvider/CommandResult 引用为 0"
-      ],
-      "files": [
-        "mobile/lib/pages/today_page.dart",
-        "mobile/lib/widgets/quick_capture_fab.dart",
-        "mobile/lib/widgets/bottom_nav.dart",
-        "mobile/lib/providers/command_bar_provider.dart",
-        "mobile/lib/models/command_result.dart",
-        "mobile/lib/providers/auth_provider.dart",
-        "mobile/test/pages/today_page_test.dart",
-        "mobile/test/widgets/quick_capture_fab_test.dart",
-        "mobile/test/widgets/bottom_nav_test.dart",
-        "mobile/test/pages/today_chat_test.dart",
-        "mobile/test/providers/command_bar_provider_test.dart",
-        "mobile/test/providers/auth_chat_isolation_test.dart"
-      ],
-      "planning_notes": "F01 只清理 bottom_nav.dart 中 commandBarProvider 相关代码（import、_onCommandResultChanged、_isOnTodayPage、commandBar listener），保留 Tab 标签/路由/菜单结构不变。F02 负责全部 Tab IA 改写。"
-    },
-    {
-      "id": "F02",
-      "phase": 2,
-      "module": "mobile",
-      "name": "底部 Tab 重构 + 菜单精简",
-      "description": "底部导航 5 个 Tab 重构：日知→对话、笔记→探索（Tab 路由从 /notes 改为 /explore）、更多→我的。更多菜单从 6 项精简为 3 项（回顾/目标/设置）。/notes 和 /inbox 保留为深层链接，高亮探索 Tab。本任务只做 Tab 标签、路由、高亮和菜单调整，不修改 ExplorePage/NotesPage 的内容结构。完成后 flutter analyze + flutter test 通过。",
-      "verification": "F2",
-      "depends_on": ["F01"],
-      "status": "completed",
-      "priority": 2,
-      "started_at": "2026-05-11T12:35:00",
-      "completed_at": "2026-05-11T12:45:00",
-      "commit": "d1fc35b",
-      "evidence_file": ".dev-flow/evidence/F02.md",
-      "summary": "Tab 标签改为今天/对话/任务/探索/我的，菜单精简为 3 项，路由高亮更新，16 个测试全部通过",
-      "acceptance_criteria": [
-        "flutter analyze 通过，0 error",
-        "flutter test 通过",
-        "5 个 Tab label：今天、对话、任务、探索、我的",
-        "Tab 图标：对话=chat_bubble、探索=explore、我的=person",
-        "对话 Tab 导航到 /chat",
-        "探索 Tab 导航到 /explore",
-        "我的 Tab 点击弹出菜单，恰好 3 项：回顾、目标、设置",
-        "我的 菜单不再包含：灵感、探索、对话",
-        "点击我的→回顾 → 跳转到 /review",
-        "点击我的→目标 → 跳转到 /goals",
-        "点击我的→设置 → 跳转到 /settings",
-        "/explore 路由高亮探索 Tab（index 3）",
-        "/notes 路由渲染 NotesPage（非 ExplorePage），高亮探索 Tab（index 3）；/inbox 同理；点击已高亮探索 Tab 导航回 /explore 根路由",
-        "/review、/goals、/settings 路由高亮我的 Tab（index 4）",
-        "bottom_nav_test.dart 更新：Tab 名称对话/探索/我的，菜单 3 项各入口跳转，图标更新"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "Tab 渲染：5 个 Tab 名称和图标正确",
-        "Tab 导航：点击每个 Tab 导航到正确路由",
-        "我的 菜单：恰好 3 个菜单项（回顾/目标/设置），无灵感/探索/对话",
-        "回顾路由：我的→回顾 → /review",
-        "目标路由：我的→目标 → /goals",
-        "设置路由：我的→设置 → /settings",
-        "路由高亮：/explore 高亮探索 Tab，/review、/goals、/settings 高亮我的 Tab",
-        "深层链接：/notes 渲染 NotesPage 并高亮探索 Tab，点击探索 Tab 导航到 /explore 根路由",
-        "深层链接：/inbox 渲染 InboxPage 并高亮探索 Tab，点击探索 Tab 导航到 /explore 根路由",
-        "全局 FAB：在各 Tab 页面正常显示"
-      ],
-      "files": [
-        "mobile/lib/widgets/bottom_nav.dart",
-        "mobile/lib/config/routes.dart",
-        "mobile/test/widgets/bottom_nav_test.dart"
-      ],
-      "planning_notes": "本任务只做导航标签/路由/高亮/菜单调整，不改 ExplorePage 内容。bottom_nav_test.dart 需扩展：补路由高亮断言（/explore→index3, /review→index4, /settings→index4）、深层链接断言（/notes→index3, /inbox→index3）。"
-    },
-    {
-      "id": "F03",
-      "phase": 3,
-      "module": "mobile",
-      "name": "QuickActions 死代码清理 + CreateTaskSheet 迁出",
-      "description": "QuickActions widget 已被 QuickCaptureFAB 完全替代，成为死代码。将 CreateTaskSheet 从 quick_actions.dart 迁出为独立文件 create_task_sheet.dart，然后删除 quick_actions.dart 和 quick_actions_test.dart。quick_capture_fab.dart 的 import 从 quick_actions.dart 改为 create_task_sheet.dart。完成后 flutter analyze + flutter test 通过。",
-      "verification": "F2",
-      "depends_on": ["F01"],
-      "status": "completed",
-      "priority": 3,
-      "started_at": "2026-05-11T13:00:00",
-      "completed_at": "2026-05-11T18:30:00",
-      "evidence_file": ".dev-flow/evidence/F03.md",
-      "summary": "CreateTaskSheet 迁出为独立文件，QuickActions 死代码清除，补 Today 刷新回归测试",
-      "acceptance_criteria": [
-        "flutter analyze 通过，0 error",
-        "flutter test 通过",
-        "mobile/lib/widgets/create_task_sheet.dart 文件已创建，包含 CreateTaskSheet 类",
-        "mobile/lib/widgets/quick_actions.dart 文件已删除",
-        "mobile/test/widgets/quick_actions_test.dart 文件已删除",
-        "quick_capture_fab.dart import 改为 create_task_sheet.dart",
-        "grep -r 'QuickActions' mobile/lib/ mobile/test/ 返回 0 结果（不含 CreateTaskSheet）",
-        "grep -r 'quick_actions' mobile/lib/ mobile/test/ 返回 0 结果",
-        "建任务创建失败时 BottomSheet 保持可重试并显示错误提示（回归 F01 契约）",
-        "建任务/记灵感成功后 Today 自动刷新，覆盖当前在 Today 页和从其他 Tab 返回两种场景（回归 F01 契约）"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "flutter analyze 0 error",
-        "flutter test 全部通过",
-        "grep 验证：QuickActions/quick_actions 引用为 0",
-        "CreateTaskSheet 功能正常：建任务 BottomSheet 弹出、输入、创建成功",
-        "建任务失败回归：创建失败时 BottomSheet 保持可重试，显示错误提示",
-        "Today 刷新回归：建任务成功后 todayProvider.loadData() 被调用"
-      ],
-      "files": [
-        "mobile/lib/widgets/create_task_sheet.dart",
-        "mobile/lib/widgets/quick_actions.dart",
-        "mobile/lib/widgets/quick_capture_fab.dart",
-        "mobile/test/widgets/quick_actions_test.dart",
-        "mobile/test/widgets/quick_capture_fab_test.dart",
-        "mobile/test/widgets/create_task_sheet_test.dart"
-      ],
-      "planning_notes": "纯文件迁移 + 删除死代码，不改任何业务逻辑。CreateTaskSheet 代码原封不动搬到新文件。"
-    },
-    {
-      "id": "F04",
-      "phase": 3,
-      "module": "mobile",
-      "name": "路由常量提取 + build 优化 + doneTasks 去重",
-      "description": "三项小型重构：(1) 在独立文件 app_routes.dart 中定义路由路径常量类 AppRoutes，routes.dart 和 bottom_nav.dart 共同依赖它，避免循环依赖；(2) bottom_nav.dart build 方法中缓存 GoRouterState.of(context).uri.path 为一次读取，消除 3 次重复解析；(3) today_page.dart 中移除 doneTasks 手动计算，复用 TodayState 已有的 completionRate 相关数据。完成后 flutter analyze + flutter test 通过。",
-      "verification": "F2",
-      "depends_on": ["F02"],
-      "status": "pending",
-      "priority": 4,
-      "acceptance_criteria": [
-        "flutter analyze 通过，0 error",
-        "flutter test 通过",
-        "app_routes.dart 独立文件中定义 AppRoutes 常量类，包含所有路由路径常量（与 routes.dart 无循环依赖）",
-        "bottom_nav.dart 引用 AppRoutes 常量，无硬编码路由字符串",
-        "bottom_nav.dart build 中 GoRouterState.of(context).uri.path 只读取一次",
-        "today_page.dart 中 doneTasks 不再手动 where().length 遍历",
-        "today_page_test.dart 全部通过"
-      ],
-      "risk_tags": [],
-      "test_tasks": [
-        "flutter analyze 0 error",
-        "flutter test 全部通过",
-        "bottom_nav_test.dart 16 个测试全部通过",
-        "today_page_test.dart 全部通过",
-        "grep 验证：bottom_nav.dart 中无 '/chat' '/tasks' '/explore' 等硬编码字符串（只有 AppRoutes 常量引用）",
-        "Today 进度计数回归：混合已完成/未完成任务时，进度文案和计数显示正确（验证 doneTasks 去重未引入统计回归）"
-      ],
-      "files": [
-        "mobile/lib/config/app_routes.dart",
-        "mobile/lib/config/routes.dart",
-        "mobile/lib/widgets/bottom_nav.dart",
-        "mobile/lib/pages/today_page.dart",
-        "mobile/test/widgets/bottom_nav_test.dart"
-      ],
-      "planning_notes": "AppRoutes 放在独立 app_routes.dart 避免 routes.dart（依赖 bottom_nav.dart）和 bottom_nav.dart 之间的循环依赖。三项改动相互独立但都小，合为一个任务。"
-    }
-  ]
+  "features": []
 }
